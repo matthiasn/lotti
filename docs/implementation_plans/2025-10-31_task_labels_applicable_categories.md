@@ -163,6 +163,24 @@ Acceptance criteria
 - Results list scrolls while the search field stays visible.
 - Enter/submit still triggers “create new category” when there are zero matches.
 
+### Label Selection Modal (Unification)
+
+- Align the task “Select labels” UI with the category selection modal using the common Wolt modal
+  utilities (`ModalUtils`).
+- Replace the bespoke bottom sheet with a content widget embedded in
+  `ModalUtils.showSinglePageModal` to share visuals (title bar, rounded container, sticky actions).
+
+Implementation approach
+- Add `LabelSelectionModalContent` (search + checkbox list + inline create) and open it via
+  `ModalUtils.showSinglePageModal` from the task labels wrapper.
+- Provide a sticky action bar with “Cancel” and “Apply”, mirroring the category modal.
+- Keep business logic unchanged: on Apply call `LabelsRepository.setLabels` with the selection.
+
+Acceptance criteria
+- Visuals match the category modal (top bar, backdrop, spacing, radius, and sticky action bar).
+- Keyboard/scroll behavior is consistent with the category modal.
+- No regressions in inline create, search, or persistence.
+
 ## Repository & Validation
 
 - `LabelsRepository.createLabel/updateLabel` → add optional `List<String>? applicableCategoryIds`.
@@ -211,7 +229,9 @@ Acceptance criteria
 - Reactivity: completed — availableLabelsForCategoryProvider wired to labelsStreamProvider.
 - UI – Editor: completed — categories chips + add/remove via CategorySelectionModalContent placed after
   color picker and before privacy switch.
-- UI – Task Picker: completed — sheet scoped by categoryId; wrapper passes current category id.
+- UI – Task Picker: completed — unified with category modal style. The wrapper uses
+  `ModalUtils.showSinglePageModal` with a new `LabelSelectionModalContent` and a sticky action bar
+  (Cancel/Apply). Scoped by `categoryId`; wrapper passes current category id.
 - i18n: English strings added; other locales pending (tracked in missing_translations.txt).
 - Tests: targeted unit/widget tests added; more planned.
 

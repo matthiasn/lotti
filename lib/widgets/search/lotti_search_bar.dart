@@ -30,6 +30,7 @@ class LottiSearchBar extends StatefulWidget {
     this.hintText = 'Search...',
     this.isCompact = false,
     this.textCapitalization = TextCapitalization.none,
+    this.useGradientInDark = true,
     super.key,
   });
 
@@ -50,6 +51,11 @@ class LottiSearchBar extends StatefulWidget {
 
   /// Text capitalization behavior for the input (e.g., Words for label searches)
   final TextCapitalization textCapitalization;
+
+  /// In dark mode, the default style uses a subtle vertical gradient to add depth.
+  /// On certain displays or over layered modals this can show visible banding.
+  /// Set this to false to use a solid background color instead.
+  final bool useGradientInDark;
 
   @override
   State<LottiSearchBar> createState() => _LottiSearchBarState();
@@ -86,26 +92,26 @@ class _LottiSearchBarState extends State<LottiSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: widget.isCompact ? 36 : 48,
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.light
+        color: !isDark
             ? context.colorScheme.surfaceContainerHighest
-            : widget.isCompact
-                ? context.colorScheme.surfaceContainer.withValues(alpha: 0.8)
+            : widget.isCompact || !widget.useGradientInDark
+                ? context.colorScheme.surfaceContainerHighest
                 : null,
-        gradient:
-            Theme.of(context).brightness == Brightness.light || widget.isCompact
-                ? null
-                : LinearGradient(
-                    colors: [
-                      context.colorScheme.surfaceContainer,
-                      context.colorScheme.surfaceContainerHigh
-                          .withValues(alpha: 0.8),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+        gradient: (!isDark || widget.isCompact || !widget.useGradientInDark)
+            ? null
+            : LinearGradient(
+                colors: [
+                  context.colorScheme.surfaceContainer,
+                  context.colorScheme.surfaceContainerHigh
+                      .withValues(alpha: 0.8),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
         borderRadius: BorderRadius.circular(widget.isCompact ? 12 : 16),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.light

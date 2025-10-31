@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -265,7 +266,8 @@ void main() {
     await tester.tap(find.byTooltip('Edit labels'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Select labels'), findsOneWidget);
+    // Verify modal opened by checking for the sticky action bar button
+    expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
   });
 
   testWidgets('hides wrapper when no labels assigned and none available',
