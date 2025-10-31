@@ -27,13 +27,19 @@ List<String>? _getEmojiFontFallback() {
 
 class ThemingCubit extends Cubit<ThemingState> {
   ThemingCubit() : super(ThemingState(enableTooltips: true)) {
-    _loadSelectedSchemes();
-    getIt<JournalDb>()
-        .watchConfigFlag(enableTooltipFlag)
-        .forEach((enableTooltips) {
-      _enableTooltips = enableTooltips;
-      emitState();
-    });
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _loadSelectedSchemes();
+    unawaited(
+      getIt<JournalDb>()
+          .watchConfigFlag(enableTooltipFlag)
+          .forEach((enableTooltips) {
+        _enableTooltips = enableTooltips;
+        emitState();
+      }),
+    );
     _watchThemePrefsUpdates();
   }
 
@@ -48,8 +54,18 @@ class ThemingCubit extends Cubit<ThemingState> {
         .listen((items) async {
       if (items.isNotEmpty && !_isApplyingSyncedChanges) {
         _isApplyingSyncedChanges = true;
-        await _loadSelectedSchemes();
-        _isApplyingSyncedChanges = false;
+        try {
+          await _loadSelectedSchemes();
+        } catch (e, st) {
+          getIt<LoggingService>().captureException(
+            e,
+            domain: 'THEMING_CUBIT',
+            subDomain: 'syncUpdate',
+            stackTrace: st,
+          );
+        } finally {
+          _isApplyingSyncedChanges = false;
+        }
       }
     });
   }

@@ -778,7 +778,10 @@ void main() {
           .toList();
 
       expect(filteredByProvider1.length, equals(2));
-      expect(filteredByProvider1.every((m) => m.inferenceProviderId == 'provider1'), isTrue);
+      expect(
+          filteredByProvider1
+              .every((m) => m.inferenceProviderId == 'provider1'),
+          isTrue);
       expect(filteredByProvider1.any((m) => m.name == 'GPT-4'), isTrue);
       expect(filteredByProvider1.any((m) => m.name == 'GPT-3.5'), isTrue);
 
@@ -846,7 +849,8 @@ void main() {
           ),
           overrides: [
             aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(multiProviderModels)),
+                .overrideWith(
+                    () => TestAiConfigByTypeController(multiProviderModels)),
             for (final provider in providers)
               aiConfigByIdProvider(provider.id)
                   .overrideWith((ref) async => provider),
@@ -867,13 +871,13 @@ void main() {
       );
     });
 
-    test('model count changes with filtering but list reference stays same', () {
+    test('model count changes with filtering but list reference stays same',
+        () {
       // Test that filtering changes count but original list is preserved
       final allModels = multiProviderModels;
 
-      final filteredModels = allModels
-          .where((m) => m.inferenceProviderId == 'provider1')
-          .toList();
+      final filteredModels =
+          allModels.where((m) => m.inferenceProviderId == 'provider1').toList();
 
       expect(filteredModels.length, equals(2));
       expect(allModels.length, equals(4)); // Original list unchanged
@@ -953,7 +957,8 @@ void main() {
           ),
           overrides: [
             aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(multiProviderModels)),
+                .overrideWith(
+                    () => TestAiConfigByTypeController(multiProviderModels)),
             for (final provider in providers)
               aiConfigByIdProvider(provider.id)
                   .overrideWith((ref) async => provider),
@@ -1000,7 +1005,8 @@ void main() {
           ),
           overrides: [
             aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(multiProviderModels)),
+                .overrideWith(
+                    () => TestAiConfigByTypeController(multiProviderModels)),
             for (final provider in providers)
               aiConfigByIdProvider(provider.id)
                   .overrideWith((ref) async => provider),
@@ -1047,7 +1053,8 @@ void main() {
           ),
           overrides: [
             aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(multiProviderModels)),
+                .overrideWith(
+                    () => TestAiConfigByTypeController(multiProviderModels)),
             for (final provider in providers)
               aiConfigByIdProvider(provider.id)
                   .overrideWith((ref) async => provider),

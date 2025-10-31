@@ -14,7 +14,8 @@ void main() {
 
     setUp(() {
       initialFilterState = AiSettingsFilterState.initial().copyWith(
-        activeTab: AiSettingsTab.models, // Set to models tab so capability filters show
+        activeTab: AiSettingsTab
+            .models, // Set to models tab so capability filters show
       );
       filterChanges = [];
       mockProviders = [AiTestDataFactory.createTestProvider()];

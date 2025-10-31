@@ -295,113 +295,118 @@ class _ModelManagementContentState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              // Provider filter chips row with horizontal scroll
-              if (uniqueProviderIds.length > 1) ...[
-                const SizedBox(height: 10),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    children: [
-                      // "All" chip
-                      FilterChip(
-                        label: const Text('All'),
-                        selected: _selectedProviderId == null,
-                        onSelected: (_) {
-                          setState(() {
-                            _selectedProviderId = null;
-                          });
-                        },
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: context.colorScheme.surfaceContainerHigh
-                            .withValues(alpha: 0.5),
-                        selectedColor: context.colorScheme.primaryContainer
-                            .withValues(alpha: 0.7),
-                        checkmarkColor: context.colorScheme.onPrimaryContainer,
-                        side: BorderSide(
-                          color: _selectedProviderId == null
-                              ? context.colorScheme.primary.withValues(alpha: 0.8)
-                              : context.colorScheme.primaryContainer
-                                  .withValues(alpha: 0.3),
-                        ),
-                        labelStyle: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                          color: _selectedProviderId == null
-                              ? context.colorScheme.onPrimaryContainer
-                              : context.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.8),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                      ),
-                      const SizedBox(width: 6),
-                      // Provider chips
-                      ...uniqueProviderIds.map((providerId) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: ProviderFilterChip(
-                            providerId: providerId,
-                            isSelected: _selectedProviderId == providerId,
-                            onTap: () {
-                              setState(() {
-                                _selectedProviderId = providerId;
-                              });
-                            },
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              // Add 10px spacing above the first card (only if no filter chips)
-              if (uniqueProviderIds.length <= 1) const SizedBox(height: 10),
-              // Models list with enhanced styling
-              ...displayedModels.map((model) {
-                final isSelected = _selectedIds.contains(model.id);
-                final isDefault = _defaultId == model.id;
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _ModelCard(
-                    model: model,
-                    isSelected: isSelected,
-                    isDefault: isDefault,
-                    onTap: () {
-                      setState(() {
-                        if (isSelected) {
-                          _selectedIds.remove(model.id);
-                          if (isDefault) {
-                            _defaultId = _selectedIds.isNotEmpty
-                                ? _selectedIds.first
-                                : '';
-                          }
-                        } else {
-                          _selectedIds.add(model.id);
-                          if (_selectedIds.length == 1 || _defaultId.isEmpty) {
-                            _defaultId = model.id;
-                          }
-                        }
-                        _updateSelection();
-                      });
-                    },
-                    onSetDefault: isSelected
-                        ? () {
+                // Provider filter chips row with horizontal scroll
+                if (uniqueProviderIds.length > 1) ...[
+                  const SizedBox(height: 10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: [
+                        // "All" chip
+                        FilterChip(
+                          label: const Text('All'),
+                          selected: _selectedProviderId == null,
+                          onSelected: (_) {
                             setState(() {
-                              _defaultId = model.id;
-                              _updateSelection();
+                              _selectedProviderId = null;
                             });
-                          }
-                        : null,
+                          },
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          backgroundColor: context
+                              .colorScheme.surfaceContainerHigh
+                              .withValues(alpha: 0.5),
+                          selectedColor: context.colorScheme.primaryContainer
+                              .withValues(alpha: 0.7),
+                          checkmarkColor:
+                              context.colorScheme.onPrimaryContainer,
+                          side: BorderSide(
+                            color: _selectedProviderId == null
+                                ? context.colorScheme.primary
+                                    .withValues(alpha: 0.8)
+                                : context.colorScheme.primaryContainer
+                                    .withValues(alpha: 0.3),
+                          ),
+                          labelStyle: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
+                            color: _selectedProviderId == null
+                                ? context.colorScheme.onPrimaryContainer
+                                : context.colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                        ),
+                        const SizedBox(width: 6),
+                        // Provider chips
+                        ...uniqueProviderIds.map((providerId) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: ProviderFilterChip(
+                              providerId: providerId,
+                              isSelected: _selectedProviderId == providerId,
+                              onTap: () {
+                                setState(() {
+                                  _selectedProviderId = providerId;
+                                });
+                              },
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
                   ),
-                );
-              }),
-            ],
+                  const SizedBox(height: 10),
+                ],
+                // Add 10px spacing above the first card (only if no filter chips)
+                if (uniqueProviderIds.length <= 1) const SizedBox(height: 10),
+                // Models list with enhanced styling
+                ...displayedModels.map((model) {
+                  final isSelected = _selectedIds.contains(model.id);
+                  final isDefault = _defaultId == model.id;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ModelCard(
+                      model: model,
+                      isSelected: isSelected,
+                      isDefault: isDefault,
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedIds.remove(model.id);
+                            if (isDefault) {
+                              _defaultId = _selectedIds.isNotEmpty
+                                  ? _selectedIds.first
+                                  : '';
+                            }
+                          } else {
+                            _selectedIds.add(model.id);
+                            if (_selectedIds.length == 1 ||
+                                _defaultId.isEmpty) {
+                              _defaultId = model.id;
+                            }
+                          }
+                          _updateSelection();
+                        });
+                      },
+                      onSetDefault: isSelected
+                          ? () {
+                              setState(() {
+                                _defaultId = model.id;
+                                _updateSelection();
+                              });
+                            }
+                          : null,
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
-        ),
         );
       },
       loading: () => const Center(

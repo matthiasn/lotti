@@ -101,15 +101,25 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                 selected: selectedProviderIds.isEmpty,
                 onSelected: (_) => onChanged({}),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHigh
                     .withValues(alpha: 0.5),
-                selectedColor:
-                    Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
-                checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                selectedColor: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.7),
+                checkmarkColor:
+                    Theme.of(context).colorScheme.onPrimaryContainer,
                 side: BorderSide(
                   color: selectedProviderIds.isEmpty
-                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.8)
-                      : Theme.of(context).colorScheme.primaryContainer
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.8)
+                      : Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
                           .withValues(alpha: 0.3),
                 ),
                 labelStyle: TextStyle(
@@ -118,7 +128,9 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                   letterSpacing: 0.2,
                   color: selectedProviderIds.isEmpty
                       ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context).colorScheme.onSurfaceVariant
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
                           .withValues(alpha: 0.8),
                 ),
                 padding:
@@ -153,15 +165,25 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                   onChanged(newSelection);
                 },
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHigh
                     .withValues(alpha: 0.5),
-                selectedColor:
-                    Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
-                checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                selectedColor: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.7),
+                checkmarkColor:
+                    Theme.of(context).colorScheme.onPrimaryContainer,
                 side: BorderSide(
                   color: isSelected
-                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.8)
-                      : Theme.of(context).colorScheme.primaryContainer
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.8)
+                      : Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
                           .withValues(alpha: 0.3),
                 ),
                 labelStyle: TextStyle(
@@ -170,7 +192,9 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                   letterSpacing: 0.2,
                   color: isSelected
                       ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context).colorScheme.onSurfaceVariant
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
                           .withValues(alpha: 0.8),
                 ),
                 padding:
