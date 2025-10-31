@@ -303,9 +303,23 @@ bool imageImportBypassMediaKitInTests = false;
 
 @visibleForTesting
 AudioMetadataReader selectAudioMetadataReader() {
-  return getIt.isRegistered<AudioMetadataReader>()
-      ? getIt<AudioMetadataReader>()
-      : _extractDurationWithMediaKit;
+  if (getIt.isRegistered<AudioMetadataReader>()) {
+    return getIt<AudioMetadataReader>();
+  }
+  // In headless/flutter test environments, prefer a no-op reader to avoid
+  // invoking platform media backends that may hang or be unavailable.
+  final isFlutterTestEnv = () {
+    try {
+      return Platform.environment['FLUTTER_TEST'] == 'true';
+    } catch (_) {
+      return false;
+    }
+  }();
+
+  if (imageImportBypassMediaKitInTests || isFlutterTestEnv) {
+    return (_) async => Duration.zero;
+  }
+  return _extractDurationWithMediaKit;
 }
 
 Future<Duration> _extractDurationWithMediaKit(String filePath) async {
@@ -315,10 +329,27 @@ Future<Duration> _extractDurationWithMediaKit(String filePath) async {
       return Duration.zero;
     }
     player = Player();
-    await player.open(Media(filePath), play: false);
-    return await player.stream.duration
-        .firstWhere((d) => d > Duration.zero, orElse: () => Duration.zero)
-        .timeout(const Duration(seconds: 5), onTimeout: () => Duration.zero);
+    try {
+      // Guard against environments where media backends are unavailable.
+      await player
+          .open(Media(filePath), play: false)
+          .timeout(const Duration(seconds: 3));
+    } on TimeoutException {
+      return Duration.zero;
+    } catch (_) {
+      // Opening failed – fall back to zero duration without failing import.
+      return Duration.zero;
+    }
+
+    try {
+      return await player.stream.duration
+          .firstWhere((d) => d > Duration.zero, orElse: () => Duration.zero)
+          .timeout(const Duration(seconds: 5), onTimeout: () => Duration.zero);
+    } on TimeoutException {
+      return Duration.zero;
+    } catch (_) {
+      return Duration.zero;
+    }
   } finally {
     await player?.dispose();
   }

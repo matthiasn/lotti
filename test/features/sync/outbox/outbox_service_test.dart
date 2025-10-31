@@ -1,8 +1,10 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
@@ -29,6 +31,8 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart' as matrix_utils;
 import 'package:mocktail/mocktail.dart';
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
@@ -50,6 +54,11 @@ class MockOutboxProcessor extends Mock implements OutboxProcessor {}
 class MockVectorClockService extends Mock implements VectorClockService {}
 
 class MockMatrixService extends Mock implements MatrixService {}
+
+class MockMatrixClient extends Mock implements Client {}
+
+class MockCachedLoginController extends Mock
+    implements matrix_utils.CachedStreamController<LoginState> {}
 
 class TestableOutboxService extends OutboxService {
   TestableOutboxService({
@@ -786,6 +795,13 @@ void main() {
 
   test('constructs with matrixService fallback sender', () async {
     final matrixService = MockMatrixService();
+    final client = MockMatrixClient();
+    when(() => matrixService.client).thenReturn(client);
+    final cached = MockCachedLoginController();
+    when(() => cached.stream)
+        .thenAnswer((_) => const Stream<LoginState>.empty());
+    when(() => cached.value).thenReturn(LoginState.loggedOut);
+    when(() => client.onLoginStateChanged).thenReturn(cached);
 
     final serviceWithMatrix = OutboxService(
       syncDatabase: syncDatabase,
@@ -826,6 +842,13 @@ void main() {
       when(gate.dispose).thenAnswer((_) async {});
 
       final matrixService = MockMatrixService();
+      final client = MockMatrixClient();
+      when(() => matrixService.client).thenReturn(client);
+      final cached = MockCachedLoginController();
+      when(() => cached.stream)
+          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
       when(matrixService.isLoggedIn).thenReturn(false);
 
       final svc = TestableOutboxService(
@@ -877,6 +900,13 @@ void main() {
       when(gate.dispose).thenAnswer((_) async {});
 
       final matrixService = MockMatrixService();
+      final client = MockMatrixClient();
+      when(() => matrixService.client).thenReturn(client);
+      final cached = MockCachedLoginController();
+      when(() => cached.stream)
+          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
       when(matrixService.isLoggedIn).thenReturn(true);
 
       final svc = OutboxService(
@@ -896,6 +926,123 @@ void main() {
 
       // sendNext performs two drains (second after a short settle delay)
       verify(() => processor.processQueue()).called(2);
+
+      await svc.dispose();
+    });
+
+    test('post-login nudge enqueues and drains after LoginState.loggedIn',
+        () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+
+      final matrixService = MockMatrixService();
+      final client = MockMatrixClient();
+      final loginController = StreamController<LoginState>.broadcast();
+      addTearDown(loginController.close);
+      when(() => matrixService.client).thenReturn(client);
+      final cached = MockCachedLoginController();
+      when(() => cached.stream).thenAnswer((_) => loginController.stream);
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
+
+      var loggedIn = false;
+      when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
+
+      final svc = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+        matrixService: matrixService,
+      );
+
+      // Flip to logged in and emit login event
+      loggedIn = true;
+      loginController.add(LoginState.loggedIn);
+      // Allow async runner to process
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
+
+      await svc.dispose();
+    });
+
+    test('connectivity regain pre-login does not drain, drains after login',
+        () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(() => repository.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [
+                OutboxItem(
+                  id: 1,
+                  message: '{}',
+                  subject: 's',
+                  status: OutboxStatus.pending.index,
+                  retries: 0,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  filePath: null,
+                )
+              ]);
+
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+
+      final matrixService = MockMatrixService();
+      final client = MockMatrixClient();
+      final loginController = StreamController<LoginState>.broadcast();
+      addTearDown(loginController.close);
+      when(() => matrixService.client).thenReturn(client);
+      final cached = MockCachedLoginController();
+      when(() => cached.stream).thenAnswer((_) => loginController.stream);
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
+
+      var loggedIn = false;
+      when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
+
+      final connectivityController =
+          StreamController<List<ConnectivityResult>>.broadcast();
+      addTearDown(connectivityController.close);
+
+      final svc = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+        matrixService: matrixService,
+        connectivityStream: connectivityController.stream,
+      );
+
+      // Connectivity regain before login — should enqueue but not drain
+      connectivityController.add([ConnectivityResult.wifi]);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      verifyNever(() => processor.processQueue());
+
+      // Now login completes — post-login nudge should drain
+      loggedIn = true;
+      loginController.add(LoginState.loggedIn);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
 
       await svc.dispose();
     });
