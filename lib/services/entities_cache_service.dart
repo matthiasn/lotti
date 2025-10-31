@@ -22,6 +22,10 @@ class EntitiesCacheService {
       for (final category in categories) {
         categoriesById[category.id] = category;
       }
+      // Prune stale category keys from label lookup when categories change
+      labelsByCategoryId.removeWhere(
+        (catId, _) => !categoriesById.containsKey(catId),
+      );
     });
 
     getIt<JournalDb>().watchHabitDefinitions().listen((
@@ -49,9 +53,34 @@ class EntitiesCacheService {
       for (final label in labels) {
         labelsById[label.id] = label;
       }
+
+      // Rebuild label lookup buckets
+      labelsByCategoryId.clear();
+      _globalLabels.clear();
+      for (final label in labels) {
+        if (label.deletedAt != null) continue;
+        final cats = label.applicableCategoryIds;
+        if (cats == null || cats.isEmpty) {
+          _globalLabels.add(label);
+        } else {
+          for (final catId in cats) {
+            labelsByCategoryId
+                .putIfAbsent(catId, () => <LabelDefinition>[])
+                .add(label);
+          }
+        }
+      }
+      // Sort buckets by label name (case-insensitive)
+      _globalLabels
+          .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      for (final entry in labelsByCategoryId.entries) {
+        entry.value.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      }
       // Notify listeners that labels changed so task views can refresh
-      if (getIt.isRegistered<UpdateNotifications>()) {
-        getIt<UpdateNotifications>().notify({'LABELS_UPDATED'});
+      final locator = getIt;
+      if (locator.isRegistered<UpdateNotifications>()) {
+        locator<UpdateNotifications>().notify({'LABELS_UPDATED'});
       }
     });
 
@@ -65,6 +94,8 @@ class EntitiesCacheService {
   Map<String, HabitDefinition> habitsById = {};
   Map<String, DashboardDefinition> dashboardsById = {};
   Map<String, LabelDefinition> labelsById = {};
+  Map<String, List<LabelDefinition>> labelsByCategoryId = {};
+  final List<LabelDefinition> _globalLabels = [];
   bool _showPrivateEntries = false;
 
   bool get showPrivateEntries => _showPrivateEntries;
@@ -104,6 +135,60 @@ class EntitiesCacheService {
         .where((label) => _showPrivateEntries || !(label.private ?? false))
         .toList()
       ..sortBy((label) => label.name.toLowerCase());
+    return res;
+  }
+
+  List<LabelDefinition> get globalLabels => List.unmodifiable(_globalLabels);
+
+  /// Returns union of global labels and labels scoped to [categoryId],
+  /// optionally filtering private entries based on [includePrivate].
+  List<LabelDefinition> availableLabelsForCategory(
+    String? categoryId, {
+    bool? includePrivate,
+  }) {
+    final allowPrivate = includePrivate ?? _showPrivateEntries;
+    final dedup = <String, LabelDefinition>{};
+    for (final l in _globalLabels) {
+      if (l.deletedAt != null) continue;
+      if (!allowPrivate && (l.private ?? false)) continue;
+      dedup[l.id] = l;
+    }
+    if (categoryId != null) {
+      for (final l
+          in labelsByCategoryId[categoryId] ?? const <LabelDefinition>[]) {
+        if (l.deletedAt != null) continue;
+        if (!allowPrivate && (l.private ?? false)) continue;
+        dedup[l.id] = l;
+      }
+    }
+    final res = dedup.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return res;
+  }
+
+  /// Pure helper used by reactive providers to compute category-scoped labels
+  /// from an arbitrary [all] set (e.g., stream-provided list), independent of
+  /// internal cache state.
+  List<LabelDefinition> filterLabelsForCategory(
+    List<LabelDefinition> all,
+    String? categoryId, {
+    bool? includePrivate,
+  }) {
+    final allowPrivate = includePrivate ?? _showPrivateEntries;
+    final dedup = <String, LabelDefinition>{};
+    for (final l in all) {
+      if (l.deletedAt != null) continue;
+      if (!allowPrivate && (l.private ?? false)) continue;
+      final cats = l.applicableCategoryIds;
+      final isGlobal = cats == null || cats.isEmpty;
+      final inCategory =
+          categoryId != null && (cats?.contains(categoryId) ?? false);
+      if (isGlobal || inCategory) {
+        dedup[l.id] = l;
+      }
+    }
+    final res = dedup.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return res;
   }
 }

@@ -7,7 +7,7 @@ part of 'checkbox_visibility_provider.dart';
 // **************************************************************************
 
 String _$checkboxVisibilityHash() =>
-    r'aa5b6d2d21b12cd086f7a79723d96a1b81c19cd0';
+    r'faa1ec44653292b3426824a03ced965a2aa006be';
 
 /// Copied from Dart SDK
 class _SystemHash {

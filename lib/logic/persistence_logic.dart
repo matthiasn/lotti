@@ -759,9 +759,13 @@ class PersistenceLogic {
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
+    bool overrideComparison = false,
   }) async {
     try {
-      final updateResult = await _journalDb.updateJournalEntity(journalEntity);
+      final updateResult = await _journalDb.updateJournalEntity(
+        journalEntity,
+        overrideComparison: overrideComparison,
+      );
       final applied = updateResult.applied;
       _updateNotifications.notify({
         ...journalEntity.affectedIds,

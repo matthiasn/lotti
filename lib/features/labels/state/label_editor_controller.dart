@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -12,6 +13,7 @@ class LabelEditorState {
     required this.name,
     required this.colorHex,
     required this.isPrivate,
+    required this.selectedCategoryIds,
     this.description,
     this.isSaving = false,
     this.hasChanges = false,
@@ -27,6 +29,9 @@ class LabelEditorState {
       colorHex: (label?.color ?? labelColorPresets.first.hex).toUpperCase(),
       isPrivate: label?.private ?? false,
       description: label?.description,
+      selectedCategoryIds: {
+        ...(label?.applicableCategoryIds ?? const <String>[])
+      },
     );
   }
 
@@ -34,6 +39,7 @@ class LabelEditorState {
   final String colorHex;
   final bool isPrivate;
   final String? description;
+  final Set<String> selectedCategoryIds;
   final bool isSaving;
   final bool hasChanges;
   final String? errorMessage;
@@ -43,6 +49,7 @@ class LabelEditorState {
     String? colorHex,
     bool? isPrivate,
     String? description,
+    Set<String>? selectedCategoryIds,
     bool? isSaving,
     bool? hasChanges,
     Object? errorMessage = _sentinel,
@@ -52,6 +59,7 @@ class LabelEditorState {
       colorHex: colorHex ?? this.colorHex,
       isPrivate: isPrivate ?? this.isPrivate,
       description: description ?? this.description,
+      selectedCategoryIds: selectedCategoryIds ?? this.selectedCategoryIds,
       isSaving: isSaving ?? this.isSaving,
       hasChanges: hasChanges ?? this.hasChanges,
       errorMessage: identical(errorMessage, _sentinel)
@@ -141,29 +149,56 @@ class LabelEditorController
     );
   }
 
+  void addCategoryId(String id) {
+    if (id.isEmpty) return;
+    final next = {...state.selectedCategoryIds}..add(id);
+    state = state.copyWith(
+      selectedCategoryIds: next,
+      hasChanges: _hasChanges(selectedCategoryIds: next),
+      errorMessage: null,
+    );
+  }
+
+  void removeCategoryId(String id) {
+    final next = {...state.selectedCategoryIds}..remove(id);
+    state = state.copyWith(
+      selectedCategoryIds: next,
+      hasChanges: _hasChanges(selectedCategoryIds: next),
+      errorMessage: null,
+    );
+  }
+
   bool _hasChanges({
     String? name,
     String? description,
     String? colorHex,
     bool? isPrivate,
+    Set<String>? selectedCategoryIds,
   }) {
     final effectiveName = (name ?? state.name).trim();
     final effectiveDescription = (description ?? state.description)?.trim();
     final effectiveColor = (colorHex ?? state.colorHex).toUpperCase();
     final effectivePrivate = isPrivate ?? state.isPrivate;
+    final effectiveCategories =
+        selectedCategoryIds ?? state.selectedCategoryIds;
 
     if (_initialLabel == null) {
       final baselineName = _initialName ?? '';
       return effectiveName != baselineName ||
           (effectiveDescription ?? '').isNotEmpty ||
           effectiveColor != labelColorPresets.first.hex.toUpperCase() ||
-          effectivePrivate;
+          effectivePrivate ||
+          effectiveCategories.isNotEmpty;
     }
 
+    final initialCats = {
+      ...(_initialLabel!.applicableCategoryIds ?? const <String>[])
+    };
     return effectiveName != _initialLabel!.name ||
         effectiveColor != _initialLabel!.color.toUpperCase() ||
         effectivePrivate != (_initialLabel!.private ?? false) ||
-        (effectiveDescription ?? '') != (_initialLabel!.description ?? '');
+        (effectiveDescription ?? '') != (_initialLabel!.description ?? '') ||
+        !setEquals(effectiveCategories, initialCats);
   }
 
   Future<LabelDefinition?> save() async {
@@ -195,12 +230,21 @@ class LabelEditorController
       }
 
       if (_initialLabel == null) {
-        final result = await _repository.createLabel(
-          name: trimmedName,
-          color: state.colorHex,
-          description: state.description,
-          private: state.isPrivate,
-        );
+        final hasCats = state.selectedCategoryIds.isNotEmpty;
+        final result = hasCats
+            ? await _repository.createLabel(
+                name: trimmedName,
+                color: state.colorHex,
+                description: state.description,
+                private: state.isPrivate,
+                applicableCategoryIds: state.selectedCategoryIds.toList(),
+              )
+            : await _repository.createLabel(
+                name: trimmedName,
+                color: state.colorHex,
+                description: state.description,
+                private: state.isPrivate,
+              );
         _initialLabel = result;
         _initialName = result.name;
         state = state.copyWith(isSaving: false, hasChanges: false);
@@ -212,6 +256,8 @@ class LabelEditorController
           color: state.colorHex,
           description: state.description,
           private: state.isPrivate,
+          // Empty set clears categories (global); null keeps existing
+          applicableCategoryIds: state.selectedCategoryIds.toList(),
         );
         _initialLabel = updated;
         state = state.copyWith(isSaving: false, hasChanges: false);

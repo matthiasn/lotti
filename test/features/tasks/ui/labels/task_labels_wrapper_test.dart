@@ -93,6 +93,16 @@ void main() {
       ..registerSingleton<LoggingService>(MockLoggingService());
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
+    when(
+      () => cacheService.filterLabelsForCategory(
+        any(),
+        any(),
+        includePrivate: any(named: 'includePrivate'),
+      ),
+    ).thenAnswer(
+      (invocation) =>
+          invocation.positionalArguments.first as List<LabelDefinition>,
+    );
     when(() => cacheService.getLabelById(testLabelDefinition1.id))
         .thenReturn(testLabelDefinition1);
     when(() => cacheService.sortedLabels)

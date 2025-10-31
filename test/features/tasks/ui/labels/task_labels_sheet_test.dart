@@ -8,8 +8,11 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_sheet.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../../mocks/mocks.dart';
 
 import '../../../../test_data/test_data.dart';
 
@@ -31,6 +34,7 @@ Future<void> _pumpSheet(
 }
 
 void main() {
+  late MockEntitiesCacheService cacheService;
   late _MockLabelsRepository repository;
   final labels = [
     testLabelDefinition1,
@@ -41,8 +45,24 @@ void main() {
     registerFallbackValue(testLabelDefinition1);
   });
 
-  setUp(() {
+  setUp(() async {
     repository = _MockLabelsRepository();
+    cacheService = MockEntitiesCacheService();
+    await getIt.reset();
+    getIt.registerSingleton<EntitiesCacheService>(cacheService);
+    when(() => cacheService.showPrivateEntries).thenReturn(true);
+    when(
+      () => cacheService.filterLabelsForCategory(
+        any(),
+        any(),
+        includePrivate: any(named: 'includePrivate'),
+      ),
+    ).thenAnswer((invocation) =>
+        invocation.positionalArguments.first as List<LabelDefinition>);
+  });
+
+  tearDown(() async {
+    await getIt.reset();
   });
 
   ProviderScope buildSheet({

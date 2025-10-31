@@ -66,6 +66,16 @@ The main interface for viewing and editing tasks, featuring:
 - AI-powered features menu
 - Auto-scroll to running timer entry when tapping the timer indicator
 
+#### Task Labels
+
+- The task label picker (`TaskLabelsSheet`) presents labels applicable to the current task’s
+  category using the reactive
+  `availableLabelsForCategoryProvider(categoryId)` union: `global ∪ scoped(categoryId)`.
+- The wrapper (`TaskLabelsWrapper`) passes the task’s current `categoryId` into the sheet; the list
+  updates reactively when labels change.
+- The label editor allows scoping labels to specific categories via an "Applicable categories"
+  section (chips + add/remove). Labels with no categories selected are considered global.
+
 #### Checklist Components
 
 **ChecklistWidget**: Displays a single checklist with:

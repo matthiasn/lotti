@@ -1982,6 +1982,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
             VectorClock? vectorClock,
             String? description,
             int? sortOrder,
+            List<String>? applicableCategoryIds,
             DateTime? deletedAt,
             bool? private)?
         labelDefinition,
@@ -2068,6 +2069,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.vectorClock,
             _that.description,
             _that.sortOrder,
+            _that.applicableCategoryIds,
             _that.deletedAt,
             _that.private);
       case HabitDefinition() when habit != null:
@@ -2168,6 +2170,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
             VectorClock? vectorClock,
             String? description,
             int? sortOrder,
+            List<String>? applicableCategoryIds,
             DateTime? deletedAt,
             bool? private)
         labelDefinition,
@@ -2253,6 +2256,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.vectorClock,
             _that.description,
             _that.sortOrder,
+            _that.applicableCategoryIds,
             _that.deletedAt,
             _that.private);
       case HabitDefinition():
@@ -2350,6 +2354,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
             VectorClock? vectorClock,
             String? description,
             int? sortOrder,
+            List<String>? applicableCategoryIds,
             DateTime? deletedAt,
             bool? private)?
         labelDefinition,
@@ -2435,6 +2440,7 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.vectorClock,
             _that.description,
             _that.sortOrder,
+            _that.applicableCategoryIds,
             _that.deletedAt,
             _that.private);
       case HabitDefinition() when habit != null:
@@ -2975,10 +2981,12 @@ class LabelDefinition implements EntityDefinition {
       required this.vectorClock,
       this.description,
       this.sortOrder,
+      final List<String>? applicableCategoryIds,
       this.deletedAt,
       this.private,
       final String? $type})
-      : $type = $type ?? 'labelDefinition';
+      : _applicableCategoryIds = applicableCategoryIds,
+        $type = $type ?? 'labelDefinition';
   factory LabelDefinition.fromJson(Map<String, dynamic> json) =>
       _$LabelDefinitionFromJson(json);
 
@@ -2994,6 +3002,16 @@ class LabelDefinition implements EntityDefinition {
   final VectorClock? vectorClock;
   final String? description;
   final int? sortOrder;
+  final List<String>? _applicableCategoryIds;
+  List<String>? get applicableCategoryIds {
+    final value = _applicableCategoryIds;
+    if (value == null) return null;
+    if (_applicableCategoryIds is EqualUnmodifiableListView)
+      return _applicableCategoryIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   final DateTime? deletedAt;
   @override
@@ -3035,6 +3053,8 @@ class LabelDefinition implements EntityDefinition {
                 other.description == description) &&
             (identical(other.sortOrder, sortOrder) ||
                 other.sortOrder == sortOrder) &&
+            const DeepCollectionEquality()
+                .equals(other._applicableCategoryIds, _applicableCategoryIds) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt) &&
             (identical(other.private, private) || other.private == private));
@@ -3042,12 +3062,23 @@ class LabelDefinition implements EntityDefinition {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, createdAt, updatedAt, name,
-      color, vectorClock, description, sortOrder, deletedAt, private);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      createdAt,
+      updatedAt,
+      name,
+      color,
+      vectorClock,
+      description,
+      sortOrder,
+      const DeepCollectionEquality().hash(_applicableCategoryIds),
+      deletedAt,
+      private);
 
   @override
   String toString() {
-    return 'EntityDefinition.labelDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, color: $color, vectorClock: $vectorClock, description: $description, sortOrder: $sortOrder, deletedAt: $deletedAt, private: $private)';
+    return 'EntityDefinition.labelDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, color: $color, vectorClock: $vectorClock, description: $description, sortOrder: $sortOrder, applicableCategoryIds: $applicableCategoryIds, deletedAt: $deletedAt, private: $private)';
   }
 }
 
@@ -3068,6 +3099,7 @@ abstract mixin class $LabelDefinitionCopyWith<$Res>
       VectorClock? vectorClock,
       String? description,
       int? sortOrder,
+      List<String>? applicableCategoryIds,
       DateTime? deletedAt,
       bool? private});
 }
@@ -3093,6 +3125,7 @@ class _$LabelDefinitionCopyWithImpl<$Res>
     Object? vectorClock = freezed,
     Object? description = freezed,
     Object? sortOrder = freezed,
+    Object? applicableCategoryIds = freezed,
     Object? deletedAt = freezed,
     Object? private = freezed,
   }) {
@@ -3129,6 +3162,10 @@ class _$LabelDefinitionCopyWithImpl<$Res>
           ? _self.sortOrder
           : sortOrder // ignore: cast_nullable_to_non_nullable
               as int?,
+      applicableCategoryIds: freezed == applicableCategoryIds
+          ? _self._applicableCategoryIds
+          : applicableCategoryIds // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable

@@ -124,6 +124,45 @@ Refers to and builds on: `docs/implementation_plans/2025-10-26_task_labels_syste
 3. Settings list (`lib/features/labels/ui/pages/labels_list_page.dart`)
   - Show small category pills under each label for discoverability.
 
+### Chip Color & Contrast
+
+- Category chips in the label editor must use the category color as the chip background.
+- Determine readable foreground color via `ThemeData.estimateBrightnessForColor`:
+  - If `Brightness.dark` → foreground `Colors.white` (text and delete icon).
+  - If `Brightness.light` → foreground `Colors.black`.
+- Use `colorFromCssHex(category.color)` to convert stored hex to `Color`.
+- Keep current chip shape/spacing; only override `backgroundColor`, `labelStyle`, and
+  `deleteIconColor`.
+
+Acceptance criteria
+- Chips reflect category colors accurately (alpha supported where present).
+- Foreground contrast remains readable on very light and very dark colors.
+- Focus/hover/pressed states remain legible with theme defaults.
+
+Implementation note (editor)
+- In `lib/features/labels/ui/widgets/label_editor_sheet.dart`, when building `InputChip`s:
+  - `final bg = colorFromCssHex(category.color);`
+  - `final isDark = ThemeData.estimateBrightnessForColor(bg) == Brightness.dark;`
+  - Set `backgroundColor: bg`, `labelStyle: TextStyle(color: isDark ? Colors.white : Colors.black)`,
+    and `deleteIconColor: isDark ? Colors.white : Colors.black`.
+
+### Selection Modal Overflow
+
+- Fix bottom overflow in the category selection modal when many results are shown.
+- Replace the unbounded `Column` with a constrained layout and a scrollable results area.
+
+Implementation approach
+- Wrap modal body in a `SizedBox` with a max height (e.g., `min(0.9 * screenHeight, 640)`).
+- Inside, use a `Column` with the search field and auxiliary rows on top, and
+  `Expanded(child: ListView(...))` for the category results.
+- If `mainAxisSize: MainAxisSize.min` prevents `Expanded`, switch to `MainAxisSize.max` or use
+  `Flexible` with `LayoutBuilder` to provide constraints.
+
+Acceptance criteria
+- No overflow indicators at any window size.
+- Results list scrolls while the search field stays visible.
+- Enter/submit still triggers “create new category” when there are zero matches.
+
 ## Repository & Validation
 
 - `LabelsRepository.createLabel/updateLabel` → add optional `List<String>? applicableCategoryIds`.
@@ -163,6 +202,43 @@ Refers to and builds on: `docs/implementation_plans/2025-10-26_task_labels_syste
 - CI discipline per AGENTS.md
   - `dart-mcp.analyze_files` (zero warnings), targeted `dart-mcp.run_tests` for new suites, then
     full run.
+
+## Implementation Status (2025‑10‑31)
+
+- Model & Codegen: completed — LabelDefinition.applicableCategoryIds added and generated.
+- Repository: completed — create/update plumbed with normalization (validate, de‑dup, stable sort).
+- Cache: completed — global + per‑category buckets; pruning on category changes; helpers exposed.
+- Reactivity: completed — availableLabelsForCategoryProvider wired to labelsStreamProvider.
+- UI – Editor: completed — categories chips + add/remove via CategorySelectionModalContent placed after
+  color picker and before privacy switch.
+- UI – Task Picker: completed — sheet scoped by categoryId; wrapper passes current category id.
+- i18n: English strings added; other locales pending (tracked in missing_translations.txt).
+- Tests: targeted unit/widget tests added; more planned.
+
+## Coverage Added
+
+- Unit: EntitiesCacheService
+  - availableLabelsForCategory returns union of global + category bucket
+  - filterLabelsForCategory respects includePrivate on/off
+- Widget: Task labels
+  - Sheet applies selected labels
+  - Inline create flow and duplicate handling (updated to the reactive provider path)
+- Widget: Label editor
+  - Existing sheet tests retained; new categories UI tests being added now (chips add/remove + save wiring)
+
+## Notes on UI Placement
+
+- Label editor categories section is inserted between color picker and privacy toggle at
+  lib/features/labels/ui/widgets/label_editor_sheet.dart:172.
+- Task label picker watches availableLabelsForCategoryProvider(categoryId) at
+  lib/features/tasks/ui/labels/task_labels_sheet.dart:34.
+
+## Open Items / Follow‑Ups
+
+- i18n: add translations for new keys in non‑English ARBs or keep in
+  missing_translations.txt until localized.
+- Bulk assignment tooling for labels → categories as an enhancement in settings.
+- Performance micro‑bench for union building with 100–500 labels, 5–50 categories.
 
 ## Risks & Mitigations
 

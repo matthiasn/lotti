@@ -217,6 +217,12 @@ class TaskLabelsWrapper extends ConsumerWidget {
       builder: (context) => TaskLabelsSheet(
         taskId: taskId,
         initialLabelIds: assignedIds,
+        categoryId: ref
+            .read(entryControllerProvider(id: taskId))
+            .value
+            ?.entry
+            ?.meta
+            .categoryId,
       ),
     );
     // Result handled inside sheet; we only show a snackbar if labels updated

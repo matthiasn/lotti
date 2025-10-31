@@ -11,11 +11,13 @@ class TaskLabelsSheet extends ConsumerStatefulWidget {
   const TaskLabelsSheet({
     required this.taskId,
     required this.initialLabelIds,
+    this.categoryId,
     super.key,
   });
 
   final String taskId;
   final List<String> initialLabelIds;
+  final String? categoryId;
 
   @override
   ConsumerState<TaskLabelsSheet> createState() => _TaskLabelsSheetState();
@@ -28,7 +30,10 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final labelsAsync = ref.watch(labelsStreamProvider);
+    final categoryId = widget.categoryId;
+    final available = ref.watch(
+      availableLabelsForCategoryProvider(categoryId),
+    );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -64,14 +69,7 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              Expanded(
-                child: labelsAsync.when(
-                  data: (labels) => _buildList(context, labels),
-                  error: (error, _) => Center(child: Text(error.toString())),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                ),
-              ),
+              Expanded(child: _buildList(context, available)),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(

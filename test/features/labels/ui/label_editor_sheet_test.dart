@@ -6,7 +6,12 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class _FakeLabelEditorController extends LabelEditorController {
   _FakeLabelEditorController(this._state, {this.onPrivateChanged});
@@ -55,11 +60,24 @@ Widget _sheetHost({LabelDefinition? label, String? initialName}) {
 }
 
 void main() {
+  setUp(() {
+    if (!getIt.isRegistered<EntitiesCacheService>()) {
+      getIt
+          .registerSingleton<EntitiesCacheService>(_MockEntitiesCacheService());
+    }
+  });
+
+  tearDown(() {
+    if (getIt.isRegistered<EntitiesCacheService>()) {
+      getIt.unregister<EntitiesCacheService>();
+    }
+  });
   testWidgets('save button disabled when name empty', (tester) async {
     const state = LabelEditorState(
       name: '',
       colorHex: '#FF0000',
       isPrivate: false,
+      selectedCategoryIds: {},
     );
 
     final container = ProviderContainer(
@@ -92,6 +110,7 @@ void main() {
       name: 'Release blocker',
       colorHex: '#FF0000',
       isPrivate: false,
+      selectedCategoryIds: {},
     );
 
     final container = ProviderContainer(
@@ -125,6 +144,7 @@ void main() {
       colorHex: '#FF0000',
       isPrivate: false,
       errorMessage: 'A label with this name already exists.',
+      selectedCategoryIds: {},
     );
 
     final container = ProviderContainer(
@@ -156,6 +176,7 @@ void main() {
       name: 'Urgent',
       colorHex: '#FF0000',
       isPrivate: false,
+      selectedCategoryIds: {},
     );
 
     final container = ProviderContainer(

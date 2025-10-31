@@ -134,6 +134,47 @@ void main() {
     verify(() => persistenceLogic.upsertEntityDefinition(any())).called(1);
   });
 
+  test(
+      'createLabel normalizes applicableCategoryIds (validates, dedups, sorts)',
+      () async {
+    when(() => persistenceLogic.upsertEntityDefinition(any()))
+        .thenAnswer((_) async => 1);
+
+    // Provide two valid categories via cache + one unknown
+    when(() => cacheService.getCategoryById('cat-b')).thenReturn(
+      CategoryDefinition(
+        id: 'cat-b',
+        name: 'Bravo',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        private: false,
+        active: true,
+      ),
+    );
+    when(() => cacheService.getCategoryById('cat-a')).thenReturn(
+      CategoryDefinition(
+        id: 'cat-a',
+        name: 'Alpha',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        private: false,
+        active: true,
+      ),
+    );
+
+    final label = await repository.createLabel(
+      name: 'Scoped',
+      color: '#ABCDEF',
+      description: 'desc',
+      applicableCategoryIds: const ['cat-b', 'unknown', 'cat-a', 'cat-a'],
+    );
+
+    // Unknown filtered, duplicates removed, sorted by category name (Alpha, Bravo)
+    expect(label.applicableCategoryIds, equals(['cat-a', 'cat-b']));
+  });
+
   test('deleteLabel marks label deleted when definition exists', () async {
     final label = LabelDefinition(
       id: 'label-id',

@@ -140,6 +140,7 @@ class _TestPersistenceLogic extends PersistenceLogic {
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
+    bool overrideComparison = false,
   }) async {
     _lastSaved = journalEntity;
     // Simulate applied

@@ -6,7 +6,9 @@ import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/search/index.dart';
 
 class LabelsListPage extends ConsumerStatefulWidget {
@@ -415,6 +417,34 @@ class _LabelListCard extends StatelessWidget {
               if (isPrivate) const _PrivateLabelBadge(),
             ],
           ),
+
+          // Applicable categories (if any)
+          Builder(
+            builder: (_) {
+              final ids = label.applicableCategoryIds;
+              if (ids == null || ids.isEmpty) return const SizedBox.shrink();
+              final cache = getIt<EntitiesCacheService>();
+              final categories = ids
+                  .map(cache.getCategoryById)
+                  .whereType<CategoryDefinition>()
+                  .toList()
+                ..sort(
+                  (a, b) =>
+                      a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                );
+              if (categories.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final cat in categories) _CategoryPill(category: cat),
+                  ],
+                ),
+              );
+            },
+          ),
           if (description != null && description.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
@@ -477,6 +507,36 @@ class _PrivateLabelBadge extends StatelessWidget {
                 ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CategoryPill extends StatelessWidget {
+  const _CategoryPill({required this.category});
+
+  final CategoryDefinition category;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bg = colorFromCssHex(
+      category.color,
+      substitute: theme.colorScheme.primary,
+    );
+    final isDark = ThemeData.estimateBrightnessForColor(bg) == Brightness.dark;
+    final fg = isDark ? Colors.white : Colors.black;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.basic,
+      child: Chip(
+        label: Text(
+          category.name,
+          style: theme.textTheme.labelSmall?.copyWith(color: fg),
+        ),
+        backgroundColor: bg,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        // No onDeleted or onPressed -> non-interactive, no hover/ripple.
       ),
     );
   }

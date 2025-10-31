@@ -55,14 +55,19 @@ class LabelsRepository {
     String? description,
     int? sortOrder,
     bool? private,
+    List<String>? applicableCategoryIds,
   }) async {
     final now = DateTime.now();
+    // Validate and normalize applicableCategoryIds
+    final normalizedCategoryIds = _normalizeCategoryIds(applicableCategoryIds);
     final label = LabelDefinition(
       id: _uuid.v4(),
       name: name.trim(),
       color: color,
       description: description?.trim(),
       sortOrder: sortOrder,
+      applicableCategoryIds:
+          normalizedCategoryIds.isEmpty ? null : normalizedCategoryIds,
       createdAt: now,
       updatedAt: now,
       vectorClock: null,
@@ -80,18 +85,49 @@ class LabelsRepository {
     String? description,
     int? sortOrder,
     bool? private,
+    List<String>? applicableCategoryIds,
   }) async {
+    // Validate and normalize applicableCategoryIds if provided; when null, keep existing
+    final normalizedCategoryIds = applicableCategoryIds == null
+        ? label.applicableCategoryIds
+        : _normalizeCategoryIds(applicableCategoryIds);
     final updated = label.copyWith(
       name: name?.trim() ?? label.name,
       color: color ?? label.color,
       description: description?.trim(),
       sortOrder: sortOrder ?? label.sortOrder,
       private: private ?? label.private,
+      applicableCategoryIds:
+          (normalizedCategoryIds == null || normalizedCategoryIds.isEmpty)
+              ? null
+              : normalizedCategoryIds,
       updatedAt: DateTime.now(),
     );
 
     await _persistenceLogic.upsertEntityDefinition(updated);
     return updated;
+  }
+
+  /// Normalize and validate category IDs: remove unknowns, de-duplicate, and
+  /// sort by category name (case-insensitive) for stable diffs.
+  List<String> _normalizeCategoryIds(List<String>? categoryIds) {
+    if (categoryIds == null) return const <String>[];
+    final unique = LinkedHashSet<String>.from(
+      categoryIds.where((id) => id.trim().isNotEmpty),
+    );
+
+    final valid = <String>[];
+    final nameById = <String, String>{};
+    for (final id in unique) {
+      final category = _entitiesCacheService.getCategoryById(id);
+      if (category != null) {
+        valid.add(id);
+        nameById[id] = category.name.toLowerCase();
+      }
+    }
+
+    valid.sort((a, b) => (nameById[a] ?? a).compareTo(nameById[b] ?? b));
+    return valid;
   }
 
   Future<void> deleteLabel(String id) async {
@@ -220,12 +256,21 @@ class LabelsRepository {
         clearLabelIds: sorted.isEmpty,
       );
 
-      return _persistenceLogic.updateDbEntity(
-        journalEntity.copyWith(
-          meta: updatedMetadata.copyWith(
-            labelIds: sorted.isEmpty ? null : sorted,
-          ),
+      final updatedEntity = journalEntity.copyWith(
+        meta: updatedMetadata.copyWith(
+          labelIds: sorted.isEmpty ? null : sorted,
         ),
+      );
+
+      // First attempt: normal update (keeps test/mocks simple and fast)
+      final applied = await _persistenceLogic.updateDbEntity(updatedEntity);
+      if (applied ?? false) return applied;
+
+      // Fallback: allow override when vector clocks are concurrent.
+      // Safe for labels since the labeled table merges the set.
+      return _persistenceLogic.updateDbEntity(
+        updatedEntity,
+        overrideComparison: true,
       );
     } catch (error, stackTrace) {
       _loggingService.captureException(
