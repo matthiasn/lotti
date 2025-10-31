@@ -93,14 +93,17 @@ Refers to and builds on: `docs/implementation_plans/2025-10-26_task_labels_syste
 ## UI & UX
 
 1. Task label picker (`lib/features/tasks/ui/labels/task_labels_sheet.dart`)
-  - Determine `currentCategoryId` by watching `entryControllerProvider(id: taskId)` and reading
-    `entry.meta.categoryId`.
-  - Replace existing `labelsStreamProvider` usage in `_buildList` with the cache-provided,
-    category-scoped list:
-    - `final cache = getIt<EntitiesCacheService>();`
-    -
-    `final visible = cache.availableLabelsForCategory(currentCategoryId, includePrivate: cache.showPrivateEntries);`
-    - Apply search filter then render.
+  - Maintain reactivity with Riverpod: create
+    `availableLabelsForCategoryProvider = Provider.family<List<LabelDefinition>, String?>((ref, categoryId) {
+      final all = ref.watch(labelsStreamProvider).valueOrNull ?? const <LabelDefinition>[];
+      final cache = getIt<EntitiesCacheService>();
+      return cache.filterLabelsForCategory(all, categoryId, includePrivate: cache.showPrivateEntries);
+    });`
+  - Handle async entry state: `final entryState = ref.watch(entryControllerProvider(id: taskId));`
+    and `final categoryId = entryState.value?.entry?.meta.categoryId;` (fall back to global-only when
+    null/loading/error).
+  - Source list via `ref.watch(availableLabelsForCategoryProvider(categoryId))`, then apply the local
+    search filter and render.
   - Keep creation flow identical; a newly created label defaults to global unless categories are
     added in the editor.
 
@@ -114,6 +117,9 @@ Refers to and builds on: `docs/implementation_plans/2025-10-26_task_labels_syste
   - For deletion in details view, support swipe/remove on the chip row as discussed.
   - Localization: add strings such as “Applicable categories”, “Add category”, and removal hints;
     add ARB keys and run `make l10n`.
+  - Placement: insert the Categories section immediately after the ColorPicker container and before
+    the `SwitchListTile.adaptive` (Private toggle) to group “appearance” controls above and privacy
+    below.
 
 3. Settings list (`lib/features/labels/ui/pages/labels_list_page.dart`)
   - Show small category pills under each label for discoverability.
@@ -133,8 +139,9 @@ Refers to and builds on: `docs/implementation_plans/2025-10-26_task_labels_syste
 
 ## Performance Notes
 
-- The cache avoids scanning all labels per open; constructing the per‑category map is O(n · k) once
-  per change (n labels, k category refs per label, typically small).
+- Constructing the per‑category map is O(n · k) once per label change (n labels, k category refs).
+  For typical sets (≤100 labels, ≤20 categories) this is negligible.
+- Add a basic perf test measuring union computation for 50–500 labels and 5–50 categories.
 - Avoid SQL substring tricks; if needed later, reconsider once we have evidence.
 
 ## Migration
@@ -165,6 +172,16 @@ Refers to and builds on: `docs/implementation_plans/2025-10-26_task_labels_syste
 - Category deletions leaving orphaned IDs → UI hides unknown categories; consider a cleanup in a
   follow‑up.
 
+## Additional Considerations
+
+- Label deletion cascade: strip orphaned `applicableCategoryIds` on label edits/saves so the JSON
+  payload stays clean.
+- Sync conflicts: vector-clock merge applies to the whole `LabelDefinition`; devices missing some
+  categories may temporarily hold orphaned IDs. Repository validation cleans these up on first
+  subsequent edit; UI hides unknown categories meanwhile.
+- Bulk assignment: add a batch action in the labels list page to select multiple labels and
+  assign/remove categories at once.
+
 ## Rollout
 
 - Land behind green analyzer/tests. No migrations required.
@@ -178,29 +195,27 @@ Refers to and builds on: `docs/implementation_plans/2025-10-26_task_labels_syste
 - Cache over DB search; union at presentation time.
 - Editor uses existing category selection modal for “add one at a time”.
 
-## Step‑By‑Step Implementation
+## Step‑By‑Step Implementation (Reordered)
 
 1. Model & Codegen
   - Add `applicableCategoryIds` to `LabelDefinition` in `lib/classes/entity_definitions.dart`.
   - Run codegen: `make build_runner`.
-  - Add ARB keys for new strings and run `make l10n`.
-2. Cache
-  - Extend `EntitiesCacheService` to compute `globalLabels` and `labelsByCategoryId` on
-    `watchLabelDefinitions()`.
-  - Add `availableLabelsForCategory` helper.
-  - On `watchCategories`, prune buckets for removed/inactive categories and rebuild.
-3. Repository
+2. Repository
   - Extend `createLabel/updateLabel` to accept and persist `applicableCategoryIds`.
-  - Add simple validation and sorting of category IDs.
+  - Validate IDs via `EntitiesCacheService.getCategoryById`, de‑dup, and keep stable order by
+    category name.
+3. Cache
+  - Extend `EntitiesCacheService` to compute `globalLabels` and `labelsByCategoryId` on
+    `watchLabelDefinitions()` and prune on `watchCategories()`.
+  - Add helpers: `availableLabelsForCategory` and `filterLabelsForCategory`.
 4. UI – Editor
   - `LabelEditorController`: new `selectedCategoryIds` state + setters.
   - `LabelEditorSheet`: categories chips + “Add category” flow; wire to controller; pass IDs to repo
-    on save.
+    on save; add ARB keys and run `make l10n`.
 5. UI – Task Picker
-  - Read `currentCategoryId` from `entryControllerProvider(id: taskId)`.
-  - Replace label source with cache union helper; keep search filter.
+  - Add `availableLabelsForCategoryProvider` (provider.family) using `labelsStreamProvider` and the
+    cache helper; handle `entryControllerProvider` AsyncValue for category ID.
+  - Keep search filter and privacy behavior.
 6. Docs & QA
-  - Update `lib/features/labels/README.md`, `lib/features/tasks/README.md` (if present) and
-    `CHANGELOG.md`.
-  - Analyzer/tests via `dart-mcp` (targeted first & often, analyzer full regularly, tests full 
-    on occasion).
+  - Update feature READMEs and `CHANGELOG.md`.
+  - Analyzer/tests via `dart-mcp` (targeted first & often, full runs before merge).
