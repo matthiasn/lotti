@@ -31,21 +31,29 @@ class ThemingCubit extends Cubit<ThemingState> {
   }
 
   Future<void> _init() async {
-    await _loadSelectedSchemes();
-    unawaited(
-      getIt<JournalDb>()
+    try {
+      await _loadSelectedSchemes();
+      _tooltipSubscription = getIt<JournalDb>()
           .watchConfigFlag(enableTooltipFlag)
-          .forEach((enableTooltips) {
+          .listen((enableTooltips) {
         _enableTooltips = enableTooltips;
         emitState();
-      }),
-    );
+      });
+    } catch (e, st) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'THEMING_CUBIT',
+        subDomain: 'init',
+        stackTrace: st,
+      );
+    }
     _watchThemePrefsUpdates();
   }
 
-  bool _enableTooltips = false;
+  bool _enableTooltips = true;
   final _debounceKey = 'theming.sync.${identityHashCode(Object())}';
   bool _isApplyingSyncedChanges = false;
+  StreamSubscription<bool>? _tooltipSubscription;
   StreamSubscription<List<SettingsItem>>? _themePrefsSubscription;
 
   void _watchThemePrefsUpdates() {
@@ -54,18 +62,8 @@ class ThemingCubit extends Cubit<ThemingState> {
         .listen((items) async {
       if (items.isNotEmpty && !_isApplyingSyncedChanges) {
         _isApplyingSyncedChanges = true;
-        try {
-          await _loadSelectedSchemes();
-        } catch (e, st) {
-          getIt<LoggingService>().captureException(
-            e,
-            domain: 'THEMING_CUBIT',
-            subDomain: 'syncUpdate',
-            stackTrace: st,
-          );
-        } finally {
-          _isApplyingSyncedChanges = false;
-        }
+        await _loadSelectedSchemes();
+        _isApplyingSyncedChanges = false;
       }
     });
   }
@@ -207,6 +205,7 @@ class ThemingCubit extends Cubit<ThemingState> {
 
   @override
   Future<void> close() async {
+    await _tooltipSubscription?.cancel();
     await _themePrefsSubscription?.cancel();
     await super.close();
   }
