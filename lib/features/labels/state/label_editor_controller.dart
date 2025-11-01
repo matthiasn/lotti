@@ -248,7 +248,9 @@ class LabelEditorController
           color: state.colorHex,
           description: state.description,
           private: state.isPrivate,
-          // Empty set clears categories (global); null keeps existing
+          // Category update behavior:
+          //  - Non-empty list replaces existing applicable categories.
+          //  - Empty list clears categories (label becomes global).
           applicableCategoryIds: state.selectedCategoryIds.toList(),
         );
         _initialLabel = updated;

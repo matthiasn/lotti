@@ -371,32 +371,45 @@ void main() {
       expect(ids, equals(['cat1', 'cat2', 'cat3', 'cat4', 'cat5', 'cat6']));
     });
 
-    testWidgets('Done button disabled when no selection', (tester) async {
+    testWidgets('Done returns empty list when no selection', (tester) async {
+      List<CategoryDefinition>? result;
+
       await tester.pumpWidget(
         WidgetTestBench(
           child: Material(
-            child: CategorySelectionModalContent(
-              onCategorySelected: (_) {},
-              multiSelect: true,
+            child: Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    result = await Navigator.of(context)
+                        .push<List<CategoryDefinition>>(
+                      MaterialPageRoute(
+                        builder: (_) => Material(
+                          child: CategorySelectionModalContent(
+                            onCategorySelected: (_) {},
+                            multiSelect: true,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
             ),
           ),
         ),
       );
 
-      // Initially disabled
-      final doneBefore = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Done'),
-      );
-      expect(doneBefore.onPressed, isNull);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
 
-      // Select a category
-      await tester.tap(find.text('Category 1'));
-      await tester.pump();
+      // Without selecting anything, tap Done
+      await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+      await tester.pumpAndSettle();
 
-      final doneAfter = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Done'),
-      );
-      expect(doneAfter.onPressed, isNotNull);
+      expect(result, isNotNull);
+      expect(result, isEmpty);
     });
 
     testWidgets('deselecting a category removes it from selection',

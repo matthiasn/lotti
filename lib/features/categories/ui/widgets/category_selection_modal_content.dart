@@ -199,16 +199,14 @@ class CategorySelectionModalContentState
                   children: [
                     Expanded(
                       child: FilledButton(
-                        onPressed: selectedIds.isEmpty
-                            ? null
-                            : () {
-                                final cache = getIt<EntitiesCacheService>();
-                                final categories = selectedIds
-                                    .map(cache.getCategoryById)
-                                    .whereType<CategoryDefinition>()
-                                    .toList();
-                                Navigator.of(context).pop(categories);
-                              },
+                        onPressed: () {
+                          final cache = getIt<EntitiesCacheService>();
+                          final categories = selectedIds
+                              .map(cache.getCategoryById)
+                              .whereType<CategoryDefinition>()
+                              .toList();
+                          Navigator.of(context).pop(categories);
+                        },
                         child: Text(context.messages.doneButton),
                       ),
                     ),
