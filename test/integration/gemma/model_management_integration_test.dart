@@ -263,7 +263,7 @@ void main() {
             final sseData = 'data: ${jsonEncode(event)}\n\n';
             streamController.add(utf8.encode(sseData));
             // Use minimal delay for testing - reduced from 100ms to 50ms for faster tests
-            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await Future<void>.delayed(const Duration(milliseconds: 5));
           }
           await streamController.close();
         }));

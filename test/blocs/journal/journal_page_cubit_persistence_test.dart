@@ -165,13 +165,9 @@ void main() {
       // Wait for any pending async operations to complete before resetting GetIt
       // This prevents race conditions where background operations try to access
       // services that have been unregistered.
-      // 2000ms is needed because:
-      // 1. persistTasksFilter() calls refreshQuery()
-      // 2. refreshQuery() calls fetchNextPage() WITHOUT awaiting
-      // 3. fetchNextPage() is async and continues after test completes
-      // 4. Tests with multiple toggles need extra time for all operations to settle
-      // 5. Increased from 1000ms to 2000ms to handle edge cases with many operations
-      await Future<void>.delayed(const Duration(milliseconds: 2000));
+      // Yield to allow any pending microtasks from fire-and-forget work
+      // (e.g., PagingController.fetchNextPage) to complete before reset.
+      await Future<void>.delayed(Duration.zero);
       await getIt.reset();
     });
 
@@ -182,8 +178,8 @@ void main() {
         // Toggle a category to trigger persistence (async operation)
         await cubit.persistTasksFilter();
 
-        // Wait for fetchNextPage to complete
-        await Future<void>.delayed(const Duration(milliseconds: 300));
+        // Yield to allow async handlers to settle
+        await Future<void>.delayed(Duration.zero);
 
         // Verify the key used for storage
         expect(
@@ -192,7 +188,7 @@ void main() {
         );
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('returns journalCategoryFiltersKey when showTasks=false', () async {
@@ -201,8 +197,8 @@ void main() {
         // Trigger persistence (async operation)
         await cubit.persistTasksFilter();
 
-        // Wait for fetchNextPage to complete
-        await Future<void>.delayed(const Duration(milliseconds: 300));
+        // Yield to allow async handlers to settle
+        await Future<void>.delayed(Duration.zero);
 
         // Verify the key used for storage
         expect(
@@ -212,7 +208,7 @@ void main() {
         );
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
     });
 
@@ -230,8 +226,8 @@ void main() {
         // Create cubit (will load filters in constructor via async _loadPersistedFilters)
         final cubit = JournalPageCubit(showTasks: true);
 
-        // Wait for the async loading to complete
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Yield to allow async loading completion
+        await Future<void>.delayed(Duration.zero);
 
         // Verify categories, task statuses, and priorities are loaded
         expect(cubit.state.selectedCategoryIds, {'cat1', 'cat2'});
@@ -239,7 +235,7 @@ void main() {
         expect(cubit.state.selectedPriorities, {'P0', 'P2'});
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('loads from per-tab key when it exists (journal tab)', () async {
@@ -255,8 +251,8 @@ void main() {
         // Create cubit (will load filters in constructor via async _loadPersistedFilters)
         final cubit = JournalPageCubit(showTasks: false);
 
-        // Wait for async loading
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Yield to allow async loading completion
+        await Future<void>.delayed(Duration.zero);
 
         // Verify only categories loaded (no task statuses)
         expect(cubit.state.selectedCategoryIds, {'cat3', 'cat4'});
@@ -269,7 +265,7 @@ void main() {
         expect(cubit.state.selectedPriorities, isEmpty);
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('falls back to legacy key when per-tab key missing (migration)',
@@ -284,21 +280,21 @@ void main() {
 
         // Create cubit (should fall back to legacy key)
         final cubit = JournalPageCubit(showTasks: true);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         // Verify data loaded from legacy key
         expect(cubit.state.selectedCategoryIds, {'legacy1', 'legacy2'});
         expect(cubit.state.selectedTaskStatuses, {'BLOCKED'});
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('returns early when no keys exist', () async {
         // Setup: No stored data
         // Create cubit
         final cubit = JournalPageCubit(showTasks: true);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         // Verify default state (tasks tab defaults to '' when no categories exist)
         expect(cubit.state.selectedCategoryIds, {''});
@@ -308,7 +304,7 @@ void main() {
         );
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('only loads task statuses when showTasks=true', () async {
@@ -323,7 +319,7 @@ void main() {
 
         // Create journal tab cubit (showTasks=false)
         final cubit = JournalPageCubit(showTasks: false);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         // Verify categories ARE loaded
         expect(cubit.state.selectedCategoryIds, {'cat1', 'cat2'});
@@ -336,7 +332,7 @@ void main() {
         expect(cubit.state.selectedPriorities, isEmpty);
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('loads both categories and statuses when showTasks=true', () async {
@@ -359,7 +355,7 @@ void main() {
         expect(cubit.state.selectedPriorities, {'P0', 'P1'});
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('handles invalid JSON gracefully', () async {
@@ -379,7 +375,7 @@ void main() {
         );
 
         await cubit.close();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('handles missing fields in JSON', () async {

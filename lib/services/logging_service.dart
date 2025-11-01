@@ -10,7 +10,6 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 class LoggingService {
   bool _enableLogging = !isTestEnv;
@@ -27,10 +26,18 @@ class LoggingService {
     try {
       final dir = getDocumentsDirectory();
       final logDir = Directory(p.join(dir.path, 'logs'));
-      await logDir.create(recursive: true);
       final fileName = 'lotti-${_dateFmt.format(DateTime.now())}.log';
       final file = File(p.join(logDir.path, fileName));
-      await file.writeAsString('$line\n', mode: FileMode.append, flush: true);
+      if (isTestEnv) {
+        // Synchronous in tests to avoid timing flakes under parallel runners.
+        if (!logDir.existsSync()) {
+          logDir.createSync(recursive: true);
+        }
+        file.writeAsStringSync('$line\n', mode: FileMode.append, flush: true);
+      } else {
+        await logDir.create(recursive: true);
+        await file.writeAsString('$line\n', mode: FileMode.append, flush: true);
+      }
     } catch (_) {
       // Swallow file-sink errors so logging never interferes with app flows.
     }
@@ -81,11 +88,11 @@ class LoggingService {
       // Swallow DB-sink errors to avoid interfering with app flows, but capture
       // a compact breadcrumb to aid root-cause analysis of SQLITE_CANTOPEN (14)
       try {
-        final doc = await findDocumentsDirectory();
-        final tmp = await getTemporaryDirectory();
+        // Avoid path_provider during tests; prefer injected documents directory.
+        final doc = getDocumentsDirectory();
+        final tmp = Directory.systemTemp;
         final diag =
             'logging.db.write.failed err=$e docDir=${doc.path} tmpDir=${tmp.path}';
-        // Write to file sink best-effort
         final line = _formatLine(
           ts: now,
           level: InsightLevel.error.name.toUpperCase(),
@@ -105,8 +112,8 @@ class LoggingService {
       debugPrint('LOGGING_DB event.write failed: $e\n$st');
     }
 
-    // File sink (best-effort)
-    unawaited(_appendToFile(line));
+    // File sink (best-effort). Await to ensure ordering and determinism.
+    await _appendToFile(line);
   }
 
   void captureEvent(
@@ -161,8 +168,8 @@ class LoggingService {
       );
     } catch (e, st2) {
       try {
-        final doc = await findDocumentsDirectory();
-        final tmp = await getTemporaryDirectory();
+        final doc = getDocumentsDirectory();
+        final tmp = Directory.systemTemp;
         final diag =
             'logging.db.exception.failed err=$e docDir=${doc.path} tmpDir=${tmp.path}';
         final line = _formatLine(
@@ -181,8 +188,8 @@ class LoggingService {
       debugPrint('LOGGING_DB exception.write failed: $e\n$st2');
     }
 
-    // File sink (best-effort)
-    unawaited(_appendToFile(line));
+    // File sink (best-effort). Await to ensure ordering and determinism.
+    await _appendToFile(line);
   }
 
   void captureException(

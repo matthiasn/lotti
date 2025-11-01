@@ -628,7 +628,7 @@ void main() {
           overrides: [
             availablePromptsProvider(entity: testTaskEntity).overrideWith(
               (ref) => Future.delayed(
-                const Duration(milliseconds: 100),
+                const Duration(milliseconds: 5),
                 () => testPrompts.take(2).toList(),
               ),
             ),

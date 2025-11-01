@@ -1069,8 +1069,9 @@ void main() {
         );
 
         // Wait for the error to be emitted
+        // No real wait: use a shorter, deterministic timeout for unit tests
         await completer.future.timeout(
-          const Duration(seconds: 2),
+          const Duration(milliseconds: 50),
           onTimeout: () => throw TestFailure('Expected error was not emitted'),
         );
 

@@ -246,8 +246,7 @@ void main() {
       test('should generate unique handle tokens for screenshots', () async {
         final token1 = PortalService.createHandleToken('screenshot');
 
-        // Add a small delay to ensure different timestamps
-        await Future<void>.delayed(const Duration(milliseconds: 1));
+        // No real delay needed; token includes a monotonic counter
 
         final token2 = PortalService.createHandleToken('screenshot');
 

@@ -1,4 +1,5 @@
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -72,16 +73,14 @@ void main() {
     ).thenAnswer((_) {});
 
     // Register in GetIt
-    GetIt.I.registerSingleton<OutboxService>(outboxService);
-    GetIt.I.registerSingleton<SettingsDb>(settingsDb);
-    GetIt.I.registerSingleton<JournalDb>(journalDb);
-    GetIt.I.registerSingleton<LoggingService>(loggingService);
+    GetIt.I
+      ..registerSingleton<OutboxService>(outboxService)
+      ..registerSingleton<SettingsDb>(settingsDb)
+      ..registerSingleton<JournalDb>(journalDb)
+      ..registerSingleton<LoggingService>(loggingService);
 
     // Create cubit
     cubit = ThemingCubit();
-
-    // Wait for cubit initialization to complete
-    await Future<void>.delayed(const Duration(milliseconds: 100));
 
     // Clear any interactions that happened during initialization
     clearInteractions(outboxService);
@@ -94,142 +93,165 @@ void main() {
     await cubit.close();
   });
 
+  // ignore_for_file: cascade_invocations
+
   group('ThemingCubit Sync', () {
-    test('setLightTheme enqueues sync message', () async {
-      // Cancel any pending debounces and clear interactions
-      EasyDebounce.cancelAll();
-      clearInteractions(outboxService);
+    test('setLightTheme enqueues sync message', () {
+      fakeAsync((async) {
+        // Cancel any pending debounces and clear interactions
+        EasyDebounce.cancelAll();
+        clearInteractions(outboxService);
 
-      cubit.setLightTheme('Indigo');
+        cubit.setLightTheme('Indigo');
 
-      // Wait for debounce with extra time for first test
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+        // Wait for debounce with extra time for first test
+        async.elapse(const Duration(milliseconds: 400));
+        async.flushMicrotasks();
 
-      // Verify enqueueMessage was called
-      final captured =
-          verify(() => outboxService.enqueueMessage(captureAny())).captured;
-      expect(captured.length, 1);
+        // Verify enqueueMessage was called
+        final captured =
+            verify(() => outboxService.enqueueMessage(captureAny())).captured;
+        expect(captured.length, 1);
 
-      final message = captured.first as SyncThemingSelection;
-      expect(message.lightThemeName, 'Indigo');
-      expect(message.status, SyncEntryStatus.update);
+        final message = captured.first as SyncThemingSelection;
+        expect(message.lightThemeName, 'Indigo');
+        expect(message.status, SyncEntryStatus.update);
+      });
     });
 
-    test('setDarkTheme enqueues sync message', () async {
-      // Cancel any pending debounces and clear interactions
-      EasyDebounce.cancelAll();
-      clearInteractions(outboxService);
+    test('setDarkTheme enqueues sync message', () {
+      fakeAsync((async) {
+        // Cancel any pending debounces and clear interactions
+        EasyDebounce.cancelAll();
+        clearInteractions(outboxService);
 
-      cubit.setDarkTheme('Shark');
+        cubit.setDarkTheme('Shark');
 
-      // Wait for debounce with extra time
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+        // Wait for debounce with extra time
+        async.elapse(const Duration(milliseconds: 400));
+        async.flushMicrotasks();
 
-      // Verify enqueueMessage was called
-      final captured =
-          verify(() => outboxService.enqueueMessage(captureAny())).captured;
-      expect(captured.length, 1);
+        // Verify enqueueMessage was called
+        final captured =
+            verify(() => outboxService.enqueueMessage(captureAny())).captured;
+        expect(captured.length, 1);
 
-      final message = captured.first as SyncThemingSelection;
-      expect(message.darkThemeName, 'Shark');
-      expect(message.status, SyncEntryStatus.update);
+        final message = captured.first as SyncThemingSelection;
+        expect(message.darkThemeName, 'Shark');
+        expect(message.status, SyncEntryStatus.update);
+      });
     });
 
-    test('onThemeSelectionChanged enqueues sync message', () async {
-      // Cancel any pending debounces and clear interactions
-      EasyDebounce.cancelAll();
-      clearInteractions(outboxService);
+    test('onThemeSelectionChanged enqueues sync message', () {
+      fakeAsync((async) {
+        // Cancel any pending debounces and clear interactions
+        EasyDebounce.cancelAll();
+        clearInteractions(outboxService);
 
-      cubit.onThemeSelectionChanged({ThemeMode.dark});
+        cubit.onThemeSelectionChanged({ThemeMode.dark});
 
-      // Wait for debounce with extra time
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+        // Wait for debounce with extra time
+        async.elapse(const Duration(milliseconds: 400));
+        async.flushMicrotasks();
 
-      // Verify enqueueMessage was called
-      final captured =
-          verify(() => outboxService.enqueueMessage(captureAny())).captured;
-      expect(captured.length, 1);
+        // Verify enqueueMessage was called
+        final captured =
+            verify(() => outboxService.enqueueMessage(captureAny())).captured;
+        expect(captured.length, 1);
 
-      final message = captured.first as SyncThemingSelection;
-      expect(message.themeMode, 'dark');
-      expect(message.status, SyncEntryStatus.update);
+        final message = captured.first as SyncThemingSelection;
+        expect(message.themeMode, 'dark');
+        expect(message.status, SyncEntryStatus.update);
+      });
     });
 
-    test('debouncing - rapid changes send only final state', () async {
-      // Make rapid changes
-      cubit
-        ..setLightTheme('Indigo')
-        ..setDarkTheme('Shark')
-        ..onThemeSelectionChanged({ThemeMode.dark});
+    test('debouncing - rapid changes send only final state', () {
+      fakeAsync((async) {
+        // Make rapid changes
+        cubit
+          ..setLightTheme('Indigo')
+          ..setDarkTheme('Shark')
+          ..onThemeSelectionChanged({ThemeMode.dark});
 
-      // Wait for debounce with sufficient time
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+        // Wait for debounce with sufficient time
+        async.elapse(const Duration(milliseconds: 300));
+        async.flushMicrotasks();
 
-      // Verify enqueueMessage called exactly once (debounced)
-      final captured =
-          verify(() => outboxService.enqueueMessage(captureAny())).captured;
-      expect(captured.length, 1);
+        // Verify enqueueMessage called exactly once (debounced)
+        final captured =
+            verify(() => outboxService.enqueueMessage(captureAny())).captured;
+        expect(captured.length, 1);
 
-      // Verify message contains all three changes
-      final message = captured.first as SyncThemingSelection;
-      expect(message.lightThemeName, 'Indigo');
-      expect(message.darkThemeName, 'Shark');
-      expect(message.themeMode, 'dark');
+        // Verify message contains all three changes
+        final message = captured.first as SyncThemingSelection;
+        expect(message.lightThemeName, 'Indigo');
+        expect(message.darkThemeName, 'Shark');
+        expect(message.themeMode, 'dark');
+      });
     });
 
-    test('gracefully handles OutboxService not registered', () async {
-      // Create new cubit without OutboxService registered
-      GetIt.I.unregister<OutboxService>();
+    test('gracefully handles OutboxService not registered', () {
+      fakeAsync((async) {
+        // Create new cubit without OutboxService registered
+        GetIt.I.unregister<OutboxService>();
 
-      cubit.setLightTheme('Indigo');
+        cubit.setLightTheme('Indigo');
 
-      // Wait for debounce with sufficient time
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+        // Wait for debounce with sufficient time
+        async.elapse(const Duration(milliseconds: 300));
+        async.flushMicrotasks();
 
-      // Should not throw exception
-      // Test passes if no exception is thrown
+        // Should not throw exception
+        // Test passes if no exception is thrown
+      });
     });
 
-    test('logs error when enqueue fails', () async {
-      // Mock enqueueMessage to throw
-      when(() => outboxService.enqueueMessage(any<SyncMessage>()))
-          .thenThrow(Exception('test error'));
+    test('logs error when enqueue fails', () {
+      fakeAsync((async) {
+        // Mock enqueueMessage to throw
+        when(() => outboxService.enqueueMessage(any<SyncMessage>()))
+            .thenThrow(Exception('test error'));
 
-      cubit.setLightTheme('Indigo');
+        cubit.setLightTheme('Indigo');
 
-      // Wait for debounce with sufficient time
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+        // Wait for debounce with sufficient time
+        async.elapse(const Duration(milliseconds: 300));
+        async.flushMicrotasks();
 
-      // Verify logging service was called
-      verify(
-        () => loggingService.captureException(
-          any<Object>(),
-          domain: 'THEMING_SYNC',
-          subDomain: 'enqueue',
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).called(1);
+        // Verify logging service was called
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'THEMING_SYNC',
+            subDomain: 'enqueue',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
     });
 
-    test('message contains all three settings', () async {
-      // Set all three settings
-      cubit
-        ..setLightTheme('Indigo')
-        ..setDarkTheme('Shark')
-        ..onThemeSelectionChanged({ThemeMode.dark});
+    test('message contains all three settings', () {
+      fakeAsync((async) {
+        // Set all three settings
+        cubit
+          ..setLightTheme('Indigo')
+          ..setDarkTheme('Shark')
+          ..onThemeSelectionChanged({ThemeMode.dark});
 
-      // Wait for debounce with sufficient time
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+        // Wait for debounce with sufficient time
+        async.elapse(const Duration(milliseconds: 300));
+        async.flushMicrotasks();
 
-      // Capture and verify message
-      final captured =
-          verify(() => outboxService.enqueueMessage(captureAny())).captured;
-      expect(captured.length, 1);
+        // Capture and verify message
+        final captured =
+            verify(() => outboxService.enqueueMessage(captureAny())).captured;
+        expect(captured.length, 1);
 
-      final message = captured.first as SyncThemingSelection;
-      expect(message.lightThemeName, 'Indigo');
-      expect(message.darkThemeName, 'Shark');
-      expect(message.themeMode, 'dark');
+        final message = captured.first as SyncThemingSelection;
+        expect(message.lightThemeName, 'Indigo');
+        expect(message.darkThemeName, 'Shark');
+        expect(message.themeMode, 'dark');
+      });
     });
   });
 }

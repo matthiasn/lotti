@@ -487,7 +487,6 @@ void main() {
       // Insert multiple drafts with same entryId and lastSaved
       // (in reality this shouldn't happen, but testing the ORDER BY clause)
       for (var i = 0; i < 3; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
         await db.insertDraftState(
           entryId: 'other-entry-$i',
           lastSaved: lastSaved,
@@ -571,7 +570,7 @@ void main() {
         draftDeltaJson: '{"ops":[{"insert":"first"}]}',
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // No real delay needed; creation timestamps may be equal which is acceptable
 
       await db.insertDraftState(
         entryId: 'entry-2',
@@ -579,7 +578,7 @@ void main() {
         draftDeltaJson: '{"ops":[{"insert":"second"}]}',
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // No real delay needed; creation timestamps may be equal which is acceptable
 
       await db.insertDraftState(
         entryId: 'entry-3',

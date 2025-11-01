@@ -255,8 +255,7 @@ void main() {
       test('should generate unique handle tokens', () async {
         final token1 = PortalService.createHandleToken('test');
 
-        // Add a longer delay to ensure different timestamps
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        // No real delay needed; token includes a monotonic counter
 
         final token2 = PortalService.createHandleToken('test');
 
