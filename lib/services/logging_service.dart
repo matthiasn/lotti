@@ -94,7 +94,13 @@ class LoggingService {
           message: diag,
         );
         unawaited(_appendToFile(line));
-      } catch (_) {}
+      } catch (fileErr, fileSt) {
+        // Last resort: surface both the original DB error and the fallback
+        // file error to the console so bootstrap failures are not invisible.
+        debugPrint('CRITICAL: Logging fallback failed!');
+        debugPrint('Original DB error: $e');
+        debugPrint('Fallback file error: $fileErr\n$fileSt');
+      }
       // Also print to console in dev
       debugPrint('LOGGING_DB event.write failed: $e\n$st');
     }
@@ -167,7 +173,11 @@ class LoggingService {
           message: diag,
         );
         unawaited(_appendToFile(line));
-      } catch (_) {}
+      } catch (fileErr, fileSt) {
+        debugPrint('CRITICAL: Logging fallback failed!');
+        debugPrint('Original DB error: $e');
+        debugPrint('Fallback file error: $fileErr\n$fileSt');
+      }
       debugPrint('LOGGING_DB exception.write failed: $e\n$st2');
     }
 

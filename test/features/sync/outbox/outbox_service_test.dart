@@ -1453,24 +1453,15 @@ void main() {
               domain: 'OUTBOX',
               subDomain: 'watchdog',
             )).called(1);
-        // The watchdog enqueues via the service helper, which logs
-        // 'enqueueRequest() done'. Verify it explicitly so the final
-        // verifyNoMoreInteractions focuses on the post-assertion window.
-        // Allow the enqueue helper to run and log
-        async
-          ..elapse(const Duration(milliseconds: 60))
-          ..flushMicrotasks();
-        try {
-          verify(() => loggingService.captureEvent(
-                'enqueueRequest() done',
-                domain: 'OUTBOX',
-                subDomain: any(named: 'subDomain'),
-              )).called(1);
-        } catch (_) {
-          // Some watchdog paths may enqueue but defer helper logging; tolerate
-          // absence here as long as no further interactions happen after
-          // disposal.
-        }
+        // Watchdog enqueues directly via ClientRunner (no helper), so
+        // 'enqueueRequest() done' should NOT be logged on this path. Other
+        // paths (e.g., dbNudge) do log it explicitly and are covered in their
+        // dedicated tests below.
+        verifyNever(() => loggingService.captureEvent(
+              'enqueueRequest() done',
+              domain: 'OUTBOX',
+              subDomain: any(named: 'subDomain'),
+            ));
         unawaited(svc.dispose());
         // Further elapse should not trigger watchdog again
         async.elapse(const Duration(seconds: 20));
