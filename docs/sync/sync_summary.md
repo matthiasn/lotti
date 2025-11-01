@@ -366,3 +366,29 @@ Benefits
 - Invites are only surfaced when targeted to this client (Matrix `state_key == client.userID`).
 - The QR page shows an accept dialog when an invite arrives while that page is open.
 - Files: `gateway/matrix_sdk_gateway.dart` (filter), `ui/matrix_logged_in_config_page.dart` (prompt).
+### Pipeline coalescing and throttling (Nov 2025)
+
+- Catch‑up
+  - Signals (client stream, connectivity) coalesce; only one catch‑up runs at a time.
+  - Trailing catch‑up: if signals arrive during a run, schedule one more pass after it finishes.
+  - Minimum gap between catch‑ups: 1s.
+  - Logging: `catchup.start` and `catchup.done` emit once per coalesced burst (start on first run, done after the last).
+
+- Live scan
+  - No overlap; signals during a scan are deferred as a single trailing scan.
+  - Minimum gap between scans: 1s.
+  - Debounce for trailing runs: ~120ms base, extended to honor the 1s min gap.
+
+- Historical windows (inbox side)
+  - Catch‑up pre‑context: 80 events; max lookback: 1000 events.
+  - Live‑scan audit: first 2 scans include look‑behind tail sized by offline delta (≤50/80/100).
+  - Live‑scan steady tail: 30 events.
+  - Strictly‑after tail limit: 30 events.
+
+- Logging and diagnostics
+  - Per‑event `selfEventSuppressed.prefetch` removed; replaced by per‑scan summary `selfEventSuppressed.count=N`.
+  - No‑advance scheduling logs, double‑scan attachment logs, and signal logs are gated by `collectMetrics`.
+  - `marker.local` condensed to a single line with `id` and `ts`, gated by `collectMetrics`.
+
+- Tuning
+  - All timings and window sizes are defined as constants in `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart` and can be tuned if needed.

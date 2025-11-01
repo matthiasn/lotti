@@ -5771,7 +5771,7 @@ void main() {
     expect(m['lastLookBehindTail'], 7);
   });
 
-  test('audit tail sized by offline delta: null ts returns 200', () async {
+  test('audit tail sized by offline delta: null ts returns 50', () async {
     await withClock(Clock.fixed(DateTime(2025, 1, 15)), () async {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -5833,18 +5833,18 @@ void main() {
       await consumer.start();
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Audit tail should default to 200 when no ts is stored
+      // Audit tail should default to 50 when no ts is stored
       final m = consumer.metricsSnapshot();
       // We can infer the tail was sized correctly by checking that the initial
       // audit scan used 200 (not 300 or 400). The override path is tested
       // separately; this tests the delta-based fallback.
       // Since we can't directly access _liveScanAuditTail, we verify by the
       // lastLookBehindTail metric on first scan.
-      expect(m['lastLookBehindTail'], isNot(greaterThan(200)));
+      expect(m['lastLookBehindTail'], isNot(greaterThan(50)));
     });
   });
 
-  test('audit tail sized by offline delta: 48+ hours returns 400', () async {
+  test('audit tail sized by offline delta: 48+ hours returns 100', () async {
     final now = DateTime(2025, 1, 15, 12);
     final oldTs =
         now.subtract(const Duration(hours: 50)).millisecondsSinceEpoch;
@@ -5911,12 +5911,12 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       final m = consumer.metricsSnapshot();
-      // Should use 400 for audit tail when offline >= 48h
-      expect(m['lastLookBehindTail'], 400);
+      // Should use 100 for audit tail when offline >= 48h (reduced)
+      expect(m['lastLookBehindTail'], 100);
     });
   });
 
-  test('audit tail sized by offline delta: 12-48 hours returns 300', () async {
+  test('audit tail sized by offline delta: 12-48 hours returns 80', () async {
     final now = DateTime(2025, 1, 15, 12);
     final oldTs =
         now.subtract(const Duration(hours: 20)).millisecondsSinceEpoch;
@@ -5983,12 +5983,12 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       final m = consumer.metricsSnapshot();
-      // Should use 300 for audit tail when offline 12-48h
-      expect(m['lastLookBehindTail'], 300);
+      // Should use 80 for audit tail when offline 12-48h (reduced)
+      expect(m['lastLookBehindTail'], 80);
     });
   });
 
-  test('audit tail sized by offline delta: <12 hours returns 200', () async {
+  test('audit tail sized by offline delta: <12 hours returns 50', () async {
     final now = DateTime(2025, 1, 15, 12);
     final oldTs = now.subtract(const Duration(hours: 6)).millisecondsSinceEpoch;
 
@@ -6054,8 +6054,8 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       final m = consumer.metricsSnapshot();
-      // Should use 200 for audit tail when offline < 12h
-      expect(m['lastLookBehindTail'], 200);
+      // Should use 50 for audit tail when offline < 12h (reduced)
+      expect(m['lastLookBehindTail'], 50);
     });
   });
 
