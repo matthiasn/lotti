@@ -123,6 +123,18 @@ class OutboxService {
         }
       });
     }
+
+    // DB-driven nudge: ensure new pending items kick the runner while online.
+    _outboxCountSubscription = _syncDatabase.watchOutboxCount().listen((count) {
+      if (_isDisposed || count <= 0) return;
+      // Light debounce via a short delay
+      unawaited(enqueueNextSendRequest(delay: const Duration(milliseconds: 50)));
+      _loggingService.captureEvent(
+        'dbNudge count=$count → enqueue',
+        domain: 'OUTBOX',
+        subDomain: 'dbNudge',
+      );
+    });
   }
 
   final LoggingService _loggingService;
@@ -149,6 +161,7 @@ class OutboxService {
   late ClientRunner<int> _clientRunner;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<LoginState>? _loginSubscription;
+  StreamSubscription<int>? _outboxCountSubscription;
   final DateTime _createdAt = DateTime.now();
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
@@ -490,6 +503,7 @@ class OutboxService {
     _clientRunner.close();
     await _connectivitySubscription?.cancel();
     await _loginSubscription?.cancel();
+    await _outboxCountSubscription?.cancel();
     _watchdogTimer?.cancel();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
