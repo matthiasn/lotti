@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_redundant_argument_values
+// ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas
 
 import 'dart:async';
 import 'dart:convert';
@@ -603,8 +603,8 @@ void main() {
           .thenAnswer((_) async => false);
 
       final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
+      when(gate.dispose).thenAnswer((_) => Future<void>.value());
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -637,8 +637,8 @@ void main() {
       );
 
       final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
+      when(gate.dispose).thenAnswer((_) => Future<void>.value());
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -670,8 +670,8 @@ void main() {
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
       final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
+      when(gate.dispose).thenAnswer((_) => Future<void>.value());
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -699,8 +699,8 @@ void main() {
       when(() => processor.processQueue()).thenThrow(exception);
 
       final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
+      when(gate.dispose).thenAnswer((_) => Future<void>.value());
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -756,8 +756,8 @@ void main() {
               ]);
 
       final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
+      when(gate.dispose).thenAnswer((_) => Future<void>.value());
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -842,8 +842,8 @@ void main() {
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
       final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
+      when(gate.dispose).thenAnswer((_) => Future<void>.value());
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -900,8 +900,8 @@ void main() {
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
       final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
+      when(gate.dispose).thenAnswer((_) => Future<void>.value());
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -943,7 +943,7 @@ void main() {
 
       final gate = MockUserActivityGate();
       when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) => Future<void>.value());
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -1151,6 +1151,499 @@ void main() {
             subDomain: 'activityGate',
           )).called(greaterThanOrEqualTo(1));
       await svc.dispose();
+    });
+  });
+
+  group('watchdog', () {
+    test('enqueues when pending + logged in + idle queue', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(() => repository.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [
+                OutboxItem(
+                  id: 1,
+                  message: '{}',
+                  subject: 's',
+                  status: OutboxStatus.pending.index,
+                  retries: 0,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  filePath: null,
+                )
+              ]);
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+      final matrixService = MockMatrixService();
+      when(() => matrixService.isLoggedIn()).thenReturn(true);
+      final client = MockMatrixClient();
+      final cached = MockCachedLoginController();
+      when(() => cached.stream)
+          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
+      when(() => matrixService.client).thenReturn(client);
+
+      // Controlled outbox count stream to avoid extra nudges
+      final countController = StreamController<int>.broadcast();
+      addTearDown(countController.close);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => countController.stream);
+
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+          matrixService: matrixService,
+        );
+
+        // Tick the 10s watchdog
+        async
+          ..elapse(const Duration(seconds: 10))
+          // Allow pending tasks and the post-drain settle (250ms)
+          ..elapse(const Duration(milliseconds: 300));
+        verify(() => loggingService.captureEvent(
+              'watchdog: pending+loggedIn idleQueue → enqueue',
+              domain: 'OUTBOX',
+              subDomain: 'watchdog',
+            )).called(1);
+        verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('does not enqueue when queue active', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => repository.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [
+                OutboxItem(
+                  id: 1,
+                  message: '{}',
+                  subject: 's',
+                  status: OutboxStatus.pending.index,
+                  retries: 0,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  filePath: null,
+                )
+              ]);
+      final gate = MockUserActivityGate();
+      // Keep the runner busy so queueSize > 0 when watchdog fires
+      when(gate.waitUntilIdle)
+          .thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 30)));
+      when(gate.dispose).thenAnswer((_) async {});
+      final matrixService = MockMatrixService();
+      when(() => matrixService.isLoggedIn()).thenReturn(true);
+      final client = MockMatrixClient();
+      final cached = MockCachedLoginController();
+      when(() => cached.stream)
+          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
+      when(() => matrixService.client).thenReturn(client);
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => const Stream<int>.empty());
+
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+          matrixService: matrixService,
+        );
+        // Make the queue active
+        unawaited(svc.enqueueNextSendRequest(delay: Duration.zero));
+        async
+          ..flushMicrotasks()
+          ..elapse(Duration.zero)
+          // Now watchdog fires while the queue is active
+          ..elapse(const Duration(seconds: 10));
+        verifyNever(() => loggingService.captureEvent(
+              'watchdog: pending+loggedIn idleQueue → enqueue',
+              domain: 'OUTBOX',
+              subDomain: 'watchdog',
+            ));
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('does not enqueue when not logged in', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+      final matrixService = MockMatrixService();
+      when(() => matrixService.isLoggedIn()).thenReturn(false);
+      final client = MockMatrixClient();
+      final cached = MockCachedLoginController();
+      when(() => cached.stream)
+          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
+      when(() => matrixService.client).thenReturn(client);
+      when(() => repository.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [
+                OutboxItem(
+                  id: 1,
+                  message: '{}',
+                  subject: 's',
+                  status: OutboxStatus.pending.index,
+                  retries: 0,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  filePath: null,
+                )
+              ]);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => const Stream<int>.empty());
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+          matrixService: matrixService,
+        );
+        async.elapse(const Duration(seconds: 10));
+        verifyNever(() => loggingService.captureEvent(
+              'watchdog: pending+loggedIn idleQueue → enqueue',
+              domain: 'OUTBOX',
+              subDomain: 'watchdog',
+            ));
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('handles fetchPending errors gracefully', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => repository.fetchPending(limit: any(named: 'limit')))
+          .thenThrow(Exception('boom'));
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+      final matrixService = MockMatrixService();
+      when(() => matrixService.isLoggedIn()).thenReturn(true);
+      final client = MockMatrixClient();
+      final cached = MockCachedLoginController();
+      when(() => cached.stream)
+          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
+      when(() => matrixService.client).thenReturn(client);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => const Stream<int>.empty());
+
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+          matrixService: matrixService,
+        );
+        async.elapse(const Duration(seconds: 10));
+        verify(() => loggingService.captureException(
+              any<Object>(),
+              domain: 'OUTBOX',
+              subDomain: 'watchdog',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            )).called(1);
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('stops after dispose', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => repository.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [
+                OutboxItem(
+                  id: 1,
+                  message: '{}',
+                  subject: 's',
+                  status: OutboxStatus.pending.index,
+                  retries: 0,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  filePath: null,
+                )
+              ]);
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+      final matrixService = MockMatrixService();
+      when(() => matrixService.isLoggedIn()).thenReturn(true);
+      final client = MockMatrixClient();
+      final cached = MockCachedLoginController();
+      when(() => cached.stream)
+          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
+      when(() => matrixService.client).thenReturn(client);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => const Stream<int>.empty());
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+          matrixService: matrixService,
+        );
+        async.elapse(const Duration(seconds: 10));
+        verify(() => loggingService.captureEvent(
+              'watchdog: pending+loggedIn idleQueue → enqueue',
+              domain: 'OUTBOX',
+              subDomain: 'watchdog',
+            )).called(1);
+        unawaited(svc.dispose());
+        // Further elapse should not trigger watchdog again
+        async.elapse(const Duration(seconds: 20));
+        verifyNoMoreInteractions(loggingService);
+      });
+    });
+  });
+
+  group('dbNudge', () {
+    test('enqueues when count increases (>0)', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      final countController = StreamController<int>.broadcast();
+      addTearDown(countController.close);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => countController.stream);
+
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+        );
+
+        countController.add(5);
+        // Debounce delay is 50ms
+        async
+          ..elapse(const Duration(milliseconds: 60))
+          ..flushMicrotasks();
+        verify(() => loggingService.captureEvent(
+              'dbNudge count=5 → enqueue',
+              domain: 'OUTBOX',
+              subDomain: 'dbNudge',
+            )).called(1);
+        verify(() => loggingService.captureEvent(
+              'enqueueRequest() done',
+              domain: 'OUTBOX',
+              subDomain: any(named: 'subDomain'),
+            )).called(1);
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('ignores count <= 0', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      final countController = StreamController<int>.broadcast();
+      addTearDown(countController.close);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => countController.stream);
+
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+        );
+
+        countController.add(0);
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+        verifyNever(() => loggingService.captureEvent(
+              startsWith('dbNudge'),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+            ));
+        verifyNever(() => loggingService.captureEvent(
+              'enqueueRequest() done',
+              domain: 'OUTBOX',
+              subDomain: any(named: 'subDomain'),
+            ));
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('stops after dispose', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      final countController = StreamController<int>.broadcast();
+      addTearDown(countController.close);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => countController.stream);
+
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+        );
+        unawaited(svc.dispose());
+        countController.add(2);
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+        verifyNever(() => loggingService.captureEvent(
+              startsWith('dbNudge'),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+            ));
+      });
+    });
+
+    test('handles stream errors without crashing the test', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      final countController = StreamController<int>.broadcast();
+      addTearDown(countController.close);
+      when(() => syncDatabase.watchOutboxCount())
+          .thenAnswer((_) => countController.stream);
+
+      fakeAsync((async) {
+        Object? capturedError;
+        StackTrace? capturedSt;
+        OutboxService? svc;
+        runZonedGuarded(() {
+          svc = OutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: gate,
+            ownsActivityGate: false,
+          );
+          countController.addError(Exception('stream error'));
+        }, (e, st) {
+          capturedError = e;
+          capturedSt = st;
+        });
+        // Allow the stream error to propagate
+        async.flushMicrotasks();
+        expect(capturedError, isNotNull);
+        expect(capturedSt, isNotNull);
+        unawaited(svc!.dispose());
+        async.flushMicrotasks();
+      });
     });
   });
 
