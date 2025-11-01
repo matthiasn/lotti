@@ -32,12 +32,14 @@ class OutboxProcessor {
     int? batchSizeOverride,
     Duration? retryDelayOverride,
     Duration? errorDelayOverride,
+    int? maxRetriesOverride,
   })  : _repository = repository,
         _messageSender = messageSender,
         _loggingService = loggingService,
         batchSize = batchSizeOverride ?? 10,
         retryDelay = retryDelayOverride ?? const Duration(seconds: 5),
-        errorDelay = errorDelayOverride ?? const Duration(seconds: 15);
+        errorDelay = errorDelayOverride ?? const Duration(seconds: 15),
+        maxRetriesForDiagnostics = maxRetriesOverride ?? 10;
 
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
@@ -45,6 +47,7 @@ class OutboxProcessor {
   final int batchSize;
   final Duration retryDelay;
   final Duration errorDelay;
+  final int maxRetriesForDiagnostics;
 
   // Diagnostics for repeated failures on the same head-of-queue subject.
   String? _lastFailedSubject;
@@ -87,6 +90,7 @@ class OutboxProcessor {
       final success = await _messageSender.send(syncMessage);
 
       if (!success) {
+        final nextAttempts = nextItem.retries + 1;
         await _repository.markRetry(nextItem);
         // Track repeated failures for quick visibility on head-of-queue pins.
         if (_lastFailedSubject == nextItem.subject) {
@@ -97,11 +101,22 @@ class OutboxProcessor {
         }
         try {
           _loggingService.captureEvent(
-            'sendFailed subject=${nextItem.subject} attempts=${nextItem.retries + 1} repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds}',
+            'sendFailed subject=${nextItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds}',
             domain: 'OUTBOX',
             subDomain: 'retry',
           );
         } catch (_) {}
+        if (nextAttempts >= maxRetriesForDiagnostics) {
+          try {
+            _loggingService.captureEvent(
+              'retryCapReached subject=${nextItem.subject} attempts=$nextAttempts → skip/head-advance',
+              domain: 'OUTBOX',
+              subDomain: 'retry.cap',
+            );
+          } catch (_) {}
+          // The repository marks status=error at cap. Continue immediately to the next item.
+          return OutboxProcessingResult.schedule(Duration.zero);
+        }
         return OutboxProcessingResult.schedule(retryDelay);
       }
 
@@ -136,6 +151,7 @@ class OutboxProcessor {
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
+      final nextAttempts = nextItem.retries + 1;
       await _repository.markRetry(nextItem);
       if (_lastFailedSubject == nextItem.subject) {
         _lastFailedRepeats++;
@@ -145,11 +161,21 @@ class OutboxProcessor {
       }
       try {
         _loggingService.captureEvent(
-          'sendException subject=${nextItem.subject} attempts=${nextItem.retries + 1} repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
+          'sendException subject=${nextItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
           domain: 'OUTBOX',
           subDomain: 'retry',
         );
       } catch (_) {}
+      if (nextAttempts >= maxRetriesForDiagnostics) {
+        try {
+          _loggingService.captureEvent(
+            'retryCapReached subject=${nextItem.subject} attempts=$nextAttempts → skip/head-advance',
+            domain: 'OUTBOX',
+            subDomain: 'retry.cap',
+          );
+        } catch (_) {}
+        return OutboxProcessingResult.schedule(Duration.zero);
+      }
       return OutboxProcessingResult.schedule(errorDelay);
     }
   }

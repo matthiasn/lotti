@@ -72,6 +72,7 @@ class OutboxService {
           repository: _repository,
           messageSender: _messageSender,
           loggingService: _loggingService,
+          maxRetriesOverride: maxRetries,
         );
 
     _startRunner();
