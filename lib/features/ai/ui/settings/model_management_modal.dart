@@ -338,6 +338,9 @@ class _ModelManagementContentState
                           ),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                         const SizedBox(width: 6),
                         // Provider chips
