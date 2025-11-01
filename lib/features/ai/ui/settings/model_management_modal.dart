@@ -206,7 +206,6 @@ class _ModelManagementContentState
     extends ConsumerState<_ModelManagementContent> {
   late Set<String> _selectedIds;
   late String _defaultId;
-  String? _selectedProviderId; // null = show all
 
   @override
   void initState() {
@@ -217,10 +216,6 @@ class _ModelManagementContentState
 
   void _updateSelection() {
     widget.onSelectionChanged(Set<String>.from(_selectedIds), _defaultId);
-  }
-
-  List<String> _getUniqueProviderIds(List<AiConfigModel> models) {
-    return models.map((m) => m.inferenceProviderId).toSet().toList();
   }
 
   @override
@@ -276,136 +271,56 @@ class _ModelManagementContentState
           );
         }
 
-        // Extract unique provider IDs for filter chips
-        final uniqueProviderIds = _getUniqueProviderIds(modelConfigs);
+        // Build the models list
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Add 10px spacing above the first card
+              const SizedBox(height: 10),
+              // Models list with enhanced styling
+              ...modelConfigs.map((model) {
+                final isSelected = _selectedIds.contains(model.id);
+                final isDefault = _defaultId == model.id;
 
-        // Apply provider filter to models
-        final displayedModels = _selectedProviderId == null
-            ? modelConfigs
-            : modelConfigs
-                .where((m) => m.inferenceProviderId == _selectedProviderId)
-                .toList();
-
-        // Build the models list with fixed height container
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.65,
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Provider filter chips row with horizontal scroll
-                if (uniqueProviderIds.length > 1) ...[
-                  const SizedBox(height: 10),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: [
-                        // "All" chip
-                        FilterChip(
-                          label: const Text('All'),
-                          selected: _selectedProviderId == null,
-                          onSelected: (_) {
-                            setState(() {
-                              _selectedProviderId = null;
-                            });
-                          },
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          backgroundColor: context
-                              .colorScheme.surfaceContainerHigh
-                              .withValues(alpha: 0.5),
-                          selectedColor: context.colorScheme.primaryContainer
-                              .withValues(alpha: 0.7),
-                          checkmarkColor:
-                              context.colorScheme.onPrimaryContainer,
-                          side: BorderSide(
-                            color: _selectedProviderId == null
-                                ? context.colorScheme.primary
-                                    .withValues(alpha: 0.8)
-                                : context.colorScheme.primaryContainer
-                                    .withValues(alpha: 0.3),
-                          ),
-                          labelStyle: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
-                            color: _selectedProviderId == null
-                                ? context.colorScheme.onPrimaryContainer
-                                : context.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                        ),
-                        const SizedBox(width: 6),
-                        // Provider chips
-                        ...uniqueProviderIds.map((providerId) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: ProviderFilterChip(
-                              providerId: providerId,
-                              isSelected: _selectedProviderId == providerId,
-                              onTap: () {
-                                setState(() {
-                                  _selectedProviderId = providerId;
-                                });
-                              },
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-                // Add 10px spacing above the first card (only if no filter chips)
-                if (uniqueProviderIds.length <= 1) const SizedBox(height: 10),
-                // Models list with enhanced styling
-                ...displayedModels.map((model) {
-                  final isSelected = _selectedIds.contains(model.id);
-                  final isDefault = _defaultId == model.id;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _ModelCard(
-                      model: model,
-                      isSelected: isSelected,
-                      isDefault: isDefault,
-                      onTap: () {
-                        setState(() {
-                          if (isSelected) {
-                            _selectedIds.remove(model.id);
-                            if (isDefault) {
-                              _defaultId = _selectedIds.isNotEmpty
-                                  ? _selectedIds.first
-                                  : '';
-                            }
-                          } else {
-                            _selectedIds.add(model.id);
-                            if (_selectedIds.length == 1 ||
-                                _defaultId.isEmpty) {
-                              _defaultId = model.id;
-                            }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _ModelCard(
+                    model: model,
+                    isSelected: isSelected,
+                    isDefault: isDefault,
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedIds.remove(model.id);
+                          if (isDefault) {
+                            _defaultId = _selectedIds.isNotEmpty
+                                ? _selectedIds.first
+                                : '';
                           }
-                          _updateSelection();
-                        });
-                      },
-                      onSetDefault: isSelected
-                          ? () {
-                              setState(() {
-                                _defaultId = model.id;
-                                _updateSelection();
-                              });
-                            }
-                          : null,
-                    ),
-                  );
-                }),
-              ],
-            ),
+                        } else {
+                          _selectedIds.add(model.id);
+                          if (_selectedIds.length == 1 || _defaultId.isEmpty) {
+                            _defaultId = model.id;
+                          }
+                        }
+                        _updateSelection();
+                      });
+                    },
+                    onSetDefault: isSelected
+                        ? () {
+                            setState(() {
+                              _defaultId = model.id;
+                              _updateSelection();
+                            });
+                          }
+                        : null,
+                  ),
+                );
+              }),
+            ],
           ),
         );
       },
@@ -762,7 +677,6 @@ class ProviderFilterChip extends ConsumerWidget {
           isDark,
         );
 
-        // Label chip styling inspired by the labels in settings
         final backgroundColor = isSelected
             ? providerColor.withValues(alpha: isDark ? 0.35 : 0.22)
             : providerColor.withValues(alpha: isDark ? 0.25 : 0.15);
@@ -771,66 +685,48 @@ class ProviderFilterChip extends ConsumerWidget {
             : providerColor.withValues(alpha: 0.35);
         final textColor = isDark ? Colors.white : Colors.black;
 
-        return InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        return FilterChip(
+          selected: isSelected,
+          onSelected: (_) => onTap(),
+          label: Text(provider.name),
+          avatar: Container(
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: borderColor,
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Colored dot indicator
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        providerColor,
-                        providerColor.withValues(alpha: 0.75),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: providerColor.withValues(alpha: 0.35),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 6),
-                // Checkmark for selected state
-                if (isSelected) ...[
-                  Icon(
-                    Icons.check,
-                    size: 14,
-                    color: textColor,
-                  ),
-                  const SizedBox(width: 4),
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  providerColor,
+                  providerColor.withValues(alpha: 0.75),
                 ],
-                Text(
-                  provider.name,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
-                    color: textColor,
-                  ),
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: providerColor.withValues(alpha: 0.35),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
+          ),
+          checkmarkColor: textColor,
+          backgroundColor: backgroundColor,
+          selectedColor: backgroundColor,
+          side: BorderSide(
+            color: borderColor,
+            width: 1.5,
+          ),
+          labelStyle: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+            color: textColor,
+          ),
+          showCheckmark: isSelected,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
         );
       },
