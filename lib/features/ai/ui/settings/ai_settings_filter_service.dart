@@ -119,7 +119,7 @@ class AiSettingsFilterService {
     List<AiConfigModel>? allModels,
   }) {
     // For efficiency, create a lookup map of modelId -> providerId
-    final Map<String, String>? modelIdToProviderIdMap =
+    final modelIdToProviderIdMap =
         filterState.selectedProviders.isNotEmpty && allModels != null
             ? {for (final model in allModels) model.id: model.inferenceProviderId}
             : null;

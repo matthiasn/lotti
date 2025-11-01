@@ -73,8 +73,6 @@ class AiSettingsFilterChips extends ConsumerWidget {
                 selectedProviders: newProviders,
               ));
             },
-            allowMultiSelect: true,
-            showAllChip: false,
           ),
 
           // Clear filters button - positioned in provider row when there are active filters
