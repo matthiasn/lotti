@@ -46,6 +46,10 @@ class OutboxProcessor {
   final Duration retryDelay;
   final Duration errorDelay;
 
+  // Diagnostics for repeated failures on the same head-of-queue subject.
+  String? _lastFailedSubject;
+  int _lastFailedRepeats = 0;
+
   Future<OutboxProcessingResult> processQueue() async {
     final pendingItems = await _repository.fetchPending(limit: batchSize);
     if (pendingItems.isEmpty) {
@@ -53,6 +57,15 @@ class OutboxProcessor {
     }
 
     final nextItem = pendingItems.first;
+    try {
+      _loggingService.captureEvent(
+        'pending=${pendingItems.length} head=${nextItem.subject}',
+        domain: 'OUTBOX',
+        subDomain: 'queue',
+      );
+    } catch (_) {
+      // best-effort logging only
+    }
     _loggingService.captureEvent(
       'trying ${nextItem.subject} ',
       domain: 'OUTBOX',
@@ -75,6 +88,20 @@ class OutboxProcessor {
 
       if (!success) {
         await _repository.markRetry(nextItem);
+        // Track repeated failures for quick visibility on head-of-queue pins.
+        if (_lastFailedSubject == nextItem.subject) {
+          _lastFailedRepeats++;
+        } else {
+          _lastFailedSubject = nextItem.subject;
+          _lastFailedRepeats = 1;
+        }
+        try {
+          _loggingService.captureEvent(
+            'sendFailed subject=${nextItem.subject} attempts=${nextItem.retries + 1} repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds}',
+            domain: 'OUTBOX',
+            subDomain: 'retry',
+          );
+        } catch (_) {}
         return OutboxProcessingResult.schedule(retryDelay);
       }
 
@@ -84,9 +111,21 @@ class OutboxProcessor {
         domain: 'OUTBOX',
         subDomain: 'sendNext()',
       );
+      // Reset repeat tracker on success for this subject.
+      if (_lastFailedSubject == nextItem.subject) {
+        _lastFailedSubject = null;
+        _lastFailedRepeats = 0;
+      }
 
       final hasMore = pendingItems.length > 1;
       if (hasMore) {
+        try {
+          _loggingService.captureEvent(
+            'scheduleNext immediate (hasMore)',
+            domain: 'OUTBOX',
+            subDomain: 'queue',
+          );
+        } catch (_) {}
         return OutboxProcessingResult.schedule(Duration.zero);
       }
       return OutboxProcessingResult.none;
@@ -98,6 +137,19 @@ class OutboxProcessor {
         stackTrace: stackTrace,
       );
       await _repository.markRetry(nextItem);
+      if (_lastFailedSubject == nextItem.subject) {
+        _lastFailedRepeats++;
+      } else {
+        _lastFailedSubject = nextItem.subject;
+        _lastFailedRepeats = 1;
+      }
+      try {
+        _loggingService.captureEvent(
+          'sendException subject=${nextItem.subject} attempts=${nextItem.retries + 1} repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
+          domain: 'OUTBOX',
+          subDomain: 'retry',
+        );
+      } catch (_) {}
       return OutboxProcessingResult.schedule(errorDelay);
     }
   }

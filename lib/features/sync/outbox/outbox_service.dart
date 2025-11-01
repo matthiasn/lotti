@@ -151,6 +151,7 @@ class OutboxService {
   final DateTime _createdAt = DateTime.now();
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
+  Timer? _watchdogTimer;
 
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
@@ -169,6 +170,34 @@ class OutboxService {
         await sendNext();
       },
     );
+
+    // Safety watchdog: if there are pending items and we appear idle (no
+    // queued work), periodically nudge the runner. This recovers from missed
+    // signals or platform-specific timer quirks after reconnects/resumes.
+    _watchdogTimer?.cancel();
+    _watchdogTimer = Timer.periodic(const Duration(seconds: 10), (Timer _) async {
+      if (_isDisposed) return;
+      try {
+        final hasPending = (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        final loggedIn = _matrixService?.isLoggedIn() ?? true;
+        final idleQueue = _clientRunner.queueSize == 0;
+        if (hasPending && loggedIn && idleQueue) {
+          _loggingService.captureEvent(
+            'watchdog: pending+loggedIn idleQueue → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          );
+          _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+        }
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'OUTBOX',
+          subDomain: 'watchdog',
+          stackTrace: st,
+        );
+      }
+    });
   }
 
   Future<List<OutboxItem>> getNextItems() async {
@@ -460,6 +489,7 @@ class OutboxService {
     _clientRunner.close();
     await _connectivitySubscription?.cancel();
     await _loginSubscription?.cancel();
+    _watchdogTimer?.cancel();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }

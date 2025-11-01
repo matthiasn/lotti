@@ -89,13 +89,23 @@ LazyDatabase openDbConnection(
     final dbFolder =
         await (documentsDirectoryProvider?.call() ?? findDocumentsDirectory());
     final file = File(p.join(dbFolder.path, fileName));
+    // Ensure parent directory exists before opening to avoid SQLITE_CANTOPEN (14)
+    try {
+      await file.parent.create(recursive: true);
+    } catch (_) {
+      // Best-effort; if this fails, sqlite open will also fail and be surfaced upstream
+    }
 
     if (Platform.isAndroid) {
       await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
     }
 
-    sqlite3.tempDirectory =
-        (await (tempDirectoryProvider?.call() ?? getTemporaryDirectory())).path;
+    try {
+      sqlite3.tempDirectory =
+          (await (tempDirectoryProvider?.call() ?? getTemporaryDirectory())).path;
+    } catch (_) {
+      // If temp directory resolution fails, keep default; sqlite will use OS default tmp
+    }
 
     final database = NativeDatabase.createInBackground(file);
 
