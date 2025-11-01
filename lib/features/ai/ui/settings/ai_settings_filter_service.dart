@@ -107,24 +107,45 @@ class AiSettingsFilterService {
   ///
   /// **Filters Applied:**
   /// - Text search: Matches against prompt name and description
+  /// - Provider filter: Only shows prompts whose models belong to selected providers
   ///
   /// **Parameters:**
   /// - [prompts]: List of AI prompts to filter
   /// - [filterState]: Current filter criteria
+  /// - [allModels]: Optional list of all models (needed for provider filtering)
   ///
   /// **Returns:** Filtered list of AI prompts
   List<AiConfigPrompt> filterPrompts(
     List<AiConfigPrompt> prompts,
-    AiSettingsFilterState filterState,
-  ) {
+    AiSettingsFilterState filterState, {
+    List<AiConfigModel>? allModels,
+  }) {
     return prompts.where((prompt) {
-      return _matchesTextSearch(
+      // Text search filter
+      if (!_matchesTextSearch(
         text: filterState.searchQuery,
         searchableFields: [
           prompt.name,
           prompt.description ?? '',
         ],
-      );
+      )) {
+        return false;
+      }
+
+      // Provider filter - only apply if providers are selected and models are provided
+      if (filterState.selectedProviders.isNotEmpty && allModels != null) {
+        // Check if ANY of the prompt's models belong to the selected providers
+        final promptModelIds = prompt.modelIds.toSet();
+        final hasMatchingModel = allModels.any((model) =>
+            promptModelIds.contains(model.id) &&
+            filterState.selectedProviders.contains(model.inferenceProviderId));
+
+        if (!hasMatchingModel) {
+          return false;
+        }
+      }
+
+      return true;
     }).toList();
   }
 

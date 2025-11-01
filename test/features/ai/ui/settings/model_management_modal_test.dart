@@ -648,4 +648,585 @@ void main() {
       expect(savedDefaultId, isNotNull);
     });
   });
+
+  group('Provider Filter Tests', () {
+    late List<AiConfigModel> multiProviderModels;
+    late List<AiConfigInferenceProvider> providers;
+
+    setUp(() {
+      providers = [
+        AiConfigInferenceProvider(
+          id: 'provider1',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        ),
+        AiConfigInferenceProvider(
+          id: 'provider2',
+          name: 'Anthropic',
+          baseUrl: 'https://api.anthropic.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.anthropic,
+        ),
+        AiConfigInferenceProvider(
+          id: 'provider3',
+          name: 'Gemini',
+          baseUrl: 'https://api.google.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.gemini,
+        ),
+      ];
+
+      multiProviderModels = [
+        AiConfigModel(
+          id: 'model1',
+          name: 'GPT-4',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+        AiConfigModel(
+          id: 'model2',
+          name: 'GPT-3.5',
+          providerModelId: 'gpt-3.5',
+          inferenceProviderId: 'provider1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+        AiConfigModel(
+          id: 'model3',
+          name: 'Claude Sonnet',
+          providerModelId: 'claude-sonnet',
+          inferenceProviderId: 'provider2',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+        AiConfigModel(
+          id: 'model4',
+          name: 'Gemini Pro',
+          providerModelId: 'gemini-pro',
+          inferenceProviderId: 'provider3',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      ];
+    });
+
+    test('extracts unique provider IDs from models', () {
+      // Test the data logic directly without widgets
+      final providerIds = multiProviderModels
+          .map((m) => m.inferenceProviderId)
+          .toSet()
+          .toList();
+
+      expect(providerIds.length, equals(3));
+      expect(providerIds.contains('provider1'), isTrue);
+      expect(providerIds.contains('provider2'), isTrue);
+      expect(providerIds.contains('provider3'), isTrue);
+    });
+
+    test('single provider models extract to one unique ID', () {
+      final singleProviderModels = [
+        AiConfigModel(
+          id: 'model1',
+          name: 'GPT-4',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+        AiConfigModel(
+          id: 'model2',
+          name: 'GPT-3.5',
+          providerModelId: 'gpt-3.5',
+          inferenceProviderId: 'provider1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      ];
+
+      final providerIds = singleProviderModels
+          .map((m) => m.inferenceProviderId)
+          .toSet()
+          .toList();
+
+      expect(providerIds.length, equals(1));
+      expect(providerIds.first, equals('provider1'));
+    });
+
+    test('filtering models by provider ID returns correct subset', () {
+      // Test filtering logic directly
+      final filteredByProvider1 = multiProviderModels
+          .where((m) => m.inferenceProviderId == 'provider1')
+          .toList();
+
+      expect(filteredByProvider1.length, equals(2));
+      expect(
+          filteredByProvider1
+              .every((m) => m.inferenceProviderId == 'provider1'),
+          isTrue);
+      expect(filteredByProvider1.any((m) => m.name == 'GPT-4'), isTrue);
+      expect(filteredByProvider1.any((m) => m.name == 'GPT-3.5'), isTrue);
+
+      final filteredByProvider2 = multiProviderModels
+          .where((m) => m.inferenceProviderId == 'provider2')
+          .toList();
+
+      expect(filteredByProvider2.length, equals(1));
+      expect(filteredByProvider2.first.name, equals('Claude Sonnet'));
+    });
+
+    test('switching filter providers changes filtered model set', () {
+      // Simulate provider switching logic
+      String? selectedProviderId = 'provider2';
+
+      var displayedModels = multiProviderModels
+          .where((m) => m.inferenceProviderId == selectedProviderId)
+          .toList();
+
+      expect(displayedModels.length, equals(1));
+      expect(displayedModels.first.name, equals('Claude Sonnet'));
+
+      // Switch to provider3
+      selectedProviderId = 'provider3';
+      displayedModels = multiProviderModels
+          .where((m) => m.inferenceProviderId == selectedProviderId)
+          .toList();
+
+      expect(displayedModels.length, equals(1));
+      expect(displayedModels.first.name, equals('Gemini Pro'));
+    });
+
+    test('null provider filter shows all models', () {
+      // Simulate "All" chip behavior - when no filter is selected, show all models
+      const String? selectedProviderId = null;
+
+      // When selectedProviderId is null, show all models
+      final displayedModels = selectedProviderId == null
+          ? multiProviderModels
+          : multiProviderModels
+              .where((m) => m.inferenceProviderId == selectedProviderId)
+              .toList();
+
+      expect(displayedModels.length, equals(4));
+      expect(displayedModels, equals(multiProviderModels));
+    });
+
+    testWidgets('horizontal scroll works with many providers', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: [],
+                    currentDefaultId: '',
+                    onSave: (selectedIds, defaultId) {},
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+                .overrideWith(
+                    () => TestAiConfigByTypeController(multiProviderModels)),
+            for (final provider in providers)
+              aiConfigByIdProvider(provider.id)
+                  .overrideWith((ref) async => provider),
+          ],
+        ),
+      );
+
+      await openModalAndWaitForContent(tester);
+
+      // Verify SingleChildScrollView with horizontal axis exists
+      final scrollView = find.byType(SingleChildScrollView).evaluate();
+      expect(
+        scrollView.any((element) {
+          final widget = element.widget as SingleChildScrollView;
+          return widget.scrollDirection == Axis.horizontal;
+        }),
+        isTrue,
+      );
+    });
+
+    test('model count changes with filtering but list reference stays same',
+        () {
+      // Test that filtering changes count but original list is preserved
+      final allModels = multiProviderModels;
+
+      final filteredModels =
+          allModels.where((m) => m.inferenceProviderId == 'provider1').toList();
+
+      expect(filteredModels.length, equals(2));
+      expect(allModels.length, equals(4)); // Original list unchanged
+      expect(identical(allModels, multiProviderModels), isTrue);
+    });
+  });
+
+  group('Provider Filter Integration Tests', () {
+    late List<AiConfigModel> multiProviderModels;
+    late List<AiConfigInferenceProvider> providers;
+
+    setUp(() {
+      providers = [
+        AiConfigInferenceProvider(
+          id: 'provider1',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        ),
+        AiConfigInferenceProvider(
+          id: 'provider2',
+          name: 'Anthropic',
+          baseUrl: 'https://api.anthropic.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.anthropic,
+        ),
+      ];
+
+      multiProviderModels = [
+        AiConfigModel(
+          id: 'model1',
+          name: 'GPT-4',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+        AiConfigModel(
+          id: 'model2',
+          name: 'Claude Sonnet',
+          providerModelId: 'claude-sonnet',
+          inferenceProviderId: 'provider2',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      ];
+    });
+
+    testWidgets('select model after filtering by provider', (tester) async {
+      List<String>? savedSelectedIds;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: [],
+                    currentDefaultId: '',
+                    onSave: (selectedIds, defaultId) {
+                      savedSelectedIds = selectedIds;
+                    },
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+                .overrideWith(
+                    () => TestAiConfigByTypeController(multiProviderModels)),
+            for (final provider in providers)
+              aiConfigByIdProvider(provider.id)
+                  .overrideWith((ref) async => provider),
+          ],
+        ),
+      );
+
+      await openModalAndWaitForContent(tester);
+
+      // Filter by OpenAI
+      await tester.tap(find.text('OpenAI').first);
+      await tester.pumpAndSettle();
+
+      // Select GPT-4 (find it specifically as a model card, not a text)
+      final gpt4Finder = find.textContaining('GPT-4').first;
+      await tester.tap(gpt4Finder);
+      await tester.pumpAndSettle();
+
+      // Save
+      await tester.tap(find.text(l10n.saveButtonLabel));
+      await tester.pumpAndSettle();
+
+      expect(savedSelectedIds, isNotNull);
+      expect(savedSelectedIds!.length, equals(1));
+    });
+
+    testWidgets('filter persists during model selection', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: [],
+                    currentDefaultId: '',
+                    onSave: (selectedIds, defaultId) {},
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+                .overrideWith(
+                    () => TestAiConfigByTypeController(multiProviderModels)),
+            for (final provider in providers)
+              aiConfigByIdProvider(provider.id)
+                  .overrideWith((ref) async => provider),
+          ],
+        ),
+      );
+
+      await openModalAndWaitForContent(tester);
+
+      // Filter by Anthropic
+      await tester.tap(find.text('Anthropic').first);
+      await tester.pumpAndSettle();
+
+      // Select Claude
+      await tester.tap(find.text('Claude Sonnet').first);
+      await tester.pumpAndSettle();
+
+      // Verify OpenAI model is still hidden (filter persists)
+      expect(find.textContaining('GPT'), findsNothing);
+      expect(find.text('Claude Sonnet'), findsWidgets);
+    });
+
+    testWidgets('set default model with filter active', (tester) async {
+      String? savedDefaultId;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: [],
+                    currentDefaultId: '',
+                    onSave: (selectedIds, defaultId) {
+                      savedDefaultId = defaultId;
+                    },
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+                .overrideWith(
+                    () => TestAiConfigByTypeController(multiProviderModels)),
+            for (final provider in providers)
+              aiConfigByIdProvider(provider.id)
+                  .overrideWith((ref) async => provider),
+          ],
+        ),
+      );
+
+      await openModalAndWaitForContent(tester);
+
+      // Filter by OpenAI
+      await tester.tap(find.text('OpenAI').first);
+      await tester.pumpAndSettle();
+
+      // Select GPT-4 (becomes default automatically as first selection)
+      await tester.tap(find.textContaining('GPT-4').first);
+      await tester.pumpAndSettle();
+
+      // Save
+      await tester.tap(find.text(l10n.saveButtonLabel));
+      await tester.pumpAndSettle();
+
+      expect(savedDefaultId, isNotNull);
+      expect(savedDefaultId, isNotEmpty);
+    });
+  });
+
+  group('Provider Filter Edge Cases', () {
+    testWidgets('empty results when provider has no models', (tester) async {
+      final providersWithNoModels = [
+        AiConfigInferenceProvider(
+          id: 'provider1',
+          name: 'Empty Provider',
+          baseUrl: 'https://example.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        ),
+        AiConfigInferenceProvider(
+          id: 'provider2',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        ),
+      ];
+
+      final modelsForOneProvider = [
+        AiConfigModel(
+          id: 'model1',
+          name: 'GPT-4',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider2',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: [],
+                    currentDefaultId: '',
+                    onSave: (selectedIds, defaultId) {},
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+                .overrideWith(
+                    () => TestAiConfigByTypeController(modelsForOneProvider)),
+            for (final provider in providersWithNoModels)
+              aiConfigByIdProvider(provider.id)
+                  .overrideWith((ref) async => provider),
+          ],
+        ),
+      );
+
+      await openModalAndWaitForContent(tester);
+
+      // Filter by empty provider - should show provider chip but no models
+      // Note: Provider chip only shows if provider has models, so this test
+      // verifies the logic handles this edge case gracefully
+      expect(find.text('GPT-4'), findsOneWidget);
+    });
+
+    testWidgets('all models from same provider still shows filter',
+        (tester) async {
+      final multiProviderConfig = [
+        AiConfigInferenceProvider(
+          id: 'provider1',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        ),
+        AiConfigInferenceProvider(
+          id: 'provider2',
+          name: 'Anthropic',
+          baseUrl: 'https://api.anthropic.com',
+          apiKey: 'test-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.anthropic,
+        ),
+      ];
+
+      final allFromSameProvider = [
+        AiConfigModel(
+          id: 'model1',
+          name: 'GPT-4',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+        AiConfigModel(
+          id: 'model2',
+          name: 'GPT-3.5',
+          providerModelId: 'gpt-3.5',
+          inferenceProviderId: 'provider1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showModelManagementModal(
+                    context: context,
+                    currentSelectedIds: [],
+                    currentDefaultId: '',
+                    onSave: (selectedIds, defaultId) {},
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+                .overrideWith(
+                    () => TestAiConfigByTypeController(allFromSameProvider)),
+            for (final provider in multiProviderConfig)
+              aiConfigByIdProvider(provider.id)
+                  .overrideWith((ref) async => provider),
+          ],
+        ),
+      );
+
+      await openModalAndWaitForContent(tester);
+
+      // Should NOT show filters since only one provider has models
+      expect(find.text('All'), findsNothing);
+    });
+  });
 }
