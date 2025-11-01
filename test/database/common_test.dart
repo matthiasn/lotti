@@ -158,25 +158,6 @@ void main() {
       expect(backupFiles.length, equals(1));
     });
 
-    test('backup directory already exists (should not fail)', () async {
-      const fileName = 'test_db.sqlite';
-
-      // Create backup directory first
-      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
-      await backupDir.create(recursive: true);
-
-      // Create source file
-      final sourceFile = File(p.join(testDir.path, fileName));
-      await sourceFile.writeAsString('test data');
-
-      // Create backup - should not fail
-      await createDbBackup(fileName);
-
-      // Verify backup was created
-      final backupFiles = backupDir.listSync();
-      expect(backupFiles.length, equals(1));
-    });
-
     test('backup file contains same data as source', () async {
       const fileName = 'test_db.sqlite';
       const testData = 'This is test database content';

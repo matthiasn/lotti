@@ -59,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   continue to schedule debounced live scans and fall back to `forceRescan()` on scheduling errors.
 - Sync (Matrix): Documentation refreshed to reflect signal-driven ingestion and backlog completion
   behavior (`lib/features/sync/README.md`, `docs/sync/sync_summary.md`).
+ - Sync (Matrix): Coalescing and throttling refinements
+   - Catch-up coalesces signals with a 1s minimum gap and runs exactly one trailing pass after bursts; logs `catchup.start` once and `catchup.done events=…` once per burst.
+   - Live-scan never overlaps; signals during a scan defer as a single trailing pass. Base debounce ~120ms is extended to honor a 1s min gap; logs `signal.liveScan.coalesce` and `trailing.liveScan.scheduled`.
+   - Double-scan for attachments now awaits the immediate second pass; a delayed pass runs at +200ms.
+   - Historical windows reduced: catch-up `preContext=80`, `maxLookback=1000`; live-scan steady tail=30; audit tails 50/80/100.
+   - Log volume reduced under `collectMetrics`; condensed `marker.local` to id+ts.
 - feat(ai/labels): Append a summary note after the labels JSON in prompts when the
   number of available labels exceeds the cap, e.g. `(Note: showing 100 of 150 labels)`.
 - Matrix Sync Stats page now uses the modern SettingsPageHeader with collapsing sliver layout and subtitle, aligning with the new settings header UX.
@@ -79,6 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync (Matrix): Catch-up now continues escalating snapshot size until it’s not full (or lookback
   cap reached), ensuring the entire backlog after the read marker is retrieved. This eliminates
   missing EntryLinks after offline windows and prevents gray boxes on return to online.
+ - Sync (Matrix): Fixed overlapping live-scans by guarding `_scanInFlight` with a depth counter and awaiting the immediate pass in attachment double-scans.
+ - Sync Outbox: Eliminated "stuck after reconnect" cases by adding a watchdog (10s), DB nudge on outbox count changes (50ms), send timeout (20s) with `timedOut=true` logging, and pass-cap continuation; ClientRunner now catches callback errors and LoggingService DB failures are best-effort.
 - Stabilized labels/task widget tests by awaiting `getIt.reset()`, providing scoped service mocks,
   and giving sheet/editor hosts real `MediaQuery` sizes so chips, toggles, and CTAs are tappable
   during automation.

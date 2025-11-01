@@ -10,6 +10,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class LoggingService {
   bool _enableLogging = !isTestEnv;
@@ -76,8 +77,32 @@ class LoggingService {
           type: type.name.toUpperCase(),
         ),
       );
-    } catch (_) {
-      // Swallow DB-sink errors to avoid interfering with app flows.
+    } catch (e, st) {
+      // Swallow DB-sink errors to avoid interfering with app flows, but capture
+      // a compact breadcrumb to aid root-cause analysis of SQLITE_CANTOPEN (14)
+      try {
+        final doc = await findDocumentsDirectory();
+        final tmp = await getTemporaryDirectory();
+        final diag =
+            'logging.db.write.failed err=$e docDir=${doc.path} tmpDir=${tmp.path}';
+        // Write to file sink best-effort
+        final line = _formatLine(
+          ts: now,
+          level: InsightLevel.error.name.toUpperCase(),
+          domain: 'LOGGING_DB',
+          subDomain: 'event.write',
+          message: diag,
+        );
+        unawaited(_appendToFile(line));
+      } catch (fileErr, fileSt) {
+        // Last resort: surface both the original DB error and the fallback
+        // file error to the console so bootstrap failures are not invisible.
+        debugPrint('CRITICAL: Logging fallback failed!');
+        debugPrint('Original DB error: $e');
+        debugPrint('Fallback file error: $fileErr\n$fileSt');
+      }
+      // Also print to console in dev
+      debugPrint('LOGGING_DB event.write failed: $e\n$st');
     }
 
     // File sink (best-effort)
@@ -134,8 +159,26 @@ class LoggingService {
           type: type.name.toUpperCase(),
         ),
       );
-    } catch (_) {
-      // Swallow DB-sink errors to avoid interfering with app flows.
+    } catch (e, st2) {
+      try {
+        final doc = await findDocumentsDirectory();
+        final tmp = await getTemporaryDirectory();
+        final diag =
+            'logging.db.exception.failed err=$e docDir=${doc.path} tmpDir=${tmp.path}';
+        final line = _formatLine(
+          ts: now,
+          level: InsightLevel.error.name.toUpperCase(),
+          domain: 'LOGGING_DB',
+          subDomain: 'exception.write',
+          message: diag,
+        );
+        unawaited(_appendToFile(line));
+      } catch (fileErr, fileSt) {
+        debugPrint('CRITICAL: Logging fallback failed!');
+        debugPrint('Original DB error: $e');
+        debugPrint('Fallback file error: $fileErr\n$fileSt');
+      }
+      debugPrint('LOGGING_DB exception.write failed: $e\n$st2');
     }
 
     // File sink (best-effort)

@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -72,6 +73,7 @@ class OutboxService {
           repository: _repository,
           messageSender: _messageSender,
           loggingService: _loggingService,
+          maxRetriesOverride: maxRetries,
         );
 
     _startRunner();
@@ -122,6 +124,20 @@ class OutboxService {
         }
       });
     }
+
+    // DB-driven nudge: ensure new pending items kick the runner while online.
+    _outboxCountSubscription = _syncDatabase.watchOutboxCount().listen((count) {
+      if (_isDisposed || count <= 0) return;
+      // Light debounce via a short delay
+      unawaited(
+        enqueueNextSendRequest(delay: SyncTuning.outboxDbNudgeDebounce),
+      );
+      _loggingService.captureEvent(
+        'dbNudge count=$count → enqueue',
+        domain: 'OUTBOX',
+        subDomain: 'dbNudge',
+      );
+    });
   }
 
   final LoggingService _loggingService;
@@ -148,9 +164,11 @@ class OutboxService {
   late ClientRunner<int> _clientRunner;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<LoginState>? _loginSubscription;
+  StreamSubscription<int>? _outboxCountSubscription;
   final DateTime _createdAt = DateTime.now();
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
+  Timer? _watchdogTimer;
 
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
@@ -169,6 +187,44 @@ class OutboxService {
         await sendNext();
       },
     );
+
+    // Safety watchdog: if there are pending items and we appear idle (no
+    // queued work), periodically nudge the runner. This recovers from missed
+    // signals or platform-specific timer quirks after reconnects/resumes.
+    _watchdogTimer?.cancel();
+    _watchdogTimer =
+        Timer.periodic(SyncTuning.outboxWatchdogInterval, (Timer _) async {
+      if (_isDisposed) return;
+      try {
+        final loggedIn = _matrixService?.isLoggedIn() ?? true;
+        if (!loggedIn) {
+          _loggingService.captureEvent(
+            'watchdog.skip notLoggedIn',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          );
+          return;
+        }
+        final hasPending =
+            (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        final idleQueue = _clientRunner.queueSize == 0;
+        if (hasPending && loggedIn && idleQueue) {
+          _loggingService.captureEvent(
+            'watchdog: pending+loggedIn idleQueue → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          );
+          _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+        }
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'OUTBOX',
+          subDomain: 'watchdog',
+          stackTrace: st,
+        );
+      }
+    });
   }
 
   Future<List<OutboxItem>> getNextItems() async {
@@ -389,7 +445,8 @@ class OutboxService {
       try {
         final loggedIn = _matrixService?.isLoggedIn() ?? false;
         final canProc = _activityGate.canProcess;
-        final hasPending = (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        final hasPending =
+            (await _repository.fetchPending(limit: 1)).isNotEmpty;
         _loggingService.captureEvent(
           'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
           domain: 'OUTBOX',
@@ -460,6 +517,8 @@ class OutboxService {
     _clientRunner.close();
     await _connectivitySubscription?.cancel();
     await _loginSubscription?.cancel();
+    await _outboxCountSubscription?.cancel();
+    _watchdogTimer?.cancel();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }

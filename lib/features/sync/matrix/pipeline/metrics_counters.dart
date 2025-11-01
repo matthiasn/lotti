@@ -55,6 +55,12 @@ class MetricsCounters {
   int signalLatencyMinMs = 0;
   int signalLatencyMaxMs = 0;
 
+  // Coalescing/trailing metrics
+  int trailingCatchups = 0;
+  int liveScanDeferredCount = 0;
+  int liveScanCoalesceCount = 0;
+  int liveScanTrailingScheduled = 0;
+
   final Map<String, int> processedByType = <String, int>{};
   final Map<String, int> droppedByType = <String, int>{};
 
@@ -157,6 +163,26 @@ class MetricsCounters {
     lastLookBehindTail = tail;
   }
 
+  void incTrailingCatchups() {
+    if (!collect) return;
+    trailingCatchups++;
+  }
+
+  void incLiveScanDeferred() {
+    if (!collect) return;
+    liveScanDeferredCount++;
+  }
+
+  void incLiveScanCoalesce() {
+    if (!collect) return;
+    liveScanCoalesceCount++;
+  }
+
+  void incLiveScanTrailingScheduled() {
+    if (!collect) return;
+    liveScanTrailingScheduled++;
+  }
+
   // DB metrics are tracked regardless of collect
   void incDbApplied() => dbApplied++;
   void incDbIgnoredByVectorClock() => dbIgnoredByVectorClock++;
@@ -210,7 +236,13 @@ class MetricsCounters {
       ..putIfAbsent('signalConnectivity', () => signalConnectivity)
       ..putIfAbsent('signalLatencyLastMs', () => signalLatencyLastMs)
       ..putIfAbsent('signalLatencyMinMs', () => signalLatencyMinMs)
-      ..putIfAbsent('signalLatencyMaxMs', () => signalLatencyMaxMs);
+      ..putIfAbsent('signalLatencyMaxMs', () => signalLatencyMaxMs)
+      // Coalescing/trailing
+      ..putIfAbsent('trailingCatchups', () => trailingCatchups)
+      ..putIfAbsent('liveScanDeferredCount', () => liveScanDeferredCount)
+      ..putIfAbsent('liveScanCoalesceCount', () => liveScanCoalesceCount)
+      ..putIfAbsent(
+          'liveScanTrailingScheduled', () => liveScanTrailingScheduled);
     return base;
   }
 

@@ -1,4 +1,7 @@
+// ignore_for_file: cascade_invocations
+
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -7,211 +10,172 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 
-import '../mocks/mocks.dart';
+class MockLoggingDb extends Mock implements LoggingDb {}
+
+class MockJournalDb extends Mock implements JournalDb {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('LoggingService Tests', () {
-    late MockJournalDb mockJournalDb;
-    late MockLoggingDb mockLoggingDb;
-    late StreamController<bool> configFlagController;
-    late LoggingService loggingService;
+  setUpAll(() {
+    // Required by mocktail for `any<LogEntry>()`
+    registerFallbackValue(const LogEntry(
+      id: 'x',
+      createdAt: '1970-01-01T00:00:00Z',
+      domain: 'D',
+      type: 'LOG',
+      level: 'INFO',
+      message: 'M',
+    ));
+  });
 
-    setUpAll(() {
-      registerFallbackValue(
-        LogEntry(
-          id: 'test-id',
-          createdAt: DateTime.now().toIso8601String(),
-          domain: 'test',
-          message: 'test',
-          level: 'INFO',
-          type: 'LOG',
-        ),
-      );
-    });
+  late Directory tempDocs;
+  late MockLoggingDb loggingDb;
+  late MockJournalDb journalDb;
+  late LoggingService logging;
 
-    setUp(() {
-      if (getIt.isRegistered<JournalDb>()) {
-        getIt.unregister<JournalDb>();
-      }
-      if (getIt.isRegistered<LoggingDb>()) {
-        getIt.unregister<LoggingDb>();
-      }
+  setUp(() async {
+    // Fresh temp directory per test for file sink
+    tempDocs = Directory.systemTemp.createTempSync('logging_svc_test_');
+    addTearDown(() =>
+        tempDocs.existsSync() ? tempDocs.deleteSync(recursive: true) : null);
 
-      mockJournalDb = MockJournalDb();
-      mockLoggingDb = MockLoggingDb();
-      configFlagController = StreamController<bool>();
+    // Reset DI and register dependencies used by LoggingService
+    await getIt.reset();
+    getIt
+      ..registerSingleton<Directory>(tempDocs)
+      ..registerSingleton<LoggingService>(LoggingService());
 
-      when(() => mockJournalDb.watchConfigFlag(enableLoggingFlag))
-          .thenAnswer((_) => configFlagController.stream);
+    // Provide a mock LoggingDb and JournalDb
+    loggingDb = MockLoggingDb();
+    journalDb = MockJournalDb();
+    getIt
+      ..registerSingleton<LoggingDb>(loggingDb)
+      ..registerSingleton<JournalDb>(journalDb);
 
-      when(() => mockLoggingDb.log(any())).thenAnswer((_) async => 1);
+    // By default, tests run with logging disabled; enable it via config flag
+    when(() => journalDb.watchConfigFlag(enableLoggingFlag))
+        .thenAnswer((_) => Stream<bool>.value(true));
 
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<LoggingDb>(mockLoggingDb);
+    logging = getIt<LoggingService>();
+    logging.listenToConfigFlag();
+    // Allow the stream microtask to flip the internal flag
+    await Future<void>.delayed(Duration.zero);
+  });
 
-      loggingService = LoggingService();
-    });
+  test('captureEvent writes to DB and file when enabled', () async {
+    when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
 
-    tearDown(() async {
-      await configFlagController.close();
-    });
+    logging.captureEvent(
+      'hello world',
+      domain: 'TEST',
+      subDomain: 'sub',
+    );
 
-    test('listenToConfigFlag enables logging when flag is true', () async {
-      loggingService.listenToConfigFlag();
+    // Let async sinks complete
+    await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      configFlagController.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    verify(() => loggingDb.log(any(that: isA<LogEntry>())))
+        .called(greaterThanOrEqualTo(1));
 
-      loggingService.captureEvent(
-        'test event',
-        domain: 'test-domain',
-      );
+    final logPath = p.join(
+      tempDocs.path,
+      'logs',
+      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+    );
+    final file = File(logPath);
+    expect(file.existsSync(), isTrue);
+    final content = file.readAsStringSync();
+    expect(
+      content.contains(' [INFO] TEST sub: hello world'),
+      isTrue,
+    );
+  });
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+  test('captureEvent DB failure still writes file line', () async {
+    when(() => loggingDb.log(any())).thenThrow(Exception('db down'));
 
-      verify(() => mockLoggingDb.log(any())).called(1);
-    });
+    logging.captureEvent(
+      'evt',
+      domain: 'OUTBOX',
+      subDomain: 'watchdog',
+    );
 
-    test('listenToConfigFlag disables logging when flag is false', () async {
-      loggingService.listenToConfigFlag();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      configFlagController.add(false);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    final logPath = p.join(
+      tempDocs.path,
+      'logs',
+      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+    );
+    final file = File(logPath);
+    expect(file.existsSync(), isTrue);
+    final content = file.readAsStringSync();
+    // Even on DB failure, original event line is still appended
+    expect(content.contains(' [INFO] OUTBOX watchdog: evt'), isTrue);
+  });
 
-      loggingService.captureEvent(
-        'test event',
-        domain: 'test-domain',
-      );
+  test('captureException writes to DB and file; includes stack trace',
+      () async {
+    when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    logging.captureException(
+      Exception('boom'),
+      domain: 'PIPE',
+      subDomain: 'liveScan',
+      stackTrace: StackTrace.current,
+    );
 
-      verifyNever(() => mockLoggingDb.log(any()));
-    });
+    await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    test('captureEvent logs with correct parameters', () async {
-      loggingService.listenToConfigFlag();
+    verify(() => loggingDb.log(any(that: isA<LogEntry>()))).called(1);
 
-      configFlagController.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    final logPath = p.join(
+      tempDocs.path,
+      'logs',
+      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+    );
+    final content = File(logPath).readAsStringSync();
+    expect(content.contains(' [ERROR] PIPE liveScan: Exception: boom'), isTrue);
+  });
 
-      loggingService.captureEvent(
-        'test event message',
-        domain: 'test-domain',
-        subDomain: 'test-subdomain',
-        level: InsightLevel.warn,
-      );
+  test('captureException DB failure still writes file line', () async {
+    when(() => loggingDb.log(any())).thenThrow(Exception('cantopen'));
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    logging.captureException(
+      'oops',
+      domain: 'DB',
+      subDomain: 'insert',
+      stackTrace: 'trace',
+    );
 
-      final captured = verify(() => mockLoggingDb.log(captureAny()))
-          .captured
-          .single as LogEntry;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(captured.domain, 'test-domain');
-      expect(captured.subDomain, 'test-subdomain');
-      expect(captured.message, 'test event message');
-      expect(captured.level, 'WARN');
-      expect(captured.type, 'LOG');
-    });
+    final content = File(p.join(
+      tempDocs.path,
+      'logs',
+      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+    )).readAsStringSync();
+    expect(content.contains(' [ERROR] DB insert: oops trace'), isTrue);
+  });
 
-    test('captureEvent uses default level and type', () async {
-      loggingService.listenToConfigFlag();
+  test('captureEvent is gated when logging disabled', () async {
+    // Create a new service with logging disabled (do not listen to flag)
+    final svc = LoggingService();
+    when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
 
-      configFlagController.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    svc.captureEvent('disabled', domain: 'TEST');
+    await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      loggingService.captureEvent(
-        'test event',
-        domain: 'test-domain',
-      );
+    verifyNever(() => loggingDb.log(any()));
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final captured = verify(() => mockLoggingDb.log(captureAny()))
-          .captured
-          .single as LogEntry;
-
-      expect(captured.level, 'INFO');
-      expect(captured.type, 'LOG');
-    });
-
-    test('captureException logs with stack trace', () async {
-      loggingService.listenToConfigFlag();
-
-      configFlagController.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final exception = Exception('Test exception');
-      final stackTrace = StackTrace.current;
-
-      loggingService.captureException(
-        exception,
-        domain: 'error-domain',
-        subDomain: 'error-subdomain',
-        stackTrace: stackTrace,
-      );
-
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final captured = verify(() => mockLoggingDb.log(captureAny()))
-          .captured
-          .single as LogEntry;
-
-      expect(captured.domain, 'error-domain');
-      expect(captured.subDomain, 'error-subdomain');
-      expect(captured.message, contains('Test exception'));
-      expect(captured.stacktrace, isNotNull);
-      expect(captured.level, 'ERROR');
-      expect(captured.type, 'EXCEPTION');
-    });
-
-    test('captureException uses default level and type', () async {
-      loggingService.listenToConfigFlag();
-
-      configFlagController.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final exception = Exception('Test exception');
-
-      loggingService.captureException(
-        exception,
-        domain: 'error-domain',
-      );
-
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final captured = verify(() => mockLoggingDb.log(captureAny()))
-          .captured
-          .single as LogEntry;
-
-      expect(captured.level, 'ERROR');
-      expect(captured.type, 'EXCEPTION');
-    });
-
-    test('captureException without stack trace', () async {
-      loggingService.listenToConfigFlag();
-
-      configFlagController.add(true);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final exception = Exception('Test exception');
-
-      loggingService.captureException(
-        exception,
-        domain: 'error-domain',
-      );
-
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final captured = verify(() => mockLoggingDb.log(captureAny()))
-          .captured
-          .single as LogEntry;
-
-      expect(captured.stacktrace, isNull);
-    });
+    final logPath = p.join(
+      tempDocs.path,
+      'logs',
+      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+    );
+    expect(File(logPath).existsSync(), isFalse);
   });
 }

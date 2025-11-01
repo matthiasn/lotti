@@ -29,6 +29,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
@@ -95,9 +96,9 @@ class MatrixStreamConsumer implements SyncPipeline {
     Duration circuitCooldown = const Duration(seconds: 30),
     // Live-scan look-behind tuning (test seams)
     bool liveScanIncludeLookBehind = true,
-    int liveScanInitialAuditScans = 5,
+    int liveScanInitialAuditScans = 2,
     int? liveScanInitialAuditTail,
-    int liveScanSteadyTail = 100,
+    int liveScanSteadyTail = 30,
     bool dropOldPayloadsInLiveScan = true,
     Future<bool> Function({
       required Timeline timeline,
@@ -195,6 +196,13 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   Timer? _liveScanTimer;
   bool _scanInFlight = false;
+  int _scanInFlightDepth =
+      0; // guards overlapping scans and trailing scheduling
+  bool _liveScanDeferred = false;
+  DateTime? _lastLiveScanAt;
+  static const Duration _minLiveScanGap = SyncTuning.minLiveScanGap;
+  static const Duration _trailingLiveScanDebounce =
+      SyncTuning.trailingLiveScanDebounce;
   // Guard to prevent overlapping catch-ups triggered by signals.
   bool _catchUpInFlight = false;
   // Explicitly request catch-up when nudging via signals, keeping semantics
@@ -209,7 +217,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   DateTime? _lastAttachmentOnlyRescanAt;
   static const Duration _minAttachmentOnlyRescanGap =
       Duration(milliseconds: 500);
-  static const int _liveScanTailLimit = 50;
+  static const int _liveScanTailLimit = 30;
   static const Duration _attachmentTsGate = Duration(seconds: 2);
   // Live-scan look-behind policy. Can be tuned via constructor (test seams).
   final bool _liveScanIncludeLookBehind;
@@ -505,26 +513,42 @@ class MatrixStreamConsumer implements SyncPipeline {
     _sub = _sessionManager.timelineEvents.listen((event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null || event.roomId != roomId) return;
-      if (_collectMetrics) _metrics.incSignalClientStream();
-      _loggingService.captureEvent(
-        'signal.clientStream',
-        domain: syncLoggingDomain,
-        subDomain: 'signal',
-      );
-      if (_catchUpInFlight) {
+      if (_collectMetrics) {
+        _metrics.incSignalClientStream();
         _loggingService.captureEvent(
-          'signal.catchup.skipped inFlight=true',
+          'signal.clientStream',
+          domain: syncLoggingDomain,
+          subDomain: 'signal',
+        );
+      }
+      // Coalesce client-stream-driven catch-ups: if one is in-flight, defer a
+      // single trailing catch-up; otherwise enforce a short minimum gap.
+      if (_catchUpInFlight) {
+        if (!_deferredCatchup) {
+          _deferredCatchup = true;
+          _loggingService.captureEvent(
+            'signal.catchup.deferred set',
+            domain: syncLoggingDomain,
+            subDomain: 'signal',
+          );
+        }
+        return;
+      }
+      final now = clock.now();
+      if (_lastCatchupAt != null &&
+          now.difference(_lastCatchupAt!) < _minCatchupGap) {
+        // Debounce: schedule once at the end of the gap
+        final remaining = _minCatchupGap - now.difference(_lastCatchupAt!);
+        _catchupDebounceTimer?.cancel();
+        _catchupDebounceTimer = Timer(remaining, _startCatchupNow);
+        _loggingService.captureEvent(
+          'signal.catchup.coalesce debounceMs=${remaining.inMilliseconds}',
           domain: syncLoggingDomain,
           subDomain: 'signal',
         );
         return;
       }
-      _catchUpInFlight = true;
-      unawaited(
-        forceRescan(includeCatchUp: _alwaysIncludeCatchUp).whenComplete(() {
-          _catchUpInFlight = false;
-        }),
-      );
+      _startCatchupNow();
     });
 
     // Also attach live timeline listeners to proactively scan in case the
@@ -535,12 +559,14 @@ class MatrixStreamConsumer implements SyncPipeline {
         // Wrap timeline callbacks to count and log signals. These callbacks do
         // not process payloads; they only nudge the scheduler.
         void onTimelineSignal() {
-          if (_collectMetrics) _metrics.incSignalTimelineCallbacks();
-          _loggingService.captureEvent(
-            'signal.timeline',
-            domain: syncLoggingDomain,
-            subDomain: 'signal',
-          );
+          if (_collectMetrics) {
+            _metrics.incSignalTimelineCallbacks();
+            _loggingService.captureEvent(
+              'signal.timeline',
+              domain: syncLoggingDomain,
+              subDomain: 'signal',
+            );
+          }
           try {
             _scheduleLiveScan();
           } catch (e, st) {
@@ -605,11 +631,68 @@ class MatrixStreamConsumer implements SyncPipeline {
     );
   }
 
+  // --- Catch-up coalescing -------------------------------------------------
+  DateTime? _lastCatchupAt;
+  bool _deferredCatchup = false;
+  Timer? _catchupDebounceTimer;
+  static const Duration _minCatchupGap = SyncTuning.minCatchupGap;
+  static const Duration _trailingCatchupDelay = SyncTuning.trailingCatchupDelay;
+  // Coalesced catch-up burst logging control
+  bool _catchupLogStartPending = false;
+  bool _catchupDoneLoggedThisBurst = false;
+  int _lastCatchupEventsCount = 0;
+
+  void _startCatchupNow() {
+    if (_catchUpInFlight) {
+      _deferredCatchup = true;
+      return;
+    }
+    _catchUpInFlight = true;
+    // New burst: emit start once for the first run only; defer 'done' until the
+    // last run in this coalesced burst (after any trailing catch-up completes).
+    _catchupLogStartPending = true;
+    _catchupDoneLoggedThisBurst = false;
+    unawaited(
+      forceRescan(includeCatchUp: _alwaysIncludeCatchUp).whenComplete(() {
+        _catchUpInFlight = false;
+        _lastCatchupAt = clock.now();
+        if (_deferredCatchup) {
+          _deferredCatchup = false;
+          if (_collectMetrics) _metrics.incTrailingCatchups();
+          _loggingService.captureEvent(
+            'trailing.catchup.scheduled',
+            domain: syncLoggingDomain,
+            subDomain: 'signal',
+          );
+          _catchupDebounceTimer?.cancel();
+          // Enforce a minimum idle gap before running the trailing catch‑up to
+          // give the UI time to settle under bursty conditions.
+          _catchupDebounceTimer =
+              Timer(_trailingCatchupDelay, _startCatchupNow);
+        } else {
+          // No trailing run scheduled: log 'done' once for this burst.
+          if (!_catchupDoneLoggedThisBurst) {
+            _loggingService.captureEvent(
+              'catchup.done events=$_lastCatchupEventsCount',
+              domain: syncLoggingDomain,
+              subDomain: 'catchup',
+            );
+            _catchupDoneLoggedThisBurst = true;
+          }
+          // Reset start flag for the next burst.
+          _catchupLogStartPending = false;
+        }
+      }),
+    );
+  }
+
   @override
   Future<void> dispose() async {
     await _sub?.cancel();
     _sub = null;
     _liveScanTimer?.cancel();
+    _catchupDebounceTimer?.cancel();
+    _catchupDebounceTimer = null;
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
@@ -633,18 +716,23 @@ class MatrixStreamConsumer implements SyncPipeline {
       final room = _roomManager.currentRoom;
       final roomId = _roomManager.currentRoomId;
       if (room == null || roomId == null) {
+        if (_collectMetrics) {
+          _loggingService.captureEvent(
+            'No active room for catch-up',
+            domain: syncLoggingDomain,
+            subDomain: 'catchup',
+          );
+        }
+        return;
+      }
+      if (_catchupLogStartPending) {
         _loggingService.captureEvent(
-          'No active room for catch-up',
+          'catchup.start lastEventId=${_lastProcessedEventId ?? 'null'}',
           domain: syncLoggingDomain,
           subDomain: 'catchup',
         );
-        return;
+        _catchupLogStartPending = false;
       }
-      _loggingService.captureEvent(
-        'catchup.start lastEventId=${_lastProcessedEventId ?? 'null'}',
-        domain: syncLoggingDomain,
-        subDomain: 'catchup',
-      );
       final preSinceTs = _startupLastProcessedTs == null
           ? null
           : (_startupLastProcessedTs!.toInt() - 1000); // small skew buffer
@@ -656,14 +744,10 @@ class MatrixStreamConsumer implements SyncPipeline {
         // Ensure we also include a bounded pre-context since the stored last
         // sync timestamp, escalating pagination as needed.
         preContextSinceTs: preSinceTs,
-        preContextCount: 300,
-        maxLookback: 8000,
+        preContextCount: SyncTuning.catchupPreContextCount,
+        maxLookback: SyncTuning.catchupMaxLookback,
       );
-      _loggingService.captureEvent(
-        'catchup.done events=${slice.length}',
-        domain: syncLoggingDomain,
-        subDomain: 'catchup',
-      );
+      _lastCatchupEventsCount = slice.length;
       if (slice.isNotEmpty) {
         if (_collectMetrics) _metrics.incCatchupBatches();
         await _processOrdered(slice);
@@ -698,15 +782,28 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
     // If a scan is currently running, coalesce this signal.
     if (_scanInFlight) {
+      if (!_liveScanDeferred) {
+        _liveScanDeferred = true;
+        if (_collectMetrics) _metrics.incLiveScanDeferred();
+        _loggingService.captureEvent(
+          'signal.liveScan.deferred set',
+          domain: syncLoggingDomain,
+          subDomain: 'signal',
+        );
+      }
+      return;
+    }
+    // Tight base debounce keeps scans responsive while coalescing bursts, but
+    // enforce a minimum gap between consecutive scans to reduce churn.
+    final delay = _calculateNextLiveScanDelay();
+    if (delay > _trailingLiveScanDebounce) {
+      if (_collectMetrics) _metrics.incLiveScanCoalesce();
       _loggingService.captureEvent(
-        'signal.liveScan.coalesce inFlight=true',
+        'signal.liveScan.coalesce debounceMs=${delay.inMilliseconds}',
         domain: syncLoggingDomain,
         subDomain: 'signal',
       );
-      return;
     }
-    // Tight debounce keeps scans responsive while coalescing bursts.
-    const delay = Duration(milliseconds: 120);
     _liveScanTimer?.cancel();
     _liveScanTimer = Timer(delay, () {
       unawaited(_scanLiveTimeline());
@@ -717,7 +814,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     final tl = _liveTimeline;
     if (tl == null) return;
     try {
+      // Enter scan: increment depth and assert the in-flight guard.
+      _scanInFlightDepth++;
       _scanInFlight = true;
+      // Test seam: allow tests to invoke scheduling while a scan is in flight
+      // to validate coalescing/guarding behavior.
+      _scanLiveTimelineTestHook?.call(_scheduleLiveScan);
       // Record signal→scan latency if a signal was captured recently.
       if (_collectMetrics && _lastSignalAt != null) {
         final ms = clock.now().difference(_lastSignalAt!).inMilliseconds;
@@ -789,19 +891,63 @@ class MatrixStreamConsumer implements SyncPipeline {
         stackTrace: st,
       );
     } finally {
-      _scanInFlight = false;
+      // Leave scan: decrement depth and only clear the in-flight flag,
+      // record completion, and schedule trailing work when the outermost
+      // scan completes. This prevents the guard from dropping during
+      // nested scans and avoids overlapping scheduling.
+      _scanInFlightDepth = _scanInFlightDepth - 1;
+      final isOutermost = _scanInFlightDepth <= 0;
+      if (isOutermost) {
+        _scanInFlightDepth = 0;
+        _scanInFlight = false;
+        // Record completion time to bound the rate of subsequent scans.
+        _lastLiveScanAt = clock.now();
+        if (_liveScanDeferred) {
+          _liveScanDeferred = false;
+          if (_collectMetrics) _metrics.incLiveScanTrailingScheduled();
+          _loggingService.captureEvent(
+            'trailing.liveScan.scheduled',
+            domain: syncLoggingDomain,
+            subDomain: 'signal',
+          );
+          // Enforce a minimum gap between scans while keeping a small base
+          // debounce to coalesce a final burst of signals.
+          final delay = _calculateNextLiveScanDelay();
+          _liveScanTimer?.cancel();
+          _liveScanTimer = Timer(delay, () {
+            unawaited(_scanLiveTimeline());
+          });
+        }
+      }
     }
+  }
+
+  // Compute the next live-scan delay by coalescing bursts and enforcing a
+  // minimum gap between consecutive scans.
+  Duration _calculateNextLiveScanDelay() {
+    var delay = _trailingLiveScanDebounce;
+    final last = _lastLiveScanAt;
+    if (last != null) {
+      final since = clock.now().difference(last);
+      if (since < _minLiveScanGap) {
+        final remaining = _minLiveScanGap - since;
+        if (remaining > delay) {
+          delay = remaining;
+        }
+      }
+    }
+    return delay;
   }
 
   int _computeAuditTailCountByDelta() {
     final ts = _startupLastProcessedTs;
-    if (ts == null) return 200;
+    if (ts == null) return 50;
     final nowMs = clock.now().millisecondsSinceEpoch;
     final deltaMs = nowMs - ts.toInt();
     final deltaH = deltaMs / (1000 * 60 * 60);
-    if (deltaH >= 48) return 400;
-    if (deltaH >= 12) return 300;
-    return 200;
+    if (deltaH >= 48) return 100;
+    if (deltaH >= 12) return 80;
+    return 50;
   }
 
   // (helper removed; all call sites use utils)
@@ -828,6 +974,7 @@ class MatrixStreamConsumer implements SyncPipeline {
 
     // First pass: prefetch attachments for remote events.
     var sawAttachmentPrefetch = false; // true only if a new file was written
+    var suppressedCount = 0; // count self-origin/suppressed events
     const ingestor = AttachmentIngestor();
     for (final e in ordered) {
       final eventId = e.eventId;
@@ -839,11 +986,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (suppressed) {
         suppressedIds.add(eventId);
         _metrics.incSelfEventsSuppressed();
-        _loggingService.captureEvent(
-          'selfEventSuppressed.prefetch id=$eventId sender=${e.senderId}',
-          domain: syncLoggingDomain,
-          subDomain: 'selfEvent',
-        );
+        suppressedCount++;
         continue;
       }
       if (dup && ec.MatrixEventClassifier.isAttachment(e)) {
@@ -874,6 +1017,15 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (wrote) sawAttachmentPrefetch = true;
 
       // (prefetch handled above)
+    }
+
+    // Emit a compact summary for suppressed items to avoid log spam.
+    if (suppressedCount > 0 && _collectMetrics) {
+      _loggingService.captureEvent(
+        'selfEventSuppressed.count=$suppressedCount',
+        domain: syncLoggingDomain,
+        subDomain: 'selfEvent',
+      );
     }
 
     // Second pass: process text events and compute advancement.
@@ -1002,17 +1154,14 @@ class MatrixStreamConsumer implements SyncPipeline {
         // backgrounds or exits before the debounced remote flush fires.
         try {
           await setLastReadMatrixEventId(latestEventId, _settingsDb);
-          _loggingService.captureEvent(
-            'marker.local id=$latestEventId',
-            domain: syncLoggingDomain,
-            subDomain: 'marker.local',
-          );
           await setLastReadMatrixEventTs(latestTs.toInt(), _settingsDb);
-          _loggingService.captureEvent(
-            'marker.local.ts ts=${latestTs.toInt()}',
-            domain: syncLoggingDomain,
-            subDomain: 'marker.local',
-          );
+          if (_collectMetrics) {
+            _loggingService.captureEvent(
+              'marker.local id=$latestEventId ts=${latestTs.toInt()}',
+              domain: syncLoggingDomain,
+              subDomain: 'marker.local',
+            );
+          }
         } catch (e, st) {
           _loggingService.captureException(
             e,
@@ -1037,12 +1186,14 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (hadFailure) {
       final openedNow = _circuit.recordFailures(batchFailures, clock.now());
       if (openedNow) {
-        if (_collectMetrics) _metrics.incCircuitOpens();
-        _loggingService.captureEvent(
-          'circuit open for ${_circuitCooldown.inSeconds}s',
-          domain: syncLoggingDomain,
-          subDomain: 'circuit',
-        );
+        if (_collectMetrics) {
+          _metrics.incCircuitOpens();
+          _loggingService.captureEvent(
+            'circuit open for ${_circuitCooldown.inSeconds}s',
+            domain: syncLoggingDomain,
+            subDomain: 'circuit',
+          );
+        }
       }
       final now = clock.now();
       final delay = msh.computeNextScanDelay(now, earliestNextDue);
@@ -1060,22 +1211,26 @@ class MatrixStreamConsumer implements SyncPipeline {
         if (last == null ||
             now.difference(last) >= _minAttachmentOnlyRescanGap) {
           _lastAttachmentOnlyRescanAt = now;
-          _loggingService.captureEvent(
-            'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
-            domain: syncLoggingDomain,
-            subDomain: 'noAdvance.rescan',
-          );
+          if (_collectMetrics) {
+            _loggingService.captureEvent(
+              'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
+              domain: syncLoggingDomain,
+              subDomain: 'noAdvance.rescan',
+            );
+          }
           _liveScanTimer?.cancel();
           _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
             unawaited(_scanLiveTimeline());
           });
         }
       } else {
-        _loggingService.captureEvent(
-          'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
-          domain: syncLoggingDomain,
-          subDomain: 'noAdvance.rescan',
-        );
+        if (_collectMetrics) {
+          _loggingService.captureEvent(
+            'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
+            domain: syncLoggingDomain,
+            subDomain: 'noAdvance.rescan',
+          );
+        }
         _liveScanTimer?.cancel();
         _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
           unawaited(_scanLiveTimeline());
@@ -1087,19 +1242,25 @@ class MatrixStreamConsumer implements SyncPipeline {
     // a second scan shortly after to catch text events that may land after the
     // attachment in the SDK's live list.
     if (sawAttachmentPrefetch) {
-      _loggingService.captureEvent(
-        'doubleScan.attachment immediate',
-        domain: syncLoggingDomain,
-        subDomain: 'doubleScan',
-      );
-      unawaited(_scanLiveTimeline());
-      _liveScanTimer?.cancel();
-      _liveScanTimer = Timer(const Duration(milliseconds: 200), () {
+      if (_collectMetrics) {
         _loggingService.captureEvent(
-          'doubleScan.attachment delayed',
+          'doubleScan.attachment immediate',
           domain: syncLoggingDomain,
           subDomain: 'doubleScan',
         );
+      }
+      // Run the immediate second scan sequentially to avoid overlapping
+      // scans; the in-flight depth guard also prevents premature clearing.
+      await _scanLiveTimeline();
+      _liveScanTimer?.cancel();
+      _liveScanTimer = Timer(const Duration(milliseconds: 200), () {
+        if (_collectMetrics) {
+          _loggingService.captureEvent(
+            'doubleScan.attachment delayed',
+            domain: syncLoggingDomain,
+            subDomain: 'doubleScan',
+          );
+        }
         unawaited(_scanLiveTimeline());
       });
     }
@@ -1287,6 +1448,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   // errors and exercise fallback logic.
   void Function()? _scheduleLiveScanTestHook;
 
+  // Test-only hook invoked at the start of _scanLiveTimeline() with a
+  // scheduler callback to allow tests to schedule additional scans while
+  // the guard is asserted.
+  void Function(void Function())? _scanLiveTimelineTestHook;
+
   // Visible for testing only: getter/setter for the hook to support tests.
   @visibleForTesting
   void Function()? get scheduleLiveScanTestHook => _scheduleLiveScanTestHook;
@@ -1294,5 +1460,15 @@ class MatrixStreamConsumer implements SyncPipeline {
   @visibleForTesting
   set scheduleLiveScanTestHook(void Function()? fn) {
     _scheduleLiveScanTestHook = fn;
+  }
+
+  // Visible for testing only: getter/setter for the scan hook.
+  @visibleForTesting
+  void Function(void Function())? get scanLiveTimelineTestHook =>
+      _scanLiveTimelineTestHook;
+
+  @visibleForTesting
+  set scanLiveTimelineTestHook(void Function(void Function())? fn) {
+    _scanLiveTimelineTestHook = fn;
   }
 }

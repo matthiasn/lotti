@@ -241,7 +241,7 @@ void main() {
       // Delay getTimeline to simulate async work during which pending changes occur
       when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer(
         (_) async {
-          await Future<void>.delayed(const Duration(milliseconds: 500));
+          async.elapse(const Duration(milliseconds: 500));
           return timeline;
         },
       );
@@ -346,7 +346,7 @@ void main() {
           concurrent++;
           if (concurrent > maxConcurrent) maxConcurrent = concurrent;
           // Keep this run in-flight for a bit
-          await Future<void>.delayed(const Duration(milliseconds: 500));
+          async.elapse(const Duration(milliseconds: 500));
           concurrent--;
           return timeline;
         },

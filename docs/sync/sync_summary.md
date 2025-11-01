@@ -15,7 +15,7 @@ This note captures the current pipeline behavior, recent fixes, logs to look for
 
 ## What We Fixed/Added
 
-Recent changes (Oct 2025)
+Recent changes (Oct–Nov 2025)
 - Client stream → signal-driven catch-up (2025-10-28):
   - Every client stream signal triggers `forceRescan(includeCatchUp=true)` with an in-flight guard.
   - Timeline callbacks continue to schedule debounced live scans and fall back to `forceRescan()`
@@ -39,6 +39,33 @@ Recent changes (Oct 2025)
   Use `MatrixException.errcode` (e.g., `M_FORBIDDEN`, `M_NOT_FOUND`) to
   detect “not in room” instead of parsing error strings. Code: `session_manager.dart`,
   `sync_room_manager.dart`.
+
+Pipeline coalescing and throttling (Nov 2025)
+- Catch‑up coalescing
+  - Minimum gap between catch‑ups: 1s.
+  - Trailing catch‑up: if signals arrive during a run, schedule one more pass after it finishes (delay ~1s).
+  - Logs emit once per burst: `catchup.start` on the first, `catchup.done` on the last.
+- Live‑scan coalescing
+  - No overlap: scans run sequentially; signals during a scan defer exactly one trailing scan.
+  - Minimum gap between scans: 1s; base debounce ~120ms, extended as needed to honor the min gap.
+  - Double‑scan for attachments: immediate pass is awaited; a second pass runs after 200ms.
+- Historical windows (inbox side)
+  - Catch‑up pre‑context: 80 events; max lookback: 1000 events.
+  - Live‑scan audit: first 2 scans include look‑behind tail sized by offline delta (≤50/80/100).
+  - Live‑scan steady tail: 30 events; strictly‑after tail limit: 30 events.
+- Logging & diagnostics
+  - Noisy per‑event logs gated behind `collectMetrics` (e.g., `signal.*`, `noAdvance.rescan`, `doubleScan.*`).
+  - `marker.local` condensed to a single line with id+ts when metrics are collected.
+
+Outbox resiliency (Nov 2025)
+- Watchdog: every 10s, if pending>0, logged‑in, and the queue is idle, enqueue a drain
+  - Log: `watchdog: pending+loggedIn idleQueue → enqueue`
+- DB nudge: on outbox count change to >0, enqueue after a 50ms debounce
+  - Logs: `dbNudge count=<n> → enqueue`, then `enqueueRequest() done`
+- Send timeout: default 20s; logs `timedOut=true` and marks retry; repeated failures tracked
+- Pass‑cap continuation: when per‑pass cap is hit, schedule immediate continuation to advance the queue
+- Best‑effort logging DB writes: failures no longer block outbox; file breadcrumbs remain
+- Files: `lib/features/sync/outbox/outbox_service.dart`, `lib/features/sync/outbox/outbox_processor.dart`, `lib/features/sync/client_runner.dart`
 
 ### Review Feedback (action items)
 - Extract atomic write/rename into a shared utility used by both
@@ -140,6 +167,9 @@ Startup
 - `MATRIX_SYNC_V2 start.liveScan` (first live scan)
 - `MATRIX_SYNC_V2 start.catchUpRetry` (when a stored marker exists)
   (Rewind logs removed; rewind is disabled by default with N=0)
+- `MATRIX_SYNC_V2 signal.liveScan.coalesce debounceMs=…` (min‑gap enforced)
+- `MATRIX_SYNC_V2 trailing.liveScan.scheduled`
+- `MATRIX_SYNC_V2 catchup.start …` / `catchup.done events=…` (once per coalesced burst)
 
 Live recovery
 - `MATRIX_SYNC_V2 noAdvance.rescan` (activity w/o advancement)
@@ -169,25 +199,31 @@ Live recovery
 - `dbApplied` should increase for new payloads.
 
 ## File Pointers (changed)
-- Consumer: `lib/features/sync/matrix/pipeline_v2/matrix_stream_consumer.dart`
-- Catch‑up: `lib/features/sync/matrix/pipeline_v2/catch_up_strategy.dart`
+- Consumer: `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart`
+- Catch‑up: `lib/features/sync/matrix/pipeline/catch_up_strategy.dart`
 - Read marker service + guard helper: `lib/features/sync/matrix/read_marker_service.dart`
-- Read marker manager: `lib/features/sync/matrix/pipeline_v2/read_marker_manager.dart`
+- Read marker manager: `lib/features/sync/matrix/pipeline/read_marker_manager.dart`
+- Outbox: `lib/features/sync/outbox/outbox_service.dart`, `lib/features/sync/outbox/outbox_processor.dart`, `lib/features/sync/client_runner.dart`
 - Daily text log sink: `lib/services/logging_service.dart`
 
-## Tests (new/updated)
-- `test/features/sync/matrix/pipeline_v2/catch_up_strategy_test.dart`
+- `test/features/sync/matrix/pipeline/catch_up_strategy_test.dart`
   - Backfill until marker is present; process strictly after (no rewind)
-- `test/features/sync/matrix/pipeline_v2/matrix_stream_consumer_test.dart`
+- `test/features/sync/matrix/pipeline/matrix_stream_consumer_test.dart`
   - Persist id + ts on marker advancement
   - Tail rescan on “activity but no advancement”
   - Existing tests adjusted for no-rewind behavior
-- `test/features/sync/matrix/pipeline_v2/read_marker_manager_test.dart`
+- `test/features/sync/matrix/pipeline/read_marker_manager_test.dart`
   - Dispose flushes pending marker; exceptions captured
 - `test/features/sync/matrix/read_marker_service_test.dart`
   - Service happy paths remain deterministic (guard skipped under `isTestEnv`)
 - `test/features/sync/matrix/read_marker_guard_test.dart`
   - Helper `isStrictlyNewerInTimeline` semantics (ts compare + id tie‑break + missing events)
+- `test/features/sync/matrix/pipeline/client_stream_coalescing_test.dart`
+  - Burst client signals coalesce (≤2 rescans)
+- `test/features/sync/matrix/pipeline/matrix_stream_consumer_signal_test.dart`
+  - Trailing catch‑up waits ~1s idle; in‑flight live‑scan scheduling defers and yields one trailing run
+- Outbox tests: `test/features/sync/outbox/outbox_service_test.dart`, `test/features/sync/outbox/outbox_processor_test.dart`
+  - Watchdog/dbNudge interplay, send timeout behavior, retry/pass‑cap continuation
 
 ## Behavior Deep‑Dive
 
@@ -366,3 +402,17 @@ Benefits
 - Invites are only surfaced when targeted to this client (Matrix `state_key == client.userID`).
 - The QR page shows an accept dialog when an invite arrives while that page is open.
 - Files: `gateway/matrix_sdk_gateway.dart` (filter), `ui/matrix_logged_in_config_page.dart` (prompt).
+### Pipeline coalescing and throttling – constants (Nov 2025)
+
+- Catch‑up
+  - `_minCatchupGap = 1s`
+  - `_trailingCatchupDelay = 1s`
+
+- Live scan
+  - `_minLiveScanGap = 1s`
+  - `_trailingLiveScanDebounce ≈ 120ms` (auto‑extended to meet min gap)
+  - Double‑scan attachment second pass delay: 200ms
+
+- Windows
+  - Catch‑up `preContextCount = 80`, `maxLookback = 1000`
+  - Live‑scan steady tail = 30; audit tails = 50/80/100 (by offline delta)

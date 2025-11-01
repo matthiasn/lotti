@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
@@ -89,13 +90,29 @@ LazyDatabase openDbConnection(
     final dbFolder =
         await (documentsDirectoryProvider?.call() ?? findDocumentsDirectory());
     final file = File(p.join(dbFolder.path, fileName));
+    // Ensure parent directory exists before opening to avoid SQLITE_CANTOPEN (14)
+    try {
+      await file.parent.create(recursive: true);
+    } catch (e, st) {
+      // Best-effort; if this fails, sqlite open will also fail and be surfaced upstream
+      debugPrint(
+          'WARNING: Failed to create DB directory at ${file.parent.path}: $e');
+      debugPrint('$st');
+    }
 
     if (Platform.isAndroid) {
       await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
     }
 
-    sqlite3.tempDirectory =
-        (await (tempDirectoryProvider?.call() ?? getTemporaryDirectory())).path;
+    try {
+      sqlite3.tempDirectory =
+          (await (tempDirectoryProvider?.call() ?? getTemporaryDirectory()))
+              .path;
+    } catch (e) {
+      // If temp directory resolution fails, keep default; sqlite will use OS default tmp
+      debugPrint(
+          'WARNING: Failed to resolve temp directory, using sqlite default: $e');
+    }
 
     final database = NativeDatabase.createInBackground(file);
 

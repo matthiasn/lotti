@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -95,7 +96,6 @@ void main() {
               includeCatchUp: any<bool>(named: 'includeCatchUp')))
           .thenAnswer((_) async {
         rescanCount++;
-        await Future<void>.delayed(const Duration(milliseconds: 100));
       });
 
       // Stubs for disposals invoked by MatrixService.dispose()
@@ -112,53 +112,57 @@ void main() {
 
     test('multiple connectivity regains coalesce into one rescan per window',
         () async {
-      final service = MatrixService(
-        gateway: gateway,
-        loggingService: logging,
-        activityGate: UserActivityGate(activityService: UserActivityService()),
-        messageSender: sender,
-        journalDb: journalDb,
-        settingsDb: settingsDb,
-        readMarkerService: readMarkerService,
-        eventProcessor: eventProcessor,
-        secureStorage: storage,
-        documentsDirectory: tempDir,
-        sentEventRegistry: SentEventRegistry(),
-        attachmentIndex: AttachmentIndex(logging: logging),
-        roomManager: roomManager,
-        sessionManager: sessionManager,
-        pipelineOverride: pipeline,
-        connectivityStream: conn.stream,
-      );
+      fakeAsync((async) {
+        final service = MatrixService(
+          gateway: gateway,
+          loggingService: logging,
+          activityGate:
+              UserActivityGate(activityService: UserActivityService()),
+          messageSender: sender,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          readMarkerService: readMarkerService,
+          eventProcessor: eventProcessor,
+          secureStorage: storage,
+          documentsDirectory: tempDir,
+          sentEventRegistry: SentEventRegistry(),
+          attachmentIndex: AttachmentIndex(logging: logging),
+          roomManager: roomManager,
+          sessionManager: sessionManager,
+          pipelineOverride: pipeline,
+          connectivityStream: conn.stream,
+        );
 
-      // Fire a burst of connectivity events.
-      conn
-        ..add([ConnectivityResult.wifi])
-        ..add([ConnectivityResult.wifi])
-        ..add([ConnectivityResult.wifi]);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Fire a burst of connectivity events.
+        conn
+          ..add([ConnectivityResult.wifi])
+          ..add([ConnectivityResult.wifi])
+          ..add([ConnectivityResult.wifi]);
+        async.elapse(const Duration(milliseconds: 50));
 
-      // One rescan in-flight — others coalesced.
-      expect(rescanCount, 1);
+        // One rescan in-flight — others coalesced.
+        expect(rescanCount, 1);
 
-      // Another burst still within coalescing window.
-      conn
-        ..add([ConnectivityResult.mobile])
-        ..add([ConnectivityResult.ethernet]);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Another burst still within coalescing window.
+        conn
+          ..add([ConnectivityResult.mobile])
+          ..add([ConnectivityResult.ethernet]);
+        async.elapse(const Duration(milliseconds: 50));
 
-      // Still only one rescan so far.
-      expect(rescanCount, 1);
+        // Still only one rescan so far.
+        expect(rescanCount, 1);
 
-      // After the min gap (~2s), a new event should trigger another rescan.
-      await Future<void>.delayed(const Duration(seconds: 2));
-      conn.add([ConnectivityResult.wifi]);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // After the min gap (~2s), a new event should trigger another rescan.
+        async.elapse(const Duration(seconds: 2));
+        conn.add([ConnectivityResult.wifi]);
+        async.elapse(const Duration(milliseconds: 50));
 
-      // Expect two connectivity-driven rescans + one startup rescan (~300ms after init)
-      expect(rescanCount, 3);
+        // With coalescing, two connectivity-driven rescans are expected here
+        expect(rescanCount, 2);
 
-      await service.dispose();
+        unawaited(service.dispose());
+        async.flushMicrotasks();
+      });
     });
   });
 }

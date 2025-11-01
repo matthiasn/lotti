@@ -15,8 +15,14 @@ class ClientRunner<T> {
 
   Future<void> _start() async {
     await for (final T event in _controller.stream) {
-      await callback(event);
-      queueSize--;
+      try {
+        await callback(event);
+      } catch (_) {
+        // Swallow callback errors so the runner loop is never torn down by an
+        // unhandled exception. Individual callers should log their own errors.
+      } finally {
+        queueSize--;
+      }
     }
   }
 
