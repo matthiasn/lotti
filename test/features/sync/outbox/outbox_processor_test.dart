@@ -398,18 +398,10 @@ void main() {
         ..elapse(const Duration(milliseconds: 55))
         ..flushMicrotasks();
       expect(result, isNotNull);
-      var sentSucceeded = true;
-      try {
-        verify(() => repo.markSent(any())).called(1);
-      } catch (_) {
-        sentSucceeded = false;
-      }
-      if (sentSucceeded) {
-        verifyNever(() => repo.markRetry(any()));
-      } else {
-        verify(() => repo.markRetry(any())).called(1);
-        verifyNever(() => repo.markSent(any()));
-      }
+      // At the exact timeout boundary, the send that completes should be
+      // treated as success. Require a deterministic outcome:
+      verify(() => repo.markSent(any())).called(1);
+      verifyNever(() => repo.markRetry(any()));
     });
   });
 
