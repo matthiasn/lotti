@@ -98,7 +98,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     int liveScanInitialAuditScans = 5,
     int? liveScanInitialAuditTail,
     int liveScanSteadyTail = 100,
-    bool dropOldPayloadsInLiveScan = false,
+    bool dropOldPayloadsInLiveScan = true,
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,

@@ -1048,6 +1048,99 @@ void main() {
     });
   });
 
+  group('drainOutbox behavior', () {
+    test('pass cap schedules immediate continuation (delay=0)', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+
+      // Processor always returns schedule(Duration.zero) to keep the loop running
+      when(() => processor.processQueue()).thenAnswer(
+          (_) async => OutboxProcessingResult.schedule(Duration.zero));
+      when(() => repository.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [
+                OutboxItem(
+                  id: 1,
+                  message: '{}',
+                  subject: 's',
+                  status: OutboxStatus.pending.index,
+                  retries: 0,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  filePath: null,
+                )
+              ]);
+
+      // Gate returns immediately to avoid delaying the test
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer((_) async {});
+      when(gate.dispose).thenAnswer((_) async {});
+
+      // Custom testable service to capture enqueueNextSendRequest calls
+      final svc = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+      );
+
+      await svc.sendNext();
+
+      // Since we hit the pass cap, the service should have enqueued an
+      // immediate continuation (delay zero).
+      expect(svc.enqueueCalls, greaterThanOrEqualTo(1));
+      expect(svc.lastDelay, Duration.zero);
+
+      await svc.dispose();
+    });
+
+    test('runner logs gate wait when > 50ms', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      // Gate simulates a short delay to exceed logging threshold
+      final gate = MockUserActivityGate();
+      when(gate.waitUntilIdle).thenAnswer(
+          (_) => Future<void>.delayed(const Duration(milliseconds: 120)));
+      when(gate.dispose).thenAnswer((_) async {});
+
+      final svc = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+      );
+
+      // Trigger the runner via the public enqueue API
+      await svc.enqueueNextSendRequest(delay: Duration.zero);
+      // Allow the async scheduled work to run
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      verify(() => loggingService.captureEvent(
+            startsWith('activityGate.wait ms='),
+            domain: 'OUTBOX',
+            subDomain: 'activityGate',
+          )).called(greaterThanOrEqualTo(1));
+
+      await svc.dispose();
+    });
+  });
+
   group('SyncThemingSelection', () {
     test('enqueues theming message with correct subject', () async {
       final message = SyncMessage.themingSelection(

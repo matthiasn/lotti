@@ -136,7 +136,6 @@ class MatrixService {
             documentsDirectory: documentsDirectory,
             attachmentIndex: attachmentIndex,
             collectMetrics: collectSyncMetrics,
-            dropOldPayloadsInLiveScan: true,
             sentEventRegistry: _sentEventRegistry,
           );
       _pipeline = pipeline;
