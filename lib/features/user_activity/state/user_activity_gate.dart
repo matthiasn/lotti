@@ -56,8 +56,8 @@ class UserActivityGate {
         complete();
       }
     });
-    hardDeadline = Timer(maxWaitForProgress, () async {
-      await sub.cancel();
+    hardDeadline = Timer(maxWaitForProgress, () {
+      unawaited(sub.cancel());
       complete();
     });
     await completer.future;

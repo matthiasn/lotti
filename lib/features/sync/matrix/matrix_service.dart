@@ -220,9 +220,31 @@ class MatrixService {
         ConnectivityResult.mobile,
         ConnectivityResult.ethernet,
       }.intersection(result.toSet()).isNotEmpty) {
-        // Nudge the pipeline to run a catch-up + live scan when connectivity
-        // resumes, improving recovery for offline-created bursts.
-        // Kick a catch-up + scan; handle async errors inside the task.
+        // Record connectivity as a signal for metrics/observability.
+        _pipeline?.recordConnectivitySignal();
+
+        // Coalesce repeated connectivity events: only trigger a rescan when
+        // there isn't one in-flight and we haven't just run one.
+        if (_rescanInFlight) {
+          _loggingService.captureEvent(
+            'service.forceRescan.connectivity.coalesce inFlight=true',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'forceRescan',
+          );
+          return;
+        }
+        final now = DateTime.now();
+        if (_lastRescanAt != null &&
+            now.difference(_lastRescanAt!) < _minConnectivityRescanGap) {
+          _loggingService.captureEvent(
+            'service.forceRescan.connectivity.coalesce recent',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'forceRescan',
+          );
+          return;
+        }
+
+        _rescanInFlight = true;
         unawaited(() async {
           try {
             _loggingService.captureEvent(
@@ -230,8 +252,6 @@ class MatrixService {
               domain: 'MATRIX_SERVICE',
               subDomain: 'forceRescan',
             );
-            // Record connectivity as a signal for metrics/observability.
-            _pipeline?.recordConnectivitySignal();
             await _pipeline?.forceRescan();
             _loggingService.captureEvent(
               'service.forceRescan.connectivity.done',
@@ -246,6 +266,9 @@ class MatrixService {
               subDomain: 'connectivity',
               stackTrace: st,
             );
+          } finally {
+            _lastRescanAt = DateTime.now();
+            _rescanInFlight = false;
           }
         }());
       }
@@ -276,6 +299,11 @@ class MatrixService {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   // Optional seam for tests to inject a connectivity stream.
   final Stream<List<ConnectivityResult>>? connectivityStream;
+
+  // Coalesce connectivity-driven rescans to avoid storms.
+  bool _rescanInFlight = false;
+  DateTime? _lastRescanAt;
+  static const Duration _minConnectivityRescanGap = Duration(seconds: 2);
 
   Client get client => _sessionManager.client;
 

@@ -385,6 +385,20 @@ class OutboxService {
         return;
       }
 
+      // State snapshot to aid debugging of stuck outbox scenarios.
+      try {
+        final loggedIn = _matrixService?.isLoggedIn() ?? false;
+        final canProc = _activityGate.canProcess;
+        final hasPending = (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        _loggingService.captureEvent(
+          'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
+          domain: 'OUTBOX',
+          subDomain: 'sendNext',
+        );
+      } catch (_) {
+        // best-effort only
+      }
+
       // Pause processing while not logged in. Do not schedule immediate retries
       // from here to avoid spin while logged out. Normal triggers (enqueue,
       // connectivity regain, UI actions) will re-nudge the outbox after login.
