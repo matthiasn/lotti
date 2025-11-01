@@ -321,4 +321,315 @@ void main() {
       containsAll(['g', 'p', 'w', 'wp']),
     );
   });
+
+  test('availableLabelsForCategory returns labels sorted case-insensitively',
+      () async {
+    when(journalDb.watchMeasurableDataTypes).thenAnswer(
+      (_) => Stream<List<MeasurableDataType>>.fromIterable([
+        const <MeasurableDataType>[],
+      ]),
+    );
+    when(journalDb.watchHabitDefinitions).thenAnswer(
+      (_) => Stream<List<HabitDefinition>>.fromIterable([
+        const <HabitDefinition>[],
+      ]),
+    );
+    when(journalDb.watchDashboards).thenAnswer(
+      (_) => Stream<List<DashboardDefinition>>.fromIterable([
+        const <DashboardDefinition>[],
+      ]),
+    );
+    when(journalDb.watchCategories).thenAnswer(
+      (_) => Stream<List<CategoryDefinition>>.fromIterable([
+        [
+          CategoryDefinition(
+            id: 'work',
+            name: 'Work',
+            color: '#0000FF',
+            createdAt: testEpochDateTime,
+            updatedAt: testEpochDateTime,
+            vectorClock: null,
+            active: true,
+            private: false,
+          ),
+        ],
+      ]),
+    );
+    when(journalDb.watchLabelDefinitions).thenAnswer(
+      (_) => Stream<List<LabelDefinition>>.fromIterable([
+        [
+          testLabelDefinition1.copyWith(id: 'a', name: 'apple'),
+          testLabelDefinition1.copyWith(
+            id: 'b',
+            name: 'Banana',
+            applicableCategoryIds: const ['work'],
+          ),
+          testLabelDefinition1.copyWith(id: 'c', name: 'cherry'),
+        ],
+      ]),
+    );
+    when(() => journalDb.watchConfigFlag('private')).thenAnswer(
+      (_) => Stream<bool>.fromIterable([true]),
+    );
+
+    final cache = EntitiesCacheService();
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    final res = cache.availableLabelsForCategory('work');
+    expect(res.map((l) => l.name).toList(), ['apple', 'Banana', 'cherry']);
+  });
+
+  test('availableLabelsForCategory handles deleted categories gracefully',
+      () async {
+    final categoriesCtrl =
+        StreamController<List<CategoryDefinition>>.broadcast();
+    final labelsCtrl = StreamController<List<LabelDefinition>>.broadcast();
+    addTearDown(() async {
+      await categoriesCtrl.close();
+      await labelsCtrl.close();
+    });
+
+    when(journalDb.watchMeasurableDataTypes).thenAnswer(
+      (_) => Stream<List<MeasurableDataType>>.fromIterable([
+        const <MeasurableDataType>[],
+      ]),
+    );
+    when(journalDb.watchHabitDefinitions).thenAnswer(
+      (_) => Stream<List<HabitDefinition>>.fromIterable([
+        const <HabitDefinition>[],
+      ]),
+    );
+    when(journalDb.watchDashboards).thenAnswer(
+      (_) => Stream<List<DashboardDefinition>>.fromIterable([
+        const <DashboardDefinition>[],
+      ]),
+    );
+    when(journalDb.watchCategories).thenAnswer((_) => categoriesCtrl.stream);
+    when(journalDb.watchLabelDefinitions).thenAnswer((_) => labelsCtrl.stream);
+    when(() => journalDb.watchConfigFlag('private')).thenAnswer(
+      (_) => Stream<bool>.fromIterable([true]),
+    );
+
+    final cache = EntitiesCacheService();
+
+    final work = CategoryDefinition(
+      id: 'work',
+      name: 'Work',
+      color: '#0000FF',
+      createdAt: testEpochDateTime,
+      updatedAt: testEpochDateTime,
+      vectorClock: null,
+      active: true,
+      private: false,
+    );
+    final personal = CategoryDefinition(
+      id: 'personal',
+      name: 'Personal',
+      color: '#00FF00',
+      createdAt: testEpochDateTime,
+      updatedAt: testEpochDateTime,
+      vectorClock: null,
+      active: true,
+      private: false,
+    );
+    categoriesCtrl.add([work, personal]);
+    final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
+    final scopedWork = testLabelDefinition1.copyWith(
+      id: 'w',
+      name: 'WorkOnly',
+      applicableCategoryIds: const ['work'],
+    );
+    labelsCtrl.add([global, scopedWork]);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    expect(cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
+        {'g', 'w'});
+
+    // Simulate deleting the 'work' category → cache should fall back to globals
+    categoriesCtrl.add([personal]);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    expect(cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
+        {'g'});
+  });
+
+  test('filterLabelsForCategory handles empty input list', () async {
+    when(journalDb.watchMeasurableDataTypes).thenAnswer(
+      (_) => Stream<List<MeasurableDataType>>.fromIterable([
+        const <MeasurableDataType>[],
+      ]),
+    );
+    when(journalDb.watchHabitDefinitions).thenAnswer(
+      (_) => Stream<List<HabitDefinition>>.fromIterable([
+        const <HabitDefinition>[],
+      ]),
+    );
+    when(journalDb.watchDashboards).thenAnswer(
+      (_) => Stream<List<DashboardDefinition>>.fromIterable([
+        const <DashboardDefinition>[],
+      ]),
+    );
+    when(journalDb.watchCategories).thenAnswer(
+      (_) => Stream<List<CategoryDefinition>>.fromIterable([
+        const <CategoryDefinition>[],
+      ]),
+    );
+    when(journalDb.watchLabelDefinitions).thenAnswer(
+      (_) => Stream<List<LabelDefinition>>.fromIterable([
+        const <LabelDefinition>[],
+      ]),
+    );
+    when(() => journalDb.watchConfigFlag('private')).thenAnswer(
+      (_) => Stream<bool>.fromIterable([false]),
+    );
+
+    final cache = EntitiesCacheService();
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+
+    final res = cache.filterLabelsForCategory(const [], 'any');
+    expect(res, isEmpty);
+  });
+
+  test('pruning cleans up multiple orphaned categories at once', () async {
+    final categoriesCtrl =
+        StreamController<List<CategoryDefinition>>.broadcast();
+    final labelsCtrl = StreamController<List<LabelDefinition>>.broadcast();
+    addTearDown(() async {
+      await categoriesCtrl.close();
+      await labelsCtrl.close();
+    });
+
+    when(journalDb.watchMeasurableDataTypes).thenAnswer(
+      (_) => Stream<List<MeasurableDataType>>.fromIterable([
+        const <MeasurableDataType>[],
+      ]),
+    );
+    when(journalDb.watchHabitDefinitions).thenAnswer(
+      (_) => Stream<List<HabitDefinition>>.fromIterable([
+        const <HabitDefinition>[],
+      ]),
+    );
+    when(journalDb.watchDashboards).thenAnswer(
+      (_) => Stream<List<DashboardDefinition>>.fromIterable([
+        const <DashboardDefinition>[],
+      ]),
+    );
+    when(journalDb.watchCategories).thenAnswer((_) => categoriesCtrl.stream);
+    when(journalDb.watchLabelDefinitions).thenAnswer((_) => labelsCtrl.stream);
+    when(() => journalDb.watchConfigFlag('private')).thenAnswer(
+      (_) => Stream<bool>.fromIterable([true]),
+    );
+
+    final cache = EntitiesCacheService();
+
+    CategoryDefinition makeCat(String id) => CategoryDefinition(
+          id: id,
+          name: id.toUpperCase(),
+          color: '#000000',
+          createdAt: testEpochDateTime,
+          updatedAt: testEpochDateTime,
+          vectorClock: null,
+          active: true,
+          private: false,
+        );
+
+    final a = makeCat('a');
+    final b = makeCat('b');
+    final c = makeCat('c');
+    categoriesCtrl.add([a, b, c]);
+
+    final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
+    final la = testLabelDefinition1.copyWith(
+      id: 'la',
+      name: 'A',
+      applicableCategoryIds: const ['a'],
+    );
+    final lb = testLabelDefinition1.copyWith(
+      id: 'lb',
+      name: 'B',
+      applicableCategoryIds: const ['b'],
+    );
+    labelsCtrl.add([global, la, lb]);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    expect(cache.availableLabelsForCategory('a').map((e) => e.id).toSet(),
+        {'g', 'la'});
+    expect(cache.availableLabelsForCategory('b').map((e) => e.id).toSet(),
+        {'g', 'lb'});
+
+    // Drop both a and b at once
+    categoriesCtrl.add([c]);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    expect(
+        cache.availableLabelsForCategory('a').map((e) => e.id).toSet(), {'g'});
+    expect(
+        cache.availableLabelsForCategory('b').map((e) => e.id).toSet(), {'g'});
+  });
+
+  test(
+      'availableLabelsForCategory de-duplicates labels present in multiple categories',
+      () async {
+    when(journalDb.watchMeasurableDataTypes).thenAnswer(
+      (_) => Stream<List<MeasurableDataType>>.fromIterable([
+        const <MeasurableDataType>[],
+      ]),
+    );
+    when(journalDb.watchHabitDefinitions).thenAnswer(
+      (_) => Stream<List<HabitDefinition>>.fromIterable([
+        const <HabitDefinition>[],
+      ]),
+    );
+    when(journalDb.watchDashboards).thenAnswer(
+      (_) => Stream<List<DashboardDefinition>>.fromIterable([
+        const <DashboardDefinition>[],
+      ]),
+    );
+    when(journalDb.watchCategories).thenAnswer(
+      (_) => Stream<List<CategoryDefinition>>.fromIterable([
+        [
+          CategoryDefinition(
+            id: 'a',
+            name: 'A',
+            color: '#000000',
+            createdAt: testEpochDateTime,
+            updatedAt: testEpochDateTime,
+            vectorClock: null,
+            active: true,
+            private: false,
+          ),
+          CategoryDefinition(
+            id: 'b',
+            name: 'B',
+            color: '#000000',
+            createdAt: testEpochDateTime,
+            updatedAt: testEpochDateTime,
+            vectorClock: null,
+            active: true,
+            private: false,
+          ),
+        ],
+      ]),
+    );
+    when(journalDb.watchLabelDefinitions).thenAnswer(
+      (_) => Stream<List<LabelDefinition>>.fromIterable([
+        [
+          testLabelDefinition1.copyWith(
+            id: 'multi',
+            name: 'Multi',
+            applicableCategoryIds: const ['a', 'b'],
+          ),
+          testLabelDefinition1.copyWith(id: 'g', name: 'Global'),
+        ],
+      ]),
+    );
+    when(() => journalDb.watchConfigFlag('private')).thenAnswer(
+      (_) => Stream<bool>.fromIterable([true]),
+    );
+
+    final cache = EntitiesCacheService();
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    final ids = cache.availableLabelsForCategory('a').map((e) => e.id).toList();
+    expect(ids.where((id) => id == 'multi').length, 1,
+        reason: 'Label should not be duplicated in union');
+  });
 }

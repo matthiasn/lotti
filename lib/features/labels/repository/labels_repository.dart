@@ -94,7 +94,8 @@ class LabelsRepository {
     final updated = label.copyWith(
       name: name?.trim() ?? label.name,
       color: color ?? label.color,
-      description: description?.trim(),
+      // Preserve existing description when not explicitly provided
+      description: description == null ? label.description : description.trim(),
       sortOrder: sortOrder ?? label.sortOrder,
       private: private ?? label.private,
       applicableCategoryIds:
@@ -112,8 +113,9 @@ class LabelsRepository {
   /// sort by category name (case-insensitive) for stable diffs.
   List<String> _normalizeCategoryIds(List<String>? categoryIds) {
     if (categoryIds == null) return const <String>[];
+    // Trim incoming IDs and drop empties before validation/dedup
     final unique = LinkedHashSet<String>.from(
-      categoryIds.where((id) => id.trim().isNotEmpty),
+      categoryIds.map((id) => id.trim()).where((id) => id.isNotEmpty),
     );
 
     final valid = <String>[];

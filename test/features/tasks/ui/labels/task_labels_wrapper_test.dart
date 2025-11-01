@@ -10,6 +10,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_wrapper.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -268,6 +269,56 @@ void main() {
 
     // Verify modal opened by checking for the sticky action bar button
     expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
+  });
+
+  testWidgets('passes task categoryId to selector content', (tester) async {
+    final task = taskWithLabels(['label-1']).copyWith(
+      meta: taskWithLabels(['label-1']).meta.copyWith(categoryId: 'work'),
+    );
+
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.pumpAndSettle();
+
+    final content = tester.widget<LabelSelectionModalContent>(
+        find.byType(LabelSelectionModalContent));
+    expect(content.categoryId, equals('work'));
+  });
+
+  testWidgets('selector content has null categoryId when task has none',
+      (tester) async {
+    final base = taskWithLabels(const []);
+    final task = base.copyWith(meta: base.meta.copyWith(categoryId: null));
+
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.pumpAndSettle();
+
+    final content = tester.widget<LabelSelectionModalContent>(
+        find.byType(LabelSelectionModalContent));
+    expect(content.categoryId, isNull);
+  });
+
+  testWidgets('wrapper extracts and passes categoryId to sheet',
+      (tester) async {
+    final base = taskWithLabels(const []);
+    final task = base.copyWith(meta: base.meta.copyWith(categoryId: 'work'));
+
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    // Tap edit to open selector
+    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.pumpAndSettle();
+
+    // Verify modal content receives the task's categoryId
+    final content = tester.widget<LabelSelectionModalContent>(
+        find.byType(LabelSelectionModalContent));
+    expect(content.categoryId, equals('work'));
   });
 
   testWidgets('hides wrapper when no labels assigned and none available',

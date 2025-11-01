@@ -200,6 +200,129 @@ void main() {
     expect(state.hasChanges, isTrue);
   });
 
+  group('category state management', () {
+    test('addCategoryId adds to selectedCategoryIds set', () {
+      final provider = labelEditorControllerProvider(
+        const LabelEditorArgs(),
+      );
+      final notifier = container.read(provider.notifier);
+
+      notifier.addCategoryId('cat-1');
+      final state = container.read(provider);
+      expect(state.selectedCategoryIds, contains('cat-1'));
+    });
+
+    test('addCategoryId ignores duplicates', () {
+      final provider = labelEditorControllerProvider(
+        const LabelEditorArgs(),
+      );
+      final notifier = container.read(provider.notifier);
+
+      notifier.addCategoryId('cat-1');
+      notifier.addCategoryId('cat-1');
+      final state = container.read(provider);
+      expect(state.selectedCategoryIds.where((e) => e == 'cat-1').length, 1);
+    });
+
+    test('removeCategoryId removes from selectedCategoryIds', () {
+      final provider = labelEditorControllerProvider(
+        const LabelEditorArgs(),
+      );
+      final notifier = container.read(provider.notifier);
+
+      notifier.addCategoryId('cat-1');
+      notifier.removeCategoryId('cat-1');
+      final state = container.read(provider);
+      expect(state.selectedCategoryIds, isEmpty);
+    });
+
+    test('removeCategoryId no-ops when ID not present', () {
+      final provider = labelEditorControllerProvider(
+        const LabelEditorArgs(),
+      );
+      final notifier = container.read(provider.notifier);
+      notifier.removeCategoryId('missing');
+      final state = container.read(provider);
+      expect(state.selectedCategoryIds, isEmpty);
+    });
+
+    test('save passes applicableCategoryIds on create', () async {
+      when(() => repository.getAllLabels()).thenAnswer((_) async => []);
+      when(
+        () => repository.createLabel(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          description: any(named: 'description'),
+          private: any(named: 'private'),
+          applicableCategoryIds: any(named: 'applicableCategoryIds'),
+        ),
+      ).thenAnswer((_) async => testLabelDefinition1);
+
+      final provider = labelEditorControllerProvider(const LabelEditorArgs());
+      final notifier = container.read(provider.notifier);
+      notifier.setName('Scoped');
+      notifier.addCategoryId('cat-a');
+      notifier.addCategoryId('cat-b');
+
+      await notifier.save();
+
+      verify(
+        () => repository.createLabel(
+          name: 'Scoped',
+          color: any(named: 'color'),
+          description: any(named: 'description'),
+          private: any(named: 'private'),
+          applicableCategoryIds: ['cat-a', 'cat-b'],
+        ),
+      ).called(1);
+    });
+
+    test('save passes applicableCategoryIds on update', () async {
+      when(() => repository.getAllLabels()).thenAnswer((_) async => []);
+      when(
+        () => repository.updateLabel(
+          testLabelDefinition1,
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          description: any(named: 'description'),
+          private: any(named: 'private'),
+          applicableCategoryIds: any(named: 'applicableCategoryIds'),
+        ),
+      ).thenAnswer((_) async => testLabelDefinition1);
+
+      final provider = labelEditorControllerProvider(
+        LabelEditorArgs(label: testLabelDefinition1),
+      );
+      final notifier = container.read(provider.notifier);
+
+      notifier.addCategoryId('x');
+      notifier.addCategoryId('y');
+      notifier.setName('${testLabelDefinition1.name}2');
+      await notifier.save();
+
+      verify(
+        () => repository.updateLabel(
+          any(),
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          description: any(named: 'description'),
+          private: any(named: 'private'),
+          applicableCategoryIds: ['x', 'y'],
+        ),
+      ).called(1);
+    });
+
+    test('initial state loads existing applicableCategoryIds when editing', () {
+      final label = testLabelDefinition1.copyWith(
+        applicableCategoryIds: const ['a', 'b'],
+      );
+      final provider =
+          labelEditorControllerProvider(LabelEditorArgs(label: label));
+      final state = container.read(provider);
+      expect(state.selectedCategoryIds, equals({'a', 'b'}));
+    });
+  });
+
   test('save validates empty name', () async {
     final provider = labelEditorControllerProvider(const LabelEditorArgs());
     final notifier = container.read(provider.notifier);
