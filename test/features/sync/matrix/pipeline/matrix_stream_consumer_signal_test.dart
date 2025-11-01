@@ -164,9 +164,8 @@ void main() {
       // Capture logs for precise assertions
       final logs = <String>[];
       when(() => logger.captureEvent(captureAny<Object>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain')))
-          .thenAnswer((inv) {
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
         logs.add(inv.positionalArguments.first.toString());
       });
 
@@ -245,9 +244,8 @@ void main() {
 
       final logs = <String>[];
       when(() => logger.captureEvent(captureAny<Object>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain')))
-          .thenAnswer((inv) {
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
         logs.add(inv.positionalArguments.first.toString());
       });
 

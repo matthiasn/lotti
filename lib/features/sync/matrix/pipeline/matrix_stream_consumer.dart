@@ -686,6 +686,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     await _sub?.cancel();
     _sub = null;
     _liveScanTimer?.cancel();
+    _catchupDebounceTimer?.cancel();
+    _catchupDebounceTimer = null;
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
@@ -787,21 +789,13 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
     // Tight base debounce keeps scans responsive while coalescing bursts, but
     // enforce a minimum gap between consecutive scans to reduce churn.
-    var delay = _trailingLiveScanDebounce;
-    final now = clock.now();
-    if (_lastLiveScanAt != null) {
-      final since = now.difference(_lastLiveScanAt!);
-      if (since < _minLiveScanGap) {
-        final remaining = _minLiveScanGap - since;
-        if (remaining > delay) {
-          delay = remaining;
-          _loggingService.captureEvent(
-            'signal.liveScan.coalesce debounceMs=${delay.inMilliseconds}',
-            domain: syncLoggingDomain,
-            subDomain: 'signal',
-          );
-        }
-      }
+    final delay = _calculateNextLiveScanDelay();
+    if (delay > _trailingLiveScanDebounce) {
+      _loggingService.captureEvent(
+        'signal.liveScan.coalesce debounceMs=${delay.inMilliseconds}',
+        domain: syncLoggingDomain,
+        subDomain: 'signal',
+      );
     }
     _liveScanTimer?.cancel();
     _liveScanTimer = Timer(delay, () {
@@ -897,21 +891,30 @@ class MatrixStreamConsumer implements SyncPipeline {
         );
         // Enforce a minimum gap between scans while keeping a small base
         // debounce to coalesce a final burst of signals.
-        var delay = _trailingLiveScanDebounce;
-        final now = clock.now();
-        if (_lastLiveScanAt != null) {
-          final since = now.difference(_lastLiveScanAt!);
-          if (since < _minLiveScanGap) {
-            final remaining = _minLiveScanGap - since;
-            if (remaining > delay) delay = remaining;
-          }
-        }
+        final delay = _calculateNextLiveScanDelay();
         _liveScanTimer?.cancel();
         _liveScanTimer = Timer(delay, () {
           unawaited(_scanLiveTimeline());
         });
       }
     }
+  }
+
+  // Compute the next live-scan delay by coalescing bursts and enforcing a
+  // minimum gap between consecutive scans.
+  Duration _calculateNextLiveScanDelay() {
+    var delay = _trailingLiveScanDebounce;
+    final last = _lastLiveScanAt;
+    if (last != null) {
+      final since = clock.now().difference(last);
+      if (since < _minLiveScanGap) {
+        final remaining = _minLiveScanGap - since;
+        if (remaining > delay) {
+          delay = remaining;
+        }
+      }
+    }
+    return delay;
   }
 
   int _computeAuditTailCountByDelta() {
