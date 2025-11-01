@@ -230,21 +230,13 @@ class LabelEditorController
       }
 
       if (_initialLabel == null) {
-        final hasCats = state.selectedCategoryIds.isNotEmpty;
-        final result = hasCats
-            ? await _repository.createLabel(
-                name: trimmedName,
-                color: state.colorHex,
-                description: state.description,
-                private: state.isPrivate,
-                applicableCategoryIds: state.selectedCategoryIds.toList(),
-              )
-            : await _repository.createLabel(
-                name: trimmedName,
-                color: state.colorHex,
-                description: state.description,
-                private: state.isPrivate,
-              );
+        final result = await _repository.createLabel(
+          name: trimmedName,
+          color: state.colorHex,
+          description: state.description,
+          private: state.isPrivate,
+          applicableCategoryIds: state.selectedCategoryIds.toList(),
+        );
         _initialLabel = result;
         _initialName = result.name;
         state = state.copyWith(isSaving: false, hasChanges: false);

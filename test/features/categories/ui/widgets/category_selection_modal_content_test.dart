@@ -53,6 +53,11 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     when(() => mockEntitiesCacheService.sortedCategories)
         .thenReturn(testCategories);
+    // Mock getCategoryById for all test categories
+    for (final category in testCategories) {
+      when(() => mockEntitiesCacheService.getCategoryById(category.id))
+          .thenReturn(category);
+    }
     getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
   });
 
@@ -315,6 +320,11 @@ void main() {
         );
       });
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn(many);
+      // Mock getCategoryById for all generated categories
+      for (final category in many) {
+        when(() => mockEntitiesCacheService.getCategoryById(category.id))
+            .thenReturn(category);
+      }
 
       List<CategoryDefinition>? result;
       await tester.pumpWidget(

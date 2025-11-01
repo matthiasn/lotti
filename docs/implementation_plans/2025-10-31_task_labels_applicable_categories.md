@@ -78,7 +78,7 @@ Refers to and builds on: `docs/implementation_plans/2025-10-26_task_labels_syste
 - Extend `EntitiesCacheService` label watcher to build fast lookups:
   - Clear and repopulate `labelsById` (existing).
   - Compute
-    `globalLabels = labels.where((l) => (l.applicableCategoryIds == null || l.applicableCategoryIds!.isEmpty))`.
+    `globalLabels = labels.where((l) => l.applicableCategoryIds?.isEmpty ?? true)`.
   - Compute `labelsByCategoryId = {}` and for each label with ids, push it into each `categoryId`
     bucket.
   - Optionally sort each bucket A→Z on name for convenient UI consumption.

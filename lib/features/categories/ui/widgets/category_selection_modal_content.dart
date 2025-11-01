@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_type_card.dart';
@@ -201,9 +202,10 @@ class CategorySelectionModalContentState
                         onPressed: selectedIds.isEmpty
                             ? null
                             : () {
-                                final categories = getIt<EntitiesCacheService>()
-                                    .sortedCategories
-                                    .where((c) => selectedIds.contains(c.id))
+                                final cache = getIt<EntitiesCacheService>();
+                                final categories = selectedIds
+                                    .map(cache.getCategoryById)
+                                    .whereType<CategoryDefinition>()
                                     .toList();
                                 Navigator.of(context).pop(categories);
                               },

@@ -148,16 +148,16 @@ class EntitiesCacheService {
   }) {
     final allowPrivate = includePrivate ?? _showPrivateEntries;
     final dedup = <String, LabelDefinition>{};
-    for (final l in _globalLabels) {
-      if (l.deletedAt != null) continue;
-      if (!allowPrivate && (l.private ?? false)) continue;
+    bool isVisible(LabelDefinition l) =>
+        l.deletedAt == null && (allowPrivate || !(l.private ?? false));
+
+    for (final l in _globalLabels.where(isVisible)) {
       dedup[l.id] = l;
     }
     if (categoryId != null) {
-      for (final l
-          in labelsByCategoryId[categoryId] ?? const <LabelDefinition>[]) {
-        if (l.deletedAt != null) continue;
-        if (!allowPrivate && (l.private ?? false)) continue;
+      final bucket =
+          labelsByCategoryId[categoryId] ?? const <LabelDefinition>[];
+      for (final l in bucket.where(isVisible)) {
         dedup[l.id] = l;
       }
     }

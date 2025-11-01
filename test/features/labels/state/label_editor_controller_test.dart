@@ -86,6 +86,7 @@ void main() {
         color: any(named: 'color'),
         description: any(named: 'description'),
         private: any(named: 'private'),
+        applicableCategoryIds: any(named: 'applicableCategoryIds'),
       ),
     ).thenAnswer((_) async => testLabelDefinition1);
 
@@ -102,6 +103,7 @@ void main() {
         color: any(named: 'color'),
         description: any(named: 'description'),
         private: any(named: 'private'),
+        applicableCategoryIds: any(named: 'applicableCategoryIds'),
       ),
     ).called(1);
   });
@@ -341,6 +343,7 @@ void main() {
         color: any(named: 'color'),
         description: any(named: 'description'),
         private: any(named: 'private'),
+        applicableCategoryIds: any(named: 'applicableCategoryIds'),
       ),
     ).thenAnswer((_) async => testLabelDefinition1);
 
@@ -373,6 +376,7 @@ void main() {
         color: any(named: 'color'),
         description: any(named: 'description'),
         private: any(named: 'private'),
+        applicableCategoryIds: any(named: 'applicableCategoryIds'),
       ),
     ).thenThrow(Exception('save failed'));
 
