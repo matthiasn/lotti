@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -129,7 +130,8 @@ class OutboxService {
       if (_isDisposed || count <= 0) return;
       // Light debounce via a short delay
       unawaited(
-          enqueueNextSendRequest(delay: const Duration(milliseconds: 50)));
+        enqueueNextSendRequest(delay: SyncTuning.outboxDbNudgeDebounce),
+      );
       _loggingService.captureEvent(
         'dbNudge count=$count → enqueue',
         domain: 'OUTBOX',
@@ -191,12 +193,20 @@ class OutboxService {
     // signals or platform-specific timer quirks after reconnects/resumes.
     _watchdogTimer?.cancel();
     _watchdogTimer =
-        Timer.periodic(const Duration(seconds: 10), (Timer _) async {
+        Timer.periodic(SyncTuning.outboxWatchdogInterval, (Timer _) async {
       if (_isDisposed) return;
       try {
+        final loggedIn = _matrixService?.isLoggedIn() ?? true;
+        if (!loggedIn) {
+          _loggingService.captureEvent(
+            'watchdog.skip notLoggedIn',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          );
+          return;
+        }
         final hasPending =
             (await _repository.fetchPending(limit: 1)).isNotEmpty;
-        final loggedIn = _matrixService?.isLoggedIn() ?? true;
         final idleQueue = _clientRunner.queueSize == 0;
         if (hasPending && loggedIn && idleQueue) {
           _loggingService.captureEvent(

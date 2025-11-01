@@ -29,6 +29,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
@@ -199,8 +200,9 @@ class MatrixStreamConsumer implements SyncPipeline {
       0; // guards overlapping scans and trailing scheduling
   bool _liveScanDeferred = false;
   DateTime? _lastLiveScanAt;
-  static const Duration _minLiveScanGap = Duration(seconds: 1);
-  static const Duration _trailingLiveScanDebounce = Duration(milliseconds: 120);
+  static const Duration _minLiveScanGap = SyncTuning.minLiveScanGap;
+  static const Duration _trailingLiveScanDebounce =
+      SyncTuning.trailingLiveScanDebounce;
   // Guard to prevent overlapping catch-ups triggered by signals.
   bool _catchUpInFlight = false;
   // Explicitly request catch-up when nudging via signals, keeping semantics
@@ -633,8 +635,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   DateTime? _lastCatchupAt;
   bool _deferredCatchup = false;
   Timer? _catchupDebounceTimer;
-  static const Duration _minCatchupGap = Duration(seconds: 1);
-  static const Duration _trailingCatchupDelay = Duration(seconds: 1);
+  static const Duration _minCatchupGap = SyncTuning.minCatchupGap;
+  static const Duration _trailingCatchupDelay = SyncTuning.trailingCatchupDelay;
   // Coalesced catch-up burst logging control
   bool _catchupLogStartPending = false;
   bool _catchupDoneLoggedThisBurst = false;
@@ -656,6 +658,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _lastCatchupAt = clock.now();
         if (_deferredCatchup) {
           _deferredCatchup = false;
+          if (_collectMetrics) _metrics.incTrailingCatchups();
           _loggingService.captureEvent(
             'trailing.catchup.scheduled',
             domain: syncLoggingDomain,
@@ -741,8 +744,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         // Ensure we also include a bounded pre-context since the stored last
         // sync timestamp, escalating pagination as needed.
         preContextSinceTs: preSinceTs,
-        preContextCount: 80,
-        maxLookback: 1000,
+        preContextCount: SyncTuning.catchupPreContextCount,
+        maxLookback: SyncTuning.catchupMaxLookback,
       );
       _lastCatchupEventsCount = slice.length;
       if (slice.isNotEmpty) {
@@ -781,6 +784,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (_scanInFlight) {
       if (!_liveScanDeferred) {
         _liveScanDeferred = true;
+        if (_collectMetrics) _metrics.incLiveScanDeferred();
         _loggingService.captureEvent(
           'signal.liveScan.deferred set',
           domain: syncLoggingDomain,
@@ -793,6 +797,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     // enforce a minimum gap between consecutive scans to reduce churn.
     final delay = _calculateNextLiveScanDelay();
     if (delay > _trailingLiveScanDebounce) {
+      if (_collectMetrics) _metrics.incLiveScanCoalesce();
       _loggingService.captureEvent(
         'signal.liveScan.coalesce debounceMs=${delay.inMilliseconds}',
         domain: syncLoggingDomain,
@@ -899,6 +904,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _lastLiveScanAt = clock.now();
         if (_liveScanDeferred) {
           _liveScanDeferred = false;
+          if (_collectMetrics) _metrics.incLiveScanTrailingScheduled();
           _loggingService.captureEvent(
             'trailing.liveScan.scheduled',
             domain: syncLoggingDomain,

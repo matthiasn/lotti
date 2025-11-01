@@ -111,9 +111,12 @@ void main() {
             .thenAnswer((_) async => [pending]);
         when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
         when(() => sender.send(any())).thenAnswer((_) async => false);
-        when(() => log.captureEvent(any<Object>(),
+        final events = <String>[];
+        when(() => log.captureEvent(captureAny<Object>(),
             domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'))).thenAnswer((_) {});
+            subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+          events.add(inv.positionalArguments.first.toString());
+        });
 
         final proc = OutboxProcessor(
           repository: repo,
@@ -134,6 +137,12 @@ void main() {
               domain: 'OUTBOX',
               subDomain: 'retry.cap',
             )).called(1);
+        expect(
+          events.any((e) =>
+              e.contains('retryCapReached subject=host:cap attempts=3') &&
+              e.contains('status=error')),
+          isTrue,
+        );
       });
     });
 
@@ -158,9 +167,12 @@ void main() {
             .thenAnswer((_) async => [pending]);
         when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
         when(() => sender.send(any())).thenThrow(Exception('boom'));
-        when(() => log.captureEvent(any<Object>(),
+        final events = <String>[];
+        when(() => log.captureEvent(captureAny<Object>(),
             domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'))).thenAnswer((_) {});
+            subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+          events.add(inv.positionalArguments.first.toString());
+        });
         when(() => log.captureException(
               any<Object>(),
               domain: any(named: 'domain'),
@@ -187,6 +199,12 @@ void main() {
               domain: 'OUTBOX',
               subDomain: 'retry.cap',
             )).called(1);
+        expect(
+          events.any((e) =>
+              e.contains('retryCapReached subject=host:cap-ex attempts=3') &&
+              e.contains('status=error')),
+          isTrue,
+        );
       });
     });
 

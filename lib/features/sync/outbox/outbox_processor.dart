@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 
 abstract class OutboxMessageSender {
@@ -38,10 +39,11 @@ class OutboxProcessor {
         _messageSender = messageSender,
         _loggingService = loggingService,
         batchSize = batchSizeOverride ?? 10,
-        retryDelay = retryDelayOverride ?? const Duration(seconds: 5),
-        errorDelay = errorDelayOverride ?? const Duration(seconds: 15),
-        maxRetriesForDiagnostics = maxRetriesOverride ?? 10,
-        sendTimeout = sendTimeoutOverride ?? const Duration(seconds: 20);
+        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
+        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
+        maxRetriesForDiagnostics =
+            maxRetriesOverride ?? SyncTuning.outboxMaxRetriesDiagnostics,
+        sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout;
 
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
@@ -118,7 +120,7 @@ class OutboxProcessor {
         if (nextAttempts >= maxRetriesForDiagnostics) {
           try {
             _loggingService.captureEvent(
-              'retryCapReached subject=${nextItem.subject} attempts=$nextAttempts → skip/head-advance',
+              'retryCapReached subject=${nextItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
               domain: 'OUTBOX',
               subDomain: 'retry.cap',
             );
@@ -178,7 +180,7 @@ class OutboxProcessor {
       if (nextAttempts >= maxRetriesForDiagnostics) {
         try {
           _loggingService.captureEvent(
-            'retryCapReached subject=${nextItem.subject} attempts=$nextAttempts → skip/head-advance',
+            'retryCapReached subject=${nextItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
             domain: 'OUTBOX',
             subDomain: 'retry.cap',
           );
