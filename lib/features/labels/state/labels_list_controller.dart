@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 
 final showPrivateEntriesProvider = StreamProvider<bool>(
     (ref) => getIt<JournalDb>().watchConfigFlag('private'));
@@ -77,3 +78,19 @@ class LabelsListController extends Notifier<AsyncValue<List<LabelDefinition>>> {
     }
   }
 }
+
+/// Reactive provider that computes the category-scoped set of available labels
+/// (global ∪ scoped-to-category) while preserving Riverpod reactivity.
+final ProviderFamily<List<LabelDefinition>, String?>
+    availableLabelsForCategoryProvider =
+    Provider.family<List<LabelDefinition>, String?>((ref, categoryId) {
+  final cache = getIt<EntitiesCacheService>();
+  return cache.filterLabelsForCategory(
+    ref.watch(labelsStreamProvider).maybeWhen(
+          data: (value) => value,
+          orElse: () => const <LabelDefinition>[],
+        ),
+    categoryId,
+    includePrivate: cache.showPrivateEntries,
+  );
+});

@@ -1,16 +1,22 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
-class TaskLabelsSheet extends ConsumerStatefulWidget {
-  const TaskLabelsSheet({
+/// Modern label selection content intended to be embedded inside the
+/// shared Wolt modal (see ModalUtils) to match the Category selection
+/// look and feel. It exposes an `apply()` method to persist selection
+/// via an external controller.
+class LabelSelectionModalContent extends ConsumerStatefulWidget {
+  const LabelSelectionModalContent({
     required this.taskId,
     required this.initialLabelIds,
+    required this.applyController,
+    required this.searchQuery,
     this.categoryId,
     super.key,
   });
@@ -18,15 +24,35 @@ class TaskLabelsSheet extends ConsumerStatefulWidget {
   final String taskId;
   final List<String> initialLabelIds;
   final String? categoryId;
+  final ValueNotifier<Future<bool> Function()?> applyController;
+  final ValueListenable<String> searchQuery;
 
   @override
-  ConsumerState<TaskLabelsSheet> createState() => _TaskLabelsSheetState();
+  ConsumerState<LabelSelectionModalContent> createState() =>
+      _LabelSelectionModalContentState();
 }
 
-class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
+class _LabelSelectionModalContentState
+    extends ConsumerState<LabelSelectionModalContent> {
   late final Set<String> _selectedLabelIds = widget.initialLabelIds.toSet();
   String _searchRaw = '';
   String _searchLower = '';
+
+  @override
+  void initState() {
+    super.initState();
+    widget.applyController.value = apply;
+  }
+
+  Future<bool> apply() async {
+    final repository = ref.read(labelsRepositoryProvider);
+    final ids = _selectedLabelIds.toList();
+    final result = await repository.setLabels(
+      journalEntityId: widget.taskId,
+      labelIds: ids,
+    );
+    return result ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,85 +61,19 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
       availableLabelsForCategoryProvider(categoryId),
     );
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.75,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  context.messages.tasksLabelsSheetTitle,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: context.messages.tasksLabelsSheetSearchHint,
-                    prefixIcon: const Icon(Icons.search),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchRaw = value;
-                      _searchLower = value.trim().toLowerCase();
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(child: _buildList(context, available)),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text(context.messages.cancelButton),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () async {
-                          final repository = ref.read(labelsRepositoryProvider);
-                          final navigator = Navigator.of(context);
-                          final messenger = ScaffoldMessenger.of(context);
-                          final messages = context.messages;
-                          final ids = _selectedLabelIds.toList();
-                          final result = await repository.setLabels(
-                            journalEntityId: widget.taskId,
-                            labelIds: ids,
-                          );
-                          if (!mounted) return;
-                          if (result ?? false) {
-                            navigator.pop(ids);
-                          } else {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(messages.tasksLabelsUpdateFailed),
-                              ),
-                            );
-                          }
-                        },
-                        child: Text(context.messages.tasksLabelsSheetApply),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return ValueListenableBuilder<String>(
+      valueListenable: widget.searchQuery,
+      builder: (context, query, _) {
+        _searchRaw = query;
+        _searchLower = query.trim().toLowerCase();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildList(context, available),
+          ],
+        );
+      },
     );
   }
 
@@ -139,8 +99,14 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
     }
 
     return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: filtered.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (context, __) => Divider(
+        height: 1,
+        thickness: 1,
+        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
+      ),
       itemBuilder: (context, index) {
         final label = filtered[index];
         final isSelected = _selectedLabelIds.contains(label.id);
@@ -156,6 +122,8 @@ class _TaskLabelsSheetState extends ConsumerState<TaskLabelsSheet> {
             backgroundColor: color,
             radius: 12,
           ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
           onChanged: (checked) {
             setState(() {
               if (checked ?? false) {

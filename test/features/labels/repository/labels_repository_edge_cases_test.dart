@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -194,6 +196,86 @@ void main() {
     );
 
     expect(label.color, 'not-a-color');
+  });
+
+  test('createLabel handles all categories deleted during validation',
+      () async {
+    when(() => persistenceLogic.upsertEntityDefinition(any()))
+        .thenAnswer((_) async => 1);
+    // Cache returns no categories → all provided IDs are invalid
+    when(() => cacheService.getCategoryById(any())).thenReturn(null);
+
+    final label = await repository.createLabel(
+      name: 'Scoped but invalid',
+      color: '#010203',
+      applicableCategoryIds: const ['gone-1', 'gone-2'],
+    );
+
+    expect(label.applicableCategoryIds, isNull,
+        reason: 'Invalid categories should result in null (global)');
+  });
+
+  test('updateLabel preserves other fields when only updating categories',
+      () async {
+    when(() => persistenceLogic.upsertEntityDefinition(any()))
+        .thenAnswer((_) async => 1);
+    when(() => cacheService.getCategoryById('cat')).thenReturn(
+      CategoryDefinition(
+        id: 'cat',
+        name: 'Work',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+        active: true,
+      ),
+    );
+
+    final original = LabelDefinition(
+      id: 'id',
+      name: 'Name',
+      color: '#AABBCC',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+      vectorClock: const VectorClock(<String, int>{}),
+      description: 'desc',
+      private: true,
+    );
+
+    final updated = await repository.updateLabel(
+      original,
+      applicableCategoryIds: const ['cat'],
+    );
+
+    expect(updated.name, original.name);
+    expect(updated.color, original.color);
+    expect(updated.description, original.description);
+    expect(updated.private, original.private);
+    expect(updated.applicableCategoryIds, equals(const ['cat']));
+  });
+
+  test('createLabel trims whitespace from category IDs', () async {
+    when(() => persistenceLogic.upsertEntityDefinition(any()))
+        .thenAnswer((_) async => 1);
+    when(() => cacheService.getCategoryById('cat')).thenReturn(
+      CategoryDefinition(
+        id: 'cat',
+        name: 'Cat',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+        active: true,
+      ),
+    );
+
+    final label = await repository.createLabel(
+      name: 'Trim',
+      color: '#000000',
+      applicableCategoryIds: const ['  cat  '],
+    );
+
+    expect(label.applicableCategoryIds, equals(const ['cat']));
   });
 
   test('createLabel accepts extremely long descriptions', () async {

@@ -302,6 +302,9 @@ LabelDefinition _$LabelDefinitionFromJson(Map<String, dynamic> json) =>
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       description: json['description'] as String?,
       sortOrder: (json['sortOrder'] as num?)?.toInt(),
+      applicableCategoryIds: (json['applicableCategoryIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -319,6 +322,7 @@ Map<String, dynamic> _$LabelDefinitionToJson(LabelDefinition instance) =>
       'vectorClock': instance.vectorClock,
       'description': instance.description,
       'sortOrder': instance.sortOrder,
+      'applicableCategoryIds': instance.applicableCategoryIds,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'private': instance.private,
       'runtimeType': instance.$type,

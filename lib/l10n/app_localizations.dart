@@ -3171,6 +3171,30 @@ abstract class AppLocalizations {
   /// **'Quick presets'**
   String get settingsLabelsColorSubheading;
 
+  /// No description provided for @settingsLabelsCategoriesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Applicable categories'**
+  String get settingsLabelsCategoriesHeading;
+
+  /// No description provided for @settingsLabelsCategoriesAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add category'**
+  String get settingsLabelsCategoriesAdd;
+
+  /// No description provided for @settingsLabelsCategoriesRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get settingsLabelsCategoriesRemoveTooltip;
+
+  /// No description provided for @settingsLabelsCategoriesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to all categories'**
+  String get settingsLabelsCategoriesNone;
+
   /// No description provided for @settingsLabelsPrivateTitle.
   ///
   /// In en, this message translates to:

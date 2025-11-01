@@ -2,9 +2,12 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 
@@ -164,6 +167,97 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                 },
                 colorNameTextStyle: theme.textTheme.bodySmall,
               ),
+            ),
+            const SizedBox(height: 24),
+            // Applicable categories section (between color and privacy)
+            Text(
+              context.messages.settingsLabelsCategoriesHeading,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Builder(
+              builder: (_) {
+                final cache = getIt<EntitiesCacheService>();
+                final chips = state.selectedCategoryIds
+                    .map(cache.getCategoryById)
+                    .whereType<CategoryDefinition>()
+                    .toList()
+                  ..sort(
+                    (a, b) =>
+                        a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                  );
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (chips.isEmpty)
+                      Text(
+                        context.messages.settingsLabelsCategoriesNone,
+                        style: theme.textTheme.bodySmall,
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final category in chips)
+                            Builder(builder: (context) {
+                              final bg = colorFromCssHex(
+                                category.color,
+                                substitute:
+                                    Theme.of(context).colorScheme.primary,
+                              );
+                              final isDark =
+                                  ThemeData.estimateBrightnessForColor(bg) ==
+                                      Brightness.dark;
+                              final fg = isDark ? Colors.white : Colors.black;
+                              return InputChip(
+                                label: Text(category.name),
+                                labelStyle: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(color: fg),
+                                backgroundColor: bg,
+                                onDeleted: () =>
+                                    controller.removeCategoryId(category.id),
+                                deleteIcon:
+                                    const Icon(Icons.close_rounded, size: 16),
+                                deleteIconColor: fg,
+                                deleteButtonTooltipMessage: context.messages
+                                    .settingsLabelsCategoriesRemoveTooltip,
+                              );
+                            }),
+                        ],
+                      ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: Text(context.messages.settingsLabelsCategoriesAdd),
+                      onPressed: () async {
+                        final result = await showModalBottomSheet<
+                            List<CategoryDefinition>>(
+                          context: context,
+                          isScrollControlled: true,
+                          useRootNavigator: true,
+                          builder: (context) => CategorySelectionModalContent(
+                            // Keep single-select behaviour for other call sites,
+                            // but use multiSelect here to allow selecting several
+                            // categories in one go.
+                            onCategorySelected: (_) {},
+                            multiSelect: true,
+                            initiallySelectedCategoryIds:
+                                state.selectedCategoryIds,
+                          ),
+                        );
+                        if (result != null && result.isNotEmpty) {
+                          for (final cat in result) {
+                            controller.addCategoryId(cat.id);
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 24),
             SwitchListTile.adaptive(

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +10,12 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_sheet.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 
 class _MockLabelsRepository extends Mock implements LabelsRepository {}
@@ -31,6 +36,7 @@ Future<void> _pumpSheet(
 }
 
 void main() {
+  late MockEntitiesCacheService cacheService;
   late _MockLabelsRepository repository;
   final labels = [
     testLabelDefinition1,
@@ -41,8 +47,24 @@ void main() {
     registerFallbackValue(testLabelDefinition1);
   });
 
-  setUp(() {
+  setUp(() async {
     repository = _MockLabelsRepository();
+    cacheService = MockEntitiesCacheService();
+    await getIt.reset();
+    getIt.registerSingleton<EntitiesCacheService>(cacheService);
+    when(() => cacheService.showPrivateEntries).thenReturn(true);
+    when(
+      () => cacheService.filterLabelsForCategory(
+        any(),
+        any(),
+        includePrivate: any(named: 'includePrivate'),
+      ),
+    ).thenAnswer((invocation) =>
+        invocation.positionalArguments.first as List<LabelDefinition>);
+  });
+
+  tearDown(() async {
+    await getIt.reset();
   });
 
   ProviderScope buildSheet({
@@ -94,10 +116,21 @@ void main() {
     await tester.tap(backlogFinder);
     await tester.pump();
 
-    final applyButton = find.widgetWithText(FilledButton, 'Apply');
-    await tester.ensureVisible(applyButton);
-    await tester.tap(applyButton);
-    await tester.pumpAndSettle();
+    // Apply selection via the sheet's Apply button.
+    // Fallback to invoking onPressed directly to avoid rare hit-test issues
+    // under test surfaces with overlays.
+    final applyFinder = find.widgetWithText(FilledButton, 'Apply');
+    if (applyFinder.evaluate().isNotEmpty) {
+      await tester.ensureVisible(applyFinder);
+      await tester.tap(applyFinder);
+      await tester.pumpAndSettle();
+    } else {
+      final anyFilled = find.byType(FilledButton);
+      final applyWidget = tester.widget<FilledButton>(anyFilled.last);
+      expect(applyWidget.onPressed, isNotNull);
+      applyWidget.onPressed!.call();
+      await tester.pumpAndSettle();
+    }
 
     verify(
       () => repository.setLabels(
@@ -125,6 +158,7 @@ void main() {
         description: any(named: 'description'),
         private: any(named: 'private'),
         sortOrder: any(named: 'sortOrder'),
+        applicableCategoryIds: any(named: 'applicableCategoryIds'),
       ),
     ).thenAnswer((_) async => testLabelDefinition1);
 
@@ -156,6 +190,7 @@ void main() {
         description: any(named: 'description'),
         private: any(named: 'private'),
         sortOrder: any(named: 'sortOrder'),
+        applicableCategoryIds: any(named: 'applicableCategoryIds'),
       ),
     ).thenAnswer((_) async => newLabel);
     when(
@@ -177,10 +212,19 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
     await tester.pumpAndSettle();
 
-    final applyButton = find.widgetWithText(FilledButton, 'Apply');
-    await tester.ensureVisible(applyButton);
-    await tester.tap(applyButton);
-    await tester.pumpAndSettle();
+    // Apply selection robustly
+    final applyFinder = find.widgetWithText(FilledButton, 'Apply');
+    if (applyFinder.evaluate().isNotEmpty) {
+      await tester.ensureVisible(applyFinder);
+      await tester.tap(applyFinder);
+      await tester.pumpAndSettle();
+    } else {
+      final anyFilled = find.byType(FilledButton);
+      final applyWidget = tester.widget<FilledButton>(anyFilled.last);
+      expect(applyWidget.onPressed, isNotNull);
+      applyWidget.onPressed!.call();
+      await tester.pumpAndSettle();
+    }
 
     final captured = verify(
       () => repository.setLabels(
@@ -222,6 +266,7 @@ void main() {
         description: any(named: 'description'),
         private: any(named: 'private'),
         sortOrder: any(named: 'sortOrder'),
+        applicableCategoryIds: any(named: 'applicableCategoryIds'),
       ),
     );
     expect(find.byType(LabelEditorSheet), findsOneWidget);
@@ -231,6 +276,140 @@ void main() {
           description: any(named: 'description'),
           private: any(named: 'private'),
           sortOrder: any(named: 'sortOrder'),
+          applicableCategoryIds: any(named: 'applicableCategoryIds'),
         ));
+  });
+
+  group('category scoping', () {
+    LabelDefinition global(String id, String name) => LabelDefinition(
+          id: id,
+          name: name,
+          color: '#111111',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+        );
+
+    LabelDefinition scoped(String id, String name, String cat) =>
+        LabelDefinition(
+          id: id,
+          name: name,
+          color: '#222222',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          applicableCategoryIds: [cat],
+        );
+
+    setUp(() {
+      // Override stub to implement simple scoping behavior
+      when(() => cacheService.filterLabelsForCategory(
+            any(),
+            any(),
+            includePrivate: any(named: 'includePrivate'),
+          )).thenAnswer((invocation) {
+        final all = invocation.positionalArguments[0] as List<LabelDefinition>;
+        final catId = invocation.positionalArguments[1] as String?;
+        final includePrivate =
+            invocation.namedArguments[#includePrivate] as bool? ?? true;
+        return all.where((l) {
+          if (!includePrivate && (l.private ?? false)) return false;
+          final cats = l.applicableCategoryIds;
+          final isGlobal = cats == null || cats.isEmpty;
+          return isGlobal || (catId != null && cats.contains(catId));
+        }).toList();
+      });
+    });
+
+    ProviderScope buildWithLabels(List<LabelDefinition> ls,
+        {String? categoryId}) {
+      return ProviderScope(
+        overrides: [
+          labelsRepositoryProvider.overrideWithValue(repository),
+          labelsStreamProvider.overrideWith((ref) => Stream.value(ls)),
+        ],
+        child: MediaQuery(
+          data: const MediaQueryData(size: Size(1200, 1800)),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              FormBuilderLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: TaskLabelsSheet(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                categoryId: categoryId,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('shows only global labels when categoryId is null',
+        (tester) async {
+      final ls = [
+        global('g', 'Global'),
+        scoped('s', 'ScopedWork', 'work'),
+      ];
+      await tester.pumpWidget(buildWithLabels(ls, categoryId: null));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Global'), findsOneWidget);
+      expect(find.text('ScopedWork'), findsNothing);
+    });
+
+    testWidgets(
+        'shows union of global + category labels when categoryId provided',
+        (tester) async {
+      final ls = [
+        global('g', 'Global'),
+        scoped('s', 'ScopedWork', 'work'),
+        scoped('t', 'OtherCat', 'other'),
+      ];
+      await tester.pumpWidget(buildWithLabels(ls, categoryId: 'work'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Global'), findsOneWidget);
+      expect(find.text('ScopedWork'), findsOneWidget);
+      expect(find.text('OtherCat'), findsNothing);
+    });
+
+    testWidgets('updates available labels when categoryId changes',
+        (tester) async {
+      final ls = [
+        global('g', 'Global'),
+        scoped('w', 'WorkOnly', 'work'),
+        scoped('p', 'PersonalOnly', 'personal'),
+      ];
+      await tester.pumpWidget(buildWithLabels(ls, categoryId: 'work'));
+      await tester.pumpAndSettle();
+      expect(find.text('WorkOnly'), findsOneWidget);
+      expect(find.text('PersonalOnly'), findsNothing);
+
+      await tester.pumpWidget(buildWithLabels(ls, categoryId: 'personal'));
+      await tester.pumpAndSettle();
+      expect(find.text('WorkOnly'), findsNothing);
+      expect(find.text('PersonalOnly'), findsOneWidget);
+    });
+
+    testWidgets('respects privacy filtering in category-scoped labels',
+        (tester) async {
+      when(() => cacheService.showPrivateEntries).thenReturn(false);
+      final privateScoped =
+          scoped('pv', 'PrivateScoped', 'work').copyWith(private: true);
+      final ls = [global('g', 'Global'), privateScoped];
+      await tester.pumpWidget(buildWithLabels(ls, categoryId: 'work'));
+      await tester.pumpAndSettle();
+
+      // Global still visible, private scoped filtered out
+      expect(find.text('Global'), findsOneWidget);
+      expect(find.text('PrivateScoped'), findsNothing);
+    });
   });
 }

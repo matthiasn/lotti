@@ -138,6 +138,7 @@ sealed class EntityDefinition with _$EntityDefinition {
     required VectorClock? vectorClock,
     String? description,
     int? sortOrder,
+    List<String>? applicableCategoryIds,
     DateTime? deletedAt,
     bool? private,
   }) = LabelDefinition;

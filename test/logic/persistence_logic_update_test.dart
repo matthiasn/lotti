@@ -38,7 +38,9 @@ class TestPersistenceLogic extends PersistenceLogic {
   TestPersistenceLogic({this.updateDbEntityHandler});
 
   final Future<bool?> Function(JournalEntity entity,
-      {String? linkedId, bool enqueueSync})? updateDbEntityHandler;
+      {String? linkedId,
+      bool enqueueSync,
+      bool overrideComparison})? updateDbEntityHandler;
   int updateMetadataCalls = 0;
   JournalEntity? lastUpdateDbEntity;
 
@@ -76,6 +78,7 @@ class TestPersistenceLogic extends PersistenceLogic {
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
+    bool overrideComparison = false,
   }) async {
     lastUpdateDbEntity = journalEntity;
     if (updateDbEntityHandler != null) {
@@ -83,12 +86,14 @@ class TestPersistenceLogic extends PersistenceLogic {
         journalEntity,
         linkedId: linkedId,
         enqueueSync: enqueueSync,
+        overrideComparison: overrideComparison,
       );
     }
     return super.updateDbEntity(
       journalEntity,
       linkedId: linkedId,
       enqueueSync: enqueueSync,
+      overrideComparison: overrideComparison,
     );
   }
 }
@@ -291,6 +296,7 @@ void main() {
           entity, {
           linkedId,
           enqueueSync = true,
+          overrideComparison = false,
         }) async =>
             true,
       );
@@ -318,6 +324,7 @@ void main() {
           entity, {
           linkedId,
           enqueueSync = true,
+          overrideComparison = false,
         }) async =>
             false,
       );

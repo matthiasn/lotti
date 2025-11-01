@@ -47,6 +47,22 @@ Soft deletions flip `deletedAt` so reconciliation drops associations without los
 - `TaskLabelQuickFilter`: Mirrors the filter drawer selections in the task list header so users can
   quickly audit/clear active label filters.
 
+### Applicable Categories (Scoped Labels)
+
+- Model: `LabelDefinition` includes optional `applicableCategoryIds: List<String>?`.
+  - `null` or empty → global (available in all categories)
+  - Non-empty → label appears in each listed category
+- Caching: `EntitiesCacheService` maintains `global` and per‑category buckets and prunes unknown
+  categories on category updates.
+- Reactivity: `availableLabelsForCategoryProvider(categoryId)` computes the union of
+  `global ∪ scoped(categoryId)` based on `labelsStreamProvider`, preserving Riverpod updates when
+  labels change.
+- UI:
+  - Label editor adds an "Applicable categories" section with chips and an add button that opens the
+    category selection modal.
+  - Task label picker shows only labels applicable to the task’s current category (unioned with
+    global labels), sorted by name. When the task has no category, only global labels are shown.
+
 ## AI Label Assignment
 
 Lotti can automatically assign labels to a task via AI function-calling during checklist updates.

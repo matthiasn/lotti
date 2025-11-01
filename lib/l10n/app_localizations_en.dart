@@ -1685,6 +1685,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLabelsColorSubheading => 'Quick presets';
 
   @override
+  String get settingsLabelsCategoriesHeading => 'Applicable categories';
+
+  @override
+  String get settingsLabelsCategoriesAdd => 'Add category';
+
+  @override
+  String get settingsLabelsCategoriesRemoveTooltip => 'Remove';
+
+  @override
+  String get settingsLabelsCategoriesNone => 'Applies to all categories';
+
+  @override
   String get settingsLabelsPrivateTitle => 'Private label';
 
   @override

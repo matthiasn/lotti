@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -132,6 +134,166 @@ void main() {
     expect(updated.color, '#FFFFFF');
     expect(updated.description, 'changed');
     verify(() => persistenceLogic.upsertEntityDefinition(any())).called(1);
+  });
+
+  test(
+      'createLabel normalizes applicableCategoryIds (validates, dedups, sorts)',
+      () async {
+    when(() => persistenceLogic.upsertEntityDefinition(any()))
+        .thenAnswer((_) async => 1);
+
+    // Provide two valid categories via cache + one unknown
+    when(() => cacheService.getCategoryById('cat-b')).thenReturn(
+      CategoryDefinition(
+        id: 'cat-b',
+        name: 'Bravo',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        private: false,
+        active: true,
+      ),
+    );
+    when(() => cacheService.getCategoryById('cat-a')).thenReturn(
+      CategoryDefinition(
+        id: 'cat-a',
+        name: 'Alpha',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        private: false,
+        active: true,
+      ),
+    );
+
+    final label = await repository.createLabel(
+      name: 'Scoped',
+      color: '#ABCDEF',
+      description: 'desc',
+      applicableCategoryIds: const ['cat-b', 'unknown', 'cat-a', 'cat-a'],
+    );
+
+    // Unknown filtered, duplicates removed, sorted by category name (Alpha, Bravo)
+    expect(label.applicableCategoryIds, equals(['cat-a', 'cat-b']));
+  });
+
+  group('updateLabel with applicableCategoryIds', () {
+    test('normalizes (validates, dedups, sorts)', () async {
+      when(() => persistenceLogic.upsertEntityDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      // Cache returns two valid categories
+      when(() => cacheService.getCategoryById('cat-b')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-b',
+          name: 'Bravo',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+          private: false,
+          active: true,
+        ),
+      );
+      when(() => cacheService.getCategoryById('cat-a')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-a',
+          name: 'Alpha',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+          private: false,
+          active: true,
+        ),
+      );
+
+      final existing = LabelDefinition(
+        id: 'id',
+        name: 'Scoped',
+        color: '#000000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        applicableCategoryIds: const ['cat-b'],
+      );
+
+      final updated = await repository.updateLabel(
+        existing,
+        applicableCategoryIds: const ['cat-b', 'unknown', 'cat-a', 'cat-a'],
+      );
+
+      // Unknown filtered, duplicates removed, sorted by category name
+      expect(updated.applicableCategoryIds, equals(['cat-a', 'cat-b']));
+    });
+
+    test('passing null keeps existing categories', () async {
+      when(() => persistenceLogic.upsertEntityDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      final existing = LabelDefinition(
+        id: 'id',
+        name: 'Keep',
+        color: '#000000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        applicableCategoryIds: const ['cat-1', 'cat-2'],
+      );
+
+      final updated =
+          await repository.updateLabel(existing, applicableCategoryIds: null);
+      expect(updated.applicableCategoryIds, equals(['cat-1', 'cat-2']));
+    });
+
+    test('empty list clears applicableCategoryIds (becomes null)', () async {
+      when(() => persistenceLogic.upsertEntityDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      final existing = LabelDefinition(
+        id: 'id',
+        name: 'Clear',
+        color: '#000000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        applicableCategoryIds: const ['cat-1'],
+      );
+
+      final updated = await repository
+          .updateLabel(existing, applicableCategoryIds: const []);
+      expect(updated.applicableCategoryIds, isNull);
+    });
+
+    test('filters orphaned category IDs during update', () async {
+      when(() => persistenceLogic.upsertEntityDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      // Only cat-live exists now
+      when(() => cacheService.getCategoryById('cat-live')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-live',
+          name: 'Live',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+          private: false,
+          active: true,
+        ),
+      );
+
+      final existing = LabelDefinition(
+        id: 'id',
+        name: 'Scoped',
+        color: '#000000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+        applicableCategoryIds: const ['cat-deleted'],
+      );
+
+      final updated = await repository.updateLabel(existing,
+          applicableCategoryIds: const ['cat-live', 'cat-deleted']);
+      expect(updated.applicableCategoryIds, equals(['cat-live']));
+    });
   });
 
   test('deleteLabel marks label deleted when definition exists', () async {
