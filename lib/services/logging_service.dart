@@ -63,18 +63,22 @@ class LoggingService {
       message: event.toString(),
     );
 
-    // DB sink
-    await getIt<LoggingDb>().log(
-      LogEntry(
-        id: uuid.v1(),
-        createdAt: now.toIso8601String(),
-        domain: domain,
-        subDomain: subDomain,
-        message: event.toString(),
-        level: level.name.toUpperCase(),
-        type: type.name.toUpperCase(),
-      ),
-    );
+    // DB sink (best-effort). Never throw from logging paths.
+    try {
+      await getIt<LoggingDb>().log(
+        LogEntry(
+          id: uuid.v1(),
+          createdAt: now.toIso8601String(),
+          domain: domain,
+          subDomain: subDomain,
+          message: event.toString(),
+          level: level.name.toUpperCase(),
+          type: type.name.toUpperCase(),
+        ),
+      );
+    } catch (_) {
+      // Swallow DB-sink errors to avoid interfering with app flows.
+    }
 
     // File sink (best-effort)
     unawaited(_appendToFile(line));
@@ -116,19 +120,23 @@ class LoggingService {
       message: '$exception ${stackTrace ?? ''}'.trim(),
     );
 
-    // DB sink
-    await getIt<LoggingDb>().log(
-      LogEntry(
-        id: uuid.v1(),
-        createdAt: now.toIso8601String(),
-        domain: domain,
-        subDomain: subDomain,
-        message: exception.toString(),
-        stacktrace: stackTrace?.toString(),
-        level: level.name.toUpperCase(),
-        type: type.name.toUpperCase(),
-      ),
-    );
+    // DB sink (best-effort). Never throw from logging paths.
+    try {
+      await getIt<LoggingDb>().log(
+        LogEntry(
+          id: uuid.v1(),
+          createdAt: now.toIso8601String(),
+          domain: domain,
+          subDomain: subDomain,
+          message: exception.toString(),
+          stacktrace: stackTrace?.toString(),
+          level: level.name.toUpperCase(),
+          type: type.name.toUpperCase(),
+        ),
+      );
+    } catch (_) {
+      // Swallow DB-sink errors to avoid interfering with app flows.
+    }
 
     // File sink (best-effort)
     unawaited(_appendToFile(line));

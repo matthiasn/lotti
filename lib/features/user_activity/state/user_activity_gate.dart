@@ -36,7 +36,31 @@ class UserActivityGate {
     if (_canProcess) {
       return;
     }
-    await canProcessStream.firstWhere((value) => value);
+    // Time-bounded wait to avoid indefinite starvation when the user remains
+    // continuously active. After the deadline, proceed once and let callers
+    // re-check idleness on the next iteration.
+    const maxWaitForProgress = Duration(seconds: 2);
+    final completer = Completer<void>();
+    late StreamSubscription<bool> sub;
+    Timer? hardDeadline;
+    void complete() {
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    }
+
+    sub = canProcessStream.listen((value) {
+      if (value) {
+        hardDeadline?.cancel();
+        unawaited(sub.cancel());
+        complete();
+      }
+    });
+    hardDeadline = Timer(maxWaitForProgress, () {
+      unawaited(sub.cancel());
+      complete();
+    });
+    await completer.future;
   }
 
   void _handleActivity(DateTime _) {

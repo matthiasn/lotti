@@ -155,7 +155,17 @@ class OutboxService {
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
+        final started = DateTime.now();
         await _activityGate.waitUntilIdle();
+        final waitedMs = DateTime.now().difference(started).inMilliseconds;
+        if (waitedMs > 50) {
+          // Light instrumentation to correlate potential stalls.
+          _loggingService.captureEvent(
+            'activityGate.wait ms=$waitedMs',
+            domain: 'OUTBOX',
+            subDomain: 'activityGate',
+          );
+        }
         await sendNext();
       },
     );
@@ -346,14 +356,23 @@ class OutboxService {
       return false;
     }
 
-    // Reached pass cap; if there are still pending items, schedule immediate
-    // continuation so large backlogs don't stall after a fixed number processed.
-    final stillPending = (await _repository.fetchPending(limit: 1)).isNotEmpty;
-    if (stillPending) {
-      await enqueueNextSendRequest(delay: Duration.zero);
-      return false;
+    // Reached pass cap; proactively schedule an immediate continuation to avoid
+    // stalling large backlogs on environments where external nudges are rare.
+    // We attempt to check for pending items for observability, but schedule the
+    // follow-up regardless as a safety net.
+    try {
+      final stillPending =
+          (await _repository.fetchPending(limit: 1)).isNotEmpty;
+      _loggingService.captureEvent(
+        'drain.passCap stillPending=$stillPending → enqueueImmediate',
+        domain: 'OUTBOX',
+        subDomain: 'drain',
+      );
+    } catch (_) {
+      // best-effort logging only
     }
-    return true;
+    await enqueueNextSendRequest(delay: Duration.zero);
+    return false;
   }
 
   Future<void> sendNext() async {
@@ -364,6 +383,20 @@ class OutboxService {
 
       if (!enableMatrix) {
         return;
+      }
+
+      // State snapshot to aid debugging of stuck outbox scenarios.
+      try {
+        final loggedIn = _matrixService?.isLoggedIn() ?? false;
+        final canProc = _activityGate.canProcess;
+        final hasPending = (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        _loggingService.captureEvent(
+          'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
+          domain: 'OUTBOX',
+          subDomain: 'sendNext',
+        );
+      } catch (_) {
+        // best-effort only
       }
 
       // Pause processing while not logged in. Do not schedule immediate retries

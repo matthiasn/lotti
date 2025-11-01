@@ -98,7 +98,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     int liveScanInitialAuditScans = 5,
     int? liveScanInitialAuditTail,
     int liveScanSteadyTail = 100,
-    bool dropOldPayloadsInLiveScan = false,
+    bool dropOldPayloadsInLiveScan = true,
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -194,6 +194,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Client stream does not buffer events; scans are scheduled via timers.
 
   Timer? _liveScanTimer;
+  bool _scanInFlight = false;
   // Guard to prevent overlapping catch-ups triggered by signals.
   bool _catchUpInFlight = false;
   // Explicitly request catch-up when nudging via signals, keeping semantics
@@ -695,9 +696,19 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'signal',
       );
     }
-    _liveScanTimer?.cancel();
+    // If a scan is currently running, coalesce this signal.
+    if (_scanInFlight) {
+      _loggingService.captureEvent(
+        'signal.liveScan.coalesce inFlight=true',
+        domain: syncLoggingDomain,
+        subDomain: 'signal',
+      );
+      return;
+    }
     // Tight debounce keeps scans responsive while coalescing bursts.
-    _liveScanTimer = Timer(const Duration(milliseconds: 120), () {
+    const delay = Duration(milliseconds: 120);
+    _liveScanTimer?.cancel();
+    _liveScanTimer = Timer(delay, () {
       unawaited(_scanLiveTimeline());
     });
   }
@@ -706,6 +717,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     final tl = _liveTimeline;
     if (tl == null) return;
     try {
+      _scanInFlight = true;
       // Record signal→scan latency if a signal was captured recently.
       if (_collectMetrics && _lastSignalAt != null) {
         final ms = clock.now().difference(_lastSignalAt!).inMilliseconds;
@@ -776,6 +788,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'liveScan',
         stackTrace: st,
       );
+    } finally {
+      _scanInFlight = false;
     }
   }
 
@@ -1094,14 +1108,31 @@ class MatrixStreamConsumer implements SyncPipeline {
     _retryTracker.prune(clock.now());
   }
 
-  Map<String, int> metricsSnapshot() => _metrics.snapshot(
-        retryStateSize: _retryTracker.size(),
-        circuitIsOpen: _circuit.isOpen(clock.now()),
-      )
-        ..putIfAbsent(
-            'pendingJsonPaths', () => _descriptorCatchUp?.pendingLength ?? 0)
-        ..putIfAbsent(
-            'descriptorCatchUpRuns', () => _descriptorCatchUp?.runs ?? 0);
+  Map<String, int> metricsSnapshot() {
+    final map = _metrics.snapshot(
+      retryStateSize: _retryTracker.size(),
+      circuitIsOpen: _circuit.isOpen(clock.now()),
+    )
+      ..putIfAbsent(
+          'pendingJsonPaths', () => _descriptorCatchUp?.pendingLength ?? 0)
+      ..putIfAbsent(
+          'descriptorCatchUpRuns', () => _descriptorCatchUp?.runs ?? 0);
+    // Derived metric to assess processing efficiency when metrics collection is
+    // enabled. When either value is zero, omit the ratio.
+    try {
+      final processed = map['processed'] ?? 0;
+      final applied = map['dbApplied'] ?? 0;
+      if (processed > 0 && applied > 0) {
+        final ratio = processed / applied;
+        // Store as integer by rounding ratio*100 to preserve ordering in maps;
+        // UI can present as text if needed.
+        map['processedPerAppliedPct'] = (ratio * 100).round();
+      }
+    } catch (_) {
+      // best-effort only
+    }
+    return map;
+  }
 
   // Called by SyncEventProcessor via observer to record DB apply results
   void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
