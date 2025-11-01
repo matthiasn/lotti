@@ -65,16 +65,51 @@ that keeps the pipeline testable and observable.
     scheduling failure, the consumer falls back to `forceRescan()`.
   - Marker advancement happens only from ordered slices returned by
     catch-up/live scans, never directly from the client stream.
-- Live streaming is micro-batched and ordered chronologically with
-  de-duplication by event ID; attachment prefetch happens before invoking
-  `SyncEventProcessor` so text payloads arrive with their media ready.
-- Read markers advance monotonically using Matrix timestamps with event IDs as
-  tie-breakers. The consumer persists the newest processed ID through
-  `SyncReadMarkerService` so fresh sessions resume from the correct position.
-- Retries apply exponential backoff with a TTL, bounded queue, and circuit
-  breaker to avoid thrashing on persistent failures. Diagnostics surface per
-  event via `SyncApplyDiagnostics`.
-- Optional typed metrics (`SyncMetrics`) power the Matrix Stats UI and tooling.
+  - Live streaming is micro-batched and ordered chronologically with
+    de-duplication by event ID; attachment prefetch happens before invoking
+    `SyncEventProcessor` so text payloads arrive with their media ready.
+  - Read markers advance monotonically using Matrix timestamps with event IDs as
+    tie-breakers. The consumer persists the newest processed ID through
+    `SyncReadMarkerService` so fresh sessions resume from the correct position.
+  - Retries apply exponential backoff with a TTL, bounded queue, and circuit
+    breaker to avoid thrashing on persistent failures. Diagnostics surface per
+    event via `SyncApplyDiagnostics`.
+  - Optional typed metrics (`SyncMetrics`) power the Matrix Stats UI and tooling.
+
+- Coalescing & throttling (2025-11):
+  - Catch-up coalesces with a 1s minimum gap. If signals arrive while a
+    catch-up is running, exactly one trailing catch-up is scheduled ~1s after
+    completion. Logging emits `catchup.start` once at the beginning of a
+    coalesced burst and `catchup.done events=<n>` once after the last run.
+  - Live-scan never overlaps. `_scanInFlight` is guarded by a small nesting
+    counter so nested scans keep the guard asserted until the outermost scan
+    finishes. Signals during a scan defer as a single trailing scan scheduled
+    after completion. A small base debounce (~120ms) is extended as needed to
+    honor the 1s minimum gap; log `signal.liveScan.coalesce`.
+  - Attachment double-scan awaits the immediate second pass and schedules a
+    delayed pass at +200ms. This reduces churn while still catching
+    late-arriving text that pairs with attachments.
+  - Historical windows tightened to reduce redundant work:
+    - Catch-up `preContextCount = 80`, `maxLookback = 1000`.
+    - Live-scan steady tail = 30; audit tails (first two scans) = 50/80/100
+      sized by the offline delta.
+  - Log noise reduced under `collectMetrics`: `signal.*`, `noAdvance.rescan`,
+    and `doubleScan.*` are gated; `marker.local` condensed to one line with
+    id+ts.
+  - Marker advancement happens only from ordered slices returned by
+    catch-up/live scans, never directly from the client stream.
+### Outbox resiliency (2025-11)
+
+- Watchdog (every 10s) enqueues a drain when `pending > 0`, logged-in, and the
+  queue is idle. Log: `watchdog: pending+loggedIn idleQueue → enqueue`.
+- DB nudge subscribes to outbox count changes and enqueues after a short
+  debounce (50ms). Logs: `dbNudge count=<n> → enqueue` then `enqueueRequest() done`.
+- Send timeout (default 20s) marks retry and logs `timedOut=true`; repeated
+  failures produce breadcrumbs, and pass-cap continuation proactively schedules
+  a follow-up drain so the queue advances past pathological items.
+- ClientRunner guards callback errors so the queue cannot die silently.
+- Logging DB writes are best-effort (exceptions captured, file breadcrumbs kept)
+  so diagnostics never block outbox progress.
 
 ### Documentation & Artefacts
 
@@ -129,6 +164,8 @@ Key helpers:
   `MatrixService.getSyncMetrics()` or the Matrix Stats UI instead.
 - Key log domains: `MATRIX_SERVICE`, `MATRIX_SYNC`, `SYNC_ENGINE`,
   `SYNC_ROOM_MANAGER`, `SYNC_EVENT_PROCESSOR`, `SYNC_READ_MARKER`, and `OUTBOX`.
+  - Coalescing signals to look for: `signal.liveScan.coalesce debounceMs=…`,
+    `trailing.liveScan.scheduled`, `catchup.start`, `catchup.done events=…`.
 - Typical messages include invite acceptance/filters, hydration retries, send
   attempts, and timeline processing outcomes.
 
