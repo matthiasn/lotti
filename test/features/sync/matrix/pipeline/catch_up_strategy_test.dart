@@ -17,6 +17,98 @@ void main() {
   });
 
   group('CatchUpStrategy', () {
+    test('preContextCount=80 bounds pre-context inclusion window', () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      // Build ordered events e0..e199 (ts increasing)
+      final events = List<Event>.generate(200, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        return e;
+      });
+
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(events);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      // Marker at e120 → with preContextCount=80, start at e(120-80)=e40 (one-based vs zero-based)
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'e120',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            true,
+        preContextCount: 80,
+        maxLookback: 2000,
+      );
+
+      expect(slice.first.eventId, 'e40');
+      verify(() => tl.cancelSubscriptions()).called(greaterThanOrEqualTo(1));
+    });
+
+    test('maxLookback=1000 bounds fallback pagination length', () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final created = <MockTimeline>[];
+
+      // Synthetic large window e0..e9999
+      final all = List<Event>.generate(10000, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        return e;
+      });
+
+      Future<Timeline> timelineForLimit(int limit) async {
+        final tl = MockTimeline();
+        created.add(tl);
+        final start = all.length > limit ? all.length - limit : 0;
+        when(() => tl.events).thenReturn(all.sublist(start));
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+        return tl;
+      }
+
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((invocation) async {
+        final limit = invocation.namedArguments[#limit] as int? ?? 200;
+        return timelineForLimit(limit);
+      });
+
+      // Use lastEventId far back so we need to page a lot; ensure maxLookback caps
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'e0',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            false,
+        initialLimit: 50,
+        maxLookback: 1000,
+      );
+
+      // Should not exceed maxLookback by more than a small margin
+      expect(slice.length, lessThanOrEqualTo(1100));
+      for (final tl in created) {
+        verify(() => tl.cancelSubscriptions()).called(1);
+      }
+    });
     test('uses backfill and returns slice strictly after lastEventId',
         () async {
       final room = MockRoom();

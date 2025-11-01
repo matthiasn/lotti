@@ -338,6 +338,109 @@ void main() {
     });
   });
 
+  test('send completing at exact timeout boundary doesnt race', () async {
+    fakeAsync((async) {
+      final repo = MockOutboxRepository();
+      final sender = MockMessageSender();
+      final log = MockLogging();
+
+      final pending = OutboxItem(
+        id: 99,
+        message:
+            jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+        subject: 'host:timeout-boundary',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+      );
+      when(() => repo.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [pending]);
+      when(() => repo.markRetry(any())).thenAnswer((_) async {});
+      when(() => repo.markSent(any())).thenAnswer((_) async {});
+      // Complete exactly at timeout boundary (50ms)
+      when(() => sender.send(any())).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return true;
+      });
+      when(() => log.captureEvent(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+
+      final proc = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+        sendTimeoutOverride: const Duration(milliseconds: 50),
+      );
+
+      OutboxProcessingResult? result;
+      unawaited(proc.processQueue().then((r) => result = r));
+      async
+        ..elapse(const Duration(milliseconds: 55))
+        ..flushMicrotasks();
+      expect(result, isNotNull);
+      var sentSucceeded = true;
+      try {
+        verify(() => repo.markSent(any())).called(1);
+      } catch (_) {
+        sentSucceeded = false;
+      }
+      if (sentSucceeded) {
+        verifyNever(() => repo.markRetry(any()));
+      } else {
+        verify(() => repo.markRetry(any())).called(1);
+        verifyNever(() => repo.markSent(any()));
+      }
+    });
+  });
+
+  test('repeated failure counter handles large values', () async {
+    final repo = MockOutboxRepository();
+    final sender = MockMessageSender();
+    final log = MockLogging();
+
+    final item = OutboxItem(
+      id: 1000,
+      message:
+          jsonEncode(const SyncMessage.aiConfigDelete(id: 'repeat').toJson()),
+      subject: 'S',
+      status: OutboxStatus.pending.index,
+      retries: 0,
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+    );
+    when(() => repo.fetchPending(limit: any(named: 'limit')))
+        .thenAnswer((_) async => [item]);
+    when(() => repo.markRetry(any())).thenAnswer((_) async {});
+    when(() => sender.send(any())).thenAnswer((_) async => false);
+
+    final events = <String>[];
+    when(() => log.captureEvent(captureAny<Object>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'))).thenAnswer((inv) {
+      events.add(inv.positionalArguments.first.toString());
+    });
+
+    final proc = OutboxProcessor(
+      repository: repo,
+      messageSender: sender,
+      loggingService: log,
+    );
+
+    // Fail same head-of-queue subject many times
+    for (var i = 0; i < 1000; i++) {
+      await proc.processQueue();
+    }
+
+    final last = events.lastWhere(
+      (e) => e.contains('sendFailed subject=S'),
+      orElse: () => '',
+    );
+    expect(last, contains('repeats=1000'));
+    expect(last.contains('repeats=-'), isFalse);
+  });
+
   group('repeated failure diagnostics', () {
     test('repeated failure increments repeats counter for same subject',
         () async {
