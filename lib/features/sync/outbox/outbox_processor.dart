@@ -33,13 +33,15 @@ class OutboxProcessor {
     Duration? retryDelayOverride,
     Duration? errorDelayOverride,
     int? maxRetriesOverride,
+    Duration? sendTimeoutOverride,
   })  : _repository = repository,
         _messageSender = messageSender,
         _loggingService = loggingService,
         batchSize = batchSizeOverride ?? 10,
         retryDelay = retryDelayOverride ?? const Duration(seconds: 5),
         errorDelay = errorDelayOverride ?? const Duration(seconds: 15),
-        maxRetriesForDiagnostics = maxRetriesOverride ?? 10;
+        maxRetriesForDiagnostics = maxRetriesOverride ?? 10,
+        sendTimeout = sendTimeoutOverride ?? const Duration(seconds: 20);
 
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
@@ -48,6 +50,7 @@ class OutboxProcessor {
   final Duration retryDelay;
   final Duration errorDelay;
   final int maxRetriesForDiagnostics;
+  final Duration sendTimeout;
 
   // Diagnostics for repeated failures on the same head-of-queue subject.
   String? _lastFailedSubject;
@@ -87,7 +90,13 @@ class OutboxProcessor {
       } catch (_) {
         // best-effort logging only
       }
-      final success = await _messageSender.send(syncMessage);
+      var timedOut = false;
+      final success = await _messageSender
+          .send(syncMessage)
+          .timeout(sendTimeout, onTimeout: () {
+        timedOut = true;
+        return false;
+      });
 
       if (!success) {
         final nextAttempts = nextItem.retries + 1;
@@ -101,7 +110,7 @@ class OutboxProcessor {
         }
         try {
           _loggingService.captureEvent(
-            'sendFailed subject=${nextItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds}',
+            'sendFailed subject=${nextItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
             domain: 'OUTBOX',
             subDomain: 'retry',
           );

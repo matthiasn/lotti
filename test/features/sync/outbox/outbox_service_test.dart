@@ -166,6 +166,9 @@ void main() {
     when(() => vectorClockService.getHost()).thenAnswer((_) async => 'hostA');
     when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
         .thenAnswer((_) async => 1);
+    // Avoid null stream issues from db-driven nudge subscription in service ctor
+    when(() => syncDatabase.watchOutboxCount())
+        .thenAnswer((_) => const Stream<int>.empty());
     // Ensure activity gate can construct if needed
     when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
     when(() => userActivityService.activityStream)

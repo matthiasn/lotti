@@ -691,4 +691,117 @@ void main() {
       async.flushMicrotasks();
     });
   });
+
+  test('signals during scan coalesce to one trailing scan', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final liveTimeline = MockTimeline();
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@other:server');
+    // No client-stream events; we drive via timeline callbacks
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => const Stream<Event>.empty());
+    when(roomManager.initialize).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+
+    void Function()? onNewEvent;
+    when(
+      () => room.getTimeline(
+        onNewEvent: any(named: 'onNewEvent'),
+        onInsert: any(named: 'onInsert'),
+        onChange: any(named: 'onChange'),
+        onRemove: any(named: 'onRemove'),
+        onUpdate: any(named: 'onUpdate'),
+      ),
+    ).thenAnswer((inv) async {
+      onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
+      return liveTimeline;
+    });
+
+    // Provide a couple of sync payloads to keep the scan busy for a bit.
+    Event mk(String id, int ts) {
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn(id);
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+      when(() => ev.senderId).thenReturn('@peer:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => ev.roomId).thenReturn('!room:server');
+      return ev;
+    }
+
+    final e1 = mk('E1', 1);
+    final e2 = mk('E2', 2);
+    when(() => liveTimeline.events).thenReturn(<Event>[e1, e2]);
+    when(liveTimeline.cancelSubscriptions).thenReturn(null);
+
+    // Make processing slow enough to simulate a scan-in-flight window.
+    when(() =>
+            processor.process(event: any(named: 'event'), journalDb: journalDb))
+        .thenAnswer((_) async =>
+            Future<void>.delayed(const Duration(milliseconds: 250)));
+
+    final consumer = await buildConsumer(
+      session: session,
+      roomManager: roomManager,
+      logger: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      processor: processor,
+      readMarker: readMarker,
+    );
+
+    // Let the initial startup live-scan run and clear logs to isolate this test.
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    clearInteractions(logger);
+
+    // Start a scan via a timeline signal (debounced by ~120ms)
+    onNewEvent?.call();
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+
+    // While the scan is in-flight, fire multiple signals; they must coalesce.
+    for (var i = 0; i < 5; i++) {
+      onNewEvent?.call();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+
+    // Allow the first scan to finish, and the single trailing scan to run.
+    await Future<void>.delayed(const Duration(milliseconds: 120 + 600));
+
+    final processedCalls = verify(
+      () => logger.captureEvent(
+        any<String>(that: contains('liveScan processed=')),
+        domain: any<String>(named: 'domain'),
+        subDomain: 'liveScan',
+      ),
+    ).callCount;
+
+    final trailingCalls = verify(
+      () => logger.captureEvent(
+        any<String>(that: contains('trailing.liveScan.scheduled')),
+        domain: any<String>(named: 'domain'),
+        subDomain: 'signal',
+      ),
+    ).callCount;
+
+    expect(processedCalls, greaterThanOrEqualTo(1),
+        reason: 'At least one liveScan should run overall');
+    expect(trailingCalls, 1,
+        reason: 'Only one trailing scan should be scheduled');
+
+    await consumer.dispose();
+  });
 }

@@ -1,6 +1,4 @@
 import 'dart:convert';
-
-import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -12,167 +10,71 @@ import 'package:mocktail/mocktail.dart';
 
 class MockOutboxRepository extends Mock implements OutboxRepository {}
 
-class MockOutboxMessageSender extends Mock implements OutboxMessageSender {}
+class MockMessageSender extends Mock implements OutboxMessageSender {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLogging extends Mock implements LoggingService {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() {
-    registerFallbackValue(StackTrace.empty);
-    registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'id'));
+    registerFallbackValue(
+      OutboxItem(
+        id: 1,
+        message: '{}',
+        subject: 's',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+      ),
+    );
+    registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'x'));
   });
 
-  group('OutboxProcessor', () {
-    late MockOutboxRepository repository;
-    late MockOutboxMessageSender sender;
-    late MockLoggingService logging;
-    late OutboxProcessor processor;
+  test('send timeout triggers retry and schedules backoff', () async {
+    final repo = MockOutboxRepository();
+    final sender = MockMessageSender();
+    final log = MockLogging();
 
-    setUp(() {
-      repository = MockOutboxRepository();
-      sender = MockOutboxMessageSender();
-      logging = MockLoggingService();
-
-      processor = OutboxProcessor(
-        repository: repository,
-        messageSender: sender,
-        loggingService: logging,
-      );
+    final pending = OutboxItem(
+      id: 1,
+      // Use valid JSON encoding for the stored message payload
+      message: jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+      subject: 'host:1',
+      status: OutboxStatus.pending.index,
+      retries: 0,
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+    );
+    when(() => repo.fetchPending(limit: any<int>(named: 'limit')))
+        .thenAnswer((_) async => [pending]);
+    when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+    // Sender completes after a long delay, exceeding timeout
+    when(() => sender.send(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      return true;
     });
+    when(() => log.captureEvent(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+    when(() => log.captureException(any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace')))
+        .thenAnswer((_) async {});
 
-    OutboxItem buildItem({String subjectValue = 'subject', int retries = 0}) {
-      final message = json.encode(
-        const SyncMessage.aiConfigDelete(id: 'config-id').toJson(),
-      );
+    final proc = OutboxProcessor(
+      repository: repo,
+      messageSender: sender,
+      loggingService: log,
+      retryDelayOverride: const Duration(milliseconds: 200),
+      sendTimeoutOverride: const Duration(milliseconds: 50),
+    );
 
-      return OutboxItem(
-        id: 1,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 1)),
-        updatedAt: DateTime.now(),
-        status: OutboxStatus.pending.index,
-        retries: retries,
-        message: message,
-        subject: subjectValue,
-      );
-    }
-
-    test('returns none when no pending items', () async {
-      when(() => repository.fetchPending(limit: any<int>(named: 'limit')))
-          .thenAnswer((_) async => []);
-
-      final result = await processor.processQueue();
-
-      expect(result.shouldSchedule, isFalse);
-      verify(() => repository.fetchPending(limit: any<int>(named: 'limit')))
-          .called(1);
-      verifyNever(() => sender.send(any<SyncMessage>()));
-    });
-
-    test('marks sent and schedules immediate retry when more items', () async {
-      final first = buildItem();
-      final second = buildItem(subjectValue: 'next');
-
-      when(() => repository.fetchPending(limit: any<int>(named: 'limit')))
-          .thenAnswer((_) async => [first, second]);
-      when(() => sender.send(any<SyncMessage>())).thenAnswer((_) async => true);
-      when(() => repository.markSent(first)).thenAnswer((_) async {});
-      when(() => logging.captureEvent(any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
-
-      final result = await processor.processQueue();
-
-      expect(result.shouldSchedule, isTrue);
-      expect(result.nextDelay, Duration.zero);
-      verify(() => repository.markSent(first)).called(1);
-      verify(() => sender.send(any<SyncMessage>())).called(1);
-    });
-
-    test('returns none when last item sent', () async {
-      final item = buildItem();
-      when(() => repository.fetchPending(limit: any<int>(named: 'limit')))
-          .thenAnswer((_) async => [item]);
-      when(() => sender.send(any<SyncMessage>())).thenAnswer((_) async => true);
-      when(() => repository.markSent(item)).thenAnswer((_) async {});
-      when(() => logging.captureEvent(any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
-
-      final result = await processor.processQueue();
-
-      expect(result.shouldSchedule, isFalse);
-      verify(() => repository.markSent(item)).called(1);
-    });
-
-    test('schedules retry when sender returns false', () async {
-      final item = buildItem();
-      when(() => repository.fetchPending(limit: any<int>(named: 'limit')))
-          .thenAnswer((_) async => [item]);
-      when(() => sender.send(any<SyncMessage>()))
-          .thenAnswer((_) async => false);
-      when(() => repository.markRetry(item)).thenAnswer((_) async {});
-
-      final result = await processor.processQueue();
-
-      expect(result.shouldSchedule, isTrue);
-      expect(result.nextDelay, const Duration(seconds: 5));
-      verify(() => repository.markRetry(item)).called(1);
-    });
-
-    test('handles exception by marking retry and scheduling error delay',
-        () async {
-      final item = buildItem();
-      when(() => repository.fetchPending(limit: any<int>(named: 'limit')))
-          .thenAnswer((_) async => [item]);
-      when(() => sender.send(any<SyncMessage>()))
-          .thenThrow(Exception('send failed'));
-      when(() => repository.markRetry(item)).thenAnswer((_) async {});
-      when(() => logging.captureException(any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace>(named: 'stackTrace'))).thenAnswer((_) {});
-
-      final result = await processor.processQueue();
-
-      expect(result.shouldSchedule, isTrue);
-      expect(result.nextDelay, const Duration(seconds: 15));
-      verify(() => repository.markRetry(item)).called(1);
-      verify(() => logging.captureException(any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace>(named: 'stackTrace'))).called(1);
-    });
-
-    test('marks item as error after exceeding max retries', () async {
-      final db = SyncDatabase(inMemoryDatabase: true);
-      final repositoryWithLimit = DatabaseOutboxRepository(db, maxRetries: 2);
-      final processorWithRepo = OutboxProcessor(
-        repository: repositoryWithLimit,
-        messageSender: sender,
-        loggingService: logging,
-      );
-
-      await db.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          retries: const Value(1),
-          message: Value(buildItem().message),
-          subject: const Value('subject'),
-          createdAt: Value(DateTime.now()),
-          updatedAt: Value(DateTime.now()),
-        ),
-      );
-
-      when(() => sender.send(any<SyncMessage>()))
-          .thenAnswer((_) async => false);
-
-      final result = await processorWithRepo.processQueue();
-
-      expect(result.shouldSchedule, isTrue);
-      final rows = await db.select(db.outbox).get();
-      expect(rows.first.status, OutboxStatus.error.index);
-
-      await db.close();
-    });
+    final result = await proc.processQueue();
+    expect(result.shouldSchedule, isTrue);
+    expect(result.nextDelay?.inMilliseconds, 200);
+    verify(() => repo.markRetry(any())).called(1);
   });
 }

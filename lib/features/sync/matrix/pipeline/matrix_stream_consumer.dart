@@ -195,6 +195,7 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   Timer? _liveScanTimer;
   bool _scanInFlight = false;
+  bool _liveScanDeferred = false;
   // Guard to prevent overlapping catch-ups triggered by signals.
   bool _catchUpInFlight = false;
   // Explicitly request catch-up when nudging via signals, keeping semantics
@@ -511,20 +512,34 @@ class MatrixStreamConsumer implements SyncPipeline {
         domain: syncLoggingDomain,
         subDomain: 'signal',
       );
+      // Coalesce client-stream-driven catch-ups: if one is in-flight, defer a
+      // single trailing catch-up; otherwise enforce a short minimum gap.
       if (_catchUpInFlight) {
+        if (!_deferredCatchup) {
+          _deferredCatchup = true;
+          _loggingService.captureEvent(
+            'signal.catchup.deferred set',
+            domain: syncLoggingDomain,
+            subDomain: 'signal',
+          );
+        }
+        return;
+      }
+      final now = clock.now();
+      if (_lastCatchupAt != null &&
+          now.difference(_lastCatchupAt!) < _minCatchupGap) {
+        // Debounce: schedule once at the end of the gap
+        final remaining = _minCatchupGap - now.difference(_lastCatchupAt!);
+        _catchupDebounceTimer?.cancel();
+        _catchupDebounceTimer = Timer(remaining, _startCatchupNow);
         _loggingService.captureEvent(
-          'signal.catchup.skipped inFlight=true',
+          'signal.catchup.coalesce debounceMs=${remaining.inMilliseconds}',
           domain: syncLoggingDomain,
           subDomain: 'signal',
         );
         return;
       }
-      _catchUpInFlight = true;
-      unawaited(
-        forceRescan(includeCatchUp: _alwaysIncludeCatchUp).whenComplete(() {
-          _catchUpInFlight = false;
-        }),
-      );
+      _startCatchupNow();
     });
 
     // Also attach live timeline listeners to proactively scan in case the
@@ -602,6 +617,38 @@ class MatrixStreamConsumer implements SyncPipeline {
       'MatrixStreamConsumer started',
       domain: syncLoggingDomain,
       subDomain: 'start',
+    );
+  }
+
+  // --- Catch-up coalescing -------------------------------------------------
+  DateTime? _lastCatchupAt;
+  bool _deferredCatchup = false;
+  Timer? _catchupDebounceTimer;
+  static const Duration _minCatchupGap = Duration(milliseconds: 1500);
+  static const Duration _trailingCatchupDelay = Duration(milliseconds: 100);
+
+  void _startCatchupNow() {
+    if (_catchUpInFlight) {
+      _deferredCatchup = true;
+      return;
+    }
+    _catchUpInFlight = true;
+    unawaited(
+      forceRescan(includeCatchUp: _alwaysIncludeCatchUp).whenComplete(() {
+        _catchUpInFlight = false;
+        _lastCatchupAt = clock.now();
+        if (_deferredCatchup) {
+          _deferredCatchup = false;
+          _loggingService.captureEvent(
+            'trailing.catchup.scheduled',
+            domain: syncLoggingDomain,
+            subDomain: 'signal',
+          );
+          _catchupDebounceTimer?.cancel();
+          _catchupDebounceTimer =
+              Timer(_trailingCatchupDelay, _startCatchupNow);
+        }
+      }),
     );
   }
 
@@ -698,11 +745,14 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
     // If a scan is currently running, coalesce this signal.
     if (_scanInFlight) {
-      _loggingService.captureEvent(
-        'signal.liveScan.coalesce inFlight=true',
-        domain: syncLoggingDomain,
-        subDomain: 'signal',
-      );
+      if (!_liveScanDeferred) {
+        _liveScanDeferred = true;
+        _loggingService.captureEvent(
+          'signal.liveScan.deferred set',
+          domain: syncLoggingDomain,
+          subDomain: 'signal',
+        );
+      }
       return;
     }
     // Tight debounce keeps scans responsive while coalescing bursts.
@@ -790,6 +840,18 @@ class MatrixStreamConsumer implements SyncPipeline {
       );
     } finally {
       _scanInFlight = false;
+      if (_liveScanDeferred) {
+        _liveScanDeferred = false;
+        _loggingService.captureEvent(
+          'trailing.liveScan.scheduled',
+          domain: syncLoggingDomain,
+          subDomain: 'signal',
+        );
+        _liveScanTimer?.cancel();
+        _liveScanTimer = Timer(const Duration(milliseconds: 120), () {
+          unawaited(_scanLiveTimeline());
+        });
+      }
     }
   }
 

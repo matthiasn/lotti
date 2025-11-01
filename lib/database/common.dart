@@ -102,7 +102,8 @@ LazyDatabase openDbConnection(
 
     try {
       sqlite3.tempDirectory =
-          (await (tempDirectoryProvider?.call() ?? getTemporaryDirectory())).path;
+          (await (tempDirectoryProvider?.call() ?? getTemporaryDirectory()))
+              .path;
     } catch (_) {
       // If temp directory resolution fails, keep default; sqlite will use OS default tmp
     }

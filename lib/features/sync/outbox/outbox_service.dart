@@ -128,7 +128,8 @@ class OutboxService {
     _outboxCountSubscription = _syncDatabase.watchOutboxCount().listen((count) {
       if (_isDisposed || count <= 0) return;
       // Light debounce via a short delay
-      unawaited(enqueueNextSendRequest(delay: const Duration(milliseconds: 50)));
+      unawaited(
+          enqueueNextSendRequest(delay: const Duration(milliseconds: 50)));
       _loggingService.captureEvent(
         'dbNudge count=$count → enqueue',
         domain: 'OUTBOX',
@@ -189,10 +190,12 @@ class OutboxService {
     // queued work), periodically nudge the runner. This recovers from missed
     // signals or platform-specific timer quirks after reconnects/resumes.
     _watchdogTimer?.cancel();
-    _watchdogTimer = Timer.periodic(const Duration(seconds: 10), (Timer _) async {
+    _watchdogTimer =
+        Timer.periodic(const Duration(seconds: 10), (Timer _) async {
       if (_isDisposed) return;
       try {
-        final hasPending = (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        final hasPending =
+            (await _repository.fetchPending(limit: 1)).isNotEmpty;
         final loggedIn = _matrixService?.isLoggedIn() ?? true;
         final idleQueue = _clientRunner.queueSize == 0;
         if (hasPending && loggedIn && idleQueue) {
@@ -432,7 +435,8 @@ class OutboxService {
       try {
         final loggedIn = _matrixService?.isLoggedIn() ?? false;
         final canProc = _activityGate.canProcess;
-        final hasPending = (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        final hasPending =
+            (await _repository.fetchPending(limit: 1)).isNotEmpty;
         _loggingService.captureEvent(
           'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
           domain: 'OUTBOX',
