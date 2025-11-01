@@ -839,6 +839,217 @@ void main() {
     });
   });
 
+  test('scheduling while scan in-flight defers and yields one trailing scan',
+      () {
+    fakeAsync((async) {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final liveTimeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(roomManager.initialize).thenAnswer((_) => Future.value());
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      void Function()? onNewEvent;
+      when(
+        () => room.getTimeline(
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        ),
+      ).thenAnswer((inv) async {
+        onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
+        return liveTimeline;
+      });
+
+      // Provide one sync payload event so the scan does some work
+      final scanEv = MockEvent();
+      when(() => scanEv.eventId).thenReturn('S1');
+      when(() => scanEv.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(3));
+      when(() => scanEv.senderId).thenReturn('@other:server');
+      when(() => scanEv.attachmentMimetype).thenReturn('');
+      when(() => scanEv.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => scanEv.roomId).thenReturn('!room:server');
+      when(() => liveTimeline.events).thenReturn(<Event>[scanEv]);
+      when(() => processor.process(event: scanEv, journalDb: journalDb))
+          .thenAnswer((_) async {});
+      when(liveTimeline.cancelSubscriptions).thenReturn(null);
+
+      final logs = <String>[];
+      when(() => logger.captureEvent(captureAny<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
+        logs.add(inv.positionalArguments.first.toString());
+      });
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
+      );
+      consumer.initialize();
+      async.flushMicrotasks();
+      consumer.start();
+      async.flushMicrotasks();
+      addTearDown(() async => consumer.dispose());
+
+      // During the scan, schedule another scan via the new test seam; it
+      // should defer (log once) and yield exactly one trailing schedule.
+      var ran = false;
+      consumer.scanLiveTimelineTestHook = (schedule) {
+        if (ran) return;
+        ran = true;
+        // Issue multiple schedules while in-flight; they must coalesce.
+        schedule();
+        schedule();
+        // Disable hook after first invocation to avoid repeated trailing loops.
+        consumer.scanLiveTimelineTestHook = null;
+      };
+
+      // Trigger the first live scan via timeline signal
+      onNewEvent?.call();
+      // Allow debounce to fire and scan start
+      async.elapse(const Duration(milliseconds: 150));
+      async.flushMicrotasks();
+
+      // While in-flight schedules should have been deferred exactly once
+      final deferredLogs =
+          logs.where((l) => l.contains('signal.liveScan.deferred set')).length;
+      expect(deferredLogs, 1);
+
+      // Let scan complete and trailing schedule occur (min gap is 1s)
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+      final trailing =
+          logs.where((l) => l.contains('trailing.liveScan.scheduled')).length;
+      expect(trailing, 1);
+    });
+  });
+
+  test('double schedule while in-flight still yields one trailing scan', () {
+    fakeAsync((async) {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final liveTimeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(roomManager.initialize).thenAnswer((_) => Future.value());
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      void Function()? onNewEvent;
+      when(
+        () => room.getTimeline(
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        ),
+      ).thenAnswer((inv) async {
+        onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
+        return liveTimeline;
+      });
+      final scanEv = MockEvent();
+      when(() => scanEv.eventId).thenReturn('S2');
+      when(() => scanEv.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(4));
+      when(() => scanEv.senderId).thenReturn('@other:server');
+      when(() => scanEv.attachmentMimetype).thenReturn('');
+      when(() => scanEv.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => scanEv.roomId).thenReturn('!room:server');
+      when(() => liveTimeline.events).thenReturn(<Event>[scanEv]);
+      when(() => processor.process(event: scanEv, journalDb: journalDb))
+          .thenAnswer((_) async {});
+      when(liveTimeline.cancelSubscriptions).thenReturn(null);
+
+      final logs = <String>[];
+      when(() => logger.captureEvent(captureAny<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
+        logs.add(inv.positionalArguments.first.toString());
+      });
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
+      );
+      consumer.initialize();
+      async.flushMicrotasks();
+      consumer.start();
+      async.flushMicrotasks();
+      addTearDown(() async => consumer.dispose());
+
+      // Burst three schedules while in-flight
+      var ran = false;
+      consumer.scanLiveTimelineTestHook = (schedule) {
+        if (ran) return;
+        ran = true;
+        schedule();
+        schedule();
+        schedule();
+        consumer.scanLiveTimelineTestHook = null;
+      };
+      onNewEvent?.call();
+      async.elapse(const Duration(milliseconds: 150));
+      async.flushMicrotasks();
+      final deferred =
+          logs.where((l) => l.contains('signal.liveScan.deferred set')).length;
+      expect(deferred, 1);
+
+      // Let scan complete and any trailing follow-up schedule occur
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+      final trailing =
+          logs.where((l) => l.contains('trailing.liveScan.scheduled')).length;
+      expect(trailing, 1);
+    });
+  });
   test('latency calculated and min/max tracked', () async {
     fakeAsync((async) {
       final session = MockMatrixSessionManager();

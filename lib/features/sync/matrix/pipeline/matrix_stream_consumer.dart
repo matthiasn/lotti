@@ -195,6 +195,8 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   Timer? _liveScanTimer;
   bool _scanInFlight = false;
+  int _scanInFlightDepth =
+      0; // guards overlapping scans and trailing scheduling
   bool _liveScanDeferred = false;
   DateTime? _lastLiveScanAt;
   static const Duration _minLiveScanGap = Duration(seconds: 1);
@@ -807,7 +809,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     final tl = _liveTimeline;
     if (tl == null) return;
     try {
+      // Enter scan: increment depth and assert the in-flight guard.
+      _scanInFlightDepth++;
       _scanInFlight = true;
+      // Test seam: allow tests to invoke scheduling while a scan is in flight
+      // to validate coalescing/guarding behavior.
+      _scanLiveTimelineTestHook?.call(_scheduleLiveScan);
       // Record signal→scan latency if a signal was captured recently.
       if (_collectMetrics && _lastSignalAt != null) {
         final ms = clock.now().difference(_lastSignalAt!).inMilliseconds;
@@ -879,23 +886,32 @@ class MatrixStreamConsumer implements SyncPipeline {
         stackTrace: st,
       );
     } finally {
-      _scanInFlight = false;
-      // Record completion time to bound the rate of subsequent scans.
-      _lastLiveScanAt = clock.now();
-      if (_liveScanDeferred) {
-        _liveScanDeferred = false;
-        _loggingService.captureEvent(
-          'trailing.liveScan.scheduled',
-          domain: syncLoggingDomain,
-          subDomain: 'signal',
-        );
-        // Enforce a minimum gap between scans while keeping a small base
-        // debounce to coalesce a final burst of signals.
-        final delay = _calculateNextLiveScanDelay();
-        _liveScanTimer?.cancel();
-        _liveScanTimer = Timer(delay, () {
-          unawaited(_scanLiveTimeline());
-        });
+      // Leave scan: decrement depth and only clear the in-flight flag,
+      // record completion, and schedule trailing work when the outermost
+      // scan completes. This prevents the guard from dropping during
+      // nested scans and avoids overlapping scheduling.
+      _scanInFlightDepth = _scanInFlightDepth - 1;
+      final isOutermost = _scanInFlightDepth <= 0;
+      if (isOutermost) {
+        _scanInFlightDepth = 0;
+        _scanInFlight = false;
+        // Record completion time to bound the rate of subsequent scans.
+        _lastLiveScanAt = clock.now();
+        if (_liveScanDeferred) {
+          _liveScanDeferred = false;
+          _loggingService.captureEvent(
+            'trailing.liveScan.scheduled',
+            domain: syncLoggingDomain,
+            subDomain: 'signal',
+          );
+          // Enforce a minimum gap between scans while keeping a small base
+          // debounce to coalesce a final burst of signals.
+          final delay = _calculateNextLiveScanDelay();
+          _liveScanTimer?.cancel();
+          _liveScanTimer = Timer(delay, () {
+            unawaited(_scanLiveTimeline());
+          });
+        }
       }
     }
   }
@@ -1227,7 +1243,9 @@ class MatrixStreamConsumer implements SyncPipeline {
           subDomain: 'doubleScan',
         );
       }
-      unawaited(_scanLiveTimeline());
+      // Run the immediate second scan sequentially to avoid overlapping
+      // scans; the in-flight depth guard also prevents premature clearing.
+      await _scanLiveTimeline();
       _liveScanTimer?.cancel();
       _liveScanTimer = Timer(const Duration(milliseconds: 200), () {
         if (_collectMetrics) {
@@ -1424,6 +1442,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   // errors and exercise fallback logic.
   void Function()? _scheduleLiveScanTestHook;
 
+  // Test-only hook invoked at the start of _scanLiveTimeline() with a
+  // scheduler callback to allow tests to schedule additional scans while
+  // the guard is asserted.
+  void Function(void Function())? _scanLiveTimelineTestHook;
+
   // Visible for testing only: getter/setter for the hook to support tests.
   @visibleForTesting
   void Function()? get scheduleLiveScanTestHook => _scheduleLiveScanTestHook;
@@ -1431,5 +1454,15 @@ class MatrixStreamConsumer implements SyncPipeline {
   @visibleForTesting
   set scheduleLiveScanTestHook(void Function()? fn) {
     _scheduleLiveScanTestHook = fn;
+  }
+
+  // Visible for testing only: getter/setter for the scan hook.
+  @visibleForTesting
+  void Function(void Function())? get scanLiveTimelineTestHook =>
+      _scanLiveTimelineTestHook;
+
+  @visibleForTesting
+  set scanLiveTimelineTestHook(void Function(void Function())? fn) {
+    _scanLiveTimelineTestHook = fn;
   }
 }
