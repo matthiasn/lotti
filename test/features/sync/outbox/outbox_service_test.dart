@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
@@ -957,28 +958,30 @@ void main() {
       var loggedIn = false;
       when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
 
-      final svc = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        processor: processor,
-        activityGate: gate,
-        ownsActivityGate: false,
-        matrixService: matrixService,
-      );
-
-      // Flip to logged in and emit login event
-      loggedIn = true;
-      loginController.add(LoginState.loggedIn);
-      // Allow async runner to process
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
-
-      await svc.dispose();
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+          matrixService: matrixService,
+        );
+        // Flip to logged in and emit login event
+        loggedIn = true;
+        loginController.add(LoginState.loggedIn);
+        // Advance time to allow scheduled drain, then flush microtasks
+        async
+          ..elapse(const Duration(milliseconds: 50))
+          ..flushMicrotasks();
+        verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
     });
 
     test('connectivity regain pre-login does not drain, drains after login',
@@ -1022,32 +1025,38 @@ void main() {
           StreamController<List<ConnectivityResult>>.broadcast();
       addTearDown(connectivityController.close);
 
-      final svc = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        processor: processor,
-        activityGate: gate,
-        ownsActivityGate: false,
-        matrixService: matrixService,
-        connectivityStream: connectivityController.stream,
-      );
+      fakeAsync((async) {
+        final svc = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+          matrixService: matrixService,
+          connectivityStream: connectivityController.stream,
+        );
+        // Connectivity regain before login — should enqueue but not drain
+        connectivityController.add([ConnectivityResult.wifi]);
+        async
+          ..elapse(const Duration(milliseconds: 20))
+          ..flushMicrotasks();
+        verifyNever(() => processor.processQueue());
 
-      // Connectivity regain before login — should enqueue but not drain
-      connectivityController.add([ConnectivityResult.wifi]);
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      verifyNever(() => processor.processQueue());
+        // Now login completes — post-login nudge should drain
+        loggedIn = true;
+        loginController.add(LoginState.loggedIn);
+        async
+          ..elapse(const Duration(milliseconds: 40))
+          ..flushMicrotasks();
+        verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
 
-      // Now login completes — post-login nudge should drain
-      loggedIn = true;
-      loginController.add(LoginState.loggedIn);
-      await Future<void>.delayed(const Duration(milliseconds: 40));
-      verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
-
-      await svc.dispose();
+        unawaited(svc.dispose());
+        async.flushMicrotasks();
+      });
     });
   });
 
@@ -1129,17 +1138,18 @@ void main() {
         ownsActivityGate: false,
       );
 
+      // Use real async waits here because the service measures with
+      // DateTime.now(), which fakeAsync does not advance.
       // Trigger the runner via the public enqueue API
       await svc.enqueueNextSendRequest(delay: Duration.zero);
-      // Allow the async scheduled work to run
+      // Allow enough wall time for the gate wait to exceed 50ms and the
+      // runner to log the instrumentation line.
       await Future<void>.delayed(const Duration(milliseconds: 200));
-
       verify(() => loggingService.captureEvent(
             startsWith('activityGate.wait ms='),
             domain: 'OUTBOX',
             subDomain: 'activityGate',
           )).called(greaterThanOrEqualTo(1));
-
       await svc.dispose();
     });
   });

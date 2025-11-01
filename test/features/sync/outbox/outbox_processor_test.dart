@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -33,48 +36,55 @@ void main() {
   });
 
   test('send timeout triggers retry and schedules backoff', () async {
-    final repo = MockOutboxRepository();
-    final sender = MockMessageSender();
-    final log = MockLogging();
+    fakeAsync((async) {
+      final repo = MockOutboxRepository();
+      final sender = MockMessageSender();
+      final log = MockLogging();
 
-    final pending = OutboxItem(
-      id: 1,
-      // Use valid JSON encoding for the stored message payload
-      message: jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
-      subject: 'host:1',
-      status: OutboxStatus.pending.index,
-      retries: 0,
-      createdAt: DateTime(2024),
-      updatedAt: DateTime(2024),
-    );
-    when(() => repo.fetchPending(limit: any<int>(named: 'limit')))
-        .thenAnswer((_) async => [pending]);
-    when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
-    // Sender completes after a long delay, exceeding timeout
-    when(() => sender.send(any())).thenAnswer((_) async {
-      await Future<void>.delayed(const Duration(seconds: 1));
-      return true;
+      final pending = OutboxItem(
+        id: 1,
+        // Use valid JSON encoding for the stored message payload
+        message:
+            jsonEncode(const SyncMessage.aiConfigDelete(id: 'cfg').toJson()),
+        subject: 'host:1',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+      );
+      when(() => repo.fetchPending(limit: any<int>(named: 'limit')))
+          .thenAnswer((_) async => [pending]);
+      when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+      // Sender never completes; processQueue relies on the timeout
+      when(() => sender.send(any()))
+          .thenAnswer((_) => Completer<bool>().future);
+      when(() => log.captureEvent(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+      when(() => log.captureException(any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace')))
+          .thenAnswer((_) async {});
+
+      final proc = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+        retryDelayOverride: const Duration(milliseconds: 200),
+        sendTimeoutOverride: const Duration(milliseconds: 50),
+      );
+
+      OutboxProcessingResult? result;
+      unawaited(proc.processQueue().then((r) => result = r));
+      // Advance past the timeout (50ms) and the retry delay observation window
+      async
+        ..elapse(const Duration(seconds: 1))
+        ..flushMicrotasks();
+      expect(result, isNotNull);
+      expect(result!.shouldSchedule, isTrue);
+      expect(result!.nextDelay?.inMilliseconds, 200);
+      verify(() => repo.markRetry(any())).called(1);
     });
-    when(() => log.captureEvent(any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
-    when(() => log.captureException(any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-            stackTrace: any<StackTrace?>(named: 'stackTrace')))
-        .thenAnswer((_) async {});
-
-    final proc = OutboxProcessor(
-      repository: repo,
-      messageSender: sender,
-      loggingService: log,
-      retryDelayOverride: const Duration(milliseconds: 200),
-      sendTimeoutOverride: const Duration(milliseconds: 50),
-    );
-
-    final result = await proc.processQueue();
-    expect(result.shouldSchedule, isTrue);
-    expect(result.nextDelay?.inMilliseconds, 200);
-    verify(() => repo.markRetry(any())).called(1);
   });
 }

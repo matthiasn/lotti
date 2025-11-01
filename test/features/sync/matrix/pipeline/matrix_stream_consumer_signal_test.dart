@@ -51,40 +51,6 @@ void main() {
     registerFallbackValue(MockRoom());
   });
 
-  Future<MatrixStreamConsumer> buildConsumer({
-    required MatrixSessionManager session,
-    required SyncRoomManager roomManager,
-    required LoggingService logger,
-    required JournalDb journalDb,
-    required SettingsDb settingsDb,
-    required SyncEventProcessor processor,
-    required SyncReadMarkerService readMarker,
-  }) async {
-    // Common stubs used by all tests to avoid null-return Futures
-    when(roomManager.initialize).thenAnswer((_) async {});
-    final consumer = MatrixStreamConsumer(
-      sessionManager: session,
-      roomManager: roomManager,
-      loggingService: logger,
-      journalDb: journalDb,
-      settingsDb: settingsDb,
-      eventProcessor: processor,
-      readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
-      collectMetrics: true,
-      sentEventRegistry: SentEventRegistry(),
-    );
-    await consumer.initialize();
-    await consumer.start();
-    // Ensure timers are cancelled and resources are cleaned between tests.
-    addTearDown(() async {
-      try {
-        await consumer.dispose();
-      } catch (_) {}
-    });
-    return consumer;
-  }
-
   test(
       'client stream event triggers catch-up/forceRescan (no immediate processing)',
       () {
@@ -511,7 +477,8 @@ void main() {
   });
 
   test('connectivity increments signalConnectivity counter (consumer level)',
-      () async {
+      () {
+    // No need to start the consumer; this counter is synchronous.
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
     final logger = MockLoggingService();
@@ -525,21 +492,20 @@ void main() {
     when(() => client.userID).thenReturn('@me:server');
     when(() => session.timelineEvents)
         .thenAnswer((_) => const Stream<Event>.empty());
-    when(roomManager.initialize).thenAnswer((_) async {});
-    when(() => roomManager.currentRoom).thenReturn(null);
-    when(() => roomManager.currentRoomId).thenReturn('!room:server');
-    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-        .thenAnswer((_) async => null);
 
-    final consumer = await buildConsumer(
-      session: session,
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
       roomManager: roomManager,
-      logger: logger,
+      loggingService: logger,
       journalDb: journalDb,
       settingsDb: settingsDb,
-      processor: processor,
-      readMarker: readMarker,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      collectMetrics: true,
+      sentEventRegistry: SentEventRegistry(),
     );
+
     final before = consumer.metricsSnapshot()['signalConnectivity'] ?? 0;
     consumer.recordConnectivitySignal();
     final after = consumer.metricsSnapshot()['signalConnectivity'] ?? 0;

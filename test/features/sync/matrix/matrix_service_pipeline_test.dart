@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -128,7 +129,6 @@ void main() {
       attachmentIndex: attachmentIndex,
       connectivityStream: connectivityStream,
     );
-
     // Allow the eager forceRescan task to run before assertions.
     await Future<void>.delayed(const Duration(milliseconds: 350));
     clearInteractions(pipeline);
@@ -153,77 +153,102 @@ void main() {
   });
 
   test('getV2Metrics returns null when metrics collection disabled', () async {
-    final service = await createService(collectMetrics: false);
+    MatrixService? service;
+    fakeAsync((async) {
+      unawaited(createService(collectMetrics: false).then((s) => service = s));
+      async.elapse(const Duration(milliseconds: 350));
+    });
 
-    final metrics = await service.getSyncMetrics();
+    final metrics = await service!.getSyncMetrics();
 
     expect(metrics, isNull);
   });
 
   test('getV2Metrics returns metrics when collection enabled', () async {
-    final service = await createService(
-      metricsSnapshot: const {'dbApplied': 7, 'failures': 0},
-    );
+    MatrixService? service;
+    fakeAsync((async) {
+      unawaited(createService(
+        metricsSnapshot: const {'dbApplied': 7, 'failures': 0},
+      ).then((s) => service = s));
+      async.elapse(const Duration(milliseconds: 350));
+    });
 
-    final metrics = await service.getSyncMetrics();
+    final metrics = await service!.getSyncMetrics();
 
     expect(metrics, isA<SyncMetrics>());
     expect(metrics?.dbApplied, 7);
   });
 
   test('forceV2Rescan forwards includeCatchUp flag to pipeline', () async {
-    final service = await createService();
+    MatrixService? service;
+    fakeAsync((async) {
+      unawaited(createService().then((s) => service = s));
+      async.elapse(const Duration(milliseconds: 350));
+    });
 
-    await service.forceRescan(includeCatchUp: false);
+    await service!.forceRescan(includeCatchUp: false);
 
     verify(() => pipeline.forceRescan(includeCatchUp: false)).called(1);
   });
 
   test('retryV2Now triggers pipeline retry', () async {
-    final service = await createService();
+    MatrixService? service;
+    fakeAsync((async) {
+      unawaited(createService().then((s) => service = s));
+      async.elapse(const Duration(milliseconds: 350));
+    });
 
-    await service.retryNow();
+    await service!.retryNow();
 
     verify(() => pipeline.retryNow()).called(1);
   });
 
   test('connectivity change calls recordConnectivitySignal before forceRescan',
       () async {
-    final connectivityController =
-        StreamController<List<ConnectivityResult>>.broadcast();
-    addTearDown(connectivityController.close);
+    fakeAsync((async) {
+      final connectivityController =
+          StreamController<List<ConnectivityResult>>.broadcast();
+      addTearDown(connectivityController.close);
 
-    final service = await createService(
-      connectivity: connectivityController.stream,
-    );
+      MatrixService? service;
+      unawaited(createService(
+        connectivity: connectivityController.stream,
+      ).then((s) => service = s));
+      async.elapse(const Duration(milliseconds: 350));
 
-    // Stub methods to track ordering
-    when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
-    when(() =>
-            pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')))
-        .thenAnswer((_) async {});
+      // Stub methods to track ordering
+      when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
+      when(() => pipeline.forceRescan(
+              includeCatchUp: any(named: 'includeCatchUp')))
+          .thenAnswer((_) async {});
 
-    // Emit connectivity regain
-    connectivityController.add([ConnectivityResult.wifi]);
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+      // Emit connectivity regain
+      connectivityController.add([ConnectivityResult.wifi]);
+      async.elapse(const Duration(milliseconds: 10));
 
-    verifyInOrder([
-      () => pipeline.recordConnectivitySignal(),
-      () => pipeline.forceRescan(includeCatchUp: true),
-    ]);
+      verifyInOrder([
+        () => pipeline.recordConnectivitySignal(),
+        () => pipeline.forceRescan(includeCatchUp: true),
+      ]);
 
-    // Clean up
-    await service.dispose();
+      // Clean up
+      unawaited(service!.dispose());
+      async.flushMicrotasks();
+    });
   });
 
   test('getSyncDiagnosticsText joins metrics and diagnostics strings',
       () async {
-    final service = await createService(
-      metricsSnapshot: const {'dbApplied': 3, 'failures': 1},
-      diagnostics: const {'nextRetry': '42s'},
-    );
+    MatrixService? service;
+    fakeAsync((async) {
+      unawaited(createService(
+        metricsSnapshot: const {'dbApplied': 3, 'failures': 1},
+        diagnostics: const {'nextRetry': '42s'},
+      ).then((s) => service = s));
+      async.elapse(const Duration(milliseconds: 350));
+    });
 
-    final text = await service.getSyncDiagnosticsText();
+    final text = await service!.getSyncDiagnosticsText();
 
     expect(text, contains('dbApplied=3'));
     expect(text, contains('failures=1'));
@@ -231,9 +256,13 @@ void main() {
   });
 
   test('dispose releases owned dependencies', () async {
-    final service = await createService();
+    MatrixService? service;
+    fakeAsync((async) {
+      unawaited(createService().then((s) => service = s));
+      async.elapse(const Duration(milliseconds: 350));
+    });
 
-    await service.dispose();
+    await service!.dispose();
 
     verify(() => sessionManager.dispose()).called(1);
     verify(() => roomManager.dispose()).called(1);

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
@@ -95,70 +96,83 @@ void main() {
     });
 
     test('reacts to login event and starts pipeline once', () async {
-      when(() => sessionManager.isLoggedIn()).thenReturn(false);
-      final coord = makeCoordinator();
-      await coord.initialize();
+      fakeAsync((async) {
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        final coord = makeCoordinator();
+        unawaited(coord.initialize());
+        async.flushMicrotasks();
 
-      // Emit loggedIn twice rapidly
-      loginStates
-        ..add(LoginState.loggedIn)
-        ..add(LoginState.loggedIn);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Emit loggedIn twice rapidly
+        loginStates
+          ..add(LoginState.loggedIn)
+          ..add(LoginState.loggedIn);
+        async.elapse(const Duration(milliseconds: 50));
 
-      verify(() =>
-              roomManager.hydrateRoomSnapshot(client: any(named: 'client')))
-          .called(greaterThanOrEqualTo(1));
-      verify(() => pipeline.start()).called(1);
-      expect(coord.isActive, isTrue);
+        verify(() =>
+                roomManager.hydrateRoomSnapshot(client: any(named: 'client')))
+            .called(greaterThanOrEqualTo(1));
+        verify(() => pipeline.start()).called(1);
+        expect(coord.isActive, isTrue);
+      });
     });
 
     test('reacts to loggedOut and disposes pipeline', () async {
-      when(() => sessionManager.isLoggedIn()).thenReturn(false);
-      final coord = makeCoordinator();
-      await coord.initialize();
+      fakeAsync((async) {
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        final coord = makeCoordinator();
+        unawaited(coord.initialize());
+        async.flushMicrotasks();
 
-      loginStates.add(LoginState.loggedIn);
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      loginStates.add(LoginState.loggedOut);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        loginStates.add(LoginState.loggedIn);
+        async.elapse(const Duration(milliseconds: 10));
+        loginStates.add(LoginState.loggedOut);
+        async.elapse(const Duration(milliseconds: 50));
 
-      verify(() => pipeline.dispose()).called(1);
-      expect(coord.isActive, isFalse);
+        verify(() => pipeline.dispose()).called(1);
+        expect(coord.isActive, isFalse);
+      });
     });
 
     test('logout before activation completes is ignored', () async {
-      when(() => sessionManager.isLoggedIn()).thenReturn(false);
-      final startCompleter = Completer<void>();
-      when(() => pipeline.start()).thenAnswer((_) => startCompleter.future);
+      fakeAsync((async) {
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        final startCompleter = Completer<void>();
+        when(() => pipeline.start()).thenAnswer((_) => startCompleter.future);
 
-      final coord = makeCoordinator();
-      await coord.initialize();
+        final coord = makeCoordinator();
+        unawaited(coord.initialize());
+        async.flushMicrotasks();
 
-      loginStates
-        ..add(LoginState.loggedIn)
-        // Immediately log out before start completes
-        ..add(LoginState.loggedOut);
-      // Now complete start
-      startCompleter.complete();
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-      // Because logout arrived while not active, coordinator does not queue a
-      // deactivation. Activation completes and remains active.
-      verifyNever(() => pipeline.dispose());
-      expect(coord.isActive, isTrue);
+        loginStates
+          ..add(LoginState.loggedIn)
+          // Immediately log out before start completes
+          ..add(LoginState.loggedOut);
+        // Now complete start
+        startCompleter.complete();
+        async.elapse(const Duration(milliseconds: 150));
+        // Because logout arrived while not active, coordinator does not queue a
+        // deactivation. Activation completes and remains active.
+        verifyNever(() => pipeline.dispose());
+        expect(coord.isActive, isTrue);
+      });
     });
 
     test('dispose cancels subscription; further events ignored', () async {
-      when(() => sessionManager.isLoggedIn()).thenReturn(false);
-      final coord = makeCoordinator();
-      await coord.initialize();
-      await coord.dispose();
+      fakeAsync((async) {
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        final coord = makeCoordinator();
+        unawaited(coord.initialize());
+        async.flushMicrotasks();
+        unawaited(coord.dispose());
+        async.flushMicrotasks();
 
-      // Emit an event after dispose; expect no calls
-      clearInteractions(pipeline);
-      loginStates.add(LoginState.loggedIn);
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      verifyNever(() => pipeline.start());
-      expect(coord.isActive, isFalse);
+        // Emit an event after dispose; expect no calls
+        clearInteractions(pipeline);
+        loginStates.add(LoginState.loggedIn);
+        async.elapse(const Duration(milliseconds: 20));
+        verifyNever(() => pipeline.start());
+        expect(coord.isActive, isFalse);
+      });
     });
   });
 }
