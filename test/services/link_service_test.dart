@@ -1,3 +1,5 @@
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -64,6 +66,23 @@ void main() {
         ..registerSingleton<LoggingService>(mockLoggingService);
 
       linkService = LinkService();
+
+      // Stub HapticFeedback to avoid platform channel dependency under fake time
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+      // Save and restore the handler's state after each test
+      addTearDown(() {
+        messenger.setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+
+      messenger.setMockMethodCallHandler(SystemChannels.platform,
+          (methodCall) async {
+        if (methodCall.method == 'HapticFeedback.vibrate') {
+          return null;
+        }
+        return null;
+      });
     });
 
     test('createLink does nothing when both IDs are null', () async {
@@ -78,137 +97,147 @@ void main() {
       );
     });
 
-    test('createLink does nothing when only linkFromId is set', () async {
-      linkService.linkFrom('from-id');
+    test('createLink does nothing when only linkFromId is set', () {
+      fakeAsync((async) {
+        linkService.linkFrom('from-id');
 
-      // Wait for createLink to complete
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Allow async tasks started by linkFrom/createLink to run.
+        async.flushMicrotasks();
 
-      verifyNever(
-        () => mockPersistenceLogic.createLink(
-          fromId: any(named: 'fromId'),
-          toId: any(named: 'toId'),
-        ),
-      );
+        verifyNever(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        );
+      });
     });
 
-    test('createLink creates link when both IDs are set via linkTo', () async {
-      // Set up mocks
-      when(
-        () => mockPersistenceLogic.createLink(
-          fromId: any(named: 'fromId'),
-          toId: any(named: 'toId'),
-        ),
-      ).thenAnswer((_) async => true);
+    test('createLink creates link when both IDs are set via linkTo', () {
+      fakeAsync((async) {
+        // Set up mocks
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById('from-id'))
-          .thenAnswer((_) async => testTextEntry);
+        when(() => mockJournalDb.journalEntityById('from-id'))
+            .thenAnswer((_) async => testTextEntry);
 
-      when(() => mockTagsService.getFilteredStoryTagIds(any()))
-          .thenReturn([testStoryTag1.id]);
+        when(() => mockTagsService.getFilteredStoryTagIds(any()))
+            .thenReturn([testStoryTag1.id]);
 
-      // Set linkFromId first
-      linkService.linkFrom('from-id');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Set linkFromId first
+        linkService.linkFrom('from-id');
+        async.flushMicrotasks();
 
-      // Then set linkToId which should trigger createLink
-      linkService.linkTo('to-id');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Then set linkToId which should trigger createLink
+        linkService.linkTo('to-id');
+        async.flushMicrotasks();
 
-      verify(
-        () => mockPersistenceLogic.createLink(
-          fromId: 'from-id',
-          toId: 'to-id',
-        ),
-      ).called(1);
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'from-id',
+            toId: 'to-id',
+          ),
+        ).called(1);
 
-      verify(() => mockJournalDb.journalEntityById('from-id')).called(1);
-      verify(() => mockTagsService.getFilteredStoryTagIds(any())).called(1);
+        verify(() => mockJournalDb.journalEntityById('from-id')).called(1);
+        verify(() => mockTagsService.getFilteredStoryTagIds(any())).called(1);
+      });
     });
 
-    test('createLink creates link when both IDs are set via linkFrom',
-        () async {
-      // Set up mocks
-      when(
-        () => mockPersistenceLogic.createLink(
-          fromId: any(named: 'fromId'),
-          toId: any(named: 'toId'),
-        ),
-      ).thenAnswer((_) async => true);
+    test('createLink creates link when both IDs are set via linkFrom', () {
+      fakeAsync((async) {
+        // Set up mocks
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById('from-id'))
-          .thenAnswer((_) async => testTextEntry);
+        when(() => mockJournalDb.journalEntityById('from-id'))
+            .thenAnswer((_) async => testTextEntry);
 
-      when(() => mockTagsService.getFilteredStoryTagIds(any()))
-          .thenReturn([testStoryTag1.id]);
+        when(() => mockTagsService.getFilteredStoryTagIds(any()))
+            .thenReturn([testStoryTag1.id]);
 
-      // Set linkToId first
-      linkService.linkTo('to-id');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Set linkToId first
+        linkService.linkTo('to-id');
+        async.flushMicrotasks();
 
-      // Then set linkFromId which should trigger createLink
-      linkService.linkFrom('from-id');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Then set linkFromId which should trigger createLink
+        linkService.linkFrom('from-id');
+        async.flushMicrotasks();
 
-      verify(
-        () => mockPersistenceLogic.createLink(
-          fromId: 'from-id',
-          toId: 'to-id',
-        ),
-      ).called(1);
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'from-id',
+            toId: 'to-id',
+          ),
+        ).called(1);
+      });
     });
 
-    test('createLink handles entity without tags', () async {
-      final entryWithoutTags = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(tagIds: null),
-      );
+    test('createLink handles entity without tags', () {
+      fakeAsync((async) {
+        final entryWithoutTags = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(tagIds: null),
+        );
 
-      when(
-        () => mockPersistenceLogic.createLink(
-          fromId: any(named: 'fromId'),
-          toId: any(named: 'toId'),
-        ),
-      ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById('from-id'))
-          .thenAnswer((_) async => entryWithoutTags);
+        when(() => mockJournalDb.journalEntityById('from-id'))
+            .thenAnswer((_) async => entryWithoutTags);
 
-      when(() => mockTagsService.getFilteredStoryTagIds(null)).thenReturn([]);
+        when(() => mockTagsService.getFilteredStoryTagIds(null)).thenReturn([]);
 
-      linkService.linkFrom('from-id');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        linkService.linkFrom('from-id');
+        async.flushMicrotasks();
 
-      linkService.linkTo('to-id');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        linkService.linkTo('to-id');
+        async.flushMicrotasks();
 
-      verify(() => mockTagsService.getFilteredStoryTagIds(null)).called(1);
+        verify(() => mockTagsService.getFilteredStoryTagIds(null)).called(1);
+      });
     });
 
-    test('createLink handles missing linked entity', () async {
-      when(
-        () => mockPersistenceLogic.createLink(
-          fromId: any(named: 'fromId'),
-          toId: any(named: 'toId'),
-        ),
-      ).thenAnswer((_) async => true);
+    test('createLink handles missing linked entity', () {
+      fakeAsync((async) {
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById('from-id'))
-          .thenAnswer((_) async => null);
+        when(() => mockJournalDb.journalEntityById('from-id'))
+            .thenAnswer((_) async => null);
 
-      when(() => mockTagsService.getFilteredStoryTagIds(any())).thenReturn([]);
+        when(() => mockTagsService.getFilteredStoryTagIds(any()))
+            .thenReturn([]);
 
-      linkService.linkFrom('from-id');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        linkService.linkFrom('from-id');
+        async.flushMicrotasks();
 
-      linkService.linkTo('to-id');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        linkService.linkTo('to-id');
+        async.flushMicrotasks();
 
-      verify(
-        () => mockPersistenceLogic.createLink(
-          fromId: 'from-id',
-          toId: 'to-id',
-        ),
-      ).called(1);
+        verify(
+          () => mockPersistenceLogic.createLink(
+            fromId: 'from-id',
+            toId: 'to-id',
+          ),
+        ).called(1);
+      });
     });
   });
 }

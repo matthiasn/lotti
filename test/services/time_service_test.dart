@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/services/time_service.dart';
@@ -40,51 +41,53 @@ void main() {
       expect(timeService.linkedFrom, linkedEntity);
     });
 
-    test('getStream emits periodic updates', () async {
-      final entity = testTextEntry;
-      final stream = timeService.getStream();
+    test('getStream emits periodic updates', () {
+      fakeAsync((async) {
+        final entity = testTextEntry;
+        final stream = timeService.getStream();
 
-      // Using take(3) ensures we only wait for 3 emissions, making the test faster and more deterministic.
-      final emissionsFuture = stream.take(3).toList();
+        List<JournalEntity?>? emissions;
+        stream.take(3).toList().then((e) => emissions = e);
 
-      await timeService.start(entity, null);
+        timeService.start(entity, null);
 
-      final emissions =
-          await emissionsFuture.timeout(const Duration(seconds: 5));
+        // Drive three ticks of the 1s periodic timer.
+        async
+          ..elapse(const Duration(seconds: 3))
+          ..flushMicrotasks();
 
-      // Should have received 3 updates
-      expect(emissions, hasLength(3));
-
-      // All emitted entities should have the same ID
-      for (final emission in emissions) {
-        expect(emission?.id, entity.id);
-      }
+        expect(emissions, isNotNull);
+        expect(emissions, hasLength(3));
+        for (final emission in emissions!) {
+          expect(emission?.id, entity.id);
+        }
+      });
     });
 
-    test('stream updates contain updated dateTo timestamp', () async {
-      final entity = testTextEntry;
-      final stream = timeService.getStream();
+    test('stream updates contain updated dateTo timestamp', () {
+      fakeAsync((async) {
+        final entity = testTextEntry;
+        final stream = timeService.getStream();
 
-      final startTime = DateTime.now();
+        final startTime = DateTime.now();
+        List<JournalEntity?>? emissions;
+        stream.take(2).toList().then((e) => emissions = e);
 
-      // Using take(2) to wait for 2 emissions
-      final emissionsFuture = stream.take(2).toList();
+        timeService.start(entity, null);
 
-      await timeService.start(entity, null);
+        async
+          ..elapse(const Duration(seconds: 2))
+          ..flushMicrotasks();
 
-      final emissions =
-          await emissionsFuture.timeout(const Duration(seconds: 3));
-
-      // Check that dateTo timestamps are being updated
-      final filteredEmissions =
-          emissions.where((e) => e != null).cast<JournalEntity>().toList();
-      expect(filteredEmissions.length, greaterThan(0));
-
-      for (final emission in filteredEmissions) {
-        final dateTo = emission.meta.dateTo;
-        expect(dateTo, isNotNull);
-        expect(dateTo.isAfter(startTime), true);
-      }
+        final filteredEmissions =
+            emissions!.where((e) => e != null).cast<JournalEntity>().toList();
+        expect(filteredEmissions.length, greaterThan(0));
+        for (final emission in filteredEmissions) {
+          final dateTo = emission.meta.dateTo;
+          expect(dateTo, isNotNull);
+          expect(dateTo.isAfter(startTime), true);
+        }
+      });
     });
 
     test('stop clears current entity and stops stream', () async {
@@ -175,29 +178,33 @@ void main() {
       expect(timeService.getCurrent(), isNull);
     });
 
-    test('getStream can be called multiple times', () async {
-      final stream1 = timeService.getStream();
-      final stream2 = timeService.getStream();
+    test('getStream can be called multiple times', () {
+      fakeAsync((async) {
+        final stream1 = timeService.getStream();
+        final stream2 = timeService.getStream();
 
-      expect(stream1, isNotNull);
-      expect(stream2, isNotNull);
+        expect(stream1, isNotNull);
+        expect(stream2, isNotNull);
 
-      // Both streams should receive the same data (broadcast)
-      final emissions1Future = stream1.take(2).toList();
-      final emissions2Future = stream2.take(2).toList();
+        List<JournalEntity?>? emissions1;
+        List<JournalEntity?>? emissions2;
+        stream1.take(2).toList().then((e) => emissions1 = e);
+        stream2.take(2).toList().then((e) => emissions2 = e);
 
-      await timeService.start(testTextEntry, null);
+        timeService.start(testTextEntry, null);
 
-      final emissions1 =
-          await emissions1Future.timeout(const Duration(seconds: 3));
-      final emissions2 =
-          await emissions2Future.timeout(const Duration(seconds: 3));
+        async
+          ..elapse(const Duration(seconds: 2))
+          ..flushMicrotasks();
 
-      await timeService.stop();
+        // Both should have received 2 emissions
+        expect(emissions1, isNotNull);
+        expect(emissions2, isNotNull);
+        expect(emissions1, hasLength(2));
+        expect(emissions2, hasLength(2));
 
-      // Both should have received 2 emissions
-      expect(emissions1, hasLength(2));
-      expect(emissions2, hasLength(2));
+        timeService.stop();
+      });
     });
   });
 }

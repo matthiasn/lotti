@@ -135,8 +135,8 @@ void main() {
           )),
         );
 
-        // Give the async operations time to complete
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        // Give the async operations a yield to complete
+        await Future<void>.delayed(Duration.zero);
 
         // Verify error logging
         verify(() => mockLoggingService.captureException(

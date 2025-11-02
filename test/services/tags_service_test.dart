@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -44,69 +45,75 @@ void main() {
       await tagsController.close();
     });
 
-    test('constructor initializes and populates tagsById from stream',
-        () async {
-      tagsController.add([testStoryTag1, testPersonTag1, testTag1]);
+    test('constructor initializes and populates tagsById from stream', () {
+      fakeAsync((async) {
+        tagsController.add([testStoryTag1, testPersonTag1, testTag1]);
+        async.flushMicrotasks();
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      expect(tagsService.tagsById.length, 3);
-      expect(tagsService.tagsById[testStoryTag1.id], testStoryTag1);
-      expect(tagsService.tagsById[testPersonTag1.id], testPersonTag1);
-      expect(tagsService.tagsById[testTag1.id], testTag1);
+        expect(tagsService.tagsById.length, 3);
+        expect(tagsService.tagsById[testStoryTag1.id], testStoryTag1);
+        expect(tagsService.tagsById[testPersonTag1.id], testPersonTag1);
+        expect(tagsService.tagsById[testTag1.id], testTag1);
+      });
     });
 
-    test('getTagById returns correct tag', () async {
-      tagsController.add([testStoryTag1, testPersonTag1]);
+    test('getTagById returns correct tag', () {
+      fakeAsync((async) {
+        tagsController.add([testStoryTag1, testPersonTag1]);
+        async.flushMicrotasks();
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final result = tagsService.getTagById(testStoryTag1.id);
-      expect(result, testStoryTag1);
+        final result = tagsService.getTagById(testStoryTag1.id);
+        expect(result, testStoryTag1);
+      });
     });
 
-    test('getTagById returns null for non-existing id', () async {
-      tagsController.add([testStoryTag1]);
+    test('getTagById returns null for non-existing id', () {
+      fakeAsync((async) {
+        tagsController.add([testStoryTag1]);
+        async.flushMicrotasks();
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final result = tagsService.getTagById('non-existing-id');
-      expect(result, isNull);
+        final result = tagsService.getTagById('non-existing-id');
+        expect(result, isNull);
+      });
     });
 
-    test('tagsById updates when stream emits new data', () async {
-      // Initial data
-      tagsController.add([testStoryTag1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    test('tagsById updates when stream emits new data', () {
+      fakeAsync((async) {
+        // Initial data
+        tagsController.add([testStoryTag1]);
+        async.flushMicrotasks();
 
-      expect(tagsService.tagsById.length, 1);
-      expect(tagsService.tagsById[testStoryTag1.id], testStoryTag1);
+        expect(tagsService.tagsById.length, 1);
+        expect(tagsService.tagsById[testStoryTag1.id], testStoryTag1);
 
-      // Update with new data
-      tagsController.add([testPersonTag1, testTag1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Update with new data
+        tagsController.add([testPersonTag1, testTag1]);
+        async.flushMicrotasks();
 
-      // Cache should be replaced with new data
-      expect(tagsService.tagsById.length, 2);
-      expect(tagsService.tagsById[testStoryTag1.id], isNull);
-      expect(tagsService.tagsById[testPersonTag1.id], testPersonTag1);
-      expect(tagsService.tagsById[testTag1.id], testTag1);
+        // Cache should be replaced with new data
+        expect(tagsService.tagsById.length, 2);
+        expect(tagsService.tagsById[testStoryTag1.id], isNull);
+        expect(tagsService.tagsById[testPersonTag1.id], testPersonTag1);
+        expect(tagsService.tagsById[testTag1.id], testTag1);
+      });
     });
 
-    test('getFilteredStoryTagIds returns only story tags', () async {
-      tagsController.add([testStoryTag1, testPersonTag1, testTag1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    test('getFilteredStoryTagIds returns only story tags', () {
+      fakeAsync((async) {
+        tagsController.add([testStoryTag1, testPersonTag1, testTag1]);
+        async.flushMicrotasks();
 
-      final result = tagsService.getFilteredStoryTagIds([
-        testStoryTag1.id,
-        testPersonTag1.id,
-        testTag1.id,
-      ]);
+        final result = tagsService.getFilteredStoryTagIds([
+          testStoryTag1.id,
+          testPersonTag1.id,
+          testTag1.id,
+        ]);
 
-      expect(result.length, 1);
-      expect(result, contains(testStoryTag1.id));
-      expect(result, isNot(contains(testPersonTag1.id)));
-      expect(result, isNot(contains(testTag1.id)));
+        expect(result.length, 1);
+        expect(result, contains(testStoryTag1.id));
+        expect(result, isNot(contains(testPersonTag1.id)));
+        expect(result, isNot(contains(testTag1.id)));
+      });
     });
 
     test('getFilteredStoryTagIds handles null tag list', () {
@@ -121,41 +128,45 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('getFilteredStoryTagIds handles multiple story tags', () async {
-      final testStoryTag2 = StoryTag(
-        id: 'story-tag-2-id',
-        tag: 'Working',
-        createdAt: testEpochDateTime,
-        updatedAt: testEpochDateTime,
-        private: false,
-        vectorClock: null,
-      );
+    test('getFilteredStoryTagIds handles multiple story tags', () {
+      fakeAsync((async) {
+        final testStoryTag2 = StoryTag(
+          id: 'story-tag-2-id',
+          tag: 'Working',
+          createdAt: testEpochDateTime,
+          updatedAt: testEpochDateTime,
+          private: false,
+          vectorClock: null,
+        );
 
-      tagsController.add([testStoryTag1, testStoryTag2, testPersonTag1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        tagsController.add([testStoryTag1, testStoryTag2, testPersonTag1]);
+        async.flushMicrotasks();
 
-      final result = tagsService.getFilteredStoryTagIds([
-        testStoryTag1.id,
-        testStoryTag2.id,
-        testPersonTag1.id,
-      ]);
+        final result = tagsService.getFilteredStoryTagIds([
+          testStoryTag1.id,
+          testStoryTag2.id,
+          testPersonTag1.id,
+        ]);
 
-      expect(result.length, 2);
-      expect(result, contains(testStoryTag1.id));
-      expect(result, contains(testStoryTag2.id));
+        expect(result.length, 2);
+        expect(result, contains(testStoryTag1.id));
+        expect(result, contains(testStoryTag2.id));
+      });
     });
 
-    test('getFilteredStoryTagIds handles non-existent tag IDs', () async {
-      tagsController.add([testStoryTag1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+    test('getFilteredStoryTagIds handles non-existent tag IDs', () {
+      fakeAsync((async) {
+        tagsController.add([testStoryTag1]);
+        async.flushMicrotasks();
 
-      final result = tagsService.getFilteredStoryTagIds([
-        testStoryTag1.id,
-        'non-existent-tag-id',
-      ]);
+        final result = tagsService.getFilteredStoryTagIds([
+          testStoryTag1.id,
+          'non-existent-tag-id',
+        ]);
 
-      expect(result.length, 1);
-      expect(result, contains(testStoryTag1.id));
+        expect(result.length, 1);
+        expect(result, contains(testStoryTag1.id));
+      });
     });
 
     test('setClipboard stores entry ID', () {

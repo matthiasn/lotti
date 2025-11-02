@@ -1,3 +1,5 @@
+// ignore_for_file: cascade_invocations
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -223,7 +225,7 @@ void main() {
   test(
       'rapid add/remove during async run schedules another run after stable window',
       () {
-    fakeAsync((async) async {
+    fakeAsync((async) {
       final logging = MockLoggingService();
       when(() => logging.captureEvent(any<String>(),
           domain: any<String>(named: 'domain'),
@@ -241,7 +243,7 @@ void main() {
       // Delay getTimeline to simulate async work during which pending changes occur
       when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer(
         (_) async {
-          async.elapse(const Duration(milliseconds: 500));
+          await Future<void>.delayed(const Duration(milliseconds: 500));
           return timeline;
         },
       );
@@ -267,18 +269,30 @@ void main() {
 
       // Allow first run to complete
       async.elapse(const Duration(milliseconds: 500));
+      async.flushMicrotasks();
+      // Ensure any queued timers/microtasks progress
+      async.elapse(Duration.zero);
+      async.flushMicrotasks();
       expect(manager.runs, 1);
 
       // Next run should be scheduled and occur only after another stable window
       async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+      async.elapse(Duration.zero);
+      async.flushMicrotasks();
       expect(manager.runs, 1);
       async.elapse(const Duration(seconds: 1));
+      // Allow the second run's async getTimeline to complete
+      async.elapse(const Duration(milliseconds: 500));
+      async.flushMicrotasks();
+      async.elapse(Duration.zero);
+      async.flushMicrotasks();
       expect(manager.runs, 2);
     });
   });
 
   test('_runCatchUp exception is logged (timer path)', () {
-    fakeAsync((async) async {
+    fakeAsync((async) {
       final logging = MockLoggingService();
       when(() => logging.captureEvent(any<String>(),
           domain: any<String>(named: 'domain'),
@@ -323,7 +337,7 @@ void main() {
   });
 
   test('does not run catch-up concurrently (in-flight guard)', () {
-    fakeAsync((async) async {
+    fakeAsync((async) {
       final logging = MockLoggingService();
       when(() => logging.captureEvent(any<String>(),
           domain: any<String>(named: 'domain'),
@@ -346,7 +360,7 @@ void main() {
           concurrent++;
           if (concurrent > maxConcurrent) maxConcurrent = concurrent;
           // Keep this run in-flight for a bit
-          async.elapse(const Duration(milliseconds: 500));
+          await Future<void>.delayed(const Duration(milliseconds: 500));
           concurrent--;
           return timeline;
         },
@@ -371,10 +385,17 @@ void main() {
       manager.addPending('b.json');
 
       // Let first run finish and the subsequent scheduled run occur
-      async
-        ..elapse(const Duration(milliseconds: 500))
-        // After completion, another stable window elapses and a second run should happen
-        ..elapse(const Duration(seconds: 2));
+      async.elapse(const Duration(milliseconds: 500));
+      async.flushMicrotasks();
+      async.elapse(Duration.zero);
+      async.flushMicrotasks();
+      // After completion, another stable window elapses and a second run should happen
+      async.elapse(const Duration(seconds: 2));
+      // Allow the second run's async getTimeline to complete
+      async.elapse(const Duration(milliseconds: 500));
+      async.flushMicrotasks();
+      async.elapse(Duration.zero);
+      async.flushMicrotasks();
 
       expect(manager.runs, greaterThanOrEqualTo(2));
       expect(maxConcurrent, 1);

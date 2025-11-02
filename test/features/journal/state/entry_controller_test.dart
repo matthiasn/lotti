@@ -37,8 +37,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
-import '../../../utils/utils.dart';
-import '../../../utils/wait.dart';
 
 class Listener<T> extends Mock {
   void call(T? previous, T next);
@@ -760,11 +758,8 @@ void main() {
         // inserting text changes to dirty state
         notifier.controller.document.insert(0, 'PREFIXED: ');
 
-        // wait until state change, not sure why waitUntilAsync alone not working
-        await waitMilliseconds(100);
-        await waitUntilAsync(
-          () async => (await container.read(testEntryProvider.future)) != null,
-        );
+        // Yield to allow state change to propagate
+        await container.pump();
 
         await expectLater(
           container.read(testEntryProvider.future),

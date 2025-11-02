@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -208,56 +209,60 @@ void main() {
     when(() => mockEntitiesCacheService.sortedCategories)
         .thenReturn([category]);
 
-    // Act - initial load
-    container.listen(
-      timeByCategoryControllerProvider,
-      listener.call,
-      fireImmediately: true,
-    );
+    // Act - initial load and update under fake time to drive throttling deterministically
+    fakeAsync((async) {
+      container
+        ..listen(
+          timeByCategoryControllerProvider,
+          listener.call,
+          fireImmediately: true,
+        )
 
-    // Wait for initial state
-    await container.read(timeByCategoryControllerProvider.future);
+        // Wait for initial state
+        ..read(timeByCategoryControllerProvider.future);
 
-    // Reset mocks for update
-    final updatedEntry = JournalEntity.journalEntry(
-      meta: Metadata(
-        id: 'updated-entry-id',
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-        createdAt: now,
-        updatedAt: now,
-        categoryId: 'test-category-id',
-      ),
-      entryText: const EntryText(plainText: 'Updated test entry'),
-    );
+      // Reset mocks for update
+      final updatedEntry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'updated-entry-id',
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          createdAt: now,
+          updatedAt: now,
+          categoryId: 'test-category-id',
+        ),
+        entryText: const EntryText(plainText: 'Updated test entry'),
+      );
 
-    when(
-      () => mockDb.sortedCalendarEntries(
-        rangeStart: any(named: 'rangeStart'),
-        rangeEnd: any(named: 'rangeEnd'),
-      ),
-    ).thenAnswer((_) async => [updatedEntry]);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [updatedEntry]);
 
-    // Simulate visibility change to true
-    final controller =
-        container.read(timeByCategoryControllerProvider.notifier);
-    final mockVisibilityInfo = MockVisibilityInfo();
-    when(() => mockVisibilityInfo.visibleFraction).thenReturn(1);
-    controller.onVisibilityChanged(mockVisibilityInfo);
+      // Simulate visibility change to true (immediate fetch)
+      final controller =
+          container.read(timeByCategoryControllerProvider.notifier);
+      final mockVisibilityInfo = MockVisibilityInfo();
+      when(() => mockVisibilityInfo.visibleFraction).thenReturn(1);
+      controller.onVisibilityChanged(mockVisibilityInfo);
 
-    // Trigger notification update
-    updateStreamController.add({textEntryNotification});
+      // Trigger notification update and advance fake time past throttle window
+      updateStreamController.add({textEntryNotification});
+      async
+        ..flushMicrotasks()
+        ..elapse(const Duration(seconds: 6))
+        ..flushMicrotasks();
 
-    // Wait for the state to update
-    await Future<void>.delayed(const Duration(seconds: 1));
-
-    // Verify update was called
-    verify(
-      () => mockDb.sortedCalendarEntries(
-        rangeStart: any(named: 'rangeStart'),
-        rangeEnd: any(named: 'rangeEnd'),
-      ),
-    ).called(greaterThan(1));
+      // Verify update was called (initial + visibility + throttled notification)
+      verify(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).called(greaterThan(1));
+    });
   });
 
   test('TimeFrameController updates timeSpanDays correctly', () {

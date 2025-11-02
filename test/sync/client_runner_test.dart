@@ -1,12 +1,13 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/client_runner.dart';
+import '../test_utils/fake_time.dart';
 
 void main() {
   group('ClientRunner Tests', () {
-    test(
-      'callback is called as often as expected',
-      () async {
+    test('callback is called as often as expected', () {
+      fakeAsync((async) {
         const delayMs = 10;
         var lastCalled = 0;
         const n = 10;
@@ -17,16 +18,21 @@ void main() {
             await Future<void>.delayed(const Duration(milliseconds: delayMs));
           },
         );
+
         for (var i = 1; i <= n; i++) {
           runner.enqueueRequest(i);
         }
-        expect(lastCalled, 0);
-        await Future.delayed(
-          const Duration(milliseconds: n * delayMs + 1000),
-          () {},
-        );
+
+        // Kick the runner loop to start processing the first item.
+        async.flushMicrotasks();
+
+        // Process each queued item by advancing fake time per callback delay.
+        for (var i = 0; i < n; i++) {
+          async.elapseAndFlush(const Duration(milliseconds: delayMs));
+        }
+
         expect(lastCalled, n);
-      },
-    );
+      });
+    });
   });
 }

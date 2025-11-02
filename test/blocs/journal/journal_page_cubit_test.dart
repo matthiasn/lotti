@@ -1,6 +1,9 @@
+// ignore_for_file: cascade_invocations
+
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
@@ -30,7 +33,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import '../../mocks/mocks.dart';
 import '../../mocks/sync_config_test_mocks.dart';
 
-const defaultWait = Duration(milliseconds: 100);
+const defaultWait = Duration(milliseconds: 20);
 
 // Test double that disables persistence side-effects to avoid touching GetIt
 class _TestJournalPageCubit extends JournalPageCubit {
@@ -245,72 +248,83 @@ void main() {
 
     test(
         'initializes with unassigned category selected when showTasks=true and no categories exist',
-        () async {
-      // Mock no categories
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+        () {
+      fakeAsync((async) {
+        // Mock no categories
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
-      final cubit = JournalPageCubit(showTasks: true);
+        final cubit = JournalPageCubit(showTasks: true);
 
-      // Verify immediately after construction
-      expect(cubit.state.selectedCategoryIds, equals(<String>{''}));
+        // Verify immediately after construction
+        expect(cubit.state.selectedCategoryIds, equals(<String>{''}));
 
-      // Wait a bit before closing to avoid async errors
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      await cubit.close();
+        // Yield before closing to avoid async errors
+        async.elapse(const Duration(milliseconds: 1));
+        async.flushMicrotasks();
+        unawaited(cubit.close());
+      });
     });
 
-    test('does not initialize with unassigned when showTasks=false', () async {
-      // Mock no categories
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+    test('does not initialize with unassigned when showTasks=false', () {
+      fakeAsync((async) {
+        // Mock no categories
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
-      final cubit = JournalPageCubit(showTasks: false);
+        final cubit = JournalPageCubit(showTasks: false);
 
-      // Verify state does not have unassigned selected
-      expect(cubit.state.selectedCategoryIds, equals(<String>{}));
+        // Verify state does not have unassigned selected
+        expect(cubit.state.selectedCategoryIds, equals(<String>{}));
 
-      // Wait a bit before closing to avoid async errors
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      await cubit.close();
+        // Yield before closing to avoid async errors
+        async.elapse(const Duration(milliseconds: 1));
+        async.flushMicrotasks();
+        unawaited(cubit.close());
+      });
     });
 
-    test('does not default to unassigned when categories exist', () async {
-      // Mock some categories
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([
-        CategoryDefinition(
-          id: 'cat1',
-          name: 'Work',
-          color: '#FF0000',
-          createdAt: DateTime(2024, 1, 1, 10),
-          updatedAt: DateTime(2024, 1, 1, 10),
-          active: true,
-          private: false,
-          vectorClock: null,
-        ),
-      ]);
+    test('does not default to unassigned when categories exist', () {
+      fakeAsync((async) {
+        // Mock some categories
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([
+          CategoryDefinition(
+            id: 'cat1',
+            name: 'Work',
+            color: '#FF0000',
+            createdAt: DateTime(2024, 1, 1, 10),
+            updatedAt: DateTime(2024, 1, 1, 10),
+            active: true,
+            private: false,
+            vectorClock: null,
+          ),
+        ]);
 
-      final cubit = JournalPageCubit(showTasks: true);
+        final cubit = JournalPageCubit(showTasks: true);
 
-      // Verify state does not have unassigned selected
-      expect(cubit.state.selectedCategoryIds, equals(<String>{}));
+        // Verify state does not have unassigned selected
+        expect(cubit.state.selectedCategoryIds, equals(<String>{}));
 
-      // Wait a bit before closing to avoid async errors
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      await cubit.close();
+        async.elapse(const Duration(milliseconds: 1));
+        async.flushMicrotasks();
+        unawaited(cubit.close());
+      });
     });
 
-    test('query returns unassigned tasks when no categories exist', () async {
-      // Mock no categories
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+    test('query returns unassigned tasks when no categories exist', () {
+      fakeAsync((async) {
+        // Mock no categories
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
-      final cubit = JournalPageCubit(showTasks: true);
+        final cubit = JournalPageCubit(showTasks: true);
 
-      // Wait for initialization
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Wait for initialization
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
 
-      // Verify the state has unassigned selected
-      expect(cubit.state.selectedCategoryIds, equals(<String>{''}));
+        // Verify the state has unassigned selected
+        expect(cubit.state.selectedCategoryIds, equals(<String>{''}));
 
-      await cubit.close();
+        unawaited(cubit.close());
+      });
     });
 
     blocTest<JournalPageCubit, JournalPageState>(
@@ -570,7 +584,7 @@ void main() {
       final cubit = JournalPageCubit(showTasks: false);
 
       // Wait for initialization
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
       final initialCount = refreshCallCount; // may perform >1 initial fetches
 
       // First, simulate being invisible
@@ -578,7 +592,7 @@ void main() {
         const MockVisibilityInfo(visibleBounds: Rect.zero),
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(defaultWait);
 
       // Count should remain unchanged (no refresh when invisible)
       expect(refreshCallCount, equals(initialCount));
@@ -591,7 +605,7 @@ void main() {
       );
 
       // Wait for the refresh to complete
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       // Should have increased by exactly 1 due to visibility change
       expect(refreshCallCount, equals(initialCount + 1));
@@ -599,103 +613,109 @@ void main() {
       await cubit.close();
     });
 
-    test('does not refresh when staying invisible', () async {
-      // Track refresh calls
-      var refreshCallCount = 0;
+    test('does not refresh when staying invisible', () {
+      fakeAsync((async) {
+        // Track refresh calls
+        var refreshCallCount = 0;
 
-      // Mock the getJournalEntities to track calls
-      final mockJournalDb = getIt<JournalDb>();
-      when(() => mockJournalDb.getJournalEntities(
-            types: any(named: 'types'),
-            starredStatuses: any(named: 'starredStatuses'),
-            privateStatuses: any(named: 'privateStatuses'),
-            flaggedStatuses: any(named: 'flaggedStatuses'),
-            ids: any(named: 'ids'),
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-            categoryIds: any(named: 'categoryIds'),
-          )).thenAnswer((_) async {
-        refreshCallCount++;
-        return [];
+        // Mock the getJournalEntities to track calls
+        final mockJournalDb = getIt<JournalDb>();
+        when(() => mockJournalDb.getJournalEntities(
+              types: any(named: 'types'),
+              starredStatuses: any(named: 'starredStatuses'),
+              privateStatuses: any(named: 'privateStatuses'),
+              flaggedStatuses: any(named: 'flaggedStatuses'),
+              ids: any(named: 'ids'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              categoryIds: any(named: 'categoryIds'),
+            )).thenAnswer((_) async {
+          refreshCallCount++;
+          return [];
+        });
+
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+
+        final cubit = JournalPageCubit(showTasks: false);
+
+        // Wait for initialization
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+        final initialCount = refreshCallCount;
+
+        // Simulate being invisible
+        cubit.updateVisibility(
+          const MockVisibilityInfo(visibleBounds: Rect.zero),
+        );
+
+        async.elapse(const Duration(milliseconds: 50));
+        async.flushMicrotasks();
+
+        // Count should still be unchanged
+        expect(refreshCallCount, equals(initialCount));
+
+        // Stay invisible - this should NOT trigger refreshQuery
+        cubit.updateVisibility(
+          const MockVisibilityInfo(visibleBounds: Rect.zero),
+        );
+
+        // Wait to ensure no refresh happens
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+
+        // Should still be unchanged (no refresh while invisible)
+        expect(refreshCallCount, equals(initialCount));
+
+        unawaited(cubit.close());
       });
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-
-      final cubit = JournalPageCubit(showTasks: false);
-
-      // Wait for initialization
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      final initialCount = refreshCallCount;
-
-      // Simulate being invisible
-      cubit.updateVisibility(
-        const MockVisibilityInfo(visibleBounds: Rect.zero),
-      );
-
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
-      // Count should still be unchanged
-      expect(refreshCallCount, equals(initialCount));
-
-      // Stay invisible - this should NOT trigger refreshQuery
-      cubit.updateVisibility(
-        const MockVisibilityInfo(visibleBounds: Rect.zero),
-      );
-
-      // Wait to ensure no refresh happens
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Should still be unchanged (no refresh while invisible)
-      expect(refreshCallCount, equals(initialCount));
-
-      await cubit.close();
     });
 
-    test('intersects selected types with allowed feature-gated types',
-        () async {
-      // Arrange: enableEvents=true, enableDashboards=false, enableHabits=true
-      final mockJournalDb = getIt<JournalDb>();
-      when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([
-          {enableEventsFlag, enableHabitsPageFlag},
-        ]),
-      );
+    test('intersects selected types with allowed feature-gated types', () {
+      fakeAsync((async) {
+        // Arrange: enableEvents=true, enableDashboards=false, enableHabits=true
+        final mockJournalDb = getIt<JournalDb>();
+        when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
+          (_) => Stream<Set<String>>.fromIterable([
+            {enableEventsFlag, enableHabitsPageFlag},
+          ]),
+        );
 
-      // Capture the types passed into getJournalEntities
-      List<String>? capturedTypes;
-      when(() => mockJournalDb.getJournalEntities(
-            types: any(named: 'types'),
-            starredStatuses: any(named: 'starredStatuses'),
-            privateStatuses: any(named: 'privateStatuses'),
-            flaggedStatuses: any(named: 'flaggedStatuses'),
-            ids: any(named: 'ids'),
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-            categoryIds: any(named: 'categoryIds'),
-          )).thenAnswer((invocation) async {
-        capturedTypes = invocation.namedArguments[#types] as List<String>;
-        return [];
+        // Capture the types passed into getJournalEntities
+        List<String>? capturedTypes;
+        when(() => mockJournalDb.getJournalEntities(
+              types: any(named: 'types'),
+              starredStatuses: any(named: 'starredStatuses'),
+              privateStatuses: any(named: 'privateStatuses'),
+              flaggedStatuses: any(named: 'flaggedStatuses'),
+              ids: any(named: 'ids'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              categoryIds: any(named: 'categoryIds'),
+            )).thenAnswer((invocation) async {
+          capturedTypes = invocation.namedArguments[#types] as List<String>;
+          return [];
+        });
+
+        // Act
+        final cubit = JournalPageCubit(showTasks: false);
+        // Select all types intentionally
+        cubit.selectAllEntryTypes(entryTypes);
+
+        // Wait briefly for stream + refresh to propagate
+        async.elapse(const Duration(milliseconds: 150));
+        async.flushMicrotasks();
+
+        // Assert: 'MeasurementEntry' and 'QuantitativeEntry' are removed when dashboards disabled
+        expect(capturedTypes, isNotNull);
+        expect(capturedTypes!.contains('MeasurementEntry'), isFalse);
+        expect(capturedTypes!.contains('QuantitativeEntry'), isFalse);
+        // Assert: 'HabitCompletionEntry' remains when habits enabled
+        expect(capturedTypes!.contains('HabitCompletionEntry'), isTrue);
+        // Assert: 'JournalEvent' remains when events enabled
+        expect(capturedTypes!.contains('JournalEvent'), isTrue);
+
+        unawaited(cubit.close());
       });
-
-      // Act
-      final cubit = JournalPageCubit(showTasks: false);
-      // Select all types intentionally
-      // ignore: cascade_invocations
-      cubit.selectAllEntryTypes(entryTypes);
-
-      // Wait briefly for stream + refresh to propagate
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-
-      // Assert: 'MeasurementEntry' and 'QuantitativeEntry' are removed when dashboards disabled
-      expect(capturedTypes, isNotNull);
-      expect(capturedTypes!.contains('MeasurementEntry'), isFalse);
-      expect(capturedTypes!.contains('QuantitativeEntry'), isFalse);
-      // Assert: 'HabitCompletionEntry' remains when habits enabled
-      expect(capturedTypes!.contains('HabitCompletionEntry'), isTrue);
-      // Assert: 'JournalEvent' remains when events enabled
-      expect(capturedTypes!.contains('JournalEvent'), isTrue);
-
-      await cubit.close();
     });
   });
 }
@@ -833,7 +853,7 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Emit initial flags with Events enabled
       flagController.add({enableEventsFlag, enableHabitsPageFlag});
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       // User selects partial types: Task, JournalEvent, JournalAudio
       cubit
@@ -842,7 +862,7 @@ class MockVisibilityInfo extends VisibilityInfo {
         ..toggleSelectedEntryTypes('JournalEvent')
         ..toggleSelectedEntryTypes('JournalAudio');
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       // Verify partial selection
       expect(cubit.state.selectedEntryTypes.contains('Task'), isTrue);
@@ -852,7 +872,7 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Toggle Events flag OFF
       flagController.add({enableHabitsPageFlag});
-      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(defaultWait);
 
       // Assert: JournalEvent removed, Task and JournalAudio remain
       expect(cubit.state.selectedEntryTypes.contains('JournalEvent'), isFalse);
@@ -894,11 +914,11 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Initial: All flags enabled
       flagController.add({enableEventsFlag, enableHabitsPageFlag, enableDashboardsPageFlag});
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       // User selects all available types
       cubit.selectAllEntryTypes(entryTypes);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       final initialCount = cubit.state.selectedEntryTypes.length;
       expect(initialCount, greaterThan(0));
@@ -907,7 +927,7 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Toggle Dashboards flag OFF (removes MeasurementEntry, QuantitativeEntry)
       flagController.add({enableEventsFlag, enableHabitsPageFlag});
-      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(defaultWait);
 
       // Assert: User had everything selected, so keep everything that's still allowed
       expect(cubit.state.selectedEntryTypes.contains('MeasurementEntry'), isFalse);
@@ -949,16 +969,16 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Initial: No flags enabled, empty selection
       flagController.add(<String>{});
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       cubit.clearSelectedEntryTypes();
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       expect(cubit.state.selectedEntryTypes, isEmpty);
 
       // Toggle Events flag ON
       flagController.add({enableEventsFlag});
-      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(defaultWait);
 
       // Assert: Empty selection means select all newly allowed types
       expect(cubit.state.selectedEntryTypes.isNotEmpty, isTrue);
@@ -995,10 +1015,10 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Initial: All flags enabled
       flagController.add({enableEventsFlag, enableHabitsPageFlag, enableDashboardsPageFlag});
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       cubit.selectAllEntryTypes(entryTypes);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       expect(cubit.state.selectedEntryTypes.contains('JournalEvent'), isTrue);
       expect(cubit.state.selectedEntryTypes.contains('HabitCompletionEntry'), isTrue);
@@ -1006,7 +1026,7 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Multiple flags toggle: Events OFF, Habits ON, Dashboards OFF
       flagController.add({enableHabitsPageFlag});
-      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(defaultWait);
 
       // Assert: JournalEvent and MeasurementEntry removed
       expect(cubit.state.selectedEntryTypes.contains('JournalEvent'), isFalse);
@@ -1056,13 +1076,13 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Initial flags
       flagController.add({enableEventsFlag});
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(defaultWait);
 
       final initialPersistCalls = persistCallCount;
 
       // Toggle flag
       flagController.add(<String>{});
-      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await Future<void>.delayed(defaultWait);
 
       // Assert: persistEntryTypes was called after flag change
       expect(persistCallCount, greaterThan(initialPersistCalls));

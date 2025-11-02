@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -150,20 +151,30 @@ void main() {
         expect(result, isFalse);
       });
 
-      test('handles timeout gracefully', () async {
-        // Arrange
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(seconds: 2));
-            return http.Response('{}', httpStatusOk);
-          },
-        );
+      test('handles timeout gracefully', () {
+        fakeAsync((async) {
+          // Arrange
+          when(() => mockHttpClient.get(any())).thenAnswer(
+            (_) async {
+              await Future<void>.delayed(const Duration(seconds: 2));
+              return http.Response('{}', httpStatusOk);
+            },
+          );
 
-        // Act
-        final result = await repository.isModelInstalled(modelName, baseUrl);
+          // Act under fake time
+          bool? result;
+          repository
+              .isModelInstalled(modelName, baseUrl)
+              .then((r) => result = r);
 
-        // Assert
-        expect(result, isFalse);
+          // Drive time forward to trigger timeout handling deterministically
+          async
+            ..elapse(const Duration(seconds: 2))
+            ..flushMicrotasks();
+
+          // Assert
+          expect(result, isFalse);
+        });
       });
     });
 
@@ -390,19 +401,30 @@ void main() {
         await repository.warmUpModel(modelName, baseUrl);
       });
 
-      test('handles timeout gracefully', () async {
-        // Arrange
-        when(() => mockHttpClient.post(any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'))).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(seconds: 2));
-            return http.Response('{"response": "Hello"}', httpStatusOk);
-          },
-        );
+      test('handles timeout gracefully', () {
+        fakeAsync((async) {
+          // Arrange
+          when(() => mockHttpClient.post(any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'))).thenAnswer(
+            (_) async {
+              await Future<void>.delayed(const Duration(seconds: 2));
+              return http.Response('{"response": "Hello"}', httpStatusOk);
+            },
+          );
 
-        // Act & Assert - should not throw
-        await repository.warmUpModel(modelName, baseUrl);
+          // Act under fake time & Assert - should not throw
+          Object? error;
+          repository
+              .warmUpModel(modelName, baseUrl)
+              .catchError((dynamic e, __) => error = e);
+
+          async
+            ..elapse(const Duration(seconds: 2))
+            ..flushMicrotasks();
+
+          expect(error, isNull);
+        });
       });
     });
 

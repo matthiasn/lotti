@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -113,19 +115,27 @@ void main() {
         expect(result, isNull);
       });
 
-      test('handles timeout gracefully', () async {
-        when(() => mockHttpClient.get(
-              any(),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async {
-          await Future<void>.delayed(const Duration(seconds: 10));
-          return http.Response('Timeout', 200);
+      test('handles timeout gracefully', () {
+        fakeAsync((async) {
+          when(() => mockHttpClient.get(
+                any(),
+                headers: any(named: 'headers'),
+              )).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(seconds: 10));
+            return http.Response('Timeout', 200);
+          });
+
+          Geolocation? result;
+          // Drive the async call under fake time.
+          IpGeolocationService.getLocationFromIp(httpClient: mockHttpClient)
+              .then((r) => result = r);
+
+          async
+            ..elapse(const Duration(seconds: 10))
+            ..flushMicrotasks();
+
+          expect(result, isNull);
         });
-
-        final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
-
-        expect(result, isNull);
       });
 
       test('handles malformed JSON response', () async {

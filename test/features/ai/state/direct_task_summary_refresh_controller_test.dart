@@ -1,3 +1,8 @@
+// ignore_for_file: cascade_invocations, unnecessary_ignore, unawaited_futures
+
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -109,303 +114,322 @@ void main() {
   });
 
   group('DirectTaskSummaryRefreshController', () {
-    test('should debounce multiple refresh requests', () async {
-      final controller = container.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      var inferenceCallCount = 0;
-
-      // Override the inference status check to always return idle
-      container
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: 'test-task-1',
-            aiResponseType: AiResponseType.taskSummary,
-          ),
-          (previous, next) {},
-          fireImmediately: true,
-        )
-        // Override the trigger provider to count calls
-        ..listen(
-          triggerNewInferenceProvider(
-            entityId: 'test-task-1',
-            promptId: 'auto-task-summary',
-          ),
-          (previous, next) {
-            inferenceCallCount++;
-          },
+    test('should debounce multiple refresh requests', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
         );
 
-      // Setup mock response for latest AI response
-      when(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'test-task-1',
-          )).thenAnswer((_) async => []);
+        var inferenceCallCount = 0;
 
-      // Make multiple rapid requests
-      await controller.requestTaskSummaryRefresh('test-task-1');
-      await controller.requestTaskSummaryRefresh('test-task-1');
-      await controller.requestTaskSummaryRefresh('test-task-1');
+        // Override the inference status check to always return idle
+        container
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'test-task-1',
+              aiResponseType: AiResponseType.taskSummary,
+            ),
+            (previous, next) {},
+            fireImmediately: true,
+          )
+          // Override the trigger provider to count calls
+          ..listen(
+            triggerNewInferenceProvider(
+              entityId: 'test-task-1',
+              promptId: 'auto-task-summary',
+            ),
+            (previous, next) {
+              inferenceCallCount++;
+            },
+          );
 
-      // Wait for debounce
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+        // Setup mock response for latest AI response
+        when(() => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'test-task-1',
+            )).thenAnswer((_) async => []);
 
-      // Should only trigger once due to debouncing
-      expect(inferenceCallCount, 1);
-    });
+        // Make multiple rapid requests
+        unawaited(controller.requestTaskSummaryRefresh('test-task-1'));
+        unawaited(controller.requestTaskSummaryRefresh('test-task-1'));
+        unawaited(controller.requestTaskSummaryRefresh('test-task-1'));
 
-    test('should handle multiple tasks independently', () async {
-      final controller = container.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
+        // Wait for debounce
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
 
-      final task1Calls = <String>[];
-      final task2Calls = <String>[];
-
-      // Setup for task 1
-      container
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: 'task-1',
-            aiResponseType: AiResponseType.taskSummary,
-          ),
-          (previous, next) {},
-          fireImmediately: true,
-        )
-        ..listen(
-          triggerNewInferenceProvider(
-            entityId: 'task-1',
-            promptId: 'auto-task-summary',
-          ),
-          (previous, next) {
-            task1Calls.add('triggered');
-          },
-        )
-        // Setup for task 2
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: 'task-2',
-            aiResponseType: AiResponseType.taskSummary,
-          ),
-          (previous, next) {},
-          fireImmediately: true,
-        )
-        ..listen(
-          triggerNewInferenceProvider(
-            entityId: 'task-2',
-            promptId: 'auto-task-summary',
-          ),
-          (previous, next) {
-            task2Calls.add('triggered');
-          },
-        );
-
-      // Setup mock responses
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'task-1'))
-          .thenAnswer((_) async => []);
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'task-2'))
-          .thenAnswer((_) async => []);
-
-      // Request refreshes
-      await controller.requestTaskSummaryRefresh('task-1');
-      await controller.requestTaskSummaryRefresh('task-2');
-
-      // Wait for debounce
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      // Both should be triggered independently
-      expect(task1Calls.length, 1);
-      expect(task2Calls.length, 1);
-    });
-
-    test('should skip refresh if inference is already running', () async {
-      var triggerCalled = false;
-      var getLinkedCalled = false;
-
-      // Create a test-specific container with mocked providers
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          // Mock the inference status controller to always return running
-          inferenceStatusControllerProvider(
-            id: 'test-task-running',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-          // Override the trigger provider to track calls
-          triggerNewInferenceProvider(
-            entityId: 'test-task-running',
-            promptId: 'auto-task-summary',
-          ).overrideWith((ref) async {
-            triggerCalled = true;
-          }),
-        ],
-      );
-
-      // Mock getLinkedEntities
-      when(() => mockJournalRepository.getLinkedEntities(
-          linkedTo: 'test-task-running')).thenAnswer((_) async {
-        getLinkedCalled = true;
-        return [];
+        // Should only trigger once due to debouncing
+        expect(inferenceCallCount, 1);
       });
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // Request refresh
-      await controller.requestTaskSummaryRefresh('test-task-running');
-
-      // Wait for debounce to complete
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      // When inference is already running:
-      // - Should NOT trigger new inference
-      // - Should NOT get linked entities (because it returns early)
-      expect(triggerCalled, false);
-      expect(getLinkedCalled, false);
-
-      testContainer.dispose();
     });
 
-    test('should handle pending refreshes correctly', () async {
-      final controller = container.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
+    test('should handle multiple tasks independently', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
 
-      final callTimes = <DateTime>[];
-      var isRunning = false;
+        final task1Calls = <String>[];
+        final task2Calls = <String>[];
 
-      // Setup mock that simulates a longer running inference
-      container
-        ..listen(
+        // Setup for task 1
+        container
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'task-1',
+              aiResponseType: AiResponseType.taskSummary,
+            ),
+            (previous, next) {},
+            fireImmediately: true,
+          )
+          ..listen(
+            triggerNewInferenceProvider(
+              entityId: 'task-1',
+              promptId: 'auto-task-summary',
+            ),
+            (previous, next) {
+              task1Calls.add('triggered');
+            },
+          )
+          // Setup for task 2
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'task-2',
+              aiResponseType: AiResponseType.taskSummary,
+            ),
+            (previous, next) {},
+            fireImmediately: true,
+          )
+          ..listen(
+            triggerNewInferenceProvider(
+              entityId: 'task-2',
+              promptId: 'auto-task-summary',
+            ),
+            (previous, next) {
+              task2Calls.add('triggered');
+            },
+          );
+
+        // Setup mock responses
+        when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'task-1'))
+            .thenAnswer((_) async => []);
+        when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'task-2'))
+            .thenAnswer((_) async => []);
+
+        // Request refreshes
+        unawaited(controller.requestTaskSummaryRefresh('task-1'));
+        unawaited(controller.requestTaskSummaryRefresh('task-2'));
+
+        // Wait for debounce
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        // Both should be triggered independently
+        expect(task1Calls.length, 1);
+        expect(task2Calls.length, 1);
+      });
+    });
+
+    test('should skip refresh if inference is already running', () {
+      fakeAsync((async) {
+        var triggerCalled = false;
+        var getLinkedCalled = false;
+
+        // Create a test-specific container with mocked providers
+        final testContainer = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            // Mock the inference status controller to always return running
+            inferenceStatusControllerProvider(
+              id: 'test-task-running',
+              aiResponseType: AiResponseType.taskSummary,
+            ).overrideWith(
+              () => MockInferenceStatusController(InferenceStatus.running),
+            ),
+            // Override the trigger provider to track calls
+            triggerNewInferenceProvider(
+              entityId: 'test-task-running',
+              promptId: 'auto-task-summary',
+            ).overrideWith((ref) async {
+              triggerCalled = true;
+            }),
+          ],
+        );
+
+        // Mock getLinkedEntities
+        when(() => mockJournalRepository.getLinkedEntities(
+            linkedTo: 'test-task-running')).thenAnswer((_) async {
+          getLinkedCalled = true;
+          return [];
+        });
+
+        final controller = testContainer.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
+
+        // Request refresh
+        unawaited(controller.requestTaskSummaryRefresh('test-task-running'));
+
+        // Wait for debounce to complete
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        // When inference is already running:
+        // - Should NOT trigger new inference
+        // - Should NOT get linked entities (because it returns early)
+        expect(triggerCalled, false);
+        expect(getLinkedCalled, false);
+
+        testContainer.dispose();
+      });
+    });
+
+    test('should handle pending refreshes correctly', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
+
+        final callTimes = <DateTime>[];
+        var isRunning = false;
+
+        // Setup mock that simulates a longer running inference
+        container
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'test-task',
+              aiResponseType: AiResponseType.taskSummary,
+            ),
+            (previous, next) {},
+            fireImmediately: true,
+          )
+          ..listen(
+            triggerNewInferenceProvider(
+              entityId: 'test-task',
+              promptId: 'auto-task-summary',
+            ),
+            (previous, next) {
+              if (!isRunning) {
+                callTimes.add(DateTime.now());
+                isRunning = true;
+                // Simulate inference taking time
+                Future<void>.delayed(const Duration(milliseconds: 300), () {
+                  isRunning = false;
+                });
+              }
+            },
+          );
+
+        when(() =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'test-task'))
+            .thenAnswer((_) async => []);
+
+        // First request
+        unawaited(controller.requestTaskSummaryRefresh('test-task'));
+
+        // Wait for first to start
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        // Second request while first is "running"
+        unawaited(controller.requestTaskSummaryRefresh('test-task'));
+
+        // Wait for everything to complete
+        async.elapse(const Duration(milliseconds: 1000));
+        async.flushMicrotasks();
+
+        // Should have been called at least once
+        expect(callTimes.length, greaterThanOrEqualTo(1));
+      });
+    });
+
+    test('should handle errors gracefully', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
+
+        // Setup to throw an error
+        container.listen(
           inferenceStatusControllerProvider(
-            id: 'test-task',
+            id: 'error-task',
             aiResponseType: AiResponseType.taskSummary,
           ),
           (previous, next) {},
           fireImmediately: true,
-        )
-        ..listen(
-          triggerNewInferenceProvider(
-            entityId: 'test-task',
-            promptId: 'auto-task-summary',
-          ),
-          (previous, next) {
-            if (!isRunning) {
-              callTimes.add(DateTime.now());
-              isRunning = true;
-              // Simulate inference taking time
-              Future<void>.delayed(const Duration(milliseconds: 300), () {
-                isRunning = false;
-              });
-            }
-          },
         );
 
-      when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'test-task'))
-          .thenAnswer((_) async => []);
+        when(() =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'error-task'))
+            .thenThrow(Exception('Test error'));
 
-      // First request
-      await controller.requestTaskSummaryRefresh('test-task');
+        // Should not throw
+        // ignore: discarded_futures
+        expectLater(
+            controller.requestTaskSummaryRefresh('error-task'), completes);
 
-      // Wait for first to start
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+        // Wait for debounce
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
 
-      // Second request while first is "running"
-      await controller.requestTaskSummaryRefresh('test-task');
-
-      // Wait for everything to complete
-      await Future<void>.delayed(const Duration(milliseconds: 1000));
-
-      // Should have been called at least once
-      expect(callTimes.length, greaterThanOrEqualTo(1));
+        // Verify error was logged
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
     });
 
-    test('should handle errors gracefully', () async {
-      final controller = container.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // Setup to throw an error
-      container.listen(
-        inferenceStatusControllerProvider(
-          id: 'error-task',
-          aiResponseType: AiResponseType.taskSummary,
-        ),
-        (previous, next) {},
-        fireImmediately: true,
-      );
-
-      when(() =>
-              mockJournalRepository.getLinkedEntities(linkedTo: 'error-task'))
-          .thenThrow(Exception('Test error'));
-
-      // Should not throw
-      await expectLater(
-        controller.requestTaskSummaryRefresh('error-task'),
-        completes,
-      );
-
-      // Wait for debounce
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      // Verify error was logged
-      verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
-
-    test('should cancel timers on dispose', () async {
-      // Create a new container for this test
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-        ],
-      );
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      var inferenceCallCount = 0;
-
-      testContainer
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: 'dispose-test',
-            aiResponseType: AiResponseType.taskSummary,
-          ),
-          (previous, next) {},
-          fireImmediately: true,
-        )
-        ..listen(
-          triggerNewInferenceProvider(
-            entityId: 'dispose-test',
-            promptId: 'auto-task-summary',
-          ),
-          (previous, next) {
-            inferenceCallCount++;
-          },
+    test('should cancel timers on dispose', () {
+      fakeAsync((async) {
+        // Create a new container for this test
+        final testContainer = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
         );
 
-      // Request a refresh
-      await controller.requestTaskSummaryRefresh('dispose-test');
+        final controller = testContainer.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
 
-      // Dispose immediately (before debounce completes)
-      testContainer.dispose();
+        var inferenceCallCount = 0;
 
-      // Wait for what would have been the debounce period
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+        testContainer
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'dispose-test',
+              aiResponseType: AiResponseType.taskSummary,
+            ),
+            (previous, next) {},
+            fireImmediately: true,
+          )
+          ..listen(
+            triggerNewInferenceProvider(
+              entityId: 'dispose-test',
+              promptId: 'auto-task-summary',
+            ),
+            (previous, next) {
+              inferenceCallCount++;
+            },
+          );
 
-      // Should not have triggered due to disposal
-      expect(inferenceCallCount, 0);
+        // Request a refresh
+        unawaited(controller.requestTaskSummaryRefresh('dispose-test'));
+
+        // Dispose immediately (before debounce completes)
+        testContainer.dispose();
+
+        // Wait for what would have been the debounce period
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        // Should not have triggered due to disposal
+        expect(inferenceCallCount, 0);
+      });
     });
 
     test('should get latest AI response with correct prompt ID', () async {
@@ -583,209 +607,223 @@ void main() {
       testContainer.dispose();
     });
 
-    test('should successfully trigger refresh with valid promptId', () async {
-      // Mock response with valid promptId
-      final testResponse = AiResponseEntry(
-        meta: Metadata(
-          id: 'ai-response-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: const AiResponseData(
-          model: 'gpt-4',
-          temperature: 0.7,
-          systemMessage: 'System',
-          prompt: 'Prompt',
-          thoughts: '',
-          response: 'Test response',
-          type: AiResponseType.taskSummary,
-          promptId: 'valid-prompt-id',
-        ),
-      );
-
-      when(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'valid-prompt-test',
-          )).thenAnswer((_) async => [testResponse]);
-
-      // Track whether the inference was triggered with correct parameters
-      var inferenceTriggered = false;
-      String? capturedEntityId;
-      String? capturedPromptId;
-
-      // Create a test container with overrides
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          // Override inference status to return idle
-          inferenceStatusControllerProvider(
-            id: 'valid-prompt-test',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-              () => MockInferenceStatusController(InferenceStatus.idle)),
-        ],
-      )
-
-        // Listen to the trigger provider to capture calls
-        ..listen(
-          triggerNewInferenceProvider(
-            entityId: 'valid-prompt-test',
+    test('should successfully trigger refresh with valid promptId', () {
+      fakeAsync((async) {
+        // Mock response with valid promptId
+        final testResponse = AiResponseEntry(
+          meta: Metadata(
+            id: 'ai-response-1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: const AiResponseData(
+            model: 'gpt-4',
+            temperature: 0.7,
+            systemMessage: 'System',
+            prompt: 'Prompt',
+            thoughts: '',
+            response: 'Test response',
+            type: AiResponseType.taskSummary,
             promptId: 'valid-prompt-id',
           ),
-          (previous, next) {
-            inferenceTriggered = true;
-            capturedEntityId = 'valid-prompt-test';
-            capturedPromptId = 'valid-prompt-id';
-          },
         );
 
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
+        when(() => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'valid-prompt-test',
+            )).thenAnswer((_) async => [testResponse]);
 
-      await controller.requestTaskSummaryRefresh('valid-prompt-test');
+        // Track whether the inference was triggered with correct parameters
+        var inferenceTriggered = false;
+        String? capturedEntityId;
+        String? capturedPromptId;
 
-      // Wait for debounce
-      await Future<void>.delayed(const Duration(milliseconds: 700));
+        // Create a test container with overrides
+        final testContainer = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            // Override inference status to return idle
+            inferenceStatusControllerProvider(
+              id: 'valid-prompt-test',
+              aiResponseType: AiResponseType.taskSummary,
+            ).overrideWith(
+                () => MockInferenceStatusController(InferenceStatus.idle)),
+          ],
+        )
 
-      // Verify the inference was triggered with correct parameters
-      expect(inferenceTriggered, true);
-      expect(capturedEntityId, equals('valid-prompt-test'));
-      expect(capturedPromptId, equals('valid-prompt-id'));
+          // Listen to the trigger provider to capture calls
+          ..listen(
+            triggerNewInferenceProvider(
+              entityId: 'valid-prompt-test',
+              promptId: 'valid-prompt-id',
+            ),
+            (previous, next) {
+              inferenceTriggered = true;
+              capturedEntityId = 'valid-prompt-test';
+              capturedPromptId = 'valid-prompt-id';
+            },
+          );
 
-      testContainer.dispose();
+        final controller = testContainer.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
+
+        unawaited(controller.requestTaskSummaryRefresh('valid-prompt-test'));
+
+        // Wait for debounce
+        async.elapse(const Duration(milliseconds: 700));
+        async.flushMicrotasks();
+
+        // Verify the inference was triggered with correct parameters
+        expect(inferenceTriggered, true);
+        expect(capturedEntityId, equals('valid-prompt-test'));
+        expect(capturedPromptId, equals('valid-prompt-id'));
+
+        testContainer.dispose();
+      });
     });
 
-    test('should handle case where no prompt ID is found', () async {
-      // Mock response without promptId
-      final testResponse = AiResponseEntry(
-        meta: Metadata(
-          id: 'ai-response-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: const AiResponseData(
-          model: 'gpt-4',
-          temperature: 0.7,
-          systemMessage: 'System',
-          prompt: 'Prompt',
-          thoughts: '',
-          response: 'Test response',
-          type: AiResponseType.taskSummary,
-          // No prompt ID
-        ),
-      );
-
-      when(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'no-prompt-task',
-          )).thenAnswer((_) async => [testResponse]);
-
-      // Create test container with overrides
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          // Override inference status to return idle
-          inferenceStatusControllerProvider(
-            id: 'no-prompt-task',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-              () => MockInferenceStatusController(InferenceStatus.idle)),
-        ],
-      );
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // We can't check if trigger was called because no promptId means no trigger provider is created
-      // Instead, we verify the behavior completes without errors
-      await expectLater(
-        controller.requestTaskSummaryRefresh('no-prompt-task'),
-        completes,
-      );
-
-      // Wait for debounce
-      await Future<void>.delayed(const Duration(milliseconds: 700));
-
-      // The test passes if no exceptions were thrown
-      // In the actual implementation, it logs "No prompt ID found, cannot trigger refresh"
-
-      testContainer.dispose();
-    });
-
-    test('should handle case where no AI response exists', () async {
-      // Mock no response (empty list)
-      when(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'no-response-task',
-          )).thenAnswer((_) async => []);
-
-      // Create test container with overrides
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          // Override inference status to return idle
-          inferenceStatusControllerProvider(
-            id: 'no-response-task',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-              () => MockInferenceStatusController(InferenceStatus.idle)),
-        ],
-      );
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // We can't check if trigger was called because no response means no promptId
-      // Instead, we verify the behavior completes without errors
-      await expectLater(
-        controller.requestTaskSummaryRefresh('no-response-task'),
-        completes,
-      );
-
-      // Wait for debounce
-      await Future<void>.delayed(const Duration(milliseconds: 700));
-
-      // The test passes if no exceptions were thrown
-      // In the actual implementation, it would not trigger because there's no promptId
-
-      testContainer.dispose();
-    });
-
-    test('should use status listener helper when inference is running',
-        () async {
-      // Create a test-specific container with mocked providers
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          // Mock the inference status controller to always return running
-          inferenceStatusControllerProvider(
-            id: 'test-task-listener-helper',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
+    test('should handle case where no prompt ID is found', () {
+      fakeAsync((async) {
+        // Mock response without promptId
+        final testResponse = AiResponseEntry(
+          meta: Metadata(
+            id: 'ai-response-1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
           ),
-        ],
-      );
+          data: const AiResponseData(
+            model: 'gpt-4',
+            temperature: 0.7,
+            systemMessage: 'System',
+            prompt: 'Prompt',
+            thoughts: '',
+            response: 'Test response',
+            type: AiResponseType.taskSummary,
+            // No prompt ID
+          ),
+        );
 
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
+        when(() => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'no-prompt-task',
+            )).thenAnswer((_) async => [testResponse]);
 
-      // Request refresh while inference is running
-      await controller.requestTaskSummaryRefresh('test-task-listener-helper');
+        // Create test container with overrides
+        final testContainer = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            // Override inference status to return idle
+            inferenceStatusControllerProvider(
+              id: 'no-prompt-task',
+              aiResponseType: AiResponseType.taskSummary,
+            ).overrideWith(
+                () => MockInferenceStatusController(InferenceStatus.idle)),
+          ],
+        );
 
-      // Wait a bit to ensure listener setup
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        final controller = testContainer.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
 
-      // The status listener should have been set up
-      // This is verified by the fact that the method completes without error
-      // and the controller doesn't crash
+        // We can't check if trigger was called because no promptId means no trigger provider is created
+        // Instead, we verify the behavior completes without errors
+        // ignore: discarded_futures
+        expectLater(
+          controller.requestTaskSummaryRefresh('no-prompt-task'),
+          completes,
+        );
 
-      testContainer.dispose();
+        // Wait for debounce
+        async.elapse(const Duration(milliseconds: 700));
+        async.flushMicrotasks();
+
+        // The test passes if no exceptions were thrown
+        // In the actual implementation, it logs "No prompt ID found, cannot trigger refresh"
+
+        testContainer.dispose();
+      });
+    });
+
+    test('should handle case where no AI response exists', () {
+      fakeAsync((async) {
+        // Mock no response (empty list)
+        when(() => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'no-response-task',
+            )).thenAnswer((_) async => []);
+
+        // Create test container with overrides
+        final testContainer = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            // Override inference status to return idle
+            inferenceStatusControllerProvider(
+              id: 'no-response-task',
+              aiResponseType: AiResponseType.taskSummary,
+            ).overrideWith(
+                () => MockInferenceStatusController(InferenceStatus.idle)),
+          ],
+        );
+
+        final controller = testContainer.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
+
+        // We can't check if trigger was called because no response means no promptId
+        // Instead, we verify the behavior completes without errors
+        // ignore: discarded_futures
+        expectLater(
+          controller.requestTaskSummaryRefresh('no-response-task'),
+          completes,
+        );
+
+        // Wait for debounce
+        async.elapse(const Duration(milliseconds: 700));
+        async.flushMicrotasks();
+
+        // The test passes if no exceptions were thrown
+        // In the actual implementation, it would not trigger because there's no promptId
+
+        testContainer.dispose();
+      });
+    });
+
+    test('should use status listener helper when inference is running', () {
+      fakeAsync((async) {
+        // Create a test-specific container with mocked providers
+        final testContainer = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            // Mock the inference status controller to always return running
+            inferenceStatusControllerProvider(
+              id: 'test-task-listener-helper',
+              aiResponseType: AiResponseType.taskSummary,
+            ).overrideWith(
+              () => MockInferenceStatusController(InferenceStatus.running),
+            ),
+          ],
+        );
+
+        final controller = testContainer.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
+
+        // Request refresh while inference is running
+        unawaited(
+            controller.requestTaskSummaryRefresh('test-task-listener-helper'));
+
+        // Wait a bit to ensure listener setup
+        async.elapse(const Duration(milliseconds: 50));
+        async.flushMicrotasks();
+
+        // The status listener should have been set up
+        // This is verified by the fact that the method completes without error
+        // and the controller doesn't crash
+
+        testContainer.dispose();
+      });
     });
 
     test('should handle status listener transitions correctly', () async {

@@ -1,4 +1,4 @@
-// ignore_for_file: cascade_invocations, unnecessary_lambdas, unawaited_futures
+// ignore_for_file: cascade_invocations, unnecessary_lambdas
 import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
@@ -41,10 +41,13 @@ class MockEvent extends Mock implements Event {}
 void main() {
   setUpAll(() {
     registerFallbackValue(MockEvent());
+    registerFallbackValue(MockClient());
+    registerFallbackValue(MockRoom());
+    registerFallbackValue(MockTimeline());
   });
 
   test('does not advance marker on equal/older events (fakeAsync)', () async {
-    fakeAsync((async) async {
+    fakeAsync((async) {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
       final logger = MockLoggingService();
@@ -113,8 +116,11 @@ void main() {
         sentEventRegistry: SentEventRegistry(),
       );
 
-      await consumer.initialize();
-      await consumer.start();
+      consumer.initialize();
+      async.flushMicrotasks();
+
+      consumer.start();
+      async.flushMicrotasks();
 
       // Let initial live scan run and any marker debounce windows elapse
       async.elapse(const Duration(seconds: 1));

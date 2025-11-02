@@ -17,9 +17,20 @@ class MockGemmaService {
 
   // Service Configuration Constants
   static const int defaultPort = 11343;
-  static const Duration streamingDelay = Duration(milliseconds: 50);
-  static const Duration downloadStepDelay = Duration(milliseconds: 200);
-  static const Duration simulatedDownloadDelay = Duration(milliseconds: 500);
+  // Allowed test delay: overridable to reduce runtime in tests
+  static Duration streamingDelay = const Duration(milliseconds: 5);
+  static Duration downloadStepDelay = const Duration(milliseconds: 5);
+  static Duration simulatedDownloadDelay = const Duration(milliseconds: 10);
+
+  static void setFastDelays({
+    Duration? stream,
+    Duration? step,
+    Duration? simulate,
+  }) {
+    if (stream != null) streamingDelay = stream;
+    if (step != null) downloadStepDelay = step;
+    if (simulate != null) simulatedDownloadDelay = simulate;
+  }
 
   // Response Template Constants
   static const String healthyStatus = 'healthy';
