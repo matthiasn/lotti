@@ -36,6 +36,8 @@ import '../../../../test_data/test_data.dart';
 import '../../../../utils/utils.dart';
 import '../../../../widget_test_utils.dart';
 
+class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -44,6 +46,7 @@ void main() {
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
   final mockUpdateNotifications = MockUpdateNotifications();
+  final mockAudioPlayerCubit = MockAudioPlayerCubit();
 
   final entryTypeStrings = entryTypes.toList();
 
@@ -193,9 +196,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
@@ -242,9 +244,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
@@ -280,9 +281,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: true),
           ),
         ),
@@ -323,9 +323,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
@@ -419,9 +418,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
@@ -504,9 +502,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
@@ -551,9 +548,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
@@ -582,9 +578,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
@@ -634,9 +629,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
@@ -678,9 +672,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: true),
           ),
         ),
@@ -738,9 +731,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: true),
           ),
         ),
@@ -773,9 +765,8 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-            lazy: false,
+          BlocProvider<AudioPlayerCubit>.value(
+            value: mockAudioPlayerCubit,
             child: const InfiniteJournalPage(showTasks: false),
           ),
         ),
