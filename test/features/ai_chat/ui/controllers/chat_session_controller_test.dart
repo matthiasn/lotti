@@ -227,7 +227,7 @@ void main() {
         // Start streaming (do not await to keep stream open)
         // ignore: unawaited_futures
         controller.sendMessage('Hello');
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Visible segments: text, then whitespace+newline, then heading start
         streamController.add('Intro');

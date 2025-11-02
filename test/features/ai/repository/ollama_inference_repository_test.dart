@@ -22,6 +22,13 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakeRequest());
     registerFallbackValue(Uri.parse('http://localhost:11434'));
+    // Use zero retry delay across this file to avoid real-time backoffs
+    OllamaInferenceRepository.retryBaseDelay = Duration.zero;
+  });
+
+  tearDownAll(() {
+    // Restore default for other suites
+    OllamaInferenceRepository.retryBaseDelay = const Duration(seconds: 2);
   });
 
   setUp(() {
@@ -1070,6 +1077,13 @@ void main() {
     setUp(() {
       mockHttpClient = MockHttpClient();
       repository = OllamaInferenceRepository(httpClient: mockHttpClient);
+      // Avoid real backoff delays in tests
+      OllamaInferenceRepository.retryBaseDelay = Duration.zero;
+    });
+
+    tearDown(() {
+      // Restore default after test
+      OllamaInferenceRepository.retryBaseDelay = const Duration(seconds: 2);
     });
 
     test('should handle malformed JSON in stream', () async {

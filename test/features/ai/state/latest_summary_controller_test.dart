@@ -384,7 +384,7 @@ void main() {
     updateStreamController.add({testId});
 
     // Wait for any pending operations
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>(() {});
 
     // Assert
     verify(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))

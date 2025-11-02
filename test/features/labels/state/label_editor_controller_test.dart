@@ -357,7 +357,7 @@ void main() {
     // Either immediately or shortly after, isSaving should true
     if (!midState.isSaving) {
       // allow microtask to process
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
       midState = container.read(provider);
     }
     expect(midState.isSaving, isTrue);

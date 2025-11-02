@@ -121,7 +121,7 @@ void main() {
         manager.addUserMessage('Test message');
 
         // Allow stream to process
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(manager.messages.length, 1);
         expect(events.whereType<UserMessageEvent>().length, 1);
@@ -173,7 +173,7 @@ void main() {
         manager.emitThinking();
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(events.length, 1);
         expect(events.first, isA<ThinkingEvent>());
@@ -187,7 +187,7 @@ void main() {
         manager.emitError('Test error message');
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(events.length, 1);
         expect(events.first, isA<ConversationErrorEvent>());
@@ -210,7 +210,7 @@ void main() {
           ..addUserMessage('Should not be emitted');
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // No events should be emitted
         expect(events, isEmpty);
@@ -228,7 +228,7 @@ void main() {
         );
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(manager.messages.length, 1);
         expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
@@ -251,7 +251,7 @@ void main() {
         );
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(manager.messages.length, 1);
         expect(
@@ -286,7 +286,7 @@ void main() {
         );
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(manager.messages.length, 1);
         expect(
@@ -321,7 +321,7 @@ void main() {
         );
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(manager.messages.length, 1);
         expect(manager.messages.first.content, 'Executing function');
@@ -339,7 +339,7 @@ void main() {
         manager.addAssistantMessage();
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(manager.messages.length, 1);
         expect(
@@ -419,7 +419,7 @@ void main() {
         manager.initialize(systemMessage: 'Test system');
 
         // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         expect(events.length, 1);
         expect(events.first, isA<ConversationInitializedEvent>());

@@ -55,7 +55,7 @@ void main() {
     );
 
     // Let post-frame init settle
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump();
 
     // Default: mic icon visible
     expect(find.byIcon(Icons.mic), findsOneWidget);
@@ -72,7 +72,9 @@ void main() {
     await tester.tap(find.byIcon(Icons.stop));
     await tester.pump();
     // Allow auto-scroll timer to complete and any queued frames to settle
-    await tester.pumpAndSettle(const Duration(seconds: 1));
+    // Drive the 100ms delayed scroll + 300ms animateTo without overpumping
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
     // Assert our fake session controller received the sent text
     expect(lastSent.value, 'Hi there');
@@ -102,7 +104,7 @@ void main() {
         ),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump();
 
     expect(find.byIcon(Icons.mic), findsOneWidget);
     await tester.tap(find.byIcon(Icons.mic));
@@ -140,7 +142,7 @@ void main() {
         ),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump();
 
     await tester.tap(find.byIcon(Icons.mic));
     await tester.pump();
@@ -175,7 +177,7 @@ void main() {
         ),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump();
 
     // Mic hidden; header settings present
     expect(find.byIcon(Icons.mic), findsNothing);
@@ -314,8 +316,8 @@ class _FakeChatRecorderController extends ChatRecorderController {
   @override
   Future<void> stopAndTranscribe() async {
     state = state.copyWith(status: ChatRecorderStatus.processing);
-    // Simulate short processing then deliver transcript
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+    // Yield once to simulate async processing without real sleep
+    await Future<void>(() {});
     state = const ChatRecorderState(
       status: ChatRecorderStatus.idle,
       amplitudeHistory: <double>[],

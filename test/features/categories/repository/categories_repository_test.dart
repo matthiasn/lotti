@@ -107,7 +107,7 @@ void main() {
         final subscription = repository.watchCategories().listen(results.add);
 
         controller.add([category1, category2]);
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
         controller.add([category1, category2, category3]);
         await Future<void>.delayed(Duration.zero);
 

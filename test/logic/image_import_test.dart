@@ -1292,13 +1292,28 @@ void main() {
   });
 
   group('importDroppedAudio', () {
+    // Note: duration probing is already bypassed in tests via FLUTTER_TEST.
+    // Individual tests toggle imageImportBypassMediaKitInTests as needed.
     Future<File> createTestAudioFile(
       String filename,
       int sizeBytes,
     ) async {
       final file = File(path.join(tempDir.path, filename));
-      // Create a minimal M4A header to simulate real audio file
-      await file.writeAsBytes(List.generate(sizeBytes, (index) => index % 256));
+      await file.create(recursive: true);
+      // For very large sizes, create a sparse file quickly instead of writing
+      // every byte. This makes the test fast while preserving File.length().
+      if (sizeBytes > 1024 * 1024) {
+        final raf = await file.open(mode: FileMode.write);
+        try {
+          await raf.setPosition(sizeBytes - 1);
+          await raf.writeFrom(<int>[0]);
+        } finally {
+          await raf.close();
+        }
+        return file;
+      }
+      // Small files: write a minimal payload
+      await file.writeAsBytes(List<int>.filled(sizeBytes, 0));
       return file;
     }
 

@@ -192,7 +192,7 @@ void main() {
     updateStreamController.add({'entry2'});
 
     // Allow the async operations to complete
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>(() {});
 
     // Verify the data was fetched again and state updated
     verify(() => mockRepository.getTaskProgressData(id: testTaskId)).called(1);
@@ -248,7 +248,7 @@ void main() {
     timeServiceStreamController.add(testJournalEntity);
 
     // Allow the async operations to complete
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>(() {});
 
     // Ensure the state was updated
     final state =
@@ -283,7 +283,7 @@ void main() {
     timeServiceStreamController.add(testJournalEntity);
 
     // Allow the async operations to complete
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>(() {});
 
     // Verify getTaskProgress is never called when task ID doesn't match
     verifyNever(
@@ -329,7 +329,7 @@ void main() {
     updateStreamController.add({testTaskId});
 
     // Allow the async operations to complete
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>(() {});
 
     // Verify no further repository calls were made after disposal
     verifyNever(() => testRepository.getTaskProgressData(id: any(named: 'id')));

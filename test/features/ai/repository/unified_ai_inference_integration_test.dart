@@ -532,8 +532,8 @@ void main() {
         if (getEntityCallCount == 1) {
           return originalTask;
         } else {
-          // Simulate small delay as if reading from database
-          await Future<void>.delayed(const Duration(milliseconds: 10));
+          // Yield once to simulate async I/O without real delay
+          await Future<void>(() {});
           return updatedTask;
         }
       });
@@ -544,8 +544,8 @@ void main() {
           .thenAnswer((invocation) async {
         final task = invocation.positionalArguments[0] as Task;
         updateAttempts.add(task);
-        // Simulate database constraint checking
-        await Future<void>.delayed(const Duration(milliseconds: 5));
+        // Yield once to simulate constraint check without real delay
+        await Future<void>(() {});
         return true;
       });
 
@@ -1365,7 +1365,7 @@ AiConfigInferenceProvider _createProvider({required String id}) {
 /// Creates a delayed stream to simulate real AI processing time
 Stream<CreateChatCompletionStreamResponse> _createDelayedStream(
   List<String> chunks, {
-  int delayMs = 100,
+  int delayMs = 0,
 }) async* {
   for (final chunk in chunks) {
     await Future<void>.delayed(Duration(milliseconds: delayMs));

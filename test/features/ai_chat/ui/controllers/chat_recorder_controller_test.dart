@@ -155,10 +155,9 @@ void main() {
         path: any(named: 'path'))).thenAnswer((_) => gate.future);
     // Emit amplitude events so state changes to recording
     when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-      (_) => Stream.periodic(
-        const Duration(milliseconds: 50),
-        (_) => record.Amplitude(current: -40, max: -30),
-      ).take(5),
+      (_) => Stream<record.Amplitude>.fromIterable(
+        List.filled(5, record.Amplitude(current: -40, max: -30)),
+      ),
     );
 
     final container = ProviderContainer(overrides: [
@@ -178,7 +177,8 @@ void main() {
     final state = container.read(chatRecorderControllerProvider);
     expect(state.errorType, ChatRecorderErrorType.concurrentOperation);
     gate.complete();
-    // Wait for first start to finish
+    // Allow the first start() to complete before disposing to avoid
+    // timers firing after test teardown.
     await Future<void>.delayed(const Duration(milliseconds: 10));
     sub.close();
     container.dispose();
@@ -226,10 +226,9 @@ void main() {
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
     // Emit amplitude events so state changes to recording
     when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-      (_) => Stream.periodic(
-        const Duration(milliseconds: 50),
-        (_) => record.Amplitude(current: -40, max: -30),
-      ).take(5),
+      (_) => Stream<record.Amplitude>.fromIterable(
+        List.filled(5, record.Amplitude(current: -40, max: -30)),
+      ),
     );
 
     final mockCloud = _MockCloudInferenceRepository();

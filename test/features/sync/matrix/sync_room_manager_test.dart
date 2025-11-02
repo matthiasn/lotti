@@ -139,7 +139,7 @@ void main() {
     when(() => invalidInvite.senderId).thenReturn('@alice:server');
 
     inviteController.add(invalidInvite);
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>(() {});
 
     expect(invites, isEmpty);
     verify(

@@ -105,9 +105,8 @@ void main() {
           throwsA(predicate((e) => e.toString().contains('Config error'))),
         );
 
-        // Verify logging was called
-        await Future<void>.delayed(
-            Duration.zero); // Let the stream attempt to process
+        // Verify logging was called (yield to allow stream dispatch)
+        await Future<void>(() {});
         verify(() => mockLoggingService.captureEvent(
               'Starting chat message processing',
               domain: 'ChatRepository',
@@ -136,7 +135,7 @@ void main() {
         );
 
         // Give the async operations a yield to complete
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Verify error logging
         verify(() => mockLoggingService.captureException(
@@ -300,8 +299,8 @@ void main() {
           title: 'First',
         );
 
-        // Simulate time passing
-        await Future<void>.delayed(const Duration(milliseconds: 1));
+        // Yield once to simulate time passing without real delay
+        await Future<void>(() {});
 
         final session2 = await repository.createSession(
           categoryId: testCategoryId,

@@ -23,6 +23,12 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
   final http.Client _httpClient;
 
+  /// Base delay used for exponential backoff between retry attempts.
+  ///
+  /// Tests may override this to `Duration.zero` to avoid consuming real time
+  /// while keeping retry logic intact. Production code should use the default.
+  static Duration retryBaseDelay = const Duration(seconds: 2);
+
   // Toggle for verbose streaming logs useful during debugging. Disabled by
   // default to avoid console noise in production.
   static const bool kVerboseStreamLogging = false;
@@ -319,7 +325,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
             )
             .timeout(timeout),
         maxRetries: 3,
-        baseDelay: const Duration(seconds: 2),
+        baseDelay: retryBaseDelay,
         context: retryContext,
         timeoutErrorMessage: timeoutErrorMessage,
         networkErrorMessage:
@@ -612,7 +618,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         return _httpClient.send(request).timeout(installTimeout);
       },
       maxRetries: 3,
-      baseDelay: const Duration(seconds: 2),
+      baseDelay: retryBaseDelay,
       context: 'model installation',
       timeoutErrorMessage:
           'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',

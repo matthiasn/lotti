@@ -232,7 +232,7 @@ void main() {
 
         // Simulate the full lifecycle
         onStatusChange(InferenceStatus.running);
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await Future<void>(() {});
         onStatusChange(InferenceStatus.idle);
       });
 
@@ -245,7 +245,7 @@ void main() {
         ).future,
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await Future<void>(() {});
 
       // Assert - both entities should have the same status sequence
       expect(mainEntityStatuses, contains(InferenceStatus.running));
@@ -324,7 +324,7 @@ void main() {
         ).future,
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await Future<void>(() {});
 
       // Assert
       expect(mainEntityErrorStatus, true);
@@ -378,7 +378,7 @@ void main() {
           executionOrder.add('ASR_START');
           onStatusChange(InferenceStatus.running);
           onProgress('Transcribing audio...');
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await Future<void>(() {});
           onProgress('Transcription complete: "Hello world"');
           onStatusChange(InferenceStatus.idle);
           executionOrder.add('ASR_COMPLETE');

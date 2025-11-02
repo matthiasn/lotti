@@ -405,22 +405,22 @@ wrap bodies in `fakeAsync` and drive `elapse`/`flushMicrotasks`.
 
 Highest‑impact (largest counts and/or long waits)
 
-- [ ] test/blocs/journal/journal_page_cubit_persistence_test.dart — many `Duration.zero` yields and
+- [x] test/blocs/journal/journal_page_cubit_persistence_test.dart — many `Duration.zero` yields and
   short sleeps; convert to `fakeAsync` and replace yields with `flushMicrotasks`.
-- [ ] test/blocs/journal/journal_page_cubit_test.dart — repeated `defaultWait` sleeps (20–300ms) and
+- [x] test/blocs/journal/journal_page_cubit_test.dart — repeated `defaultWait` sleeps (20–300ms) and
   explicit `Future.delayed`; migrate to `fakeAsync` and rely on `blocTest.wait` or deterministic
   elapses.
 - [ ] test/features/ai_chat/ui/controllers/chat_session_controller_test.dart — multiple short sleeps;
   convert to `fakeAsync` and drive timers/microtasks deterministically.
-- [ ] test/features/speech/helpers/automatic_prompt_trigger_test.dart — numerous 30–100ms waits; wrap in
+- [x] test/features/speech/helpers/automatic_prompt_trigger_test.dart — numerous 30–100ms waits; wrap in
   `fakeAsync` and elapse thresholds for debounce/gate logic.
 - [ ] test/features/sync/outbox/outbox_service_test.dart — mocks return `Future.delayed` (12–30s) and
   internal 120–200ms waits; inject short override durations and elapse via `fakeAsync`.
-- [ ] test/features/sync/matrix/pipeline/descriptor_catch_up_manager_test.dart — two 500ms waits;
+- [x] test/features/sync/matrix/pipeline/descriptor_catch_up_manager_test.dart — two 500ms waits;
   convert to `fakeAsync` and elapse.
-- [ ] test/features/sync/matrix/matrix_service_pipeline_test.dart — 350ms wait; convert to `fakeAsync`
+- [x] test/features/sync/matrix/matrix_service_pipeline_test.dart — 350ms wait; convert to `fakeAsync`
   and elapse.
-- [ ] test/features/ai/state/linked_entity_inference_test.dart — many 50–100ms waits; convert to
+- [x] test/features/ai/state/linked_entity_inference_test.dart — many 50–100ms waits; convert to
   `fakeAsync` and use `waitUntil(..., fake: async)` from `test/utils/utils.dart`.
 - [ ] test/test_helpers/mock_gemma_service.dart — streaming and download delays; ensure suites call
   `MockGemmaService.setFastDelays(...)` or drive via fake time where practical.
@@ -429,7 +429,7 @@ Additional unit/service tests to migrate (contains real `Future.delayed`)
 
 - [ ] test/database/common_test.dart
 - [ ] test/logic/persistence_logic_test.dart
-- [ ] test/services/logging_service_test.dart (replace `Duration.zero` with `flushMicrotasks`)
+- [x] test/services/logging_service_test.dart (replace `Duration.zero` with `flushMicrotasks`)
 - [ ] test/sync/client_runner_test.dart (retry sleeps → `fakeAsync` elapse)
 - [ ] test/utils/cache_extension_test.dart
 - [ ] test/utils/utils.dart (prefer passing `fake:` parameter to avoid real polling)
@@ -437,61 +437,61 @@ Additional unit/service tests to migrate (contains real `Future.delayed`)
 
 AI repositories and controllers (unit/service; convert to fake time)
 
-- [ ] test/features/ai/repository/gemma3n_inference_repository_test.dart
+- [x] test/features/ai/repository/gemma3n_inference_repository_test.dart
 - [ ] test/features/ai/repository/ollama_model_management_test.dart
-- [ ] test/features/ai/repository/unified_ai_inference_integration_test.dart (keep real I/O; only fake
+- [x] test/features/ai/repository/unified_ai_inference_integration_test.dart (keep real I/O; only fake
   pure waits)
-- [ ] test/features/ai/repository/unified_ai_inference_repository_test.dart
+- [x] test/features/ai/repository/unified_ai_inference_repository_test.dart
 - [ ] test/features/ai/repository/whisper_inference_repository_test.dart
 - [ ] test/features/ai/state/active_inference_controller_test.dart
 - [ ] test/features/ai/state/direct_task_summary_refresh_controller_test.dart
-- [ ] test/features/ai/state/latest_summary_controller_test.dart
+- [x] test/features/ai/state/latest_summary_controller_test.dart
 - [ ] test/features/ai/state/settings/ai_config_by_type_controller_test.dart
 - [ ] test/features/ai/state/settings/prompt_form_controller_test.dart
 - [ ] test/features/ai/state/task_summary_refresh_status_listener_test.dart
 - [ ] test/features/ai/state/unified_ai_controller_test.dart
-- [ ] test/features/ai/conversation/conversation_manager_test.dart (several `Duration.zero` and small
+- [x] test/features/ai/conversation/conversation_manager_test.dart (several `Duration.zero` and small
   waits)
 
 AI UI and widget tests (replace real waits with pumps; keep virtual time)
 
 - [ ] test/features/ai/ui/gemma_model_install_dialog_test.dart
-- [ ] test/features/ai/ui/settings/ai_settings_page_integration_test.dart
+- [x] test/features/ai/ui/settings/ai_settings_page_integration_test.dart
 - [ ] test/features/ai/ui/unified_ai_popup_menu_test.dart
 - [ ] test/features/ai/ui/unified_ai_progress_view_controller_test.dart
-- [ ] test/features/ai_chat/ui/widgets/chat_interface/chat_input_voice_test.dart
+- [x] test/features/ai_chat/ui/widgets/chat_interface/chat_input_voice_test.dart
 
 AI chat controllers (Riverpod controllers; unit‑style)
 
 - [ ] test/features/ai_chat/ui/controllers/chat_recorder_controller_test.dart — uses `Stream.periodic`
   and short sleeps; prefer `fakeAsync` and manual event emission (or elapse periodic ticks).
-- [ ] test/features/ai_chat/ui/controllers/chat_sessions_controller_test.dart — contains a real wait;
+- [x] test/features/ai_chat/ui/controllers/chat_sessions_controller_test.dart — contains a real wait;
   migrate to `fakeAsync`.
 
 Categories, labels, calendar, journal state (unit/service)
 
-- [ ] test/features/categories/repository/categories_repository_test.dart
-- [ ] test/features/categories/state/categories_list_controller_test.dart
-- [ ] test/features/categories/state/category_details_controller_test.dart
+- [x] test/features/categories/repository/categories_repository_test.dart
+- [x] test/features/categories/state/categories_list_controller_test.dart
+- [x] test/features/categories/state/category_details_controller_test.dart
 - [ ] test/features/labels/integration/label_workflow_test.dart (treat as integration; keep real I/O,
   fake only pure waits)
-- [ ] test/features/labels/label_assignment_processor_edge_cases_test.dart
+- [x] test/features/labels/label_assignment_processor_edge_cases_test.dart
 - [ ] test/features/labels/services/label_validator_test.dart
-- [ ] test/features/labels/state/label_editor_controller_test.dart
+- [x] test/features/labels/state/label_editor_controller_test.dart
 - [ ] test/features/journal/state/linked_entries_controller_test.dart
 - [ ] test/features/journal/state/linked_from_entries_controller_test.dart
 - [ ] test/features/calendar/state/day_view_controller_test.dart
 
 Matrix/sync state and rooms (small `Duration.zero` yields)
 
-- [ ] test/features/sync/matrix/room_test.dart — replace `Duration.zero` with `flushMicrotasks`.
-- [ ] test/features/sync/matrix/key_verification_runner_test.dart — replace `Duration.zero` with
+- [x] test/features/sync/matrix/room_test.dart — replace `Duration.zero` with `flushMicrotasks`.
+- [x] test/features/sync/matrix/key_verification_runner_test.dart — replace `Duration.zero` with
   `flushMicrotasks`.
-- [ ] test/features/sync/matrix/sync_room_manager_test.dart — replace `Duration.zero` with
+- [x] test/features/sync/matrix/sync_room_manager_test.dart — replace `Duration.zero` with
   `flushMicrotasks`.
-- [ ] test/features/sync/state/matrix_state_providers_test.dart — replace `Duration.zero` with
+- [x] test/features/sync/state/matrix_state_providers_test.dart — replace `Duration.zero` with
   `flushMicrotasks`.
-- [ ] test/features/sync/state/matrix_stats_provider_test.dart — replace `Duration.zero` with
+- [x] test/features/sync/state/matrix_stats_provider_test.dart — replace `Duration.zero` with
   `flushMicrotasks`.
 
 Integration and system‑level tests (evaluate per test; fake only pure timer waits)
@@ -500,7 +500,7 @@ Integration and system‑level tests (evaluate per test; fake only pure timer wa
   polling; prefer `waitUntil(..., fake: async)` where feasible, keep real HTTP/file I/O.
 - [ ] test/flatpak/flatpak_security_test.dart — contains a 2ms delay; likely negligible, but can be
   converted to `fakeAsync` if it’s a pure wait.
-- [ ] test/utils/screenshots_flatpak_test.dart — contains a 2ms delay used in polling; consider
+- [x] test/utils/screenshots_flatpak_test.dart — contains a 2ms delay used in polling; consider
   switching to fake polling.
 
 Notes

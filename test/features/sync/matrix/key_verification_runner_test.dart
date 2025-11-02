@@ -193,7 +193,7 @@ void main() {
       when(() => request.deviceId).thenReturn('device-123');
 
       requestCachedController.add(request);
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
 
       expect(assignedRunner, isNotNull);
       expect(assignedRunner!.name, 'Incoming KeyVerificationRunner');
@@ -202,7 +202,7 @@ void main() {
       final collectedRequests = <KeyVerification>[];
       requestController.stream.listen(collectedRequests.add);
       requestCachedController.add(request);
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
       expect(collectedRequests, isNotEmpty);
 
       assignedRunner?.stopTimer();

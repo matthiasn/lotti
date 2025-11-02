@@ -2058,7 +2058,7 @@ void main() {
           throwsA(isA<Exception>()),
         );
 
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
         expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
       });
 

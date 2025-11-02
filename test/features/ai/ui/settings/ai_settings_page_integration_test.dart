@@ -9,7 +9,7 @@ void main() {
   group('AiSettingsPage Integration Tests', () {
     tearDown(() async {
       // Ensure all timers are disposed after each test
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
     });
     late List<AiConfig> testConfigs;
 

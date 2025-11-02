@@ -663,7 +663,7 @@ void main() {
         when(() => mockResponse.statusCode).thenReturn(200);
         when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
               () async* {
-                await Future<void>.delayed(const Duration(milliseconds: 100));
+                await Future<void>(() {});
                 yield utf8
                     .encode('{"message":{"content":"result"},"done":true}\n');
               }(),

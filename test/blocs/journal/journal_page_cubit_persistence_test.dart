@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -167,7 +168,7 @@ void main() {
       // services that have been unregistered.
       // Yield to allow any pending microtasks from fire-and-forget work
       // (e.g., PagingController.fetchNextPage) to complete before reset.
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
       await getIt.reset();
     });
 
@@ -179,7 +180,7 @@ void main() {
         await cubit.persistTasksFilter();
 
         // Yield to allow async handlers to settle
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Verify the key used for storage
         expect(
@@ -188,7 +189,7 @@ void main() {
         );
 
         await cubit.close();
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
       });
 
       test('returns journalCategoryFiltersKey when showTasks=false', () async {
@@ -198,7 +199,7 @@ void main() {
         await cubit.persistTasksFilter();
 
         // Yield to allow async handlers to settle
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Verify the key used for storage
         expect(
@@ -208,7 +209,7 @@ void main() {
         );
 
         await cubit.close();
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
       });
     });
 
@@ -227,7 +228,7 @@ void main() {
         final cubit = JournalPageCubit(showTasks: true);
 
         // Yield to allow async loading completion
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Verify categories, task statuses, and priorities are loaded
         expect(cubit.state.selectedCategoryIds, {'cat1', 'cat2'});
@@ -235,7 +236,7 @@ void main() {
         expect(cubit.state.selectedPriorities, {'P0', 'P2'});
 
         await cubit.close();
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
       });
 
       test('loads from per-tab key when it exists (journal tab)', () async {
@@ -252,7 +253,7 @@ void main() {
         final cubit = JournalPageCubit(showTasks: false);
 
         // Yield to allow async loading completion
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Verify only categories loaded (no task statuses)
         expect(cubit.state.selectedCategoryIds, {'cat3', 'cat4'});
@@ -265,7 +266,7 @@ void main() {
         expect(cubit.state.selectedPriorities, isEmpty);
 
         await cubit.close();
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
       });
 
       test('falls back to legacy key when per-tab key missing (migration)',
@@ -280,21 +281,21 @@ void main() {
 
         // Create cubit (should fall back to legacy key)
         final cubit = JournalPageCubit(showTasks: true);
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Verify data loaded from legacy key
         expect(cubit.state.selectedCategoryIds, {'legacy1', 'legacy2'});
         expect(cubit.state.selectedTaskStatuses, {'BLOCKED'});
 
         await cubit.close();
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
       });
 
       test('returns early when no keys exist', () async {
         // Setup: No stored data
         // Create cubit
         final cubit = JournalPageCubit(showTasks: true);
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>.microtask(() {});
 
         // Verify default state (tasks tab defaults to '' when no categories exist)
         expect(cubit.state.selectedCategoryIds, {''});

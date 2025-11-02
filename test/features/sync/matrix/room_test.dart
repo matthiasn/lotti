@@ -93,7 +93,7 @@ void main() {
           senderId: '@user:server',
         ),
       );
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
 
       expect(invites, hasLength(1));
       expect(invites.first.roomId, '!room:server');
@@ -113,7 +113,7 @@ void main() {
           senderId: '@user:server',
         ),
       );
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
 
       expect(invites, isEmpty);
       await sub.cancel();
@@ -135,7 +135,7 @@ void main() {
           senderId: '@user:server',
         ),
       );
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
 
       expect(invites.single.matchesExistingRoom, isTrue);
       await sub.cancel();

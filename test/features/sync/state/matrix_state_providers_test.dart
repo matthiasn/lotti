@@ -105,7 +105,7 @@ void main() {
       final stats = MatrixStats(sentCount: 1, messageCounts: const {});
 
       matrixStatsStreamController.add(stats);
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>(() {});
       expect(captured, contains(stats));
     });
 
