@@ -5,10 +5,15 @@ import 'package:lotti/utils/platform.dart';
 import 'package:media_kit/media_kit.dart';
 
 void ensureMpvInitialized() {
+  // In CI/linux test environments, skip libmpv initialization to avoid
+  // installing native dependencies. media_kit is not exercised directly in
+  // these widget tests and can be safely bypassed.
+  if (isTestEnv && isLinux) {
+    return;
+  }
   if (isMacOS) {
     MediaKit.ensureInitialized(libmpv: '/opt/homebrew/bin/mpv');
-  }
-  if (isLinux || isWindows) {
+  } else if (isLinux || isWindows) {
     MediaKit.ensureInitialized();
   }
 }
