@@ -343,7 +343,7 @@ void main() {
     });
 
     test('should handle errors gracefully', () {
-      fakeAsync((async) async {
+      fakeAsync((async) {
         final controller = container.read(
           directTaskSummaryRefreshControllerProvider.notifier,
         );
@@ -685,7 +685,7 @@ void main() {
     });
 
     test('should handle case where no prompt ID is found', () {
-      fakeAsync((async) async {
+      fakeAsync((async) {
         // Mock response without promptId
         final testResponse = AiResponseEntry(
           meta: Metadata(
@@ -748,7 +748,7 @@ void main() {
     });
 
     test('should handle case where no AI response exists', () {
-      fakeAsync((async) async {
+      fakeAsync((async) {
         // Mock no response (empty list)
         when(() => mockJournalRepository.getLinkedEntities(
               linkedTo: 'no-response-task',

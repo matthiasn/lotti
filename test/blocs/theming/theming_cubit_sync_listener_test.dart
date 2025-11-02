@@ -290,13 +290,14 @@ void main() {
     });
 
     test('stream subscription is cancelled on cubit close', () {
-      fakeAsync((async) async {
+      fakeAsync((async) {
         // Create cubit
         final cubit = ThemingCubit();
         async.flushMicrotasks();
 
         // Close cubit
-        await cubit.close();
+        cubit.close();
+        async.flushMicrotasks();
 
         // Emit after close should not cause errors or reloads
         clearInteractions(settingsDb);

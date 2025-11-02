@@ -68,9 +68,16 @@ void main() {
       linkService = LinkService();
 
       // Stub HapticFeedback to avoid platform channel dependency under fake time
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform,
-              (methodCall) async {
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+      // Save and restore the handler's state after each test
+      addTearDown(() {
+        messenger.setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+
+      messenger.setMockMethodCallHandler(SystemChannels.platform,
+          (methodCall) async {
         if (methodCall.method == 'HapticFeedback.vibrate') {
           return null;
         }

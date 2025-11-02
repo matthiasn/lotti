@@ -579,16 +579,16 @@ void main() {
         );
       });
 
-      test('notify after dispose should be no-op', () {
-        fakeAsync((async) async {
-          final emittedIds = <Set<String>>[];
+      test('notify after dispose should be no-op', () async {
+        final emittedIds = <Set<String>>[];
 
-          final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+        final subscription = _TestHelpers.createTestSubscription(
+            updateNotifications, emittedIds);
 
-          // Dispose the notifications
-          await updateNotifications.dispose();
+        // Dispose the notifications before entering fake time
+        await updateNotifications.dispose();
 
+        fakeAsync((async) {
           // Try to notify after disposal
           updateNotifications.notify({_TestConstants.testId1});
 
@@ -598,22 +598,22 @@ void main() {
 
           // Should not emit anything
           expect(emittedIds.length, equals(0));
-
-          // Clean up subscription
-          await subscription.cancel();
         });
+
+        // Clean up subscription outside fake time
+        await subscription.cancel();
       });
 
-      test('notify with sync flag after dispose should be no-op', () {
-        fakeAsync((async) async {
-          final emittedIds = <Set<String>>[];
+      test('notify with sync flag after dispose should be no-op', () async {
+        final emittedIds = <Set<String>>[];
 
-          final subscription = _TestHelpers.createTestSubscription(
-              updateNotifications, emittedIds);
+        final subscription = _TestHelpers.createTestSubscription(
+            updateNotifications, emittedIds);
 
-          // Dispose the notifications
-          await updateNotifications.dispose();
+        // Dispose the notifications before entering fake time
+        await updateNotifications.dispose();
 
+        fakeAsync((async) {
           // Try to notify with sync flag after disposal
           updateNotifications.notify({_TestConstants.syncId1}, fromSync: true);
 
@@ -623,10 +623,10 @@ void main() {
 
           // Should not emit anything
           expect(emittedIds.length, equals(0));
-
-          // Clean up subscription
-          await subscription.cancel();
         });
+
+        // Clean up subscription outside fake time
+        await subscription.cancel();
       });
 
       test('timers should be cleaned up on dispose', () {
