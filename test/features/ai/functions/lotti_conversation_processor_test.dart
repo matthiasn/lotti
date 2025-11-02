@@ -260,6 +260,161 @@ void main() {
   tearDown(getIt.reset);
 
   group('LottiConversationProcessor - processPromptWithConversation', () {
+    test(
+        'Ollama non-GPT-OSS: bracketed list rejected then creates single items',
+        () async {
+      // Arrange
+      final task = TestDataFactory.createTask();
+      final promptConfig = TestDataFactory.createPromptConfig();
+      const prompt = 'Add milk and eggs';
+      const conversationId = 'conv-non-gptoss';
+      final mockOllamaRepo = MockOllamaInferenceRepository();
+
+      // Provider is Ollama but model is NOT GPT-OSS
+      final model = AiConfigModel(
+        id: 'llama-model',
+        name: 'llama3.2:3b',
+        providerModelId: 'llama3.2:3b',
+        inferenceProviderId: 'ollama',
+        createdAt: DateTime.now(),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+        supportsFunctionCalling: true,
+        maxCompletionTokens: 1000,
+      );
+
+      // Mock conversation setup
+      when(() => mockConversationRepo.createConversation(
+            systemMessage: any(named: 'systemMessage'),
+            maxTurns: any(named: 'maxTurns'),
+          )).thenReturn(conversationId);
+      when(() => mockConversationRepo.getConversation(conversationId))
+          .thenReturn(mockConversationManager);
+      when(() => mockConversationManager.messages).thenReturn([]);
+      final streamController = StreamController<ConversationEvent>();
+      when(() => mockConversationManager.events)
+          .thenAnswer((_) => streamController.stream);
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenReturn(null);
+
+      // Phase 1: model mistakenly sends bracketed list into single-item function
+      const badToolCall = ChatCompletionMessageToolCall(
+        id: 'tool-bad',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'add_checklist_item',
+          arguments: '{"actionItemDescription": "[milk, eggs]"}',
+        ),
+      );
+
+      // Phase 2: model retries with two proper single-item calls
+      const okToolCall1 = ChatCompletionMessageToolCall(
+        id: 'tool-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'add_checklist_item',
+          arguments: '{"actionItemDescription": "milk"}',
+        ),
+      );
+      const okToolCall2 = ChatCompletionMessageToolCall(
+        id: 'tool-2',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'add_checklist_item',
+          arguments: '{"actionItemDescription": "eggs"}',
+        ),
+      );
+
+      when(() => mockConversationRepo.sendMessage(
+            conversationId: conversationId,
+            message: prompt,
+            model: model.name,
+            provider: any(named: 'provider'),
+            inferenceRepo: any(named: 'inferenceRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).thenAnswer((invocation) async {
+        final strategy =
+            invocation.namedArguments[#strategy] as ConversationStrategy?;
+        if (strategy != null) {
+          // Round 1: rejected bracketed list
+          await strategy.processToolCalls(
+            toolCalls: [badToolCall],
+            manager: mockConversationManager,
+          );
+          // Round 2: two valid single items
+          await strategy.processToolCalls(
+            toolCalls: [okToolCall1, okToolCall2],
+            manager: mockConversationManager,
+          );
+        }
+      });
+
+      // Checklist creation
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.meta.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          )).thenAnswer((_) async => (
+            success: true,
+            checklistId: 'ck',
+            error: null,
+          ));
+
+      // Second item should be added to existing checklist
+      when(() => mockChecklistRepo.addItemToChecklist(
+            checklistId: 'ck',
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((invocation) async {
+        final title = invocation.namedArguments[#title] as String? ?? '';
+        return TestDataFactory.createChecklistItem(title: title);
+      });
+
+      // Task refresh
+      var calls = 0;
+      when(() => mockJournalDb.journalEntityById(task.meta.id))
+          .thenAnswer((_) async {
+        calls++;
+        if (calls > 1) {
+          return TestDataFactory.createTask(
+              id: task.meta.id, checklistIds: const ['ck']);
+        }
+        return task;
+      });
+      when(() => mockConversationRepo.deleteConversation(conversationId))
+          .thenReturn(null);
+
+      // Act
+      final result = await processor.processPromptWithConversation(
+        prompt: prompt,
+        entity: task,
+        task: task,
+        model: model,
+        provider: AiConfigInferenceProvider(
+          id: 'ollama',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          name: 'Ollama',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.ollama,
+        ),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: const [],
+        inferenceRepo: mockOllamaRepo,
+        autoChecklistService: mockAutoChecklistService,
+      );
+
+      // Assert: total 2 items created after retry path
+      expect(result.totalCreated, 2);
+      expect(result.items, containsAll(['milk', 'eggs']));
+    });
     test('should process single checklist item creation', () async {
       // Arrange
       final task = TestDataFactory.createTask();
@@ -517,6 +672,113 @@ void main() {
       // TODO: Fix hadErrors issue
       // expect(result.hadErrors, false);
       expect(result.responseText, contains('Created 3 checklist items'));
+    });
+
+    test('Ollama GPT-OSS: creates multiple items via one batch tool call',
+        () async {
+      // Arrange
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel(); // gpt-oss:20b
+      final promptConfig = TestDataFactory.createPromptConfig();
+      const prompt = 'Add shopping items: apples, bananas, cereal';
+      const conversationId = 'conv-gptoss-batch';
+      final mockOllamaRepo = MockOllamaInferenceRepository();
+
+      // Conversation setup
+      when(() => mockConversationRepo.createConversation(
+            systemMessage: any(named: 'systemMessage'),
+            maxTurns: any(named: 'maxTurns'),
+          )).thenReturn(conversationId);
+      when(() => mockConversationRepo.getConversation(conversationId))
+          .thenReturn(mockConversationManager);
+      when(() => mockConversationManager.messages).thenReturn([]);
+      final streamController = StreamController<ConversationEvent>();
+      when(() => mockConversationManager.events)
+          .thenAnswer((_) => streamController.stream);
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenReturn(null);
+
+      // The model emits a single batch call with three items
+      const batchToolCall = ChatCompletionMessageToolCall(
+        id: 'tool-batch',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'add_multiple_checklist_items',
+          arguments: '{"items": ["apples", "bananas", "cereal"]}',
+        ),
+      );
+
+      when(() => mockConversationRepo.sendMessage(
+            conversationId: conversationId,
+            message: prompt,
+            model: model.name,
+            provider: any(named: 'provider'),
+            inferenceRepo: any(named: 'inferenceRepo'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            strategy: any(named: 'strategy'),
+          )).thenAnswer((invocation) async {
+        final strategy =
+            invocation.namedArguments[#strategy] as ConversationStrategy?;
+        if (strategy != null) {
+          await strategy.processToolCalls(
+            toolCalls: [batchToolCall],
+            manager: mockConversationManager,
+          );
+        }
+      });
+
+      // Checklist creation using auto service for brand-new checklist
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.meta.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          )).thenAnswer((_) async => (
+            success: true,
+            checklistId: 'ck',
+            error: null,
+          ));
+
+      // Task refresh: after creation, return a task with the new checklist id
+      var calls = 0;
+      when(() => mockJournalDb.journalEntityById(task.meta.id))
+          .thenAnswer((_) async {
+        calls++;
+        if (calls > 1) {
+          return TestDataFactory.createTask(
+              id: task.meta.id, checklistIds: const ['ck']);
+        }
+        return task;
+      });
+      when(() => mockConversationRepo.deleteConversation(conversationId))
+          .thenReturn(null);
+
+      // Act
+      final result = await processor.processPromptWithConversation(
+        prompt: prompt,
+        entity: task,
+        task: task,
+        model: model,
+        provider: AiConfigInferenceProvider(
+          id: 'ollama',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          name: 'Ollama',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.ollama,
+        ),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: const [],
+        inferenceRepo: mockOllamaRepo,
+        autoChecklistService: mockAutoChecklistService,
+      );
+
+      // Assert
+      expect(result.totalCreated, 3);
+      expect(result.items, containsAll(['apples', 'bananas', 'cereal']));
     });
 
     test('should handle language detection before checklist creation',

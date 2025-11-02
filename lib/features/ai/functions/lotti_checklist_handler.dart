@@ -6,8 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/ai/utils/item_list_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_log.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Handler for checklist item creation in Lotti
@@ -49,6 +51,62 @@ class LottiChecklistItemHandler extends FunctionHandler {
       final description = args['actionItemDescription'] as String?;
 
       if (description != null && description.trim().isNotEmpty) {
+        final trimmed = description.trim();
+
+        // Heuristic 1: square‑bracketed list with commas
+        // Example: "[a, b, c]" — this is almost certainly a multi-item list
+        // that was accidentally passed to the single-item function.
+        if (trimmed.startsWith('[') &&
+            trimmed.endsWith(']') &&
+            trimmed.contains(',')) {
+          lottiDevLog(
+            name: 'LottiChecklistItemHandler',
+            message:
+                'Rejected multi-item bracketed list in single-item handler: '
+                '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
+            level: 900,
+          );
+          return FunctionCallResult(
+            success: false,
+            functionName: functionName,
+            arguments: call.function.arguments,
+            data: {
+              'attemptedItem': description,
+              'toolCallId': call.id,
+              'taskId': task.id,
+            },
+            error:
+                'Multiple items detected in a single-item call. Provide items separately or use the appropriate multi-item tool if available.',
+          );
+        }
+
+        // Heuristic 2: re-use the robust parser to detect 3+ items.
+        // This keeps the rules consistent with the batch path and avoids
+        // duplicating tricky parsing logic here. We only reject when the
+        // parsed list contains three or more items so that legitimate
+        // single descriptions like "Buy milk, 2%" still pass.
+        if (parseItemListString(trimmed).length >= 3) {
+          lottiDevLog(
+            name: 'LottiChecklistItemHandler',
+            message:
+                'Rejected comma-separated multi-item pattern in single-item handler: '
+                '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
+            level: 900,
+          );
+          return FunctionCallResult(
+            success: false,
+            functionName: functionName,
+            arguments: call.function.arguments,
+            data: {
+              'attemptedItem': description,
+              'toolCallId': call.id,
+              'taskId': task.id,
+            },
+            error:
+                'Multiple items detected in a single-item call. Provide items separately or use the appropriate multi-item tool if available.',
+          );
+        }
+
         return FunctionCallResult(
           success: true,
           functionName: functionName,
