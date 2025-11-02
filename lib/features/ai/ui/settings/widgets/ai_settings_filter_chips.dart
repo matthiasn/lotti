@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -61,10 +62,12 @@ class AiSettingsFilterChips extends ConsumerWidget {
   /// Builds the provider filter section
   Widget _buildProviderFilter(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(
+        bottom: ProviderChipConstants.chipSpacing,
+      ),
       child: Wrap(
-        spacing: 6,
-        runSpacing: 6,
+        spacing: ProviderChipConstants.chipSpacing,
+        runSpacing: ProviderChipConstants.chipSpacing,
         children: [
           ProviderFilterChipsRow(
             selectedProviderIds: filterState.selectedProviders,
@@ -73,6 +76,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
                 selectedProviders: newProviders,
               ));
             },
+            useStyledChips: true,
           ),
 
           // Clear filters button - positioned in provider row when there are active filters

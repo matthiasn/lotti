@@ -27,10 +27,18 @@ List<String>? _getEmojiFontFallback() {
 
 class ThemingCubit extends Cubit<ThemingState> {
   ThemingCubit() : super(ThemingState(enableTooltips: true)) {
-    _init();
+    // Intentionally not awaited - initialization happens asynchronously
+    // while cubit remains in valid state. Errors are caught and logged.
+    unawaited(_init());
   }
 
   Future<void> _init() async {
+    // Initialize with default themes as fallback
+    _initLightTheme(_lightThemeName);
+    _initDarkTheme(_darkThemeName);
+    emitState();
+
+    // Try to load user's theme preferences
     try {
       await _loadSelectedSchemes();
     } catch (e, st) {
@@ -39,6 +47,12 @@ class ThemingCubit extends Cubit<ThemingState> {
         domain: 'THEMING_CUBIT',
         subDomain: 'init',
         stackTrace: st,
+      );
+      // Fallback is already set above, so we can continue
+      getIt<LoggingService>().captureException(
+        Exception('Using default theme (Grey Law) due to initialization error'),
+        domain: 'THEMING_CUBIT',
+        subDomain: 'fallback',
       );
     }
 
@@ -65,6 +79,7 @@ class ThemingCubit extends Cubit<ThemingState> {
   bool _enableTooltips = true;
   final _debounceKey = 'theming.sync.${identityHashCode(Object())}';
   bool _isApplyingSyncedChanges = false;
+  bool _isClosing = false;
   StreamSubscription<bool>? _tooltipSubscription;
   StreamSubscription<List<SettingsItem>>? _themePrefsSubscription;
 
@@ -73,9 +88,20 @@ class ThemingCubit extends Cubit<ThemingState> {
         .watchSettingsItemByKey(themePrefsUpdatedAtKey)
         .listen(
       (items) async {
+        if (_isClosing || isClosed) return;
         if (items.isNotEmpty && !_isApplyingSyncedChanges) {
           _isApplyingSyncedChanges = true;
-          await _loadSelectedSchemes();
+          try {
+            await _loadSelectedSchemes();
+          } catch (e, st) {
+            getIt<LoggingService>().captureException(
+              e,
+              domain: 'THEMING_CUBIT',
+              subDomain: 'theme_prefs_reload',
+              stackTrace: st,
+            );
+            // Keep current theme if reload fails
+          }
           _isApplyingSyncedChanges = false;
         }
       },
@@ -227,6 +253,7 @@ class ThemingCubit extends Cubit<ThemingState> {
 
   @override
   Future<void> close() async {
+    _isClosing = true;
     await _tooltipSubscription?.cancel();
     await _themePrefsSubscription?.cancel();
     await super.close();

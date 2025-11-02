@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Reusable widget for displaying provider filter chips
@@ -42,6 +44,7 @@ class ProviderFilterChipsRow extends ConsumerWidget {
     this.allowMultiSelect = true,
     this.showAllChip = false,
     this.availableProviderIds,
+    this.useStyledChips = false,
     super.key,
   });
 
@@ -64,6 +67,11 @@ class ProviderFilterChipsRow extends ConsumerWidget {
   /// If null, shows chips for all available providers
   /// If provided, only shows chips for providers in this list
   final List<String>? availableProviderIds;
+
+  /// Whether to use styled chips with provider-specific colors and avatars
+  /// - true: Use ProviderFilterChip with colors and avatars
+  /// - false: Use plain FilterChip (default)
+  final bool useStyledChips;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -91,55 +99,95 @@ class ProviderFilterChipsRow extends ConsumerWidget {
         }
 
         return Wrap(
-          spacing: 6,
-          runSpacing: 6,
+          spacing: ProviderChipConstants.chipSpacing,
+          runSpacing: ProviderChipConstants.chipSpacing,
           children: [
             // Optional "All" chip
             if (showAllChip)
               FilterChip(
-                label: const Text('All'),
+                label: Text(context.messages.tasksLabelFilterAll),
                 selected: selectedProviderIds.isEmpty,
                 onSelected: (_) => onChanged({}),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 backgroundColor: Theme.of(context)
                     .colorScheme
                     .surfaceContainerHigh
-                    .withValues(alpha: 0.5),
-                selectedColor: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withValues(alpha: 0.7),
+                    .withValues(alpha: ProviderChipConstants.surfaceAlpha),
+                selectedColor:
+                    Theme.of(context).colorScheme.primaryContainer.withValues(
+                          alpha: ProviderChipConstants.primaryContainerAlpha,
+                        ),
                 checkmarkColor:
                     Theme.of(context).colorScheme.onPrimaryContainer,
                 side: BorderSide(
                   color: selectedProviderIds.isEmpty
-                      ? Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.8)
+                      ? Theme.of(context).colorScheme.primary.withValues(
+                            alpha: ProviderChipConstants.primaryAlpha,
+                          )
                       : Theme.of(context)
                           .colorScheme
                           .primaryContainer
-                          .withValues(alpha: 0.3),
+                          .withValues(
+                            alpha: ProviderChipConstants
+                                .primaryContainerBorderAlpha,
+                          ),
                 ),
                 labelStyle: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
+                  fontSize: ProviderChipConstants.chipFontSize,
+                  fontWeight: ProviderChipConstants.chipFontWeight,
+                  letterSpacing: ProviderChipConstants.chipLetterSpacing,
                   color: selectedProviderIds.isEmpty
                       ? Theme.of(context).colorScheme.onPrimaryContainer
                       : Theme.of(context)
                           .colorScheme
                           .onSurfaceVariant
-                          .withValues(alpha: 0.8),
+                          .withValues(
+                            alpha: ProviderChipConstants.onSurfaceVariantAlpha,
+                          ),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ProviderChipConstants.chipHorizontalPadding,
+                  vertical: ProviderChipConstants.chipVerticalPadding,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    ProviderChipConstants.chipBorderRadius,
+                  ),
+                ),
               ),
 
-            // Provider chips
+            // Provider chips - styled or plain based on useStyledChips parameter
             ...providerConfigs.map((provider) {
               final isSelected = selectedProviderIds.contains(provider.id);
+
+              if (useStyledChips) {
+                // Use styled ProviderFilterChip with colors and avatars
+                return ProviderFilterChip(
+                  providerId: provider.id,
+                  isSelected: isSelected,
+                  onTap: () {
+                    final newSelection = Set<String>.from(selectedProviderIds);
+                    if (allowMultiSelect) {
+                      if (isSelected) {
+                        newSelection.remove(provider.id);
+                      } else {
+                        newSelection.add(provider.id);
+                      }
+                    } else {
+                      if (isSelected) {
+                        newSelection.clear();
+                      } else {
+                        newSelection
+                          ..clear()
+                          ..add(provider.id);
+                      }
+                    }
+                    onChanged(newSelection);
+                  },
+                );
+              }
+
+              // Use plain FilterChip
               return FilterChip(
                 label: Text(provider.name),
                 selected: isSelected,
@@ -168,37 +216,48 @@ class ProviderFilterChipsRow extends ConsumerWidget {
                 backgroundColor: Theme.of(context)
                     .colorScheme
                     .surfaceContainerHigh
-                    .withValues(alpha: 0.5),
-                selectedColor: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withValues(alpha: 0.7),
+                    .withValues(alpha: ProviderChipConstants.surfaceAlpha),
+                selectedColor:
+                    Theme.of(context).colorScheme.primaryContainer.withValues(
+                          alpha: ProviderChipConstants.primaryContainerAlpha,
+                        ),
                 checkmarkColor:
                     Theme.of(context).colorScheme.onPrimaryContainer,
                 side: BorderSide(
                   color: isSelected
-                      ? Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.8)
+                      ? Theme.of(context).colorScheme.primary.withValues(
+                            alpha: ProviderChipConstants.primaryAlpha,
+                          )
                       : Theme.of(context)
                           .colorScheme
                           .primaryContainer
-                          .withValues(alpha: 0.3),
+                          .withValues(
+                            alpha: ProviderChipConstants
+                                .primaryContainerBorderAlpha,
+                          ),
                 ),
                 labelStyle: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
+                  fontSize: ProviderChipConstants.chipFontSize,
+                  fontWeight: ProviderChipConstants.chipFontWeight,
+                  letterSpacing: ProviderChipConstants.chipLetterSpacing,
                   color: isSelected
                       ? Theme.of(context).colorScheme.onPrimaryContainer
                       : Theme.of(context)
                           .colorScheme
                           .onSurfaceVariant
-                          .withValues(alpha: 0.8),
+                          .withValues(
+                            alpha: ProviderChipConstants.onSurfaceVariantAlpha,
+                          ),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ProviderChipConstants.chipHorizontalPadding,
+                  vertical: ProviderChipConstants.chipVerticalPadding,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    ProviderChipConstants.chipBorderRadius,
+                  ),
+                ),
                 tooltip: context.messages
                     .aiSettingsFilterByProviderTooltip(provider.name),
               );

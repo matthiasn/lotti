@@ -153,8 +153,8 @@ void main() {
         await tester.tap(find.text('Prompts'));
         await tester.pumpAndSettle();
 
-        // Filter chips should still be visible (changed behavior - filters shown on all tabs)
-        expect(find.text('Vision'), findsOneWidget);
+        // Model filters should be hidden on prompts tab
+        expect(find.text('Vision'), findsNothing);
       });
     });
 

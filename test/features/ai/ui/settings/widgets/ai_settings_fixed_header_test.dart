@@ -127,7 +127,7 @@ void main() {
       expect(searchController.text, 'test query');
     });
 
-    testWidgets('displays filter section on all tabs',
+    testWidgets('displays filter section only on models tab',
         (WidgetTester tester) async {
       // Start on providers tab (default)
       await tester.pumpWidget(createWidget(
@@ -135,8 +135,8 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Filter chips should now be visible on providers tab (changed behavior)
-      expect(find.byType(AiSettingsFilterChips), findsOneWidget);
+      // Should not show AiSettingsFilterChips on providers tab
+      expect(find.byType(AiSettingsFilterChips), findsNothing);
 
       // Now test with models tab active - create fresh widget to avoid exceptions
       await tester.pumpWidget(createWidget(
@@ -145,17 +145,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Filter chips widget should still be visible
-      expect(find.byType(AiSettingsFilterChips), findsOneWidget);
-
-      // Test with prompts tab - create fresh widget
-      await tester.pumpWidget(createWidget(
-        filterState:
-            const AiSettingsFilterState(activeTab: AiSettingsTab.prompts),
-      ));
-      await tester.pumpAndSettle();
-
-      // Filter chips widget should still be visible
+      // Filter chips widget should now be visible
       expect(find.byType(AiSettingsFilterChips), findsOneWidget);
     });
 
