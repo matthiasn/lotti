@@ -24,7 +24,7 @@ List<ChatCompletionTool> getChecklistToolsForProvider({
 
   final isOllama =
       provider.inferenceProviderType == InferenceProviderType.ollama;
-  final isGptOss = model.providerModelId.startsWith('gpt-oss');
+  final isGptOss = model.providerModelId.startsWith('gpt-oss:');
 
   if (isOllama && isGptOss) {
     tools.add(

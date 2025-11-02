@@ -152,5 +152,27 @@ void main() {
           _call('{"actionItemDescription": "[item1, item2], and item3"}'));
       expect(result.success, true);
     });
+
+    test('function name mismatch returns error', () {
+      const badCall = ChatCompletionMessageToolCall(
+        id: 'tool-x',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'wrong_function',
+          arguments: '{"actionItemDescription": "ok"}',
+        ),
+      );
+      final result = handler.processFunctionCall(badCall);
+      expect(result.success, false);
+      expect(result.error, contains('Function name mismatch'));
+    });
+
+    test('invalid JSON returns error', () {
+      final result = handler.processFunctionCall(
+        _call('not json at all'),
+      );
+      expect(result.success, false);
+      expect(result.error, contains('Invalid JSON'));
+    });
   });
 }

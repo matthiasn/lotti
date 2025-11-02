@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/ai/utils/item_list_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_log.dart';
@@ -77,85 +78,29 @@ class LottiChecklistItemHandler extends FunctionHandler {
           );
         }
 
-        // Heuristic 2: two or more top-level commas (outside quotes/grouping)
-        var commaCount = 0;
-        var escape = false;
-        var inQuotes = false;
-        String? quoteChar;
-        var paren = 0;
-        var bracket = 0;
-        var brace = 0;
-        for (var i = 0; i < trimmed.length; i++) {
-          final ch = trimmed[i];
-          if (escape) {
-            escape = false;
-            continue;
-          }
-          if (ch == r'\\') {
-            escape = true;
-            continue;
-          }
-          if (inQuotes) {
-            if (ch == quoteChar) {
-              inQuotes = false;
-              quoteChar = null;
-            }
-            continue;
-          }
-          final cu = ch.codeUnitAt(0);
-          if (cu == 34 || cu == 39) {
-            inQuotes = true;
-            quoteChar = ch;
-            continue;
-          }
-          if (ch == '(') {
-            paren++;
-            continue;
-          }
-          if (ch == ')') {
-            if (paren > 0) paren--;
-            continue;
-          }
-          if (ch == '[') {
-            bracket++;
-            continue;
-          }
-          if (ch == ']') {
-            if (bracket > 0) bracket--;
-            continue;
-          }
-          if (ch == '{') {
-            brace++;
-            continue;
-          }
-          if (ch == '}') {
-            if (brace > 0) brace--;
-            continue;
-          }
-          if (ch == ',' && paren == 0 && bracket == 0 && brace == 0) {
-            commaCount++;
-            if (commaCount >= 2) {
-              lottiDevLog(
-                name: 'LottiChecklistItemHandler',
-                message:
-                    'Rejected comma-separated multi-item pattern in single-item handler: '
-                    '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
-                level: 900,
-              );
-              return FunctionCallResult(
-                success: false,
-                functionName: functionName,
-                arguments: call.function.arguments,
-                data: {
-                  'attemptedItem': description,
-                  'toolCallId': call.id,
-                  'taskId': task.id,
-                },
-                error:
-                    'Multiple items detected in a single-item call. Provide items separately or use the appropriate multi-item tool if available.',
-              );
-            }
-          }
+        // Heuristic 2: if robust parser would split into 3+ items, reject.
+        // This allows single-comma descriptions and two-part phrases but
+        // prevents multi-item lists from slipping through the single-item tool.
+        if (parseItemListString(trimmed).length >= 3) {
+          lottiDevLog(
+            name: 'LottiChecklistItemHandler',
+            message:
+                'Rejected comma-separated multi-item pattern in single-item handler: '
+                '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
+            level: 900,
+          );
+          return FunctionCallResult(
+            success: false,
+            functionName: functionName,
+            arguments: call.function.arguments,
+            data: {
+              'attemptedItem': description,
+              'toolCallId': call.id,
+              'taskId': task.id,
+            },
+            error:
+                'Multiple items detected in a single-item call. Provide items separately or use the appropriate multi-item tool if available.',
+          );
         }
 
         return FunctionCallResult(
