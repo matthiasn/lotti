@@ -39,7 +39,7 @@ except ImportError:  # pragma: no cover - colorama optional
     Fore = Style = None  # type: ignore
     _COLOR_ENABLED = False
 
-_DEFAULT_FLUTTER_TAG = "3.35.6"
+DEFAULT_FLUTTER_TAG = "3.35.7"
 _ALLOWED_URL_SCHEMES = {"https"}
 
 _SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400")
@@ -364,8 +364,8 @@ def _extract_flutter_tag(manifest_template: Path, printer: _StatusPrinter) -> Op
             for source in sources:
                 if isinstance(source, dict) and "tag" in source:
                     return str(source["tag"]).strip()
-    printer.warn(f"Could not detect Flutter tag from manifest; defaulting to {_DEFAULT_FLUTTER_TAG}")
-    return _DEFAULT_FLUTTER_TAG
+    printer.warn(f"Could not detect Flutter tag from manifest; defaulting to {DEFAULT_FLUTTER_TAG}")
+    return DEFAULT_FLUTTER_TAG
 
 
 def _copy_manifest_template(context: PrepareFlathubContext) -> None:
@@ -415,8 +415,8 @@ def _ensure_flutter_tag_from_modules(
         printer.info(f"Using Flutter tag from FVM configuration: {context.flutter_tag}")
         return
 
-    printer.warn(f"Could not detect Flutter tag; defaulting to {_DEFAULT_FLUTTER_TAG}")
-    context.flutter_tag = _DEFAULT_FLUTTER_TAG
+    printer.warn(f"Could not detect Flutter tag; defaulting to {DEFAULT_FLUTTER_TAG}")
+    context.flutter_tag = DEFAULT_FLUTTER_TAG
 
 
 def _ensure_branch_for_lotti_sources(sources: list[object], branch: str) -> bool:

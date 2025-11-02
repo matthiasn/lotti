@@ -12,6 +12,7 @@ from flatpak.manifest_tool.prepare.orchestrator import (
     PrepareFlathubOptions,
     PrepareFlathubError,
     _StatusPrinter,
+    DEFAULT_FLUTTER_TAG,
     _download_cargo_lock_files,
     _assert_commit_pinned,
     _prepare_directories,
@@ -70,7 +71,7 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         release_date="1970-01-01",
         current_branch="main",
         app_commit="deadbeef",
-        flutter_tag="3.35.6",
+        flutter_tag=DEFAULT_FLUTTER_TAG,
         cached_flutter_dir=None,
         flatpak_flutter_repo=flatpak_dir / "flatpak-flutter",
         flatpak_flutter_log=work_dir / "flatpak-flutter.log",
@@ -159,7 +160,7 @@ class PrepareOrchestratorTests(unittest.TestCase):
                                     {
                                         "type": "git",
                                         "url": "https://github.com/flutter/flutter.git",
-                                        "tag": "3.35.6",
+                                        "tag": DEFAULT_FLUTTER_TAG,
                                     }
                                 ],
                             },
