@@ -209,7 +209,7 @@ void main() {
     });
 
     test('disposes stream subscription on provider disposal', () {
-      fakeAsync((async) async {
+      fakeAsync((async) {
         final flagController = StreamController<Set<ConfigFlag>>();
         var listenerCalled = false;
 
@@ -247,12 +247,13 @@ void main() {
         expect(listenerCalled, isFalse,
             reason: 'Listener should not be called after disposal');
 
-        await flagController.close();
+        flagController.close();
+        async.flushMicrotasks();
       });
     });
 
     test('emits updates when flag value changes', () {
-      fakeAsync((async) async {
+      fakeAsync((async) {
         final flagController = StreamController<Set<ConfigFlag>>();
 
         when(() => mockDb.watchConfigFlags()).thenAnswer(
@@ -304,7 +305,8 @@ void main() {
         // Assert: All values received
         expect(values, equals([false, true, false]));
 
-        await flagController.close();
+        flagController.close();
+        async.flushMicrotasks();
       });
     });
 
