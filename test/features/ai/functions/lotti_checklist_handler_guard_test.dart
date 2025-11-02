@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -105,6 +107,50 @@ void main() {
           '{"actionItemDescription": "[Investigate audio quality from Bluetooth headphones,Find out if network connectivity detection triggers sending,Come up with an implementation plan to fix the network issue]"}'));
       expect(result.success, false);
       expect(result.error, contains('Multiple items detected'));
+    });
+
+    test('logs rejected bracketed list with truncation', () {
+      final longList = '[${List.generate(50, (i) => 'item$i').join(', ')}]';
+      final logs = <String>[];
+      runZoned(
+        () {
+          final result = handler.processFunctionCall(
+              _call('{"actionItemDescription": "$longList"}'));
+          expect(result.success, false);
+        },
+        zoneSpecification: ZoneSpecification(
+          print: (self, parent, zone, line) {
+            logs.add(line);
+          },
+        ),
+      );
+
+      // Expect our dev log mirror printed a line containing this rejection
+      expect(
+        logs.any((l) =>
+            l.contains('[LottiChecklistItemHandler]') &&
+            l.contains('Rejected multi-item') &&
+            l.contains('item0')),
+        true,
+      );
+    });
+
+    test('accepts brackets in description (no escape needed)', () {
+      final result = handler.processFunctionCall(
+          _call('{"actionItemDescription": "Buy [organic] milk"}'));
+      expect(result.success, true);
+    });
+
+    test('accepts nested brackets without commas', () {
+      final result = handler.processFunctionCall(
+          _call('{"actionItemDescription": "[[nested]]"}'));
+      expect(result.success, true);
+    });
+
+    test('mixed bracket then comma outside is accepted (current behavior)', () {
+      final result = handler.processFunctionCall(
+          _call('{"actionItemDescription": "[item1, item2], and item3"}'));
+      expect(result.success, true);
     });
   });
 }

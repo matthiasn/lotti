@@ -230,6 +230,290 @@ void main() {
   });
 
   group('UnifiedAiInferenceRepository', () {
+    group('tool injection logging and gating', () {
+      test('stream checklistUpdates logs OpenAI tools without multi-item',
+          () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'checklist-updates',
+          name: 'Checklist Updates',
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
+
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'gpt-4',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: true,
+          supportsFunctionCalling: true,
+        );
+
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          name: 'OpenAI',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'test-api-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
+
+        const mockStream = Stream<CreateChatCompletionStreamResponse>.empty();
+
+        List<ChatCompletionTool>? capturedTools;
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+            tools: captureAny(named: 'tools'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedTools =
+              invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
+          return mockStream;
+        });
+
+        final logs = <String>[];
+        await runZoned(
+          () async {
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+          },
+          zoneSpecification: ZoneSpecification(
+            print: (self, parent, zone, line) => logs.add(line),
+          ),
+        );
+
+        // Verify tools passed exclude multi-item
+        final names =
+            (capturedTools ?? []).map((t) => t.function.name).toList();
+        expect(names, contains('add_checklist_item'));
+        expect(names, contains('suggest_checklist_completion'));
+        expect(names, isNot(contains('add_multiple_checklist_items')));
+
+        // Verify log line includes provider/model and tool list
+        final logged = logs.join('\n');
+        expect(logged, contains('[UnifiedAiInferenceRepository]'));
+        expect(logged, contains('Checklist tools:'));
+        expect(logged, contains('provider=InferenceProviderType.openAi'));
+        expect(logged, contains('model=gpt-4'));
+        expect(logged, isNot(contains('add_multiple_checklist_items')));
+      });
+
+      test('legacy task path logs tool list without multi-item', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'legacy',
+          name: 'Legacy',
+          aiResponseType: AiResponseType
+              .imageAnalysis, // not checklistUpdates or taskSummary
+          defaultModelId: 'model-2',
+        );
+
+        final model = AiConfigModel(
+          id: 'model-2',
+          name: 'gpt-4',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider-2',
+          createdAt: DateTime.now(),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: true,
+          supportsFunctionCalling: true,
+        );
+
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-2',
+          name: 'OpenAI',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'test-api-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockAiInputRepo.getEntity('legacy-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-2'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-2'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'legacy-id'))
+            .thenAnswer((_) async => '{"task": "Legacy"}');
+
+        const mockStream = Stream<CreateChatCompletionStreamResponse>.empty();
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        final logs = <String>[];
+        await runZoned(
+          () async {
+            await repository!.runInference(
+              entityId: 'legacy-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+          },
+          zoneSpecification: ZoneSpecification(
+            print: (self, parent, zone, line) => logs.add(line),
+          ),
+        );
+
+        final logged = logs.join('\n');
+        expect(
+            logged, contains('Including checklist completion and task tools'));
+        expect(logged, isNot(contains('add_multiple_checklist_items')));
+      });
+
+      test('conversation path logs OpenAI tools without multi-item', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'conv',
+          name: 'Conv',
+          aiResponseType: AiResponseType.checklistUpdates,
+          defaultModelId: 'model-3',
+        );
+
+        final model = AiConfigModel(
+          id: 'model-3',
+          name: 'gpt-4',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider-3',
+          createdAt: DateTime.now(),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: true,
+          supportsFunctionCalling: true,
+        );
+
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-3',
+          name: 'OpenAI',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'test-api-key',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockAiInputRepo.getEntity('conv-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-3'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-3'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'conv-id'))
+            .thenAnswer((_) async => '{"task": "Conv"}');
+
+        // Cloud repo still required for wrapper; but result won't be used since we'll fail early
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+          ),
+        ).thenAnswer(
+            (_) => const Stream<CreateChatCompletionStreamResponse>.empty());
+
+        // Cause conversation to fail quickly after logging
+        final logs = <String>[];
+        await runZoned(
+          () async {
+            await repository!.runInference(
+              entityId: 'conv-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+              useConversationApproach: true,
+            );
+          },
+          zoneSpecification: ZoneSpecification(
+            print: (self, parent, zone, line) => logs.add(line),
+          ),
+        );
+
+        final logged = logs.join('\n');
+        expect(logged, contains('Conversation tool set. Checklist tools:'));
+        expect(logged, isNot(contains('add_multiple_checklist_items')));
+      });
+    });
     group('getActivePromptsForContext', () {
       test('returns prompts matching task entity', () async {
         final taskEntity = Task(

@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_log.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Handler for checklist item creation in Lotti
@@ -55,10 +56,11 @@ class LottiChecklistItemHandler extends FunctionHandler {
         if (trimmed.startsWith('[') &&
             trimmed.endsWith(']') &&
             trimmed.contains(',')) {
-          developer.log(
-            'Rejected multi-item bracketed list in single-item handler: '
-            '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
+          lottiDevLog(
             name: 'LottiChecklistItemHandler',
+            message:
+                'Rejected multi-item bracketed list in single-item handler: '
+                '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
             level: 900,
           );
           return FunctionCallResult(
@@ -133,10 +135,11 @@ class LottiChecklistItemHandler extends FunctionHandler {
           if (ch == ',' && paren == 0 && bracket == 0 && brace == 0) {
             commaCount++;
             if (commaCount >= 2) {
-              developer.log(
-                'Rejected comma-separated multi-item pattern in single-item handler: '
-                '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
+              lottiDevLog(
                 name: 'LottiChecklistItemHandler',
+                message:
+                    'Rejected comma-separated multi-item pattern in single-item handler: '
+                    '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
                 level: 900,
               );
               return FunctionCallResult(

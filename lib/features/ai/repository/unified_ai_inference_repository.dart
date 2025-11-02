@@ -42,6 +42,7 @@ import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_log.dart';
 // ignore: unused_import
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -680,11 +681,12 @@ class UnifiedAiInferenceRepository {
           if (enableLabels) ...LabelFunctions.getTools(),
           ...TaskFunctions.getTools(),
         ];
-        developer.log(
-          'Including checklist and task tools for checklistUpdates response type. '
-          'Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')} '
-          'for provider=${provider.inferenceProviderType} model=${model.providerModelId}',
+        lottiDevLog(
           name: 'UnifiedAiInferenceRepository',
+          message:
+              'Including checklist and task tools for checklistUpdates response type. '
+              'Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')} '
+              'for provider=${provider.inferenceProviderType} model=${model.providerModelId}',
         );
       }
       // For task summary, no longer include function tools (they're handled separately now)
@@ -703,10 +705,11 @@ class UnifiedAiInferenceRepository {
           ...checklistTools,
           ...TaskFunctions.getTools(),
         ];
-        developer.log(
-          'Including checklist completion and task tools for task ${entity.id} with model ${model.providerModelId}. '
-          'Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')}',
+        lottiDevLog(
           name: 'UnifiedAiInferenceRepository',
+          message:
+              'Including checklist completion and task tools for task ${entity.id} with model ${model.providerModelId}. '
+              'Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')}',
         );
       } else {
         developer.log(
@@ -1581,10 +1584,11 @@ class UnifiedAiInferenceRepository {
         ...TaskFunctions.getTools(),
       ];
 
-      developer.log(
-        'Conversation tool set. Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')} '
-        'for provider=${provider.inferenceProviderType} model=${model.providerModelId}',
+      lottiDevLog(
         name: 'UnifiedAiInferenceRepository',
+        message:
+            'Conversation tool set. Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')} '
+            'for provider=${provider.inferenceProviderType} model=${model.providerModelId}',
       );
 
       // Process with conversation
