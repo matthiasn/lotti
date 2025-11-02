@@ -14,6 +14,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/functions/checklist_tool_selector.dart';
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
@@ -672,13 +673,17 @@ class UnifiedAiInferenceRepository {
       if (promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
           model.supportsFunctionCalling) {
         final enableLabels = await _getFlagSafe(enableAiLabelAssignmentFlag);
+        final checklistTools =
+            getChecklistToolsForProvider(provider: provider, model: model);
         tools = [
-          ...ChecklistCompletionFunctions.getTools(),
+          ...checklistTools,
           if (enableLabels) ...LabelFunctions.getTools(),
           ...TaskFunctions.getTools(),
         ];
         developer.log(
-          'Including checklist and task tools for checklistUpdates response type',
+          'Including checklist and task tools for checklistUpdates response type. '
+          'Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')} '
+          'for provider=${provider.inferenceProviderType} model=${model.providerModelId}',
           name: 'UnifiedAiInferenceRepository',
         );
       }
@@ -692,12 +697,15 @@ class UnifiedAiInferenceRepository {
       }
       // Legacy behavior for other cases (should not happen in practice)
       else if (entity is Task && model.supportsFunctionCalling) {
+        final checklistTools =
+            getChecklistToolsForProvider(provider: provider, model: model);
         tools = [
-          ...ChecklistCompletionFunctions.getTools(),
+          ...checklistTools,
           ...TaskFunctions.getTools(),
         ];
         developer.log(
-          'Including checklist completion and task tools for task ${entity.id} with model ${model.providerModelId}',
+          'Including checklist completion and task tools for task ${entity.id} with model ${model.providerModelId}. '
+          'Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')}',
           name: 'UnifiedAiInferenceRepository',
         );
       } else {
@@ -1565,11 +1573,19 @@ class UnifiedAiInferenceRepository {
 
       // Define tools for checklist updates
       final enableLabels = await _getFlagSafe(enableAiLabelAssignmentFlag);
+      final checklistTools =
+          getChecklistToolsForProvider(provider: provider, model: model);
       final tools = [
-        ...ChecklistCompletionFunctions.getTools(),
+        ...checklistTools,
         if (enableLabels) ...LabelFunctions.getTools(),
         ...TaskFunctions.getTools(),
       ];
+
+      developer.log(
+        'Conversation tool set. Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')} '
+        'for provider=${provider.inferenceProviderType} model=${model.providerModelId}',
+        name: 'UnifiedAiInferenceRepository',
+      );
 
       // Process with conversation
       final result = await processor.processPromptWithConversation(

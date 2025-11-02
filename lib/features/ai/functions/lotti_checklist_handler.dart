@@ -49,6 +49,112 @@ class LottiChecklistItemHandler extends FunctionHandler {
       final description = args['actionItemDescription'] as String?;
 
       if (description != null && description.trim().isNotEmpty) {
+        final trimmed = description.trim();
+
+        // Heuristic 1: square-bracketed list with commas
+        if (trimmed.startsWith('[') &&
+            trimmed.endsWith(']') &&
+            trimmed.contains(',')) {
+          developer.log(
+            'Rejected multi-item bracketed list in single-item handler: '
+            '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
+            name: 'LottiChecklistItemHandler',
+            level: 900,
+          );
+          return FunctionCallResult(
+            success: false,
+            functionName: functionName,
+            arguments: call.function.arguments,
+            data: {
+              'attemptedItem': description,
+              'toolCallId': call.id,
+              'taskId': task.id,
+            },
+            error:
+                'Multiple items detected in a single-item call. Provide items separately or use the appropriate multi-item tool if available.',
+          );
+        }
+
+        // Heuristic 2: two or more top-level commas (outside quotes/grouping)
+        var commaCount = 0;
+        var escape = false;
+        var inQuotes = false;
+        String? quoteChar;
+        var paren = 0;
+        var bracket = 0;
+        var brace = 0;
+        for (var i = 0; i < trimmed.length; i++) {
+          final ch = trimmed[i];
+          if (escape) {
+            escape = false;
+            continue;
+          }
+          if (ch == r'\\') {
+            escape = true;
+            continue;
+          }
+          if (inQuotes) {
+            if (ch == quoteChar) {
+              inQuotes = false;
+              quoteChar = null;
+            }
+            continue;
+          }
+          final cu = ch.codeUnitAt(0);
+          if (cu == 34 || cu == 39) {
+            inQuotes = true;
+            quoteChar = ch;
+            continue;
+          }
+          if (ch == '(') {
+            paren++;
+            continue;
+          }
+          if (ch == ')') {
+            if (paren > 0) paren--;
+            continue;
+          }
+          if (ch == '[') {
+            bracket++;
+            continue;
+          }
+          if (ch == ']') {
+            if (bracket > 0) bracket--;
+            continue;
+          }
+          if (ch == '{') {
+            brace++;
+            continue;
+          }
+          if (ch == '}') {
+            if (brace > 0) brace--;
+            continue;
+          }
+          if (ch == ',' && paren == 0 && bracket == 0 && brace == 0) {
+            commaCount++;
+            if (commaCount >= 2) {
+              developer.log(
+                'Rejected comma-separated multi-item pattern in single-item handler: '
+                '${trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed}',
+                name: 'LottiChecklistItemHandler',
+                level: 900,
+              );
+              return FunctionCallResult(
+                success: false,
+                functionName: functionName,
+                arguments: call.function.arguments,
+                data: {
+                  'attemptedItem': description,
+                  'toolCallId': call.id,
+                  'taskId': task.id,
+                },
+                error:
+                    'Multiple items detected in a single-item call. Provide items separately or use the appropriate multi-item tool if available.',
+              );
+            }
+          }
+        }
+
         return FunctionCallResult(
           success: true,
           functionName: functionName,
