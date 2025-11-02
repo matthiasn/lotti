@@ -257,7 +257,7 @@ def test_cli_add_offline_sources(tmp_path):
             "--cargo",
             "cargo-sources.json",
             "--flutter-json",
-            "flutter-sdk-3.35.6.json",
+            "flutter-sdk-3.35.7.json",
         ]
     )
     assert exit_code == 0
@@ -265,7 +265,7 @@ def test_cli_add_offline_sources(tmp_path):
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
     assert "pubspec-sources.json" in lotti["sources"]
     assert "cargo-sources.json" in lotti["sources"]
-    assert any(isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.6.json" for s in lotti["sources"])
+    assert any(isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.7.json" for s in lotti["sources"])
 
 
 def test_cli_normalize_lotti_env_idempotent(tmp_path):

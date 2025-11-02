@@ -2,7 +2,7 @@ Flatpak/Flathub Build Recovery – Progress Log
 
 Summary
 - Goal: Restore a reproducible Flathub submission build for Lotti, generate a submission‑ready manifest (urls + sha256 only), and pass local validation without ad‑hoc network during build.
-- Status: Flatpak pipeline largely refactored. flatpak-flutter is now preferred and preserved; nested Flutter 3.35.6 is used; Rust toolchain resolves via SDK extension (with an offline rustup bootstrap for cargokit’s rustup calls); SQLite and mimalloc are provided via declared sources; cargokit patches are applied and ordered correctly. The build reaches the CMake/ninja stage and fails while building the flutter_vodozemac plugin (link/compile step).
+- Status: Flatpak pipeline largely refactored. flatpak-flutter is now preferred and preserved; nested Flutter 3.35.7 is used; Rust toolchain resolves via SDK extension (with an offline rustup bootstrap for cargokit’s rustup calls); SQLite and mimalloc are provided via declared sources; cargokit patches are applied and ordered correctly. The build reaches the CMake/ninja stage and fails while building the flutter_vodozemac plugin (link/compile step).
 
 Key Changes Implemented
 - Prefer flatpak-flutter outputs; fail fast on failure
@@ -10,8 +10,8 @@ Key Changes Implemented
   - Abort the run if flatpak-flutter fails, unless `ALLOW_FALLBACK=true` is set for local debugging (strict, submission-friendly default).
   - Code: manifest_tool/prepare/orchestrator.py
 
-- Flutter 3.35.6 and nested SDK by default
-  - Detect and use FVM tag 3.35.6 from repo (.fvmrc), generate `flutter-sdk-3.35.6.json`, and use nested SDK to avoid Dart SDK downloads during build.
+- Flutter 3.35.7 and nested SDK by default
+  - Detect and use FVM tag 3.35.7 from repo (.fvmrc), generate `flutter-sdk-3.35.7.json`, and use nested SDK to avoid Dart SDK downloads during build.
   - Code: manifest_tool/cli.py, manifest_tool/prepare/orchestrator.py
 
 - Eliminate build-time network for plugin toolchains
