@@ -96,6 +96,8 @@ MatrixService _createMatrixService({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  const timeout = Duration(minutes: 1);
+
   // description and how to run in https://github.com/matthiasn/lotti/pull/1695
   group('MatrixService V2 Tests', () {
     final secureStorageMock = MockSecureStorage();
@@ -338,8 +340,14 @@ void main() {
         debugPrint('Bob - room joined: $joinRes2');
         await waitSeconds(defaultDelay);
 
-        await waitUntil(() => alice.getUnverifiedDevices().isNotEmpty);
-        await waitUntil(() => bob.getUnverifiedDevices().isNotEmpty);
+        await waitUntil(
+          () => alice.getUnverifiedDevices().isNotEmpty,
+          timeout: timeout,
+        );
+        await waitUntil(
+          () => bob.getUnverifiedDevices().isNotEmpty,
+          timeout: timeout,
+        );
 
         final unverifiedAlice = alice.getUnverifiedDevices();
         final unverifiedBob = bob.getUnverifiedDevices();
@@ -375,6 +383,7 @@ void main() {
                 () =>
                     emojisFromAlice == emojisFromBob &&
                     emojisFromAlice.isNotEmpty,
+                timeout: timeout,
               );
 
               await runner.acceptEmojiVerification();
@@ -401,6 +410,7 @@ void main() {
                 () =>
                     emojisFromAlice == emojisFromBob &&
                     emojisFromBob.isNotEmpty,
+                timeout: timeout,
               );
 
               await runner.acceptEmojiVerification();
@@ -419,8 +429,11 @@ void main() {
         debugPrint('\n--- Alice verifies Bob');
         await alice.verifyDevice(unverifiedAlice.first);
 
-        await waitUntil(() => emojisFromAlice.isNotEmpty);
-        await waitUntil(() => emojisFromBob.isNotEmpty);
+        await waitUntil(() => emojisFromAlice.isNotEmpty, timeout: timeout);
+        await waitUntil(
+          () => emojisFromBob.isNotEmpty,
+          timeout: timeout,
+        );
 
         expect(emojisFromAlice, isNotEmpty);
         expect(emojisFromBob, isNotEmpty);
@@ -430,8 +443,14 @@ void main() {
           '\n--- Alice and Bob both have no unverified devices',
         );
 
-        await waitUntil(() => alice.getUnverifiedDevices().isEmpty);
-        await waitUntil(() => bob.getUnverifiedDevices().isEmpty);
+        await waitUntil(
+          () => alice.getUnverifiedDevices().isEmpty,
+          timeout: timeout,
+        );
+        await waitUntil(
+          () => bob.getUnverifiedDevices().isEmpty,
+          timeout: timeout,
+        );
 
         expect(alice.getUnverifiedDevices(), isEmpty);
         expect(bob.getUnverifiedDevices(), isEmpty);
@@ -511,42 +530,48 @@ void main() {
         );
 
         var lastAliceCount = -1;
-        await waitUntilAsync(() async {
-          final currentCount = await aliceDb.getJournalCount();
-          if (currentCount != lastAliceCount) {
-            debugPrint('Alice journal count: $currentCount');
-            lastAliceCount = currentCount;
-          }
-          if (currentCount < expectedEntriesPerDb) {
-            // Under degraded network, proactively drive catch-up and retries
-            // while we wait to avoid long hangs on CI.
-            await alice.forceRescan();
-            await alice.retryNow();
-            // Allow the homeserver to settle before the next fetch.
-            await Future<void>.delayed(const Duration(milliseconds: 200));
-          }
-          return currentCount >= expectedEntriesPerDb;
-        });
+        await waitUntilAsync(
+          () async {
+            final currentCount = await aliceDb.getJournalCount();
+            if (currentCount != lastAliceCount) {
+              debugPrint('Alice journal count: $currentCount');
+              lastAliceCount = currentCount;
+            }
+            if (currentCount < expectedEntriesPerDb) {
+              // Under degraded network, proactively drive catch-up and retries
+              // while we wait to avoid long hangs on CI.
+              await alice.forceRescan();
+              await alice.retryNow();
+              // Allow the homeserver to settle before the next fetch.
+              await Future<void>.delayed(const Duration(milliseconds: 200));
+            }
+            return currentCount >= expectedEntriesPerDb;
+          },
+          timeout: timeout,
+        );
         debugPrint('\n--- Alice finished receiving messages');
         final aliceEntriesCount = await aliceDb.getJournalCount();
         expect(aliceEntriesCount, expectedEntriesPerDb);
         debugPrint('Alice persisted $aliceEntriesCount entries');
 
         var lastBobCount = -1;
-        await waitUntilAsync(() async {
-          final currentCount = await bobDb.getJournalCount();
-          if (currentCount != lastBobCount) {
-            debugPrint('Bob journal count: $currentCount');
-            lastBobCount = currentCount;
-          }
-          if (currentCount < expectedEntriesPerDb) {
-            await bob.forceRescan();
-            await bob.retryNow();
-            // Allow the homeserver to settle before the next fetch.
-            await Future<void>.delayed(const Duration(milliseconds: 200));
-          }
-          return currentCount >= expectedEntriesPerDb;
-        });
+        await waitUntilAsync(
+          () async {
+            final currentCount = await bobDb.getJournalCount();
+            if (currentCount != lastBobCount) {
+              debugPrint('Bob journal count: $currentCount');
+              lastBobCount = currentCount;
+            }
+            if (currentCount < expectedEntriesPerDb) {
+              await bob.forceRescan();
+              await bob.retryNow();
+              // Allow the homeserver to settle before the next fetch.
+              await Future<void>.delayed(const Duration(milliseconds: 200));
+            }
+            return currentCount >= expectedEntriesPerDb;
+          },
+          timeout: timeout,
+        );
         debugPrint('\n--- Bob finished receiving messages');
         final bobEntriesCount = await bobDb.getJournalCount();
         expect(bobEntriesCount, expectedEntriesPerDb);
