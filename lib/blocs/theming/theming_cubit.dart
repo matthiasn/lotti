@@ -33,12 +33,6 @@ class ThemingCubit extends Cubit<ThemingState> {
   Future<void> _init() async {
     try {
       await _loadSelectedSchemes();
-      _tooltipSubscription = getIt<JournalDb>()
-          .watchConfigFlag(enableTooltipFlag)
-          .listen((enableTooltips) {
-        _enableTooltips = enableTooltips;
-        emitState();
-      });
     } catch (e, st) {
       getIt<LoggingService>().captureException(
         e,
@@ -47,6 +41,24 @@ class ThemingCubit extends Cubit<ThemingState> {
         stackTrace: st,
       );
     }
+
+    // Set up tooltip subscription regardless of theme load success
+    _tooltipSubscription =
+        getIt<JournalDb>().watchConfigFlag(enableTooltipFlag).listen(
+      (enableTooltips) {
+        _enableTooltips = enableTooltips;
+        emitState();
+      },
+      onError: (Object e, StackTrace st) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'THEMING_CUBIT',
+          subDomain: 'tooltip_stream',
+          stackTrace: st,
+        );
+      },
+    );
+
     _watchThemePrefsUpdates();
   }
 
@@ -59,13 +71,23 @@ class ThemingCubit extends Cubit<ThemingState> {
   void _watchThemePrefsUpdates() {
     _themePrefsSubscription = getIt<SettingsDb>()
         .watchSettingsItemByKey(themePrefsUpdatedAtKey)
-        .listen((items) async {
-      if (items.isNotEmpty && !_isApplyingSyncedChanges) {
-        _isApplyingSyncedChanges = true;
-        await _loadSelectedSchemes();
-        _isApplyingSyncedChanges = false;
-      }
-    });
+        .listen(
+      (items) async {
+        if (items.isNotEmpty && !_isApplyingSyncedChanges) {
+          _isApplyingSyncedChanges = true;
+          await _loadSelectedSchemes();
+          _isApplyingSyncedChanges = false;
+        }
+      },
+      onError: (Object e, StackTrace st) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'THEMING_CUBIT',
+          subDomain: 'theme_prefs_stream',
+          stackTrace: st,
+        );
+      },
+    );
   }
 
   void _enqueueSyncMessage() {

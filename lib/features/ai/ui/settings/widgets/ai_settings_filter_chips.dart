@@ -100,8 +100,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color:
-                            context.colorScheme.error.withValues(alpha: 0.8),
+                        color: context.colorScheme.error.withValues(alpha: 0.8),
                       ),
                     ),
                     onPressed: () {

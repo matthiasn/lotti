@@ -119,10 +119,10 @@ class AiSettingsFilterService {
     List<AiConfigModel>? allModels,
   }) {
     // For efficiency, create a lookup map of modelId -> providerId
-    final modelIdToProviderIdMap =
-        filterState.selectedProviders.isNotEmpty && allModels != null
-            ? {for (final model in allModels) model.id: model.inferenceProviderId}
-            : null;
+    final modelIdToProviderIdMap = filterState.selectedProviders.isNotEmpty &&
+            allModels != null
+        ? {for (final model in allModels) model.id: model.inferenceProviderId}
+        : null;
 
     return prompts.where((prompt) {
       // Text search filter

@@ -122,7 +122,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Start on Providers tab - should see the test provider
-      expect(find.text('Anthropic Provider'), findsOneWidget);
+      expect(find.text('Anthropic Provider'), findsNWidgets(2));
 
       // Tap Models tab
       await tester.tap(find.text('Models'));
@@ -144,8 +144,8 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Initially should see the provider
-      expect(find.text('Anthropic Provider'), findsOneWidget);
+      // Initially should see the provider (appears in filter chips AND config list)
+      expect(find.text('Anthropic Provider'), findsNWidgets(2));
 
       // Enter search text that doesn't match
       await tester.enterText(find.byType(TextField), 'nonexistent');
@@ -154,8 +154,8 @@ void main() {
       // Wait for debounce timer (300ms + buffer)
       await tester.pump(const Duration(milliseconds: 350));
 
-      // Should not see the provider anymore
-      expect(find.text('Anthropic Provider'), findsNothing);
+      // Should not see the provider in config list, but still in filter chips
+      expect(find.text('Anthropic Provider'), findsOneWidget);
 
       // Clear search
       await tester.enterText(find.byType(TextField), '');
@@ -165,7 +165,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Should see the provider again
-      expect(find.text('Anthropic Provider'), findsOneWidget);
+      expect(find.text('Anthropic Provider'), findsNWidgets(2));
     });
 
     testWidgets('should display capability filters on Models tab',
@@ -280,7 +280,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify we're on the right tab
-      expect(find.text('Anthropic Provider'), findsOneWidget);
+      expect(find.text('Anthropic Provider'), findsNWidgets(2));
 
       // Switch tabs programmatically
       await tester.tap(find.text('Models'));
@@ -378,8 +378,9 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Tap on a config card - this triggers navigation
-      await tester.tap(find.text('Anthropic Provider'));
+      // Tap on a config card - need to find the one in the card, not the filter chip
+      // Use .last to get the instance in the config card (filter chip is first)
+      await tester.tap(find.text('Anthropic Provider').last);
 
       // Don't use pumpAndSettle as navigation will fail in test context
       // This test verifies that the tap handler is attached and doesn't crash
@@ -483,9 +484,9 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Should see both providers initially
-      expect(find.text('Anthropic Provider'), findsOneWidget);
-      expect(find.text('OpenAI Provider'), findsOneWidget);
+      // Should see both providers initially (each appears in filter chips AND config list)
+      expect(find.text('Anthropic Provider'), findsNWidgets(2));
+      expect(find.text('OpenAI Provider'), findsNWidgets(2));
 
       // Search for "Anthropic"
       await tester.enterText(find.byType(TextField), 'Anthropic');
@@ -494,9 +495,10 @@ void main() {
       // Wait for debounce timer
       await tester.pump(const Duration(milliseconds: 350));
 
-      // Should only see Anthropic provider
-      expect(find.text('Anthropic Provider'), findsOneWidget);
-      expect(find.text('OpenAI Provider'), findsNothing);
+      // Should only see Anthropic provider in config list, but both in filter chips
+      expect(find.text('Anthropic Provider'), findsNWidgets(2));
+      expect(find.text('OpenAI Provider'),
+          findsOneWidget); // Still in filter chips
     });
 
     testWidgets('should handle back navigation', (WidgetTester tester) async {
