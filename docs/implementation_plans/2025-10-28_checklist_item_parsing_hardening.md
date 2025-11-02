@@ -228,11 +228,12 @@ This matches the attached screenshot and is a regression from the hardening work
 
 ### Remediation Plan (Phased)
 
-1) Guard single‑item handler against bracketed multi‑lists (pragmatic fix)
+1) Guard single‑item handler against multi‑lists (pragmatic fix)
 
-- In `LottiChecklistItemHandler.processFunctionCall`, detect common multi‑item patterns and reject
-  with an instructive error, e.g.:
-  - Trimmed value starts with `[` and ends with `]` and contains a comma.
+- In `LottiChecklistItemHandler.processFunctionCall`, detect common multi‑item patterns and reject with an instructive error.
+- Use two simple checks that share logic with the batch path:
+  - Bracketed list: trimmed value starts with `[` and ends with `]` and contains a comma.
+  - Robust parser length: if `parseItemListString(description)` yields 3+ items, reject. This keeps rules consistent with batch parsing and avoids logic duplication.
 - Return a failure `FunctionCallResult` with an error like: “Multiple items detected in a single‑item call. Provide items separately or use the appropriate multi‑item tool if available.”
 - The conversation strategy already turns failures into a retry prompt, which will guide the model
   to use the correct function.
@@ -246,7 +247,7 @@ This matches the attached screenshot and is a regression from the hardening work
   `getChecklistToolsForProvider(provider: provider, model: model)`.
 - Include `add_multiple_checklist_items` only when BOTH are true:
   - `provider.inferenceProviderType == InferenceProviderType.ollama`, AND
-  - `model.providerModelId` identifies a GPT‑OSS variant (e.g., starts with `gpt-oss:`)
+  - `model.providerModelId` identifies a GPT‑OSS variant (precisely: starts with `gpt-oss:`)
 - All other cases (non‑Ollama, or Ollama but not GPT‑OSS) receive only the single‑item tool; models
   can emit multiple single calls if needed.
 
@@ -270,7 +271,7 @@ This matches the attached screenshot and is a regression from the hardening work
 
 ### Logging Plan (optional, helpful for validation)
 
-- Add logging calls using `developer.log` (consistent with current codebase):
+- Add logging calls using the lightweight `lottiDevLog` helper (mirrors to `developer.log` and to `print` inside an `assert` so unit tests can capture output):
   - Single‑item handler: when the multi‑list heuristic matches, log the first ~120 characters and the function name.
   - Unified repository: when assembling tools, log which checklist tools are included for each provider/model combination and whether the multi‑item tool was exposed.
 

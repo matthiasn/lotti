@@ -666,7 +666,9 @@ class UnifiedAiInferenceRepository {
         maxCompletionTokens: model.maxCompletionTokens,
       );
     } else {
-      // Determine tools based on response type and entity
+      // Determine tools based on response type and entity.
+      // We keep the selection centralized via getChecklistToolsForProvider
+      // so gating rules (Ollama + GPT‑OSS) stay consistent everywhere.
       List<ChatCompletionTool>? tools;
 
       // For checklistUpdates response type, always include function tools regardless of entity type

@@ -1,9 +1,11 @@
 // ignore_for_file: avoid_print
 import 'dart:developer' as developer;
 
-/// Lightweight dev logging helper that mirrors messages to print in debug/test.
-/// This allows tests to capture logs via ZoneSpecification while keeping
-/// production behavior (developer.log) intact.
+/// Lightweight dev logging helper.
+///
+/// Writes to `developer.log` and mirrors the message to `print` inside an
+/// `assert` so unit tests can capture logs via `ZoneSpecification`. The
+/// mirrored print is stripped in release builds.
 void lottiDevLog({
   required String name,
   required String message,

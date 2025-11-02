@@ -53,7 +53,9 @@ class LottiChecklistItemHandler extends FunctionHandler {
       if (description != null && description.trim().isNotEmpty) {
         final trimmed = description.trim();
 
-        // Heuristic 1: square-bracketed list with commas
+        // Heuristic 1: square‑bracketed list with commas
+        // Example: "[a, b, c]" — this is almost certainly a multi-item list
+        // that was accidentally passed to the single-item function.
         if (trimmed.startsWith('[') &&
             trimmed.endsWith(']') &&
             trimmed.contains(',')) {
@@ -78,9 +80,11 @@ class LottiChecklistItemHandler extends FunctionHandler {
           );
         }
 
-        // Heuristic 2: if robust parser would split into 3+ items, reject.
-        // This allows single-comma descriptions and two-part phrases but
-        // prevents multi-item lists from slipping through the single-item tool.
+        // Heuristic 2: re-use the robust parser to detect 3+ items.
+        // This keeps the rules consistent with the batch path and avoids
+        // duplicating tricky parsing logic here. We only reject when the
+        // parsed list contains three or more items so that legitimate
+        // single descriptions like "Buy milk, 2%" still pass.
         if (parseItemListString(trimmed).length >= 3) {
           lottiDevLog(
             name: 'LottiChecklistItemHandler',
