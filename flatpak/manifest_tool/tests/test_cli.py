@@ -3,6 +3,7 @@ from __future__ import annotations
 import yaml
 
 from manifest_tool import cli
+from manifest_tool.prepare.orchestrator import _DEFAULT_FLUTTER_TAG
 from manifest_tool.tests.conftest import SAMPLE_MANIFEST
 
 
@@ -257,7 +258,7 @@ def test_cli_add_offline_sources(tmp_path):
             "--cargo",
             "cargo-sources.json",
             "--flutter-json",
-            "flutter-sdk-3.35.7.json",
+            f"flutter-sdk-{_DEFAULT_FLUTTER_TAG}.json",
         ]
     )
     assert exit_code == 0
@@ -265,7 +266,9 @@ def test_cli_add_offline_sources(tmp_path):
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
     assert "pubspec-sources.json" in lotti["sources"]
     assert "cargo-sources.json" in lotti["sources"]
-    assert any(isinstance(s, dict) and s.get("path") == "flutter-sdk-3.35.7.json" for s in lotti["sources"])
+    assert any(
+        isinstance(s, dict) and s.get("path") == f"flutter-sdk-{_DEFAULT_FLUTTER_TAG}.json" for s in lotti["sources"]
+    )
 
 
 def test_cli_normalize_lotti_env_idempotent(tmp_path):
