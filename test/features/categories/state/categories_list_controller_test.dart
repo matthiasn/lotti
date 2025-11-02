@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -65,8 +65,8 @@ void main() {
         },
       );
 
-      // Wait for the stream to emit
-      await completer.future.timeout(const Duration(seconds: 1));
+      // Wait for the stream to emit (short guard)
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       final state = container.read(categoriesListControllerProvider);
 
@@ -99,8 +99,8 @@ void main() {
         },
       );
 
-      // Wait for the error to be processed
-      await completer.future.timeout(const Duration(seconds: 1));
+      // Wait for the error to be processed (short guard)
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       final state = container.read(categoriesListControllerProvider);
 
@@ -108,55 +108,57 @@ void main() {
       expect(state.error, equals(error));
     });
 
-    test('updates state when categories change', () async {
-      final categories1 = [
-        CategoryTestUtils.createTestCategory(name: 'Category 1')
-      ];
-      final categories2 = [
-        CategoryTestUtils.createTestCategory(name: 'Category 1'),
-        CategoryTestUtils.createTestCategory(name: 'Category 2'),
-      ];
+    test('updates state when categories change', () {
+      fakeAsync((async) {
+        final categories1 = [
+          CategoryTestUtils.createTestCategory(name: 'Category 1')
+        ];
+        final categories2 = [
+          CategoryTestUtils.createTestCategory(name: 'Category 1'),
+          CategoryTestUtils.createTestCategory(name: 'Category 2'),
+        ];
 
-      final streamController =
-          StreamController<List<CategoryDefinition>>.broadcast();
-      when(() => mockRepository.watchCategories()).thenAnswer(
-        (_) => streamController.stream,
-      );
+        final streamController =
+            StreamController<List<CategoryDefinition>>.broadcast();
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => streamController.stream,
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(() async {
-        await streamController.close();
-        container.dispose();
+        final container = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
+        addTearDown(() async {
+          await streamController.close();
+          container.dispose();
+        });
+
+        // Listen for state changes
+        final states = <AsyncValue<List<CategoryDefinition>>>[];
+        container.listen(
+          categoriesListControllerProvider,
+          (prev, next) => states.add(next),
+          fireImmediately: true,
+        );
+
+        // Yield and process initial state
+        async.flushMicrotasks();
+
+        // Emit first set of categories and flush microtasks
+        streamController.add(categories1);
+        async.flushMicrotasks();
+
+        // Emit second set of categories and flush microtasks
+        streamController.add(categories2);
+        async.flushMicrotasks();
+
+        // Should have loading, data1, data2
+        expect(states.length, greaterThanOrEqualTo(3));
+        expect(states.first.isLoading, isTrue);
+        expect(states[1].value, equals(categories1));
+        expect(states[2].value, equals(categories2));
       });
-
-      // Listen for state changes
-      final states = <AsyncValue<List<CategoryDefinition>>>[];
-      container.listen(
-        categoriesListControllerProvider,
-        (prev, next) => states.add(next),
-        fireImmediately: true,
-      );
-
-      // Wait a bit for initial state
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-
-      // Emit first set of categories
-      streamController.add(categories1);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
-      // Emit second set of categories
-      streamController.add(categories2);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
-      // Should have loading, data1, data2
-      expect(states.length, greaterThanOrEqualTo(3));
-      expect(states.first.isLoading, isTrue);
-      expect(states[1].value, equals(categories1));
-      expect(states[2].value, equals(categories2));
     });
 
     test('deletes category successfully', () async {
@@ -177,8 +179,8 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      // Wait for initial load
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Yield once for initial load (no real wait)
+      await Future<void>.delayed(Duration.zero);
 
       final controller =
           container.read(categoriesListControllerProvider.notifier);
@@ -222,15 +224,15 @@ void main() {
         },
       );
 
-      // Wait for initial load
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Yield once for initial load (no real wait)
+      await Future<void>.delayed(Duration.zero);
 
       final controller =
           container.read(categoriesListControllerProvider.notifier);
       await controller.deleteCategory(categoryId);
 
-      // Wait for error state
-      await completer.future.timeout(const Duration(seconds: 1));
+      // Wait for error state (short guard)
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       final state = container.read(categoriesListControllerProvider);
       expect(state.hasError, isTrue);

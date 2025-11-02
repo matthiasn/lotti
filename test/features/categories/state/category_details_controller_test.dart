@@ -86,8 +86,8 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      // Wait for the category to load
-      await completer.future.timeout(const Duration(seconds: 1));
+      // Wait for the category to load (short guard)
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       final state = container.read(
         categoryDetailsControllerProvider(testCategoryId),
@@ -131,8 +131,8 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      // Wait for the error to be processed
-      await completer.future.timeout(const Duration(seconds: 1));
+      // Wait for the error to be processed (short guard)
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       final state = container.read(
         categoryDetailsControllerProvider(testCategoryId),
@@ -175,7 +175,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       // Test name change
       controller.updateFormField(name: 'New Name');
@@ -288,7 +288,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       // Set same values
       controller.updateFormField(
@@ -339,7 +339,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       // Update allowed prompt IDs
       controller.updateAllowedPromptIds(['prompt1', 'prompt2']);
@@ -395,7 +395,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       // Add automatic prompt
       controller.updateAutomaticPrompts(
@@ -466,7 +466,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       // Make a change
       controller.updateFormField(name: 'Updated');
@@ -518,7 +518,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       // Set empty name
       controller.updateFormField(name: '   ');
@@ -571,7 +571,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       controller.updateFormField(name: 'Updated');
       await controller.saveChanges();
@@ -619,7 +619,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       await controller.saveChanges();
 
@@ -662,7 +662,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       await controller.deleteCategory();
 
@@ -712,7 +712,7 @@ void main() {
         categoryDetailsControllerProvider(testCategoryId).notifier,
       );
 
-      await completer.future.timeout(const Duration(seconds: 1));
+      await completer.future.timeout(const Duration(milliseconds: 100));
 
       await controller.deleteCategory();
 
@@ -743,9 +743,9 @@ void main() {
           categoryDetailsControllerProvider(testCategoryId).notifier,
         );
 
-      // Add a value to ensure subscription is active
+      // Add a value and yield once to ensure subscription is active (no real wait)
       streamController.add(CategoryTestUtils.createTestCategory());
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(Duration.zero);
 
       // Dispose the controller
       container.dispose();

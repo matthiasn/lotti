@@ -37,7 +37,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
-import '../../../utils/utils.dart';
 
 class Listener<T> extends Mock {
   void call(T? previous, T next);
@@ -761,9 +760,6 @@ void main() {
 
         // Yield to allow state change to propagate
         await container.pump();
-        await waitUntilAsync(
-          () async => (await container.read(testEntryProvider.future)) != null,
-        );
 
         await expectLater(
           container.read(testEntryProvider.future),
