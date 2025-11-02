@@ -16,10 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Update apt-get
-        run: sudo apt-get update
-      - name: Install libraries
-        run: sudo apt-get install network-manager
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
