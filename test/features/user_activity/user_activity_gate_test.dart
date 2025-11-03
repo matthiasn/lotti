@@ -70,30 +70,26 @@ void main() {
           idleThreshold: const Duration(milliseconds: 300),
         );
 
+        // Start the hard deadline timer at t=0
+        var completed = false;
+        gate.waitUntilIdle().then((_) => completed = true);
+
         // Continuously report activity deterministically under fake time.
-        // Step through ~1900ms in 150ms increments, updating activity each step.
+        // Step through 1950ms in 150ms increments, updating activity each step.
         const step = Duration(milliseconds: 150);
-        var elapsed = Duration.zero;
-        while (elapsed < const Duration(milliseconds: 1900)) {
+        for (var i = 0; i < 13; i++) {
           service.updateActivity();
           async
             ..elapse(step)
             ..flushMicrotasks();
-          elapsed += step;
         }
 
-        var completed = false;
-        gate.waitUntilIdle().then((_) => completed = true);
-
-        // Elapse to just before hard deadline (additional 100ms)
-        async
-          ..elapse(const Duration(milliseconds: 100))
-          ..flushMicrotasks();
+        // After 1950ms, we are just before the hard deadline
         expect(completed, isFalse);
 
-        // Advance past hard deadline (~2s); small epsilon beyond boundary
+        // Advance past hard deadline (~2s), small epsilon beyond boundary
         async
-          ..elapse(const Duration(milliseconds: 210))
+          ..elapse(const Duration(milliseconds: 100))
           ..flushMicrotasks();
         expect(completed, isTrue);
 

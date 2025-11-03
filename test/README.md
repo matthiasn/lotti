@@ -91,7 +91,10 @@ A retry plan calculates the total time needed to trigger all retry attempts:
 - Attempt 3: 11s
 - **Total: 39s of virtual time**
 
-The `epsilon` (default 1ms-1s) ensures the timeout boundary is crossed deterministically.
+The `epsilon` (default 1ms) ensures the timeout boundary is crossed deterministically.
+In some cases (e.g., coarse timeouts or to simplify mental math), using a larger
+epsilon such as `Duration(seconds: 1)` is fine, but the helper defaults to
+`Duration(milliseconds: 1)`.
 
 ### When to Use Retry Helpers
 

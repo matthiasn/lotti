@@ -122,8 +122,8 @@ void main() {
                 any(),
                 headers: any(named: 'headers'),
               )).thenAnswer((_) async {
-            // Exceed the 10s timeout to deterministically trigger onTimeout
-            await Future<void>.delayed(const Duration(seconds: 11));
+            // Exceed the 5s service timeout to deterministically trigger onTimeout
+            await Future<void>.delayed(const Duration(seconds: 6));
             return http.Response('Timeout', 200);
           });
 
@@ -135,7 +135,7 @@ void main() {
           // Elapse timeout + epsilon via the retry helper (single attempt)
           final plan = buildRetryBackoffPlan(
             maxRetries: 1,
-            timeout: const Duration(seconds: 10),
+            timeout: const Duration(seconds: 5),
             baseDelay: Duration.zero,
             epsilon: const Duration(seconds: 1),
           );
