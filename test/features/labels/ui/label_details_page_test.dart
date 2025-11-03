@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -48,13 +50,26 @@ class _ColorSpyController extends _FakeLabelEditorController {
 }
 
 void main() {
+  setUpAll(() async {
+    // Make sliver list build more children so deep widgets are present
+    TestWidgetsFlutterBinding.ensureInitialized();
+  });
   setUp(() {
+    // Larger viewport to keep bottom bar and sliver content within view
+    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        .physicalSize = const Size(1024, 1400);
+    TestWidgetsFlutterBinding
+        .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
     if (!getIt.isRegistered<EntitiesCacheService>()) {
       getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
     }
   });
 
   tearDown(() async {
+    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        .physicalSize = const Size(800, 600);
+    TestWidgetsFlutterBinding
+        .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
     if (getIt.isRegistered<EntitiesCacheService>()) {
       await getIt.reset(dispose: false);
     }
@@ -235,6 +250,319 @@ void main() {
       await tester.ensureVisible(addButton);
       await tester.tap(addButton);
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('keyboard shortcut Cmd+S triggers save', (tester) async {
+      var saved = false;
+      const state = LabelEditorState(
+        name: 'Alpha',
+        colorHex: '#00FF00',
+        isPrivate: false,
+        selectedCategoryIds: {},
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          labelEditorControllerProvider.overrideWith(
+            () => _FakeLabelEditorController(
+              state,
+              onSave: () async {
+                saved = true;
+                return testLabelDefinition1;
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(const LabelDetailsPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+      await tester.pumpAndSettle();
+
+      expect(saved, isTrue);
+    });
+
+    testWidgets('keyboard shortcut Ctrl+S triggers save', (tester) async {
+      var saved = false;
+      const state = LabelEditorState(
+        name: 'Alpha',
+        colorHex: '#00FF00',
+        isPrivate: false,
+        selectedCategoryIds: {},
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          labelEditorControllerProvider.overrideWith(
+            () => _FakeLabelEditorController(
+              state,
+              onSave: () async {
+                saved = true;
+                return testLabelDefinition1;
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(const LabelDetailsPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+      await tester.pumpAndSettle();
+
+      expect(saved, isTrue);
+    });
+
+    testWidgets('Cancel button does not call save and pops', (tester) async {
+      var saved = false;
+      const state = LabelEditorState(
+        name: 'Alpha',
+        colorHex: '#00FF00',
+        isPrivate: false,
+        selectedCategoryIds: {},
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          labelEditorControllerProvider.overrideWith(
+            () => _FakeLabelEditorController(
+              state,
+              onSave: () async {
+                saved = true;
+                return testLabelDefinition1;
+              },
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(const LabelDetailsPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cancel = find.byType(LottiSecondaryButton);
+      expect(cancel, findsOneWidget);
+      await tester.tap(cancel);
+      await tester.pumpAndSettle();
+
+      expect(saved, isFalse);
+    });
+
+    testWidgets('error message renders when present in state', (tester) async {
+      const state = LabelEditorState(
+        name: 'Alpha',
+        colorHex: '#00FF00',
+        isPrivate: false,
+        selectedCategoryIds: {},
+        errorMessage: 'boom error',
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          labelEditorControllerProvider.overrideWith(
+            () => _FakeLabelEditorController(state),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(const LabelDetailsPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Ensure the error row is built and visible within sliver list
+      final errorText = find.text('boom error');
+      await tester.ensureVisible(errorText);
+      expect(errorText, findsOneWidget);
+    });
+
+    testWidgets('privacy switch toggles value via controller', (tester) async {
+      const state = LabelEditorState(
+        name: 'Alpha',
+        colorHex: '#00FF00',
+        isPrivate: false,
+        selectedCategoryIds: {},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          labelEditorControllerProvider.overrideWith(
+            () => _FakeLabelEditorController(state),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(const LabelDetailsPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final switchFinder = find.byType(Switch);
+      await tester.ensureVisible(switchFinder);
+      expect(switchFinder, findsOneWidget);
+      expect(tester.widget<Switch>(switchFinder).value, isFalse);
+
+      await tester.tap(switchFinder);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Switch>(switchFinder).value, isTrue);
+    });
+
+    testWidgets('category chip delete removes it via controller',
+        (tester) async {
+      // Prepare categories
+      final catWork = CategoryDefinition(
+        id: 'cat-work',
+        name: 'Work',
+        color: '#00AA00',
+        createdAt: testEpochDateTime,
+        updatedAt: testEpochDateTime,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      final catLife = CategoryDefinition(
+        id: 'cat-life',
+        name: 'Life',
+        color: '#AA00AA',
+        createdAt: testEpochDateTime,
+        updatedAt: testEpochDateTime,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      final cache = getIt<EntitiesCacheService>();
+      when(() => cache.getCategoryById('cat-work')).thenReturn(catWork);
+      when(() => cache.getCategoryById('cat-life')).thenReturn(catLife);
+
+      const state = LabelEditorState(
+        name: 'Alpha',
+        colorHex: '#00FF00',
+        isPrivate: false,
+        selectedCategoryIds: {'cat-work', 'cat-life'},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          labelEditorControllerProvider.overrideWith(
+            () => _FakeLabelEditorController(state),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(const LabelDetailsPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Ensure both chips are present
+      expect(find.text('Work'), findsWidgets);
+      expect(find.text('Life'), findsWidgets);
+
+      // Tap delete icon on the 'Work' chip
+      final workChip = find.widgetWithText(InputChip, 'Work');
+      await tester.ensureVisible(workChip);
+      final deleteIcon = find.descendant(
+        of: find.widgetWithText(InputChip, 'Work'),
+        matching: find.byIcon(Icons.close_rounded),
+      );
+      expect(deleteIcon, findsOneWidget);
+      await tester.tap(deleteIcon);
+      await tester.pumpAndSettle();
+
+      // 'Work' chip should be gone; 'Life' remains
+      expect(find.text('Work'), findsNothing);
+      expect(find.text('Life'), findsWidgets);
+    });
+
+    testWidgets('controllers seed once and do not reseed on rebuild',
+        (tester) async {
+      const state = LabelEditorState(
+        name: 'Alpha',
+        colorHex: '#00FF00',
+        isPrivate: false,
+        selectedCategoryIds: {},
+        description: 'Hello world',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          labelEditorControllerProvider.overrideWith(
+            () => _FakeLabelEditorController(state),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(const LabelDetailsPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Both fields seeded from state
+      final nameField = find.byType(TextFormField).first;
+      expect(tester.widget<TextFormField>(nameField).controller?.text, 'Alpha');
+      final descField = find.byType(TextFormField).at(1);
+      expect(
+        tester.widget<TextFormField>(descField).controller?.text,
+        'Hello world',
+      );
+
+      // User edits
+      await tester.enterText(nameField, 'AlphaX');
+      await tester.enterText(descField, 'HelloX');
+      await tester.pumpAndSettle();
+
+      // Trigger a rebuild via toggling private switch
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await tester.pumpAndSettle();
+
+      // Controllers keep user-edited text (no reseed)
+      expect(
+        tester.widget<TextFormField>(nameField).controller?.text,
+        'AlphaX',
+      );
+      expect(
+        tester.widget<TextFormField>(descField).controller?.text,
+        'HelloX',
+      );
     });
   });
 }
