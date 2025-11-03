@@ -27,47 +27,101 @@ List<String>? _getEmojiFontFallback() {
 
 class ThemingCubit extends Cubit<ThemingState> {
   ThemingCubit() : super(ThemingState(enableTooltips: true)) {
-    _init();
+    // Intentionally not awaited - initialization happens asynchronously
+    // while cubit remains in valid state. Errors are caught and logged.
+    unawaited(_init());
   }
 
   Future<void> _init() async {
-    await _loadSelectedSchemes();
-    unawaited(
-      getIt<JournalDb>()
-          .watchConfigFlag(enableTooltipFlag)
-          .forEach((enableTooltips) {
+    // Initialize with default themes as fallback
+    _initLightTheme(_lightThemeName);
+    _initDarkTheme(_darkThemeName);
+    if (_isClosing || isClosed) {
+      return;
+    }
+    emitState();
+
+    // Try to load user's theme preferences
+    try {
+      await _loadSelectedSchemes();
+    } catch (e, st) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'THEMING_CUBIT',
+        subDomain: 'init',
+        stackTrace: st,
+      );
+      // Fallback is already set above, so we can continue
+      getIt<LoggingService>().captureException(
+        Exception('Using default theme (Grey Law) due to initialization error'),
+        domain: 'THEMING_CUBIT',
+        subDomain: 'fallback',
+      );
+    }
+
+    if (_isClosing || isClosed) {
+      return;
+    }
+
+    // Set up tooltip subscription regardless of theme load success
+    _tooltipSubscription =
+        getIt<JournalDb>().watchConfigFlag(enableTooltipFlag).listen(
+      (enableTooltips) {
+        if (_isClosing || isClosed) return;
         _enableTooltips = enableTooltips;
         emitState();
-      }),
+      },
+      onError: (Object e, StackTrace st) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'THEMING_CUBIT',
+          subDomain: 'tooltip_stream',
+          stackTrace: st,
+        );
+      },
     );
+
     _watchThemePrefsUpdates();
   }
 
-  bool _enableTooltips = false;
+  bool _enableTooltips = true;
   final _debounceKey = 'theming.sync.${identityHashCode(Object())}';
   bool _isApplyingSyncedChanges = false;
+  bool _isClosing = false;
+  StreamSubscription<bool>? _tooltipSubscription;
   StreamSubscription<List<SettingsItem>>? _themePrefsSubscription;
 
   void _watchThemePrefsUpdates() {
     _themePrefsSubscription = getIt<SettingsDb>()
         .watchSettingsItemByKey(themePrefsUpdatedAtKey)
-        .listen((items) async {
-      if (items.isNotEmpty && !_isApplyingSyncedChanges) {
-        _isApplyingSyncedChanges = true;
-        try {
-          await _loadSelectedSchemes();
-        } catch (e, st) {
-          getIt<LoggingService>().captureException(
-            e,
-            domain: 'THEMING_CUBIT',
-            subDomain: 'syncUpdate',
-            stackTrace: st,
-          );
-        } finally {
+        .listen(
+      (items) async {
+        if (_isClosing || isClosed) return;
+        if (items.isNotEmpty && !_isApplyingSyncedChanges) {
+          _isApplyingSyncedChanges = true;
+          try {
+            await _loadSelectedSchemes();
+          } catch (e, st) {
+            getIt<LoggingService>().captureException(
+              e,
+              domain: 'THEMING_CUBIT',
+              subDomain: 'theme_prefs_reload',
+              stackTrace: st,
+            );
+            // Keep current theme if reload fails
+          }
           _isApplyingSyncedChanges = false;
         }
-      }
-    });
+      },
+      onError: (Object e, StackTrace st) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'THEMING_CUBIT',
+          subDomain: 'theme_prefs_stream',
+          stackTrace: st,
+        );
+      },
+    );
   }
 
   void _enqueueSyncMessage() {
@@ -118,6 +172,9 @@ class ThemingCubit extends Cubit<ThemingState> {
           ThemeMode.system;
     }
 
+    if (_isClosing || isClosed) {
+      return;
+    }
     emitState();
   }
 
@@ -207,6 +264,8 @@ class ThemingCubit extends Cubit<ThemingState> {
 
   @override
   Future<void> close() async {
+    _isClosing = true;
+    await _tooltipSubscription?.cancel();
     await _themePrefsSubscription?.cancel();
     await super.close();
   }

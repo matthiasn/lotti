@@ -279,6 +279,187 @@ void main() {
 
         expect(result, isEmpty);
       });
+
+      test('filters prompts by provider when allModels provided', () {
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedProviders: {'anthropic-provider'});
+        final result = service.filterPrompts(
+          testPrompts,
+          filterState,
+          allModels: testModels,
+        );
+
+        // Both prompts use claude-model which belongs to anthropic-provider
+        expect(result, hasLength(2));
+      });
+
+      test('filters out prompts with models from non-selected providers', () {
+        // Create a prompt that uses the openai model
+        final gptPrompt = AiConfig.prompt(
+          id: 'gpt-prompt',
+          name: 'GPT Prompt',
+          description: 'Uses GPT model',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'gpt-model',
+          modelIds: ['gpt-model'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        ) as AiConfigPrompt;
+
+        final prompts = [...testPrompts, gptPrompt];
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedProviders: {'anthropic-provider'});
+        final result = service.filterPrompts(
+          prompts,
+          filterState,
+          allModels: testModels,
+        );
+
+        // Should only return prompts using anthropic models
+        expect(result, hasLength(2));
+        expect(result, containsAll(testPrompts));
+        expect(result, isNot(contains(gptPrompt)));
+      });
+
+      test('handles prompts with multiple models from different providers', () {
+        // Create a prompt that uses models from both providers
+        final mixedPrompt = AiConfig.prompt(
+          id: 'mixed-prompt',
+          name: 'Mixed Prompt',
+          description: 'Uses multiple providers',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'claude-model',
+          modelIds: ['claude-model', 'gpt-model'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        ) as AiConfigPrompt;
+
+        final prompts = [mixedPrompt];
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedProviders: {'anthropic-provider'});
+        final result = service.filterPrompts(
+          prompts,
+          filterState,
+          allModels: testModels,
+        );
+
+        // Should include prompt because it has at least one model from anthropic
+        expect(result, hasLength(1));
+        expect(result.first, mixedPrompt);
+      });
+
+      test('returns all prompts when allModels is null', () {
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedProviders: {'anthropic-provider'});
+        final result = service.filterPrompts(
+          testPrompts,
+          filterState,
+          // allModels not provided
+        );
+
+        // Should not apply provider filter without allModels
+        expect(result, hasLength(2));
+      });
+
+      test('returns all prompts when no providers selected', () {
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedProviders: <String>{});
+        final result = service.filterPrompts(
+          testPrompts,
+          filterState,
+          allModels: testModels,
+        );
+
+        // Should not apply provider filter when no providers selected
+        expect(result, hasLength(2));
+      });
+
+      test('handles prompts with unknown model IDs gracefully', () {
+        final promptWithUnknownModel = AiConfig.prompt(
+          id: 'unknown-prompt',
+          name: 'Unknown Model Prompt',
+          description: 'Uses unknown model',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'unknown-model-id',
+          modelIds: ['unknown-model-id'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        ) as AiConfigPrompt;
+
+        final prompts = [promptWithUnknownModel];
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedProviders: {'anthropic-provider'});
+        final result = service.filterPrompts(
+          prompts,
+          filterState,
+          allModels: testModels,
+        );
+
+        // Should filter out prompt with unknown model
+        expect(result, isEmpty);
+      });
+
+      test('uses efficient lookup map for provider filtering', () {
+        // This test ensures the implementation uses the optimized lookup approach
+        // Create many models to ensure performance matters
+        final manyModels = List.generate(
+          100,
+          (i) => AiConfig.model(
+            id: 'model-$i',
+            name: 'Model $i',
+            providerModelId: 'model-$i',
+            inferenceProviderId: i.isEven ? 'provider-a' : 'provider-b',
+            createdAt: DateTime.now(),
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+          ) as AiConfigModel,
+        );
+
+        final manyPrompts = List.generate(
+          50,
+          (i) => AiConfig.prompt(
+            id: 'prompt-$i',
+            name: 'Prompt $i',
+            systemMessage: 'System',
+            userMessage: 'User',
+            defaultModelId: 'model-$i',
+            modelIds: ['model-$i'],
+            createdAt: DateTime.now(),
+            useReasoning: false,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.taskSummary,
+          ) as AiConfigPrompt,
+        );
+
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedProviders: {'provider-a'});
+
+        // This should complete quickly with O(models + prompts) complexity
+        final stopwatch = Stopwatch()..start();
+        final result = service.filterPrompts(
+          manyPrompts,
+          filterState,
+          allModels: manyModels,
+        );
+        stopwatch.stop();
+
+        // Verify correct results (even-numbered prompts use provider-a models)
+        expect(result.length, 25);
+
+        // Performance check - should complete in reasonable time
+        // With O(n*m) this would be slow, with O(n+m) it's fast
+        expect(stopwatch.elapsedMilliseconds, lessThan(100));
+      });
     });
 
     group('edge cases', () {

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -60,126 +61,69 @@ class AiSettingsFilterChips extends ConsumerWidget {
 
   /// Builds the provider filter section
   Widget _buildProviderFilter(BuildContext context, WidgetRef ref) {
-    final providersAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
+    return Padding(
+      padding: const EdgeInsets.only(
+        bottom: ProviderChipConstants.chipSpacing,
       ),
-    );
-
-    return providersAsync.when(
-      data: (providers) {
-        final providerConfigs =
-            providers.whereType<AiConfigInferenceProvider>().toList();
-
-        if (providerConfigs.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              ...providerConfigs.map((provider) {
-                final isSelected =
-                    filterState.selectedProviders.contains(provider.id);
-                return FilterChip(
-                  label: Text(provider.name),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    final newProviders =
-                        Set<String>.from(filterState.selectedProviders);
-                    if (selected) {
-                      newProviders.add(provider.id);
-                    } else {
-                      newProviders.remove(provider.id);
-                    }
-                    onFilterChanged(filterState.copyWith(
-                      selectedProviders: newProviders,
-                    ));
-                  },
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: context.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.5),
-                  selectedColor: context.colorScheme.primaryContainer
-                      .withValues(alpha: 0.7),
-                  checkmarkColor: context.colorScheme.onPrimaryContainer,
-                  side: BorderSide(
-                    color: isSelected
-                        ? context.colorScheme.primary.withValues(alpha: 0.8)
-                        : context.colorScheme.primaryContainer
-                            .withValues(alpha: 0.3),
-                  ),
-                  labelStyle: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
-                    color: isSelected
-                        ? context.colorScheme.onPrimaryContainer
-                        : context.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.8),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  tooltip: context.messages
-                      .aiSettingsFilterByProviderTooltip(provider.name),
-                );
-              }),
-
-              // Clear filters button - positioned in provider row when there are active filters
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, animation) {
-                  return ScaleTransition(
-                    scale: animation,
-                    child: FadeTransition(
-                      opacity: animation,
-                      child: child,
-                    ),
-                  );
-                },
-                child: filterState.hasModelFilters
-                    ? ActionChip(
-                        key: const ValueKey('clear_button'),
-                        avatar: Icon(
-                          Icons.clear,
-                          size: 14,
-                          color:
-                              context.colorScheme.error.withValues(alpha: 0.7),
-                        ),
-                        label: Text(
-                          context.messages.aiSettingsClearFiltersButton,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: context.colorScheme.error
-                                .withValues(alpha: 0.8),
-                          ),
-                        ),
-                        onPressed: () {
-                          onFilterChanged(filterState.resetModelFilters());
-                        },
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: Colors.transparent,
-                        side: BorderSide(
-                          color:
-                              context.colorScheme.error.withValues(alpha: 0.3),
-                          width: 0.8,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        tooltip:
-                            context.messages.aiSettingsClearAllFiltersTooltip,
-                      )
-                    : const SizedBox.shrink(key: ValueKey('no_clear_button')),
-              ),
-            ],
+      child: Wrap(
+        spacing: ProviderChipConstants.chipSpacing,
+        runSpacing: ProviderChipConstants.chipSpacing,
+        children: [
+          ProviderFilterChipsRow(
+            selectedProviderIds: filterState.selectedProviders,
+            onChanged: (newProviders) {
+              onFilterChanged(filterState.copyWith(
+                selectedProviders: newProviders,
+              ));
+            },
+            useStyledChips: true,
           ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+
+          // Clear filters button - positioned in provider row when there are active filters
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, animation) {
+              return ScaleTransition(
+                scale: animation,
+                child: FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+              );
+            },
+            child: filterState.hasModelFilters
+                ? ActionChip(
+                    key: const ValueKey('clear_button'),
+                    avatar: Icon(
+                      Icons.clear,
+                      size: 14,
+                      color: context.colorScheme.error.withValues(alpha: 0.7),
+                    ),
+                    label: Text(
+                      context.messages.aiSettingsClearFiltersButton,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: context.colorScheme.error.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    onPressed: () {
+                      onFilterChanged(filterState.resetModelFilters());
+                    },
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    backgroundColor: Colors.transparent,
+                    side: BorderSide(
+                      color: context.colorScheme.error.withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    tooltip: context.messages.aiSettingsClearAllFiltersTooltip,
+                  )
+                : const SizedBox.shrink(key: ValueKey('no_clear_button')),
+          ),
+        ],
+      ),
     );
   }
 

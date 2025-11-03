@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -276,7 +278,6 @@ class _ModelManagementContentState
           );
         }
 
-        // Extract unique provider IDs for filter chips
         final uniqueProviderIds = _getUniqueProviderIds(modelConfigs);
 
         // Apply provider filter to models
@@ -288,7 +289,8 @@ class _ModelManagementContentState
 
         // Build the models list with fixed height container
         return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.65,
+          height: MediaQuery.of(context).size.height *
+              ProviderChipConstants.modalHeightFactor,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Column(
@@ -303,9 +305,9 @@ class _ModelManagementContentState
                     physics: const BouncingScrollPhysics(),
                     child: Row(
                       children: [
-                        // "All" chip
+                        // "All" chip - uses shared constants for consistent styling
                         FilterChip(
-                          label: const Text('All'),
+                          label: Text(context.messages.tasksLabelFilterAll),
                           selected: _selectedProviderId == null,
                           onSelected: (_) {
                             setState(() {
@@ -316,35 +318,59 @@ class _ModelManagementContentState
                               MaterialTapTargetSize.shrinkWrap,
                           backgroundColor: context
                               .colorScheme.surfaceContainerHigh
-                              .withValues(alpha: 0.5),
-                          selectedColor: context.colorScheme.primaryContainer
-                              .withValues(alpha: 0.7),
+                              .withValues(
+                            alpha: ProviderChipConstants.surfaceAlpha,
+                          ),
+                          selectedColor:
+                              context.colorScheme.primaryContainer.withValues(
+                            alpha: ProviderChipConstants.primaryContainerAlpha,
+                          ),
                           checkmarkColor:
                               context.colorScheme.onPrimaryContainer,
                           side: BorderSide(
                             color: _selectedProviderId == null
-                                ? context.colorScheme.primary
-                                    .withValues(alpha: 0.8)
+                                ? context.colorScheme.primary.withValues(
+                                    alpha: ProviderChipConstants.primaryAlpha,
+                                  )
                                 : context.colorScheme.primaryContainer
-                                    .withValues(alpha: 0.3),
+                                    .withValues(
+                                    alpha: ProviderChipConstants
+                                        .primaryContainerBorderAlpha,
+                                  ),
                           ),
                           labelStyle: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
+                            fontSize: ProviderChipConstants.chipFontSize,
+                            fontWeight: ProviderChipConstants.chipFontWeight,
+                            letterSpacing:
+                                ProviderChipConstants.chipLetterSpacing,
                             color: _selectedProviderId == null
                                 ? context.colorScheme.onPrimaryContainer
                                 : context.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.8),
+                                    .withValues(
+                                    alpha: ProviderChipConstants
+                                        .onSurfaceVariantAlpha,
+                                  ),
                           ),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                            horizontal:
+                                ProviderChipConstants.chipHorizontalPadding,
+                            vertical: ProviderChipConstants.chipVerticalPadding,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              ProviderChipConstants.chipBorderRadius,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(
+                          width: ProviderChipConstants.chipSpacing,
+                        ),
                         // Provider chips
                         ...uniqueProviderIds.map((providerId) {
                           return Padding(
-                            padding: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.only(
+                              right: ProviderChipConstants.chipSpacing,
+                            ),
                             child: ProviderFilterChip(
                               providerId: providerId,
                               isSelected: _selectedProviderId == providerId,
@@ -684,158 +710,6 @@ class _ModelCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-@visibleForTesting
-class ProviderFilterChip extends ConsumerWidget {
-  const ProviderFilterChip({
-    required this.providerId,
-    required this.isSelected,
-    required this.onTap,
-    super.key,
-  });
-
-  final String providerId;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  /// Get unique color for each provider type that works in both themes
-  Color _getProviderColor(
-      InferenceProviderType type, BuildContext context, bool isDark) {
-    switch (type) {
-      case InferenceProviderType.anthropic:
-        return isDark
-            ? const Color(0xFFD4A574)
-            : const Color(0xFFB8864E); // Warm bronze
-      case InferenceProviderType.openAi:
-        return isDark
-            ? const Color(0xFF6BCF7F)
-            : const Color(0xFF4CAF50); // Green
-      case InferenceProviderType.gemini:
-        return isDark
-            ? const Color(0xFF73B6F5)
-            : const Color(0xFF2196F3); // Blue
-      case InferenceProviderType.ollama:
-        return isDark
-            ? const Color(0xFFFF9F68)
-            : const Color(0xFFFF7043); // Orange
-      case InferenceProviderType.openRouter:
-        return isDark
-            ? const Color(0xFF4ECDC4)
-            : const Color(0xFF00BCD4); // Teal
-      case InferenceProviderType.genericOpenAi:
-        return isDark
-            ? const Color(0xFFA78BFA)
-            : const Color(0xFF9C27B0); // Purple
-      case InferenceProviderType.nebiusAiStudio:
-        return isDark
-            ? const Color(0xFFF06292)
-            : const Color(0xFFE91E63); // Pink
-      case InferenceProviderType.whisper:
-        return isDark
-            ? const Color(0xFFFF8A65)
-            : const Color(0xFFFF5722); // Deep Orange
-      case InferenceProviderType.gemma3n:
-        return isDark
-            ? const Color(0xFF81C784)
-            : const Color(0xFF66BB6A); // Light Green
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final providerAsync = ref.watch(aiConfigByIdProvider(providerId));
-
-    return providerAsync.when(
-      data: (provider) {
-        if (provider == null) return const SizedBox.shrink();
-        if (provider is! AiConfigInferenceProvider) {
-          return const SizedBox.shrink();
-        }
-
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final providerColor = _getProviderColor(
-          provider.inferenceProviderType,
-          context,
-          isDark,
-        );
-
-        // Label chip styling inspired by the labels in settings
-        final backgroundColor = isSelected
-            ? providerColor.withValues(alpha: isDark ? 0.35 : 0.22)
-            : providerColor.withValues(alpha: isDark ? 0.25 : 0.15);
-        final borderColor = isSelected
-            ? providerColor.withValues(alpha: 0.55)
-            : providerColor.withValues(alpha: 0.35);
-        final textColor = isDark ? Colors.white : Colors.black;
-
-        return InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: borderColor,
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Colored dot indicator
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        providerColor,
-                        providerColor.withValues(alpha: 0.75),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: providerColor.withValues(alpha: 0.35),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 6),
-                // Checkmark for selected state
-                if (isSelected) ...[
-                  Icon(
-                    Icons.check,
-                    size: 14,
-                    color: textColor,
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  provider.name,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
-                    color: textColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

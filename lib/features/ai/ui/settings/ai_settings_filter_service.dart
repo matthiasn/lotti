@@ -107,12 +107,13 @@ class AiSettingsFilterService {
   ///
   /// **Filters Applied:**
   /// - Text search: Matches against prompt name and description
-  /// - Provider filter: Only shows prompts whose models belong to selected providers
+  /// - Provider filter: Only shows prompts whose models belong to selected providers.
+  ///   Requires [allModels] to be provided.
   ///
   /// **Parameters:**
   /// - [prompts]: List of AI prompts to filter
   /// - [filterState]: Current filter criteria
-  /// - [allModels]: Optional list of all models (needed for provider filtering)
+  /// - [allModels]: Optional list of all models, required for provider filtering.
   ///
   /// **Returns:** Filtered list of AI prompts
   List<AiConfigPrompt> filterPrompts(
@@ -120,6 +121,12 @@ class AiSettingsFilterService {
     AiSettingsFilterState filterState, {
     List<AiConfigModel>? allModels,
   }) {
+    // For efficiency, create a lookup map of modelId -> providerId
+    final modelIdToProviderIdMap = filterState.selectedProviders.isNotEmpty &&
+            allModels != null
+        ? {for (final model in allModels) model.id: model.inferenceProviderId}
+        : null;
+
     return prompts.where((prompt) {
       // Text search filter
       if (!_matchesTextSearch(
@@ -133,12 +140,13 @@ class AiSettingsFilterService {
       }
 
       // Provider filter - only apply if providers are selected and models are provided
-      if (filterState.selectedProviders.isNotEmpty && allModels != null) {
+      if (modelIdToProviderIdMap != null) {
         // Check if ANY of the prompt's models belong to the selected providers
-        final promptModelIds = prompt.modelIds.toSet();
-        final hasMatchingModel = allModels.any((model) =>
-            promptModelIds.contains(model.id) &&
-            filterState.selectedProviders.contains(model.inferenceProviderId));
+        final hasMatchingModel = prompt.modelIds.any((modelId) {
+          final providerId = modelIdToProviderIdMap[modelId];
+          return providerId != null &&
+              filterState.selectedProviders.contains(providerId);
+        });
 
         if (!hasMatchingModel) {
           return false;

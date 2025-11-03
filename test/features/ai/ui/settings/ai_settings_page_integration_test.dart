@@ -150,7 +150,7 @@ void main() {
         await tester.tap(find.text('Prompts'));
         await tester.pumpAndSettle();
 
-        // Model filters should be hidden
+        // Model filters should be hidden on prompts tab
         expect(find.text('Vision'), findsNothing);
       });
     });

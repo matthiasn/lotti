@@ -121,7 +121,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Start on Providers tab - should see the test provider
+      // Start on Providers tab - should see the test provider (only in config list, not in filter chips)
       expect(find.text('Anthropic Provider'), findsOneWidget);
 
       // Tap Models tab
@@ -144,7 +144,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Initially should see the provider
+      // Initially should see the provider (only in config list on Providers tab)
       expect(find.text('Anthropic Provider'), findsOneWidget);
 
       // Enter search text that doesn't match
@@ -279,7 +279,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Verify we're on the right tab
+      // Verify we're on the right tab (Providers tab - only in config list)
       expect(find.text('Anthropic Provider'), findsOneWidget);
 
       // Switch tabs programmatically
@@ -483,7 +483,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Should see both providers initially
+      // Should see both providers initially (only in config list on Providers tab)
       expect(find.text('Anthropic Provider'), findsOneWidget);
       expect(find.text('OpenAI Provider'), findsOneWidget);
 

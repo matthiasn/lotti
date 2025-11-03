@@ -295,8 +295,10 @@ void main() {
         final cubit = ThemingCubit();
         async.flushMicrotasks();
 
-        // Close cubit
+        // Close cubit and allow cancellation to complete
         cubit.close();
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 50));
         async.flushMicrotasks();
 
         // Emit after close should not cause errors or reloads

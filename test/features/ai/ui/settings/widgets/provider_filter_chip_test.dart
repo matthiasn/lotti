@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/ui/settings/model_management_modal.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chip.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 void main() {
@@ -51,11 +51,11 @@ void main() {
       final containerFinder = find.byType(Container);
       expect(containerFinder, findsWidgets);
 
-      // Find the InkWell and verify tap works
-      final inkWell = find.byType(InkWell);
-      expect(inkWell, findsOneWidget);
+      // Find the FilterChip and verify tap works
+      final filterChip = find.byType(FilterChip);
+      expect(filterChip, findsOneWidget);
 
-      await tester.tap(inkWell);
+      await tester.tap(filterChip);
       await tester.pump();
 
       expect(tapCalled, isTrue);
@@ -253,7 +253,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify checkmark is displayed when selected
+      // Verify FilterChip is selected and shows checkmark icon
+      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
+      expect(filterChip.selected, isTrue);
+      expect(filterChip.showCheckmark, isFalse);
       expect(find.byIcon(Icons.check), findsOneWidget);
       expect(find.text('Test Provider'), findsOneWidget);
     });
@@ -290,7 +293,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify no checkmark when not selected
+      // Verify FilterChip is not selected and does not show checkmark icon
+      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
+      expect(filterChip.selected, isFalse);
+      expect(filterChip.showCheckmark, isFalse);
       expect(find.byIcon(Icons.check), findsNothing);
       expect(find.text('Test Provider'), findsOneWidget);
     });
@@ -441,8 +447,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final textWidget = tester.widget<Text>(find.text('Test Provider'));
-      expect(textWidget.style?.color, equals(Colors.white));
+      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
+      expect(filterChip.labelStyle?.color, equals(Colors.white));
     });
 
     testWidgets('Text color is black in light theme', (tester) async {
@@ -478,8 +484,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final textWidget = tester.widget<Text>(find.text('Test Provider'));
-      expect(textWidget.style?.color, equals(Colors.black));
+      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
+      expect(filterChip.labelStyle?.color, equals(Colors.black));
     });
   });
 
@@ -518,14 +524,14 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final inkWell = find.byType(InkWell);
+      final filterChip = find.byType(FilterChip);
 
       // Rapid taps
-      await tester.tap(inkWell);
+      await tester.tap(filterChip);
       await tester.pump();
-      await tester.tap(inkWell);
+      await tester.tap(filterChip);
       await tester.pump();
-      await tester.tap(inkWell);
+      await tester.tap(filterChip);
       await tester.pump();
 
       expect(tapCount, equals(3));
@@ -563,8 +569,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-      expect(inkWell.borderRadius, equals(BorderRadius.circular(20)));
+      final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
+      expect(
+        filterChip.shape,
+        equals(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      );
     });
   });
 }
