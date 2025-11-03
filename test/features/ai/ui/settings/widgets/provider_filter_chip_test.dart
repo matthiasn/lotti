@@ -253,10 +253,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify FilterChip is selected
+      // Verify FilterChip is selected and shows checkmark icon
       final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
       expect(filterChip.selected, isTrue);
-      expect(filterChip.showCheckmark, isTrue);
+      expect(filterChip.showCheckmark, isFalse);
+      expect(find.byIcon(Icons.check), findsOneWidget);
       expect(find.text('Test Provider'), findsOneWidget);
     });
 
@@ -292,10 +293,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify FilterChip is not selected
+      // Verify FilterChip is not selected and does not show checkmark icon
       final filterChip = tester.widget<FilterChip>(find.byType(FilterChip));
       expect(filterChip.selected, isFalse);
       expect(filterChip.showCheckmark, isFalse);
+      expect(find.byIcon(Icons.check), findsNothing);
       expect(find.text('Test Provider'), findsOneWidget);
     });
 

@@ -63,7 +63,20 @@ class ProviderFilterChip extends ConsumerWidget {
         return FilterChip(
           selected: isSelected,
           onSelected: (_) => onTap(),
-          label: Text(provider.name),
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isSelected) ...[
+                Icon(
+                  Icons.check,
+                  size: 14,
+                  color: textColor,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(provider.name),
+            ],
+          ),
           avatar: Container(
             width: ProviderChipConstants.avatarSize,
             height: ProviderChipConstants.avatarSize,
@@ -103,7 +116,7 @@ class ProviderFilterChip extends ConsumerWidget {
             letterSpacing: ProviderChipConstants.chipLetterSpacing,
             color: textColor,
           ),
-          showCheckmark: isSelected,
+          showCheckmark: false,
           shape: RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.circular(ProviderChipConstants.chipBorderRadius),
