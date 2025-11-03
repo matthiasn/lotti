@@ -237,9 +237,14 @@ void main() {
       },
     );
 
-    await updatedCompleter.future
-        .timeout(const Duration(seconds: 2), onTimeout: () {});
-    sub.close();
+    try {
+      await updatedCompleter.future
+          .timeout(const Duration(seconds: 2));
+    } on TimeoutException {
+      fail('Timed out waiting for provider update');
+    } finally {
+      sub.close();
+    }
 
     // Assert
     verify(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))

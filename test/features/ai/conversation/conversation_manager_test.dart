@@ -409,20 +409,22 @@ void main() {
         expect(manager.messages, isEmpty);
       });
 
-      test('initialize emits initialization event', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('initialize emits initialization event', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        manager.initialize(systemMessage: 'Test system');
+          manager.initialize(systemMessage: 'Test system');
 
-        // Allow event processing
-        await Future<void>(() {});
+          // Deterministically allow event processing
+          async.flushMicrotasks();
 
-        expect(events.length, 1);
-        expect(events.first, isA<ConversationInitializedEvent>());
-        final initEvent = events.first as ConversationInitializedEvent;
-        expect(initEvent.conversationId, 'test-conversation');
-        expect(initEvent.systemMessage, 'Test system');
+          expect(events.length, 1);
+          expect(events.first, isA<ConversationInitializedEvent>());
+          final initEvent = events.first as ConversationInitializedEvent;
+          expect(initEvent.conversationId, 'test-conversation');
+          expect(initEvent.systemMessage, 'Test system');
+        });
       });
     });
 
