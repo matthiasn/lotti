@@ -57,6 +57,22 @@ class ChecklistItemWrapper extends ConsumerWidget {
             return dragItem;
           },
           allowedOperations: () => [DropOperation.move],
+          dragBuilder: (context, child) {
+            // Add colored border to dragged item, provide solid background
+            // to prevent black showing through transparency
+            final theme = Theme.of(context);
+            return Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border.all(
+                  color: theme.colorScheme.primary,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: child,
+            );
+          },
           child: DraggableWidget(
             child: Dismissible(
               key: Key(item.id),

@@ -139,7 +139,7 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                             }(),
                           ),
                         ),
-                        if (widget.showEditIcon)
+                        if (widget.showEditIcon) ...[
                           IconButton(
                             icon: Icon(
                               Icons.edit,
@@ -152,6 +152,8 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                               });
                             },
                           ),
+                          const SizedBox(width: 8),
+                        ],
                       ],
                     ),
                   ),

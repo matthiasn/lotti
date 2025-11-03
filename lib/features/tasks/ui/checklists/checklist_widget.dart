@@ -236,6 +236,19 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               buildDefaultDragHandles: _isEditing,
+              proxyDecorator: (child, index, animation) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surface,
+                    border: Border.all(
+                      color: context.colorScheme.primary,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: child,
+                );
+              },
               onReorder: (int oldIndex, int newIndex) {
                 final itemIds = [..._itemIds];
                 final movedItem = itemIds.removeAt(oldIndex);
