@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -114,17 +115,17 @@ void main() {
     });
 
     group('addUserMessage', () {
-      test('should add messages and emit events', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('should add messages and emit events', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        manager.addUserMessage('Test message');
+          manager.addUserMessage('Test message');
+          async.flushMicrotasks();
 
-        // Allow stream to process
-        await Future<void>.delayed(Duration.zero);
-
-        expect(manager.messages.length, 1);
-        expect(events.whereType<UserMessageEvent>().length, 1);
+          expect(manager.messages.length, 1);
+          expect(events.whereType<UserMessageEvent>().length, 1);
+        });
       });
 
       test('should add tool responses correctly', () {
@@ -166,104 +167,100 @@ void main() {
     });
 
     group('Event Emission', () {
-      test('emitThinking should emit thinking event', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('emitThinking should emit thinking event', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        manager.emitThinking();
+          manager.emitThinking();
+          async.flushMicrotasks();
 
-        // Allow event processing
-        await Future<void>.delayed(Duration.zero);
-
-        expect(events.length, 1);
-        expect(events.first, isA<ThinkingEvent>());
-        expect((events.first as ThinkingEvent).turnNumber, 0);
+          expect(events.length, 1);
+          expect(events.first, isA<ThinkingEvent>());
+          expect((events.first as ThinkingEvent).turnNumber, 0);
+        });
       });
 
-      test('emitError should emit error event', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('emitError should emit error event', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        manager.emitError('Test error message');
+          manager.emitError('Test error message');
+          async.flushMicrotasks();
 
-        // Allow event processing
-        await Future<void>.delayed(Duration.zero);
-
-        expect(events.length, 1);
-        expect(events.first, isA<ConversationErrorEvent>());
-        final errorEvent = events.first as ConversationErrorEvent;
-        expect(errorEvent.message, 'Test error message');
-        expect(errorEvent.turnNumber, 0);
+          expect(events.length, 1);
+          expect(events.first, isA<ConversationErrorEvent>());
+          final errorEvent = events.first as ConversationErrorEvent;
+          expect(errorEvent.message, 'Test error message');
+          expect(errorEvent.turnNumber, 0);
+        });
       });
 
-      test('should not emit events after dispose', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('should not emit events after dispose', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        // Dispose the manager
-        manager
-          ..dispose()
+          // Dispose the manager
+          manager
+            ..dispose()
+            ..emitError('Should not be emitted')
+            ..emitThinking()
+            ..addUserMessage('Should not be emitted');
 
-          // Try to emit events after dispose
-          ..emitError('Should not be emitted')
-          ..emitThinking()
-          ..addUserMessage('Should not be emitted');
-
-        // Allow event processing
-        await Future<void>.delayed(Duration.zero);
-
-        // No events should be emitted
-        expect(events, isEmpty);
+          async.flushMicrotasks();
+          expect(events, isEmpty);
+        });
       });
     });
 
     group('Tool Response Handling', () {
-      test('addToolResponse should emit tool response event', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('addToolResponse should emit tool response event', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        manager.addToolResponse(
-          toolCallId: 'tool-123',
-          response: 'Tool executed successfully',
-        );
+          manager.addToolResponse(
+            toolCallId: 'tool-123',
+            response: 'Tool executed successfully',
+          );
+          async.flushMicrotasks();
 
-        // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+          expect(manager.messages.length, 1);
+          expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
 
-        expect(manager.messages.length, 1);
-        expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
-
-        expect(events.length, 1);
-        expect(events.first, isA<ToolResponseEvent>());
-        final toolEvent = events.first as ToolResponseEvent;
-        expect(toolEvent.toolCallId, 'tool-123');
-        expect(toolEvent.response, 'Tool executed successfully');
+          expect(events.length, 1);
+          expect(events.first, isA<ToolResponseEvent>());
+          final toolEvent = events.first as ToolResponseEvent;
+          expect(toolEvent.toolCallId, 'tool-123');
+          expect(toolEvent.response, 'Tool executed successfully');
+        });
       });
     });
 
     group('Assistant Message Handling', () {
-      test('addAssistantMessage with only content', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('addAssistantMessage with only content', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        manager.addAssistantMessage(
-          content: 'This is the assistant response',
-        );
+          manager.addAssistantMessage(
+            content: 'This is the assistant response',
+          );
+          async.flushMicrotasks();
 
-        // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+          expect(manager.messages.length, 1);
+          expect(
+              manager.messages.first.role, ChatCompletionMessageRole.assistant);
+          expect(
+              manager.messages.first.content, 'This is the assistant response');
 
-        expect(manager.messages.length, 1);
-        expect(
-            manager.messages.first.role, ChatCompletionMessageRole.assistant);
-        expect(
-            manager.messages.first.content, 'This is the assistant response');
-        // Tool calls would be null since only content is provided
-
-        expect(events.length, 1);
-        expect(events.first, isA<AssistantMessageEvent>());
-        final assistantEvent = events.first as AssistantMessageEvent;
-        expect(assistantEvent.message, 'This is the assistant response');
+          expect(events.length, 1);
+          expect(events.first, isA<AssistantMessageEvent>());
+          final assistantEvent = events.first as AssistantMessageEvent;
+          expect(assistantEvent.message, 'This is the assistant response');
+        });
       });
 
       test('addAssistantMessage with only tool calls', () async {
@@ -286,7 +283,7 @@ void main() {
         );
 
         // Allow event processing
-        await Future<void>(() {});
+        await Future<void>.delayed(Duration.zero);
 
         expect(manager.messages.length, 1);
         expect(
@@ -321,7 +318,7 @@ void main() {
         );
 
         // Allow event processing
-        await Future<void>(() {});
+        await Future<void>.delayed(Duration.zero);
 
         expect(manager.messages.length, 1);
         expect(manager.messages.first.content, 'Executing function');
@@ -339,7 +336,7 @@ void main() {
         manager.addAssistantMessage();
 
         // Allow event processing
-        await Future<void>(() {});
+        await Future<void>.delayed(Duration.zero);
 
         expect(manager.messages.length, 1);
         expect(

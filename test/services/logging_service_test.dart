@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -65,117 +66,126 @@ void main() {
     await Future<void>.delayed(Duration.zero);
   });
 
-  test('captureEvent writes to DB and file when enabled', () async {
-    when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+  test('captureEvent writes to DB and file when enabled', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
 
-    logging.captureEvent(
-      'hello world',
-      domain: 'TEST',
-      subDomain: 'sub',
-    );
+      logging.captureEvent(
+        'hello world',
+        domain: 'TEST',
+        subDomain: 'sub',
+      );
 
-    // Yield to allow async sinks to complete
-    await Future<void>.delayed(Duration.zero);
+      async.flushMicrotasks();
 
-    verify(() => loggingDb.log(any(that: isA<LogEntry>())))
-        .called(greaterThanOrEqualTo(1));
+      verify(() => loggingDb.log(any(that: isA<LogEntry>())))
+          .called(greaterThanOrEqualTo(1));
 
-    final logPath = p.join(
-      tempDocs.path,
-      'logs',
-      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-    );
-    final file = File(logPath);
-    expect(file.existsSync(), isTrue);
-    final content = file.readAsStringSync();
-    expect(
-      content.contains(' [INFO] TEST sub: hello world'),
-      isTrue,
-    );
+      final logPath = p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      );
+      final file = File(logPath);
+      expect(file.existsSync(), isTrue);
+      final content = file.readAsStringSync();
+      expect(
+        content.contains(' [INFO] TEST sub: hello world'),
+        isTrue,
+      );
+    });
   });
 
-  test('captureEvent DB failure still writes file line', () async {
-    when(() => loggingDb.log(any())).thenThrow(Exception('db down'));
+  test('captureEvent DB failure still writes file line', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenThrow(Exception('db down'));
 
-    logging.captureEvent(
-      'evt',
-      domain: 'OUTBOX',
-      subDomain: 'watchdog',
-    );
+      logging.captureEvent(
+        'evt',
+        domain: 'OUTBOX',
+        subDomain: 'watchdog',
+      );
 
-    await Future<void>.delayed(Duration.zero);
+      async.flushMicrotasks();
 
-    final logPath = p.join(
-      tempDocs.path,
-      'logs',
-      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-    );
-    final file = File(logPath);
-    expect(file.existsSync(), isTrue);
-    final content = file.readAsStringSync();
-    // Even on DB failure, original event line is still appended
-    expect(content.contains(' [INFO] OUTBOX watchdog: evt'), isTrue);
+      final logPath = p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      );
+      final file = File(logPath);
+      expect(file.existsSync(), isTrue);
+      final content = file.readAsStringSync();
+      // Even on DB failure, original event line is still appended
+      expect(content.contains(' [INFO] OUTBOX watchdog: evt'), isTrue);
+    });
   });
 
-  test('captureException writes to DB and file; includes stack trace',
-      () async {
-    when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+  test('captureException writes to DB and file; includes stack trace', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
 
-    logging.captureException(
-      Exception('boom'),
-      domain: 'PIPE',
-      subDomain: 'liveScan',
-      stackTrace: StackTrace.current,
-    );
+      logging.captureException(
+        Exception('boom'),
+        domain: 'PIPE',
+        subDomain: 'liveScan',
+        stackTrace: StackTrace.current,
+      );
 
-    await Future<void>.delayed(Duration.zero);
+      async.flushMicrotasks();
 
-    verify(() => loggingDb.log(any(that: isA<LogEntry>()))).called(1);
+      verify(() => loggingDb.log(any(that: isA<LogEntry>()))).called(1);
 
-    final logPath = p.join(
-      tempDocs.path,
-      'logs',
-      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-    );
-    final content = File(logPath).readAsStringSync();
-    expect(content.contains(' [ERROR] PIPE liveScan: Exception: boom'), isTrue);
+      final logPath = p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      );
+      final content = File(logPath).readAsStringSync();
+      expect(
+          content.contains(' [ERROR] PIPE liveScan: Exception: boom'), isTrue);
+    });
   });
 
-  test('captureException DB failure still writes file line', () async {
-    when(() => loggingDb.log(any())).thenThrow(Exception('cantopen'));
+  test('captureException DB failure still writes file line', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenThrow(Exception('cantopen'));
 
-    logging.captureException(
-      'oops',
-      domain: 'DB',
-      subDomain: 'insert',
-      stackTrace: 'trace',
-    );
+      logging.captureException(
+        'oops',
+        domain: 'DB',
+        subDomain: 'insert',
+        stackTrace: 'trace',
+      );
 
-    await Future<void>.delayed(Duration.zero);
+      async.flushMicrotasks();
 
-    final content = File(p.join(
-      tempDocs.path,
-      'logs',
-      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-    )).readAsStringSync();
-    expect(content.contains(' [ERROR] DB insert: oops trace'), isTrue);
+      final content = File(p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      )).readAsStringSync();
+      expect(content.contains(' [ERROR] DB insert: oops trace'), isTrue);
+    });
   });
 
-  test('captureEvent is gated when logging disabled', () async {
-    // Create a new service with logging disabled (do not listen to flag)
-    final svc = LoggingService();
-    when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+  test('captureEvent is gated when logging disabled', () {
+    fakeAsync((async) {
+      // Create a new service with logging disabled (do not listen to flag)
+      final svc = LoggingService();
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
 
-    svc.captureEvent('disabled', domain: 'TEST');
-    await Future<void>(() {});
+      svc.captureEvent('disabled', domain: 'TEST');
+      async.flushMicrotasks();
 
-    verifyNever(() => loggingDb.log(any()));
+      verifyNever(() => loggingDb.log(any()));
 
-    final logPath = p.join(
-      tempDocs.path,
-      'logs',
-      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-    );
-    expect(File(logPath).existsSync(), isFalse);
+      final logPath = p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      );
+      expect(File(logPath).existsSync(), isFalse);
+    });
   });
 }

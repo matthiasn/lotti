@@ -22,7 +22,7 @@ void main() {
 
     // Instantiate notifier and allow first append
     container.read(syncMetricsHistoryProvider);
-    await Future<void>(() {});
+    await Future<void>.delayed(Duration.zero);
 
     // Append 30 updates; history should cap at 24.
     for (var i = 2; i <= 31; i++) {

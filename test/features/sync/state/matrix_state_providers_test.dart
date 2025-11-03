@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
@@ -88,25 +89,27 @@ void main() {
       await matrixStatsStreamController.close();
     });
 
-    test('matrixStatsStream exposes matrix service stream', () async {
-      final container = ProviderContainer(
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-        ],
-      );
-      addTearDown(container.dispose);
+    test('matrixStatsStream exposes matrix service stream', () {
+      fakeAsync((FakeAsync async) {
+        final container = ProviderContainer(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final captured = <MatrixStats>[];
-      final sub = container.listen(
-        matrixStatsStreamProvider,
-        (_, next) => next.whenData(captured.add),
-      );
-      addTearDown(sub.close);
-      final stats = MatrixStats(sentCount: 1, messageCounts: const {});
+        final captured = <MatrixStats>[];
+        final sub = container.listen(
+          matrixStatsStreamProvider,
+          (_, next) => next.whenData(captured.add),
+        );
+        addTearDown(sub.close);
+        final stats = MatrixStats(sentCount: 1, messageCounts: const {});
 
-      matrixStatsStreamController.add(stats);
-      await Future<void>(() {});
-      expect(captured, contains(stats));
+        matrixStatsStreamController.add(stats);
+        async.flushMicrotasks();
+        expect(captured, contains(stats));
+      });
     });
 
     test('MatrixStatsController falls back to current counters', () async {

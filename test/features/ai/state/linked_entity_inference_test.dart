@@ -232,7 +232,6 @@ void main() {
 
         // Simulate the full lifecycle
         onStatusChange(InferenceStatus.running);
-        await Future<void>.delayed(Duration.zero);
         onStatusChange(InferenceStatus.idle);
       });
 
@@ -244,8 +243,16 @@ void main() {
           linkedEntityId: linkedTaskId,
         ).future,
       );
-
-      await Future<void>.delayed(Duration.zero);
+      // Wait deterministically until both entities observed idle
+      final done = Completer<void>();
+      Timer.periodic(const Duration(milliseconds: 1), (t) {
+        if (mainEntityStatuses.contains(InferenceStatus.idle) &&
+            linkedEntityStatuses.contains(InferenceStatus.idle)) {
+          t.cancel();
+          if (!done.isCompleted) done.complete();
+        }
+      });
+      await done.future.timeout(const Duration(seconds: 1), onTimeout: () {});
 
       // Assert - both entities should have the same status sequence
       expect(mainEntityStatuses, contains(InferenceStatus.running));

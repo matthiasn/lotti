@@ -1077,13 +1077,6 @@ void main() {
     setUp(() {
       mockHttpClient = MockHttpClient();
       repository = OllamaInferenceRepository(httpClient: mockHttpClient);
-      // Avoid real backoff delays in tests
-      OllamaInferenceRepository.retryBaseDelay = Duration.zero;
-    });
-
-    tearDown(() {
-      // Restore default after test
-      OllamaInferenceRepository.retryBaseDelay = const Duration(seconds: 2);
     });
 
     test('should handle malformed JSON in stream', () async {

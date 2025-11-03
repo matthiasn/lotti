@@ -1,6 +1,8 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -83,67 +85,74 @@ void main() {
         );
       });
 
-      test('calls ChatMessageProcessor methods in correct order', () async {
-        // This test verifies that ChatRepository properly orchestrates
-        // the ChatMessageProcessor methods, even though we can't easily
-        // test the exact flow due to the complexity of mocking streams
+      test('calls ChatMessageProcessor methods in correct order', () {
+        fakeAsync((async) {
+          // This test verifies that ChatRepository properly orchestrates
+          // the ChatMessageProcessor methods, even though we can't easily
+          // test the exact flow due to the complexity of mocking streams
 
-        // The key insight is that if getAiConfigurationForModel fails,
-        // the entire operation should fail early
-        when(() => mockAiConfigRepository.getConfigById(testModelId))
-            .thenThrow(Exception('Config error'));
+          // The key insight is that if getAiConfigurationForModel fails,
+          // the entire operation should fail early
+          when(() => mockAiConfigRepository.getConfigById(testModelId))
+              .thenThrow(Exception('Config error'));
 
-        await expectLater(
-          repository
+          Object? thrown;
+          final sub = repository
               .sendMessage(
                 message: testMessage,
                 conversationHistory: [],
                 categoryId: testCategoryId,
                 modelId: testModelId,
               )
-              .first,
-          throwsA(predicate((e) => e.toString().contains('Config error'))),
-        );
+              .listen((_) {}, onError: (Object e, _) => thrown = e);
 
-        // Verify logging was called (yield to allow stream dispatch)
-        await Future<void>.delayed(Duration.zero);
-        verify(() => mockLoggingService.captureEvent(
-              'Starting chat message processing',
-              domain: 'ChatRepository',
-              subDomain: 'sendMessage',
-            )).called(1);
+          async.flushMicrotasks();
+          expect(thrown.toString(), contains('Config error'));
+
+          // Verify logging was called after dispatch
+          verify(() => mockLoggingService.captureEvent(
+                'Starting chat message processing',
+                domain: 'ChatRepository',
+                subDomain: 'sendMessage',
+              )).called(1);
+          sub.cancel();
+        });
       });
 
-      test('handles errors and logs them properly', () async {
-        when(() => mockAiConfigRepository.getConfigById(testModelId))
-            .thenThrow(Exception('Test error'));
+      test('handles errors and logs them properly', () {
+        fakeAsync((async) {
+          when(() => mockAiConfigRepository.getConfigById(testModelId))
+              .thenThrow(Exception('Test error'));
 
-        await expectLater(
-          repository
+          Object? thrown;
+          final sub = repository
               .sendMessage(
                 message: testMessage,
                 conversationHistory: [],
                 categoryId: testCategoryId,
                 modelId: testModelId,
               )
-              .first,
-          throwsA(isA<ChatRepositoryException>().having(
-            (e) => e.message,
-            'message',
-            contains('Failed to send message: Exception: Test error'),
-          )),
-        );
+              .listen((_) {}, onError: (Object e, _) => thrown = e);
 
-        // Give the async operations a yield to complete
-        await Future<void>.delayed(Duration.zero);
+          async.flushMicrotasks();
 
-        // Verify error logging
-        verify(() => mockLoggingService.captureException(
-              any<Exception>(),
-              domain: 'ChatRepository',
-              subDomain: 'sendMessage',
-              stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            )).called(1);
+          expect(
+            thrown,
+            isA<ChatRepositoryException>(),
+          );
+          final err = thrown! as ChatRepositoryException;
+          expect(err.message,
+              contains('Failed to send message: Exception: Test error'));
+
+          // Verify error logging
+          verify(() => mockLoggingService.captureException(
+                any<Exception>(),
+                domain: 'ChatRepository',
+                subDomain: 'sendMessage',
+                stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              )).called(1);
+          sub.cancel();
+        });
       });
 
       test('wraps TimeoutException from provider as ChatRepositoryException',
