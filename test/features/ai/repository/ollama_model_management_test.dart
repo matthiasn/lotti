@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
@@ -652,48 +653,64 @@ void main() {
           const images = [testImage];
           const temperature = 0.7;
 
-          // Mock warm-up call
+          // Mock warm-up call (returns quickly)
           when(() => mockHttpClient.post(any(),
               headers: any(named: 'headers'),
               body: any(named: 'body'))).thenAnswer(
             (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
           );
 
-          // Mock generate call with delayed response (deterministic fake time)
-          final mockResponse = MockStreamedResponse();
-          when(() => mockResponse.statusCode).thenReturn(200);
-          when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-                () async* {
-                  await Future<void>.delayed(const Duration(milliseconds: 100));
-                  yield utf8
-                      .encode('{"message":{"content":"result"},"done":true}\n');
-                }(),
-              ));
+          // Simulate the HTTP send exceeding the image-analysis timeout on each retry.
+          when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+            await Future<void>.delayed(
+              const Duration(seconds: ollamaImageAnalysisTimeoutSeconds + 1),
+            );
+            return MockStreamedResponse(); // never reached before timeout
+          });
 
-          when(() => mockHttpClient.send(any()))
-              .thenAnswer((_) async => mockResponse);
+          // Remove backoff to keep time math simple under fake clock
+          final prevDelay = OllamaInferenceRepository.retryBaseDelay;
+          OllamaInferenceRepository.retryBaseDelay = Duration.zero;
 
-          // Act: start the stream and collect results without real waits
           final received = <dynamic>[];
+          final errors = <Object>[];
+          final done = Completer<void>();
+
           repository
               .generateWithImages(
-                prompt,
-                model: modelName,
-                temperature: temperature,
-                baseUrl: baseUrl,
-                apiKey: '',
-                images: images,
-                provider: ollamaProvider,
-              )
-              .listen(received.add);
+            prompt,
+            model: modelName,
+            temperature: temperature,
+            baseUrl: baseUrl,
+            apiKey: '',
+            images: images,
+            provider: ollamaProvider,
+          )
+              .listen(
+            received.add,
+            onError: (Object e, StackTrace st) {
+              errors.add(e);
+              if (!done.isCompleted) done.complete();
+            },
+            onDone: () {
+              if (!done.isCompleted) done.complete();
+            },
+          );
 
-          // Advance fake time to trigger delayed emission
+          // Advance fake time past 3x timeout (3 attempts) plus epsilon
+          const totalSeconds = (ollamaImageAnalysisTimeoutSeconds * 3) + 1;
           async
-            ..elapse(const Duration(milliseconds: 100))
+            ..elapse(const Duration(seconds: totalSeconds))
             ..flushMicrotasks();
 
-          // Assert
-          expect(received, isNotEmpty);
+          // Assert the timeout path deterministically
+          expect(done.isCompleted, isTrue);
+          expect(received, isEmpty);
+          expect(errors, isNotEmpty);
+          expect(errors.first.toString(), contains('timed out'));
+
+          // Restore retry delay
+          OllamaInferenceRepository.retryBaseDelay = prevDelay;
         });
       });
     });
