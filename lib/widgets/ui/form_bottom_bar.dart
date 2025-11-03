@@ -31,23 +31,27 @@ class FormBottomBar extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: leftButton != null
-            ? MainAxisAlignment.spaceBetween
-            : MainAxisAlignment.end,
-        children: [
-          if (leftButton != null) leftButton!,
-          Row(
-            mainAxisSize: MainAxisSize.min,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(24, 12, 16, 12),
+          child: Row(
+            mainAxisAlignment: leftButton != null
+                ? MainAxisAlignment.spaceBetween
+                : MainAxisAlignment.end,
             children: [
-              for (var i = 0; i < rightButtons.length; i++) ...[
-                if (i > 0) const SizedBox(width: 12),
-                rightButtons[i],
-              ],
+              if (leftButton != null) leftButton!,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < rightButtons.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 12),
+                    rightButtons[i],
+                  ],
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

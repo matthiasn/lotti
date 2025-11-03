@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
@@ -81,6 +82,8 @@ void main() {
         '/settings/categories/:categoryId',
         '/settings/categories/create',
         '/settings/labels',
+        '/settings/labels/create',
+        '/settings/labels/:labelId',
         '/settings/dashboards',
         '/settings/dashboards/:dashboardId',
         '/settings/dashboards/create',
@@ -144,6 +147,41 @@ void main() {
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<LabelsListPage>());
+    });
+
+    test('buildPages builds LabelDetailsPage for create', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/labels/create'));
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<LabelsListPage>());
+      expect(pages[2].child, isA<LabelDetailsPage>());
+    });
+
+    test('buildPages builds LabelDetailsPage with labelId', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/labels/test-id'));
+      var beamState = BeamState.fromRouteInformation(routeInformation);
+      final location = SettingsLocation(routeInformation);
+      beamState = beamState.copyWith(
+        pathParameters: {'labelId': 'test-id'},
+      );
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<LabelsListPage>());
+      expect(pages[2].child, isA<LabelDetailsPage>());
+      final labelPage = pages[2].child as LabelDetailsPage;
+      expect(labelPage.labelId, 'test-id');
     });
 
     test('buildPages builds AiSettingsPage', () {

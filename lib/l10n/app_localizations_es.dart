@@ -766,6 +766,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createEntryTitle => 'Añadir';
 
   @override
+  String get customColor => 'Custom Color';
+
+  @override
   String get dashboardActiveLabel => 'Activo:';
 
   @override

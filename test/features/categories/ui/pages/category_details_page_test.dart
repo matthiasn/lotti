@@ -807,7 +807,7 @@ void main() {
     });
 
     group('UI Behavior', () {
-      testWidgets('displays save button in app bar when changes exist',
+      testWidgets('does not display app bar save; only bottom bar save is used',
           (tester) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
@@ -842,14 +842,20 @@ void main() {
         await tester.enterText(find.byType(TextFormField), 'Changed Name');
         await tester.pumpAndSettle();
 
-        // Save button should appear in app bar
+        // Save button should remain absent in app bar; save is in bottom bar only
         expect(
           find.ancestor(
             of: find.byType(LottiTertiaryButton),
             matching: find.byType(SliverAppBar),
           ),
-          findsOneWidget,
+          findsNothing,
         );
+
+        // Bottom bar should show Save enabled
+        final enabledSave = find.byWidgetPredicate(
+          (w) => w is LottiPrimaryButton && w.onPressed != null,
+        );
+        expect(enabledSave, findsOneWidget);
 
         await streamController.close();
       });

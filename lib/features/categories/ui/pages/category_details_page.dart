@@ -280,13 +280,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                 ),
               ),
               pinned: true,
-              actions: [
-                if (state.hasChanges && !state.isSaving)
-                  LottiTertiaryButton(
-                    label: context.messages.saveButton,
-                    onPressed: _handleSave,
-                  ),
-              ],
+              // Save action intentionally removed; single Save lives in bottom bar.
             ),
             if (state.errorMessage != null)
               SliverToBoxAdapter(

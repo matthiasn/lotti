@@ -196,3 +196,5 @@ coverage.xml
 .venv
 env/
 ENV/
+
+test/.test_optimizer.dart

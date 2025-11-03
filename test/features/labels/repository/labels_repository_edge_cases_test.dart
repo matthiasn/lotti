@@ -73,6 +73,31 @@ void main() {
     );
   });
 
+  test('updateLabel clears description when empty string provided', () async {
+    when(() => persistenceLogic.upsertEntityDefinition(any()))
+        .thenAnswer((_) async => 1);
+
+    final original = testLabelDefinition1.copyWith(description: 'a');
+
+    final updated = await repository.updateLabel(
+      original,
+      description: '', // signal clear
+    );
+
+    expect(updated.description, isNull,
+        reason: 'Empty string should clear (persist as null)');
+
+    verify(
+      () => persistenceLogic.upsertEntityDefinition(
+        any(
+          that: predicate<LabelDefinition>(
+            (l) => l.description == null,
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
   test('createLabel generates unique ids and trims whitespace', () async {
     when(() => persistenceLogic.upsertEntityDefinition(any()))
         .thenAnswer((_) async => 1);

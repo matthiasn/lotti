@@ -1449,6 +1449,12 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get createEntryTitle;
 
+  /// No description provided for @customColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Color'**
+  String get customColor;
+
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:

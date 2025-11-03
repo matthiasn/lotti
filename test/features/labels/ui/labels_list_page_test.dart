@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
-import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
@@ -115,38 +113,17 @@ void main() {
     expect(find.textContaining('boom'), findsOneWidget);
   });
 
-  testWidgets('popup menu shows edit and delete options', (tester) async {
+  testWidgets('list item uses chevron and no popup menu', (tester) async {
     await tester.pumpWidget(
       _buildPage(labels: [testLabelDefinition1]),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('Delete'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
   });
 
-  testWidgets('delete confirmation shows label name and cancel keeps list',
-      (tester) async {
-    await tester.pumpWidget(
-      _buildPage(labels: [testLabelDefinition1]),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Urgent'), findsWidgets);
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-
-    // Label still visible after cancel
-    expect(find.text('Urgent'), findsWidgets);
-  });
+  // Deletion now happens in the details page; list does not show a popup menu anymore.
 
   testWidgets('private badge renders for private labels', (tester) async {
     final privateLabel = testLabelDefinition1.copyWith(private: true);
@@ -161,14 +138,10 @@ void main() {
   // Note: FAB behavior is covered by dedicated editor sheet tests; here we
   // verify presence and focus coverage via other interactions.
 
-  testWidgets('shows create-from-search CTA and opens editor prefilled',
-      (tester) async {
-    // Provide a mock repository to satisfy LabelEditorSheet dependencies.
-    final mockRepo = _MockLabelsRepository();
+  testWidgets('shows create-from-search CTA with typed query', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          labelsRepositoryProvider.overrideWithValue(mockRepo),
           labelsStreamProvider.overrideWith(
             (ref) => Stream.value([
               testLabelDefinition1,
@@ -195,12 +168,7 @@ void main() {
     // CTA should reflect the exact typed casing
     expect(find.text('Create "$query" label'), findsOneWidget);
 
-    // Tap to open the label editor, which should be prefilled with the query
-    await tester.tap(find.text('Create "$query" label'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(LabelEditorSheet), findsOneWidget);
-    expect(find.text(query), findsWidgets);
+    // We navigate to a new page in the app; here we only assert the CTA exists.
   });
 
   testWidgets('settings search field capitalizes words', (tester) async {
@@ -311,4 +279,4 @@ void main() {
   });
 }
 
-class _MockLabelsRepository extends Mock implements LabelsRepository {}
+// No longer needed in this suite.
