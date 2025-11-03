@@ -285,12 +285,13 @@ void main() {
     when(() => mockRecorder.start(any<record.RecordConfig>(),
         path: any(named: 'path'))).thenAnswer((_) async {});
     // Emit amplitude events so state changes to recording
-    when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-      (_) => Stream.periodic(
-        const Duration(milliseconds: 50),
+    when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer((_) {
+      // Emit 5 amplitude samples synchronously to drive state without timers
+      return Stream<record.Amplitude>.fromIterable(List.generate(
+        5,
         (_) => record.Amplitude(current: -40, max: -30),
-      ).take(5),
-    );
+      ));
+    });
 
     const now = 1234567890;
     final container = ProviderContainer(overrides: [

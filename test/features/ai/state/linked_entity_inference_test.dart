@@ -179,94 +179,94 @@ void main() {
 
     test('status updates propagate to both main and linked entities', () {
       fakeAsync((async) {
-      // Arrange
-      const audioEntryId = 'audio-123';
-      const linkedTaskId = 'task-456';
-      const asrPromptId = 'asr-prompt';
+        // Arrange
+        const audioEntryId = 'audio-123';
+        const linkedTaskId = 'task-456';
+        const asrPromptId = 'asr-prompt';
 
-      final container = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
-          aiConfigByIdProvider(asrPromptId).overrideWith(
-            (ref) => Future.value(asrPromptConfig),
-          ),
-        ],
-      );
-
-      final mainEntityStatuses = <InferenceStatus>[];
-      final linkedEntityStatuses = <InferenceStatus>[];
-
-      // Track status changes
-      container
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: audioEntryId,
-            aiResponseType: AiResponseType.audioTranscription,
-          ),
-          (previous, next) {
-            mainEntityStatuses.add(next);
-          },
-          fireImmediately: true,
-        )
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: linkedTaskId,
-            aiResponseType: AiResponseType.audioTranscription,
-          ),
-          (previous, next) {
-            linkedEntityStatuses.add(next);
-          },
-          fireImmediately: true,
+        final container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider
+                .overrideWithValue(mockRepository),
+            aiConfigByIdProvider(asrPromptId).overrideWith(
+              (ref) => Future.value(asrPromptConfig),
+            ),
+          ],
         );
 
-      when(
-        () => mockRepository.runInference(
-          entityId: any(named: 'entityId'),
-          promptConfig: any(named: 'promptConfig'),
-          onProgress: any(named: 'onProgress'),
-          onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
-        ),
-      ).thenAnswer((invocation) async {
-        final onStatusChange = invocation.namedArguments[#onStatusChange]
-            as void Function(InferenceStatus);
+        final mainEntityStatuses = <InferenceStatus>[];
+        final linkedEntityStatuses = <InferenceStatus>[];
 
-        // Simulate the full lifecycle
-        onStatusChange(InferenceStatus.running);
-        onStatusChange(InferenceStatus.idle);
-      });
-
-      // Act: run the provider and drive fake time deterministically
-      var finished = false;
-      container
-          .read(
-            triggerNewInferenceProvider(
-              entityId: audioEntryId,
-              promptId: asrPromptId,
-              linkedEntityId: linkedTaskId,
-            ).future,
+        // Track status changes
+        container
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: audioEntryId,
+              aiResponseType: AiResponseType.audioTranscription,
+            ),
+            (previous, next) {
+              mainEntityStatuses.add(next);
+            },
+            fireImmediately: true,
           )
-          .then((_) => finished = true);
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: linkedTaskId,
+              aiResponseType: AiResponseType.audioTranscription,
+            ),
+            (previous, next) {
+              linkedEntityStatuses.add(next);
+            },
+            fireImmediately: true,
+          );
 
-      async
-        ..flushMicrotasks()
-        ..elapse(const Duration(milliseconds: 1))
-        ..flushMicrotasks();
+        when(
+          () => mockRepository.runInference(
+            entityId: any(named: 'entityId'),
+            promptConfig: any(named: 'promptConfig'),
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            useConversationApproach: any(named: 'useConversationApproach'),
+          ),
+        ).thenAnswer((invocation) async {
+          final onStatusChange = invocation.namedArguments[#onStatusChange]
+              as void Function(InferenceStatus);
 
-      // Assert - both entities should have the same status sequence
-      expect(mainEntityStatuses, contains(InferenceStatus.running));
-      expect(mainEntityStatuses, contains(InferenceStatus.idle));
-      expect(linkedEntityStatuses, contains(InferenceStatus.running));
-      expect(linkedEntityStatuses, contains(InferenceStatus.idle));
+          // Simulate the full lifecycle
+          onStatusChange(InferenceStatus.running);
+          onStatusChange(InferenceStatus.idle);
+        });
 
-      // The sequences should be identical (after initial state)
-      final mainSequence = mainEntityStatuses.skip(1).toList();
-      final linkedSequence = linkedEntityStatuses.skip(1).toList();
-      expect(mainSequence, equals(linkedSequence));
+        // Act: run the provider and drive fake time deterministically
+        var finished = false;
+        container
+            .read(
+              triggerNewInferenceProvider(
+                entityId: audioEntryId,
+                promptId: asrPromptId,
+                linkedEntityId: linkedTaskId,
+              ).future,
+            )
+            .then((_) => finished = true);
 
-      container.dispose();
-      expect(finished, isTrue);
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 1))
+          ..flushMicrotasks();
+
+        // Assert - both entities should have the same status sequence
+        expect(mainEntityStatuses, contains(InferenceStatus.running));
+        expect(mainEntityStatuses, contains(InferenceStatus.idle));
+        expect(linkedEntityStatuses, contains(InferenceStatus.running));
+        expect(linkedEntityStatuses, contains(InferenceStatus.idle));
+
+        // The sequences should be identical (after initial state)
+        final mainSequence = mainEntityStatuses.skip(1).toList();
+        final linkedSequence = linkedEntityStatuses.skip(1).toList();
+        expect(mainSequence, equals(linkedSequence));
+
+        container.dispose();
+        expect(finished, isTrue);
       });
     });
 
