@@ -245,14 +245,20 @@ void main() {
       );
       // Wait deterministically until both entities observed idle
       final done = Completer<void>();
-      Timer.periodic(const Duration(milliseconds: 1), (t) {
+      final timer = Timer.periodic(const Duration(milliseconds: 1), (t) {
         if (mainEntityStatuses.contains(InferenceStatus.idle) &&
             linkedEntityStatuses.contains(InferenceStatus.idle)) {
           t.cancel();
           if (!done.isCompleted) done.complete();
         }
       });
-      await done.future.timeout(const Duration(seconds: 1), onTimeout: () {});
+      try {
+        await done.future.timeout(const Duration(seconds: 1));
+      } on TimeoutException {
+        fail('Timed out waiting for both entities to reach idle status');
+      } finally {
+        timer.cancel();
+      }
 
       // Assert - both entities should have the same status sequence
       expect(mainEntityStatuses, contains(InferenceStatus.running));

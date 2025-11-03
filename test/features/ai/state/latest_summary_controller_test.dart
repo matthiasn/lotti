@@ -238,8 +238,7 @@ void main() {
     );
 
     try {
-      await updatedCompleter.future
-          .timeout(const Duration(seconds: 2));
+      await updatedCompleter.future.timeout(const Duration(seconds: 2));
     } on TimeoutException {
       fail('Timed out waiting for provider update');
     } finally {

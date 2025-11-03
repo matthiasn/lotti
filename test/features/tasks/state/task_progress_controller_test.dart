@@ -201,8 +201,13 @@ void main() {
 
     // Trigger update notification with the changed entry id
     updateStreamController.add({'entry2'});
-    await updated.future.timeout(const Duration(seconds: 1), onTimeout: () {});
-    sub.close();
+    try {
+      await updated.future.timeout(const Duration(seconds: 1));
+    } on TimeoutException {
+      fail('Timed out waiting for updated task progress state');
+    } finally {
+      sub.close();
+    }
 
     // Verify the data was fetched again and state updated
     verify(() => mockRepository.getTaskProgressData(id: testTaskId)).called(1);
