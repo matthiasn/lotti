@@ -12,7 +12,7 @@
 - Category icon becomes a subtle inline element:
   - Sits in the subtitle row, before `P3` and `Groomed` chips.
   - Visually sized to match the chips (reduced from large display size).
-- Improve scroll experience by adding ~160 px bottom space in the tasks list.
+- Improve scroll experience by adding ~100 px bottom space in the tasks list.
 - Zero analyzer warnings; thorough widget tests for the updated layout.
 
 ## Non‑Goals
@@ -38,15 +38,15 @@
 
 1) Reposition and resize category icon
 - Remove the `leading` slot usage in `ModernTaskCard` to reclaim left space for the title.
-- Add a compact `CategoryIconCompact` inline at the beginning of the subtitle row, immediately before the priority chip.
+- Add a compact `CategoryIconCompact` inline in the subtitle row, after the priority and status chips.
 - Size choice: match chip visual scale rather than the old large display size.
-  - Default: use `CategoryIconConstants.iconSizeSmall` or a custom 20px target to visually match the ~26px chip height.
-  - Spacing: `SizedBox(width: 6)` between the category icon and the `P3` chip (consistent with existing chip spacing).
-- Keep category color as the icon color for recognizability. Optionally reduce alpha slightly to de‑emphasize (see Questions).
+  - Use `CategoryIconConstants.iconSizeSmall` (24px default) to visually match the ~26px chip height.
+  - Spacing: `SizedBox(width: 6)` between the status chip and the category icon (consistent with existing chip spacing).
+- Keep category color as the icon color for recognizability.
 
 2) Increase bottom space in the scroll view
-- Wrap the `PagedSliverList` with `SliverPadding(padding: EdgeInsets.only(bottom: 160))` so the last item can scroll fully into view above the time recorder and FAB.
-- Alternatively/additionally append a terminal `SliverToBoxAdapter(child: SizedBox(height: 160))` if wrapping proves awkward with `PagingListener`.
+- Wrap the `PagedSliverList` with `SliverPadding(padding: EdgeInsets.only(bottom: 100))` so the last item can scroll fully into view above the time recorder and FAB.
+- Alternatively/additionally append a terminal `SliverToBoxAdapter(child: SizedBox(height: 100))` if wrapping proves awkward with `PagingListener`.
 
 ## Implementation Plan
 
@@ -54,16 +54,15 @@ A. ModernTaskCard (title focus)
 - File: `lib/features/journal/ui/widgets/list_cards/modern_task_card.dart`
 - Changes:
   - Remove `leading: ModernIconContainer(child: CategoryIconCompact(...))` from `ModernCardContent`.
-  - In `_buildSubtitleWidget`, prepend a small `CategoryIconCompact` to the `statusRow` children list:
-    - `CategoryIconCompact(task.meta.categoryId, size: /* see Decision */)`
-    - Followed by `const SizedBox(width: 6)` then the existing priority and status chips.
+  - In `_buildSubtitleWidget`, add a small `CategoryIconCompact` to the `statusRow` children list after the priority and status chips:
+    - Priority chip, then status chip, then `const SizedBox(width: 6)`, then `CategoryIconCompact(task.meta.categoryId, size: /* see Decision */)`
   - Verify no overflow or misalignment; keep `CompactTaskProgress` aligned at the far right via `Spacer()`.
 
 B. InfiniteJournalPage (bottom padding)
 - File: `lib/features/journal/ui/pages/infinite_journal_page.dart`
 - Changes:
-  - Inside the `PagingListener` builder, wrap the `PagedSliverList<int, JournalEntity>` in `SliverPadding(padding: const EdgeInsets.only(bottom: 160), sliver: ...)`.
-  - If wrapping inside `PagingListener` is intrusive, add a final `SliverToBoxAdapter(child: SizedBox(height: 160))` after the paged list sliver.
+  - Inside the `PagingListener` builder, wrap the `PagedSliverList<int, JournalEntity>` in `SliverPadding(padding: const EdgeInsets.only(bottom: 100), sliver: ...)`.
+  - If wrapping inside `PagingListener` is intrusive, add a final `SliverToBoxAdapter(child: SizedBox(height: 100))` after the paged list sliver.
 
 C. Tests (add first, iterate per guideline)
 - Use `flutter_test` with targeted widget tests; run analyzer/tests after each file via MCP tools.
@@ -93,12 +92,12 @@ C. Tests (add first, iterate per guideline)
       findsNothing,
     );
     ```
-  - Category icon size matches the chosen target (20.0). Example:
+  - Category icon size matches the chosen target (24.0). Example:
     ```dart
     final iconFinder = find.byType(CategoryIconCompact);
     final size = tester.getSize(iconFinder.first);
-    expect(size.width, 20);
-    expect(size.height, 20);
+    expect(size.width, 24);
+    expect(size.height, 24);
     ```
   - Do not rely on pixel positioning for the title; verifying absence of the leading `ModernIconContainer` is sufficient to confirm the title gains space.
 
@@ -107,7 +106,7 @@ C. Tests (add first, iterate per guideline)
 - Approach:
   - Provide a stub `JournalPageCubit`/`JournalPageState` with a minimal, non‑null `pagingController` and a tiny page of fake `JournalEntity` tasks.
   - Pump `InfiniteJournalPageBody(showTasks: true)` inside a `BlocProvider.value` using the stub.
-  - Assert there is a `SliverPadding` with `EdgeInsets.only(bottom: 160)` or a terminal `SliverToBoxAdapter` with `SizedBox(height: 160)`.
+- Assert there is a `SliverPadding` with `EdgeInsets.only(bottom: 100)` or a terminal `SliverToBoxAdapter` with `SizedBox(height: 100)`.
   - Optionally scroll to max extent to ensure no bounce‑back hides the final card (golden/unnecessary — keep test reliable and structural).
 
 D. Housekeeping
@@ -126,17 +125,17 @@ E. Update/baseline existing tests
 
 ## Decisions
 
-- Category icon inline size: 20px (custom) to align with chip height without dominating.
+- Category icon inline size: 24px (`CategoryIconConstants.iconSizeSmall`) to align with chip height without dominating.
 - Icon emphasis/color: keep full category color (no alpha reduction).
-- Bottom padding: fixed 160px across all platforms; implement via a terminal `SliverToBoxAdapter(SizedBox(height: 160))` after the paged list.
-- Presence rule: always show the category icon inline before priority/status chips regardless of labels.
+- Bottom padding: fixed 100px across all platforms; implement via a terminal `SliverToBoxAdapter(SizedBox(height: 100))` after the paged list.
+- Presence rule: always show the category icon inline after priority/status chips regardless of labels.
 
 ## Risks & Mitigations
 
 - Risk: Icon inline may increase subtitle row height on small screens.
-  - Mitigation: Use compact size (20px) and maintain chip spacing (6px). Verify on smaller device sizes in tests/manual run.
+  - Mitigation: Use compact size (24px) and maintain chip spacing (6px). Verify on smaller device sizes in tests/manual run.
 - Risk: Wrapping `PagedSliverList` may be awkward inside `PagingListener`.
-  - Mitigation: Append a final `SliverToBoxAdapter(SizedBox(height: 160))` instead — behavior‑equivalent and simpler. <= YES GOOD IDEA
+  - Mitigation: Append a final `SliverToBoxAdapter(SizedBox(height: 100))` instead — behavior‑equivalent and simpler. <= YES GOOD IDEA
 - Risk: Visual regressions in other cards using `ModernCardContent` leading slot.
   - Mitigation: We only change `ModernTaskCard` usage; other cards still use `leading` as before.
 
@@ -160,7 +159,8 @@ E. Update/baseline existing tests
 - Task cards show the category icon inline in the subtitle row before the priority and status chips.
 - The title aligns with the card’s left padding and has visibly more width than before.
 - The category icon is reduced to a compact size matching the chips’ visual scale (decision above), without overshadowing the title.
-- The tasks list allows the last item to scroll fully into view; a ~160px space exists between the last card and the bottom overlays.
+- The tasks list allows the last item to scroll fully into view; a ~100px space exists between 
+  the last card and the bottom overlays.
 - Analyzer: zero warnings. All new tests pass reliably.
 
 ## Code Pointers
@@ -226,14 +226,14 @@ return PagedSliverList<int, JournalEntity>(
   state: pagingState,
   fetchNextPage: fetchNextPageFunction,
   builderDelegate: ...,
-).toSliverPadding(bottom: 160); // extension or explicit SliverPadding
+).toSliverPadding(bottom: 100); // extension or explicit SliverPadding
 ```
 
 Or explicitly:
 
 ```dart
 SliverPadding(
-  padding: const EdgeInsets.only(bottom: 160),
+  padding: const EdgeInsets.only(bottom: 100),
   sliver: PagedSliverList<int, JournalEntity>(
     state: pagingState,
     fetchNextPage: fetchNextPageFunction,
@@ -244,5 +244,5 @@ SliverPadding(
 
 ```dart
 // Alternative minimal change if wrapping complicates the builder:
-const SliverToBoxAdapter(child: SizedBox(height: 160)),
+const SliverToBoxAdapter(child: SizedBox(height: 100)),
 ```

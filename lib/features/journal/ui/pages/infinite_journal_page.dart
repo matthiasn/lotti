@@ -127,6 +127,10 @@ class _InfiniteJournalPageBodyState extends State<InfiniteJournalPageBody> {
                       child: CircularProgressIndicator(),
                     ),
                   ),
+                // Ensure the final card can scroll above overlays (FAB/time indicator)
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 100),
+                ),
               ],
             ),
           );
