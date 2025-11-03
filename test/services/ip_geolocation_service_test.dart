@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import '../test_utils/retry_fake_time.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
@@ -121,18 +122,24 @@ void main() {
                 any(),
                 headers: any(named: 'headers'),
               )).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(seconds: 10));
+            // Exceed the 5s service timeout to deterministically trigger onTimeout
+            await Future<void>.delayed(const Duration(seconds: 6));
             return http.Response('Timeout', 200);
           });
 
           Geolocation? result;
-          // Drive the async call under fake time.
+          // Kick off under fake time.
           IpGeolocationService.getLocationFromIp(httpClient: mockHttpClient)
               .then((r) => result = r);
 
-          async
-            ..elapse(const Duration(seconds: 10))
-            ..flushMicrotasks();
+          // Elapse timeout + epsilon via the retry helper (single attempt)
+          final plan = buildRetryBackoffPlan(
+            maxRetries: 1,
+            timeout: const Duration(seconds: 5),
+            baseDelay: Duration.zero,
+            epsilon: const Duration(seconds: 1),
+          );
+          async.elapseRetryPlan(plan);
 
           expect(result, isNull);
         });

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -72,23 +70,26 @@ void main() {
           idleThreshold: const Duration(milliseconds: 300),
         );
 
-        // Continuously report activity to keep non‑idle until hard deadline
-        Timer.periodic(const Duration(milliseconds: 150), (_) {
-          service.updateActivity();
-        });
-
+        // Start the hard deadline timer at t=0
         var completed = false;
         gate.waitUntilIdle().then((_) => completed = true);
 
-        // Advance to just before hard deadline
-        async
-          ..elapse(const Duration(milliseconds: 1900))
-          ..flushMicrotasks();
+        // Continuously report activity deterministically under fake time.
+        // Step through 1950ms in 150ms increments, updating activity each step.
+        const step = Duration(milliseconds: 150);
+        for (var i = 0; i < 13; i++) {
+          service.updateActivity();
+          async
+            ..elapse(step)
+            ..flushMicrotasks();
+        }
+
+        // After 1950ms, we are just before the hard deadline
         expect(completed, isFalse);
 
-        // Advance past hard deadline (~2s)
+        // Advance past hard deadline (~2s), small epsilon beyond boundary
         async
-          ..elapse(const Duration(milliseconds: 200))
+          ..elapse(const Duration(milliseconds: 100))
           ..flushMicrotasks();
         expect(completed, isTrue);
 

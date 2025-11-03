@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../test_utils/retry_fake_time.dart';
+
 class MockHttpClient extends Mock implements http.Client {}
 
 class MockRef extends Mock implements Ref<Object?> {}
@@ -154,10 +156,10 @@ void main() {
 
       test('handles timeout gracefully', () {
         fakeAsync((async) {
-          // Arrange
+          // Arrange: force the GET to exceed the repository's 10s timeout
           when(() => mockHttpClient.get(any())).thenAnswer(
             (_) async {
-              await Future<void>.delayed(const Duration(seconds: 2));
+              await Future<void>.delayed(const Duration(seconds: 11));
               return http.Response('{}', httpStatusOk);
             },
           );
@@ -168,12 +170,16 @@ void main() {
               .isModelInstalled(modelName, baseUrl)
               .then((r) => result = r);
 
-          // Drive time forward to trigger timeout handling deterministically
-          async
-            ..elapse(const Duration(seconds: 2))
-            ..flushMicrotasks();
+          // Elapse timeout + epsilon using the retry helper (single attempt)
+          final plan = buildRetryBackoffPlan(
+            maxRetries: 1,
+            timeout: const Duration(seconds: 10),
+            baseDelay: Duration.zero,
+            epsilon: const Duration(seconds: 1),
+          );
+          async.elapseRetryPlan(plan);
 
-          // Assert
+          // Assert: should return false on timeout
           expect(result, isFalse);
         });
       });
@@ -404,25 +410,29 @@ void main() {
 
       test('handles timeout gracefully', () {
         fakeAsync((async) {
-          // Arrange
+          // Arrange: force POST to exceed the repository's 60s timeout
           when(() => mockHttpClient.post(any(),
               headers: any(named: 'headers'),
               body: any(named: 'body'))).thenAnswer(
             (_) async {
-              await Future<void>.delayed(const Duration(seconds: 2));
+              await Future<void>.delayed(const Duration(seconds: 61));
               return http.Response('{"response": "Hello"}', httpStatusOk);
             },
           );
 
-          // Act under fake time & Assert - should not throw
+          // Act under fake time & Assert - warmUpModel swallows timeouts
           Object? error;
           repository
               .warmUpModel(modelName, baseUrl)
               .catchError((dynamic e, __) => error = e);
 
-          async
-            ..elapse(const Duration(seconds: 2))
-            ..flushMicrotasks();
+          final plan = buildRetryBackoffPlan(
+            maxRetries: 1,
+            timeout: const Duration(seconds: 60),
+            baseDelay: Duration.zero,
+            epsilon: const Duration(seconds: 1),
+          );
+          async.elapseRetryPlan(plan);
 
           expect(error, isNull);
         });
@@ -647,6 +657,9 @@ void main() {
       });
 
       test('handles timeout for image analysis', () {
+        // Ensure retryBaseDelay is always restored even if the test fails
+        final prevDelay = OllamaInferenceRepository.retryBaseDelay;
+        addTearDown(() => OllamaInferenceRepository.retryBaseDelay = prevDelay);
         fakeAsync((async) {
           // Arrange
           const prompt = 'Analyze this image';
@@ -669,7 +682,6 @@ void main() {
           });
 
           // Remove backoff to keep time math simple under fake clock
-          final prevDelay = OllamaInferenceRepository.retryBaseDelay;
           OllamaInferenceRepository.retryBaseDelay = Duration.zero;
 
           final received = <dynamic>[];
@@ -697,20 +709,20 @@ void main() {
             },
           );
 
-          // Advance fake time past 3x timeout (3 attempts) plus epsilon
-          const totalSeconds = (ollamaImageAnalysisTimeoutSeconds * 3) + 1;
-          async
-            ..elapse(const Duration(seconds: totalSeconds))
-            ..flushMicrotasks();
+          // Advance fake time following the retry/backoff plan deterministically
+          final plan = buildRetryBackoffPlan(
+            maxRetries: 3,
+            timeout: const Duration(seconds: ollamaImageAnalysisTimeoutSeconds),
+            baseDelay: OllamaInferenceRepository.retryBaseDelay,
+            epsilon: const Duration(seconds: 1),
+          );
+          async.elapseRetryPlan(plan);
 
           // Assert the timeout path deterministically
           expect(done.isCompleted, isTrue);
           expect(received, isEmpty);
           expect(errors, isNotEmpty);
           expect(errors.first.toString(), contains('timed out'));
-
-          // Restore retry delay
-          OllamaInferenceRepository.retryBaseDelay = prevDelay;
         });
       });
     });

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -6,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../test_utils/retry_fake_time.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
@@ -294,10 +298,14 @@ void main() {
             completed = true;
           });
 
-          // Drive time to trigger timeout without real wait
-          async
-            ..elapse(const Duration(milliseconds: 100))
-            ..flushMicrotasks();
+          // Drive time to trigger timeout deterministically via helper
+          final plan = buildRetryBackoffPlan(
+            maxRetries: 1,
+            timeout: const Duration(milliseconds: 100),
+            baseDelay: Duration.zero,
+            epsilon: const Duration(milliseconds: 1),
+          );
+          async.elapseRetryPlan(plan);
 
           expect(completed, isTrue);
           final err = error;
@@ -703,10 +711,14 @@ void main() {
             completed = true;
           });
 
-          // Drive time forward
-          async
-            ..elapse(const Duration(milliseconds: 100))
-            ..flushMicrotasks();
+          // Drive time forward deterministically via helper
+          final plan = buildRetryBackoffPlan(
+            maxRetries: 1,
+            timeout: const Duration(milliseconds: 100),
+            baseDelay: Duration.zero,
+            epsilon: const Duration(milliseconds: 1),
+          );
+          async.elapseRetryPlan(plan);
 
           expect(completed, isTrue);
           final err = error;
