@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -176,79 +177,85 @@ void main() {
     });
 
     group('sendMessage', () {
-      test('upgrades soft break before heading to blank line for Markdown',
-          () async {
-        // Initialize empty session
-        when(() =>
-                mockChatRepository.createSession(categoryId: 'test-category'))
-            .thenAnswer((_) async => ChatSession(
-                  id: 's1',
-                  title: 'New Chat',
-                  createdAt: DateTime(2024),
-                  lastMessageAt: DateTime(2024),
-                  messages: const [],
-                ));
+      test('upgrades soft break before heading to blank line for Markdown', () {
+        fakeAsync((async) {
+          // Initialize empty session
+          when(() =>
+                  mockChatRepository.createSession(categoryId: 'test-category'))
+              .thenAnswer((_) async => ChatSession(
+                    id: 's1',
+                    title: 'New Chat',
+                    createdAt: DateTime(2024),
+                    lastMessageAt: DateTime(2024),
+                    messages: const [],
+                  ));
 
-        final streamController = StreamController<String>();
-        // Keep provider alive during async streaming
-        final sbSubscription = container.listen(
-          chatSessionControllerProvider('test-category'),
-          (_, __) {},
-          fireImmediately: true,
-        );
-        when(() => mockChatRepository.sendMessage(
-              message: any(named: 'message'),
-              conversationHistory: any(named: 'conversationHistory'),
-              categoryId: any(named: 'categoryId'),
-              modelId: any(named: 'modelId'),
-            )).thenAnswer((_) => streamController.stream);
-        when(() => mockChatRepository.saveSession(any()))
-            .thenAnswer((_) async => ChatSession(
-                  id: 's1',
-                  title: 'New Chat',
-                  createdAt: DateTime(2024),
-                  lastMessageAt: DateTime(2024),
-                  messages: const [],
-                ));
+          final streamController = StreamController<String>();
+          // Keep provider alive during async streaming
+          final sbSubscription = container.listen(
+            chatSessionControllerProvider('test-category'),
+            (_, __) {},
+            fireImmediately: true,
+          );
+          when(() => mockChatRepository.sendMessage(
+                message: any(named: 'message'),
+                conversationHistory: any(named: 'conversationHistory'),
+                categoryId: any(named: 'categoryId'),
+                modelId: any(named: 'modelId'),
+              )).thenAnswer((_) => streamController.stream);
+          when(() => mockChatRepository.saveSession(any()))
+              .thenAnswer((_) async => ChatSession(
+                    id: 's1',
+                    title: 'New Chat',
+                    createdAt: DateTime(2024),
+                    lastMessageAt: DateTime(2024),
+                    messages: const [],
+                  ));
 
-        // Keep provider alive during async streaming
-        final keepAlive = container.listen(
-          chatSessionControllerProvider('test-category'),
-          (_, __) {},
-          fireImmediately: true,
-        );
+          // Keep provider alive during async streaming
+          final keepAlive = container.listen(
+            chatSessionControllerProvider('test-category'),
+            (_, __) {},
+            fireImmediately: true,
+          );
 
-        final controller = container.read(
-          chatSessionControllerProvider('test-category').notifier,
-        );
-        await controller.initializeSession();
-        await controller.setModel('model-1');
+          final controller = container.read(
+            chatSessionControllerProvider('test-category').notifier,
+          );
+          // Run async init steps deterministically
+          // ignore: cascade_invocations
+          controller.initializeSession();
+          async.flushMicrotasks();
+          controller.setModel('model-1');
+          async.flushMicrotasks();
 
-        // Start streaming (do not await to keep stream open)
-        // ignore: unawaited_futures
-        controller.sendMessage('Hello');
-        await Future<void>.delayed(Duration.zero);
+          // Start streaming (do not await to keep stream open)
+          controller.sendMessage('Hello');
+          async.flushMicrotasks();
 
-        // Visible segments: text, then whitespace+newline, then heading start
-        streamController.add('Intro');
-        await Future<void>.delayed(Duration.zero);
-        streamController.add(' \n');
-        await Future<void>.delayed(Duration.zero);
-        streamController.add('# Title');
-        await streamController.close();
-        await Future<void>.delayed(Duration.zero);
+          // Visible segments: text, then whitespace+newline, then heading start
+          streamController.add('Intro');
+          async.flushMicrotasks();
+          streamController.add(' \n');
+          async.flushMicrotasks();
+          streamController.add('# Title');
+          // Close and flush delivery
+          // ignore: cascade_invocations
+          streamController.close();
+          async.flushMicrotasks();
 
-        final state = container.read(
-          chatSessionControllerProvider('test-category'),
-        );
-        final assistant = state.messages.last;
+          final state = container.read(
+            chatSessionControllerProvider('test-category'),
+          );
+          final assistant = state.messages.last;
 
-        // The controller should have upgraded the soft break to a blank line
-        // before the heading so Markdown recognizes the header properly.
-        expect(assistant.content.contains('\n\n# Title'), isTrue);
-        // Close the listen subscriptions
-        sbSubscription.close();
-        keepAlive.close();
+          // The controller should have upgraded the soft break to a blank line
+          // before the heading so Markdown recognizes the header properly.
+          expect(assistant.content.contains('\n\n# Title'), isTrue);
+          // Close the listen subscriptions
+          sbSubscription.close();
+          keepAlive.close();
+        });
       });
       test('does not send empty messages', () async {
         final controller = container.read(

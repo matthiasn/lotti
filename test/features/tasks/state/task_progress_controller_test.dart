@@ -188,11 +188,26 @@ void main() {
       ),
     ).thenReturn(updatedProgress);
 
-    // Trigger update notification with the test task ID
-    updateStreamController.add({'entry2'});
+    // Listen for the updated state
+    final updated = Completer<void>();
+    final sub = container.listen(
+      taskProgressControllerProvider(id: testTaskId),
+      (_, next) {
+        if (!updated.isCompleted && next.value == updatedProgress) {
+          updated.complete();
+        }
+      },
+    );
 
-    // Allow the async operations to complete
-    await Future<void>.delayed(Duration.zero);
+    // Trigger update notification with the changed entry id
+    updateStreamController.add({'entry2'});
+    try {
+      await updated.future.timeout(const Duration(seconds: 1));
+    } on TimeoutException {
+      fail('Timed out waiting for updated task progress state');
+    } finally {
+      sub.close();
+    }
 
     // Verify the data was fetched again and state updated
     verify(() => mockRepository.getTaskProgressData(id: testTaskId)).called(1);
@@ -246,8 +261,6 @@ void main() {
 
     // Emit a journal entity from the time service
     timeServiceStreamController.add(testJournalEntity);
-
-    // Allow the async operations to complete
     await Future<void>.delayed(Duration.zero);
 
     // Ensure the state was updated
@@ -281,8 +294,6 @@ void main() {
 
     // Emit a journal entity from the time service
     timeServiceStreamController.add(testJournalEntity);
-
-    // Allow the async operations to complete
     await Future<void>.delayed(Duration.zero);
 
     // Verify getTaskProgress is never called when task ID doesn't match
@@ -328,7 +339,7 @@ void main() {
     // Emit events that would normally trigger updates
     updateStreamController.add({testTaskId});
 
-    // Allow the async operations to complete
+    // Allow the async operations to complete deterministically
     await Future<void>.delayed(Duration.zero);
 
     // Verify no further repository calls were made after disposal

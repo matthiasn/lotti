@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
@@ -645,47 +646,72 @@ void main() {
         );
       });
 
-      test('handles timeout for image analysis', () async {
-        // Arrange
-        const prompt = 'Analyze this image';
-        const images = [testImage];
-        const temperature = 0.7;
+      test('handles timeout for image analysis', () {
+        fakeAsync((async) {
+          // Arrange
+          const prompt = 'Analyze this image';
+          const images = [testImage];
+          const temperature = 0.7;
 
-        // Mock warm-up call
-        when(() => mockHttpClient.post(any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'))).thenAnswer(
-          (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
-        );
+          // Mock warm-up call (returns quickly)
+          when(() => mockHttpClient.post(any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'))).thenAnswer(
+            (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
+          );
 
-        // Mock generate call with delayed response
-        final mockResponse = MockStreamedResponse();
-        when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              () async* {
-                await Future<void>.delayed(const Duration(milliseconds: 100));
-                yield utf8
-                    .encode('{"message":{"content":"result"},"done":true}\n');
-              }(),
-            ));
+          // Simulate the HTTP send exceeding the image-analysis timeout on each retry.
+          when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+            await Future<void>.delayed(
+              const Duration(seconds: ollamaImageAnalysisTimeoutSeconds + 1),
+            );
+            return MockStreamedResponse(); // never reached before timeout
+          });
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+          // Remove backoff to keep time math simple under fake clock
+          final prevDelay = OllamaInferenceRepository.retryBaseDelay;
+          OllamaInferenceRepository.retryBaseDelay = Duration.zero;
 
-        // Act & Assert - should not throw due to timeout handling
-        final result = await repository
-            .generateWithImages(
-              prompt,
-              model: modelName,
-              temperature: temperature,
-              baseUrl: baseUrl,
-              apiKey: '',
-              images: images,
-              provider: ollamaProvider,
-            )
-            .toList();
+          final received = <dynamic>[];
+          final errors = <Object>[];
+          final done = Completer<void>();
 
-        expect(result, isNotEmpty);
+          repository
+              .generateWithImages(
+            prompt,
+            model: modelName,
+            temperature: temperature,
+            baseUrl: baseUrl,
+            apiKey: '',
+            images: images,
+            provider: ollamaProvider,
+          )
+              .listen(
+            received.add,
+            onError: (Object e, StackTrace st) {
+              errors.add(e);
+              if (!done.isCompleted) done.complete();
+            },
+            onDone: () {
+              if (!done.isCompleted) done.complete();
+            },
+          );
+
+          // Advance fake time past 3x timeout (3 attempts) plus epsilon
+          const totalSeconds = (ollamaImageAnalysisTimeoutSeconds * 3) + 1;
+          async
+            ..elapse(const Duration(seconds: totalSeconds))
+            ..flushMicrotasks();
+
+          // Assert the timeout path deterministically
+          expect(done.isCompleted, isTrue);
+          expect(received, isEmpty);
+          expect(errors, isNotEmpty);
+          expect(errors.first.toString(), contains('timed out'));
+
+          // Restore retry delay
+          OllamaInferenceRepository.retryBaseDelay = prevDelay;
+        });
       });
     });
 

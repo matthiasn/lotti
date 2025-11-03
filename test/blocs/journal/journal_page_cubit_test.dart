@@ -584,7 +584,7 @@ void main() {
       final cubit = JournalPageCubit(showTasks: false);
 
       // Wait for initialization
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
       final initialCount = refreshCallCount; // may perform >1 initial fetches
 
       // First, simulate being invisible
@@ -592,7 +592,7 @@ void main() {
         const MockVisibilityInfo(visibleBounds: Rect.zero),
       );
 
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       // Count should remain unchanged (no refresh when invisible)
       expect(refreshCallCount, equals(initialCount));
@@ -605,7 +605,7 @@ void main() {
       );
 
       // Wait for the refresh to complete
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       // Should have increased by exactly 1 due to visibility change
       expect(refreshCallCount, equals(initialCount + 1));
@@ -853,7 +853,7 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Emit initial flags with Events enabled
       flagController.add({enableEventsFlag, enableHabitsPageFlag});
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       // User selects partial types: Task, JournalEvent, JournalAudio
       cubit
@@ -862,7 +862,7 @@ class MockVisibilityInfo extends VisibilityInfo {
         ..toggleSelectedEntryTypes('JournalEvent')
         ..toggleSelectedEntryTypes('JournalAudio');
 
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       // Verify partial selection
       expect(cubit.state.selectedEntryTypes.contains('Task'), isTrue);
@@ -872,7 +872,7 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Toggle Events flag OFF
       flagController.add({enableHabitsPageFlag});
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       // Assert: JournalEvent removed, Task and JournalAudio remain
       expect(cubit.state.selectedEntryTypes.contains('JournalEvent'), isFalse);
@@ -914,11 +914,11 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Initial: All flags enabled
       flagController.add({enableEventsFlag, enableHabitsPageFlag, enableDashboardsPageFlag});
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       // User selects all available types
       cubit.selectAllEntryTypes(entryTypes);
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       final initialCount = cubit.state.selectedEntryTypes.length;
       expect(initialCount, greaterThan(0));
@@ -927,7 +927,7 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Toggle Dashboards flag OFF (removes MeasurementEntry, QuantitativeEntry)
       flagController.add({enableEventsFlag, enableHabitsPageFlag});
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       // Assert: User had everything selected, so keep everything that's still allowed
       expect(cubit.state.selectedEntryTypes.contains('MeasurementEntry'), isFalse);
@@ -969,16 +969,16 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Initial: No flags enabled, empty selection
       flagController.add(<String>{});
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       cubit.clearSelectedEntryTypes();
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       expect(cubit.state.selectedEntryTypes, isEmpty);
 
       // Toggle Events flag ON
       flagController.add({enableEventsFlag});
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       // Assert: Empty selection means select all newly allowed types
       expect(cubit.state.selectedEntryTypes.isNotEmpty, isTrue);
@@ -1015,10 +1015,10 @@ class MockVisibilityInfo extends VisibilityInfo {
 
       // Initial: All flags enabled
       flagController.add({enableEventsFlag, enableHabitsPageFlag, enableDashboardsPageFlag});
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       cubit.selectAllEntryTypes(entryTypes);
-      await Future<void>.delayed(defaultWait);
+      await Future<void>(() {});
 
       expect(cubit.state.selectedEntryTypes.contains('JournalEvent'), isTrue);
       expect(cubit.state.selectedEntryTypes.contains('HabitCompletionEntry'), isTrue);

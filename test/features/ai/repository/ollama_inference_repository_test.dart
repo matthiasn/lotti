@@ -22,6 +22,13 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakeRequest());
     registerFallbackValue(Uri.parse('http://localhost:11434'));
+    // Use zero retry delay across this file to avoid real-time backoffs
+    OllamaInferenceRepository.retryBaseDelay = Duration.zero;
+  });
+
+  tearDownAll(() {
+    // Restore default for other suites
+    OllamaInferenceRepository.retryBaseDelay = const Duration(seconds: 2);
   });
 
   setUp(() {

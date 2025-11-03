@@ -12,6 +12,7 @@ IOS_EXPORT_PATH = ./build/ios/export
 MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
 MACOS_EXPORT_PATH = ./build/macos/export
 LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
+THRESH ?= 1000
 
 .PHONY: test
 test:
@@ -24,6 +25,12 @@ analyze:
 .PHONY: junit_test
 junit_test:
 	$(FLUTTER_CMD) test --coverage --reporter json > TEST-report.jsonl
+
+.PHONY: slow_boundaries
+slow_boundaries: deps
+	@mkdir -p reports
+	$(FLUTTER_CMD) test -r json --file-reporter json:reports/tests.json
+	dart run test/tool/analyze_test_timings.dart reports/tests.json $(THRESH)
 
 .PHONY: junit_upload
 junit_upload:

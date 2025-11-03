@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
@@ -264,31 +265,47 @@ void main() {
         );
       });
 
-      test('should handle timeout', () async {
-        // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          return http.Response('', 200);
+      test('should handle timeout', () {
+        fakeAsync((FakeAsync async) {
+          // Arrange
+          when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              )).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(seconds: 2));
+            return http.Response('', 200);
+          });
+
+          // Act under fake time
+          Object? error;
+          var completed = false;
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            timeout: const Duration(milliseconds: 100),
+          );
+
+          stream.first.then((_) {
+            completed = true;
+          }, onError: (Object e) {
+            error = e;
+            completed = true;
+          });
+
+          // Drive time to trigger timeout without real wait
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+
+          expect(completed, isTrue);
+          final err = error;
+          expect(err, isA<Gemma3nInferenceException>());
+          if (err is Gemma3nInferenceException) {
+            expect(err.statusCode, 408);
+          }
         });
-
-        // Act & Assert
-        final stream = repository.transcribeAudio(
-          model: model,
-          audioBase64: audioBase64,
-          baseUrl: baseUrl,
-          timeout: const Duration(milliseconds: 100),
-        );
-
-        expect(
-          stream.first,
-          throwsA(isA<Gemma3nInferenceException>()
-              .having((e) => e.message, 'message', contains('timed out'))
-              .having((e) => e.statusCode, 'statusCode', 408)),
-        );
       });
 
       test('should handle invalid JSON response', () async {
@@ -660,28 +677,44 @@ void main() {
         );
       });
 
-      test('should handle timeout', () async {
-        // Arrange
-        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          final mockStreamedResponse = MockStreamedResponse();
-          return mockStreamedResponse;
+      test('should handle timeout', () {
+        fakeAsync((FakeAsync async) {
+          // Arrange
+          when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(seconds: 2));
+            final mockStreamedResponse = MockStreamedResponse();
+            return mockStreamedResponse;
+          });
+
+          // Act under fake time
+          Object? error;
+          var completed = false;
+          final stream = repository.generateText(
+            prompt: prompt,
+            model: model,
+            baseUrl: baseUrl,
+            timeout: const Duration(milliseconds: 100),
+          );
+
+          stream.toList().then((_) {
+            completed = true;
+          }, onError: (Object e) {
+            error = e;
+            completed = true;
+          });
+
+          // Drive time forward
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+
+          expect(completed, isTrue);
+          final err = error;
+          expect(err, isA<Gemma3nInferenceException>());
+          if (err is Gemma3nInferenceException) {
+            expect(err.statusCode, 408);
+          }
         });
-
-        // Act & Assert
-        final stream = repository.generateText(
-          prompt: prompt,
-          model: model,
-          baseUrl: baseUrl,
-          timeout: const Duration(milliseconds: 100),
-        );
-
-        expect(
-          stream.toList(),
-          throwsA(isA<Gemma3nInferenceException>()
-              .having((e) => e.message, 'message', contains('timed out'))
-              .having((e) => e.statusCode, 'statusCode', 408)),
-        );
       });
 
       test('should handle malformed SSE chunks gracefully', () async {

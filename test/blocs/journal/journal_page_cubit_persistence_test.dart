@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -252,7 +253,7 @@ void main() {
         final cubit = JournalPageCubit(showTasks: false);
 
         // Yield to allow async loading completion
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Verify only categories loaded (no task statuses)
         expect(cubit.state.selectedCategoryIds, {'cat3', 'cat4'});
@@ -265,7 +266,7 @@ void main() {
         expect(cubit.state.selectedPriorities, isEmpty);
 
         await cubit.close();
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
       });
 
       test('falls back to legacy key when per-tab key missing (migration)',
@@ -280,14 +281,14 @@ void main() {
 
         // Create cubit (should fall back to legacy key)
         final cubit = JournalPageCubit(showTasks: true);
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
 
         // Verify data loaded from legacy key
         expect(cubit.state.selectedCategoryIds, {'legacy1', 'legacy2'});
         expect(cubit.state.selectedTaskStatuses, {'BLOCKED'});
 
         await cubit.close();
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>(() {});
       });
 
       test('returns early when no keys exist', () async {

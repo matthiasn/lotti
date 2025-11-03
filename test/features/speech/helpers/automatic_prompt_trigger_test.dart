@@ -614,7 +614,7 @@ void main() {
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
             ).overrideWith((ref) async {
-              await Future<void>.delayed(const Duration(milliseconds: 100));
+              await Future<void>.delayed(Duration.zero);
               transcriptionCompleted = true;
               transcriptionCompleter.complete();
             }),
@@ -706,7 +706,7 @@ void main() {
               entityId: taskId,
               promptId: checklistPromptId,
             ).overrideWith((ref) async {
-              await Future<void>.delayed(const Duration(milliseconds: 100));
+              await Future<void>(() {});
               checklistCompleted = true;
               checklistCompleter.complete();
             }),
@@ -803,7 +803,7 @@ void main() {
               linkedEntityId: taskId,
             ).overrideWith((ref) async {
               executionOrder.add('transcription-start');
-              await Future<void>.delayed(const Duration(milliseconds: 50));
+              await Future<void>.delayed(Duration.zero);
               transcriptionCompleted = true;
               executionOrder.add('transcription-end');
             }),
@@ -813,7 +813,7 @@ void main() {
             ).overrideWith((ref) async {
               executionOrder.add('checklist-start');
               expect(transcriptionCompleted, isTrue);
-              await Future<void>.delayed(const Duration(milliseconds: 50));
+              await Future<void>.delayed(Duration.zero);
               checklistCompleted = true;
               executionOrder.add('checklist-end');
             }),
@@ -823,7 +823,7 @@ void main() {
             ).overrideWith((ref) async {
               executionOrder.add('summary-start');
               expect(checklistCompleted, isTrue);
-              await Future<void>.delayed(const Duration(milliseconds: 50));
+              await Future<void>.delayed(Duration.zero);
               taskSummaryCompleted = true;
               executionOrder.add('summary-end');
             }),
@@ -1255,7 +1255,7 @@ void main() {
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
             ).overrideWith((ref) async {
-              await Future<void>.delayed(const Duration(milliseconds: 50));
+              await Future<void>(() {});
               transcriptionCompleted = true;
             }),
           ],
@@ -1356,14 +1356,14 @@ void main() {
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
             ).overrideWith((ref) async {
-              await Future<void>.delayed(const Duration(milliseconds: 50));
+              await Future<void>(() {});
               transcriptionCompleted = true;
             }),
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
             ).overrideWith((ref) async {
-              await Future<void>.delayed(const Duration(milliseconds: 50));
+              await Future<void>(() {});
               checklistCompleted = true;
             }),
           ],
@@ -1490,13 +1490,13 @@ void main() {
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
             ).overrideWith((ref) async {
-              await Future<void>.delayed(const Duration(milliseconds: 30));
+              await Future<void>(() {});
             }),
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
             ).overrideWith((ref) async {
-              await Future<void>.delayed(const Duration(milliseconds: 50));
+              await Future<void>(() {});
               checklistCompleted = true;
             }),
             triggerNewInferenceProvider(

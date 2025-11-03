@@ -232,7 +232,6 @@ void main() {
 
         // Simulate the full lifecycle
         onStatusChange(InferenceStatus.running);
-        await Future<void>.delayed(const Duration(milliseconds: 20));
         onStatusChange(InferenceStatus.idle);
       });
 
@@ -244,8 +243,22 @@ void main() {
           linkedEntityId: linkedTaskId,
         ).future,
       );
-
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Wait deterministically until both entities observed idle
+      final done = Completer<void>();
+      final timer = Timer.periodic(const Duration(milliseconds: 1), (t) {
+        if (mainEntityStatuses.contains(InferenceStatus.idle) &&
+            linkedEntityStatuses.contains(InferenceStatus.idle)) {
+          t.cancel();
+          if (!done.isCompleted) done.complete();
+        }
+      });
+      try {
+        await done.future.timeout(const Duration(seconds: 1));
+      } on TimeoutException {
+        fail('Timed out waiting for both entities to reach idle status');
+      } finally {
+        timer.cancel();
+      }
 
       // Assert - both entities should have the same status sequence
       expect(mainEntityStatuses, contains(InferenceStatus.running));
@@ -324,7 +337,7 @@ void main() {
         ).future,
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await Future<void>(() {});
 
       // Assert
       expect(mainEntityErrorStatus, true);
@@ -378,7 +391,7 @@ void main() {
           executionOrder.add('ASR_START');
           onStatusChange(InferenceStatus.running);
           onProgress('Transcribing audio...');
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await Future<void>(() {});
           onProgress('Transcription complete: "Hello world"');
           onStatusChange(InferenceStatus.idle);
           executionOrder.add('ASR_COMPLETE');

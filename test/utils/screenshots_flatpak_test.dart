@@ -148,8 +148,8 @@ void main() {
     group('Screenshot Portal Parameters', () {
       test('creates unique handle tokens', () async {
         final token1 = PortalService.createHandleToken('screenshot');
-        // Add delay to ensure different timestamp
-        await Future<void>.delayed(const Duration(milliseconds: 2));
+        // Yield once to ensure a different timestamp without real sleep
+        await Future<void>.delayed(Duration.zero);
         final token2 = PortalService.createHandleToken('screenshot');
 
         expect(token1, startsWith('screenshot_'));

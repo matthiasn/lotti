@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -147,41 +148,48 @@ void main() {
   });
 
   test('concurrent start attempts are rejected', () async {
-    final mockRecorder = _MockAudioRecorder();
-    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
-    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
-    final gate = Completer<void>();
-    when(() => mockRecorder.start(any<record.RecordConfig>(),
-        path: any(named: 'path'))).thenAnswer((_) => gate.future);
-    // Emit amplitude events so state changes to recording
-    when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-      (_) => Stream.periodic(
-        const Duration(milliseconds: 50),
-        (_) => record.Amplitude(current: -40, max: -30),
-      ).take(5),
-    );
+    // Use fake time to avoid real waits
+    fakeAsync((FakeAsync async) {
+      final mockRecorder = _MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      final gate = Completer<void>();
+      when(() => mockRecorder.start(any<record.RecordConfig>(),
+          path: any(named: 'path'))).thenAnswer((_) => gate.future);
+      // Emit amplitude events so state changes to recording
+      when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
+        (_) => Stream<record.Amplitude>.fromIterable(
+          List.filled(5, record.Amplitude(current: -40, max: -30)),
+        ),
+      );
 
-    final container = ProviderContainer(overrides: [
-      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
-            recorderFactory: () => mockRecorder,
-            tempDirectoryProvider: () async => Directory.systemTemp,
-            config: const ChatRecorderConfig(maxSeconds: 2),
-          )),
-    ]);
-    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final container = ProviderContainer(overrides: [
+        chatRecorderControllerProvider
+            .overrideWith(() => ChatRecorderController(
+                  recorderFactory: () => mockRecorder,
+                  tempDirectoryProvider: () async => Directory.systemTemp,
+                  config: const ChatRecorderConfig(maxSeconds: 2),
+                )),
+      ]);
+      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
 
-    final sub2 = container.listen(chatRecorderControllerProvider, (_, __) {});
-    addTearDown(sub2.close);
-    final controller = container.read(chatRecorderControllerProvider.notifier);
-    unawaited(controller.start());
-    await controller.start();
-    final state = container.read(chatRecorderControllerProvider);
-    expect(state.errorType, ChatRecorderErrorType.concurrentOperation);
-    gate.complete();
-    // Wait for first start to finish
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    sub.close();
-    container.dispose();
+      final sub2 = container.listen(chatRecorderControllerProvider, (_, __) {});
+      final controller =
+          container.read(chatRecorderControllerProvider.notifier);
+      unawaited(controller.start());
+      // Second start should trigger concurrent operation error
+      controller.start();
+      async.flushMicrotasks();
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.errorType, ChatRecorderErrorType.concurrentOperation);
+      gate.complete();
+      // Allow the first start() to complete deterministically
+      async.elapse(const Duration(milliseconds: 10));
+      async.flushMicrotasks();
+      sub.close();
+      sub2.close();
+      container.dispose();
+    });
   });
 
   test('transcription failures surface friendly error', () async {
@@ -226,10 +234,9 @@ void main() {
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
     // Emit amplitude events so state changes to recording
     when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
-      (_) => Stream.periodic(
-        const Duration(milliseconds: 50),
-        (_) => record.Amplitude(current: -40, max: -30),
-      ).take(5),
+      (_) => Stream<record.Amplitude>.fromIterable(
+        List.filled(5, record.Amplitude(current: -40, max: -30)),
+      ),
     );
 
     final mockCloud = _MockCloudInferenceRepository();
