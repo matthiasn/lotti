@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -176,7 +177,8 @@ void main() {
       container.dispose();
     });
 
-    test('status updates propagate to both main and linked entities', () async {
+    test('status updates propagate to both main and linked entities', () {
+      fakeAsync((async) {
       // Arrange
       const audioEntryId = 'audio-123';
       const linkedTaskId = 'task-456';
@@ -235,30 +237,22 @@ void main() {
         onStatusChange(InferenceStatus.idle);
       });
 
-      // Act
-      await container.read(
-        triggerNewInferenceProvider(
-          entityId: audioEntryId,
-          promptId: asrPromptId,
-          linkedEntityId: linkedTaskId,
-        ).future,
-      );
-      // Wait deterministically until both entities observed idle
-      final done = Completer<void>();
-      final timer = Timer.periodic(const Duration(milliseconds: 1), (t) {
-        if (mainEntityStatuses.contains(InferenceStatus.idle) &&
-            linkedEntityStatuses.contains(InferenceStatus.idle)) {
-          t.cancel();
-          if (!done.isCompleted) done.complete();
-        }
-      });
-      try {
-        await done.future.timeout(const Duration(seconds: 1));
-      } on TimeoutException {
-        fail('Timed out waiting for both entities to reach idle status');
-      } finally {
-        timer.cancel();
-      }
+      // Act: run the provider and drive fake time deterministically
+      var finished = false;
+      container
+          .read(
+            triggerNewInferenceProvider(
+              entityId: audioEntryId,
+              promptId: asrPromptId,
+              linkedEntityId: linkedTaskId,
+            ).future,
+          )
+          .then((_) => finished = true);
+
+      async
+        ..flushMicrotasks()
+        ..elapse(const Duration(milliseconds: 1))
+        ..flushMicrotasks();
 
       // Assert - both entities should have the same status sequence
       expect(mainEntityStatuses, contains(InferenceStatus.running));
@@ -272,6 +266,8 @@ void main() {
       expect(mainSequence, equals(linkedSequence));
 
       container.dispose();
+      expect(finished, isTrue);
+      });
     });
 
     test('error status propagates to linked entity on failure', () async {
