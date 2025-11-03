@@ -11,7 +11,7 @@ import 'dart:io';
 void main(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln(
-        'Usage: dart run tool/analyze_test_timings.dart <jsonFile> [thresholdMs]');
+        'Usage: dart run test/tool/analyze_test_timings.dart <jsonFile> [thresholdMs]');
     exitCode = 64;
     return;
   }

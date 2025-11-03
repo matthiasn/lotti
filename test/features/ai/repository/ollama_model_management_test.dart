@@ -657,6 +657,9 @@ void main() {
       });
 
       test('handles timeout for image analysis', () {
+        // Ensure retryBaseDelay is always restored even if the test fails
+        final prevDelay = OllamaInferenceRepository.retryBaseDelay;
+        addTearDown(() => OllamaInferenceRepository.retryBaseDelay = prevDelay);
         fakeAsync((async) {
           // Arrange
           const prompt = 'Analyze this image';
@@ -679,7 +682,6 @@ void main() {
           });
 
           // Remove backoff to keep time math simple under fake clock
-          final prevDelay = OllamaInferenceRepository.retryBaseDelay;
           OllamaInferenceRepository.retryBaseDelay = Duration.zero;
 
           final received = <dynamic>[];
@@ -721,9 +723,6 @@ void main() {
           expect(received, isEmpty);
           expect(errors, isNotEmpty);
           expect(errors.first.toString(), contains('timed out'));
-
-          // Restore retry delay
-          OllamaInferenceRepository.retryBaseDelay = prevDelay;
         });
       });
     });

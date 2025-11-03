@@ -8,9 +8,9 @@ class RetryPumpPlan {
 
   final List<Duration> steps;
 
-  Duration get total =>
-      steps.fold(Duration.zero, (acc, d) => acc + d);
+  Duration get total => steps.fold(Duration.zero, (acc, d) => acc + d);
 }
+
 /// Builds a retry pump plan mirroring exponential backoff behavior for
 /// widget tests. Use with [WidgetTesterPumpRetryX.pumpRetryPlan].
 RetryPumpPlan buildRetryBackoffPumpPlan({
