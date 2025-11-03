@@ -67,6 +67,7 @@ class ThemingCubit extends Cubit<ThemingState> {
     _tooltipSubscription =
         getIt<JournalDb>().watchConfigFlag(enableTooltipFlag).listen(
       (enableTooltips) {
+        if (_isClosing || isClosed) return;
         _enableTooltips = enableTooltips;
         emitState();
       },
