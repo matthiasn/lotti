@@ -106,7 +106,7 @@ void main() {
         );
 
         // Verify logging was called (yield to allow stream dispatch)
-        await Future<void>(() {});
+        await Future<void>.delayed(Duration.zero);
         verify(() => mockLoggingService.captureEvent(
               'Starting chat message processing',
               domain: 'ChatRepository',
@@ -135,7 +135,7 @@ void main() {
         );
 
         // Give the async operations a yield to complete
-        await Future<void>(() {});
+        await Future<void>.delayed(Duration.zero);
 
         // Verify error logging
         verify(() => mockLoggingService.captureException(

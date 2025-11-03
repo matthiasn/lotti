@@ -115,7 +115,7 @@ void main() {
       shadowMode: false,
     );
     // Allow asynchronous stream delivery
-    await Future<void>(() {});
+    await Future<void>.delayed(Duration.zero);
     await sub.cancel();
 
     // Even if persistence fails, current behavior publishes event and records rate limit

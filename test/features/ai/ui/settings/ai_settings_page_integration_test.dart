@@ -7,10 +7,7 @@ import '../../test_utils.dart';
 
 void main() {
   group('AiSettingsPage Integration Tests', () {
-    tearDown(() async {
-      // Ensure all timers are disposed after each test
-      await Future<void>(() {});
-    });
+    // No per-test teardown needed; widget tests use pump/pumpAndSettle.
     late List<AiConfig> testConfigs;
 
     setUp(() {

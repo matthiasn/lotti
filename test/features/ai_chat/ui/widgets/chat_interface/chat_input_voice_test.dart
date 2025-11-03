@@ -316,8 +316,6 @@ class _FakeChatRecorderController extends ChatRecorderController {
   @override
   Future<void> stopAndTranscribe() async {
     state = state.copyWith(status: ChatRecorderStatus.processing);
-    // Yield once to simulate async processing without real sleep
-    await Future<void>(() {});
     state = const ChatRecorderState(
       status: ChatRecorderStatus.idle,
       amplitudeHistory: <double>[],

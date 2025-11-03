@@ -180,7 +180,7 @@ void main() {
       addTearDown(container.dispose);
 
       // Yield once for initial load (no real wait)
-      await Future<void>(() {});
+      await Future<void>.delayed(Duration.zero);
 
       final controller =
           container.read(categoriesListControllerProvider.notifier);

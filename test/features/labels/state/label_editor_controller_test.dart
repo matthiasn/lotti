@@ -1,5 +1,6 @@
 // ignore_for_file: cascade_invocations
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -335,37 +336,41 @@ void main() {
     expect(state.errorMessage, contains('must not be empty'));
   });
 
-  test('isSaving toggles during successful save', () async {
-    when(() => repository.getAllLabels()).thenAnswer((_) async => []);
-    when(
-      () => repository.createLabel(
-        name: any(named: 'name'),
-        color: any(named: 'color'),
-        description: any(named: 'description'),
-        private: any(named: 'private'),
-        applicableCategoryIds: any(named: 'applicableCategoryIds'),
-      ),
-    ).thenAnswer((_) async => testLabelDefinition1);
+  test('isSaving toggles during successful save', () {
+    fakeAsync((async) {
+      when(() => repository.getAllLabels()).thenAnswer((_) async => []);
+      when(
+        () => repository.createLabel(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          description: any(named: 'description'),
+          private: any(named: 'private'),
+          applicableCategoryIds: any(named: 'applicableCategoryIds'),
+        ),
+      ).thenAnswer((_) async => testLabelDefinition1);
 
-    final provider = labelEditorControllerProvider(const LabelEditorArgs());
-    final notifier = container.read(provider.notifier);
-    notifier.setName('Ok');
+      final provider = labelEditorControllerProvider(const LabelEditorArgs());
+      final notifier = container.read(provider.notifier);
+      notifier.setName('Ok');
 
-    // Start save but observe state around it
-    final future = notifier.save();
-    var midState = container.read(provider);
-    // Either immediately or shortly after, isSaving should true
-    if (!midState.isSaving) {
-      // allow microtask to process
-      await Future<void>(() {});
-      midState = container.read(provider);
-    }
-    expect(midState.isSaving, isTrue);
+      // Start save but observe state around it
+      final future = notifier.save();
+      var midState = container.read(provider);
+      // Either immediately or shortly after, isSaving should be true
+      if (!midState.isSaving) {
+        async.flushMicrotasks();
+        midState = container.read(provider);
+      }
+      expect(midState.isSaving, isTrue);
 
-    final res = await future;
-    expect(res, isNotNull);
-    final endState = container.read(provider);
-    expect(endState.isSaving, isFalse);
+      var completed = false;
+      future.then((value) => completed = true);
+      // Allow the async save to complete deterministically
+      async.flushMicrotasks();
+      expect(completed, isTrue);
+      final endState = container.read(provider);
+      expect(endState.isSaving, isFalse);
+    });
   });
 
   test('save handles repository errors gracefully', () async {

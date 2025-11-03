@@ -614,7 +614,7 @@ void main() {
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
             ).overrideWith((ref) async {
-              await Future<void>(() {});
+              await Future<void>.delayed(Duration.zero);
               transcriptionCompleted = true;
               transcriptionCompleter.complete();
             }),
@@ -803,7 +803,7 @@ void main() {
               linkedEntityId: taskId,
             ).overrideWith((ref) async {
               executionOrder.add('transcription-start');
-              await Future<void>(() {});
+              await Future<void>.delayed(Duration.zero);
               transcriptionCompleted = true;
               executionOrder.add('transcription-end');
             }),
@@ -813,7 +813,7 @@ void main() {
             ).overrideWith((ref) async {
               executionOrder.add('checklist-start');
               expect(transcriptionCompleted, isTrue);
-              await Future<void>(() {});
+              await Future<void>.delayed(Duration.zero);
               checklistCompleted = true;
               executionOrder.add('checklist-end');
             }),
@@ -823,7 +823,7 @@ void main() {
             ).overrideWith((ref) async {
               executionOrder.add('summary-start');
               expect(checklistCompleted, isTrue);
-              await Future<void>(() {});
+              await Future<void>.delayed(Duration.zero);
               taskSummaryCompleted = true;
               executionOrder.add('summary-end');
             }),

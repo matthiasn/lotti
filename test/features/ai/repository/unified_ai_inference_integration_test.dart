@@ -1365,7 +1365,7 @@ AiConfigInferenceProvider _createProvider({required String id}) {
 /// Creates a delayed stream to simulate real AI processing time
 Stream<CreateChatCompletionStreamResponse> _createDelayedStream(
   List<String> chunks, {
-  int delayMs = 0,
+  int delayMs = 100,
 }) async* {
   for (final chunk in chunks) {
     await Future<void>.delayed(Duration(milliseconds: delayMs));

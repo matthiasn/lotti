@@ -232,7 +232,7 @@ void main() {
 
         // Simulate the full lifecycle
         onStatusChange(InferenceStatus.running);
-        await Future<void>(() {});
+        await Future<void>.delayed(Duration.zero);
         onStatusChange(InferenceStatus.idle);
       });
 
@@ -245,7 +245,7 @@ void main() {
         ).future,
       );
 
-      await Future<void>(() {});
+      await Future<void>.delayed(Duration.zero);
 
       // Assert - both entities should have the same status sequence
       expect(mainEntityStatuses, contains(InferenceStatus.running));

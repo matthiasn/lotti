@@ -62,7 +62,7 @@ void main() {
     logging = getIt<LoggingService>();
     logging.listenToConfigFlag();
     // Allow the stream microtask to flip the internal flag
-    await Future<void>(() {});
+    await Future<void>.delayed(Duration.zero);
   });
 
   test('captureEvent writes to DB and file when enabled', () async {
@@ -75,7 +75,7 @@ void main() {
     );
 
     // Yield to allow async sinks to complete
-    await Future<void>(() {});
+    await Future<void>.delayed(Duration.zero);
 
     verify(() => loggingDb.log(any(that: isA<LogEntry>())))
         .called(greaterThanOrEqualTo(1));
@@ -103,7 +103,7 @@ void main() {
       subDomain: 'watchdog',
     );
 
-    await Future<void>(() {});
+    await Future<void>.delayed(Duration.zero);
 
     final logPath = p.join(
       tempDocs.path,
@@ -128,7 +128,7 @@ void main() {
       stackTrace: StackTrace.current,
     );
 
-    await Future<void>(() {});
+    await Future<void>.delayed(Duration.zero);
 
     verify(() => loggingDb.log(any(that: isA<LogEntry>()))).called(1);
 
@@ -151,7 +151,7 @@ void main() {
       stackTrace: 'trace',
     );
 
-    await Future<void>(() {});
+    await Future<void>.delayed(Duration.zero);
 
     final content = File(p.join(
       tempDocs.path,

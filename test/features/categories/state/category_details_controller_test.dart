@@ -745,7 +745,7 @@ void main() {
 
       // Add a value and yield once to ensure subscription is active (no real wait)
       streamController.add(CategoryTestUtils.createTestCategory());
-      await Future<void>(() {});
+      await Future<void>.delayed(Duration.zero);
 
       // Dispose the controller
       container.dispose();

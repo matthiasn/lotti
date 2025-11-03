@@ -191,7 +191,7 @@ void main() {
       build: () => _TestJournalPageCubit(showTasks: false),
       act: (cubit) async {
         await cubit.toggleSelectedLabelId('label-A');
-        await Future<void>(() {});
+        await Future<void>.delayed(defaultWait);
         await cubit.toggleSelectedLabelId('label-A');
       },
       wait: const Duration(milliseconds: 300),
@@ -207,7 +207,7 @@ void main() {
       act: (cubit) async {
         await cubit.toggleSelectedLabelId('label-A');
         await cubit.toggleSelectedLabelId('label-B');
-        await Future<void>(() {});
+        await Future<void>.delayed(defaultWait);
         await cubit.clearSelectedLabelIds();
       },
       wait: const Duration(milliseconds: 300),

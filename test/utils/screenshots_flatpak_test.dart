@@ -149,7 +149,7 @@ void main() {
       test('creates unique handle tokens', () async {
         final token1 = PortalService.createHandleToken('screenshot');
         // Yield once to ensure a different timestamp without real sleep
-        await Future<void>(() {});
+        await Future<void>.delayed(Duration.zero);
         final token2 = PortalService.createHandleToken('screenshot');
 
         expect(token1, startsWith('screenshot_'));

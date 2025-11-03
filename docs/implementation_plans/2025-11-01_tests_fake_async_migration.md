@@ -230,6 +230,8 @@ Duration.zero conversions
 - Replace `await Future.delayed(Duration.zero)` with `async.flushMicrotasks()` in unit/service
   tests, or with `await tester.pump()` in widget tests. Add a brief comment:
   `// Yield to microtasks queued by SUT`.
+- Do not use `await Future<void>(() {})` as a yield; it is not deterministic and deviates from the
+  fake time strategy.
 
 ## Testing & Verification
 
@@ -438,7 +440,7 @@ Additional unit/service tests to migrate (contains real `Future.delayed`)
 AI repositories and controllers (unit/service; convert to fake time)
 
 - [x] test/features/ai/repository/gemma3n_inference_repository_test.dart
-- [ ] test/features/ai/repository/ollama_model_management_test.dart
+- [x] test/features/ai/repository/ollama_model_management_test.dart
 - [x] test/features/ai/repository/unified_ai_inference_integration_test.dart (keep real I/O; only fake
   pure waits)
 - [x] test/features/ai/repository/unified_ai_inference_repository_test.dart
@@ -458,6 +460,76 @@ AI UI and widget tests (replace real waits with pumps; keep virtual time)
 - [ ] test/features/ai/ui/gemma_model_install_dialog_test.dart
 - [x] test/features/ai/ui/settings/ai_settings_page_integration_test.dart
 - [ ] test/features/ai/ui/unified_ai_popup_menu_test.dart
+
+## PR Review — Required Fixups
+
+Apply the following cleanups to align with the fake time policy and the review feedback. Use
+`fakeAsync((async) { … })` for unit/service tests and `tester.pump()` for widget tests.
+
+- test/features/ai_chat/ui/controllers/chat_session_controller_test.dart
+  - Replace `await Future<void>(() {})` with `async.flushMicrotasks()` within a `fakeAsync` body.
+- test/features/labels/state/label_editor_controller_test.dart
+  - Replace `await Future<void>(() {})` with `async.flushMicrotasks()` within a `fakeAsync` body.
+- test/blocs/journal/journal_page_cubit_persistence_test.dart
+  - Wrap in `fakeAsync`; replace zero‑duration yields with `async.flushMicrotasks()`.
+- test/blocs/journal/journal_page_cubit_test.dart
+  - `blocTest` doesn’t compose well with `fakeAsync`. Prefer refactoring into a standard `test`
+    using `fakeAsync` to handle `defaultWait` via `async.elapse`. If refactoring isn’t feasible
+    immediately, restore the original `Future.delayed(defaultWait)` instead of a microtask yield.
+- test/features/ai/conversation/conversation_manager_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/ai/repository/ollama_model_management_test.dart
+  - Convert timed delays to deterministic `async.elapse`. Do not replace timed waits with
+    microtask yields. For streaming stubs (e.g., `http.ByteStream`), simulate delay with
+    `async.elapse` and then emit the next chunk.
+- test/features/ai/repository/unified_ai_inference_integration_test.dart
+  - For pure timer waits, use `fakeAsync` and `async.elapse`; do not replace delays with microtask
+    yields. Revert helper defaults such as `_createDelayedStream` back to a non‑zero delay and make
+    tests advance time explicitly.
+- test/features/ai/repository/unified_ai_inference_repository_test.dart
+  - Replace `await Future<void>(() {})` with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/ai/state/latest_summary_controller_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/ai/state/linked_entity_inference_test.dart
+  - Replace timed waits with `async.elapse` and flush microtasks; remove real sleeps.
+- test/features/ai/ui/settings/ai_settings_page_integration_test.dart
+  - Widget test: replace `await Future<void>(() {})` with `await tester.pump()`.
+- test/features/ai_chat/repository/chat_repository_test.dart
+  - Replace `await Future<void>(() {})` with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/ai_chat/ui/controllers/chat_recorder_controller_test.dart
+  - Remove real `Future.delayed(const Duration(milliseconds: 10))`. Use `fakeAsync` or
+    `tester.pump()` to advance time deterministically.
+- test/utils/screenshots_flatpak_test.dart
+  - Replace real 2ms wait with `fakeAsync` + `async.elapse(const Duration(milliseconds: 2))`.
+- test/services/logging_service_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/sync/matrix/key_verification_runner_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/categories/state/categories_list_controller_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/categories/state/category_details_controller_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/labels/label_assignment_processor_edge_cases_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/ai_chat/ui/widgets/chat_interface/chat_input_voice_test.dart
+  - Remove real delays from fake controller logic; advance time using `tester.pump()` in the test.
+- test/features/speech/helpers/automatic_prompt_trigger_test.dart
+  - Replace timed waits with `fakeAsync` + `async.elapse`.
+- test/features/categories/repository/categories_repository_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/sync/matrix/room_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/sync/matrix/sync_room_manager_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/sync/state/matrix_state_providers_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/sync/state/matrix_stats_provider_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/tasks/state/task_progress_controller_test.dart
+  - Replace zero‑duration yields with `async.flushMicrotasks()` within `fakeAsync`.
+- test/features/ai/repository/ollama_inference_repository_test.dart
+  - Remove redundant per‑test `setUp`/`tearDown` that override `retryBaseDelay`; rely on the
+    existing `setUpAll`/`tearDownAll` at the top of the file to configure and restore the value.
 - [ ] test/features/ai/ui/unified_ai_progress_view_controller_test.dart
 - [x] test/features/ai_chat/ui/widgets/chat_interface/chat_input_voice_test.dart
 
