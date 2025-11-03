@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
@@ -36,16 +35,9 @@ class ModernTaskCard extends StatelessWidget {
       child: ModernCardContent(
         title: task.data.title,
         maxTitleLines: 3,
-        leading: ModernIconContainer(
-          child: CategoryIconCompact(
-            task.meta.categoryId,
-            size: CategoryIconConstants.iconSizeLarge,
-          ),
-        ),
         subtitleWidget: _buildSubtitleWidget(context),
         trailing: TimeRecordingIcon(
           taskId: task.meta.id,
-          padding: const EdgeInsets.only(left: 8),
         ),
       ),
     );
@@ -54,6 +46,7 @@ class ModernTaskCard extends StatelessWidget {
   Widget _buildSubtitleWidget(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final statusRow = Row(
+      key: const Key('task_status_row'),
       children: [
         ModernStatusChip(
           label: task.data.priority.short,
@@ -66,6 +59,9 @@ class ModernTaskCard extends StatelessWidget {
           color: task.data.status.colorForBrightness(brightness),
           icon: _getStatusIcon(task.data.status),
         ),
+        const SizedBox(width: 6),
+        // Inline category icon after status chip for better chip alignment
+        CategoryIconCompact(task.meta.categoryId),
         if (task.data.due != null) ...[
           const SizedBox(width: 8),
           Icon(
