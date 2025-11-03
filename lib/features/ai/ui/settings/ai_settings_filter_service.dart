@@ -107,10 +107,13 @@ class AiSettingsFilterService {
   ///
   /// **Filters Applied:**
   /// - Text search: Matches against prompt name and description
+  /// - Provider filter: Only shows prompts whose models belong to selected providers.
+  ///   Requires [allModels] to be provided.
   ///
   /// **Parameters:**
   /// - [prompts]: List of AI prompts to filter
   /// - [filterState]: Current filter criteria
+  /// - [allModels]: Optional list of all models, required for provider filtering.
   ///
   /// **Returns:** Filtered list of AI prompts
   List<AiConfigPrompt> filterPrompts(
