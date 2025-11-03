@@ -36,6 +36,9 @@ class ThemingCubit extends Cubit<ThemingState> {
     // Initialize with default themes as fallback
     _initLightTheme(_lightThemeName);
     _initDarkTheme(_darkThemeName);
+    if (_isClosing || isClosed) {
+      return;
+    }
     emitState();
 
     // Try to load user's theme preferences
@@ -54,6 +57,10 @@ class ThemingCubit extends Cubit<ThemingState> {
         domain: 'THEMING_CUBIT',
         subDomain: 'fallback',
       );
+    }
+
+    if (_isClosing || isClosed) {
+      return;
     }
 
     // Set up tooltip subscription regardless of theme load success
@@ -164,6 +171,9 @@ class ThemingCubit extends Cubit<ThemingState> {
           ThemeMode.system;
     }
 
+    if (_isClosing || isClosed) {
+      return;
+    }
     emitState();
   }
 
