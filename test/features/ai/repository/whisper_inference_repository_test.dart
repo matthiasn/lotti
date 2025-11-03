@@ -1,11 +1,16 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../test_utils/retry_fake_time.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
@@ -542,38 +547,53 @@ void main() {
         );
       });
 
-      test('handles timeout via onTimeout callback', () async {
-        // Arrange - mock a request that never completes to trigger onTimeout
-        const customTimeout =
-            Duration(milliseconds: 100); // Short timeout for testing
-        when(() => mockHttpClient.post(
-                  any(),
-                  headers: any(named: 'headers'),
-                  body: any(named: 'body'),
-                ))
-            .thenAnswer(
-                (_) => Completer<http.Response>().future); // Never completes
+      test('handles timeout via onTimeout callback', () {
+        fakeAsync((async) {
+          // Arrange - mock a request that never completes to trigger onTimeout
+          const customTimeout = Duration(milliseconds: 100);
+          when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              )).thenAnswer((_) => Completer<http.Response>().future);
 
-        // Act
-        final stream = repository.transcribeAudio(
-          model: model,
-          audioBase64: audioBase64,
-          baseUrl: baseUrl,
-          prompt: prompt,
-          timeout: customTimeout,
-        );
+          // Act
+          Object? error;
+          var completed = false;
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            prompt: prompt,
+            timeout: customTimeout,
+          );
 
-        // Assert
-        await expectLater(
-          stream.first,
-          throwsA(
-            isA<WhisperTranscriptionException>()
-                .having(
-                    (e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
-                .having((e) => e.message, 'message',
-                    contains('0 minutes')), // 100ms = 0 minutes
-          ),
-        );
+          stream.first.then((_) {
+            completed = true;
+          }, onError: (Object e) {
+            error = e;
+            completed = true;
+          });
+
+          // Drive time to trigger timeout deterministically
+          final plan = buildRetryBackoffPlan(
+            maxRetries: 1,
+            timeout: customTimeout,
+            baseDelay: Duration.zero,
+            epsilon: const Duration(milliseconds: 1),
+          );
+          async.elapseRetryPlan(plan);
+
+          // Assert
+          expect(completed, isTrue);
+          final err = error;
+          expect(
+              err,
+              isA<WhisperTranscriptionException>()
+                  .having((e) => e.statusCode, 'statusCode',
+                      httpStatusRequestTimeout)
+                  .having((e) => e.message, 'message', contains('0 minutes')));
+        });
       });
 
       test('uses default timeout when no custom timeout provided', () async {
