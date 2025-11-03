@@ -645,47 +645,56 @@ void main() {
         );
       });
 
-      test('handles timeout for image analysis', () async {
-        // Arrange
-        const prompt = 'Analyze this image';
-        const images = [testImage];
-        const temperature = 0.7;
+      test('handles timeout for image analysis', () {
+        fakeAsync((async) {
+          // Arrange
+          const prompt = 'Analyze this image';
+          const images = [testImage];
+          const temperature = 0.7;
 
-        // Mock warm-up call
-        when(() => mockHttpClient.post(any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'))).thenAnswer(
-          (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
-        );
+          // Mock warm-up call
+          when(() => mockHttpClient.post(any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'))).thenAnswer(
+            (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
+          );
 
-        // Mock generate call with delayed response
-        final mockResponse = MockStreamedResponse();
-        when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              () async* {
-                await Future<void>(() {});
-                yield utf8
-                    .encode('{"message":{"content":"result"},"done":true}\n');
-              }(),
-            ));
+          // Mock generate call with delayed response (deterministic fake time)
+          final mockResponse = MockStreamedResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+                () async* {
+                  await Future<void>.delayed(const Duration(milliseconds: 100));
+                  yield utf8
+                      .encode('{"message":{"content":"result"},"done":true}\n');
+                }(),
+              ));
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+          when(() => mockHttpClient.send(any()))
+              .thenAnswer((_) async => mockResponse);
 
-        // Act & Assert - should not throw due to timeout handling
-        final result = await repository
-            .generateWithImages(
-              prompt,
-              model: modelName,
-              temperature: temperature,
-              baseUrl: baseUrl,
-              apiKey: '',
-              images: images,
-              provider: ollamaProvider,
-            )
-            .toList();
+          // Act: start the stream and collect results without real waits
+          final received = <dynamic>[];
+          repository
+              .generateWithImages(
+                prompt,
+                model: modelName,
+                temperature: temperature,
+                baseUrl: baseUrl,
+                apiKey: '',
+                images: images,
+                provider: ollamaProvider,
+              )
+              .listen(received.add);
 
-        expect(result, isNotEmpty);
+          // Advance fake time to trigger delayed emission
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+
+          // Assert
+          expect(received, isNotEmpty);
+        });
       });
     });
 

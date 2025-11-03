@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -493,85 +494,97 @@ void main() {
 
     test(
         'Database transaction simulation: AI handles concurrent database operations',
-        () async {
-      // Test that our Read-Current-Write pattern works even with database-level concurrency
-      const taskId = 'test-task-db';
-      final originalTask = _createTaskWithTitle(taskId, 'DB', checklistIds: []);
-      final updatedTask = _createTaskWithTitle(
-          taskId, 'Database updated task with longer title',
-          checklistIds: []);
+        () {
+      fakeAsync((async) {
+        // Test that our Read-Current-Write pattern works even with database-level concurrency
+        const taskId = 'test-task-db';
+        final originalTask =
+            _createTaskWithTitle(taskId, 'DB', checklistIds: []);
+        final updatedTask = _createTaskWithTitle(
+            taskId, 'Database updated task with longer title',
+            checklistIds: []);
 
-      final promptConfig = _createPrompt(
-        id: 'summary-prompt',
-        requiredInputData: [InputDataType.task],
-      );
-      final model = _createModel(id: 'model-1');
-      final provider = _createProvider(id: 'provider-1');
+        final promptConfig = _createPrompt(
+          id: 'summary-prompt',
+          requiredInputData: [InputDataType.task],
+        );
+        final model = _createModel(id: 'model-1');
+        final provider = _createProvider(id: 'provider-1');
 
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => promptConfig);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
+        when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
+            .thenAnswer((_) async => promptConfig);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId)).thenAnswer(
-          (_) async => jsonEncode({'title': originalTask.data.title}));
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId)).thenAnswer(
+            (_) async => jsonEncode({'title': originalTask.data.title}));
 
-      when(() => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
+        when(() => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((_) async => null);
 
-      // Simulate database-level concurrent modifications
-      var getEntityCallCount = 0;
-      when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
-        getEntityCallCount++;
-        if (getEntityCallCount == 1) {
-          return originalTask;
-        } else {
-          // Yield once to simulate async I/O without real delay
-          await Future<void>(() {});
-          return updatedTask;
-        }
+        // Simulate database-level concurrent modifications
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity(taskId)).thenAnswer((_) async {
+          getEntityCallCount++;
+          if (getEntityCallCount == 1) {
+            return originalTask;
+          } else {
+            // Simulate small DB delay deterministically
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            return updatedTask;
+          }
+        });
+
+        // Track update attempts
+        final updateAttempts = <Task>[];
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((invocation) async {
+          final task = invocation.positionalArguments[0] as Task;
+          updateAttempts.add(task);
+          // Simulate constraint check with a deterministic timer
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return true;
+        });
+
+        final mockStream = _createDelayedStream(['# AI Title\n\nSummary.']);
+
+        when(() => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              provider: any(named: 'provider'),
+            )).thenAnswer((_) => mockStream);
+
+        // Kick off inference; drive time with fake clock
+        repository.runInference(
+          entityId: taskId,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
+
+        // Allow queued microtasks, then elapse DB + stream delays
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 10))
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+
+        // Verify: AI should not update because final state has long title
+        verify(() => mockAiInputRepo.getEntity(taskId)).called(2);
+        expect(updateAttempts, isEmpty,
+            reason: 'AI should not attempt update when current title is long');
       });
-
-      // Track update attempts
-      final updateAttempts = <Task>[];
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((invocation) async {
-        final task = invocation.positionalArguments[0] as Task;
-        updateAttempts.add(task);
-        // Yield once to simulate constraint check without real delay
-        await Future<void>(() {});
-        return true;
-      });
-
-      final mockStream = _createDelayedStream(['# AI Title\n\nSummary.']);
-
-      when(() => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          )).thenAnswer((_) => mockStream);
-
-      await repository.runInference(
-        entityId: taskId,
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
-
-      // Verify: AI should not update because final state has long title
-      verify(() => mockAiInputRepo.getEntity(taskId)).called(2);
-      expect(updateAttempts, isEmpty,
-          reason: 'AI should not attempt update when current title is long');
     });
 
     test(

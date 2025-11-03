@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -2011,125 +2012,133 @@ void main() {
         expect(data.response, 'Task completed successfully');
       });
 
-      test('handles provider not found error', () async {
-        final taskEntity = Task(
-          meta: _createMetadata(),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test('handles provider not found error', () {
+        fakeAsync((async) {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          requiredInputData: [InputDataType.task],
-        );
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'gpt-4',
-        );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4',
+          );
 
-        final statusChanges = <InferenceStatus>[];
+          final statusChanges = <InferenceStatus>[];
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => null);
+          when(() => mockAiInputRepo.getEntity('test-id'))
+              .thenAnswer((_) async => taskEntity);
+          when(() => mockAiConfigRepo.getConfigById('model-1'))
+              .thenAnswer((_) async => model);
+          when(() => mockAiConfigRepo.getConfigById('provider-1'))
+              .thenAnswer((_) async => null);
 
-        expect(
-          () => repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: statusChanges.add,
-          ),
-          throwsA(isA<Exception>()),
-        );
+          expect(
+            () => repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: statusChanges.add,
+            ),
+            throwsA(isA<Exception>()),
+          );
 
-        await Future<void>(() {});
-        expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+          // Deterministically process queued microtasks
+          async.flushMicrotasks();
+          expect(
+              statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+        });
       });
 
-      test('handles build prompt failure', () async {
-        final taskEntity = Task(
-          meta: _createMetadata(),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test('handles build prompt failure', () {
+        fakeAsync((async) {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          requiredInputData: [InputDataType.task],
-        );
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'gpt-4',
-        );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4',
+          );
 
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
 
-        final statusChanges = <InferenceStatus>[];
+          final statusChanges = <InferenceStatus>[];
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => null);
+          when(() => mockAiInputRepo.getEntity('test-id'))
+              .thenAnswer((_) async => taskEntity);
+          when(() => mockAiConfigRepo.getConfigById('model-1'))
+              .thenAnswer((_) async => model);
+          when(() => mockAiConfigRepo.getConfigById('provider-1'))
+              .thenAnswer((_) async => provider);
+          when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+              .thenAnswer((_) async => null);
 
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          ),
-        ).thenThrow(Exception('Failed to build prompt'));
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              provider: any(named: 'provider'),
+            ),
+          ).thenThrow(Exception('Failed to build prompt'));
 
-        expect(
-          () => repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: statusChanges.add,
-          ),
-          throwsA(isA<Exception>()),
-        );
+          expect(
+            () => repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: statusChanges.add,
+            ),
+            throwsA(isA<Exception>()),
+          );
 
-        await Future<void>.delayed(Duration.zero);
-        expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+          // Deterministically process queued microtasks
+          async.flushMicrotasks();
+          expect(
+              statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+        });
       });
 
       test('handles empty stream chunk content', () async {
@@ -2235,73 +2244,81 @@ void main() {
         expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
       });
 
-      test('handles error during inference', () async {
-        final taskEntity = Task(
-          meta: _createMetadata(),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test('handles error during inference', () {
+        fakeAsync((async) {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          requiredInputData: [InputDataType.task],
-        );
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final statusChanges = <InferenceStatus>[];
+          final statusChanges = <InferenceStatus>[];
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenThrow(Exception('Model not found'));
+          when(() => mockAiInputRepo.getEntity('test-id'))
+              .thenAnswer((_) async => taskEntity);
+          when(() => mockAiConfigRepo.getConfigById('model-1'))
+              .thenThrow(Exception('Model not found'));
 
-        expect(
-          () => repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: statusChanges.add,
-          ),
-          throwsException,
-        );
+          expect(
+            () => repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: statusChanges.add,
+            ),
+            throwsException,
+          );
 
-        await Future<void>.delayed(Duration.zero);
-        expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+          // Deterministically process queued microtasks
+          async.flushMicrotasks();
+          expect(
+              statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+        });
       });
 
-      test('handles entity not found error', () async {
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          requiredInputData: [InputDataType.task],
-        );
+      test('handles entity not found error', () {
+        fakeAsync((async) {
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final statusChanges = <InferenceStatus>[];
+          final statusChanges = <InferenceStatus>[];
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => null);
+          when(() => mockAiInputRepo.getEntity('test-id'))
+              .thenAnswer((_) async => null);
 
-        expect(
-          () => repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: statusChanges.add,
-          ),
-          throwsA(isA<Exception>()),
-        );
+          expect(
+            () => repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: statusChanges.add,
+            ),
+            throwsA(isA<Exception>()),
+          );
 
-        await Future<void>.delayed(Duration.zero);
-        expect(statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+          // Deterministically process queued microtasks
+          async.flushMicrotasks();
+          expect(
+              statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+        });
       });
 
       test('handles task title update error during post-processing', () async {

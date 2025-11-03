@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
@@ -139,7 +140,9 @@ void main() {
     when(() => invalidInvite.senderId).thenReturn('@alice:server');
 
     inviteController.add(invalidInvite);
-    await Future<void>(() {});
+    // Yield an event-loop turn, then flush microtasks deterministically
+    await Future<void>.delayed(Duration.zero);
+    fakeAsync((async) => async.flushMicrotasks());
 
     expect(invites, isEmpty);
     verify(
