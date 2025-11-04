@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import '../../../../test_helper.dart';
 
@@ -432,18 +433,28 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify DragItemWidget exists (which contains dragBuilder)
-      expect(find.byType(ChecklistItemWrapper), findsOneWidget);
+      // Find the DragItemWidget and test its dragBuilder directly
+      final dragItemWidget =
+          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      expect(dragItemWidget.dragBuilder, isNotNull);
 
-      // The dragBuilder provides a Container with a colored border and surface background
-      // We can't directly test dragBuilder in isolation, but we verify the widget structure
-      // that will use it during drag operations
-      final wrapper = tester.widget<ChecklistItemWrapper>(
-        find.byType(ChecklistItemWrapper),
-      );
-      expect(wrapper.itemId, testItemId);
-      expect(wrapper.checklistId, testChecklistId);
-      expect(wrapper.taskId, testTaskId);
+      // Test the dragBuilder by calling it directly
+      final testChild = Container(key: const ValueKey('test-child'));
+      final context = tester.element(find.byType(ChecklistItemWrapper));
+      final decoratedWidget = dragItemWidget.dragBuilder!(context, testChild);
+
+      // Verify the decorated widget is a Container with the correct styling
+      expect(decoratedWidget, isA<Container>());
+      final container = decoratedWidget! as Container;
+      final decoration = container.decoration! as BoxDecoration;
+      final theme = Theme.of(context);
+
+      expect(decoration.color, theme.colorScheme.surface);
+      expect(decoration.border, isA<Border>());
+      final border = decoration.border! as Border;
+      expect(border.top.color, theme.colorScheme.primary);
+      expect(border.top.width, 2);
+      expect(decoration.borderRadius, BorderRadius.circular(12));
     });
 
     testWidgets('drag item has correct localData', (tester) async {
