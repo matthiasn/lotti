@@ -335,4 +335,233 @@ void main() {
     final list = jsonDecode(jsonPart) as List<dynamic>;
     expect(list, isEmpty);
   });
+
+  group('Category-scoped label filtering in prompts', () {
+    LabelDefinition global(String id, String name, {bool private = false}) =>
+        LabelDefinition(
+          id: id,
+          name: name,
+          color: '#000',
+          description: null,
+          sortOrder: null,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: private,
+        );
+
+    LabelDefinition scoped(String id, String name, String cat,
+            {bool private = false}) =>
+        global(id, name, private: private)
+            .copyWith(applicableCategoryIds: [cat]);
+
+    Future<String?> buildPromptFor({
+      required Task task,
+      required List<LabelDefinition> labels,
+      Map<String, int>? usage,
+      bool includePrivate = true,
+    }) async {
+      when(() => mockDb.getConfigFlag(enableAiLabelAssignmentFlag))
+          .thenAnswer((_) async => true);
+      when(() => mockDb.getConfigFlag(includePrivateLabelsInPromptsFlag))
+          .thenAnswer((_) async => includePrivate);
+      when(() => mockDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => labels);
+      when(() => mockDb.getLabelUsageCounts())
+          .thenAnswer((_) async => usage ?? <String, int>{});
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
+          .thenAnswer((_) async => '{}');
+      final prompt = await helper.buildPromptWithData(
+        promptConfig: AiConfigPrompt(
+          id: 'p',
+          name: 'Checklist Updates',
+          systemMessage: 'sys',
+          userMessage: 'Labels:```json\n{{labels}}\n```',
+          defaultModelId: 'm',
+          modelIds: const ['m'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: const [InputDataType.task],
+          aiResponseType: AiResponseType.checklistUpdates,
+        ),
+        entity: task,
+      );
+      return prompt;
+    }
+
+    List<Map<String, dynamic>> extractLabelsJson(String prompt) {
+      final match =
+          RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt)!;
+      final jsonPart = match.group(1)!;
+      return (jsonDecode(jsonPart) as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    }
+
+    test('includes only global and category-scoped labels for task category',
+        () async {
+      final task = Task(
+        meta: Metadata(
+          id: 't',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          categoryId: 'engineering',
+        ),
+        data: TaskData(
+          title: 'Task',
+          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          statusHistory: const [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+      final labels = [
+        global('g1', 'Global 1'),
+        global('g2', 'Global 2'),
+        scoped('e1', 'Engineering 1', 'engineering'),
+        scoped('d1', 'Design 1', 'design'),
+      ];
+      final prompt = await buildPromptFor(task: task, labels: labels);
+      final injected = extractLabelsJson(prompt!);
+      final ids = injected.map((e) => e['id']).toSet();
+      expect(ids, {'g1', 'g2', 'e1'});
+      expect(ids.contains('d1'), isFalse);
+    });
+
+    test('includes only global labels when task has no category', () async {
+      final task = Task(
+        meta: Metadata(
+          id: 't',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          categoryId: null,
+        ),
+        data: TaskData(
+          title: 'Task',
+          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          statusHistory: const [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+      final labels = [
+        global('g1', 'Global 1'),
+        scoped('e1', 'Engineering 1', 'engineering'),
+        scoped('d1', 'Design 1', 'design'),
+      ];
+      final prompt = await buildPromptFor(task: task, labels: labels);
+      final injected = extractLabelsJson(prompt!);
+      final ids = injected.map((e) => e['id']).toSet();
+      expect(ids, {'g1'});
+    });
+
+    test('applies 100-entry cap within category-filtered set', () async {
+      final task = Task(
+        meta: Metadata(
+          id: 't',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          categoryId: 'engineering',
+        ),
+        data: TaskData(
+          title: 'Task',
+          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          statusHistory: const [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+      final labels = <LabelDefinition>[];
+      // 200 global
+      for (var i = 0; i < 200; i++) {
+        labels.add(global('g$i', 'Global $i'));
+      }
+      // 50 engineering
+      for (var i = 0; i < 50; i++) {
+        labels.add(scoped('e$i', 'Engineering $i', 'engineering'));
+      }
+      // Provide some usage to influence top-50
+      final usage = <String, int>{'e0': 999, 'g0': 500, 'g1': 400};
+      final prompt = await buildPromptFor(
+        task: task,
+        labels: labels,
+        usage: usage,
+      );
+      final injected = extractLabelsJson(prompt!);
+      expect(injected.length, 100);
+      final firstIds = injected.take(3).map((e) => e['id']).toList();
+      // e0 should surface first given highest usage within the filtered set
+      expect(firstIds, contains('e0'));
+    });
+
+    test('category filtering respects privacy flag', () async {
+      final task = Task(
+        meta: Metadata(
+          id: 't',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          categoryId: 'engineering',
+        ),
+        data: TaskData(
+          title: 'Task',
+          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          statusHistory: const [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+      final labels = [
+        global('gPublic', 'Global Public'),
+        global('gPrivate', 'Global Private', private: true),
+        scoped('ePublic', 'Engineering Public', 'engineering'),
+        scoped('ePrivate', 'Engineering Private', 'engineering', private: true),
+      ];
+      final prompt = await buildPromptFor(
+        task: task,
+        labels: labels,
+        includePrivate: false,
+      );
+      final injected = extractLabelsJson(prompt!);
+      final ids = injected.map((e) => e['id']).toSet();
+      expect(ids, {'gPublic', 'ePublic'});
+      expect(ids.contains('gPrivate'), isFalse);
+      expect(ids.contains('ePrivate'), isFalse);
+    });
+
+    test('falls back to global-only when category lookup fails', () async {
+      final task = Task(
+        meta: Metadata(
+          id: 't',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          categoryId: 'unknown',
+        ),
+        data: TaskData(
+          title: 'Task',
+          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          statusHistory: const [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+      final labels = [
+        global('gPublic', 'Global Public'),
+        scoped('e1', 'Engineering', 'engineering'),
+      ];
+      final prompt = await buildPromptFor(task: task, labels: labels);
+      final injected = extractLabelsJson(prompt!);
+      final ids = injected.map((e) => e['id']).toSet();
+      expect(ids, {'gPublic'});
+    });
+  });
 }

@@ -322,7 +322,7 @@ void main() {
     });
 
     ProviderScope buildWithLabels(List<LabelDefinition> ls,
-        {String? categoryId}) {
+        {String? categoryId, List<String> initial = const []}) {
       return ProviderScope(
         overrides: [
           labelsRepositoryProvider.overrideWithValue(repository),
@@ -342,7 +342,7 @@ void main() {
             home: Scaffold(
               body: TaskLabelsSheet(
                 taskId: 'task-123',
-                initialLabelIds: const [],
+                initialLabelIds: initial,
                 categoryId: categoryId,
               ),
             ),
@@ -410,6 +410,199 @@ void main() {
       // Global still visible, private scoped filtered out
       expect(find.text('Global'), findsOneWidget);
       expect(find.text('PrivateScoped'), findsNothing);
+    });
+  });
+
+  group('out-of-scope assigned label handling', () {
+    LabelDefinition global(String id, String name, {String? desc}) =>
+        LabelDefinition(
+          id: id,
+          name: name,
+          color: '#111111',
+          description: desc,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+        );
+
+    LabelDefinition scoped(String id, String name, String cat, {String? desc}) =>
+        global(id, name, desc: desc)
+            .copyWith(applicableCategoryIds: [cat]);
+
+    setUp(() {
+      // Provide an implementation that scopes available labels by category
+      when(() => cacheService.filterLabelsForCategory(
+            any(),
+            any(),
+            includePrivate: any(named: 'includePrivate'),
+          )).thenAnswer((invocation) {
+        final all = invocation.positionalArguments[0] as List<LabelDefinition>;
+        final catId = invocation.positionalArguments[1] as String?;
+        return all.where((l) {
+          final cats = l.applicableCategoryIds;
+          final isGlobal = cats == null || cats.isEmpty;
+          return isGlobal || (catId != null && cats.contains(catId));
+        }).toList();
+      });
+    });
+
+    ProviderScope buildWithLabels(List<LabelDefinition> ls,
+        {String? categoryId, List<String> initial = const []}) {
+      return ProviderScope(
+        overrides: [
+          labelsRepositoryProvider.overrideWithValue(repository),
+          labelsStreamProvider.overrideWith((ref) => Stream.value(ls)),
+        ],
+        child: MediaQuery(
+          data: const MediaQueryData(size: Size(1200, 1800)),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              FormBuilderLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: TaskLabelsSheet(
+                taskId: 'task-123',
+                initialLabelIds: initial,
+                categoryId: categoryId,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('shows assigned out-of-scope label in selector', (tester) async {
+      final engineering1 = scoped('eng1', 'engineering1', 'engineering');
+      final global1 = global('g1', 'global1');
+      final designOut = scoped('des1', 'design1', 'design');
+
+      // Return assigned definition through cache lookup
+      when(() => cacheService.getLabelById('des1')).thenReturn(designOut);
+      when(() => cacheService.getLabelById('eng1')).thenReturn(engineering1);
+
+      await _pumpSheet(
+        tester,
+        ({initial = const <String>[]}) => buildWithLabels(
+          [engineering1, global1],
+          categoryId: 'engineering',
+          initial: initial,
+        ),
+        initial: const ['eng1', 'des1'],
+      );
+
+      expect(find.text('design1'), findsOneWidget);
+      expect(find.text('engineering1'), findsOneWidget);
+    });
+
+    testWidgets('shows "Out of category" note for out-of-scope assigned labels',
+        (tester) async {
+      final engineering1 = scoped('eng1', 'engineering1', 'engineering');
+      final designOut = scoped('des1', 'design1', 'design', desc: 'Design-related tasks');
+      when(() => cacheService.getLabelById('des1')).thenReturn(designOut);
+      when(() => cacheService.getLabelById('eng1')).thenReturn(engineering1);
+
+      await _pumpSheet(
+        tester,
+        ({initial = const <String>[]}) => buildWithLabels(
+          [engineering1],
+          categoryId: 'engineering',
+          initial: initial,
+        ),
+        initial: const ['eng1', 'des1'],
+      );
+
+      final tile = find.ancestor(
+        of: find.text('design1'),
+        matching: find.byType(CheckboxListTile),
+      );
+      expect(
+        find.descendant(
+          of: tile,
+          matching: find.text('Out of category • Design-related tasks'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('allows unchecking out-of-scope assigned labels', (tester) async {
+      final engineering1 = scoped('eng1', 'engineering1', 'engineering');
+      final designOut = scoped('des1', 'design1', 'design');
+      when(() => cacheService.getLabelById('des1')).thenReturn(designOut);
+      when(() => cacheService.getLabelById('eng1')).thenReturn(engineering1);
+
+      await _pumpSheet(
+        tester,
+        ({initial = const <String>[]}) => buildWithLabels(
+          [engineering1],
+          categoryId: 'engineering',
+          initial: initial,
+        ),
+        initial: const ['eng1', 'des1'],
+      );
+
+      final designCheckbox = find.descendant(
+        of: find.ancestor(
+          of: find.text('design1'),
+          matching: find.byType(CheckboxListTile),
+        ),
+        matching: find.byType(Checkbox),
+      );
+
+      expect(tester.widget<Checkbox>(designCheckbox).value, isTrue);
+      await tester.tap(designCheckbox);
+      await tester.pump();
+      expect(tester.widget<Checkbox>(designCheckbox).value, isFalse);
+    });
+
+    testWidgets('assigned labels appear before available labels', (tester) async {
+      final alpha = global('a', 'alpha');
+      final bravo = scoped('b', 'bravo', 'engineering');
+      final charlie = global('c', 'charlie');
+      final deltaOut = scoped('d', 'delta', 'design');
+      when(() => cacheService.getLabelById('d')).thenReturn(deltaOut);
+      when(() => cacheService.getLabelById('b')).thenReturn(bravo);
+
+      await _pumpSheet(
+        tester,
+        ({initial = const <String>[]}) => buildWithLabels(
+          [alpha, bravo, charlie],
+          categoryId: 'engineering',
+          initial: initial,
+        ),
+        initial: const ['b', 'd'],
+      );
+
+      final tiles = find.byType(CheckboxListTile);
+      final texts = tester
+          .widgetList<CheckboxListTile>(tiles)
+          .map((t) => (t.title as Text).data)
+          .whereType<String>()
+          .toList();
+      // Assigned should come first: bravo, delta before alpha, charlie
+      expect(texts.indexOf('bravo'), lessThan(texts.indexOf('alpha')));
+      expect(texts.indexOf('delta'), lessThan(texts.indexOf('charlie')));
+    });
+
+    testWidgets('out-of-scope label is not duplicated in the list', (tester) async {
+      final global1 = global('g1', 'global1');
+      when(() => cacheService.getLabelById('g1')).thenReturn(global1);
+
+      await _pumpSheet(
+        tester,
+        ({initial = const <String>[]}) => buildWithLabels(
+          [global1],
+          categoryId: 'engineering',
+          initial: initial,
+        ),
+        initial: const ['g1'],
+      );
+
+      expect(find.text('global1'), findsOneWidget);
     });
   });
 }

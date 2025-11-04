@@ -149,4 +149,59 @@ void main() {
           addedLabelIds: any(named: 'addedLabelIds'),
         )).called(1);
   });
+
+  test('assign_task_labels respects labels array confidence and category scope', () async {
+    // Task belongs to cat; one high label is out-of-scope
+    final task = makeTask(labels: const []);
+
+    // very-high and high-1 in cat; high-2 in other cat (out-of-scope)
+    final now = DateTime.now();
+    final vh = makeLabel('vh')
+        .copyWith(applicableCategoryIds: const ['cat'], updatedAt: now);
+    final h1 = makeLabel('h1')
+        .copyWith(applicableCategoryIds: const ['cat'], updatedAt: now);
+    final h2 = makeLabel('h2')
+        .copyWith(applicableCategoryIds: const ['other'], updatedAt: now);
+    final low = makeLabel('low').copyWith(updatedAt: now);
+
+    when(() => mockDb.getLabelDefinitionById('vh')).thenAnswer((_) async => vh);
+    when(() => mockDb.getLabelDefinitionById('h1')).thenAnswer((_) async => h1);
+    when(() => mockDb.getLabelDefinitionById('h2')).thenAnswer((_) async => h2);
+    when(() => mockDb.getLabelDefinitionById('low')).thenAnswer((_) async => low);
+    when(() => mockDb.getAllLabelDefinitions())
+        .thenAnswer((_) async => [vh, h1, h2, low]);
+
+    when(() => mockDb.getConfigFlag(aiLabelAssignmentShadowFlag))
+        .thenAnswer((_) async => false);
+
+    final repo = container.read(unifiedAiInferenceRepositoryProvider);
+    final calls = [
+      ChatCompletionMessageToolCall(
+        id: 'tool-2',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'assign_task_labels',
+          arguments: jsonEncode({
+            'labels': [
+              {'id': 'h2', 'confidence': 'high'},
+              {'id': 'vh', 'confidence': 'very_high'},
+              {'id': 'low', 'confidence': 'low'},
+              {'id': 'h1', 'confidence': 'high'},
+            ]
+          }),
+        ),
+      ),
+    ];
+
+    await repo.processToolCalls(toolCalls: calls, task: task);
+
+    // Expect only in-scope selected top-3 by rank with out-of-scope removed
+    final captured = verify(() => mockLabelsRepo.addLabels(
+          journalEntityId: task.id,
+          addedLabelIds: captureAny(named: 'addedLabelIds'),
+        )).captured;
+    expect(captured, isNotEmpty);
+    final added = (captured.first as List).cast<String>();
+    expect(added, equals(['vh', 'h1']));
+  });
 }

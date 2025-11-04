@@ -7,6 +7,7 @@ import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLabelsRepository extends Mock implements LabelsRepository {}
@@ -18,6 +19,10 @@ class MockLimiter extends Mock implements LabelAssignmentRateLimiter {}
 class MockJournalDb extends Mock implements JournalDb {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(InsightLevel.info);
+    registerFallbackValue(InsightType.log);
+  });
   late MockLabelsRepository mockRepo;
   late MockLoggingService mockLogging;
   late MockLimiter mockLimiter;
@@ -58,5 +63,14 @@ void main() {
           journalEntityId: any(named: 'journalEntityId'),
           addedLabelIds: any(named: 'addedLabelIds'),
         ));
+
+    // Verify a max_total_reached event was logged
+    verify(() => mockLogging.captureEvent(
+          any(),
+          domain: 'labels_ai_assignment',
+          subDomain: 'processor',
+          level: any(named: 'level'),
+          type: any(named: 'type'),
+        )).called(1);
   });
 }
