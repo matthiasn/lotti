@@ -73,17 +73,17 @@ void main() {
     final validator = LabelValidator(db: db);
 
     // z is deleted and also in suppression set
-    when(() => db.getLabelDefinitionById('z')).thenAnswer((_) async =>
-        LabelDefinition(
-          id: 'z',
-          name: 'Zed',
-          color: '#000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          private: false,
-          deletedAt: DateTime.now(),
-        ));
+    when(() => db.getLabelDefinitionById('z'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'z',
+              name: 'Zed',
+              color: '#000',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+              deletedAt: DateTime.now(),
+            ));
 
     final res = await validator.validateForTask(
       const ['z'],

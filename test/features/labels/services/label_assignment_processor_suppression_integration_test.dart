@@ -76,21 +76,23 @@ void main() {
         );
 
     // getLabelDefinitionById
-    when(() => db.getLabelDefinitionById('A')).thenAnswer((_) async => global('A'));
-    when(() => db.getLabelDefinitionById('S')).thenAnswer((_) async => global('S'));
-    when(() => db.getLabelDefinitionById('D')).thenAnswer((_) async =>
-        global('D').copyWith(deletedAt: DateTime.now()));
-    when(() => db.getLabelDefinitionById('C')).thenAnswer((_) async =>
-        LabelDefinition(
-          id: 'C',
-          name: 'C',
-          color: '#000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          private: false,
-          applicableCategoryIds: const ['design'], // out of scope
-        ));
+    when(() => db.getLabelDefinitionById('A'))
+        .thenAnswer((_) async => global('A'));
+    when(() => db.getLabelDefinitionById('S'))
+        .thenAnswer((_) async => global('S'));
+    when(() => db.getLabelDefinitionById('D')).thenAnswer(
+        (_) async => global('D').copyWith(deletedAt: DateTime.now()));
+    when(() => db.getLabelDefinitionById('C'))
+        .thenAnswer((_) async => LabelDefinition(
+              id: 'C',
+              name: 'C',
+              color: '#000',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+              applicableCategoryIds: const ['design'], // out of scope
+            ));
     when(() => db.getLabelDefinitionById('G'))
         .thenAnswer((_) async => engineeringOnly('G'));
 
