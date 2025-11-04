@@ -135,33 +135,40 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
     void handleDelete() {
       final label = existingLabel;
       if (label == null) return;
+      // Capture the page context for navigation/snackbar after dialog closes.
+      final pageContext = context;
       showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(context.messages.settingsLabelsDeleteConfirmTitle),
+        context: pageContext,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(dialogContext.messages.settingsLabelsDeleteConfirmTitle),
           content: Text(
-            context.messages.settingsLabelsDeleteConfirmMessage(label.name),
+            dialogContext.messages
+                .settingsLabelsDeleteConfirmMessage(label.name),
           ),
           actions: [
             LottiTertiaryButton(
-              onPressed: () => Navigator.pop(context),
-              label: context.messages.cancelButton,
+              onPressed: () => Navigator.pop(dialogContext),
+              label: dialogContext.messages.cancelButton,
             ),
             LottiTertiaryButton(
               onPressed: () async {
-                Navigator.pop(context);
+                // Close the dialog using its own context
+                Navigator.pop(dialogContext);
                 await ref.read(labelsRepositoryProvider).deleteLabel(label.id);
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted || !pageContext.mounted) return;
+                // Pop the details page and show a snackbar using the page context
+                Navigator.of(pageContext).pop();
+                if (!mounted || !pageContext.mounted) return;
+                ScaffoldMessenger.of(pageContext).showSnackBar(
                   SnackBar(
                     content: Text(
-                      context.messages.settingsLabelsDeleteSuccess(label.name),
+                      pageContext.messages
+                          .settingsLabelsDeleteSuccess(label.name),
                     ),
                   ),
                 );
               },
-              label: context.messages.settingsLabelsDeleteConfirmAction,
+              label: dialogContext.messages.settingsLabelsDeleteConfirmAction,
               isDestructive: true,
             ),
           ],
