@@ -8,13 +8,13 @@ References and builds on:
 
 ## Summary
 
-Split the guardrails into three incremental PRs to reduce risk and clarify decisions. Phase 1 fixes the core safety bug (wrong‑category assignments and the inability to unassign). Phase 2 adds the max‑3 cap and confidence policy. Phase 3 introduces suppression (never re‑suggest user‑removed labels) with user‑visible controls.
+Split the guardrails into three incremental PRs to reduce risk and clarify decisions. Phase 1 fixes the core safety bug (wrong‑category assignments and the inability to unassign). Phase 2 adds the max‑3 cap and confidence policy. Phase 3 introduces per‑task suppression (never re‑suggest user‑removed labels) powered by a simple set stored on the task, without new tables.
 
 This plan resolves the previously open decisions, specifies user messaging, and strengthens testing and telemetry.
 
 ## Decisions (resolved)
 
-- Prompt context (assigned labels): Use Option A in Phase 2 — extend task JSON from `AiInputRepository.buildTaskDetailsJson` to include `labels: [{id,name}]` and later `suppressedLabelIds: string[]` when Phase 3 lands. Avoid extra placeholders.
+- Prompt context (assigned labels): Use Option A in Phase 2 — extend task JSON from `AiInputRepository.buildTaskDetailsJson` to include `labels: [{id,name}]`. In Phase 3, also include `aiSuppressedLabelIds: string[]` and a `suppressedLabels: [{id,name}]` block so the model can see explicit “do not use” names.
 - Confidence schema: String enum — `low | medium | high | very_high`. Prompt requires `very_high`; ingestion gate will be enforced in Phase 2. We will monitor confidence distribution post‑launch and adjust the threshold in a follow‑up PR if needed.
 - Performance: Introduce a lightweight `TaskContext` passed to `LabelAssignmentProcessor` when available; DB fallback otherwise. Processor re‑reads metadata immediately before persistence to compute remaining room, ensuring race safety.
 - Existing out‑of‑category and >3 labels: Will NOT be auto‑changed. Users remain in control. We will surface assigned out‑of‑scope in the selector to allow unassignment.
@@ -23,7 +23,7 @@ This plan resolves the previously open decisions, specifies user messaging, and 
 
 - Define `TaskContext` as a plain data class at `lib/features/labels/models/task_context.dart`:
   - Fields: `String? categoryId; List<String> existingLabelIds; List<String>? suppressedLabelIds;`
-  - Nullable `suppressedLabelIds` until Phase 3.
+  - Nullable `suppressedLabelIds` until Phase 3; populated from `TaskData.aiSuppressedLabelIds`.
 - Constructed by call sites that already have the task (preferred):
   - `lib/features/ai/repository/unified_ai_inference_repository.dart`
   - `lib/features/ai/functions/lotti_conversation_processor.dart`
@@ -161,43 +161,52 @@ Telemetry
 ## Phase 3 — Suppression (Don’t Re‑suggest Removed Labels)
 
 Scope
-- Track per‑task set `aiSuppressedLabelIds`. When a user removes a label, add it to the set. AI will not suggest suppressed labels; manual user assignment still allowed (and unsuppresses).
-- Prompt excludes suppressed; ingestion rejects suppressed with explicit reason.
-- Provide a “Reset suggestions for this task” action.
+- Track per‑task set `aiSuppressedLabelIds` on `TaskData` (Set<String>?, serialized as array). When a user removes a label, add it to the set. Manual user assignment is always allowed and implicitly unsuppresses.
+- Prompt exposes suppressed labels by id and name and instructs the model not to suggest them; callers also hard‑filter: any suppressed IDs in tool calls are dropped before processing.
+- Ingestion rejects suppressed with explicit reason for defense‑in‑depth.
+- Provide a “Reset suggestions for this task” action (clears the set).
 
 Design
-- Data model
-  - Add `List<String>? aiSuppressedLabelIds` to `Metadata` (Freezed + JSON). No DB migration (serialized JSON field only).
+- Data model (no new tables)
+  - Add `Set<String>? aiSuppressedLabelIds` to `TaskData` (Freezed + JSON). Serialize as array; keep null/empty distinction minimal (empty set serializes to `[]`).
 - Repository
-  - On `removeLabel`, union labelId into `aiSuppressedLabelIds`; on `addLabels`/`setLabels` user‑initiated, remove those IDs from `aiSuppressedLabelIds`.
-  - Helper to normalize/persist suppressed set.
+  - On `removeLabel`, add the labelId to `aiSuppressedLabelIds`.
+  - On `addLabels`/`setLabels` (manual user flows), unsuppress: subtract newly added IDs from the set.
+  - Provide ergonomic helpers: `addSuppressedLabels(taskId, Set<String>)` and `removeSuppressedLabels(taskId, Set<String>)`.
+  - No database table; suppression lives in the task’s data blob.
 - Prompt
-  - Exclude suppressed from Available labels list.
-  - Include `suppressedLabelIds` in task JSON for transparency.
+  - Exclude suppressed from the “Available Labels” list.
+  - Include a separate “Suppressed Labels” block with `[{id,name}]` for clarity.
+  - Task JSON also includes `aiSuppressedLabelIds` for transparency.
+- Callers (AI function ingestion)
+  - After `parseLabelCallArgs`, subtract `aiSuppressedLabelIds` from the selected IDs.
+  - If all candidates are suppressed, return a structured no‑op tool response; do not call the processor.
 - Ingestion
-  - `LabelValidator.validateForTask` rejects suppressed with skip reason `suppressed`.
+  - `LabelValidator.validateForTask` rejects suppressed with skip reason `suppressed` (defense‑in‑depth).
 - UI/UX
-  - In selector, no change to default list (suppressed are hidden unless already assigned).
+  - Default selector behavior unchanged; suppressed labels are simply not suggested by AI.
   - Task detail page (⋮ overflow): “Reset label suggestions” → clears `aiSuppressedLabelIds` with confirmation.
-  - Tooltip in selector header: “AI won’t suggest labels you removed. Use ‘Reset label suggestions’ to allow again.”
+  - Manual re‑adding implicitly unsuppresses and is always allowed.
 
 User messaging
 - Confirmation dialog for reset: Title “Reset label suggestions?”; Body “AI may suggest previously removed labels again for this task.”; Actions: Cancel / Reset.
 
 Performance
-- No extra DB queries beyond existing repository updates; suppressed set lives in task metadata.
+- No extra DB queries beyond existing repository updates; suppression set lives in task data.
 
 Flags/rollback
 - Not applicable (always‑on).
 
 Tests
-- Remove label → appears in `aiSuppressedLabelIds`; AI proposals containing it are skipped with reason `suppressed`.
-- Manually re‑add suppressed label → removed from suppressed set; subsequent AI proposals may include it if in scope.
+- Remove label → labelId added to `aiSuppressedLabelIds`; AI proposals containing it are dropped by callers and rejected by validator if they slip through.
+- Manually re‑add suppressed label → labelId removed from suppressed set; subsequent AI proposals may include it if in scope.
+- Callers: partial suppression (some candidates dropped) and full suppression (no‑op response; processor not called).
+- Prompt builder: “Suppressed Labels” JSON block contains id+name; rule text present.
 - Reset action clears suppressed set.
 - Edge: label becomes deleted while suppressed → still excluded; deletion takes precedence.
 
 Telemetry
-- Same schema (domain/subDomain as prior phases). Payload example (Phase 3):
+- Same schema (domain/subDomain as prior phases). Optionally include `suppressed_skipped` count. Payload example (Phase 3):
   ```json
   {
     "taskId": "...",
@@ -287,10 +296,24 @@ Phase 2 — Max‑3 & Confidence
 - Processor: cap by remaining room; enforce `very_high` confidence; re‑read meta before persist and recompute reasons.
 - Tests: capped assignment, max reached, missing/invalid confidence, concurrency.
 
-Phase 3 — Suppression
-- Metadata: add `aiSuppressedLabelIds`.
-- Repository: add/remove/normalize suppressed set on remove/add.
-- Prompt: exclude suppressed; include `suppressedLabelIds` in task JSON.
-- Validator: extend to `validateForTask()` (category + suppression).
-- UI: Reset action on Task detail ⋮ with confirmation; tooltip in selector header.
-- Tests: suppression skip, manual unsuppress, reset action, label deleted while suppressed (kept in metadata).
+Phase 3 — Suppression (No DB tables)
+- TaskData: add `aiSuppressedLabelIds: Set<String>?` to persist labels the user removed from the task.
+  - Purpose: used only to suppress AI suggestions; manual assignment remains unrestricted.
+  - Backward compatible (nullable; treat null as empty).
+- JSON shape remains an array (`string[]`) for serialization; the in-memory type is a Set for efficient lookups and dedupe.
+- Repository (setLabels): when applying a new `labelIds` set, compute `removed = previous \ new` and update
+  `task.data.aiSuppressedLabelIds = (existingSuppressed ∪ removed)`; and remove from suppressed when labels are re‑added manually (implicit unsuppress).
+- Prompt + Task JSON:
+  - AiInputRepository: include `aiSuppressedLabelIds: string[]` in the task JSON alongside `labels: [{id,name}]`.
+  - PromptBuilderHelper: inject a "Suppressed Labels" JSON block as an array of objects `[{id, name}]`.
+    - Resolve names at prompt construction (batch `getAllLabelDefinitions` or cached filter), falling back to the ID if missing.
+  - Preconfigured prompt (checklist_updates): add an explicit rule: "Do not propose or use any IDs listed in Suppressed Labels when calling assign_task_labels; prefer alternatives or assign none."
+- Callers (hard filter before processor): in both unified and conversation paths:
+  - Subtract `aiSuppressedLabelIds` from the parser‑selected IDs (even if the model sent them anyway).
+  - If all proposed IDs are suppressed, short‑circuit with an empty assignment and a structured response indicating suppression.
+- Telemetry (optional): if desired, include a `suppressed_skipped` counter when suppressed labels were filtered by callers.
+- UI: no additional controls required in this phase (optional future "unsuppress" affordance can be added later). Manual selection remains free.
+- Tests:
+  - Repository: removing labels appends them to `aiSuppressedLabelIds`; adding labels removes them from `aiSuppressedLabelIds` (implicit unsuppress).
+  - Prompt: aiSuppressedLabelIds appears in the task JSON; and the prompt contains a "Suppressed Labels" block with id+name pairs; explicit suppression rule present.
+  - Callers: suppressed labels filtered from candidates before processor; when all candidates are suppressed, processor is not called and a no‑op assignment is returned.
