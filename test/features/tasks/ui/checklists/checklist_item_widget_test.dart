@@ -371,10 +371,12 @@ void main() {
       // When showEditIcon is false, verify edit icon is not present
       expect(find.byIcon(Icons.edit), findsNothing);
 
-      // The entire section (edit icon + spacing) should not be rendered
-      final widget =
-          tester.widget<ChecklistItemWidget>(find.byType(ChecklistItemWidget));
-      expect(widget.showEditIcon, false);
+      // Verify the spacing SizedBox with width 8.0 is NOT rendered
+      final sizedBoxWidgets = tester
+          .widgetList<SizedBox>(find.byType(SizedBox))
+          .where((widget) => widget.width == 8.0);
+
+      expect(sizedBoxWidgets, isEmpty);
     });
 
     testWidgets('applies different background colors based on state',
