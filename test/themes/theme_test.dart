@@ -46,6 +46,10 @@ void main() {
         themedData.snackBarTheme.actionTextColor,
         equals(baseTheme.colorScheme.onPrimary),
       );
+      expect(
+        themedData.snackBarTheme.contentTextStyle?.fontSize,
+        equals(fontSizeMedium),
+      );
     });
 
     test('applies card theme with correct border radius', () {

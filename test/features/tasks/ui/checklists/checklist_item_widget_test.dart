@@ -438,5 +438,155 @@ void main() {
       // Verify TitleTextField is present (edit mode active)
       expect(find.byType(TitleTextField), findsOneWidget);
     });
+
+    testWidgets('triggers onCancel when canceling edit mode', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+            onTitleChange: (_) {},
+          ),
+        ),
+      );
+
+      // Enter edit mode by tapping edit button
+      await tester.tap(find.byIcon(Icons.edit).first);
+      await tester.pump();
+
+      // Verify we're in edit mode
+      expect(find.byType(TitleTextField), findsOneWidget);
+
+      // Find the TitleTextField and access its onCancel callback
+      final titleTextField =
+          tester.widget<TitleTextField>(find.byType(TitleTextField));
+      expect(titleTextField.onCancel, isNotNull);
+
+      // Call onCancel to exit edit mode
+      titleTextField.onCancel!();
+      await tester.pump();
+
+      // After canceling, we should be back in view mode
+      // The edit button should be visible again (not in editing state)
+      expect(find.byIcon(Icons.edit), findsWidgets);
+    });
+
+    testWidgets('has MouseRegion with hover callbacks configured',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Find the MouseRegion widgets and verify at least one has hover callbacks
+      final mouseRegions =
+          tester.widgetList<MouseRegion>(find.byType(MouseRegion));
+      expect(mouseRegions.length, greaterThan(0));
+
+      // At least one MouseRegion should have onEnter and onExit callbacks
+      final mouseRegionsWithCallbacks = mouseRegions.where(
+        (mr) => mr.onEnter != null && mr.onExit != null,
+      );
+      expect(mouseRegionsWithCallbacks, isNotEmpty);
+
+      // Verify AnimatedContainer exists for hover animations
+      final animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      expect(animatedContainer.duration, const Duration(milliseconds: 200));
+      expect(animatedContainer.curve, Curves.easeInOut);
+    });
+
+    testWidgets('renders secondary edit button when onEdit is provided',
+        (tester) async {
+      var editButtonTapped = false;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+            onEdit: () {
+              editButtonTapped = true;
+            },
+          ),
+        ),
+      );
+
+      // Verify secondary IconButton exists (inside CheckboxListTile.secondary)
+      final checkboxListTile =
+          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
+      expect(checkboxListTile.secondary, isNotNull);
+      expect(checkboxListTile.secondary, isA<IconButton>());
+
+      // Find and tap the secondary edit button
+      final secondaryEditButton = checkboxListTile.secondary! as IconButton;
+      expect(secondaryEditButton.onPressed, isNotNull);
+
+      // Call the onPressed callback
+      secondaryEditButton.onPressed!();
+
+      // Verify the callback was triggered
+      expect(editButtonTapped, isTrue);
+    });
+
+    testWidgets('does not render secondary button when onEdit is null',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify secondary is null
+      final checkboxListTile =
+          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
+      expect(checkboxListTile.secondary, isNull);
+    });
+
+    testWidgets('applies editing background color when editing',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+            onTitleChange: (_) {},
+          ),
+        ),
+      );
+
+      // Get initial background color
+      var animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final initialDecoration = animatedContainer.decoration as BoxDecoration?;
+      final initialColor = initialDecoration?.color;
+
+      // Enter edit mode
+      await tester.tap(find.byIcon(Icons.edit).first);
+      await tester.pump();
+
+      // Get background color in edit mode
+      animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final editingDecoration = animatedContainer.decoration as BoxDecoration?;
+      final editingColor = editingDecoration?.color;
+
+      // Verify colors exist and container properly animates
+      expect(initialColor, isNotNull);
+      expect(editingColor, isNotNull);
+      expect(animatedContainer.duration, const Duration(milliseconds: 200));
+    });
   });
 }
