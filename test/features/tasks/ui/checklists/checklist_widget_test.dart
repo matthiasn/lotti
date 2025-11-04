@@ -283,14 +283,25 @@ void main() {
         key: const ValueKey('test-child'),
         child: const Text('Test Item'),
       );
+      final context = tester.element(find.byType(ChecklistWidget));
       final decoratedWidget = reorderableListView.proxyDecorator!(
         testChild,
         0,
         const AlwaysStoppedAnimation(1),
       );
 
-      // Verify the decorated widget is a Container
+      // Verify the decorated widget is a Container with correct styling
       expect(decoratedWidget, isA<Container>());
+      final container = decoratedWidget as Container;
+      final decoration = container.decoration! as BoxDecoration;
+      final theme = Theme.of(context);
+
+      expect(decoration.color, theme.colorScheme.surface);
+      expect(decoration.border, isA<Border>());
+      final border = decoration.border! as Border;
+      expect(border.top.color, theme.colorScheme.primary);
+      expect(border.top.width, 2);
+      expect(decoration.borderRadius, BorderRadius.circular(12));
     });
 
     testWidgets('shows export button when onExportMarkdown is provided',

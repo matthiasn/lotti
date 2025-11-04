@@ -58,8 +58,7 @@ class ChecklistItemWrapper extends ConsumerWidget {
             return dragItem;
           },
           allowedOperations: () => [DropOperation.move],
-          dragBuilder: (context, child) =>
-              buildDragDecorator(context, child),
+          dragBuilder: buildDragDecorator,
           child: DraggableWidget(
             child: Dismissible(
               key: Key(item.id),
