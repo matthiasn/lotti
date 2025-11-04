@@ -457,7 +457,7 @@ void main() {
       expect(decoration.borderRadius, BorderRadius.circular(12));
     });
 
-    testWidgets('drag item has correct localData', (tester) async {
+    testWidgets('renders with drag and drop capabilities', (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
       final mockChecklistController = MockChecklistController();
 
@@ -485,12 +485,19 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify the widget renders correctly with drag functionality
+      // Verify widget renders correctly
+      expect(find.byType(ChecklistItemWrapper), findsOneWidget);
       expect(find.byType(ChecklistItemWithSuggestionWidget), findsOneWidget);
       expect(find.text('Test Item'), findsWidgets);
 
-      // The dragItemProvider should include checklistItemId and checklistId in localData
-      // This is indirectly tested by verifying the widget structure
+      // Verify DragItemWidget is configured with dragItemProvider
+      final dragItemWidget =
+          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      expect(dragItemWidget.dragItemProvider, isNotNull);
+
+      // Note: Testing the actual dragItemProvider invocation requires mocking
+      // DragSession which is complex. The provider's logic is tested through
+      // integration tests where actual drag operations occur.
     });
   });
 }
