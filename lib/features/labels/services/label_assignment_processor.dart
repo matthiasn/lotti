@@ -237,7 +237,7 @@ class LabelAssignmentProcessor {
           legacyUsed && (totalCandidates != null && totalCandidates > 3),
       if (confidenceBreakdown != null)
         'confidenceBreakdown': confidenceBreakdown,
-      'phase': 1,
+      'phase': 2,
     });
     _logging.captureEvent(
       telemetry,

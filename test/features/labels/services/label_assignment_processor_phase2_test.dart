@@ -66,11 +66,11 @@ void main() {
 
     // Verify a max_total_reached event was logged
     verify(() => mockLogging.captureEvent(
-          any(),
+          any<dynamic>(),
           domain: 'labels_ai_assignment',
           subDomain: 'processor',
-          level: any(named: 'level'),
-          type: any(named: 'type'),
+          level: any<InsightLevel>(named: 'level'),
+          type: any<InsightType>(named: 'type'),
         )).called(1);
   });
 }

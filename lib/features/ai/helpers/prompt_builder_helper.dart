@@ -13,6 +13,7 @@ import 'package:lotti/features/labels/constants/label_assignment_constants.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 
 /// Helper class for building AI prompts with support for template tracking
 typedef LabelFilterFn = List<LabelDefinition> Function(
@@ -267,15 +268,8 @@ class PromptBuilderHelper {
     if (task == null) return '[]';
     final ids = task.meta.labelIds ?? const <String>[];
     if (ids.isEmpty) return '[]';
-    // Batch lookup for names
-    final defs = await db.getAllLabelDefinitions();
-    final byId = {for (final d in defs) d.id: d};
-    final tuples = <Map<String, String>>[];
-    for (final id in ids) {
-      final def = byId[id];
-      final name = def?.name ?? id;
-      tuples.add({'id': id, 'name': name});
-    }
+    // Resolve via shared utility
+    final tuples = await buildAssignedLabelTuples(db: db, ids: ids);
     return jsonEncode(tuples);
   }
 

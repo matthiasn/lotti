@@ -425,9 +425,9 @@ void main() {
           vectorClock: null,
         );
 
-    LabelDefinition scoped(String id, String name, String cat, {String? desc}) =>
-        global(id, name, desc: desc)
-            .copyWith(applicableCategoryIds: [cat]);
+    LabelDefinition scoped(String id, String name, String cat,
+            {String? desc}) =>
+        global(id, name, desc: desc).copyWith(applicableCategoryIds: [cat]);
 
     setUp(() {
       // Provide an implementation that scopes available labels by category
@@ -476,7 +476,8 @@ void main() {
       );
     }
 
-    testWidgets('shows assigned out-of-scope label in selector', (tester) async {
+    testWidgets('shows assigned out-of-scope label in selector',
+        (tester) async {
       final engineering1 = scoped('eng1', 'engineering1', 'engineering');
       final global1 = global('g1', 'global1');
       final designOut = scoped('des1', 'design1', 'design');
@@ -502,7 +503,8 @@ void main() {
     testWidgets('shows "Out of category" note for out-of-scope assigned labels',
         (tester) async {
       final engineering1 = scoped('eng1', 'engineering1', 'engineering');
-      final designOut = scoped('des1', 'design1', 'design', desc: 'Design-related tasks');
+      final designOut =
+          scoped('des1', 'design1', 'design', desc: 'Design-related tasks');
       when(() => cacheService.getLabelById('des1')).thenReturn(designOut);
       when(() => cacheService.getLabelById('eng1')).thenReturn(engineering1);
 
@@ -529,7 +531,8 @@ void main() {
       );
     });
 
-    testWidgets('allows unchecking out-of-scope assigned labels', (tester) async {
+    testWidgets('allows unchecking out-of-scope assigned labels',
+        (tester) async {
       final engineering1 = scoped('eng1', 'engineering1', 'engineering');
       final designOut = scoped('des1', 'design1', 'design');
       when(() => cacheService.getLabelById('des1')).thenReturn(designOut);
@@ -559,7 +562,8 @@ void main() {
       expect(tester.widget<Checkbox>(designCheckbox).value, isFalse);
     });
 
-    testWidgets('assigned labels appear before available labels', (tester) async {
+    testWidgets('assigned labels appear before available labels',
+        (tester) async {
       final alpha = global('a', 'alpha');
       final bravo = scoped('b', 'bravo', 'engineering');
       final charlie = global('c', 'charlie');
@@ -580,7 +584,7 @@ void main() {
       final tiles = find.byType(CheckboxListTile);
       final texts = tester
           .widgetList<CheckboxListTile>(tiles)
-          .map((t) => (t.title as Text).data)
+          .map((t) => (t.title as Text?)?.data)
           .whereType<String>()
           .toList();
       // Assigned should come first: bravo, delta before alpha, charlie
@@ -588,7 +592,8 @@ void main() {
       expect(texts.indexOf('delta'), lessThan(texts.indexOf('charlie')));
     });
 
-    testWidgets('out-of-scope label is not duplicated in the list', (tester) async {
+    testWidgets('out-of-scope label is not duplicated in the list',
+        (tester) async {
       final global1 = global('g1', 'global1');
       when(() => cacheService.getLabelById('g1')).thenReturn(global1);
 

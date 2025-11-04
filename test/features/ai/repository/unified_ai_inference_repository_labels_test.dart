@@ -150,7 +150,8 @@ void main() {
         )).called(1);
   });
 
-  test('assign_task_labels respects labels array confidence and category scope', () async {
+  test('assign_task_labels respects labels array confidence and category scope',
+      () async {
     // Task belongs to cat; one high label is out-of-scope
     final task = makeTask(labels: const []);
 
@@ -167,7 +168,8 @@ void main() {
     when(() => mockDb.getLabelDefinitionById('vh')).thenAnswer((_) async => vh);
     when(() => mockDb.getLabelDefinitionById('h1')).thenAnswer((_) async => h1);
     when(() => mockDb.getLabelDefinitionById('h2')).thenAnswer((_) async => h2);
-    when(() => mockDb.getLabelDefinitionById('low')).thenAnswer((_) async => low);
+    when(() => mockDb.getLabelDefinitionById('low'))
+        .thenAnswer((_) async => low);
     when(() => mockDb.getAllLabelDefinitions())
         .thenAnswer((_) async => [vh, h1, h2, low]);
 

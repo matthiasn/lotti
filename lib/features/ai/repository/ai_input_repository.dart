@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -165,16 +166,7 @@ class AiInputRepository {
       if (entity is Task) {
         final ids = entity.meta.labelIds ?? const <String>[];
         if (ids.isNotEmpty) {
-          // Prefer batch lookup for names
-          final defs = await _db.getAllLabelDefinitions();
-          final byId = {for (final d in defs) d.id: d};
-          final labels = <Map<String, String>>[];
-          for (final lid in ids) {
-            final def = byId[lid];
-            final name = def?.name ?? lid;
-            labels.add({'id': lid, 'name': name});
-          }
-          base['labels'] = labels;
+          base['labels'] = await buildAssignedLabelTuples(db: _db, ids: ids);
         } else {
           base['labels'] = <Map<String, String>>[];
         }

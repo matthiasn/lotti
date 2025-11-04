@@ -390,8 +390,8 @@ void main() {
     }
 
     List<Map<String, dynamic>> extractLabelsJson(String prompt) {
-      final match =
-          RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true).firstMatch(prompt)!;
+      final match = RegExp(r'Labels:```json\n(.*?)\n```', dotAll: true)
+          .firstMatch(prompt)!;
       final jsonPart = match.group(1)!;
       return (jsonDecode(jsonPart) as List<dynamic>)
           .map((e) => e as Map<String, dynamic>)
@@ -411,7 +411,8 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status:
+              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
@@ -442,7 +443,8 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status:
+              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
@@ -471,7 +473,8 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status:
+              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
@@ -512,7 +515,8 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status:
+              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
@@ -548,7 +552,8 @@ void main() {
         ),
         data: TaskData(
           title: 'Task',
-          status: TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
+          status:
+              TaskStatus.open(id: 's', createdAt: DateTime.now(), utcOffset: 0),
           statusHistory: const [],
           dateFrom: DateTime.now(),
           dateTo: DateTime.now(),
