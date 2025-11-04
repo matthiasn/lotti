@@ -10,10 +10,10 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
+import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 
 /// Helper class for building AI prompts with support for template tracking
 typedef LabelFilterFn = List<LabelDefinition> Function(

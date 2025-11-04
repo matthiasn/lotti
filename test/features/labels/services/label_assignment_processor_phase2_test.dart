@@ -1,13 +1,13 @@
 // ignore_for_file: avoid_redundant_argument_values
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockLabelsRepository extends Mock implements LabelsRepository {}
