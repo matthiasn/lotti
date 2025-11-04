@@ -190,13 +190,14 @@ class LabelsRepository {
       if (journalEntity is Task) {
         final currentSuppressed =
             journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-        final toUnsuppress = addedLabelIds.toSet();
-        final nextSuppressed = currentSuppressed.difference(toUnsuppress);
+        final nextSuppressed = _mergeSuppressed(
+          current: currentSuppressed,
+          remove: addedLabelIds.toSet(),
+        );
         final updatedEntity = journalEntity.copyWith(
           meta: updatedMetadata,
           data: journalEntity.data.copyWith(
-            aiSuppressedLabelIds:
-                nextSuppressed.isEmpty ? null : nextSuppressed,
+            aiSuppressedLabelIds: nextSuppressed,
           ),
         );
         return _persistenceLogic.updateDbEntity(updatedEntity);
@@ -235,12 +236,14 @@ class LabelsRepository {
       if (journalEntity is Task) {
         final currentSuppressed =
             journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-        final nextSuppressed = <String>{...currentSuppressed, labelId};
+        final nextSuppressed = _mergeSuppressed(
+          current: currentSuppressed,
+          add: {labelId},
+        );
         final updatedEntity = journalEntity.copyWith(
           meta: updatedMetadata,
           data: journalEntity.data.copyWith(
-            aiSuppressedLabelIds:
-                nextSuppressed.isEmpty ? null : nextSuppressed,
+            aiSuppressedLabelIds: nextSuppressed,
           ),
         );
         return _persistenceLogic.updateDbEntity(updatedEntity);
@@ -311,16 +314,18 @@ class LabelsRepository {
 
         final currentSuppressed =
             journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-        final nextSuppressed = <String>{...currentSuppressed, ...removed}
-          ..removeAll(added);
+        final nextSuppressed = _mergeSuppressed(
+          current: currentSuppressed,
+          add: removed,
+          remove: added,
+        );
 
         updatedEntity = journalEntity.copyWith(
           meta: updatedMetadata.copyWith(
             labelIds: sorted.isEmpty ? null : sorted,
           ),
           data: journalEntity.data.copyWith(
-            aiSuppressedLabelIds:
-                nextSuppressed.isEmpty ? null : nextSuppressed,
+            aiSuppressedLabelIds: nextSuppressed,
           ),
         );
       } else {
@@ -365,13 +370,16 @@ class LabelsRepository {
       final currentSuppressed =
           journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
       final assigned = journalEntity.meta.labelIds?.toSet() ?? const <String>{};
-      final next = <String>{...currentSuppressed, ...labelIds}
-        ..removeAll(assigned);
+      final next = _mergeSuppressed(
+        current: currentSuppressed,
+        add: labelIds,
+        remove: assigned,
+      );
 
       final updatedEntity = journalEntity.copyWith(
         meta: await _persistenceLogic.updateMetadata(journalEntity.meta),
         data: journalEntity.data.copyWith(
-          aiSuppressedLabelIds: next.isEmpty ? null : next,
+          aiSuppressedLabelIds: next,
         ),
       );
       return _persistenceLogic.updateDbEntity(updatedEntity);
@@ -398,12 +406,15 @@ class LabelsRepository {
 
       final current =
           journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-      final next = <String>{...current}..removeAll(labelIds);
+      final next = _mergeSuppressed(
+        current: current,
+        remove: labelIds,
+      );
 
       final updatedEntity = journalEntity.copyWith(
         meta: await _persistenceLogic.updateMetadata(journalEntity.meta),
         data: journalEntity.data.copyWith(
-          aiSuppressedLabelIds: next.isEmpty ? null : next,
+          aiSuppressedLabelIds: next,
         ),
       );
       return _persistenceLogic.updateDbEntity(updatedEntity);
@@ -417,6 +428,17 @@ class LabelsRepository {
       return false;
     }
   }
+}
+
+Set<String>? _mergeSuppressed({
+  Set<String>? current,
+  Set<String> add = const <String>{},
+  Set<String> remove = const <String>{},
+}) {
+  final next = <String>{...(current ?? const <String>{})}
+    ..addAll(add)
+    ..removeAll(remove);
+  return next.isEmpty ? null : next;
 }
 
 Metadata addLabelsToMeta(

@@ -419,9 +419,9 @@ class LottiChecklistStrategy extends ConversationStrategy {
           final selected =
               LinkedHashSet<String>.from(parsed.selectedIds).toList();
           // Phase 3: filter out suppressed IDs for this task (hard filter)
-          final suppressed = checklistHandler.task.data.aiSuppressedLabelIds ??
-              const <String>{};
-          final suppressedSet = suppressed.toSet();
+          final suppressedSet =
+              checklistHandler.task.data.aiSuppressedLabelIds ??
+                  const <String>{};
           final proposed =
               selected.where((id) => !suppressedSet.contains(id)).toList();
           // Shadow mode: do not persist if enabled (safe default false)
@@ -464,7 +464,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
             droppedLow: parsed.droppedLow,
             legacyUsed: parsed.legacyUsed,
             confidenceBreakdown: parsed.confidenceBreakdown,
-            totalCandidates: selected.length,
+            totalCandidates: parsed.totalCandidates,
           );
 
           // Structured tool response for the model

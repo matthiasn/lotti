@@ -1383,9 +1383,8 @@ class UnifiedAiInferenceRepository {
               LinkedHashSet<String>.from(parsed.selectedIds).toList();
 
           // Phase 3: filter suppressed IDs for this task (hard filter)
-          final suppressed =
+          final suppressedSet =
               currentTask.data.aiSuppressedLabelIds ?? const <String>{};
-          final suppressedSet = suppressed.toSet();
           final proposed =
               requested.where((id) => !suppressedSet.contains(id)).toList();
 

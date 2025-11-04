@@ -110,15 +110,15 @@ void main() {
       when(() => mockDb.getLabelDefinitionById(any()))
           .thenAnswer((_) async => def('a'));
       when(() => mockPl.updateMetadata(
-            any(),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            clearCategoryId: any(named: 'clearCategoryId'),
-            deletedAt: any(named: 'deletedAt'),
-            labelIds: any<List<String>?>(named: 'labelIds'),
-            clearLabelIds: any<bool>(named: 'clearLabelIds'),
-          ))
+                any(),
+                dateFrom: any(named: 'dateFrom'),
+                dateTo: any(named: 'dateTo'),
+                categoryId: any(named: 'categoryId'),
+                clearCategoryId: any(named: 'clearCategoryId'),
+                deletedAt: any(named: 'deletedAt'),
+                labelIds: any<List<String>?>(named: 'labelIds'),
+                clearLabelIds: any<bool>(named: 'clearLabelIds'),
+              ))
           .thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
       when(() => mockPl.updateDbEntity(any(),
               linkedId: any<String?>(named: 'linkedId'),
@@ -201,7 +201,8 @@ void main() {
         journalEntityId: 't2',
         labelIds: const {'z'},
       );
-      expect(current.data.aiSuppressedLabelIds?.contains('z') ?? false, isFalse);
+      expect(
+          current.data.aiSuppressedLabelIds?.contains('z') ?? false, isFalse);
     });
 
     test('addSuppressedLabels returns early on empty set', () async {
@@ -245,7 +246,8 @@ void main() {
       expect(res, isTrue);
     });
 
-    test('non-Task entities do not touch suppression for add/remove/set', () async {
+    test('non-Task entities do not touch suppression for add/remove/set',
+        () async {
       final img = JournalImage(
         meta: Metadata(
           id: 'img1',
@@ -289,16 +291,14 @@ void main() {
     test('error handling returns false and logs', () async {
       when(() => mockDb.journalEntityById('bad')).thenThrow(Exception('db'));
       when(() => mockLog.captureException(any<dynamic>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
-              stackTrace: any<StackTrace?>(named: 'stackTrace')))
-          .thenReturn(null);
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
 
-      expect(
-          await repo.addLabels(journalEntityId: 'bad', addedLabelIds: ['x']),
+      expect(await repo.addLabels(journalEntityId: 'bad', addedLabelIds: ['x']),
           isFalse);
-      expect(
-          await repo.removeLabel(journalEntityId: 'bad', labelId: 'x'), isFalse);
+      expect(await repo.removeLabel(journalEntityId: 'bad', labelId: 'x'),
+          isFalse);
       expect(await repo.setLabels(journalEntityId: 'bad', labelIds: const []),
           isFalse);
 
@@ -346,34 +346,17 @@ void main() {
 
       // First attempt without override -> false to trigger fallback
       when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => false);
-      // Fallback attempt with override -> true (cover both signature variants)
-      var overrideCallCount = 0;
-      when(() => mockPl.updateDbEntity(
-            any(),
-            overrideComparison: any(named: 'overrideComparison'),
-          )).thenAnswer((inv) async {
-        overrideCallCount++;
-        final override = inv.namedArguments[#overrideComparison] as bool?;
-        return override == true;
-      });
-      when(() => mockPl.updateDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-            enqueueSync: any(named: 'enqueueSync'),
-            overrideComparison: any(named: 'overrideComparison'),
-          )).thenAnswer((inv) async {
-        overrideCallCount++;
-        final override = inv.namedArguments[#overrideComparison] as bool?;
-        return override == true;
-      });
+      // First normal update (without named args) should fail to trigger fallback
+      when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => false);
 
-      final result = await repo.setLabels(
+      await repo.setLabels(
         journalEntityId: 't4',
         labelIds: const ['a'],
       );
-
-      // Verify fallback with override was attempted at least once
-      expect(overrideCallCount, greaterThanOrEqualTo(1));
+      // Verify: first normal call and then fallback with overrideComparison
+      verify(() => mockPl.updateDbEntity(any())).called(1);
+      verify(() => mockPl.updateDbEntity(any(), overrideComparison: true))
+          .called(1);
     });
   });
 }
