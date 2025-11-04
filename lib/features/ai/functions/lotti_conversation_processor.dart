@@ -436,6 +436,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
             existingIds:
                 checklistHandler.task.meta.labelIds ?? const <String>[],
             shadowMode: shadow,
+            categoryId: checklistHandler.task.meta.categoryId,
           );
 
           // Structured tool response for the model

@@ -10,7 +10,7 @@ References and builds on:
 
 Split the guardrails into three incremental PRs to reduce risk and clarify decisions. Phase 1 fixes the core safety bug (wrong‑category assignments and the inability to unassign). Phase 2 adds the max‑3 cap and confidence policy. Phase 3 introduces suppression (never re‑suggest user‑removed labels) with user‑visible controls.
 
-This plan resolves the previously open decisions, specifies user messaging, adds feature flags and rollback paths, and strengthens testing and telemetry.
+This plan resolves the previously open decisions, specifies user messaging, and strengthens testing and telemetry.
 
 ## Decisions (resolved)
 
@@ -29,14 +29,9 @@ This plan resolves the previously open decisions, specifies user messaging, adds
   - `lib/features/ai/functions/lotti_conversation_processor.dart`
 - If unavailable, `LabelAssignmentProcessor` will fetch the task once to assemble the missing fields.
 
-## Feature Flags and Rollback
+## Rollout
 
-- `enableCategoryFilterInLabelPrompts` (Phase 1; default: true)
-- `enforceCategoryScopeIngestion` (Phase 1; default: true)
-- `enforceMaxLabelsPerTask` (Phase 2; default: true)
-- `requireVeryHighConfidenceForLabels` (Phase 2; default: false)
-- `enableAiLabelSuppression` (Phase 3; default: true)
-- Rollback: disable corresponding flags to revert behavior without shipping a new build. All phases are additive and flag‑guarded.
+All phases ship as always‑on behavior (no runtime flags). We will monitor via telemetry and adjust thresholds via follow‑up PRs if needed.
 
 ## Success Metrics
 
@@ -79,7 +74,7 @@ Performance
 - Processor prefers caller‑provided context; at most one DB fetch if missing.
 
 Flags/rollback
-- `enableCategoryFilterInLabelPrompts`, `enforceCategoryScopeIngestion` (both default true). Disable either to rollback prompt or ingestion filter independently.
+- Not applicable (always‑on).
 
 Tests
 - Prompt: `{{labels}}` excludes out‑of‑scope labels; respects privacy flag; retains cap.
@@ -137,7 +132,7 @@ Performance
 - Same as Phase 1; added re‑read before persistence is a single DB call.
 
 Flags/rollback
-- `enforceMaxLabelsPerTask` (default true) and `requireVeryHighConfidenceForLabels` (default false) can be toggled independently.
+- Not applicable (always‑on).
 
 Tests
 - Prompt includes “Assigned labels” JSON and the max‑3 instruction when assigned ≥3.
@@ -197,7 +192,7 @@ Performance
 - No extra DB queries beyond existing repository updates; suppressed set lives in task metadata.
 
 Flags/rollback
-- `enableAiLabelSuppression` (default true). Toggle off to ignore suppressed list in both prompt and ingestion.
+- Not applicable (always‑on).
 
 Tests
 - Remove label → appears in `aiSuppressedLabelIds`; AI proposals containing it are skipped with reason `suppressed`.
@@ -259,10 +254,10 @@ Phase 3 adds: PromptBuilder reads suppressedIds; Processor validates against sup
 
 ---
 
-## Confidence Policy Justification and A/B Plan
+## Confidence Policy Justification
 
-- Rationale: False‑positive labels degrade utility; user reports indicate low‑confidence drift. We choose an explicit “very_high” policy to bias toward precision over recall.
-- A/B Plan: Run 1‑week experiment with `requireVeryHighConfidenceForLabels=false` (gate off). Collect `confidence` distribution from tool calls. If ≥70% of successful assignments self‑report `very_high`, enable the gate by default in a follow‑up (config only).
+- Rationale: False‑positive labels degrade utility; user reports indicate low‑confidence drift. We enforce an explicit “very_high” policy to bias toward precision over recall starting with Phase 2.
+- Monitoring: Collect `confidence` distribution from tool calls for 1–2 weeks after Phase 2 to verify policy fit. If the distribution suggests a better threshold, we will adjust in a follow‑up PR.
 
 ## Telemetry Aggregation for Metrics
 
@@ -275,7 +270,7 @@ Phase 3 adds: PromptBuilder reads suppressedIds; Processor validates against sup
 
 ## Phase Dependencies
 
-- Phase 2 requires Phase 1 code present (validators and prompt filtering), but Phase 1 can be disabled by flags. Phase 3 requires Phase 2.
+- Phase 2 builds on Phase 1 code (validators and prompt filtering). Phase 3 builds on Phase 2.
 
 ## Implementation Steps (per phase)
 
@@ -285,7 +280,6 @@ Phase 1 — Category Guardrails
 - Validator: `validateForCategory()` in `label_validator.dart`.
 - Processor: accept `TaskContext`, apply category scope; log telemetry payload (Phase 1 schema).
 - UI: selector union + sectioned rendering; "Out of category" note.
-- Flags: wire `enableCategoryFilterInLabelPrompts`, `enforceCategoryScopeIngestion`.
 - Tests: prompt, validator, ingestion, UI, edge no category.
 
 Phase 2 — Max‑3 & Confidence
@@ -293,8 +287,7 @@ Phase 2 — Max‑3 & Confidence
 - AiInputRepository: include `labels: [{id,name}]` in task JSON.
 - Prompts: add Assigned labels block + max‑3 instruction; include before/after diff in PR description.
 - Parser: `parseLabelCallArgs` with optional `confidence`.
-- Processor: cap by remaining room; optional confidence gate; re‑read meta before persist and recompute reasons.
-- Flags: `enforceMaxLabelsPerTask`, `requireVeryHighConfidenceForLabels`.
+- Processor: cap by remaining room; enforce `very_high` confidence; re‑read meta before persist and recompute reasons.
 - Tests: capped assignment, max reached, missing/invalid confidence, concurrency.
 
 Phase 3 — Suppression
@@ -303,6 +296,4 @@ Phase 3 — Suppression
 - Prompt: exclude suppressed; include `suppressedLabelIds` in task JSON.
 - Validator: extend to `validateForTask()` (category + suppression).
 - UI: Reset action on Task detail ⋮ with confirmation; tooltip in selector header.
-- Flag: `enableAiLabelSuppression`.
 - Tests: suppression skip, manual unsuppress, reset action, label deleted while suppressed (kept in metadata).
-
