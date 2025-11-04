@@ -291,6 +291,140 @@ void main() {
         )).called(greaterThanOrEqualTo(1));
   });
 
+  test(
+      'conversation selects top 3 by confidence and omits low when labels array provided',
+      () async {
+    final task = makeTask();
+
+    // Define label IDs used in the mixed confidence payload
+    const vh1 = 'very-high-1';
+    const h1 = 'high-1';
+    const h2 = 'high-2';
+    const m1 = 'medium-1';
+    const low1 = 'low-1';
+
+    Future<LabelDefinition> def(String id) async => LabelDefinition(
+          id: id,
+          name: id,
+          color: '#000',
+          description: null,
+          sortOrder: null,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+        );
+
+    // All proposed labels exist and are not deleted (global)
+    when(() => mockJournalDb.getLabelDefinitionById(vh1))
+        .thenAnswer((_) => def(vh1));
+    when(() => mockJournalDb.getLabelDefinitionById(h1))
+        .thenAnswer((_) => def(h1));
+    when(() => mockJournalDb.getLabelDefinitionById(h2))
+        .thenAnswer((_) => def(h2));
+    when(() => mockJournalDb.getLabelDefinitionById(m1))
+        .thenAnswer((_) => def(m1));
+    when(() => mockJournalDb.getLabelDefinitionById(low1))
+        .thenAnswer((_) => def(low1));
+
+    when(() => mockJournalDb.getConfigFlag(aiLabelAssignmentShadowFlag))
+        .thenAnswer((_) async => false);
+
+    // Wire conversation
+    const conversationId = 'conv-mixed';
+    when(() => mockConversationRepo.createConversation(
+          systemMessage: any(named: 'systemMessage'),
+          maxTurns: any(named: 'maxTurns'),
+        )).thenReturn(conversationId);
+    when(() => mockConversationRepo.getConversation(conversationId))
+        .thenReturn(mockConversationManager);
+    when(() => mockConversationManager.messages).thenReturn([]);
+
+    // Capture tool response
+    String? toolResponse;
+    when(() => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: captureAny(named: 'response'),
+        )).thenAnswer((invocation) {
+      toolResponse = invocation.namedArguments[#response] as String;
+      return;
+    });
+
+    // sendMessage triggers strategy with the new preferred labels array
+    when(() => mockConversationRepo.sendMessage(
+          conversationId: conversationId,
+          message: any(named: 'message'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          inferenceRepo: any(named: 'inferenceRepo'),
+          tools: any(named: 'tools'),
+          temperature: any(named: 'temperature'),
+          strategy: any(named: 'strategy'),
+        )).thenAnswer((invocation) async {
+      final strategy =
+          invocation.namedArguments[#strategy] as ConversationStrategy?;
+      if (strategy != null) {
+        await strategy.processToolCalls(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-mixed',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'assign_task_labels',
+                arguments: jsonEncode({
+                  'labels': [
+                    {'id': h1, 'confidence': 'high'},
+                    {'id': low1, 'confidence': 'low'},
+                    {'id': vh1, 'confidence': 'very_high'},
+                    {'id': m1, 'confidence': 'medium'},
+                    {'id': h2, 'confidence': 'high'},
+                  ]
+                }),
+              ),
+            ),
+          ],
+          manager: mockConversationManager,
+        );
+      }
+    });
+    when(() => mockConversationRepo.deleteConversation(conversationId))
+        .thenAnswer((_) {});
+
+    // Repo call should persist selected labels
+    when(() => mockLabelsRepo.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        )).thenAnswer((_) async => true);
+
+    await processor.processPromptWithConversation(
+      prompt: 'user',
+      entity: task,
+      task: task,
+      model: makeModel(),
+      provider: makeProvider(),
+      promptConfig: makePrompt(),
+      systemMessage: 'sys',
+      tools: const [],
+      inferenceRepo: FakeInferenceRepo(),
+    );
+
+    // Verify persistence received the top-3 by confidence in order: vh1, h1, h2
+    final captured = verify(() => mockLabelsRepo.addLabels(
+          journalEntityId: task.id,
+          addedLabelIds: captureAny(named: 'addedLabelIds'),
+        )).captured;
+    expect(captured, isNotEmpty);
+    final ids = (captured.first as List).cast<String>();
+    expect(ids, equals([vh1, h1, h2]));
+
+    // Verify tool response is present
+    expect(toolResponse, isNotNull);
+    final decoded = jsonDecode(toolResponse!) as Map<String, dynamic>;
+    expect(decoded['function'], 'assign_task_labels');
+    final result = Map<String, dynamic>.from(decoded['result'] as Map);
+    expect((result['assigned'] as List).cast<String>(), equals([vh1, h1, h2]));
+  });
+
   test('shadow mode does not persist but returns response', () async {
     final task = makeTask();
 
@@ -496,7 +630,8 @@ void main() {
               function: ChatCompletionMessageFunctionCall(
                 name: 'assign_task_labels',
                 arguments: jsonEncode({
-                  'labelIds': ['valid-1', 'typo-id', 'valid-2', 'deleted-id'],
+                  // With Phase 2 cap (≤3), ensure the deleted label is within the first three
+                  'labelIds': ['valid-1', 'typo-id', 'deleted-id', 'valid-2'],
                 }),
               ),
             ),
@@ -526,7 +661,8 @@ void main() {
     final firstAssigned = (firstResMap['assigned'] as List).cast<String>();
     final firstInvalid = (firstResMap['invalid'] as List).cast<String>();
     expect(firstFunction, 'assign_task_labels');
-    expect(firstAssigned, containsAll(['valid-1', 'valid-2']));
+    // With Phase 2 cap (≤3) and selection order, only 'valid-1' is assigned.
+    expect(firstAssigned, equals(['valid-1']));
     expect(firstInvalid, containsAll(['typo-id', 'deleted-id']));
 
     // Clear rate limiter before retry to allow second assignment

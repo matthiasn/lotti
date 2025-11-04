@@ -156,8 +156,35 @@ class AiInputRepository {
       return null;
     }
 
+    // Start with the base task JSON
+    final base = aiInput.toJson();
+
+    // Extend with assigned labels [{id,name}] when available
+    try {
+      final entity = await _db.journalEntityById(id);
+      if (entity is Task) {
+        final ids = entity.meta.labelIds ?? const <String>[];
+        if (ids.isNotEmpty) {
+          // Prefer batch lookup for names
+          final defs = await _db.getAllLabelDefinitions();
+          final byId = {for (final d in defs) d.id: d};
+          final labels = <Map<String, String>>[];
+          for (final lid in ids) {
+            final def = byId[lid];
+            final name = def?.name ?? lid;
+            labels.add({'id': lid, 'name': name});
+          }
+          base['labels'] = labels;
+        } else {
+          base['labels'] = <Map<String, String>>[];
+        }
+      }
+    } catch (_) {
+      // On lookup failure, omit labels extension silently
+    }
+
     const encoder = JsonEncoder.withIndent('    ');
-    final jsonString = encoder.convert(aiInput);
+    final jsonString = encoder.convert(base);
     return jsonString;
   }
 }

@@ -14,7 +14,6 @@ library;
 
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 
 /// Represents a preconfigured prompt template that can be used
 /// to quickly create common prompt types.
@@ -136,7 +135,7 @@ Annoyances:
 const checklistUpdatesPrompt = PreconfiguredPrompt(
   id: 'checklist_updates',
   name: 'Checklist Updates',
-  systemMessage: '''
+  systemMessage: r'''
 You are a task management assistant that ONLY processes task updates through function calls.
 You should NOT generate any text response - only make function calls.
 
@@ -151,7 +150,7 @@ Your job is to:
 Available functions:
 1. add_multiple_checklist_items: Add multiple checklist items at once (ALWAYS USE THIS FOR 2+ ITEMS when available)
    - Preferred format: {"items": ["item1", "item2", "item3"]}
-   - Fallback format: {"items": "item1, item2, item3"} (escape commas within an item as \\,, or wrap the item in quotes)
+   - Fallback format: {"items": "item1, item2, item3"} (escape commas within an item as \,, or wrap the item in quotes)
    - Never put square‑bracketed arrays (e.g., [item1, item2]) into actionItemDescription.
    - This is MUCH more efficient than multiple individual calls
    - ALL items should be in ONE function call
@@ -186,11 +185,15 @@ Tools for checklist updates:
 2. add_multiple_checklist_items: Create multiple items at once
 3. suggest_checklist_completion: Suggest marking items as done when evidence exists
 4. set_task_language: Set task language after creating items
-5. assign_task_labels: Add one or more labels to the task using label IDs (add-only)
+5. assign_task_labels: Add one or more labels to the task (add-only)
+   - Preferred: {"labels": [{"id": "<labelId>", "confidence": "very_high|high|medium|low"}, ...]}
+   - Legacy: {"labelIds": ["<labelId>", ...]} (deprecated)
 
 Label assignment rules:
-- Assign at most $kMaxLabelsPerAssignment labels and only with HIGH confidence
-- Choose from the provided Available Labels list only (use IDs)
+- If the task already has 3 or more labels assigned, do NOT call assign_task_labels.
+- When calling assign_task_labels, provide highest-confidence labels first and omit low confidence.
+- Cap to at most 3 labels total in a single call.
+- Choose only from the Available Labels list (use IDs)
 - If unsure, assign none
 
 Examples:
@@ -213,6 +216,11 @@ Create checklist items based on the user's request below.
 {{task}}
 ```
 
+Assigned Labels (currently on the task):
+```json
+{{assigned_labels}}
+```
+
 Available Labels (id and name):
 ```json
 {{labels}}
@@ -222,7 +230,7 @@ REMEMBER:
 - Count the items first: if 2 or more, use add_multiple_checklist_items
 - Create items in the language used in the request
 - After creating items, ALWAYS set the task language (even if it's English, use "en")
-- To assign labels, use assign_task_labels and pass label IDs from the list above; only assign with HIGH confidence and at most $kMaxLabelsPerAssignment labels
+- For labels: if there are already 3 or more assigned, do not call assign_task_labels. Otherwise, call assign_task_labels using the preferred {labels: [{id, confidence}]} shape, omit low confidence, order highest confidence first, and cap to 3 labels.
 - Only use the functions listed in the system message''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.checklistUpdates,

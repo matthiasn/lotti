@@ -100,25 +100,26 @@ Telemetry
 
 ---
 
-## Phase 2 — Max‑3 Cap and Confidence Policy
+## Phase 2 — Max‑3 by Confidence (Top‑3; exclude low)
 
 Scope
 - Max labels per task = 3 for AI suggestions (manual user assignment unaffected).
 - Pass assigned labels into prompt context; instruct “If ≥3 assigned, do not call the tool”.
-- Optional ingestion gate on confidence (string enum), default off; prompt still demands “very high”.
+- Confidence‑driven selection: drop all `low`, sort remaining by confidence (very_high > high > medium) while preserving input order, then select top 3. For legacy payloads with only `labelIds`, treat all as `medium` and cap at 3.
 
 Design
-- Constants: `LabelAssignmentConfig.maxLabelsPerTask = 3`; `minConfidenceForAssignment = 'very_high'`.
+- Constants: `LabelAssignmentConfig.maxLabelsPerTask = 3`.
 - PromptBuilderHelper & AiInputRepository
   - Extend `AiInputRepository.buildTaskDetailsJson` to include `labels: [{id,name}]`.
   - Preconfigured prompt includes an “Assigned labels” JSON section and an explicit rule: “If the task already has ≥3 labels, do not call assign_task_labels.”
+  - Prompt instructs the model to return per‑label confidences and to order suggestions by confidence (omit `low`).
 - Parsing
-  - Add `parseLabelCallArgs` → `{ labelIds: string[], confidence?: string }`. Keep old parser for compatibility.
+  - Extend parser to accept `{ labels: [{ id, confidence }] }` while keeping `{ labelIds: [] }` for backward compatibility.
+  - Normalize into ranks (very_high=3, high=2, medium=1, low=0), drop `low`, stable‑sort by rank desc, take top 3. Legacy payload: treat all as `medium` and take first 3.
 - Ingestion (`LabelAssignmentProcessor`)
-  - Derive `existing` (from `TaskContext` or DB). If `existing.length >= 3`, short‑circuit: assigned=0; skipped reason `max_total_reached`.
-  - Else, compute `room = 3 - existing.length` and cap proposed to `room`; skipped reason `over_total_cap` for extras.
-  - If flag `requireVeryHighConfidenceForLabels` enabled and `confidence != 'very_high'`, skip all with `low_confidence`.
-  - Re‑read fresh metadata immediately before `addLabels` inside the processor to recompute `room` and avoid race; skipped reasons are recalculated against the fresh state to keep the structured response truthful.
+  - If `existing.length >= 3`, short‑circuit: assigned=0; skipped reason `max_total_reached`.
+  - Otherwise, use the cap‑and‑ranked list from parsing (already ≤3) and apply Phase‑1 category scope checks and assignment.
+  - Re‑read fresh metadata immediately before `addLabels` to recompute remaining room safely.
 
 Dependencies
 - Phase 2 builds on Phase 1 codebase (validators and prompt filtering). Phase 3 builds on Phase 2. All phases are always‑on; there are no runtime flags.
@@ -134,9 +135,8 @@ Flags/rollback
 
 Tests
 - Prompt includes “Assigned labels” JSON and the max‑3 instruction when assigned ≥3.
-- Ingestion: with 2 assigned and 2 proposed → assigns 1, skips 1 with `over_total_cap`.
+- Parser selects top‑3 by confidence (drops `low`), preserves order among equals, and handles legacy `labelIds`.
 - Ingestion: with 3 assigned → assigns none, `max_total_reached`.
-- Confidence gate on: `confidence: high` → `low_confidence` skip; off → assignment proceeds.
 - Concurrency: two concurrent AI calls proposing the same label → idempotent union assigns once.
 
 Telemetry
@@ -144,16 +144,14 @@ Telemetry
   ```json
   {
     "taskId": "...",
-    "attempted": 4,
-    "assigned": 1,
+    "attempted": 5,
+    "assigned": 3,
     "invalid": 0,
     "skipped": {
-      "over_total_cap": 2,
-      "low_confidence": 1
+      "dropped_low": 1,
+      "legacy_capped": 1
     },
-    "existingCount": 2,
-    "room": 1,
-    "confidence": "high",
+    "confidenceBreakdown": {"very_high": 2, "high": 2, "medium": 1},
     "phase": 2
   }
   ```

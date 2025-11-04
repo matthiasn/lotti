@@ -88,7 +88,25 @@ class LabelAssignmentProcessor {
     bool shadowMode = false,
     // Optional task context to avoid redundant DB lookups
     String? categoryId,
+    // Optional Phase 2 parser metrics for telemetry
+    int droppedLow = 0,
+    bool legacyUsed = false,
+    Map<String, int>? confidenceBreakdown,
+    int? totalCandidates,
   }) async {
+    // Phase 2: Do not assign if task already has >= 3 labels
+    if (existingIds.length >= 3) {
+      _logging.captureEvent(
+        'max_total_reached: existing labels >= 3 for task $taskId',
+        domain: 'labels_ai_assignment',
+        subDomain: 'processor',
+      );
+      return LabelAssignmentResult(
+        assigned: const [],
+        invalid: const [],
+        skipped: const [],
+      );
+    }
     // Normalize proposed IDs (trim, drop empties)
     final normalized =
         proposedIds.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
@@ -213,6 +231,12 @@ class LabelAssignmentProcessor {
         'duplicate': duplicateIds.length,
       },
       'validationMs': sw.elapsedMilliseconds,
+      // Phase 2 metrics
+      'dropped_low': droppedLow,
+      'legacy_capped':
+          legacyUsed && (totalCandidates != null && totalCandidates > 3),
+      if (confidenceBreakdown != null)
+        'confidenceBreakdown': confidenceBreakdown,
       'phase': 1,
     });
     _logging.captureEvent(

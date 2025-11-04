@@ -35,7 +35,6 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/utils/item_list_parsing.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
@@ -1381,10 +1380,9 @@ class UnifiedAiInferenceRepository {
       } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
         // Handle assign task labels (add-only)
         try {
-          final parsed = parseLabelIdsFromToolArgs(toolCall.function.arguments);
-          final proposed = LinkedHashSet<String>.from(parsed)
-              .take(kMaxLabelsPerAssignment)
-              .toList();
+          final parsed = parseLabelCallArgs(toolCall.function.arguments);
+          final proposed =
+              LinkedHashSet<String>.from(parsed.selectedIds).toList();
 
           final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
           final processor = LabelAssignmentProcessor(
@@ -1396,6 +1394,10 @@ class UnifiedAiInferenceRepository {
             existingIds: currentTask.meta.labelIds ?? const <String>[],
             shadowMode: shadow,
             categoryId: currentTask.meta.categoryId,
+            droppedLow: parsed.droppedLow,
+            legacyUsed: parsed.legacyUsed,
+            confidenceBreakdown: parsed.confidenceBreakdown,
+            totalCandidates: parsed.totalCandidates,
           );
           // Log structured result for debugging
           try {

@@ -100,6 +100,17 @@ class PromptBuilderHelper {
       }
     }
 
+    // Inject currently assigned labels if requested
+    if (prompt.contains('{{assigned_labels}}') &&
+        promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
+      try {
+        final assigned = await _buildAssignedLabelsJson(entity);
+        prompt = prompt.replaceAll('{{assigned_labels}}', assigned);
+      } catch (_) {
+        prompt = prompt.replaceAll('{{assigned_labels}}', '[]');
+      }
+    }
+
     return prompt;
   }
 
@@ -242,6 +253,30 @@ class PromptBuilderHelper {
     }
     // Caller applies ranking/sorting (usage then alpha). Avoid extra sort here.
     return dedup.values.toList();
+  }
+
+  /// Build JSON array of assigned labels [{id,name}] for the task or linked task
+  Future<String> _buildAssignedLabelsJson(JournalEntity entity) async {
+    final db = getIt<JournalDb>();
+    Task? task;
+    if (entity is Task) {
+      task = entity;
+    } else {
+      task = await _findLinkedTask(entity);
+    }
+    if (task == null) return '[]';
+    final ids = task.meta.labelIds ?? const <String>[];
+    if (ids.isEmpty) return '[]';
+    // Batch lookup for names
+    final defs = await db.getAllLabelDefinitions();
+    final byId = {for (final d in defs) d.id: d};
+    final tuples = <Map<String, String>>[];
+    for (final id in ids) {
+      final def = byId[id];
+      final name = def?.name ?? id;
+      tuples.add({'id': id, 'name': name});
+    }
+    return jsonEncode(tuples);
   }
 
   // Removed obsolete helper _buildLabelsJson(); the category-scoped builder
