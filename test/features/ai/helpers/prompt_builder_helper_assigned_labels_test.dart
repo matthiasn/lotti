@@ -1,4 +1,3 @@
-// ignore_for_file: unnecessary_lambdas
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -29,8 +28,8 @@ void main() {
     helper = PromptBuilderHelper(aiInputRepository: mockAiInputRepo);
   });
 
-  tearDown(() {
-    getIt.reset();
+  tearDown(() async {
+    await getIt.reset();
   });
 
   AiConfigPrompt makePrompt() => AiConfigPrompt(

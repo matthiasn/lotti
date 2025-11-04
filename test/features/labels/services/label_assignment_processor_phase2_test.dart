@@ -64,13 +64,16 @@ void main() {
           addedLabelIds: any(named: 'addedLabelIds'),
         ));
 
-    // Verify a max_total_reached event was logged
-    verify(() => mockLogging.captureEvent(
-          any<dynamic>(),
+    // Verify a max_total_reached event was logged with expected marker
+    final logged = verify(() => mockLogging.captureEvent(
+          captureAny<dynamic>(),
           domain: 'labels_ai_assignment',
           subDomain: 'processor',
           level: any<InsightLevel>(named: 'level'),
           type: any<InsightType>(named: 'type'),
-        )).called(1);
+        )).captured;
+    expect(logged, isNotEmpty);
+    final message = logged.first.toString();
+    expect(message, contains('max_total_reached'));
   });
 }
