@@ -51,6 +51,60 @@ void main() {
       testCategoryId = const Uuid().v4();
     });
 
+    testWidgets(
+        'name field does not reseed selection/text on rebuild during edit',
+        (tester) async {
+      final streamController =
+          StreamController<CategoryDefinition?>.broadcast();
+      when(() => mockRepository.watchCategory(any())).thenAnswer(
+        (_) => streamController.stream,
+      );
+
+      final category = CategoryDefinition(
+        id: testCategoryId,
+        name: 'Alpha',
+        color: '#00AAFF',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: CategoryDetailsPage(categoryId: testCategoryId),
+        ),
+      );
+
+      // Emit initial category
+      streamController.add(category);
+      await tester.pumpAndSettle();
+
+      // Find the name field (first TextFormField in Basic Settings)
+      final nameField = find.byType(TextFormField).first;
+      await tester.tap(nameField);
+      await tester.pumpAndSettle();
+
+      // User types a suffix
+      await tester.enterText(nameField, 'AlphaX');
+      await tester.pump();
+
+      // Trigger a rebuild via controller state change: simulate toggling favorite
+      final updated = category.copyWith(favorite: true);
+      streamController.add(updated);
+      await tester.pump();
+
+      // The text should remain user's edited value (no reseed)
+      final tf = tester.widget<TextFormField>(nameField);
+      expect(tf.controller?.text, equals('AlphaX'));
+
+      await streamController.close();
+    });
+
     group('Loading and Error States', () {
       testWidgets('displays loading state initially', (tester) async {
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -807,7 +861,7 @@ void main() {
     });
 
     group('UI Behavior', () {
-      testWidgets('displays save button in app bar when changes exist',
+      testWidgets('does not display app bar save; only bottom bar save is used',
           (tester) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
@@ -842,14 +896,20 @@ void main() {
         await tester.enterText(find.byType(TextFormField), 'Changed Name');
         await tester.pumpAndSettle();
 
-        // Save button should appear in app bar
+        // Save button should remain absent in app bar; save is in bottom bar only
         expect(
           find.ancestor(
             of: find.byType(LottiTertiaryButton),
             matching: find.byType(SliverAppBar),
           ),
-          findsOneWidget,
+          findsNothing,
         );
+
+        // Bottom bar should show Save enabled
+        final enabledSave = find.byWidgetPredicate(
+          (w) => w is LottiPrimaryButton && w.onPressed != null,
+        );
+        expect(enabledSave, findsOneWidget);
 
         await streamController.close();
       });

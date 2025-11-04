@@ -91,11 +91,23 @@ class LabelsRepository {
     final normalizedCategoryIds = applicableCategoryIds == null
         ? label.applicableCategoryIds
         : _normalizeCategoryIds(applicableCategoryIds);
+    // Description semantics:
+    //  - null  => leave unchanged
+    //  - ''    => clear (persist as null)
+    //  - value => trimmed value
+    String? effectiveDescription;
+    if (description == null) {
+      effectiveDescription = label.description;
+    } else {
+      final trimmed = description.trim();
+      effectiveDescription = trimmed.isEmpty ? null : trimmed;
+    }
+
     final updated = label.copyWith(
       name: name?.trim() ?? label.name,
       color: color ?? label.color,
-      // Preserve existing description when not explicitly provided
-      description: description == null ? label.description : description.trim(),
+      // Preserve existing when null (not provided); clear when empty string
+      description: effectiveDescription,
       sortOrder: sortOrder ?? label.sortOrder,
       private: private ?? label.private,
       applicableCategoryIds:

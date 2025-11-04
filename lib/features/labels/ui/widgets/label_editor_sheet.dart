@@ -163,7 +163,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                 pickerTypeLabels: <ColorPickerType, String>{
                   ColorPickerType.custom:
                       context.messages.settingsLabelsColorSubheading,
-                  ColorPickerType.wheel: 'Custom color',
+                  ColorPickerType.wheel: context.messages.customColor,
                 },
                 colorNameTextStyle: theme.textTheme.bodySmall,
               ),

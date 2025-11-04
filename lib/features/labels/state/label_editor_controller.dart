@@ -48,7 +48,7 @@ class LabelEditorState {
     String? name,
     String? colorHex,
     bool? isPrivate,
-    String? description,
+    Object? description = _sentinel,
     Set<String>? selectedCategoryIds,
     bool? isSaving,
     bool? hasChanges,
@@ -58,7 +58,9 @@ class LabelEditorState {
       name: name ?? this.name,
       colorHex: colorHex ?? this.colorHex,
       isPrivate: isPrivate ?? this.isPrivate,
-      description: description ?? this.description,
+      description: identical(description, _sentinel)
+          ? this.description
+          : description as String?,
       selectedCategoryIds: selectedCategoryIds ?? this.selectedCategoryIds,
       isSaving: isSaving ?? this.isSaving,
       hasChanges: hasChanges ?? this.hasChanges,
@@ -122,13 +124,13 @@ class LabelEditorController
   }
 
   void setDescription(String? value) {
-    final trimmed = value?.trim();
-    final normalized = trimmed?.isEmpty ?? true ? null : trimmed;
-    final updated = state.copyWith(
+    // Normalize description eagerly for state (tests expect trimmed value),
+    // but the UI text field is not re-seeded on rebuilds, so cursor won't jump.
+    final trimmed = _sanitize(value);
+    final normalized = trimmed.isEmpty ? null : trimmed;
+    state = state.copyWith(
       description: normalized,
       errorMessage: null,
-    );
-    state = updated.copyWith(
       hasChanges: _hasChanges(description: normalized),
     );
   }
@@ -230,10 +232,12 @@ class LabelEditorController
       }
 
       if (_initialLabel == null) {
+        final descTrim = _sanitize(state.description);
+        final normalizedDesc = descTrim.isEmpty ? null : descTrim;
         final result = await _repository.createLabel(
           name: trimmedName,
           color: state.colorHex,
-          description: state.description,
+          description: normalizedDesc,
           private: state.isPrivate,
           applicableCategoryIds: state.selectedCategoryIds.toList(),
         );
@@ -242,11 +246,14 @@ class LabelEditorController
         state = state.copyWith(isSaving: false, hasChanges: false);
         return result;
       } else {
+        final descTrim = _sanitize(state.description);
+        // For updates, pass empty string to clear description; repository treats null as "keep".
+        final normalizedDesc = descTrim.isEmpty ? '' : descTrim;
         final updated = await _repository.updateLabel(
           _initialLabel!,
           name: trimmedName,
           color: state.colorHex,
-          description: state.description,
+          description: normalizedDesc,
           private: state.isPrivate,
           // Category update behavior:
           //  - Non-empty list replaces existing applicable categories.
@@ -269,4 +276,14 @@ class LabelEditorController
   void resetToInitial() {
     state = LabelEditorState.initial(label: _initialLabel);
   }
+}
+
+String _sanitize(String? value) {
+  var text = value ?? '';
+  // Remove common invisible/stray characters that survive a normal trim
+  // - NBSP (\u00A0), ZWSP (\u200B), BOM (\uFEFF)
+  text = text.replaceAll(RegExp(r'[\u00A0\u200B\uFEFF]'), '');
+  // Trim leading/trailing unicode whitespace
+  text = text.trim();
+  return text;
 }

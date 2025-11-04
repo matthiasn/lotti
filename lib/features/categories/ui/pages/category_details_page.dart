@@ -55,7 +55,7 @@ class CategoryDetailsPage extends ConsumerStatefulWidget {
 
 class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   late TextEditingController _nameController;
-  String? _lastSyncedName;
+  // Track input via controller; avoid re-seeding on rebuilds to prevent selection jumps.
   Color? _selectedColor; // Only used in create mode
   CategoryIcon? _selectedIcon; // Only used in create mode
 
@@ -72,10 +72,15 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   void _syncFormWithCategory(CategoryDefinition category) {
-    // Update name controller only if the name has changed externally
-    if (_lastSyncedName != category.name) {
-      _lastSyncedName = category.name;
-      _nameController.text = category.name;
+    // Only update the controller when its current text differs from the model.
+    // This avoids clobbering the user's cursor/selection on each rebuild.
+    final newText = category.name;
+    if (_nameController.text != newText) {
+      // Collapse to end to keep UX consistent when external changes arrive.
+      _nameController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
+      );
     }
   }
 
@@ -280,13 +285,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                 ),
               ),
               pinned: true,
-              actions: [
-                if (state.hasChanges && !state.isSaving)
-                  LottiTertiaryButton(
-                    label: context.messages.saveButton,
-                    onPressed: _handleSave,
-                  ),
-              ],
+              // Save action intentionally removed; single Save lives in bottom bar.
             ),
             if (state.errorMessage != null)
               SliverToBoxAdapter(

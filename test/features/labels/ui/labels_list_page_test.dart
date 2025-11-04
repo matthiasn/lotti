@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
-import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:mocktail/mocktail.dart';
-import '../../../mocks/mocks.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
@@ -30,6 +29,12 @@ Widget _buildPage({
 
 void main() {
   setUp(() {
+    // Give enough viewport height so FAB and CTA are built and tappable.
+    TestWidgetsFlutterBinding.ensureInitialized();
+    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        .physicalSize = const Size(1024, 1400);
+    TestWidgetsFlutterBinding
+        .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
     if (!getIt.isRegistered<EntitiesCacheService>()) {
       final mock = MockEntitiesCacheService();
       // No categories needed for this suite; return empty list
@@ -37,13 +42,25 @@ void main() {
           .thenReturn(const <CategoryDefinition>[]);
       getIt.registerSingleton<EntitiesCacheService>(mock);
     }
+    if (!getIt.isRegistered<NavService>()) {
+      getIt.registerSingleton<NavService>(MockNavService());
+    }
   });
 
   tearDown(() async {
+    // Reset surface size
+    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        .physicalSize = const Size(800, 600);
+    TestWidgetsFlutterBinding
+        .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
     if (getIt.isRegistered<EntitiesCacheService>()) {
       await getIt.reset(dispose: false);
     }
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
   });
+
   testWidgets('renders labels with usage stats', (tester) async {
     await tester.pumpWidget(
       _buildPage(
@@ -115,37 +132,69 @@ void main() {
     expect(find.textContaining('boom'), findsOneWidget);
   });
 
-  testWidgets('popup menu shows edit and delete options', (tester) async {
+  testWidgets('list item uses chevron and no popup menu', (tester) async {
     await tester.pumpWidget(
       _buildPage(labels: [testLabelDefinition1]),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('Delete'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
   });
 
-  testWidgets('delete confirmation shows label name and cancel keeps list',
-      (tester) async {
+  // Deletion now happens in the details page; list does not show a popup menu anymore.
+
+  testWidgets('FAB navigates to create label page', (tester) async {
+    final mockNav = getIt<NavService>() as MockNavService;
     await tester.pumpWidget(
       _buildPage(labels: [testLabelDefinition1]),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Urgent'), findsWidgets);
-    await tester.tap(find.text('Cancel'));
+    final fab = find.byType(FloatingActionButton);
+    await tester.ensureVisible(fab);
+    await tester.tap(fab, warnIfMissed: false);
     await tester.pumpAndSettle();
 
-    // Label still visible after cancel
-    expect(find.text('Urgent'), findsWidgets);
+    verify(() => mockNav.beamToNamed('/settings/labels/create')).called(1);
+  });
+
+  testWidgets('Create CTA navigates with encoded name', (tester) async {
+    final mockNav = getIt<NavService>() as MockNavService;
+    await tester.pumpWidget(_buildPage(labels: const []));
+    await tester.pumpAndSettle();
+
+    const query = 'My Label';
+    await tester.enterText(
+      find.byType(TextField, skipOffstage: false).first,
+      query,
+    );
+    await tester.pumpAndSettle();
+
+    final ctaText = find.text('Create "$query" label');
+    expect(ctaText, findsOneWidget);
+    await tester.ensureVisible(ctaText);
+    await tester.tap(ctaText, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    verify(() => mockNav.beamToNamed('/settings/labels/create?name=My%20Label'))
+        .called(1);
+  });
+
+  testWidgets('tapping label navigates to details', (tester) async {
+    final mockNav = getIt<NavService>() as MockNavService;
+    await tester.pumpWidget(_buildPage(labels: [testLabelDefinition1]));
+    await tester.pumpAndSettle();
+
+    // Tap the first ListTile
+    final tile = find.byType(ListTile).first;
+    await tester.ensureVisible(tile);
+    await tester.tap(tile, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    verify(() =>
+            mockNav.beamToNamed('/settings/labels/${testLabelDefinition1.id}'))
+        .called(1);
   });
 
   testWidgets('private badge renders for private labels', (tester) async {
@@ -161,14 +210,10 @@ void main() {
   // Note: FAB behavior is covered by dedicated editor sheet tests; here we
   // verify presence and focus coverage via other interactions.
 
-  testWidgets('shows create-from-search CTA and opens editor prefilled',
-      (tester) async {
-    // Provide a mock repository to satisfy LabelEditorSheet dependencies.
-    final mockRepo = _MockLabelsRepository();
+  testWidgets('shows create-from-search CTA with typed query', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          labelsRepositoryProvider.overrideWithValue(mockRepo),
           labelsStreamProvider.overrideWith(
             (ref) => Stream.value([
               testLabelDefinition1,
@@ -195,12 +240,7 @@ void main() {
     // CTA should reflect the exact typed casing
     expect(find.text('Create "$query" label'), findsOneWidget);
 
-    // Tap to open the label editor, which should be prefilled with the query
-    await tester.tap(find.text('Create "$query" label'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(LabelEditorSheet), findsOneWidget);
-    expect(find.text(query), findsWidgets);
+    // We navigate to a new page in the app; here we only assert the CTA exists.
   });
 
   testWidgets('settings search field capitalizes words', (tester) async {
@@ -311,4 +351,4 @@ void main() {
   });
 }
 
-class _MockLabelsRepository extends Mock implements LabelsRepository {}
+// No longer needed in this suite.

@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
-import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/search/index.dart';
 
 class LabelsListPage extends ConsumerStatefulWidget {
@@ -43,7 +43,7 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
         error: (error, stackTrace) => _buildErrorState(context, error),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _openEditor,
+        onPressed: () => beamToNamed('/settings/labels/create'),
         tooltip: context.messages.settingsLabelsCreateTitle,
         child: const Icon(Icons.add),
       ),
@@ -118,7 +118,10 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
-                  onPressed: () => _openEditorWithInitial(query),
+                  onPressed: () {
+                    final encoded = Uri.encodeComponent(query);
+                    beamToNamed('/settings/labels/create?name=$encoded');
+                  },
                   icon: const Icon(Icons.add),
                   label: Text('Create "$query" label'),
                 ),
@@ -169,8 +172,6 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
           child: _LabelListCard(
             label: label,
             usageCount: usageCounts[label.id] ?? 0,
-            onEdit: () => _openEditor(label: label),
-            onDelete: () => _confirmDelete(label),
           ),
         );
       },
@@ -205,129 +206,15 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
       ),
     );
   }
-
-  Future<void> _openEditor({LabelDefinition? label}) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final result = await showModalBottomSheet<LabelDefinition>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      builder: (context) => LabelEditorSheet(label: label),
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          label == null
-              ? context.messages.settingsLabelsCreateSuccess
-              : context.messages.settingsLabelsUpdateSuccess,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openEditorWithInitial(String initialName) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final result = await showModalBottomSheet<LabelDefinition>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      builder: (context) => LabelEditorSheet(initialName: initialName),
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(context.messages.settingsLabelsCreateSuccess),
-      ),
-    );
-  }
-
-  Future<void> _confirmDelete(LabelDefinition label) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.messages.settingsLabelsDeleteConfirmTitle),
-        content: Text(
-          context.messages.settingsLabelsDeleteConfirmMessage(label.name),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(context.messages.settingsLabelsDeleteCancel),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(context.messages.settingsLabelsDeleteConfirmAction),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    final controller = ref.read(labelsListControllerProvider.notifier);
-    try {
-      await controller.deleteLabel(label.id);
-
-      if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            context.messages.settingsLabelsDeleteSuccess(label.name),
-          ),
-        ),
-      );
-    } catch (e, st) {
-      // Log the error without crashing; surface feedback to the user.
-      try {
-        if (getIt.isRegistered<LoggingService>()) {
-          getIt<LoggingService>().captureException(
-            e,
-            domain: 'LABELS',
-            subDomain: 'deleteLabel',
-            stackTrace: st,
-          );
-        }
-      } catch (_) {
-        // Swallow logging failures silently.
-      }
-
-      if (!mounted) return;
-      final errText = '${context.messages.commonError}: $e';
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(errText),
-        ),
-      );
-    }
-  }
 }
 
 class _LabelListCard extends StatelessWidget {
   const _LabelListCard({
     required this.label,
-    required this.onEdit,
-    required this.onDelete,
     required this.usageCount,
   });
 
   final LabelDefinition label;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
   final int usageCount;
 
   @override
@@ -335,105 +222,54 @@ class _LabelListCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isPrivate = label.private ?? false;
     final description = label.description?.trim();
-    final cardColor = theme.colorScheme.surfaceContainerHighest.withValues(
-      alpha: theme.brightness == Brightness.dark ? 0.45 : 0.9,
-    );
+    final cache = getIt<EntitiesCacheService>();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.dividerColor.withValues(alpha: 0.18),
+    final ids = label.applicableCategoryIds;
+    final List<CategoryDefinition> categories;
+    if (ids == null || ids.isEmpty) {
+      categories = <CategoryDefinition>[];
+    } else {
+      categories = ids
+          .map(cache.getCategoryById)
+          .whereType<CategoryDefinition>()
+          .toList()
+        ..sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
+    }
+
+    return ModernBaseCard(
+      onTap: () => beamToNamed('/settings/labels/${label.id}'),
+      padding: EdgeInsets.zero,
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        title: Text(
+          label.name,
+          style: theme.textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.w700),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label.name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                LabelChip(label: label),
+                Text(
+                  label.color.toUpperCase(),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
-              ),
-              PopupMenuButton<String>(
-                tooltip: context.messages.settingsLabelsActionsTooltip,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    onEdit();
-                  } else if (value == 'delete') {
-                    onDelete();
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: ListTile(
-                      leading: const Icon(Icons.edit),
-                      title: Text(context.messages.editMenuTitle),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: const Icon(Icons.delete_outline),
-                      title: Text(context.messages.deleteButton),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              LabelChip(label: label),
-              Text(
-                label.color.toUpperCase(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-              if (isPrivate) const _PrivateLabelBadge(),
-            ],
-          ),
-
-          // Applicable categories (if any)
-          Builder(
-            builder: (_) {
-              final ids = label.applicableCategoryIds;
-              if (ids == null || ids.isEmpty) return const SizedBox.shrink();
-              final cache = getIt<EntitiesCacheService>();
-              final categories = ids
-                  .map(cache.getCategoryById)
-                  .whereType<CategoryDefinition>()
-                  .toList()
-                ..sort(
-                  (a, b) =>
-                      a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-                );
-              if (categories.isEmpty) return const SizedBox.shrink();
-              return Padding(
+                if (isPrivate) const _PrivateLabelBadge(),
+              ],
+            ),
+            if (categories.isNotEmpty)
+              Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Wrap(
                   spacing: 6,
@@ -442,36 +278,39 @@ class _LabelListCard extends StatelessWidget {
                     for (final cat in categories) _CategoryPill(category: cat),
                   ],
                 ),
-              );
-            },
-          ),
-          if (description != null && description.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              description,
-              style: theme.textTheme.bodySmall,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.insights_outlined,
-                size: 18,
-                color: theme.colorScheme.primary.withValues(alpha: 0.8),
               ),
-              const SizedBox(width: 6),
+            if (description != null && description.isNotEmpty) ...[
+              const SizedBox(height: 10),
               Text(
-                context.messages.settingsLabelsUsageCount(usageCount),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+                description,
+                style: theme.textTheme.bodySmall,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
-          ),
-        ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.insights_outlined,
+                  size: 18,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  context.messages.settingsLabelsUsageCount(usageCount),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

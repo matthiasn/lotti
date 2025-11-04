@@ -289,6 +289,7 @@
   "categoryCreationError": "Failed to create category. Please try again.",
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
+  "customColor": "Custom Color",
   "dashboardActiveLabel": "Active:",
   "dashboardAddChartsTitle": "Add Charts:",
   "dashboardAddHabitButton": "Habit Charts",

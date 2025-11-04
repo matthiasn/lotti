@@ -33,6 +33,22 @@ Soft deletions flip `deletedAt` so reconciliation drops associations without los
   duplicate detection before persisting via `LabelsRepository`.
 - Both controllers rely on Riverpod notifiers and follow the same disposal patterns as categories.
 
+### Description normalization and clearing semantics
+
+- Input normalization happens in the controller via a sanitize helper:
+  - Trims whitespace and strips common invisible chars (NBSP/ZWSP/BOM).
+  - Stores `null` in state when the normalized value is empty.
+- Persistence semantics are explicit to avoid accidental resurrection of trimmed characters:
+  - Create: controller passes `description: null` when empty; repository persists `null`.
+  - Update: controller passes `description: ''` (empty string) to signal “clear this field”.
+  - Repository interprets values as:
+    - `null` → unchanged (keep existing)
+    - `''` (empty after trim) → clear (persist as `null`)
+    - non‑empty → trimmed value
+
+This guarantees that deleting the last remaining character in the description clears it on save and
+does not reappear due to null-as-unchanged merges downstream.
+
 ## UI Components
 
 - `LabelsListPage`: Settings surface with search, empty/error states, and per-label actions.
@@ -40,6 +56,9 @@ Soft deletions flip `deletedAt` so reconciliation drops associations without los
   - Name + optional description fields (with trimming/validation).
   - `flex_color_picker` hybrid color picker (WCAG-friendly presets + HSV wheel).
   - Private toggle description to clarify scope.
+  - Keyboard shortcuts: Cmd+S (macOS) / Ctrl+S (Windows/Linux) triggers Save.
+  - Text fields are seeded once per label to avoid cursor jumps; user edits aren’t clobbered by
+    rebuilds.
 - `LabelChip`: Reusable chip with dynamic text color based on label color brightness plus tooltip
   support so descriptions surface on hover/long-press contexts.
 - `TaskLabelsSheet` + `TaskLabelsWrapper`: Provide multi-select assignment with search, inline
@@ -62,6 +81,8 @@ Soft deletions flip `deletedAt` so reconciliation drops associations without los
     category selection modal.
   - Task label picker shows only labels applicable to the task’s current category (unioned with
     global labels), sorted by name. When the task has no category, only global labels are shown.
+ - Repository normalizes category IDs: trims, de‑duplicates, validates against cache, and sorts by
+   category name (case‑insensitive) for stable diffs. Empty lists persist as `null` (global).
 
 ## AI Label Assignment
 
@@ -117,7 +138,7 @@ This balances accessibility (encouraged presets) with flexibility.
 ## Testing
 
 Unit tests cover controller state transitions, validation paths, duplicate detection, stream updates
-and repository edge cases. Widget-level coverage now exercises the editor sheet, settings list,
+and repository edge cases (including clearing the last description character). Widget-level coverage now exercises the editor sheet, settings list,
 assignment sheet/wrapper, filter chips, and accessibility semantics. Integration + performance
 tests validate the reconciliation workflow and filtering performance across 1k+ tasks.
 

@@ -76,6 +76,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI prompt availability now respects platform capabilities, preventing confusion from unusable model options on mobile.
 
 ### Fixed
+- Labels: description clearing when deleting the last character
+  - Controller sanitizes input (trim + remove NBSP/ZWSP/BOM) and stores `null` in state when empty.
+  - On update, the controller signals a clear by sending `''` (empty string) instead of `null`.
+  - Repository update semantics: `null` = unchanged, empty string → clear (persist as `null`), non‑empty → trimmed.
+  - Prevents the last stray character from reappearing after Save when the field was cleared.
+  - Tests added for repository clearing and Label Details UI (keyboard shortcuts, cancel, error rendering, privacy toggle, category chip removal, controller reseed behavior). Codecov patch coverage improved for `label_details_page.dart` and `labels_list_page.dart`.
 - AI: Hardened checklist item parsing to avoid accidental splitting when items contain commas or grouped text:
   - `add_multiple_checklist_items` now accepts a JSON array of strings (preferred) or a robustly parsed string.
   - Escaped commas (`\,`), quoted items ("..." / '...'), and commas inside parentheses/brackets/braces no longer split into separate items.

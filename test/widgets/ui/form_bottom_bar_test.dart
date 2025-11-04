@@ -158,7 +158,7 @@ void main() {
         ),
       );
 
-      // Find the main container
+      // Find the outer container that holds the decoration
       final container = tester.widget<Container>(
         find
             .descendant(
@@ -168,14 +168,25 @@ void main() {
             .first,
       );
 
-      // Check padding
-      expect(container.padding, isNotNull);
-
-      // Check decoration
+      // Check decoration on the outer container (shadow present)
       expect(container.decoration, isA<BoxDecoration>());
       final decoration = container.decoration! as BoxDecoration;
       expect(decoration.boxShadow, isNotNull);
       expect(decoration.boxShadow!.isNotEmpty, isTrue);
+
+      // Padding is applied inside a SafeArea; verify a Padding descendant exists
+      final paddingWidget = tester.widgetList<Padding>(
+        find.descendant(
+          of: find.byType(FormBottomBar),
+          matching: find.byType(Padding),
+        ),
+      );
+      // Ensure one of the Padding widgets uses the specific insets
+      final paddings = paddingWidget.map((p) => p.padding).toList();
+      expect(
+        paddings,
+        contains(const EdgeInsetsDirectional.fromSTEB(24, 12, 16, 12)),
+      );
     });
 
     testWidgets('renders correctly with text field', (tester) async {

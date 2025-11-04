@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -47,48 +50,40 @@ Widget _buildPage({
   );
 }
 
+class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
+
 void main() {
-  testWidgets('shows actions menu and deletes label successfully',
-      (tester) async {
+  setUp(() {
+    if (!getIt.isRegistered<EntitiesCacheService>()) {
+      getIt
+          .registerSingleton<EntitiesCacheService>(_MockEntitiesCacheService());
+    }
+  });
+
+  tearDown(() async {
+    if (getIt.isRegistered<EntitiesCacheService>()) {
+      await getIt.reset(dispose: false);
+    }
+  });
+  testWidgets('list shows no actions menu; chevron present', (tester) async {
     await tester.pumpWidget(_buildPage(
       labels: [testLabelDefinition1],
       controllerFactory: _NoopLabelsListController.new,
     ));
     await tester.pumpAndSettle();
 
-    // Open actions menu
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
-    await tester.pumpAndSettle();
-
-    // Tap Delete in the menu
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-
-    // Confirm deletion in dialog
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-
-    // Expect success snackbar text
-    expect(find.textContaining('Label "Urgent" deleted'), findsOneWidget);
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
+    expect(find.byIcon(Icons.chevron_right), findsWidgets);
   });
 
-  testWidgets('shows error snackbar when deletion fails', (tester) async {
+  testWidgets('list does not trigger delete dialog', (tester) async {
     await tester.pumpWidget(_buildPage(
       labels: [testLabelDefinition1],
       controllerFactory: _ThrowingLabelsListController.new,
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-
-    // Expect error snackbar prefix (Error: …)
-    expect(find.textContaining('Error:'), findsOneWidget);
+    // There is no delete affordance on the list anymore; ensure no dialog is shown.
+    expect(find.byType(AlertDialog), findsNothing);
   });
 }
