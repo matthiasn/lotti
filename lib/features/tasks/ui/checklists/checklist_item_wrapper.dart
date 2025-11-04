@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -57,22 +58,8 @@ class ChecklistItemWrapper extends ConsumerWidget {
             return dragItem;
           },
           allowedOperations: () => [DropOperation.move],
-          dragBuilder: (context, child) {
-            // Add colored border to dragged item, provide solid background
-            // to prevent black showing through transparency
-            final theme = Theme.of(context);
-            return Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border.all(
-                  color: theme.colorScheme.primary,
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: child,
-            );
-          },
+          dragBuilder: (context, child) =>
+              buildDragDecorator(context, child),
           child: DraggableWidget(
             child: Dismissible(
               key: Key(item.id),
