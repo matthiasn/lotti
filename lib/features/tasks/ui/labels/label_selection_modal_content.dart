@@ -5,6 +5,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
+import 'package:lotti/features/tasks/ui/labels/label_ui_utils.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 
 /// Modern label selection content intended to be embedded inside the
@@ -78,16 +81,21 @@ class _LabelSelectionModalContentState
   }
 
   Widget _buildList(BuildContext context, List<LabelDefinition> labels) {
-    final filtered = labels.where((label) {
-      if (_searchLower.isEmpty) {
-        return true;
-      }
-      return label.name.toLowerCase().contains(_searchLower) ||
-          (label.description?.toLowerCase().contains(_searchLower) ?? false);
-    }).toList()
-      ..sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
+    // Union available labels with currently assigned ones to allow
+    // unassigning out-of-scope labels.
+    final cache = getIt<EntitiesCacheService>();
+    final assignedDefs = widget.initialLabelIds
+        .map(cache.getLabelById)
+        .whereType<LabelDefinition>()
+        .toList();
+    final result = buildSelectorLabelList(
+      available: labels,
+      assignedDefs: assignedDefs,
+      selectedIds: _selectedLabelIds,
+      searchLower: _searchLower,
+    );
+    final availableIds = result.availableIds;
+    final filtered = result.items;
 
     if (filtered.isEmpty) {
       final hasQuery = _searchRaw.trim().isNotEmpty;
@@ -110,14 +118,18 @@ class _LabelSelectionModalContentState
       itemBuilder: (context, index) {
         final label = filtered[index];
         final isSelected = _selectedLabelIds.contains(label.id);
+        final outOfCategory = isSelected && !availableIds.contains(label.id);
         final color = colorFromCssHex(label.color, substitute: Colors.grey);
+
+        final subtitleText = buildLabelSubtitleText(
+          label,
+          outOfCategory: outOfCategory,
+        );
 
         return CheckboxListTile(
           value: isSelected,
           title: Text(label.name),
-          subtitle: label.description != null && label.description!.isNotEmpty
-              ? Text(label.description!)
-              : null,
+          subtitle: subtitleText != null ? Text(subtitleText) : null,
           secondary: CircleAvatar(
             backgroundColor: color,
             radius: 12,

@@ -72,20 +72,22 @@ class LabelAssignmentProcessor {
   })  : _repository = repository ?? getIt<LabelsRepository>(),
         _rateLimiter = rateLimiter ?? getIt<LabelAssignmentRateLimiter>(),
         _logging = logging ?? getIt<LoggingService>(),
-        _validator = validator ?? LabelValidator(db: db);
+        _validator = validator ?? LabelValidator(db: db),
+        _db = db;
 
   final LabelsRepository _repository;
   final LabelAssignmentRateLimiter _rateLimiter;
   final LoggingService _logging;
   final LabelValidator _validator;
-  LabelAssignmentEventService get _events =>
-      getIt<LabelAssignmentEventService>();
+  final JournalDb? _db;
 
   Future<LabelAssignmentResult> processAssignment({
     required String taskId,
     required List<String> proposedIds,
     required List<String> existingIds,
     bool shadowMode = false,
+    // Optional task context to avoid redundant DB lookups
+    String? categoryId,
   }) async {
     // Normalize proposed IDs (trim, drop empties)
     final normalized =
@@ -129,9 +131,56 @@ class LabelAssignmentProcessor {
     final invalid = <String>[];
     final skipped = <Map<String, String>>[];
     final sw = Stopwatch()..start();
-    final validation = await _validator.validate(requested);
+    // Determine category for category-scoped validation (Phase 1)
+    var effectiveCategoryId = categoryId;
+    if (effectiveCategoryId == null) {
+      try {
+        final db = _db ?? getIt<JournalDb>();
+        final entity = await db.journalEntityById(taskId);
+        effectiveCategoryId = entity?.meta.categoryId;
+      } catch (e, st) {
+        // fall back to treating only global labels as valid and log for diagnostics
+        _logging.captureException(
+          'label_assignment.category_lookup_failed: $e',
+          domain: 'labels_ai_assignment',
+          subDomain: 'processor',
+          stackTrace: st,
+        );
+        effectiveCategoryId = null;
+      }
+    }
+    final validation = await _validator.validateForCategory(
+      requested,
+      categoryId: effectiveCategoryId,
+    );
     assigned.addAll(validation.valid);
-    invalid.addAll(validation.invalid);
+    // Classify invalids: out_of_scope vs unknown/deleted (batch fetch to reduce lookups)
+    var outOfScopeCount = 0;
+    if (validation.invalid.isNotEmpty) {
+      try {
+        final db = _db ?? getIt<JournalDb>();
+        final allDefs = await db.getAllLabelDefinitions();
+        final byId = {for (final d in allDefs) d.id: d};
+        for (final id in validation.invalid) {
+          final def = byId[id];
+          if (def != null && def.deletedAt == null) {
+            outOfScopeCount += 1;
+            skipped.add({'id': id, 'reason': 'out_of_scope'});
+          } else {
+            invalid.add(id);
+          }
+        }
+      } catch (e, st) {
+        // On lookup error, keep all as invalid and log for diagnostics
+        invalid.addAll(validation.invalid);
+        _logging.captureException(
+          'label_assignment.invalid_classification_failed: $e',
+          domain: 'labels_ai_assignment',
+          subDomain: 'processor',
+          stackTrace: st,
+        );
+      }
+    }
 
     // Populate skipped with structured reasons. Priority:
     // 1) already_assigned, 2) over_cap, 3) duplicate
@@ -151,8 +200,23 @@ class LabelAssignmentProcessor {
     );
     sw.stop();
 
+    // Telemetry payload (Phase 1 schema)
+    final telemetry = jsonEncode({
+      'taskId': taskId,
+      'attempted': requested.length,
+      'assigned': assigned.length,
+      'invalid': invalid.length,
+      'skipped': {
+        'out_of_scope': outOfScopeCount,
+        'already_assigned': alreadyAssigned.length,
+        'over_cap': overCap.length,
+        'duplicate': duplicateIds.length,
+      },
+      'validationMs': sw.elapsedMilliseconds,
+      'phase': 1,
+    });
     _logging.captureEvent(
-      'Assignment attempt task=$taskId attempted=${requested.length} assigned=${assigned.length} invalid=${invalid.length} skipped=${skipped.length} validationMs=${sw.elapsedMilliseconds}',
+      telemetry,
       domain: 'labels_ai_assignment',
       subDomain: 'processor',
     );
@@ -163,10 +227,16 @@ class LabelAssignmentProcessor {
         addedLabelIds: assigned,
       );
       _rateLimiter.recordAssignment(taskId);
-      // Publish event for UI (toast + undo)
-      _events.publish(
-        LabelAssignmentEvent(taskId: taskId, assignedIds: [...assigned]),
-      );
+      // Publish event for UI (toast + undo) when event bus is available
+      try {
+        if (getIt.isRegistered<LabelAssignmentEventService>()) {
+          getIt<LabelAssignmentEventService>().publish(
+            LabelAssignmentEvent(taskId: taskId, assignedIds: [...assigned]),
+          );
+        }
+      } catch (_) {
+        // ignore publish errors in processor path
+      }
     }
 
     return LabelAssignmentResult(

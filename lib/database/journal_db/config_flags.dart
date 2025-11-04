@@ -106,4 +106,6 @@ Future<void> initConfigFlags(
       status: true,
     ),
   );
+
+  // No additional flags for label guardrails: always-on behavior.
 }

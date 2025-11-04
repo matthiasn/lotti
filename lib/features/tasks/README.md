@@ -68,10 +68,17 @@ The main interface for viewing and editing tasks, featuring:
 
 #### Task Labels
 
-- The task label picker (`TaskLabelsSheet`) presents labels applicable to the current task’s
-  category using the reactive
+- The task label picker (`TaskLabelsSheet`, `LabelSelectionModalContent`) presents labels applicable
+  to the current task's category using the reactive
   `availableLabelsForCategoryProvider(categoryId)` union: `global ∪ scoped(categoryId)`.
-- The wrapper (`TaskLabelsWrapper`) passes the task’s current `categoryId` into the sheet; the list
+- **Out-of-scope label handling**: The selector unions available labels with currently assigned
+  labels to ensure out-of-scope assigned labels can be unassigned. This solves the issue where
+  labels assigned before category scoping was enforced (or manually assigned) couldn't be removed
+  because they were hidden in the selector.
+  - Assigned labels appear first in the selector list (alphabetical)
+  - Out-of-category assigned labels show a subtle "Out of category" note in the subtitle
+  - All assigned labels remain checkable/uncheckable regardless of category scope
+- The wrapper (`TaskLabelsWrapper`) passes the task's current `categoryId` into the sheet; the list
   updates reactively when labels change.
 - The label editor allows scoping labels to specific categories via an "Applicable categories"
   section (chips + add/remove). Labels with no categories selected are considered global.

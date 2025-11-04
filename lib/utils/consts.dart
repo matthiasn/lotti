@@ -15,3 +15,4 @@ const enableEventsFlag = 'enable_events';
 const enableAiLabelAssignmentFlag = 'enable_ai_label_assignment';
 const aiLabelAssignmentShadowFlag = 'ai_label_assignment_shadow';
 const includePrivateLabelsInPromptsFlag = 'include_private_labels_in_prompts';
+// Note: No new runtime flags for label guardrails; behavior is always on.

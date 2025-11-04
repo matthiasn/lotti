@@ -1395,6 +1395,7 @@ class UnifiedAiInferenceRepository {
             proposedIds: proposed,
             existingIds: currentTask.meta.labelIds ?? const <String>[],
             shadowMode: shadow,
+            categoryId: currentTask.meta.categoryId,
           );
           // Log structured result for debugging
           try {

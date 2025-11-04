@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -10,17 +11,26 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// Helper class for building AI prompts with support for template tracking
+typedef LabelFilterFn = List<LabelDefinition> Function(
+  List<LabelDefinition> all,
+  String? categoryId, {
+  required bool includePrivate,
+});
+
 class PromptBuilderHelper {
   PromptBuilderHelper({
     required this.aiInputRepository,
     this.journalRepository,
+    this.labelFilterForCategory,
   });
 
   final AiInputRepository aiInputRepository;
   final JournalRepository? journalRepository;
+  final LabelFilterFn? labelFilterForCategory;
 
   /// Get effective message from prompt config, using preconfigured if tracking is enabled
   String getEffectiveMessage({
@@ -78,7 +88,7 @@ class PromptBuilderHelper {
         promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
       final enabled = await _getFlagSafe(enableAiLabelAssignmentFlag);
       if (enabled) {
-        final labels = await _buildLabelsJsonWithCounts();
+        final labels = await _buildCategoryScopedLabelsJsonWithCounts(entity);
         prompt = prompt.replaceAll('{{labels}}', labels.json);
         if (labels.totalCount > labels.selectedCount) {
           // Add a short note after the JSON block to avoid breaking JSON parsing
@@ -129,13 +139,26 @@ class PromptBuilderHelper {
     return task;
   }
 
-  /// Build a compact JSON array [{"id":"...","name":"..."}] of labels
-  /// limited to 100 entries (top-50 by usage + next-50 alphabetical).
+  // Note: the legacy global labels builder was removed. The category-scoped
+  // builder covers both category and no-category (global-only) scenarios.
+
+  /// Build a compact JSON array of labels scoped to the task's category
+  /// when available. Falls back to global behavior when no category is
+  /// resolvable for the current context.
   Future<({String json, int selectedCount, int totalCount})>
-      _buildLabelsJsonWithCounts() async {
+      _buildCategoryScopedLabelsJsonWithCounts(JournalEntity entity) async {
     final db = getIt<JournalDb>();
 
-    // Respect privacy toggle
+    // Determine categoryId from the current entity or linked task
+    String? categoryId;
+    if (entity is Task) {
+      categoryId = entity.meta.categoryId;
+    } else {
+      final linkedTask = await _findLinkedTask(entity);
+      categoryId = linkedTask?.meta.categoryId;
+    }
+
+    // Respect privacy toggle for prompts
     final includePrivate = await _getFlagSafe(
       includePrivateLabelsInPromptsFlag,
     );
@@ -144,12 +167,15 @@ class PromptBuilderHelper {
     final all = await db.getAllLabelDefinitions();
     final usage = await db.getLabelUsageCounts();
 
-    // Optionally filter private labels
-    final filtered =
-        includePrivate ? all : all.where((l) => !(l.private ?? false)).toList();
+    // Scope to category (union of global ∪ scoped(category)) using injected or cache filter
+    final scoped = _getLabelFilterFn().call(
+      all,
+      categoryId,
+      includePrivate: includePrivate,
+    );
 
-    // Sort: top N by usage desc (ties by name asc), then next M alphabetical
-    final byUsage = [...filtered]..sort((a, b) {
+    // Sort into top usage and next alpha, within the scoped set
+    final byUsage = [...scoped]..sort((a, b) {
         final ua = usage[a.id] ?? 0;
         final ub = usage[b.id] ?? 0;
         if (ua != ub) return ub.compareTo(ua);
@@ -157,7 +183,7 @@ class PromptBuilderHelper {
       });
     final topUsage = byUsage.take(kLabelsPromptTopUsageCount).toList();
 
-    final remaining = filtered
+    final remaining = scoped
         .where((l) => !topUsage.any((t) => t.id == l.id))
         .toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -174,16 +200,52 @@ class PromptBuilderHelper {
     return (
       json: jsonEncode(tuples),
       selectedCount: tuples.length,
-      totalCount: filtered.length,
+      totalCount: scoped.length,
     );
   }
 
-  // Backwards-compatible helper if needed elsewhere (kept for potential future use)
-  // ignore: unused_element
-  Future<String> _buildLabelsJson() async {
-    final result = await _buildLabelsJsonWithCounts();
-    return result.json;
+  /// Resolve the filter function preference order:
+  /// 1) Injected [labelFilterForCategory]
+  /// 2) EntitiesCacheService.filterLabelsForCategory (if registered)
+  /// 3) Local fallback (kept minimal; keep in sync with EntitiesCacheService)
+  LabelFilterFn _getLabelFilterFn() {
+    if (labelFilterForCategory != null) return labelFilterForCategory!;
+    try {
+      if (getIt.isRegistered<EntitiesCacheService>()) {
+        final cache = getIt<EntitiesCacheService>();
+        return cache.filterLabelsForCategory;
+      }
+    } catch (_) {}
+    return _localFilterLabelsForCategory;
   }
+
+  /// Local fallback for category scoping used when neither an injected filter
+  /// nor EntitiesCacheService is available (primarily in tests).
+  /// IMPORTANT: Keep semantics in sync with
+  /// `EntitiesCacheService.filterLabelsForCategory`.
+  List<LabelDefinition> _localFilterLabelsForCategory(
+    List<LabelDefinition> all,
+    String? categoryId, {
+    required bool includePrivate,
+  }) {
+    final dedup = <String, LabelDefinition>{};
+    for (final l in all) {
+      if (l.deletedAt != null) continue;
+      if (!includePrivate && (l.private ?? false)) continue;
+      final cats = l.applicableCategoryIds;
+      final isGlobal = cats == null || cats.isEmpty;
+      final inCategory =
+          categoryId != null && (cats?.contains(categoryId) ?? false);
+      if (isGlobal || inCategory) {
+        dedup[l.id] = l;
+      }
+    }
+    // Caller applies ranking/sorting (usage then alpha). Avoid extra sort here.
+    return dedup.values.toList();
+  }
+
+  // Removed obsolete helper _buildLabelsJson(); the category-scoped builder
+  // covers all current use cases.
 
   Future<bool> _getFlagSafe(String name, {bool defaultValue = false}) async {
     try {
