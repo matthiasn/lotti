@@ -8,6 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -156,8 +157,26 @@ class AiInputRepository {
       return null;
     }
 
+    // Start with the base task JSON
+    final base = aiInput.toJson();
+
+    // Extend with assigned labels [{id,name}] when available
+    try {
+      final entity = await _db.journalEntityById(id);
+      if (entity is Task) {
+        final ids = entity.meta.labelIds ?? const <String>[];
+        if (ids.isNotEmpty) {
+          base['labels'] = await buildAssignedLabelTuples(db: _db, ids: ids);
+        } else {
+          base['labels'] = <Map<String, String>>[];
+        }
+      }
+    } catch (_) {
+      // On lookup failure, omit labels extension silently
+    }
+
     const encoder = JsonEncoder.withIndent('    ');
-    final jsonString = encoder.convert(aiInput);
+    final jsonString = encoder.convert(base);
     return jsonString;
   }
 }

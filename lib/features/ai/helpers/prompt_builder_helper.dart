@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
+import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -97,6 +98,17 @@ class PromptBuilderHelper {
         }
       } else {
         prompt = prompt.replaceAll('{{labels}}', '[]');
+      }
+    }
+
+    // Inject currently assigned labels if requested
+    if (prompt.contains('{{assigned_labels}}') &&
+        promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
+      try {
+        final assigned = await _buildAssignedLabelsJson(entity);
+        prompt = prompt.replaceAll('{{assigned_labels}}', assigned);
+      } catch (_) {
+        prompt = prompt.replaceAll('{{assigned_labels}}', '[]');
       }
     }
 
@@ -242,6 +254,23 @@ class PromptBuilderHelper {
     }
     // Caller applies ranking/sorting (usage then alpha). Avoid extra sort here.
     return dedup.values.toList();
+  }
+
+  /// Build JSON array of assigned labels [{id,name}] for the task or linked task
+  Future<String> _buildAssignedLabelsJson(JournalEntity entity) async {
+    final db = getIt<JournalDb>();
+    Task? task;
+    if (entity is Task) {
+      task = entity;
+    } else {
+      task = await _findLinkedTask(entity);
+    }
+    if (task == null) return '[]';
+    final ids = task.meta.labelIds ?? const <String>[];
+    if (ids.isEmpty) return '[]';
+    // Resolve via shared utility
+    final tuples = await buildAssignedLabelTuples(db: db, ids: ids);
+    return jsonEncode(tuples);
   }
 
   // Removed obsolete helper _buildLabelsJson(); the category-scoped builder

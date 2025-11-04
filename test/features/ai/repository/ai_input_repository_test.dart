@@ -870,6 +870,86 @@ void main() {
         expect(jsonData['logEntries'][0]['text'], equals('Test Journal Entry'));
         expect(jsonData['logEntries'][0]['loggedDuration'], equals('00:30'));
       });
+
+      test('includes assigned labels with names in task JSON', () async {
+        // Arrange
+        const taskTitle = 'Test Task';
+        const statusId = 'status-abc';
+
+        // Provide progress data
+        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+            .thenAnswer((_) async =>
+                (const Duration(minutes: 10), <String, Duration>{}));
+
+        // Task with assigned labels
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+            labelIds: const ['l1', 'l2'],
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.open(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            estimate: const Duration(minutes: 10),
+          ),
+        );
+
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => task);
+        when(() => mockDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => []);
+
+        // Label definitions
+        final defs = [
+          LabelDefinition(
+            id: 'l1',
+            name: 'Label 1',
+            color: '#000',
+            createdAt: creationDate,
+            updatedAt: creationDate,
+            vectorClock: null,
+            private: false,
+          ),
+          LabelDefinition(
+            id: 'l2',
+            name: 'Label 2',
+            color: '#000',
+            createdAt: creationDate,
+            updatedAt: creationDate,
+            vectorClock: null,
+            private: false,
+          ),
+        ];
+        when(() => mockDb.getAllLabelDefinitions())
+            .thenAnswer((_) async => defs);
+
+        // Act
+        final jsonString = await repository.buildTaskDetailsJson(id: taskId);
+        expect(jsonString, isNotNull);
+        final data = jsonDecode(jsonString!) as Map<String, dynamic>;
+
+        // Assert labels present with resolved names
+        expect(data['labels'], isA<List<dynamic>>());
+        final labels = (data['labels'] as List).cast<Map<String, dynamic>>();
+        expect(labels.length, 2);
+        expect(labels[0]['id'], anyOf('l1', 'l2'));
+        final ids = labels.map((e) => e['id']).toSet();
+        expect(ids, {'l1', 'l2'});
+        final namesById = {for (final l in labels) l['id']: l['name']};
+        expect(namesById['l1'], 'Label 1');
+        expect(namesById['l2'], 'Label 2');
+      });
     });
   });
 }

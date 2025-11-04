@@ -15,7 +15,6 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
@@ -416,10 +415,9 @@ class LottiChecklistStrategy extends ConversationStrategy {
             repository: ref.read(labelsRepositoryProvider),
           );
 
-          final parsed = parseLabelIdsFromToolArgs(call.function.arguments);
-          final proposed = LinkedHashSet<String>.from(parsed)
-              .take(kMaxLabelsPerAssignment)
-              .toList();
+          final parsed = parseLabelCallArgs(call.function.arguments);
+          final proposed =
+              LinkedHashSet<String>.from(parsed.selectedIds).toList();
           // Shadow mode: do not persist if enabled (safe default false)
           var shadow = false;
           try {
@@ -454,8 +452,8 @@ class LottiChecklistStrategy extends ConversationStrategy {
           // Return a structured error response instead of a generic string
           try {
             final requested = LinkedHashSet<String>.from(
-              parseLabelIdsFromToolArgs(call.function.arguments),
-            ).take(kMaxLabelsPerAssignment).toList();
+              parseLabelCallArgs(call.function.arguments).selectedIds,
+            ).toList();
             final errorResponse = jsonEncode({
               'function': 'assign_task_labels',
               'request': {'labelIds': requested},

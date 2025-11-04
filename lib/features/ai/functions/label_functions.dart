@@ -6,7 +6,10 @@ class LabelFunctions {
 
   /// Provide the tool schema for assigning labels to a task by ID.
   ///
-  /// Example call arguments (from the model):
+  /// Preferred arguments (Phase 2):
+  /// {"labels": [{"id": "bug", "confidence": "very_high"}]}
+  ///
+  /// Backward-compatible (deprecated):
   /// {"labelIds": ["bug", "backend", "ui"]}
   ///
   /// Expected structured response (string) from the system:
@@ -23,17 +26,48 @@ class LabelFunctions {
         function: FunctionObject(
           name: assignTaskLabels,
           description:
-              'Assign one or more existing labels to the current task using label IDs. This is add-only, will not remove existing labels.',
+              'Assign one or more existing labels to the current task. Add-only; will not remove existing labels. Prefer `labels` with per-label confidence; `labelIds` is deprecated.',
           parameters: {
             'type': 'object',
             'properties': {
+              // New Phase 2 schema: prefer structured labels with confidence.
+              'labels': {
+                'type': 'array',
+                'description':
+                    'Preferred. Array of objects with {id, confidence}. Omit low-confidence labels. Provide highest-confidence first.',
+                'items': {
+                  'type': 'object',
+                  'properties': {
+                    'id': {
+                      'type': 'string',
+                      'description': 'Label ID to add to the task',
+                    },
+                    'confidence': {
+                      'type': 'string',
+                      'enum': ['low', 'medium', 'high', 'very_high'],
+                      'description':
+                          'Confidence for selecting this label. Low should be omitted.',
+                    },
+                  },
+                  'required': ['id'],
+                },
+              },
               'labelIds': {
                 'type': 'array',
-                'description': 'Array of label IDs to add to the task',
+                'description':
+                    '[Deprecated] Array of label IDs to add to the task. Use `labels` instead.',
                 'items': {'type': 'string'},
               },
             },
-            'required': ['labelIds'],
+            // Accept either `labels` or legacy `labelIds`.
+            'oneOf': [
+              {
+                'required': ['labels']
+              },
+              {
+                'required': ['labelIds']
+              }
+            ],
           },
         ),
       ),
