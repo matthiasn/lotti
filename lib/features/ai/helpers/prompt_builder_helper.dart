@@ -11,17 +11,26 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// Helper class for building AI prompts with support for template tracking
+typedef LabelFilterFn = List<LabelDefinition> Function(
+  List<LabelDefinition> all,
+  String? categoryId, {
+  required bool includePrivate,
+});
+
 class PromptBuilderHelper {
   PromptBuilderHelper({
     required this.aiInputRepository,
     this.journalRepository,
+    this.labelFilterForCategory,
   });
 
   final AiInputRepository aiInputRepository;
   final JournalRepository? journalRepository;
+  final LabelFilterFn? labelFilterForCategory;
 
   /// Get effective message from prompt config, using preconfigured if tracking is enabled
   String getEffectiveMessage({
@@ -158,8 +167,8 @@ class PromptBuilderHelper {
     final all = await db.getAllLabelDefinitions();
     final usage = await db.getLabelUsageCounts();
 
-    // Scope to category (union of global ∪ scoped(category)) without requiring cache
-    final scoped = _filterLabelsForCategory(
+    // Scope to category (union of global ∪ scoped(category)) using injected or cache filter
+    final scoped = _getLabelFilterFn().call(
       all,
       categoryId,
       includePrivate: includePrivate,
@@ -195,8 +204,26 @@ class PromptBuilderHelper {
     );
   }
 
-  /// Local category scoping to avoid hard dependency on EntitiesCacheService in tests.
-  List<LabelDefinition> _filterLabelsForCategory(
+  /// Resolve the filter function preference order:
+  /// 1) Injected [labelFilterForCategory]
+  /// 2) EntitiesCacheService.filterLabelsForCategory (if registered)
+  /// 3) Local fallback (kept minimal; keep in sync with EntitiesCacheService)
+  LabelFilterFn _getLabelFilterFn() {
+    if (labelFilterForCategory != null) return labelFilterForCategory!;
+    try {
+      if (getIt.isRegistered<EntitiesCacheService>()) {
+        final cache = getIt<EntitiesCacheService>();
+        return cache.filterLabelsForCategory;
+      }
+    } catch (_) {}
+    return _localFilterLabelsForCategory;
+  }
+
+  /// Local fallback for category scoping used when neither an injected filter
+  /// nor EntitiesCacheService is available (primarily in tests).
+  /// IMPORTANT: Keep semantics in sync with
+  /// `EntitiesCacheService.filterLabelsForCategory`.
+  List<LabelDefinition> _localFilterLabelsForCategory(
     List<LabelDefinition> all,
     String? categoryId, {
     required bool includePrivate,
@@ -213,9 +240,8 @@ class PromptBuilderHelper {
         dedup[l.id] = l;
       }
     }
-    final res = dedup.values.toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    return res;
+    // Caller applies ranking/sorting (usage then alpha). Avoid extra sort here.
+    return dedup.values.toList();
   }
 
   // Removed obsolete helper _buildLabelsJson(); the category-scoped builder

@@ -169,6 +169,11 @@ class EntitiesCacheService {
   /// Pure helper used by reactive providers to compute category-scoped labels
   /// from an arbitrary [all] set (e.g., stream-provided list), independent of
   /// internal cache state.
+  ///
+  /// Note: PromptBuilderHelper contains a local copy of this logic to avoid a
+  /// hard test-time dependency on GetIt/EntitiesCacheService when assembling
+  /// prompt JSON. If you change scoping rules here, mirror the change in
+  /// PromptBuilderHelper._filterLabelsForCategory.
   List<LabelDefinition> filterLabelsForCategory(
     List<LabelDefinition> all,
     String? categoryId, {

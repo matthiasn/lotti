@@ -88,13 +88,37 @@ does not reappear due to null-as-unchanged merges downstream.
 
 Lotti can automatically assign labels to a task via AI function-calling during checklist updates.
 
-- Prompt enrichment: The checklistUpdates prompt injects a compact JSON array of available labels
+### Category Scoping (Phase 1 Guardrails)
+
+AI label suggestions respect task categories to prevent inappropriate assignments:
+
+- **Prompt filtering**: The `{{labels}}` placeholder in the prompt includes only labels applicable
+  to the task's category: `global ∪ scoped(categoryId)`. When a task has no category, only global
+  labels are included. Labels are filtered before ranking/capping to ensure the top-50-by-usage and
+  next-50-alphabetical entries come from the valid set.
+- **Ingestion enforcement**: `LabelAssignmentProcessor` validates proposed label IDs against the
+  task's category using `LabelValidator.validateForCategory()`. Out-of-scope labels are skipped
+  with reason `out_of_scope` and recorded in telemetry; they are never persisted.
+- **TaskContext optimization**: Callers (`UnifiedAiInferenceRepository`,
+  `LottiConversationProcessor`) pass the task's `categoryId` when available to avoid redundant DB
+  lookups. The processor falls back to fetching the task entity only when `categoryId` is `null`.
+- **UI unassignment**: Task label selectors (`TaskLabelsSheet`, `LabelSelectionModalContent`) now
+  union the available labels with currently assigned labels, so out-of-scope assigned labels (from
+  before category scoping was enforced or from manual assignment) can be unassigned. These labels
+  appear in the selector with a subtle "Out of category" note.
+
+### Prompt Enrichment
+
+- The checklistUpdates prompt injects a compact JSON array of available labels
   (`[{"id":"…","name":"…"}]`) under the `{{labels}}` placeholder when the
   `enable_ai_label_assignment` flag is enabled. The list is capped to 100 entries (top 50 by usage,
   then 50 alphabetical) and optionally excludes private labels based on the
   `include_private_labels_in_prompts` flag. Data is JSON-encoded to avoid prompt injection.
-  When the total number of labels exceeds the cap, a short note is appended after the JSON block in the
-  prompt indicating the subset size, for example: `(Note: showing 100 of 150 labels)`.
+  When the total number of labels exceeds the cap, a short note is appended after the JSON block in
+  the prompt indicating the subset size, for example: `(Note: showing 100 of 150 labels)`.
+
+### Function Tool and Processing
+
 - Function tool: The model calls `assign_task_labels` with `labelIds: string[]`. The system
   enforces add‑only semantics (no removal) and caps assignments per call using
   `kMaxLabelsPerAssignment` (default 5).
@@ -116,7 +140,10 @@ Lotti can automatically assign labels to a task via AI function-calling during c
 
 ### Observability
 
-- Logging domain: `labels_ai_assignment` records attempted/assigned/invalid/skipped counts.
+- Logging domain: `labels_ai_assignment` with subdomain `processor` records structured telemetry:
+  - Counters: `attempted`, `assigned`, `invalid`, `validationMs`
+  - Skip reasons: `out_of_scope`, `already_assigned`, `over_cap`, `duplicate`
+  - Phase marker: `phase: 1` indicates Phase 1 guardrails active
 - Tool responses include a structured JSON payload for debugging and analytics.
 
 ### Testing

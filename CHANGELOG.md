@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
+- AI label assignment: Category-scoped label suggestions (Phase 1 guardrails)
+  - AI only suggests labels applicable to the task's category (global ∪ scoped labels)
+  - Prompt includes category-filtered labels; ingestion enforces category scope
+  - Telemetry tracks `out_of_scope` skip reason with full structured payload
+  - TaskContext parameter reduces DB lookups when category is already available
 - Tasks: Priority (P0–P3) end-to-end support
   - New TaskPriority field with compact P0–P3 chips and colors
   - Header picker + detail chip; selection modal uses the chip visuals
@@ -15,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     with backfill to P2/2 for legacy tasks and updated composite index
   - i18n: English keys for labels, picker title and descriptions
   - Tests: database ordering/filtering, UI wrappers, filter UX
+### Fixed
+- AI label assignment: Prevented out-of-category labels from being assigned by AI
+- Task label selector: Now shows currently assigned out-of-scope labels to allow unassigning
+  - Assigned labels appear first in selector list with "Out of category" note when applicable
+  - Solves issue where out-of-scope labels were hidden and couldn't be removed
+
 - Sync maintenance now supports Labels in the manual definition sync flow:
   - Sync page → Sync Entities modal includes a "Labels" checkbox alongside Tags, Measurables,
     Categories, Dashboards, Habits, and AI Settings.

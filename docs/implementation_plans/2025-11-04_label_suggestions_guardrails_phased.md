@@ -15,7 +15,7 @@ This plan resolves the previously open decisions, specifies user messaging, and 
 ## Decisions (resolved)
 
 - Prompt context (assigned labels): Use Option A in Phase 2 — extend task JSON from `AiInputRepository.buildTaskDetailsJson` to include `labels: [{id,name}]` and later `suppressedLabelIds: string[]` when Phase 3 lands. Avoid extra placeholders.
-- Confidence schema: String enum — `low | medium | high | very_high`. Prompt requires `very_high`; ingestion gate is optional and disabled by default via flag. A/B plan below.
+- Confidence schema: String enum — `low | medium | high | very_high`. Prompt requires `very_high`; ingestion gate will be enforced in Phase 2. We will monitor confidence distribution post‑launch and adjust the threshold in a follow‑up PR if needed.
 - Performance: Introduce a lightweight `TaskContext` passed to `LabelAssignmentProcessor` when available; DB fallback otherwise. Processor re‑reads metadata immediately before persistence to compute remaining room, ensuring race safety.
 - Existing out‑of‑category and >3 labels: Will NOT be auto‑changed. Users remain in control. We will surface assigned out‑of‑scope in the selector to allow unassignment.
 
@@ -52,7 +52,7 @@ Scope
 
 Design
 - PromptBuilderHelper
-  - Replace global label list with category‑scoped set using `EntitiesCacheService.filterLabelsForCategory(all, categoryId, includePrivate)` before ranking/capping.
+  - Replace global label list with category‑scoped set. For testability, the implementation uses a local category filter function equivalent to `EntitiesCacheService.filterLabelsForCategory` (to avoid GetIt dependencies in tests). Long‑term, consider refactoring `EntitiesCacheService` to be easily mockable and unify the logic.
   - Keep current 100‑entry cap (top‑usage + next A→Z) but applied within the filtered set.
 - Ingestion (`LabelAssignmentProcessor`)
   - Accept `TaskContext` (categoryId, existingLabelIds) from callers when available to avoid DB roundtrip; else fetch once.
@@ -60,9 +60,7 @@ Design
   - Note: `validateForCategory()` is extended in Phase 3 to `validateForTask()` (adds suppression rule) without breaking API.
 - UI (selector)
   - `task_labels_sheet.dart` and `label_selection_modal_content.dart`: union of available labels with currently assigned label definitions.
-  - Sorting (deduplicated):
-    - Assigned section: all currently assigned labels (alphabetical), regardless of scope; out‑of‑category show a subtle caption “Out of category”.
-    - Available section: all available labels NOT currently assigned (alphabetical). An assigned label never appears in both sections.
+  - Ordering (deduplicated): Assigned labels are listed before available labels within a single list. Out‑of‑category assigned labels include a subtle “Out of category” caption. Section headers may be introduced later if needed.
   - Touch targets remain `CheckboxListTile` (meets current sizing).
 
 User messaging
@@ -123,7 +121,7 @@ Design
   - Re‑read fresh metadata immediately before `addLabels` inside the processor to recompute `room` and avoid race; skipped reasons are recalculated against the fresh state to keep the structured response truthful.
 
 Dependencies
-- Phase 2 requires Phase 1 codebase (validators and prompt filtering) to be present; Phase 1 can be disabled via flags if needed. Phase 3 requires Phase 2.
+- Phase 2 builds on Phase 1 codebase (validators and prompt filtering). Phase 3 builds on Phase 2. All phases are always‑on; there are no runtime flags.
 
 User messaging
 - If max reached, we don’t show an auto toast; selector continues to work for manual assignment. We’ll document that AI respects a max of 3.
@@ -279,7 +277,8 @@ Phase 1 — Category Guardrails
 - Prompt: `PromptBuilderHelper` category‑scoped labels.
 - Validator: `validateForCategory()` in `label_validator.dart`.
 - Processor: accept `TaskContext`, apply category scope; log telemetry payload (Phase 1 schema).
-- UI: selector union + sectioned rendering; "Out of category" note.
+- UI: selector union + assigned‑first ordering; "Out of category" note.
+- UI: extract small utilities for union and subtitle to reduce duplication.
 - Tests: prompt, validator, ingestion, UI, edge no category.
 
 Phase 2 — Max‑3 & Confidence

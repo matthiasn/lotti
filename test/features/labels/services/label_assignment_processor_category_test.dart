@@ -113,6 +113,8 @@ void main() {
         .thenAnswer((_) async => inScope);
     when(() => db.getLabelDefinitionById('out'))
         .thenAnswer((_) async => outScope);
+    when(db.getAllLabelDefinitions)
+        .thenAnswer((_) async => [inScope, outScope]);
 
     final processor = LabelAssignmentProcessor(
       db: db,

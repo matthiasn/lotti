@@ -154,22 +154,31 @@ class LabelAssignmentProcessor {
       categoryId: effectiveCategoryId,
     );
     assigned.addAll(validation.valid);
-    // Classify invalids: out_of_scope vs unknown/deleted
+    // Classify invalids: out_of_scope vs unknown/deleted (batch fetch to reduce lookups)
     var outOfScopeCount = 0;
-    for (final id in validation.invalid) {
+    if (validation.invalid.isNotEmpty) {
       try {
-        final def =
-            await (_db ?? getIt<JournalDb>()).getLabelDefinitionById(id);
-        if (def != null && def.deletedAt == null) {
-          // Exists but not in scope → skipped with reason
-          outOfScopeCount += 1;
-          skipped.add({'id': id, 'reason': 'out_of_scope'});
-        } else {
-          invalid.add(id);
+        final db = _db ?? getIt<JournalDb>();
+        final allDefs = await db.getAllLabelDefinitions();
+        final byId = {for (final d in allDefs) d.id: d};
+        for (final id in validation.invalid) {
+          final def = byId[id];
+          if (def != null && def.deletedAt == null) {
+            outOfScopeCount += 1;
+            skipped.add({'id': id, 'reason': 'out_of_scope'});
+          } else {
+            invalid.add(id);
+          }
         }
-      } catch (_) {
-        // On lookup error, keep it as invalid to avoid accidental assignment
-        invalid.add(id);
+      } catch (e, st) {
+        // On lookup error, keep all as invalid and log for diagnostics
+        invalid.addAll(validation.invalid);
+        _logging.captureException(
+          'label_assignment.invalid_classification_failed: $e',
+          domain: 'labels_ai_assignment',
+          subDomain: 'processor',
+          stackTrace: st,
+        );
       }
     }
 
