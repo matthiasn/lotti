@@ -221,6 +221,11 @@ Assigned Labels (currently on the task):
 {{assigned_labels}}
 ```
 
+Suppressed Labels (do not propose these):
+```json
+{{suppressed_labels}}
+```
+
 Available Labels (id and name):
 ```json
 {{labels}}
@@ -231,6 +236,7 @@ REMEMBER:
 - Create items in the language used in the request
 - After creating items, ALWAYS set the task language (even if it's English, use "en")
 - For labels: if there are already 3 or more assigned, do not call assign_task_labels. Otherwise, call assign_task_labels using the preferred {labels: [{id, confidence}]} shape, omit low confidence, order highest confidence first, and cap to 3 labels.
+- Do not propose any labels listed under Suppressed Labels; callers will remove suppressed IDs if used.
 - Only use the functions listed in the system message''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.checklistUpdates,

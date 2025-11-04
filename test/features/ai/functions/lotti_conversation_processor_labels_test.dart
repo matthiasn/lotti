@@ -514,6 +514,111 @@ void main() {
         )).called(greaterThanOrEqualTo(1));
   });
 
+  test('suppression no-op when all requested labels are suppressed', () async {
+    // Task with suppression set for X and Y
+    final task = makeTask().copyWith(
+      data: makeTask().data.copyWith(
+        aiSuppressedLabelIds: {'X', 'Y'},
+      ),
+    );
+
+    // Both labels exist (global); should be filtered by caller due to suppression
+    when(() => mockJournalDb.getLabelDefinitionById('X')).thenAnswer(
+      (_) async => LabelDefinition(
+        id: 'X',
+        name: 'X',
+        color: '#000',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+      ),
+    );
+    when(() => mockJournalDb.getLabelDefinitionById('Y')).thenAnswer(
+      (_) async => LabelDefinition(
+        id: 'Y',
+        name: 'Y',
+        color: '#000',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+      ),
+    );
+    when(() => mockJournalDb.getConfigFlag(aiLabelAssignmentShadowFlag))
+        .thenAnswer((_) async => false);
+
+    // Conversation wiring + capture tool response
+    const conversationId = 'conv-suppressed';
+    when(() => mockConversationRepo.createConversation(
+          systemMessage: any(named: 'systemMessage'),
+          maxTurns: any(named: 'maxTurns'),
+        )).thenReturn(conversationId);
+    when(() => mockConversationRepo.getConversation(conversationId))
+        .thenReturn(mockConversationManager);
+    when(() => mockConversationManager.messages).thenReturn([]);
+
+    String? toolResponse;
+    when(() => mockConversationManager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        )).thenAnswer((inv) {
+      toolResponse = inv.namedArguments[#response] as String?;
+    });
+
+    when(() => mockConversationRepo.sendMessage(
+          conversationId: conversationId,
+          message: any(named: 'message'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          inferenceRepo: any(named: 'inferenceRepo'),
+          tools: any(named: 'tools'),
+          temperature: any(named: 'temperature'),
+          strategy: any(named: 'strategy'),
+        )).thenAnswer((invocation) async {
+      final strategy =
+          invocation.namedArguments[#strategy] as ConversationStrategy?;
+      if (strategy != null) {
+        await strategy.processToolCalls(
+          toolCalls: [
+            makeCall(['X', 'Y'])
+          ],
+          manager: mockConversationManager,
+        );
+      }
+    });
+    when(() => mockConversationRepo.deleteConversation(conversationId))
+        .thenAnswer((_) {});
+
+    // No labels should be persisted (short-circuit)
+    await processor.processPromptWithConversation(
+      prompt: 'user',
+      entity: task,
+      task: task,
+      model: makeModel(),
+      provider: makeProvider(),
+      promptConfig: makePrompt(),
+      systemMessage: 'sys',
+      tools: const [],
+      inferenceRepo: FakeInferenceRepo(),
+    );
+
+    verifyNever(() => mockLabelsRepo.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        ));
+    expect(toolResponse, isNotNull);
+    final decoded = jsonDecode(toolResponse!) as Map<String, dynamic>;
+    expect(decoded['function'], 'assign_task_labels');
+    final result = Map<String, dynamic>.from(decoded['result'] as Map);
+    expect((result['assigned'] as List).cast<String>(), isEmpty);
+    final skipped = (result['skipped'] as List).cast<Map<String, dynamic>>();
+    // Both X and Y should be skipped for reason 'suppressed'
+    final reasons = {for (final m in skipped) m['id'] as String: m['reason']};
+    expect(reasons['X'], 'suppressed');
+    expect(reasons['Y'], 'suppressed');
+  });
+
   test('handles retry with corrected label IDs in conversation', () async {
     final task = makeTask();
 

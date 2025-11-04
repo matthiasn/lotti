@@ -138,6 +138,10 @@ abstract class TaskData with _$TaskData {
     Duration? estimate,
     List<String>? checklistIds,
     String? languageCode,
+
+    /// Set of label IDs the user explicitly removed and does not want suggested by AI.
+    /// Stored as a Set in memory; serialized as an array in JSON.
+    Set<String>? aiSuppressedLabelIds,
     @Default(TaskPriority.p2Medium) TaskPriority priority,
   }) = _TaskData;
 

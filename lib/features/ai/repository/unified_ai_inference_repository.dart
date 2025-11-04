@@ -42,8 +42,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_log.dart';
-// ignore: unused_import
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -1381,13 +1379,43 @@ class UnifiedAiInferenceRepository {
         // Handle assign task labels (add-only)
         try {
           final parsed = parseLabelCallArgs(toolCall.function.arguments);
-          final proposed =
+          final requested =
               LinkedHashSet<String>.from(parsed.selectedIds).toList();
+
+          // Phase 3: filter suppressed IDs for this task (hard filter)
+          final suppressed =
+              currentTask.data.aiSuppressedLabelIds ?? const <String>{};
+          final suppressedSet = suppressed.toSet();
+          final proposed =
+              requested.where((id) => !suppressedSet.contains(id)).toList();
 
           final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
           final processor = LabelAssignmentProcessor(
             repository: ref.read(labelsRepositoryProvider),
           );
+
+          // Short-circuit if everything was suppressed
+          if (proposed.isEmpty && requested.isNotEmpty) {
+            final skipped = requested
+                .where(suppressedSet.contains)
+                .map((id) => {'id': id, 'reason': 'suppressed'})
+                .toList();
+            final noop = LabelAssignmentResult(
+              assigned: const [],
+              invalid: const [],
+              skipped: skipped,
+            );
+            try {
+              final response = noop.toStructuredJson(requested);
+              developer.log(
+                'assign_task_labels suppressed-only: $response',
+                name: 'UnifiedAiInferenceRepository',
+              );
+            } catch (_) {
+              // best-effort logging
+            }
+            continue;
+          }
           final result = await processor.processAssignment(
             taskId: currentTask.id,
             proposedIds: proposed,
@@ -1401,7 +1429,6 @@ class UnifiedAiInferenceRepository {
           );
           // Log structured result for debugging
           try {
-            final requested = proposed;
             developer.log(
               'assign_task_labels result: ${result.toStructuredJson(requested)}',
               name: 'UnifiedAiInferenceRepository',

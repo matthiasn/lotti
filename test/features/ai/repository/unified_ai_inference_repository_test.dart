@@ -28,6 +28,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -97,6 +98,8 @@ class FakeChecklistData extends Fake implements ChecklistData {}
 
 class FakeChecklistItemData extends Fake implements ChecklistItemData {}
 
+class MockLabelsRepository extends Mock implements LabelsRepository {}
+
 void main() {
   UnifiedAiInferenceRepository? repository;
   late MockRef mockRef;
@@ -111,6 +114,7 @@ void main() {
   late MockDirectory mockDirectory;
   late MockCategoryRepository mockCategoryRepo;
   late MockPromptCapabilityFilter mockPromptCapabilityFilter;
+  late MockLabelsRepository mockLabelsRepository;
 
   setUpAll(() {
     // Isolate registrations from other files when tests are optimized
@@ -146,6 +150,7 @@ void main() {
     mockDirectory = MockDirectory();
     mockCategoryRepo = MockCategoryRepository();
     mockPromptCapabilityFilter = MockPromptCapabilityFilter();
+    mockLabelsRepository = MockLabelsRepository();
 
     // Set up GetIt
     if (getIt.isRegistered<JournalDb>()) {
@@ -182,6 +187,8 @@ void main() {
         .thenReturn(mockCategoryRepo);
     when(() => mockRef.read(promptCapabilityFilterProvider))
         .thenReturn(mockPromptCapabilityFilter);
+    when(() => mockRef.read(labelsRepositoryProvider))
+        .thenReturn(mockLabelsRepository);
 
     // Set up default behavior for prompt capability filter to pass through all prompts
     when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
@@ -231,6 +238,94 @@ void main() {
   });
 
   group('UnifiedAiInferenceRepository', () {
+    test('assign_task_labels no-op when all candidates suppressed', () async {
+      // Arrange task with suppressed X and Y
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: const [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          aiSuppressedLabelIds: const {'X', 'Y'},
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'checklist-updates',
+        name: 'Checklist Updates',
+        aiResponseType: AiResponseType.checklistUpdates,
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      when(() => mockAiInputRepo.getEntity('test-id'))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+          .thenAnswer((_) async => '{"task":"details"}');
+
+      // Shadow flag
+      when(() => mockJournalDb.getConfigFlag('ai_label_assignment_shadow'))
+          .thenAnswer((_) async => false);
+
+      // Stream a single assign_task_labels tool call for X and Y
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'tool-1',
+                functionName: 'assign_task_labels',
+                arguments: '{"labelIds":["X","Y"]}',
+              )
+            ]))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          provider: any(named: 'provider'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      // Act
+      await repository!.runInference(
+        entityId: 'test-id',
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Assert: no persistence because both candidates suppressed
+      verifyNever(() => mockLabelsRepository.addLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            addedLabelIds: any(named: 'addedLabelIds'),
+          ));
+    });
     group('tool injection logging and gating', () {
       test('stream checklistUpdates logs OpenAI tools without multi-item',
           () async {

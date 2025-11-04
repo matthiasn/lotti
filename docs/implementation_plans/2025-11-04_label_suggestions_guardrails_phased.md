@@ -164,7 +164,7 @@ Scope
 - Track per‑task set `aiSuppressedLabelIds` on `TaskData` (Set<String>?, serialized as array). When a user removes a label, add it to the set. Manual user assignment is always allowed and implicitly unsuppresses.
 - Prompt exposes suppressed labels by id and name and instructs the model not to suggest them; callers also hard‑filter: any suppressed IDs in tool calls are dropped before processing.
 - Ingestion rejects suppressed with explicit reason for defense‑in‑depth.
-- Provide a “Reset suggestions for this task” action (clears the set).
+  
 
 Design
 - Data model (no new tables)
@@ -185,11 +185,10 @@ Design
   - `LabelValidator.validateForTask` rejects suppressed with skip reason `suppressed` (defense‑in‑depth).
 - UI/UX
   - Default selector behavior unchanged; suppressed labels are simply not suggested by AI.
-  - Task detail page (⋮ overflow): “Reset label suggestions” → clears `aiSuppressedLabelIds` with confirmation.
   - Manual re‑adding implicitly unsuppresses and is always allowed.
 
 User messaging
-- Confirmation dialog for reset: Title “Reset label suggestions?”; Body “AI may suggest previously removed labels again for this task.”; Actions: Cancel / Reset.
+  
 
 Performance
 - No extra DB queries beyond existing repository updates; suppression set lives in task data.
@@ -202,7 +201,7 @@ Tests
 - Manually re‑add suppressed label → labelId removed from suppressed set; subsequent AI proposals may include it if in scope.
 - Callers: partial suppression (some candidates dropped) and full suppression (no‑op response; processor not called).
 - Prompt builder: “Suppressed Labels” JSON block contains id+name; rule text present.
-- Reset action clears suppressed set.
+  
 - Edge: label becomes deleted while suppressed → still excluded; deletion takes precedence.
 
 Telemetry

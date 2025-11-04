@@ -170,6 +170,14 @@ class AiInputRepository {
         } else {
           base['labels'] = <Map<String, String>>[];
         }
+
+        // Phase 3: include suppressed label IDs for transparency
+        final suppressed = entity.data.aiSuppressedLabelIds;
+        if (suppressed != null && suppressed.isNotEmpty) {
+          base['aiSuppressedLabelIds'] = suppressed.toList();
+        } else {
+          base['aiSuppressedLabelIds'] = <String>[];
+        }
       }
     } catch (_) {
       // On lookup failure, omit labels extension silently
