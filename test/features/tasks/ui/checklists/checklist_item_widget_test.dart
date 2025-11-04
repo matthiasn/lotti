@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
+import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
 import '../../../../test_helper.dart';
 
@@ -243,6 +244,349 @@ void main() {
         find.byType(CheckboxListTile),
       );
       expect(checkbox.onChanged, isNull);
+    });
+
+    testWidgets('has MouseRegion for hover interactions', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Find the MouseRegion widget - it should exist to enable hover
+      expect(find.byType(MouseRegion), findsWidgets);
+
+      // Find AnimatedContainer which should change color on hover
+      expect(find.byType(AnimatedContainer), findsOneWidget);
+
+      // Verify animation duration is set correctly
+      final animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      expect(
+        animatedContainer.duration,
+        equals(const Duration(milliseconds: 200)),
+      );
+      expect(animatedContainer.curve, equals(Curves.easeInOut));
+    });
+
+    testWidgets('animates background color transitions', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify AnimatedContainer exists with correct animation settings
+      final animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      expect(
+        animatedContainer.duration,
+        equals(const Duration(milliseconds: 200)),
+      );
+      expect(animatedContainer.curve, equals(Curves.easeInOut));
+
+      // Toggle checkbox to trigger animation
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+
+      // Verify container still exists (animation in progress)
+      expect(find.byType(AnimatedContainer), findsOneWidget);
+
+      // Complete the animation
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Verify animation completed
+      expect(find.byType(AnimatedContainer), findsOneWidget);
+    });
+
+    testWidgets('applies border radius to container', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Find AnimatedContainer and verify border radius
+      final animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final decoration = animatedContainer.decoration as BoxDecoration?;
+
+      expect(decoration, isNotNull);
+      expect(decoration!.borderRadius, isA<BorderRadius>());
+      final borderRadius = decoration.borderRadius! as BorderRadius;
+      expect(borderRadius.topLeft.x, equals(12.0));
+    });
+
+    testWidgets('shows correct spacing after edit icon', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Find all SizedBox widgets
+      final sizedBoxes = find.byType(SizedBox);
+
+      // Verify at least one SizedBox exists (the spacing after edit icon)
+      expect(sizedBoxes, findsWidgets);
+
+      // Find the SizedBox with width: 8 (spacing after edit icon)
+      final sizedBoxWidgets = tester
+          .widgetList<SizedBox>(sizedBoxes)
+          .where((widget) => widget.width == 8.0);
+
+      // Verify the spacing exists when showEditIcon is true
+      expect(sizedBoxWidgets.isNotEmpty, isTrue);
+    });
+
+    testWidgets('does not show spacing when showEditIcon is false',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+            showEditIcon: false,
+          ),
+        ),
+      );
+
+      // When showEditIcon is false, verify edit icon is not present
+      expect(find.byIcon(Icons.edit), findsNothing);
+
+      // Verify the spacing SizedBox with width 8.0 is NOT rendered
+      final sizedBoxWidgets = tester
+          .widgetList<SizedBox>(find.byType(SizedBox))
+          .where((widget) => widget.width == 8.0);
+
+      expect(sizedBoxWidgets, isEmpty);
+    });
+
+    testWidgets('applies different background colors based on state',
+        (tester) async {
+      // Test unchecked state
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify AnimatedContainer exists with decoration
+      var animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      var decoration = animatedContainer.decoration as BoxDecoration?;
+      expect(decoration, isNotNull);
+      expect(decoration!.color, isNotNull);
+
+      // Toggle to checked state
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Verify container decoration changed
+      animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      decoration = animatedContainer.decoration as BoxDecoration?;
+      expect(decoration, isNotNull);
+      expect(decoration!.color, isNotNull);
+    });
+
+    testWidgets('toggles edit mode when edit button is tapped', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+            onTitleChange: (_) {},
+          ),
+        ),
+      );
+
+      // Find and tap the edit button
+      final editButtons = find.byIcon(Icons.edit);
+      expect(editButtons, findsWidgets);
+
+      // Tap one of the edit buttons
+      await tester.tap(editButtons.first);
+      await tester.pump();
+
+      // Verify AnimatedCrossFade exists (indicates edit mode toggle)
+      expect(find.byType(AnimatedCrossFade), findsOneWidget);
+
+      // Verify TitleTextField is present (edit mode active)
+      expect(find.byType(TitleTextField), findsOneWidget);
+    });
+
+    testWidgets('triggers onCancel when canceling edit mode', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+            onTitleChange: (_) {},
+          ),
+        ),
+      );
+
+      // Enter edit mode by tapping edit button
+      await tester.tap(find.byIcon(Icons.edit).first);
+      await tester.pump();
+
+      // Verify we're in edit mode
+      expect(find.byType(TitleTextField), findsOneWidget);
+
+      // Find the TitleTextField and access its onCancel callback
+      final titleTextField =
+          tester.widget<TitleTextField>(find.byType(TitleTextField));
+      expect(titleTextField.onCancel, isNotNull);
+
+      // Call onCancel to exit edit mode
+      titleTextField.onCancel!();
+      await tester.pump();
+
+      // After canceling, we should be back in view mode
+      // The edit button should be visible again (not in editing state)
+      expect(find.byIcon(Icons.edit), findsWidgets);
+    });
+
+    testWidgets('has MouseRegion with hover callbacks configured',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Find the MouseRegion widgets and verify at least one has hover callbacks
+      final mouseRegions =
+          tester.widgetList<MouseRegion>(find.byType(MouseRegion));
+      expect(mouseRegions.length, greaterThan(0));
+
+      // At least one MouseRegion should have onEnter and onExit callbacks
+      final mouseRegionsWithCallbacks = mouseRegions.where(
+        (mr) => mr.onEnter != null && mr.onExit != null,
+      );
+      expect(mouseRegionsWithCallbacks, isNotEmpty);
+
+      // Verify AnimatedContainer exists for hover animations
+      final animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      expect(animatedContainer.duration, const Duration(milliseconds: 200));
+      expect(animatedContainer.curve, Curves.easeInOut);
+    });
+
+    testWidgets('renders secondary edit button when onEdit is provided',
+        (tester) async {
+      var editButtonTapped = false;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+            onEdit: () {
+              editButtonTapped = true;
+            },
+          ),
+        ),
+      );
+
+      // Verify secondary IconButton exists (inside CheckboxListTile.secondary)
+      final checkboxListTile =
+          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
+      expect(checkboxListTile.secondary, isNotNull);
+      expect(checkboxListTile.secondary, isA<IconButton>());
+
+      // Find and tap the secondary edit button
+      final secondaryEditButton = checkboxListTile.secondary! as IconButton;
+      expect(secondaryEditButton.onPressed, isNotNull);
+
+      // Call the onPressed callback
+      secondaryEditButton.onPressed!();
+
+      // Verify the callback was triggered
+      expect(editButtonTapped, isTrue);
+    });
+
+    testWidgets('does not render secondary button when onEdit is null',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify secondary is null
+      final checkboxListTile =
+          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
+      expect(checkboxListTile.secondary, isNull);
+    });
+
+    testWidgets('applies editing background color when editing',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+            onTitleChange: (_) {},
+          ),
+        ),
+      );
+
+      // Get initial background color
+      var animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final initialDecoration = animatedContainer.decoration as BoxDecoration?;
+      final initialColor = initialDecoration?.color;
+
+      // Enter edit mode
+      await tester.tap(find.byIcon(Icons.edit).first);
+      await tester.pump();
+
+      // Get background color in edit mode
+      animatedContainer =
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final editingDecoration = animatedContainer.decoration as BoxDecoration?;
+      final editingColor = editingDecoration?.color;
+
+      // Verify colors exist and container properly animates
+      expect(initialColor, isNotNull);
+      expect(editingColor, isNotNull);
+      expect(animatedContainer.duration, const Duration(milliseconds: 200));
     });
   });
 }

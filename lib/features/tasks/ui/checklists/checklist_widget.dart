@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
+import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
 import 'package:lotti/features/tasks/ui/checklists/progress_indicator.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -236,6 +237,8 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               buildDefaultDragHandles: _isEditing,
+              proxyDecorator: (child, index, animation) =>
+                  buildDragDecorator(context, child),
               onReorder: (int oldIndex, int newIndex) {
                 final itemIds = [..._itemIds];
                 final movedItem = itemIds.removeAt(oldIndex);

@@ -186,6 +186,47 @@ void main() {
         )).called(1);
   });
 
+  testWidgets('snackbar uses primary color scheme with onPrimary text',
+      (tester) async {
+    // Register event service for provider
+    final eventService = LabelAssignmentEventService();
+    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
+
+    // Ensure cache returns label definition
+    when(() => cacheService.getLabelById('label-1')).thenReturn(
+      testLabelDefinition1.copyWith(id: 'label-1', name: 'Test Label'),
+    );
+
+    final task = taskWithLabels([]);
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    // Publish assignment event to trigger SnackBar
+    eventService.publish(
+      const LabelAssignmentEvent(
+        taskId: 'task-123',
+        assignedIds: ['label-1'],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Find the SnackBar widget
+    final snackBarFinder = find.byType(SnackBar);
+    expect(snackBarFinder, findsOneWidget);
+
+    // Verify "Assigned:" text is rendered with expected styling
+    final assignedTextFinder = find.text('Assigned:');
+    expect(assignedTextFinder, findsOneWidget);
+
+    // Get the Text widget and verify it uses onPrimary color
+    final textWidget = tester.widget<Text>(assignedTextFinder);
+    final theme = Theme.of(tester.element(assignedTextFinder));
+
+    expect(textWidget.style?.color, equals(theme.colorScheme.onPrimary));
+    expect(textWidget.style?.fontWeight, equals(FontWeight.w600));
+  });
+
   testWidgets('handles rapid multiple assignments, showing latest toast',
       (tester) async {
     // Register event service for provider

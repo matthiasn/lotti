@@ -251,5 +251,201 @@ void main() {
       // Verify delete action was called
       expect(deleteActionCalled, isTrue);
     });
+
+    testWidgets('proxyDecorator applies correct styling during reorder',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: mockState.title,
+              itemIds: const [],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5,
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // Verify the ReorderableListView exists
+      final reorderableListView =
+          tester.widget<ReorderableListView>(find.byType(ReorderableListView));
+
+      // The proxyDecorator should be defined
+      expect(reorderableListView.proxyDecorator, isNotNull);
+
+      // Test the proxyDecorator by calling it directly
+      final testChild = Container(
+        key: const ValueKey('test-child'),
+        child: const Text('Test Item'),
+      );
+      final context = tester.element(find.byType(ChecklistWidget));
+      final decoratedWidget = reorderableListView.proxyDecorator!(
+        testChild,
+        0,
+        const AlwaysStoppedAnimation(1),
+      );
+
+      // Verify the decorated widget is a Container with correct styling
+      expect(decoratedWidget, isA<Container>());
+      final container = decoratedWidget as Container;
+      final decoration = container.decoration! as BoxDecoration;
+      final theme = Theme.of(context);
+
+      expect(decoration.color, theme.colorScheme.surface);
+      expect(decoration.border, isA<Border>());
+      final border = decoration.border! as Border;
+      expect(border.top.color, theme.colorScheme.primary);
+      expect(border.top.width, 2);
+      expect(decoration.borderRadius, BorderRadius.circular(12));
+    });
+
+    testWidgets('shows export button when onExportMarkdown is provided',
+        (tester) async {
+      var exportCalled = false;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: mockState.title,
+              itemIds: const [],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5,
+              updateItemOrder: (_) async {},
+              onExportMarkdown: () {
+                exportCalled = true;
+              },
+            ),
+          ),
+        ),
+      );
+
+      // Find the export icon (MdiIcons.exportVariant)
+      expect(find.byIcon(MdiIcons.exportVariant), findsOneWidget);
+
+      // Tap the export button
+      await tester.tap(find.byIcon(MdiIcons.exportVariant));
+      await tester.pump();
+
+      // Verify callback was called
+      expect(exportCalled, isTrue);
+    });
+
+    testWidgets('does not show export button when onExportMarkdown is null',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: mockState.title,
+              itemIds: const [],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5,
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // Export icon should not be present
+      expect(find.byIcon(MdiIcons.exportVariant), findsNothing);
+    });
+
+    testWidgets('has GestureDetector for share on long press', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: mockState.title,
+              itemIds: const [],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5,
+              updateItemOrder: (_) async {},
+              onExportMarkdown: () {},
+              onShareMarkdown: () {},
+            ),
+          ),
+        ),
+      );
+
+      // Verify export icon exists
+      expect(find.byIcon(MdiIcons.exportVariant), findsOneWidget);
+
+      // Find GestureDetector wrapping the export IconButton
+      final gestureDetectors = find.ancestor(
+        of: find.byIcon(MdiIcons.exportVariant),
+        matching: find.byType(GestureDetector),
+      );
+
+      // Verify GestureDetector exists (enables long press and secondary click)
+      // There may be multiple due to Flutter's widget hierarchy
+      expect(gestureDetectors, findsWidgets);
+    });
+
+    testWidgets('checklist expands by default when incomplete', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: mockState.title,
+              itemIds: const [],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5, // Not complete
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // The ExpansionTile should be initially expanded
+      final expansionTile =
+          tester.widget<ExpansionTile>(find.byType(ExpansionTile));
+
+      // Verify initiallyExpanded is true (completion rate < 1)
+      expect(expansionTile.initiallyExpanded, isTrue);
+    });
+
+    testWidgets('checklist collapses by default when complete', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: mockState.title,
+              itemIds: const [],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 1, // Complete
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // The ExpansionTile should be initially collapsed
+      final expansionTile =
+          tester.widget<ExpansionTile>(find.byType(ExpansionTile));
+
+      // Verify initiallyExpanded is false (completion rate == 1)
+      expect(expansionTile.initiallyExpanded, isFalse);
+    });
   });
 }

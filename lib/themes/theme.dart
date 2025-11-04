@@ -562,6 +562,14 @@ ThemeData withOverrides(ThemeData themeData) {
           }),
         ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: themeData.colorScheme.primary,
+        contentTextStyle: TextStyle(
+          color: themeData.colorScheme.onPrimary,
+          fontSize: fontSizeMedium,
+        ),
+        actionTextColor: themeData.colorScheme.onPrimary,
+      ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{},
       ),

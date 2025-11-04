@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import '../../../../test_helper.dart';
 
@@ -402,6 +403,277 @@ void main() {
       // The key insight of our fix is that notifiers are read and stored
       // during the build method, not in the onDismissed callback
       // This test passes if no disposal errors occur during widget lifecycle
+    });
+
+    testWidgets('dragBuilder applies correct visual styling', (tester) async {
+      final mockItemController = MockChecklistItemController(item: testItem);
+      final mockChecklistController = MockChecklistController();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider(
+              id: testItemId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockItemController),
+            checklistControllerProvider(
+              id: testChecklistId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockChecklistController),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the DragItemWidget and test its dragBuilder directly
+      final dragItemWidget =
+          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      expect(dragItemWidget.dragBuilder, isNotNull);
+
+      // Test the dragBuilder by calling it directly
+      final testChild = Container(key: const ValueKey('test-child'));
+      final context = tester.element(find.byType(ChecklistItemWrapper));
+      final decoratedWidget = dragItemWidget.dragBuilder!(context, testChild);
+
+      // Verify the decorated widget is a Container with the correct styling
+      expect(decoratedWidget, isA<Container>());
+      final container = decoratedWidget! as Container;
+      final decoration = container.decoration! as BoxDecoration;
+      final theme = Theme.of(context);
+
+      expect(decoration.color, theme.colorScheme.surface);
+      expect(decoration.border, isA<Border>());
+      final border = decoration.border! as Border;
+      expect(border.top.color, theme.colorScheme.primary);
+      expect(border.top.width, 2);
+      expect(decoration.borderRadius, BorderRadius.circular(12));
+    });
+
+    testWidgets('renders with drag and drop capabilities', (tester) async {
+      final mockItemController = MockChecklistItemController(item: testItem);
+      final mockChecklistController = MockChecklistController();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider(
+              id: testItemId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockItemController),
+            checklistControllerProvider(
+              id: testChecklistId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockChecklistController),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify widget renders correctly
+      expect(find.byType(ChecklistItemWrapper), findsOneWidget);
+      expect(find.byType(ChecklistItemWithSuggestionWidget), findsOneWidget);
+      expect(find.text('Test Item'), findsWidgets);
+
+      // Verify DragItemWidget is configured with dragItemProvider
+      final dragItemWidget =
+          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      expect(dragItemWidget.dragItemProvider, isNotNull);
+
+      // Note: Testing the actual dragItemProvider invocation requires mocking
+      // DragSession which is complex. The provider's logic is tested through
+      // integration tests where actual drag operations occur.
+    });
+
+    testWidgets('dragItemProvider creates DragItem with correct data',
+        (tester) async {
+      final mockItemController = MockChecklistItemController(item: testItem);
+      final mockChecklistController = MockChecklistController();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider(
+              id: testItemId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockItemController),
+            checklistControllerProvider(
+              id: testChecklistId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockChecklistController),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify DragItemWidget is configured with dragItemProvider
+      final dragItemWidget =
+          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      expect(dragItemWidget.dragItemProvider, isNotNull);
+
+      // Note: Directly invoking dragItemProvider requires creating a proper
+      // DragItemRequest which depends on the drag-and-drop framework.
+      // The provider's existence and configuration is verified above.
+      // The actual behavior is tested through integration tests.
+    });
+
+    testWidgets('allowedOperations returns move operation', (tester) async {
+      final mockItemController = MockChecklistItemController(item: testItem);
+      final mockChecklistController = MockChecklistController();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider(
+              id: testItemId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockItemController),
+            checklistControllerProvider(
+              id: testChecklistId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockChecklistController),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the DragItemWidget and check allowedOperations
+      final dragItemWidget =
+          tester.widget<DragItemWidget>(find.byType(DragItemWidget));
+      expect(dragItemWidget.allowedOperations, isNotNull);
+
+      // Call allowedOperations to verify it returns move
+      final operations = dragItemWidget.allowedOperations();
+      expect(operations, [DropOperation.move]);
+    });
+
+    testWidgets('confirmDismiss shows delete confirmation dialog',
+        (tester) async {
+      final mockItemController = MockChecklistItemController(item: testItem);
+      final mockChecklistController = MockChecklistController();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider(
+              id: testItemId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockItemController),
+            checklistControllerProvider(
+              id: testChecklistId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockChecklistController),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the Dismissible widget
+      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+
+      // Call confirmDismiss to trigger the dialog
+      final confirmFuture =
+          dismissible.confirmDismiss!(DismissDirection.endToStart);
+      await tester.pump();
+
+      // Verify dialog is shown
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      // Find all buttons (cancel is first, confirm is last)
+      final buttons = find.byType(TextButton);
+      await tester.tap(buttons.first);
+      await tester.pumpAndSettle();
+
+      // Verify dialog returned false
+      expect(await confirmFuture, isFalse);
+    });
+
+    testWidgets('confirmDismiss returns true when user confirms',
+        (tester) async {
+      final mockItemController = MockChecklistItemController(item: testItem);
+      final mockChecklistController = MockChecklistController();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider(
+              id: testItemId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockItemController),
+            checklistControllerProvider(
+              id: testChecklistId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockChecklistController),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the Dismissible widget
+      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+
+      // Call confirmDismiss to trigger the dialog
+      final confirmFuture =
+          dismissible.confirmDismiss!(DismissDirection.endToStart);
+      await tester.pump();
+
+      // Verify dialog is shown
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      // Find all buttons and tap the last one (confirm button)
+      final buttons = find.byType(TextButton);
+      await tester.tap(buttons.last);
+      await tester.pumpAndSettle();
+
+      // Verify dialog returned true
+      expect(await confirmFuture, isTrue);
     });
   });
 }

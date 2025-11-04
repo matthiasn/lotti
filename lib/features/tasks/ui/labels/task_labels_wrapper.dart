@@ -53,7 +53,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
               child: Text(
                 'Assigned:',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface,
+                  color: colorScheme.onPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -82,7 +82,6 @@ class TaskLabelsWrapper extends ConsumerWidget {
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            backgroundColor: colorScheme.surfaceContainerHigh,
             elevation: 6,
             margin: EdgeInsets.only(
               left: 12,
