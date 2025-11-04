@@ -66,4 +66,34 @@ void main() {
     expect(res.suppressed.toSet(), {'e1'});
     expect(res.invalid.toSet(), {'d1', 'z'});
   });
+
+  test('deleted label in suppressed set is treated as invalid (deletion wins)',
+      () async {
+    final db = MockJournalDb();
+    final validator = LabelValidator(db: db);
+
+    // z is deleted and also in suppression set
+    when(() => db.getLabelDefinitionById('z')).thenAnswer((_) async =>
+        LabelDefinition(
+          id: 'z',
+          name: 'Zed',
+          color: '#000',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          deletedAt: DateTime.now(),
+        ));
+
+    final res = await validator.validateForTask(
+      const ['z'],
+      categoryId: 'engineering',
+      suppressedIds: const {'z'},
+    );
+
+    // Deleted takes precedence over suppression
+    expect(res.invalid, contains('z'));
+    expect(res.suppressed, isEmpty);
+    expect(res.valid, isEmpty);
+  });
 }
