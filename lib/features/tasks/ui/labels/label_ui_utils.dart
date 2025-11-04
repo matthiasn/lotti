@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 
 class LabelListBuildResult {
@@ -47,8 +48,8 @@ LabelListBuildResult buildSelectorLabelList({
   }).toList()
     ..sort((a, b) {
       // Sort strictly A–Z by name, independent of selection state.
-      // This keeps items from jumping when toggled.
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      // Use compareAsciiLowerCase to avoid allocating new strings.
+      return compareAsciiLowerCase(a.name, b.name);
     });
 
   return LabelListBuildResult(items: filtered, availableIds: availableIds);
