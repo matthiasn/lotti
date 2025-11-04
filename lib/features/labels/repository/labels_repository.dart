@@ -186,6 +186,23 @@ class LabelsRepository {
         addLabelsToMeta(journalEntity.meta, addedLabelIds),
       );
 
+      // Manual add implicitly unsuppresses corresponding labels on tasks
+      if (journalEntity is Task) {
+        final currentSuppressed =
+            journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
+        final nextSuppressed = _mergeSuppressed(
+          current: currentSuppressed,
+          remove: addedLabelIds.toSet(),
+        );
+        final updatedEntity = journalEntity.copyWith(
+          meta: updatedMetadata,
+          data: journalEntity.data.copyWith(
+            aiSuppressedLabelIds: nextSuppressed,
+          ),
+        );
+        return _persistenceLogic.updateDbEntity(updatedEntity);
+      }
+
       return _persistenceLogic.updateDbEntity(
         journalEntity.copyWith(meta: updatedMetadata),
       );
@@ -214,6 +231,23 @@ class LabelsRepository {
       final updatedMetadata = await _persistenceLogic.updateMetadata(
         removeLabelFromMeta(journalEntity.meta, labelId),
       );
+
+      // Removing a label adds it to the task's suppression set
+      if (journalEntity is Task) {
+        final currentSuppressed =
+            journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
+        final nextSuppressed = _mergeSuppressed(
+          current: currentSuppressed,
+          add: {labelId},
+        );
+        final updatedEntity = journalEntity.copyWith(
+          meta: updatedMetadata,
+          data: journalEntity.data.copyWith(
+            aiSuppressedLabelIds: nextSuppressed,
+          ),
+        );
+        return _persistenceLogic.updateDbEntity(updatedEntity);
+      }
 
       return _persistenceLogic.updateDbEntity(
         journalEntity.copyWith(meta: updatedMetadata),
@@ -270,11 +304,37 @@ class LabelsRepository {
         clearLabelIds: sorted.isEmpty,
       );
 
-      final updatedEntity = journalEntity.copyWith(
-        meta: updatedMetadata.copyWith(
-          labelIds: sorted.isEmpty ? null : sorted,
-        ),
-      );
+      JournalEntity updatedEntity;
+      if (journalEntity is Task) {
+        final prev = journalEntity.meta.labelIds ?? const <String>[];
+        final prevSet = prev.toSet();
+        final nextSet = sorted.toSet();
+        final removed = prevSet.difference(nextSet);
+        final added = nextSet.difference(prevSet);
+
+        final currentSuppressed =
+            journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
+        final nextSuppressed = _mergeSuppressed(
+          current: currentSuppressed,
+          add: removed,
+          remove: added,
+        );
+
+        updatedEntity = journalEntity.copyWith(
+          meta: updatedMetadata.copyWith(
+            labelIds: sorted.isEmpty ? null : sorted,
+          ),
+          data: journalEntity.data.copyWith(
+            aiSuppressedLabelIds: nextSuppressed,
+          ),
+        );
+      } else {
+        updatedEntity = journalEntity.copyWith(
+          meta: updatedMetadata.copyWith(
+            labelIds: sorted.isEmpty ? null : sorted,
+          ),
+        );
+      }
 
       // First attempt: normal update (keeps test/mocks simple and fast)
       final applied = await _persistenceLogic.updateDbEntity(updatedEntity);
@@ -296,6 +356,89 @@ class LabelsRepository {
       return false;
     }
   }
+
+  /// Add one or more label IDs to the task's suppression set.
+  Future<bool?> addSuppressedLabels({
+    required String journalEntityId,
+    required Set<String> labelIds,
+  }) async {
+    if (labelIds.isEmpty) return true;
+    try {
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+      if (journalEntity is! Task) return false;
+
+      final currentSuppressed =
+          journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
+      final assigned = journalEntity.meta.labelIds?.toSet() ?? const <String>{};
+      final next = _mergeSuppressed(
+        current: currentSuppressed,
+        add: labelIds,
+        remove: assigned,
+      );
+
+      final updatedEntity = journalEntity.copyWith(
+        meta: await _persistenceLogic.updateMetadata(journalEntity.meta),
+        data: journalEntity.data.copyWith(
+          aiSuppressedLabelIds: next,
+        ),
+      );
+      return _persistenceLogic.updateDbEntity(updatedEntity);
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'labels_repository',
+        subDomain: 'addSuppressedLabels',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+  /// Remove one or more label IDs from the task's suppression set.
+  Future<bool?> removeSuppressedLabels({
+    required String journalEntityId,
+    required Set<String> labelIds,
+  }) async {
+    if (labelIds.isEmpty) return true;
+    try {
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+      if (journalEntity is! Task) return false;
+
+      final current =
+          journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
+      final next = _mergeSuppressed(
+        current: current,
+        remove: labelIds,
+      );
+
+      final updatedEntity = journalEntity.copyWith(
+        meta: await _persistenceLogic.updateMetadata(journalEntity.meta),
+        data: journalEntity.data.copyWith(
+          aiSuppressedLabelIds: next,
+        ),
+      );
+      return _persistenceLogic.updateDbEntity(updatedEntity);
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'labels_repository',
+        subDomain: 'removeSuppressedLabels',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+}
+
+Set<String>? _mergeSuppressed({
+  Set<String>? current,
+  Set<String> add = const <String>{},
+  Set<String> remove = const <String>{},
+}) {
+  final next = <String>{...(current ?? const <String>{})}
+    ..addAll(add)
+    ..removeAll(remove);
+  return next.isEmpty ? null : next;
 }
 
 Metadata addLabelsToMeta(

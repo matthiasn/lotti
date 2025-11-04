@@ -416,8 +416,14 @@ class LottiChecklistStrategy extends ConversationStrategy {
           );
 
           final parsed = parseLabelCallArgs(call.function.arguments);
-          final proposed =
+          final selected =
               LinkedHashSet<String>.from(parsed.selectedIds).toList();
+          // Phase 3: filter out suppressed IDs for this task (hard filter)
+          final suppressedSet =
+              checklistHandler.task.data.aiSuppressedLabelIds ??
+                  const <String>{};
+          final proposed =
+              selected.where((id) => !suppressedSet.contains(id)).toList();
           // Shadow mode: do not persist if enabled (safe default false)
           var shadow = false;
           try {
@@ -428,6 +434,25 @@ class LottiChecklistStrategy extends ConversationStrategy {
           } catch (_) {
             shadow = false;
           }
+          // Short-circuit if everything was suppressed
+          if (proposed.isEmpty && selected.isNotEmpty) {
+            final skipped = selected
+                .where(suppressedSet.contains)
+                .map((id) => {'id': id, 'reason': 'suppressed'})
+                .toList();
+            final noop = LabelAssignmentResult(
+              assigned: const [],
+              invalid: const [],
+              skipped: skipped,
+            );
+            final response = noop.toStructuredJson(selected);
+            manager.addToolResponse(
+              toolCallId: call.id,
+              response: response,
+            );
+            continue;
+          }
+
           final result = await processor.processAssignment(
             taskId: checklistHandler.task.id,
             proposedIds: proposed,
@@ -435,6 +460,11 @@ class LottiChecklistStrategy extends ConversationStrategy {
                 checklistHandler.task.meta.labelIds ?? const <String>[],
             shadowMode: shadow,
             categoryId: checklistHandler.task.meta.categoryId,
+            // Phase 2 metrics forwarded for telemetry
+            droppedLow: parsed.droppedLow,
+            legacyUsed: parsed.legacyUsed,
+            confidenceBreakdown: parsed.confidenceBreakdown,
+            totalCandidates: parsed.totalCandidates,
           );
 
           // Structured tool response for the model

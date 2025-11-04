@@ -1526,6 +1526,10 @@ mixin _$TaskData {
   Duration? get estimate;
   List<String>? get checklistIds;
   String? get languageCode;
+
+  /// Set of label IDs the user explicitly removed and does not want suggested by AI.
+  /// Stored as a Set in memory; serialized as an array in JSON.
+  Set<String>? get aiSuppressedLabelIds;
   TaskPriority get priority;
 
   /// Create a copy of TaskData
@@ -1557,6 +1561,8 @@ mixin _$TaskData {
                 .equals(other.checklistIds, checklistIds) &&
             (identical(other.languageCode, languageCode) ||
                 other.languageCode == languageCode) &&
+            const DeepCollectionEquality()
+                .equals(other.aiSuppressedLabelIds, aiSuppressedLabelIds) &&
             (identical(other.priority, priority) ||
                 other.priority == priority));
   }
@@ -1574,11 +1580,12 @@ mixin _$TaskData {
       estimate,
       const DeepCollectionEquality().hash(checklistIds),
       languageCode,
+      const DeepCollectionEquality().hash(aiSuppressedLabelIds),
       priority);
 
   @override
   String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, priority: $priority)';
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority)';
   }
 }
 
@@ -1597,6 +1604,7 @@ abstract mixin class $TaskDataCopyWith<$Res> {
       Duration? estimate,
       List<String>? checklistIds,
       String? languageCode,
+      Set<String>? aiSuppressedLabelIds,
       TaskPriority priority});
 
   $TaskStatusCopyWith<$Res> get status;
@@ -1623,6 +1631,7 @@ class _$TaskDataCopyWithImpl<$Res> implements $TaskDataCopyWith<$Res> {
     Object? estimate = freezed,
     Object? checklistIds = freezed,
     Object? languageCode = freezed,
+    Object? aiSuppressedLabelIds = freezed,
     Object? priority = null,
   }) {
     return _then(_self.copyWith(
@@ -1662,6 +1671,10 @@ class _$TaskDataCopyWithImpl<$Res> implements $TaskDataCopyWith<$Res> {
           ? _self.languageCode
           : languageCode // ignore: cast_nullable_to_non_nullable
               as String?,
+      aiSuppressedLabelIds: freezed == aiSuppressedLabelIds
+          ? _self.aiSuppressedLabelIds
+          : aiSuppressedLabelIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>?,
       priority: null == priority
           ? _self.priority
           : priority // ignore: cast_nullable_to_non_nullable
@@ -1783,6 +1796,7 @@ extension TaskDataPatterns on TaskData {
             Duration? estimate,
             List<String>? checklistIds,
             String? languageCode,
+            Set<String>? aiSuppressedLabelIds,
             TaskPriority priority)?
         $default, {
     required TResult orElse(),
@@ -1800,6 +1814,7 @@ extension TaskDataPatterns on TaskData {
             _that.estimate,
             _that.checklistIds,
             _that.languageCode,
+            _that.aiSuppressedLabelIds,
             _that.priority);
       case _:
         return orElse();
@@ -1831,6 +1846,7 @@ extension TaskDataPatterns on TaskData {
             Duration? estimate,
             List<String>? checklistIds,
             String? languageCode,
+            Set<String>? aiSuppressedLabelIds,
             TaskPriority priority)
         $default,
   ) {
@@ -1847,6 +1863,7 @@ extension TaskDataPatterns on TaskData {
             _that.estimate,
             _that.checklistIds,
             _that.languageCode,
+            _that.aiSuppressedLabelIds,
             _that.priority);
       case _:
         throw StateError('Unexpected subclass');
@@ -1877,6 +1894,7 @@ extension TaskDataPatterns on TaskData {
             Duration? estimate,
             List<String>? checklistIds,
             String? languageCode,
+            Set<String>? aiSuppressedLabelIds,
             TaskPriority priority)?
         $default,
   ) {
@@ -1893,6 +1911,7 @@ extension TaskDataPatterns on TaskData {
             _that.estimate,
             _that.checklistIds,
             _that.languageCode,
+            _that.aiSuppressedLabelIds,
             _that.priority);
       case _:
         return null;
@@ -1913,9 +1932,11 @@ class _TaskData implements TaskData {
       this.estimate,
       final List<String>? checklistIds,
       this.languageCode,
+      final Set<String>? aiSuppressedLabelIds,
       this.priority = TaskPriority.p2Medium})
       : _statusHistory = statusHistory,
-        _checklistIds = checklistIds;
+        _checklistIds = checklistIds,
+        _aiSuppressedLabelIds = aiSuppressedLabelIds;
   factory _TaskData.fromJson(Map<String, dynamic> json) =>
       _$TaskDataFromJson(json);
 
@@ -1951,6 +1972,23 @@ class _TaskData implements TaskData {
 
   @override
   final String? languageCode;
+
+  /// Set of label IDs the user explicitly removed and does not want suggested by AI.
+  /// Stored as a Set in memory; serialized as an array in JSON.
+  final Set<String>? _aiSuppressedLabelIds;
+
+  /// Set of label IDs the user explicitly removed and does not want suggested by AI.
+  /// Stored as a Set in memory; serialized as an array in JSON.
+  @override
+  Set<String>? get aiSuppressedLabelIds {
+    final value = _aiSuppressedLabelIds;
+    if (value == null) return null;
+    if (_aiSuppressedLabelIds is EqualUnmodifiableSetView)
+      return _aiSuppressedLabelIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(value);
+  }
+
   @override
   @JsonKey()
   final TaskPriority priority;
@@ -1989,6 +2027,8 @@ class _TaskData implements TaskData {
                 .equals(other._checklistIds, _checklistIds) &&
             (identical(other.languageCode, languageCode) ||
                 other.languageCode == languageCode) &&
+            const DeepCollectionEquality()
+                .equals(other._aiSuppressedLabelIds, _aiSuppressedLabelIds) &&
             (identical(other.priority, priority) ||
                 other.priority == priority));
   }
@@ -2006,11 +2046,12 @@ class _TaskData implements TaskData {
       estimate,
       const DeepCollectionEquality().hash(_checklistIds),
       languageCode,
+      const DeepCollectionEquality().hash(_aiSuppressedLabelIds),
       priority);
 
   @override
   String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, priority: $priority)';
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority)';
   }
 }
 
@@ -2031,6 +2072,7 @@ abstract mixin class _$TaskDataCopyWith<$Res>
       Duration? estimate,
       List<String>? checklistIds,
       String? languageCode,
+      Set<String>? aiSuppressedLabelIds,
       TaskPriority priority});
 
   @override
@@ -2058,6 +2100,7 @@ class __$TaskDataCopyWithImpl<$Res> implements _$TaskDataCopyWith<$Res> {
     Object? estimate = freezed,
     Object? checklistIds = freezed,
     Object? languageCode = freezed,
+    Object? aiSuppressedLabelIds = freezed,
     Object? priority = null,
   }) {
     return _then(_TaskData(
@@ -2097,6 +2140,10 @@ class __$TaskDataCopyWithImpl<$Res> implements _$TaskDataCopyWith<$Res> {
           ? _self.languageCode
           : languageCode // ignore: cast_nullable_to_non_nullable
               as String?,
+      aiSuppressedLabelIds: freezed == aiSuppressedLabelIds
+          ? _self._aiSuppressedLabelIds
+          : aiSuppressedLabelIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>?,
       priority: null == priority
           ? _self.priority
           : priority // ignore: cast_nullable_to_non_nullable

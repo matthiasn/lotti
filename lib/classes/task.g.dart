@@ -172,6 +172,9 @@ _TaskData _$TaskDataFromJson(Map<String, dynamic> json) => _TaskData(
           ?.map((e) => e as String)
           .toList(),
       languageCode: json['languageCode'] as String?,
+      aiSuppressedLabelIds: (json['aiSuppressedLabelIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toSet(),
       priority: $enumDecodeNullable(_$TaskPriorityEnumMap, json['priority']) ??
           TaskPriority.p2Medium,
     );
@@ -186,6 +189,7 @@ Map<String, dynamic> _$TaskDataToJson(_TaskData instance) => <String, dynamic>{
       'estimate': instance.estimate?.inMicroseconds,
       'checklistIds': instance.checklistIds,
       'languageCode': instance.languageCode,
+      'aiSuppressedLabelIds': instance.aiSuppressedLabelIds?.toList(),
       'priority': _$TaskPriorityEnumMap[instance.priority]!,
     };
 

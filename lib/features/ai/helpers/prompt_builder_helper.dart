@@ -112,6 +112,17 @@ class PromptBuilderHelper {
       }
     }
 
+    // Inject suppressed labels if requested (id and name for clarity)
+    if (prompt.contains('{{suppressed_labels}}') &&
+        promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
+      try {
+        final suppressed = await _buildSuppressedLabelsJson(entity);
+        prompt = prompt.replaceAll('{{suppressed_labels}}', suppressed);
+      } catch (_) {
+        prompt = prompt.replaceAll('{{suppressed_labels}}', '[]');
+      }
+    }
+
     return prompt;
   }
 
@@ -186,8 +197,14 @@ class PromptBuilderHelper {
       includePrivate: includePrivate,
     );
 
+    // Phase 3: Exclude task-suppressed labels from the Available list
+    final suppressedIds = await _getSuppressedIdsForEntity(entity);
+    final scopedNotSuppressed = suppressedIds == null || suppressedIds.isEmpty
+        ? scoped
+        : scoped.where((l) => !suppressedIds.contains(l.id)).toList();
+
     // Sort into top usage and next alpha, within the scoped set
-    final byUsage = [...scoped]..sort((a, b) {
+    final byUsage = [...scopedNotSuppressed]..sort((a, b) {
         final ua = usage[a.id] ?? 0;
         final ub = usage[b.id] ?? 0;
         if (ua != ub) return ub.compareTo(ua);
@@ -195,7 +212,7 @@ class PromptBuilderHelper {
       });
     final topUsage = byUsage.take(kLabelsPromptTopUsageCount).toList();
 
-    final remaining = scoped
+    final remaining = scopedNotSuppressed
         .where((l) => !topUsage.any((t) => t.id == l.id))
         .toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -212,7 +229,7 @@ class PromptBuilderHelper {
     return (
       json: jsonEncode(tuples),
       selectedCount: tuples.length,
-      totalCount: scoped.length,
+      totalCount: scopedNotSuppressed.length,
     );
   }
 
@@ -271,6 +288,32 @@ class PromptBuilderHelper {
     // Resolve via shared utility
     final tuples = await buildAssignedLabelTuples(db: db, ids: ids);
     return jsonEncode(tuples);
+  }
+
+  /// Build JSON array of suppressed labels [{id,name}] for the task or linked task
+  Future<String> _buildSuppressedLabelsJson(JournalEntity entity) async {
+    final db = getIt<JournalDb>();
+    Task? task;
+    if (entity is Task) {
+      task = entity;
+    } else {
+      task = await _findLinkedTask(entity);
+    }
+    if (task == null) return '[]';
+    final ids = task.data.aiSuppressedLabelIds ?? const <String>{};
+    if (ids.isEmpty) return '[]';
+    final tuples = await buildAssignedLabelTuples(db: db, ids: ids.toList());
+    return jsonEncode(tuples);
+  }
+
+  Future<Set<String>?> _getSuppressedIdsForEntity(JournalEntity entity) async {
+    Task? task;
+    if (entity is Task) {
+      task = entity;
+    } else {
+      task = await _findLinkedTask(entity);
+    }
+    return task?.data.aiSuppressedLabelIds;
   }
 
   // Removed obsolete helper _buildLabelsJson(); the category-scoped builder

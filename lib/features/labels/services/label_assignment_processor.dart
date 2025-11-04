@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -167,9 +168,20 @@ class LabelAssignmentProcessor {
         effectiveCategoryId = null;
       }
     }
-    final validation = await _validator.validateForCategory(
+    // Fetch suppressed set for defense-in-depth (callers already filter)
+    var suppressedSet = const <String>{};
+    try {
+      final db = _db ?? getIt<JournalDb>();
+      final entity = await db.journalEntityById(taskId);
+      if (entity is Task) {
+        suppressedSet = entity.data.aiSuppressedLabelIds ?? const <String>{};
+      }
+    } catch (_) {}
+
+    final validation = await _validator.validateForTask(
       requested,
       categoryId: effectiveCategoryId,
+      suppressedIds: suppressedSet,
     );
     assigned.addAll(validation.valid);
     // Classify invalids: out_of_scope vs unknown/deleted (batch fetch to reduce lookups)
@@ -200,6 +212,14 @@ class LabelAssignmentProcessor {
       }
     }
 
+    // Add suppressed (defense-in-depth) to skipped reasons
+    if (validation.suppressed.isNotEmpty) {
+      skipped.addAll(
+        validation.suppressed
+            .map((id) => <String, String>{'id': id, 'reason': 'suppressed'}),
+      );
+    }
+
     // Populate skipped with structured reasons. Priority:
     // 1) already_assigned, 2) over_cap, 3) duplicate
     final skipReasons = <String, String>{};
@@ -226,6 +246,7 @@ class LabelAssignmentProcessor {
       'invalid': invalid.length,
       'skipped': {
         'out_of_scope': outOfScopeCount,
+        'suppressed': validation.suppressed.length,
         'already_assigned': alreadyAssigned.length,
         'over_cap': overCap.length,
         'duplicate': duplicateIds.length,
