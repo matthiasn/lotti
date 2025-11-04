@@ -166,7 +166,7 @@ void main() {
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
 
-    expect(find.text('Active label filters'), findsOneWidget);
+    expect(find.textContaining('Active label filters'), findsOneWidget);
     expect(find.text('Label 0'), findsOneWidget);
     expect(find.text('Unassigned'), findsOneWidget);
 

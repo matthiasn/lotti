@@ -102,7 +102,7 @@ void main() {
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
 
-    expect(find.text('Active label filters'), findsOneWidget);
+    expect(find.textContaining('Active label filters'), findsOneWidget);
     expect(find.text('Work'), findsOneWidget);
     expect(find.text('Focus'), findsOneWidget);
   });
@@ -133,7 +133,7 @@ void main() {
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(TextButton, 'Clear'));
+    await tester.tap(find.text('Clear'));
     verify(() => mockCubit.clearSelectedLabelIds()).called(1);
   });
 
@@ -153,7 +153,7 @@ void main() {
     final hidden = pumpFilter(_baseState(selectedLabelIds: {}));
     await tester.pumpWidget(hidden);
     await tester.pumpAndSettle();
-    expect(find.text('Active label filters'), findsNothing);
+    expect(find.textContaining('Active label filters'), findsNothing);
 
     final state = _baseState(selectedLabelIds: {'label-a'}, showTasks: false);
     when(() => mockCache.getLabelById(any())).thenReturn(_buildLabel(
@@ -163,6 +163,6 @@ void main() {
     final widget = pumpFilter(state);
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
-    expect(find.text('Active label filters'), findsNothing);
+    expect(find.textContaining('Active label filters'), findsNothing);
   });
 }

@@ -11,11 +11,14 @@ import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class MockJournalPageCubit extends MockCubit<JournalPageState>
     implements JournalPageCubit {}
+
+class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +28,10 @@ void main() {
     getIt.allowReassignment = true;
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
     // Required by InfiniteJournalPageBody initState (adds a scroll listener)
-    getIt.registerSingleton<UserActivityService>(UserActivityService());
+    getIt
+      ..registerSingleton<UserActivityService>(UserActivityService())
+      // Required because the quick filter sliver builds and resolves the cache even when hidden
+      ..registerSingleton<EntitiesCacheService>(_MockEntitiesCacheService());
   });
 
   tearDown(getIt.reset);

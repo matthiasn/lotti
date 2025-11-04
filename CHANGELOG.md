@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - i18n: English keys for labels, picker title and descriptions
   - Tests: database ordering/filtering, UI wrappers, filter UX
 ### Fixed
+- Tasks page: Active label filters are now visible below the search header (no longer clipped in the app bar).
 - AI label assignment: Prevented out-of-category labels from being assigned by AI
 - Task label selector: Now shows currently assigned out-of-scope labels to allow unassigning
   - List is strictly A–Z (case-insensitive); selection does not change ordering
