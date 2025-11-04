@@ -75,7 +75,7 @@ The main interface for viewing and editing tasks, featuring:
   labels to ensure out-of-scope assigned labels can be unassigned. This solves the issue where
   labels assigned before category scoping was enforced (or manually assigned) couldn't be removed
   because they were hidden in the selector.
-  - Assigned labels appear first in the selector list (alphabetical)
+  - The selector is strictly A–Z (case-insensitive); selection does not change ordering
   - Out-of-category assigned labels show a subtle "Out of category" note in the subtitle
   - All assigned labels remain checkable/uncheckable regardless of category scope
 - The wrapper (`TaskLabelsWrapper`) passes the task's current `categoryId` into the sheet; the list

@@ -46,10 +46,8 @@ LabelListBuildResult buildSelectorLabelList({
         (label.description?.toLowerCase().contains(searchLower) ?? false);
   }).toList()
     ..sort((a, b) {
-      final aAssigned = selectedIds.contains(a.id) ? 0 : 1;
-      final bAssigned = selectedIds.contains(b.id) ? 0 : 1;
-      final byAssigned = aAssigned.compareTo(bAssigned);
-      if (byAssigned != 0) return byAssigned;
+      // Sort strictly A–Z by name, independent of selection state.
+      // This keeps items from jumping when toggled.
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
 

@@ -562,7 +562,7 @@ void main() {
       expect(tester.widget<Checkbox>(designCheckbox).value, isFalse);
     });
 
-    testWidgets('assigned labels appear before available labels',
+    testWidgets('keeps alphabetical order independent of selection',
         (tester) async {
       final alpha = global('a', 'alpha');
       final bravo = scoped('b', 'bravo', 'engineering');
@@ -587,9 +587,8 @@ void main() {
           .map((t) => (t.title as Text?)?.data)
           .whereType<String>()
           .toList();
-      // Assigned should come first: bravo, delta before alpha, charlie
-      expect(texts.indexOf('bravo'), lessThan(texts.indexOf('alpha')));
-      expect(texts.indexOf('delta'), lessThan(texts.indexOf('charlie')));
+      // Expect strict A–Z order regardless of selection state
+      expect(texts, equals(['alpha', 'bravo', 'charlie', 'delta']));
     });
 
     testWidgets('out-of-scope label is not duplicated in the list',

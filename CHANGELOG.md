@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - AI label assignment: Prevented out-of-category labels from being assigned by AI
 - Task label selector: Now shows currently assigned out-of-scope labels to allow unassigning
-  - Assigned labels appear first in selector list with "Out of category" note when applicable
+  - List is strictly A–Z (case-insensitive); selection does not change ordering
+  - Out-of-category assigned labels are included with an "Out of category" note when applicable
   - Solves issue where out-of-scope labels were hidden and couldn't be removed
 
 - Sync maintenance now supports Labels in the manual definition sync flow:
