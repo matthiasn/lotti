@@ -46,16 +46,14 @@ sliver for a premium feel while scrolling.
 1) Move quick filter out of the app bar (Phase 1)
 
 - Remove `TaskLabelQuickFilter()` from the app bar `title`.
-- Insert it directly below the header as a `SliverToBoxAdapter(child: TaskLabelQuickFilter())` so it
-  can lay out to its intrinsic height and wrap across multiple rows without constraints.
-- Padding & divider decisions (final):
-  - Keep the widget’s internal `Padding(EdgeInsets.only(top: 4))` for vertical rhythm.
-  - Add an outer horizontal padding of `EdgeInsets.symmetric(horizontal: 40)` to align with the
-    search field margins. The double padding is intentional: inner = top spacing; outer = horizontal
-    alignment. No vertical duplication is introduced.
-  - Insert a full‑bleed divider as a separate sliver before the padded section for clear visual
-    separation from the header: `const SliverToBoxAdapter(child: Divider(height: 1))`. Using the
-    stock `Divider` keeps the color theme‑aware.
+- Insert it directly below the header as a dedicated sliver so it can lay out to its intrinsic
+  height and wrap across multiple rows without constraints.
+- Layout decisions (final):
+  - No divider; use spacing and a compact card‑style container for separation.
+  - Outer padding: `EdgeInsets.fromLTRB(40, 8, 40, 8)`.
+  - Card container: `Container(decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)), padding: EdgeInsets.all(12))`.
+  - Animation: Wrap with `AnimatedSize(duration: 180ms, curve: easeInOut, alignment: topCenter)`.
+  - Header (from TaskLabelQuickFilter): icon + “Active label filters (n)” + compact Clear button.
 
 2) Optional: Pinned quick filter (Phase 2)
 
@@ -82,26 +80,36 @@ B. InfiniteJournalPage (add quick filter sliver)
 
 - File: `lib/features/journal/ui/pages/infinite_journal_page.dart`
 - Changes:
-  - Insert after `const JournalSliverAppBar(),` two slivers:
+  - Insert after `const JournalSliverAppBar(),` a conditional sliver:
     ```dart
-    // Subtle separator below the header (theme-aware)
-    const SliverToBoxAdapter(child: Divider(height: 1)),
-    // Visible only when tasks are shown and labels are selected (handled inside the widget)
-    const SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 40),
-        child: TaskLabelQuickFilter(),
+    if (snapshot.showTasks && snapshot.selectedLabelIds.isNotEmpty)
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(40, 8, 40, 8),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: const TaskLabelQuickFilter(),
+            ),
+          ),
+        ),
       ),
-    ),
     ```
-  - We choose a standalone Divider sliver (outside padding) for a full‑bleed rule that clearly
-    separates the header from the filter section.
+  - Rationale: the decorated wrapper would otherwise render an empty card when no labels are active; page‑level gating avoids that.
 
 C. Visual details
 
-- Maintain the existing typography from `TaskLabelQuickFilter` (`labelSmall` for captions,
-  `InputChip` for chips).
-- Respect theme colors; ensure contrast meets WCAG AA for the “Clear” button.
+- Header: `labelMedium` + `onSurfaceVariant`, with a leading filter icon and count suffix “(n)”.
+- Clear: `TextButton.icon(backspace_outlined)` with compact density and `labelSmall` text style.
+- Chips: compact density for visual balance with the header.
+- Background: `surfaceContainerHighest`; verify adequate contrast in light/dark.
 
 D. Tests (targeted)
 
@@ -163,16 +171,17 @@ I. Tests
 - Phase 1 first: ship a robust fix quickly without over‑engineering. It fully resolves the
   visibility/clipping issue and supports multi‑line wraps out of the box.
 - Optional Phase 2 delivers a premium feel (pinned) without blocking the initial improvement.
-- Keep horizontal padding at `40` to align with the search bar’s
-  `EdgeInsets.symmetric(horizontal: 40)` used today.
+- Keep horizontal padding at `40` to align with the search bar margins.
+- Preferred: compact card‑style container (rounded background) without a divider under the header.
+- Page‑level condition (`selectedLabelIds.isNotEmpty`) is intentional to prevent an empty decorated container when no filters are active.
 
 ## Risks & Mitigations
 
 - Risk: Extra vertical space might feel heavy when many labels are selected.
   - Mitigation: The section scrolls with content in Phase 1. Phase 2 can pin and cap height with
     internal scrolling if needed.
-- Risk: The divider/padding might not perfectly match themes on all platforms.
-  - Mitigation: Use the stock `Divider` widget (theme‑aware by default) and verify on iOS/Android/Desktop.
+- Risk: Confusion about visibility enforcement (page vs widget).
+  - Mitigation: Document that page‑level gating avoids an empty card due to the decorated wrapper; TaskLabelQuickFilter still self‑hides its content.
 - Risk: Tests need a stubbed `JournalPageCubit`.
   - Mitigation: Follow patterns from existing tests that drive `BlocBuilder` state.
  - Risk: Always‑present divider sliver adds overhead.
@@ -184,7 +193,7 @@ I. Tests
 - 1–2 labels selected → section shows with one row of chips, “Clear” works.
 - Many labels selected → chips wrap to multiple rows; no clipping.
 - Small device width → chips wrap early; tap targets remain ≥ 40x40 dp.
-- Verify with light/dark themes; ensure the divider and text contrast is adequate.
+- Verify with light/dark themes; ensure background and text contrast are adequate.
 - Scroll behavior → section sits directly below the app bar (Phase 1) and can be pinned (Phase 2).
  - Upgrade path: during a version jump, toggle labels on an existing install to ensure the new
    divider + sliver appear without flicker.
