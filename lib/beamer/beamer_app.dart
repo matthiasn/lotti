@@ -16,7 +16,6 @@ import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
-import 'package:lotti/features/sync/ui/app_lifecycle_rescan_observer.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -369,26 +368,24 @@ class _MyBeamerAppState extends State<MyBeamerApp> {
               child: TooltipVisibility(
                 visible: themingSnapshot.enableTooltips,
                 child: DesktopMenuWrapper(
-                  child: AppLifecycleRescanObserver(
-                    child: MaterialApp.router(
-                      supportedLocales: AppLocalizations.supportedLocales,
-                      theme: themingSnapshot.lightTheme,
-                      darkTheme: themingSnapshot.darkTheme,
-                      themeMode: themingSnapshot.themeMode,
-                      localizationsDelegates: const [
-                        AppLocalizations.delegate,
-                        FormBuilderLocalizations.delegate,
-                        GlobalMaterialLocalizations.delegate,
-                        GlobalWidgetsLocalizations.delegate,
-                        GlobalCupertinoLocalizations.delegate,
-                        FlutterQuillLocalizations.delegate,
-                      ],
-                      debugShowCheckedModeBanner: false,
-                      routerDelegate: routerDelegate,
-                      routeInformationParser: BeamerParser(),
-                      backButtonDispatcher: BeamerBackButtonDispatcher(
-                        delegate: routerDelegate,
-                      ),
+                  child: MaterialApp.router(
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    theme: themingSnapshot.lightTheme,
+                    darkTheme: themingSnapshot.darkTheme,
+                    themeMode: themingSnapshot.themeMode,
+                    localizationsDelegates: const [
+                      AppLocalizations.delegate,
+                      FormBuilderLocalizations.delegate,
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
+                      FlutterQuillLocalizations.delegate,
+                    ],
+                    debugShowCheckedModeBanner: false,
+                    routerDelegate: routerDelegate,
+                    routeInformationParser: BeamerParser(),
+                    backButtonDispatcher: BeamerBackButtonDispatcher(
+                      delegate: routerDelegate,
                     ),
                   ),
                 ),
