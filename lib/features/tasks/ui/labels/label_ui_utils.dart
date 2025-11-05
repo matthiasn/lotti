@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 
 class LabelListBuildResult {
@@ -46,11 +47,9 @@ LabelListBuildResult buildSelectorLabelList({
         (label.description?.toLowerCase().contains(searchLower) ?? false);
   }).toList()
     ..sort((a, b) {
-      final aAssigned = selectedIds.contains(a.id) ? 0 : 1;
-      final bAssigned = selectedIds.contains(b.id) ? 0 : 1;
-      final byAssigned = aAssigned.compareTo(bAssigned);
-      if (byAssigned != 0) return byAssigned;
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      // Sort strictly A–Z by name, independent of selection state.
+      // Use compareAsciiLowerCase to avoid allocating new strings.
+      return compareAsciiLowerCase(a.name, b.name);
     });
 
   return LabelListBuildResult(items: filtered, availableIds: availableIds);
