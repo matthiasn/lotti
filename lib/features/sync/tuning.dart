@@ -18,6 +18,7 @@ class SyncTuning {
 
   // Historical windows
   static const int catchupPreContextCount = 80;
-  static const int catchupMaxLookback = 1000;
+  static const int catchupMaxLookback =
+      10000; // Increased from 1000 to handle larger backlogs
   static const int liveScanSteadyTail = 30;
 }

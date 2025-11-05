@@ -250,6 +250,9 @@ void main() {
       final newer = mk('E2', 201);
       final att = mk('A1', 50, payload: false);
       var skipped = 0;
+
+      // With zero attempts: keep all events (they haven't been tried yet)
+      // This fixes the bug where first-time events arriving out-of-order were dropped
       final kept = filterSyncPayloadsByMonotonic(
         events: [old, equal, newer, att],
         dropOldSyncPayloads: true,
@@ -258,23 +261,22 @@ void main() {
         hasAttempts: (_) => false,
         onSkipped: () => skipped++,
       );
-      expect(kept.map((e) => e.eventId), containsAllInOrder(['E2', 'A1']));
-      expect(kept.any((e) => e.eventId == 'E0' || e.eventId == 'E1'), isFalse);
-      expect(skipped, 2);
+      expect(kept.map((e) => e.eventId), containsAll(['E0', 'E1', 'E2', 'A1']));
+      expect(skipped, 0);
 
-      // Mark equal as retrying -> kept
+      // Mark old events as having attempts -> they get dropped
       skipped = 0;
       final kept2 = filterSyncPayloadsByMonotonic(
         events: [old, equal, newer, att],
         dropOldSyncPayloads: true,
         lastTimestamp: 200,
         lastEventId: 'E1',
-        hasAttempts: (id) => id == 'E1',
+        hasAttempts: (id) => id == 'E0' || id == 'E1',
         onSkipped: () => skipped++,
       );
-      expect(kept2.map((e) => e.eventId), containsAll(['E1', 'E2', 'A1']));
-      expect(kept2.any((e) => e.eventId == 'E0'), isFalse);
-      expect(skipped, 1);
+      expect(kept2.map((e) => e.eventId), containsAll(['E2', 'A1']));
+      expect(kept2.any((e) => e.eventId == 'E0' || e.eventId == 'E1'), isFalse);
+      expect(skipped, 2);
     });
   });
 }
