@@ -53,67 +53,87 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
 
     return ExpansionTile(
       controller: _controller,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Opacity(
-            opacity: show ? 1 : 0,
-            child: IconButton(
-              onPressed: () {
-                SpeechRepository.removeAudioTranscript(
-                  journalEntityId: widget.entryId,
-                  transcript: widget.transcript,
-                );
-              },
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      trailing: SizedBox(
+        width: 96,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IgnorePointer(
+              ignoring: !show,
+              child: Opacity(
+                opacity: show ? 1 : 0,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 40, minHeight: 40),
+                  onPressed: () {
+                    SpeechRepository.removeAudioTranscript(
+                      journalEntityId: widget.entryId,
+                      transcript: widget.transcript,
+                    );
+                  },
+                  icon: Icon(
+                    MdiIcons.trashCanOutline,
+                    size: fontSizeMedium,
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              onPressed: toggleShow,
               icon: Icon(
-                MdiIcons.trashCanOutline,
+                show
+                    ? Icons.keyboard_double_arrow_up_outlined
+                    : Icons.keyboard_double_arrow_down_outlined,
                 size: fontSizeMedium,
               ),
             ),
-          ),
-          IconButton(
-            onPressed: toggleShow,
-            icon: Icon(
-              show
-                  ? Icons.keyboard_double_arrow_up_outlined
-                  : Icons.keyboard_double_arrow_down_outlined,
-              size: fontSizeMedium,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
-      title: Row(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            dfShorter.format(widget.transcript.created),
-            style: titleStyle,
+          Row(
+            children: [
+              Text(
+                dfShorter.format(widget.transcript.created),
+                style: titleStyle,
+              ),
+              const SizedBox(width: 8),
+              if (processingTime != null)
+                Text(
+                  '⏳${formatMmSs(processingTime)}',
+                  style: titleStyle,
+                ),
+            ],
           ),
-          const SizedBox(width: 10),
-          if (processingTime != null)
-            Text(
-              '⏳${formatMmSs(processingTime)}',
-              style: titleStyle,
-            ),
-          const SizedBox(width: 10),
-        ],
-      ),
-      subtitle: Row(
-        children: [
-          Text(
-            'Lang: ${widget.transcript.detectedLanguage.toUpperCase()}',
-            style: subTitleStyle,
-          ),
-          const SizedBox(width: 10),
-          Text(
-            'Model: ${widget.transcript.library}, '
-            ' ${widget.transcript.model}',
-            style: subTitleStyle,
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Text(
+                'Lang: ${widget.transcript.detectedLanguage.toUpperCase()}',
+                style: subTitleStyle,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Model: ${widget.transcript.library}, ${widget.transcript.model}',
+                  style: subTitleStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ],
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: SelectableText(widget.transcript.transcript),
         ),
       ],
