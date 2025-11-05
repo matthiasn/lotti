@@ -187,7 +187,10 @@ List<Event> filterSyncPayloadsByMonotonic({
       latestTimestamp: lastTimestamp,
       latestEventId: lastEventId,
     );
-    if (!newer && !hasAttempts(e.eventId)) {
+    // Only drop events that are not newer AND have been attempted (confirmed old).
+    // Keep zero-attempt events even if they appear older, as they may have arrived
+    // out of order in a burst and need their first processing attempt.
+    if (!newer && hasAttempts(e.eventId)) {
       onSkipped?.call();
       continue;
     }

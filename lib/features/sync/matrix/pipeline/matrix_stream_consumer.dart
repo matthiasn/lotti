@@ -194,6 +194,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   num? _startupLastProcessedTs;
   // Client stream does not buffer events; scans are scheduled via timers.
 
+  // Track initial catch-up completion to ensure it runs at least once.
+  bool _initialCatchUpCompleted = false;
+  Timer? _catchUpRetryTimer;
+  bool _firstStreamEventCatchUpTriggered = false;
+
   Timer? _liveScanTimer;
   bool _scanInFlight = false;
   int _scanInFlightDepth =
@@ -501,18 +506,35 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'start',
       );
     }
-    // Attempt catch‑up only when we have an active room; otherwise signals
-    // (client stream/connectivity) will trigger a catch‑up shortly.
+    // Attempt catch‑up only when we have an active room; otherwise schedule
+    // a retry loop that will keep trying until the room becomes available.
     if (_roomManager.currentRoom != null) {
       await _attachCatchUp();
     }
+    // Ensure we eventually run initial catch‑up even if the room was not yet
+    // ready — schedule a retry loop that cancels itself once catch‑up runs.
+    if (!_initialCatchUpCompleted) {
+      _scheduleInitialCatchUpRetry();
+    }
     await _sub?.cancel();
     // Client-level session stream → signal-driven catch-up.
-    // Filter by current room; every signal triggers a catch-up to avoid
-    // skipping backlog created while offline.
+    // Filter by current room; the very first event also triggers a catch-up
+    // to ensure we ingest backlog before scanning the tail.
     _sub = _sessionManager.timelineEvents.listen((event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null || event.roomId != roomId) return;
+      if (!_initialCatchUpCompleted && !_firstStreamEventCatchUpTriggered) {
+        _firstStreamEventCatchUpTriggered = true;
+        if (_collectMetrics) {
+          _loggingService.captureEvent(
+            'signal.firstStreamEvent.triggering.catchup',
+            domain: syncLoggingDomain,
+            subDomain: 'signal',
+          );
+        }
+        // Trigger catch-up via the standard coalescing path to maintain proper
+        // debouncing behavior. Don't call forceRescan directly.
+      }
       if (_collectMetrics) {
         _metrics.incSignalClientStream();
         _loggingService.captureEvent(
@@ -693,6 +715,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     _liveScanTimer?.cancel();
     _catchupDebounceTimer?.cancel();
     _catchupDebounceTimer = null;
+    _catchUpRetryTimer?.cancel();
+    _catchUpRetryTimer = null;
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
@@ -710,6 +734,38 @@ class MatrixStreamConsumer implements SyncPipeline {
   }
 
   // Client stream no longer enqueues per-event work.
+
+  void _scheduleInitialCatchUpRetry() {
+    _catchUpRetryTimer?.cancel();
+    _catchUpRetryTimer = Timer(const Duration(milliseconds: 500), () {
+      _loggingService.captureEvent(
+        'catchup.retry.attempt',
+        domain: syncLoggingDomain,
+        subDomain: 'catchup',
+      );
+      _attachCatchUp().then((_) {
+        if (!_initialCatchUpCompleted) {
+          _loggingService.captureEvent(
+            'catchup.retry.reschedule (not completed)',
+            domain: syncLoggingDomain,
+            subDomain: 'catchup',
+          );
+          _scheduleInitialCatchUpRetry();
+        }
+      }).catchError((Object error, StackTrace st) {
+        _loggingService.captureException(
+          error,
+          domain: syncLoggingDomain,
+          subDomain: 'catchup.retry',
+          stackTrace: st,
+        );
+        // Keep retrying on errors.
+        if (!_initialCatchUpCompleted) {
+          _scheduleInitialCatchUpRetry();
+        }
+      });
+    });
+  }
 
   Future<void> _attachCatchUp() async {
     try {
@@ -751,6 +807,17 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (slice.isNotEmpty) {
         if (_collectMetrics) _metrics.incCatchupBatches();
         await _processOrdered(slice);
+      }
+      // Mark initial catch-up as completed and cancel retry timer.
+      if (!_initialCatchUpCompleted) {
+        _initialCatchUpCompleted = true;
+        _catchUpRetryTimer?.cancel();
+        _catchUpRetryTimer = null;
+        _loggingService.captureEvent(
+          'catchup.initial.completed',
+          domain: syncLoggingDomain,
+          subDomain: 'catchup',
+        );
       }
       // Catch-up completed.
     } catch (e, st) {
@@ -1060,37 +1127,20 @@ class MatrixStreamConsumer implements SyncPipeline {
         treatAsHandled = true;
       } else if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
           content['msgtype'] == syncMessageType) {
-        isSyncPayloadEvent = true;
-        syncPayloadEventsSeen++;
-        _inFlightSyncIds.add(id);
-        try {
-          final outcome = await _processSyncPayloadEvent(e);
-          processedOk = outcome.processedOk;
-          treatAsHandled = outcome.treatAsHandled;
-          if (outcome.hadFailure) hadFailure = true;
-          if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
-          if (outcome.nextDue != null &&
-              (earliestNextDue == null ||
-                  outcome.nextDue!.isBefore(earliestNextDue))) {
-            earliestNextDue = outcome.nextDue;
-          }
-        } finally {
-          _inFlightSyncIds.remove(id);
-        }
-      } else {
-        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
-        final validFallback = ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
-            content['msgtype'] != syncMessageType;
-
-        if (validFallback) {
+        // Skip already-completed sync events only if they're duplicates from the
+        // audit tail (seen earlier in THIS batch). This avoids redundant logging
+        // and DB checks while still allowing legitimate reprocessing across scans.
+        final isAuditTailDuplicate = suppressedIds.contains(id);
+        if (isAuditTailDuplicate && _wasCompletedSync(id)) {
+          isSyncPayloadEvent = true;
+          processedOk = true;
+          treatAsHandled = true;
+        } else {
           isSyncPayloadEvent = true;
           syncPayloadEventsSeen++;
           _inFlightSyncIds.add(id);
           try {
-            final outcome = await _processSyncPayloadEvent(
-              e,
-              dropSuffix: ' (no-msgtype)',
-            );
+            final outcome = await _processSyncPayloadEvent(e);
             processedOk = outcome.processedOk;
             treatAsHandled = outcome.treatAsHandled;
             if (outcome.hadFailure) hadFailure = true;
@@ -1100,15 +1150,52 @@ class MatrixStreamConsumer implements SyncPipeline {
                     outcome.nextDue!.isBefore(earliestNextDue))) {
               earliestNextDue = outcome.nextDue;
             }
-            if (processedOk && _collectMetrics) {
-              _loggingService.captureEvent(
-                'processed via no-msgtype fallback: $id',
-                domain: syncLoggingDomain,
-                subDomain: 'fallback',
-              );
-            }
           } finally {
             _inFlightSyncIds.remove(id);
+          }
+        }
+      } else {
+        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
+        final validFallback = ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+            content['msgtype'] != syncMessageType;
+
+        if (validFallback) {
+          // Skip already-completed sync events only if they're audit tail duplicates.
+          final isAuditTailDuplicate = suppressedIds.contains(id);
+          if (isAuditTailDuplicate && _wasCompletedSync(id)) {
+            isSyncPayloadEvent = true;
+            processedOk = true;
+            treatAsHandled = true;
+          } else {
+            isSyncPayloadEvent = true;
+            syncPayloadEventsSeen++;
+            _inFlightSyncIds.add(id);
+            try {
+              final outcome = await _processSyncPayloadEvent(
+                e,
+                dropSuffix: ' (no-msgtype)',
+              );
+              processedOk = outcome.processedOk;
+              treatAsHandled = outcome.treatAsHandled;
+              if (outcome.hadFailure) hadFailure = true;
+              if (outcome.failureDelta > 0) {
+                batchFailures += outcome.failureDelta;
+              }
+              if (outcome.nextDue != null &&
+                  (earliestNextDue == null ||
+                      outcome.nextDue!.isBefore(earliestNextDue))) {
+                earliestNextDue = outcome.nextDue;
+              }
+              if (processedOk && _collectMetrics) {
+                _loggingService.captureEvent(
+                  'processed via no-msgtype fallback: $id',
+                  domain: syncLoggingDomain,
+                  subDomain: 'fallback',
+                );
+              }
+            } finally {
+              _inFlightSyncIds.remove(id);
+            }
           }
         } else {
           // Do not count attachment events as "skipped" — they are part of
