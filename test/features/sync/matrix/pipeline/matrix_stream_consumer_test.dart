@@ -3133,6 +3133,205 @@ void main() {
     expect(catchupCalls, 2);
   });
 
+  test('stream events during startup trigger catch-up', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+    final streamController = StreamController<Event>.broadcast();
+
+    addTearDown(streamController.close);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => streamController.stream);
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => null);
+    when(() => timeline.events).thenReturn(<Event>[]);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+
+    final streamEvent = MockEvent();
+    when(() => streamEvent.eventId).thenReturn('stream1');
+    when(() => streamEvent.roomId).thenReturn('!room:server');
+    when(() => streamEvent.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+    when(() => streamEvent.senderId).thenReturn('@other:server');
+
+    var catchupCalls = 0;
+    when(
+      () => room.getTimeline(
+        limit: any(named: 'limit'),
+        onNewEvent: any(named: 'onNewEvent'),
+        onInsert: any(named: 'onInsert'),
+        onChange: any(named: 'onChange'),
+        onRemove: any(named: 'onRemove'),
+        onUpdate: any(named: 'onUpdate'),
+      ),
+    ).thenAnswer((_) async {
+      catchupCalls++;
+      // Throw error to prevent catch-up completion (stay in startup mode)
+      throw Exception('Room not ready');
+    });
+    when(() => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+        )).thenAnswer((_) async {});
+    when(() => processor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: journalDb,
+        )).thenAnswer((_) async {});
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      liveScanIncludeLookBehind: false,
+      liveScanInitialAuditScans: 0,
+      liveScanSteadyTail: 0,
+      sentEventRegistry: SentEventRegistry(),
+    );
+
+    fakeAsync((async) {
+      unawaited(consumer.initialize());
+      async.flushMicrotasks();
+      unawaited(consumer.start());
+      async.flushMicrotasks();
+
+      // Capture baseline - initial catch-up from start() may have been attempted
+      final catchupAfterStart = catchupCalls;
+
+      // Fire the FIRST stream event immediately (before catch-up completes)
+      streamController.add(streamEvent);
+      async.flushMicrotasks();
+
+      // The first stream event should trigger catch-up
+      expect(catchupCalls, greaterThan(catchupAfterStart));
+    });
+  });
+
+  test('stream events in steady state skip catch-up, only scan', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+    final streamController = StreamController<Event>.broadcast();
+
+    addTearDown(streamController.close);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => streamController.stream);
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => 'marker1');
+
+    final streamEvent = MockEvent();
+    when(() => streamEvent.eventId).thenReturn('stream2');
+    when(() => streamEvent.roomId).thenReturn('!room:server');
+    when(() => streamEvent.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+    when(() => streamEvent.senderId).thenReturn('@other:server');
+    when(() => streamEvent.content)
+        .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+    when(() => streamEvent.attachmentMimetype).thenReturn('');
+
+    when(() => timeline.events).thenReturn(<Event>[streamEvent]);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+
+    var catchupCalls = 0;
+    var scanCalls = 0;
+    when(
+      () => room.getTimeline(
+        limit: any(named: 'limit'),
+        onNewEvent: any(named: 'onNewEvent'),
+        onInsert: any(named: 'onInsert'),
+        onChange: any(named: 'onChange'),
+        onRemove: any(named: 'onRemove'),
+        onUpdate: any(named: 'onUpdate'),
+      ),
+    ).thenAnswer((_) async {
+      catchupCalls++;
+      return timeline;
+    });
+    when(() => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+        )).thenAnswer((_) async {});
+    when(() => processor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: journalDb,
+        )).thenAnswer((_) async {});
+
+    final consumer = MatrixStreamConsumer(
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      documentsDirectory: Directory.systemTemp,
+      liveScanIncludeLookBehind: false,
+      liveScanInitialAuditScans: 0,
+      liveScanSteadyTail: 0,
+      sentEventRegistry: SentEventRegistry(),
+    );
+
+    // Hook to track scan calls
+    consumer.scanLiveTimelineTestHook = (_) {
+      scanCalls++;
+    };
+
+    fakeAsync((async) {
+      unawaited(consumer.initialize());
+      async.flushMicrotasks();
+      unawaited(consumer.start());
+      async.flushMicrotasks();
+      async.elapse(const Duration(milliseconds: 1500));
+      async.flushMicrotasks();
+
+      // Initial catch-up from start() completes
+      final catchupAfterStart = catchupCalls;
+      final scanAfterStart = scanCalls;
+
+      // Fire stream event after initial catch-up completes (steady state)
+      streamController.add(streamEvent);
+      async.flushMicrotasks();
+      async.elapse(const Duration(milliseconds: 200));
+      async.flushMicrotasks();
+
+      // Stream event should trigger scan but NOT catch-up in steady state
+      expect(catchupCalls, catchupAfterStart); // No additional catch-up
+      expect(scanCalls, greaterThan(scanAfterStart)); // Scan was called
+    });
+  });
+
   test('retry backoff blocks until due, retryNow forces scan', () async {
     fakeAsync((async) async {
       final session = MockMatrixSessionManager();
