@@ -3168,20 +3168,22 @@ void main() {
     when(() => streamEvent.senderId).thenReturn('@other:server');
 
     var catchupCalls = 0;
+    // Stub for snapshot-only overload (used by catch-up)
+    when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((_) async {
+      catchupCalls++;
+      // Throw error to prevent catch-up completion (stay in startup mode)
+      throw Exception('Room not ready');
+    });
+    // Stub for callbacks-only overload (used by live timeline attachment)
     when(
       () => room.getTimeline(
-        limit: any(named: 'limit'),
         onNewEvent: any(named: 'onNewEvent'),
         onInsert: any(named: 'onInsert'),
         onChange: any(named: 'onChange'),
         onRemove: any(named: 'onRemove'),
         onUpdate: any(named: 'onUpdate'),
       ),
-    ).thenAnswer((_) async {
-      catchupCalls++;
-      // Throw error to prevent catch-up completion (stay in startup mode)
-      throw Exception('Room not ready');
-    });
+    ).thenAnswer((_) async => timeline);
     when(() => readMarker.updateReadMarker(
           client: any<Client>(named: 'client'),
           room: any<Room>(named: 'room'),
@@ -3265,19 +3267,21 @@ void main() {
 
     var catchupCalls = 0;
     var scanCalls = 0;
+    // Stub for snapshot-only overload (used by catch-up)
+    when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((_) async {
+      catchupCalls++;
+      return timeline;
+    });
+    // Stub for callbacks-only overload (used by live timeline attachment)
     when(
       () => room.getTimeline(
-        limit: any(named: 'limit'),
         onNewEvent: any(named: 'onNewEvent'),
         onInsert: any(named: 'onInsert'),
         onChange: any(named: 'onChange'),
         onRemove: any(named: 'onRemove'),
         onUpdate: any(named: 'onUpdate'),
       ),
-    ).thenAnswer((_) async {
-      catchupCalls++;
-      return timeline;
-    });
+    ).thenAnswer((_) async => timeline);
     when(() => readMarker.updateReadMarker(
           client: any<Client>(named: 'client'),
           room: any<Room>(named: 'room'),
