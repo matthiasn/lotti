@@ -3,16 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../../../../widget_test_utils.dart';
-
-class MockSpeechRepository extends Mock {
-  static void removeAudioTranscript({
-    required String journalEntityId,
-    required AudioTranscript transcript,
-  }) {}
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
