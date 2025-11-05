@@ -55,8 +55,16 @@ class CatchUpStrategy {
       // - The marker is not present (idx < 0 and no SDK pagination attempted)
       // - OR we need additional pre-context (by count or by timestamp)
       bool needsMore() {
+        // If we haven't located the marker and we haven't tried SDK backfill
+        // yet, escalate immediately.
         if (idx < 0 && !attempted) return true;
-        if (idx < 0) return false; // marker not found but backfill attempted
+
+        // If the marker is still not found even after backfill attempted,
+        // escalate while the snapshot appears full. This avoids truncating
+        // catch-up when there are more events than the current snapshot limit.
+        if (idx < 0) return events.length >= limit;
+
+        // Marker found: ensure requested pre-context by count and/or since-ts.
         final availablePre = idx + 1; // events before (and including) marker
         final needCount = preContextCount > 0 && availablePre < preContextCount;
         final needSinceTs = preContextSinceTs != null &&
@@ -64,9 +72,9 @@ class CatchUpStrategy {
                 TimelineEventOrdering.timestamp(events.first) >
                     preContextSinceTs);
         if (needCount || needSinceTs) return true;
-        // NEW: If the snapshot is full, there may be more events after the
-        // marker that are not yet included. Keep escalating until the snapshot
-        // is not full (boundary reached) or we hit the cap.
+
+        // If the snapshot is full, there may be more events after the marker.
+        // Keep escalating until the snapshot is not full or we hit the cap.
         return events.length >= limit;
       }
 
