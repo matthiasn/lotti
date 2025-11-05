@@ -578,9 +578,9 @@ class MatrixStreamConsumer implements SyncPipeline {
         _startCatchupNow();
       } else {
         // Steady state: skip expensive catch-up, just scan timeline.
-        // The _scanInFlightDepth guard inside _scanLiveTimeline prevents
-        // concurrent execution.
-        unawaited(_scanLiveTimeline());
+        // Use _scheduleLiveScan() to benefit from debouncing and coalescing,
+        // preventing excessive scans during event bursts.
+        _scheduleLiveScan();
       }
     });
 
