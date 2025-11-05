@@ -3793,7 +3793,9 @@ void main() {
       async.elapse(const Duration(milliseconds: 250));
       async.flushMicrotasks();
     });
-    verify(() => processor.process(event: ev, journalDb: journalDb)).called(3);
+    // With the fix for excessive logging (bug #3), completed events are skipped
+    // on subsequent scans, so the event is only processed once.
+    verify(() => processor.process(event: ev, journalDb: journalDb)).called(1);
   });
 
   test('metrics snapshot contains expected counters', () async {
@@ -4999,8 +5001,10 @@ void main() {
       });
 
       verify(() => roomManager.hydrateRoomSnapshot(client: client)).called(1);
+      // With the fix for excessive logging (bug #3), completed events are skipped
+      // on subsequent scans, so the event is only processed once.
       verify(() => processor.process(event: newEvent, journalDb: journalDb))
-          .called(3);
+          .called(1);
       final metrics = consumer.metricsSnapshot();
       expect(metrics['processed'], greaterThanOrEqualTo(1));
     });

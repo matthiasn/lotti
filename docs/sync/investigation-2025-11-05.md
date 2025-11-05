@@ -247,11 +247,57 @@ This makes it clear in logs whether catch-up is using the startup marker or curr
 - Backfill implementation: `lib/features/sync/matrix/sdk_pagination_compat.dart`
 - Consumer that calls catch-up: `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart:770`
 
+## Additional Fixes (2025-11-05 Code Review)
+
+After initial fixes, code review identified two more critical issues:
+
+### 5. **Missing catch-up trigger in stream listener** ⚠️ **CRITICAL**
+**File**: `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart:537`
+
+The first stream event handler logged "triggering.catchup" but never actually triggered it. This caused desktop to receive stream events without processing them.
+
+**Fix**: Added `_startCatchupNow()` call after the log statement:
+```dart
+if (!_initialCatchUpCompleted && !_firstStreamEventCatchUpTriggered) {
+  _firstStreamEventCatchUpTriggered = true;
+  // ... logging ...
+  _startCatchupNow(); // ← Added missing call
+}
+```
+
+### 6. **Unreachable duplicate detection logic** ⚠️ **CRITICAL**
+**File**: `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart:1150, 1181`
+
+The fix for excessive logging (bug #3) used an unreachable condition:
+```dart
+final wasSuppressed = suppressedIds.contains(id);
+if (wasSuppressed) {
+  // handle suppressed
+} else if (...) {
+  final isAuditTailDuplicate = suppressedIds.contains(id); // ← Always false!
+  if (isAuditTailDuplicate && _wasCompletedSync(id)) {
+```
+
+Since we're in the `else` branch where `wasSuppressed` is false, checking `suppressedIds.contains(id)` again will always be false.
+
+**Fix**: Removed the unreachable condition and use `_wasCompletedSync(id)` directly:
+```dart
+if (_wasCompletedSync(id)) {
+  isSyncPayloadEvent = true;
+  processedOk = true;
+  treatAsHandled = true;
+} else {
+```
+
+**Test impact**: Updated tests that expected events to be reprocessed multiple times. With the fix, completed events are skipped on subsequent scans (as intended).
+
 ## TL;DR
-**Four critical bugs identified and fixed**:
+**Six critical bugs identified and fixed**:
 1. **Catch-up retry removed** → ✅ FIXED: restored 500ms retry loop until success
 2. **Drop filter inverted** → ✅ FIXED: flipped logic to keep zero-attempt events
-3. **Excessive logging** → ✅ FIXED: skip already-completed events in audit tail
+3. **Excessive logging** → ✅ FIXED: skip already-completed events (initially broken, then properly fixed)
 4. **Race condition: live scan vs catch-up** → ✅ FIXED: use startup marker for initial catch-up
+5. **Missing catch-up trigger** → ✅ FIXED: added `_startCatchupNow()` call in stream listener
+6. **Unreachable duplicate detection** → ✅ FIXED: removed unreachable condition, use direct check
 
-**Result**: All sync issues resolved. Catch-up now uses the startup marker to avoid race conditions with live scans, ensuring all missed events are properly fetched even when room hydration is delayed.
+**Result**: All sync issues resolved. Desktop now properly catches up after being offline, and excessive logging from reprocessing has been eliminated.

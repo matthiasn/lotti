@@ -534,6 +534,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         }
         // Trigger catch-up via the standard coalescing path to maintain proper
         // debouncing behavior. Don't call forceRescan directly.
+        _startCatchupNow();
       }
       if (_collectMetrics) {
         _metrics.incSignalClientStream();
@@ -1144,11 +1145,9 @@ class MatrixStreamConsumer implements SyncPipeline {
         treatAsHandled = true;
       } else if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
           content['msgtype'] == syncMessageType) {
-        // Skip already-completed sync events only if they're duplicates from the
-        // audit tail (seen earlier in THIS batch). This avoids redundant logging
-        // and DB checks while still allowing legitimate reprocessing across scans.
-        final isAuditTailDuplicate = suppressedIds.contains(id);
-        if (isAuditTailDuplicate && _wasCompletedSync(id)) {
+        // Skip already-completed sync events to avoid redundant logging
+        // and DB checks.
+        if (_wasCompletedSync(id)) {
           isSyncPayloadEvent = true;
           processedOk = true;
           treatAsHandled = true;
@@ -1177,9 +1176,9 @@ class MatrixStreamConsumer implements SyncPipeline {
             content['msgtype'] != syncMessageType;
 
         if (validFallback) {
-          // Skip already-completed sync events only if they're audit tail duplicates.
-          final isAuditTailDuplicate = suppressedIds.contains(id);
-          if (isAuditTailDuplicate && _wasCompletedSync(id)) {
+          // Skip already-completed sync events to avoid redundant logging
+          // and DB checks.
+          if (_wasCompletedSync(id)) {
             isSyncPayloadEvent = true;
             processedOk = true;
             treatAsHandled = true;
