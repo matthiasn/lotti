@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -28,8 +29,23 @@ class _AppLifecycleRescanObserverState
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Unawaited; MatrixService handles coalescing and logging.
-      ref.read(matrixServiceProvider).forceRescan();
+      // Unawaited; attach error logging to avoid unhandled async errors.
+      unawaited(
+        ref.read(matrixServiceProvider).forceRescan().catchError(
+          (Object error, StackTrace stackTrace) {
+            try {
+              ref.read(loggingServiceProvider).captureException(
+                    error,
+                    stackTrace: stackTrace,
+                    domain: 'AppLifecycleRescanObserver',
+                    subDomain: 'didChangeAppLifecycleState',
+                  );
+            } catch (_) {
+              // Best-effort logging only.
+            }
+          },
+        ),
+      );
     }
   }
 
