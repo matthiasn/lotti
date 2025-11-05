@@ -83,6 +83,25 @@ The main interface for viewing and editing tasks, featuring:
 - The label editor allows scoping labels to specific categories via an "Applicable categories"
   section (chips + add/remove). Labels with no categories selected are considered global.
 
+#### Tasks List — Active Label Filters Header
+
+When label filters are active on the Tasks page, a compact quick‑filter header appears directly
+below the search bar:
+
+- Container: Rounded background using `surfaceContainerHighest` with `BorderRadius.circular(10)` and
+  `EdgeInsets.all(12)` padding.
+- Animation: Wrapped in `AnimatedSize` (~180ms, easeInOut) for smooth expand/collapse as filters
+  change.
+- Header: Leading `filter_alt_outlined` icon and title “Active label filters (n)” using
+  `labelMedium` tinted with `onSurfaceVariant`.
+- Clear: Compact `TextButton.icon` (backspace icon) using `labelSmall` typography.
+- Chips: `InputChip` with `VisualDensity.compact`; delete icon allows removing individual filters.
+- Placement and spacing: Rendered inside a `SliverToBoxAdapter` with outer padding
+  `EdgeInsets.fromLTRB(40, 8, 40, 8)` to align with the search field.
+- Visibility: Rendered only when `selectedLabelIds.isNotEmpty` to avoid an empty container when no
+  label filters are active. `TaskLabelQuickFilter` still self‑hides its own content as an extra
+  guard.
+
 #### Checklist Components
 
 **ChecklistWidget**: Displays a single checklist with:

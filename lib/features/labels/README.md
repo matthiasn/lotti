@@ -65,6 +65,10 @@ does not reappear due to null-as-unchanged merges downstream.
   “create label” CTA, and a long-press description dialog for mobile discoverability.
 - `TaskLabelQuickFilter`: Mirrors the filter drawer selections in the task list header so users can
   quickly audit/clear active label filters.
+  - When active, the quick filter appears in a compact, rounded container below the search bar on
+    the Tasks page, shows an icon + “Active label filters (n)”, compact chips, and a small Clear
+    action. It animates open/closed via `AnimatedSize` and only renders when there are active label
+    selections.
 
 ### Applicable Categories (Scoped Labels)
 

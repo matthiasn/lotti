@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -100,6 +101,31 @@ class _InfiniteJournalPageBodyState extends State<InfiniteJournalPageBody> {
               controller: _scrollController,
               slivers: <Widget>[
                 const JournalSliverAppBar(),
+                // Quick filter section below the header with content-aligned padding
+                if (snapshot.showTasks && snapshot.selectedLabelIds.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(40, 8, 40, 8),
+                      child: AnimatedSize(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeInOut,
+                        alignment: Alignment.topCenter,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          child: const TaskLabelQuickFilter(),
+                        ),
+                      ),
+                    ),
+                  ),
                 if (snapshot.pagingController != null)
                   PagingListener<int, JournalEntity>(
                     controller: snapshot.pagingController!,
