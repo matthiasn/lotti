@@ -1,12 +1,12 @@
 # Sync Regression Investigation — 2025-11-05
 
 - Scope: Matrix sync pipeline (stream-first consumer) on mobile and desktop
-- Window analyzed: today after 11:00 CET; focus around 13:55–14:05
-- Artifacts: `docs/sync/lotti-2025-11-05_mobile.log`, `docs/sync/lotti-2025-11-05_desktop.log`
-- **Status**: ✅ **FIXED** — Three critical bugs identified and resolved (2025-11-05)
+- Window analyzed: today after 11:00 CET; focus around 13:55–14:05, 15:20–16:35
+- Artifacts: `docs/sync/lotti-2025-11-05_mobile.log`, `docs/sync/lotti-2025-11-05_desktop.log`, `docs/sync/lotti-2025-11-05_1635_mobile.log`, `docs/sync/lotti-2025-11-05_1635_desktop.log`
+- **Status**: ✅ **FIXED** — Four critical bugs identified and resolved (2025-11-05)
 
 ## Summary
-Mobile was missing entries created on desktop, showing only the newest entry after sync with everything in between dropped. Investigation revealed **three separate but related root causes**:
+Mobile was missing entries created on desktop, showing only the newest entry after sync with everything in between dropped. Desktop was missing entries created on mobile while offline. Investigation revealed **four critical bugs**:
 
 ### Root Causes Identified
 
@@ -28,6 +28,13 @@ Mobile was missing entries created on desktop, showing only the newest entry aft
    - Each event logged "SyncEventProcessor: processing" even when immediately skipped
    - After large sync sessions (resync the past week), log files reached 30+ MB
    - **Fix**: Skip `_processSyncPayloadEvent()` for events in `_completedSyncIds` cache
+
+4. **Race condition between live scan and catch-up** ⚠️ **CRITICAL**
+   - Catch-up used `_lastProcessedEventId` (current marker) instead of startup marker
+   - When room hydration was delayed, live scans processed new events first
+   - Live scans advanced the marker before catch-up ran
+   - Catch-up then used the NEW marker, missing everything between startup and current
+   - **Fix**: Use `_startupLastProcessedEventId` for initial catch-up, not current marker
 
 ## Evidence
 
@@ -144,10 +151,107 @@ if (!newer && hasAttempts(e.eventId)) {
 - Monitor log file sizes in production after fix
 - Consider adding test for audit tail performance with large event histories
 
-## TL;DR
-**Three critical bugs fixed**:
-1. **Catch-up retry removed** → restored 500ms retry loop until success
-2. **Drop filter inverted** → flipped logic to keep zero-attempt events
-3. **Excessive logging** → skip already-completed events in audit tail
+## CRITICAL ISSUE #4 — Desktop Missing Events After Offline Period (2025-11-05 16:33)
 
-**Result**: Sync reliability restored, log volume reduced, all entries now arrive correctly even with slow room hydration or out-of-order event delivery.
+⚠️ **NEW CRITICAL FINDING** — Desktop failed to fetch events sent while offline
+
+### Problem
+Desktop was offline from 14:43 to 16:33. Mobile created and sent entries with audio/images at 15:20-15:30. When desktop came back online at 16:33, it **never received** these entries despite successful catch-up completion.
+
+### Root Cause
+**Race condition between live scan and catch-up**. When desktop came back online:
+
+1. **16:33:33.410** - Desktop started, startup marker: `$j-bJlKAiA8RNFZ...` from **14:40:25**
+2. **16:33:34.060** - Initial catch-up marked "completed" but room wasn't ready (didn't actually run!)
+3. **16:33:34.188** - Live scan processed 50 events, **marker advanced** to `$u342KW7XrfoBcXkIthtzNXdRyB3Su_Gw9qrOjB5r2IQ`
+4. **16:35:02.664** - First real catch-up ran with **NEW marker** (not startup marker!)
+
+**The bug**: Catch-up code at line 797 used `_lastProcessedEventId` (current marker updated by live scans) instead of `_startupLastProcessedEventId` (stored startup marker from 14:40).
+
+**Result**: Catch-up only looked back from the current position (15:54), missing everything between startup marker (14:40) and current marker.
+
+**Critical finding**: Desktop only processed events from **15:54 onwards**, completely missing 15:20-15:30:
+```
+2025-11-05T16:35:02 [INFO] SyncEventProcessor: processing 2025-11-05 15:54:17.154
+2025-11-05T16:35:02 [INFO] SyncEventProcessor: processing 2025-11-05 15:54:17.423
+2025-11-05T16:35:02 [INFO] SyncEventProcessor: processing 2025-11-05 15:54:18.168
+```
+
+### Evidence
+**Mobile log at 15:20:**
+- `15:20:48` - Enqueued entry 9660 with 1.6MB audio attachment
+- `15:20:49` - Enqueued entry 9661
+- `15:20:49` - Mobile's catch-up processing old events from 14:40 (82 events)
+- `15:20:52` - Entry 9660 sent successfully
+- `15:20:53` - Entry 9661 sent successfully
+- `15:20:54` - Tried entry 9662
+- `15:20:56` - Entry 9662 sent successfully
+
+**Desktop log - the race:**
+- `16:33:33.410` - Startup marker: `$j-bJlKAiA8RNFZ...` from 14:40:25
+- `16:33:34.060` - Catch-up "completed" (room not ready, didn't actually run)
+- `16:33:34.188` - Live scan processed 50 events, marker→`$u342KW7XrfoBcXkIthtzNXdRyB3Su_Gw9qrOjB5r2IQ`
+- `16:35:02.664` - First real catch-up used NEW marker, not startup marker
+- Timeline only includes events from `15:54` onwards
+
+### Why This Happens
+When room hydration is delayed, live scans can process events before initial catch-up runs. The live scan advances `_lastProcessedEventId`, and when catch-up finally runs, it uses the updated marker instead of the startup marker. This creates a gap: events between the startup marker and the first live scan are never caught up.
+
+### Impact
+- Entries with audio/images created on mobile at 15:20-15:30 never appeared on desktop
+- User saw entries at 14:00 and 16:00-16:30 but nothing in the 15:00-16:00 window
+- Sync appeared to complete successfully (no errors logged)
+- Desktop's stored marker advanced to latest event, preventing future catch-up attempts
+
+### Fix Implemented
+
+**The solution**: Use startup marker for initial catch-up, not current marker.
+
+**File**: `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart:797`
+
+```dart
+// Before (WRONG):
+final slice = await CatchUpStrategy.collectEventsForCatchUp(
+  room: room,
+  lastEventId: _lastProcessedEventId,  // ← Uses marker updated by live scans!
+  ...
+);
+
+// After (CORRECT):
+final catchUpMarker = !_initialCatchUpCompleted
+    ? _startupLastProcessedEventId    // ← Use startup marker
+    : _lastProcessedEventId;          // ← Use current marker for subsequent catch-ups
+final slice = await CatchUpStrategy.collectEventsForCatchUp(
+  room: room,
+  lastEventId: catchUpMarker,
+  ...
+);
+```
+
+**Why this works**:
+- `_startupLastProcessedEventId` is captured at initialization (line 469) before any live scans run
+- Initial catch-up uses the startup marker, ensuring it catches up from the stored position
+- After initial catch-up completes, `_initialCatchUpCompleted` is set to true
+- Subsequent catch-ups use the current marker (normal behavior)
+
+**Log enhancement**:
+Also updated catch-up log to show which marker is being used:
+```dart
+'catchup.start lastEventId=${marker ?? 'null'} (${!_initialCatchUpCompleted ? 'startup' : 'current'})'
+```
+
+This makes it clear in logs whether catch-up is using the startup marker or current marker.
+
+### Code Location
+- Catch-up logic: `lib/features/sync/matrix/pipeline/catch_up_strategy.dart`
+- Backfill implementation: `lib/features/sync/matrix/sdk_pagination_compat.dart`
+- Consumer that calls catch-up: `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart:770`
+
+## TL;DR
+**Four critical bugs identified and fixed**:
+1. **Catch-up retry removed** → ✅ FIXED: restored 500ms retry loop until success
+2. **Drop filter inverted** → ✅ FIXED: flipped logic to keep zero-attempt events
+3. **Excessive logging** → ✅ FIXED: skip already-completed events in audit tail
+4. **Race condition: live scan vs catch-up** → ✅ FIXED: use startup marker for initial catch-up
+
+**Result**: All sync issues resolved. Catch-up now uses the startup marker to avoid race conditions with live scans, ensuring all missed events are properly fetched even when room hydration is delayed.

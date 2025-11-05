@@ -782,8 +782,11 @@ class MatrixStreamConsumer implements SyncPipeline {
         return;
       }
       if (_catchupLogStartPending) {
+        final marker = !_initialCatchUpCompleted
+            ? _startupLastProcessedEventId
+            : _lastProcessedEventId;
         _loggingService.captureEvent(
-          'catchup.start lastEventId=${_lastProcessedEventId ?? 'null'}',
+          'catchup.start lastEventId=${marker ?? 'null'} (${!_initialCatchUpCompleted ? 'startup' : 'current'})',
           domain: syncLoggingDomain,
           subDomain: 'catchup',
         );
@@ -792,9 +795,14 @@ class MatrixStreamConsumer implements SyncPipeline {
       final preSinceTs = _startupLastProcessedTs == null
           ? null
           : (_startupLastProcessedTs!.toInt() - 1000); // small skew buffer
+      // Use startup marker for initial catch-up to avoid race with live scans
+      // that may advance the current marker before catch-up runs.
+      final catchUpMarker = !_initialCatchUpCompleted
+          ? _startupLastProcessedEventId
+          : _lastProcessedEventId;
       final slice = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
-        lastEventId: _lastProcessedEventId,
+        lastEventId: catchUpMarker,
         backfill: _backfill ?? SdkPaginationCompat.backfillUntilContains,
         logging: _loggingService,
         // Ensure we also include a bounded pre-context since the stored last
