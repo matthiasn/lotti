@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/ui/app_lifecycle_rescan_observer.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -104,7 +105,7 @@ Future<void> main() async {
           aiConfigRepositoryProvider
               .overrideWithValue(getIt<AiConfigRepository>()),
         ],
-        child: const MyBeamerApp(),
+        child: const AppLifecycleRescanObserver(child: MyBeamerApp()),
       ),
     );
   }, (Object error, StackTrace stackTrace) {

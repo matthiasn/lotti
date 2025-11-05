@@ -17,6 +17,100 @@ void main() {
   });
 
   group('CatchUpStrategy', () {
+    test('escalates when marker missing after backfill and snapshot is full',
+        () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final created = <MockTimeline>[];
+
+      // Large dataset e0..e4999
+      final all = List<Event>.generate(5000, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        return e;
+      });
+
+      // Snapshot returns the last `limit` events in ascending order
+      Future<Timeline> timelineForLimit(int limit) async {
+        final tl = MockTimeline();
+        created.add(tl);
+        final start = all.length > limit ? all.length - limit : 0;
+        when(() => tl.events).thenReturn(all.sublist(start));
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+        return tl;
+      }
+
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((invocation) async {
+        final limit = invocation.namedArguments[#limit] as int? ?? 200;
+        return timelineForLimit(limit);
+      });
+
+      // Backfill attempted but marker never found in any snapshot
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'e999999',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            true,
+        maxLookback: 1000,
+      );
+
+      // Should escalate to maxLookback and return that full window
+      expect(slice.length, 1000);
+      for (final tl in created) {
+        verify(() => tl.cancelSubscriptions()).called(1);
+      }
+    });
+
+    test(
+        'does not escalate when marker missing after backfill but snapshot not full',
+        () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      // Data shorter than the initial limit
+      final all = List<Event>.generate(150, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e$i');
+        when(() => e.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        return e;
+      });
+
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(all);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'does_not_exist',
+        logging: log,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int maxPages,
+          required LoggingService logging,
+        }) async =>
+            true,
+        maxLookback: 1000,
+      );
+
+      // No escalation: returns the existing snapshot (150)
+      expect(slice.length, 150);
+      verify(() => tl.cancelSubscriptions()).called(1);
+    });
     test('preContextCount=80 bounds pre-context inclusion window', () async {
       final room = MockRoom();
       final log = MockLogging();
