@@ -67,6 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tests: service unit tests and widget tests updated; i18n keys added with missing translations noted
 
 ### Changed
+- UI/Tasks: Redesigned the active label filters header below the search bar
+  - Compact card-style container (rounded, `surfaceContainerHighest`) with smooth `AnimatedSize`
+  - Header shows a subtle filter icon and “Active label filters (n)”
+  - Clear action uses compact `TextButton.icon` (smaller text) and chips use compact density
+  - Renders only when filters are active; no empty container state
 - Sync (Matrix): Client stream is now signal-driven and always triggers a catch-up via
   `forceRescan(includeCatchUp=true)` with an in-flight guard to prevent overlaps. Timeline callbacks
   continue to schedule debounced live scans and fall back to `forceRescan()` on scheduling errors.
