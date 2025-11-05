@@ -11,7 +11,7 @@ Mobile was missing entries created on desktop, showing only the newest entry aft
 ### Root Causes Identified
 
 1. **Catch-up retry mechanism removed (commit 074bb34d4)** ⚠️ **CRITICAL**
-   - Recent "sync catchup improvements" removed `_scheduleInitialCatchUpRetry()`
+   - Recent "sync catch-up improvements" removed `_scheduleInitialCatchUpRetry()`
    - If room wasn't ready within ~150ms at startup, catch-up was **permanently skipped**
    - Mobile's room hydration took longer, so catch-up never ran → all entries missed
    - **Fix**: Restored retry mechanism with 500ms intervals until catch-up succeeds

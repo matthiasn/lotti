@@ -738,32 +738,41 @@ class MatrixStreamConsumer implements SyncPipeline {
   void _scheduleInitialCatchUpRetry() {
     _catchUpRetryTimer?.cancel();
     _catchUpRetryTimer = Timer(const Duration(milliseconds: 500), () {
+      if (_initialCatchUpCompleted) return;
+      if (_catchUpInFlight) {
+        _scheduleInitialCatchUpRetry();
+        return;
+      }
+      _catchUpInFlight = true;
       _loggingService.captureEvent(
         'catchup.retry.attempt',
         domain: syncLoggingDomain,
         subDomain: 'catchup',
       );
-      _attachCatchUp().then((_) {
-        if (!_initialCatchUpCompleted) {
-          _loggingService.captureEvent(
-            'catchup.retry.reschedule (not completed)',
+      _attachCatchUp()
+        ..whenComplete(() {
+          _catchUpInFlight = false;
+        })
+        ..then((_) {
+          if (!_initialCatchUpCompleted) {
+            _loggingService.captureEvent(
+              'catchup.retry.reschedule (not completed)',
+              domain: syncLoggingDomain,
+              subDomain: 'catchup',
+            );
+            _scheduleInitialCatchUpRetry();
+          }
+        }).catchError((Object error, StackTrace st) {
+          _loggingService.captureException(
+            error,
             domain: syncLoggingDomain,
-            subDomain: 'catchup',
+            subDomain: 'catchup.retry',
+            stackTrace: st,
           );
-          _scheduleInitialCatchUpRetry();
-        }
-      }).catchError((Object error, StackTrace st) {
-        _loggingService.captureException(
-          error,
-          domain: syncLoggingDomain,
-          subDomain: 'catchup.retry',
-          stackTrace: st,
-        );
-        // Keep retrying on errors.
-        if (!_initialCatchUpCompleted) {
-          _scheduleInitialCatchUpRetry();
-        }
-      });
+          if (!_initialCatchUpCompleted) {
+            _scheduleInitialCatchUpRetry();
+          }
+        });
     });
   }
 
