@@ -3133,6 +3133,200 @@ void main() {
     expect(catchupCalls, 2);
   });
 
+  group('stream event processing modes', () {
+    late MockMatrixSessionManager session;
+    late MockSyncRoomManager roomManager;
+    late MockLoggingService logger;
+    late MockJournalDb journalDb;
+    late MockSettingsDb settingsDb;
+    late MockSyncEventProcessor processor;
+    late MockSyncReadMarkerService readMarker;
+    late MockClient client;
+    late MockRoom room;
+    late MockTimeline timeline;
+    late StreamController<Event> streamController;
+
+    setUp(() {
+      session = MockMatrixSessionManager();
+      roomManager = MockSyncRoomManager();
+      logger = MockLoggingService();
+      journalDb = MockJournalDb();
+      settingsDb = MockSettingsDb();
+      processor = MockSyncEventProcessor();
+      readMarker = MockSyncReadMarkerService();
+      client = MockClient();
+      room = MockRoom();
+      timeline = MockTimeline();
+      streamController = StreamController<Event>.broadcast();
+
+      // Common stubs
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => streamController.stream);
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+          )).thenAnswer((_) async {});
+      when(() => processor.process(
+            event: any<Event>(named: 'event'),
+            journalDb: journalDb,
+          )).thenAnswer((_) async {});
+    });
+
+    tearDown(() {
+      streamController.close();
+    });
+
+    test('stream events during startup trigger catch-up', () async {
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      final streamEvent = MockEvent();
+      when(() => streamEvent.eventId).thenReturn('stream1');
+      when(() => streamEvent.roomId).thenReturn('!room:server');
+      when(() => streamEvent.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(() => streamEvent.senderId).thenReturn('@other:server');
+
+      var catchupCalls = 0;
+      // Stub for snapshot-only overload (used by catch-up)
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async {
+        catchupCalls++;
+        // Throw error to prevent catch-up completion (stay in startup mode)
+        throw Exception('Room not ready');
+      });
+      // Stub for callbacks-only overload (used by live timeline attachment)
+      when(
+        () => room.getTimeline(
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        ),
+      ).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      fakeAsync((async) {
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+
+        // Capture baseline - initial catch-up from start() may have been attempted
+        final catchupAfterStart = catchupCalls;
+
+        // Fire the FIRST stream event immediately (before catch-up completes)
+        streamController.add(streamEvent);
+        async.flushMicrotasks();
+
+        // The first stream event should trigger catch-up
+        expect(catchupCalls, greaterThan(catchupAfterStart));
+      });
+    });
+
+    test('stream events in steady state skip catch-up, only scan', () async {
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'marker1');
+
+      final streamEvent = MockEvent();
+      when(() => streamEvent.eventId).thenReturn('stream2');
+      when(() => streamEvent.roomId).thenReturn('!room:server');
+      when(() => streamEvent.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+      when(() => streamEvent.senderId).thenReturn('@other:server');
+      when(() => streamEvent.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => streamEvent.attachmentMimetype).thenReturn('');
+
+      when(() => timeline.events).thenReturn(<Event>[streamEvent]);
+
+      var catchupCalls = 0;
+      var scanCalls = 0;
+      // Stub for snapshot-only overload (used by catch-up)
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async {
+        catchupCalls++;
+        return timeline;
+      });
+      // Stub for callbacks-only overload (used by live timeline attachment)
+      when(
+        () => room.getTimeline(
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        ),
+      ).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        documentsDirectory: Directory.systemTemp,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      // Hook to track scan calls
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanCalls++;
+      };
+
+      fakeAsync((async) {
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 1500));
+        async.flushMicrotasks();
+
+        // Initial catch-up from start() completes
+        final catchupAfterStart = catchupCalls;
+        final scanAfterStart = scanCalls;
+
+        // Fire stream event after initial catch-up completes (steady state)
+        streamController.add(streamEvent);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 200));
+        async.flushMicrotasks();
+
+        // Stream event should trigger scan but NOT catch-up in steady state
+        expect(catchupCalls, catchupAfterStart); // No additional catch-up
+        expect(scanCalls, greaterThan(scanAfterStart)); // Scan was called
+      });
+    });
+  });
+
   test('retry backoff blocks until due, retryNow forces scan', () async {
     fakeAsync((async) async {
       final session = MockMatrixSessionManager();

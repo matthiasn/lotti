@@ -544,34 +544,44 @@ class MatrixStreamConsumer implements SyncPipeline {
           subDomain: 'signal',
         );
       }
-      // Coalesce client-stream-driven catch-ups: if one is in-flight, defer a
-      // single trailing catch-up; otherwise enforce a short minimum gap.
-      if (_catchUpInFlight) {
-        if (!_deferredCatchup) {
-          _deferredCatchup = true;
+      // Conditional processing: expensive catch-up during startup, cheap scan in
+      // steady state.
+      if (!_initialCatchUpCompleted) {
+        // Startup: coalesce client-stream-driven catch-ups to avoid redundant
+        // work. If one is in-flight, defer a single trailing catch-up;
+        // otherwise enforce a short minimum gap.
+        if (_catchUpInFlight) {
+          if (!_deferredCatchup) {
+            _deferredCatchup = true;
+            _loggingService.captureEvent(
+              'signal.catchup.deferred set',
+              domain: syncLoggingDomain,
+              subDomain: 'signal',
+            );
+          }
+          return;
+        }
+        final now = clock.now();
+        if (_lastCatchupAt != null &&
+            now.difference(_lastCatchupAt!) < _minCatchupGap) {
+          // Debounce: schedule once at the end of the gap
+          final remaining = _minCatchupGap - now.difference(_lastCatchupAt!);
+          _catchupDebounceTimer?.cancel();
+          _catchupDebounceTimer = Timer(remaining, _startCatchupNow);
           _loggingService.captureEvent(
-            'signal.catchup.deferred set',
+            'signal.catchup.coalesce debounceMs=${remaining.inMilliseconds}',
             domain: syncLoggingDomain,
             subDomain: 'signal',
           );
+          return;
         }
-        return;
+        _startCatchupNow();
+      } else {
+        // Steady state: skip expensive catch-up, just scan timeline.
+        // Use _scheduleLiveScan() to benefit from debouncing and coalescing,
+        // preventing excessive scans during event bursts.
+        _scheduleLiveScan();
       }
-      final now = clock.now();
-      if (_lastCatchupAt != null &&
-          now.difference(_lastCatchupAt!) < _minCatchupGap) {
-        // Debounce: schedule once at the end of the gap
-        final remaining = _minCatchupGap - now.difference(_lastCatchupAt!);
-        _catchupDebounceTimer?.cancel();
-        _catchupDebounceTimer = Timer(remaining, _startCatchupNow);
-        _loggingService.captureEvent(
-          'signal.catchup.coalesce debounceMs=${remaining.inMilliseconds}',
-          domain: syncLoggingDomain,
-          subDomain: 'signal',
-        );
-        return;
-      }
-      _startCatchupNow();
     });
 
     // Also attach live timeline listeners to proactively scan in case the

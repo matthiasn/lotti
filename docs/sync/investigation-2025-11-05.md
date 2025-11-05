@@ -291,6 +291,61 @@ if (_wasCompletedSync(id)) {
 
 **Test impact**: Updated tests that expected events to be reprocessed multiple times. With the fix, completed events are skipped on subsequent scans (as intended).
 
+## Performance Optimization (2025-11-05)
+
+After fixing the critical bugs, discovered that every stream event was triggering full catch-up (SDK pagination + backfill + scan), even in steady state when already caught up. This caused unnecessary overhead for every incoming message.
+
+### Problem
+**Stream listener behavior** (before optimization):
+```dart
+_sub = _sessionManager.timelineEvents.listen((event) {
+  // ... metrics ...
+
+  // Every event triggered catch-up coalescing
+  if (_catchUpInFlight) { /* defer */ }
+  if (/* debounce check */) { /* schedule */ }
+  _startCatchupNow();  // ← Always calls forceRescan(includeCatchUp: true)
+});
+```
+
+**What `_startCatchupNow()` does:**
+- Calls `forceRescan(includeCatchUp: _alwaysIncludeCatchUp)` where `_alwaysIncludeCatchUp = true`
+- This runs both:
+  1. `_attachCatchUp()` - expensive SDK pagination/backfill for historical events
+  2. `_scanLiveTimeline()` - scans timeline events
+
+In steady state (already caught up), only #2 is needed.
+
+### Solution
+**Conditional processing based on catch-up completion state:**
+
+```dart
+if (!_initialCatchUpCompleted) {
+  // Startup: use expensive catch-up path with coalescing
+  if (_catchUpInFlight) { /* defer */ }
+  if (/* debounce check */) { /* schedule */ }
+  _startCatchupNow();  // Full catch-up + scan
+} else {
+  // Steady state: skip expensive catch-up, just scan timeline
+  unawaited(_scanLiveTimeline());  // Scan only
+}
+```
+
+**File**: `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart:549-584`
+
+### Benefits
+- **Reduced per-message overhead in steady state**: Eliminates SDK pagination/backfill for every incoming message
+- **Preserved startup behavior**: Initial catch-up still runs with retry mechanism
+- **Maintained correctness**: Live scan still processes all timeline events
+- **Better performance**: Typical message → scan latency drops significantly
+
+### Test Coverage
+Added two tests to verify conditional behavior:
+- `stream events during startup trigger catch-up`: Verifies catch-up is triggered when `_initialCatchUpCompleted = false`
+- `stream events in steady state skip catch-up, only scan`: Verifies catch-up is skipped when `_initialCatchUpCompleted = true`
+
+**File**: `test/features/sync/matrix/pipeline/matrix_stream_consumer_test.dart:3136-3332`
+
 ## TL;DR
 **Six critical bugs identified and fixed**:
 1. **Catch-up retry removed** → ✅ FIXED: restored 500ms retry loop until success
@@ -300,4 +355,7 @@ if (_wasCompletedSync(id)) {
 5. **Missing catch-up trigger** → ✅ FIXED: added `_startCatchupNow()` call in stream listener
 6. **Unreachable duplicate detection** → ✅ FIXED: removed unreachable condition, use direct check
 
-**Result**: All sync issues resolved. Desktop now properly catches up after being offline, and excessive logging from reprocessing has been eliminated.
+**Performance optimization**:
+- **Stream event overhead** → ✅ OPTIMIZED: skip expensive catch-up in steady state, only run scan
+
+**Result**: All sync issues resolved. Desktop now properly catches up after being offline, excessive logging eliminated, and per-message processing overhead significantly reduced.
