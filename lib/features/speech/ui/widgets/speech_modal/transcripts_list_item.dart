@@ -60,20 +60,24 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Opacity(
-              opacity: show ? 1 : 0,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                onPressed: () {
-                  SpeechRepository.removeAudioTranscript(
-                    journalEntityId: widget.entryId,
-                    transcript: widget.transcript,
-                  );
-                },
-                icon: Icon(
-                  MdiIcons.trashCanOutline,
-                  size: fontSizeMedium,
+            IgnorePointer(
+              ignoring: !show,
+              child: Opacity(
+                opacity: show ? 1 : 0,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 40, minHeight: 40),
+                  onPressed: () {
+                    SpeechRepository.removeAudioTranscript(
+                      journalEntityId: widget.entryId,
+                      transcript: widget.transcript,
+                    );
+                  },
+                  icon: Icon(
+                    MdiIcons.trashCanOutline,
+                    size: fontSizeMedium,
+                  ),
                 ),
               ),
             ),
