@@ -1,15 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('TranscriptListItem Tests', () {
+    late MockJournalDb mockJournalDb;
+    late MockPersistenceLogic mockPersistenceLogic;
+
+    setUpAll(() {
+      final now = DateTime(2025, 1, 21, 13, 9);
+      registerFallbackValue(
+        Metadata(
+          id: 'test-id',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+      registerFallbackValue(
+        JournalAudio(
+          meta: Metadata(
+            id: 'test-id',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: AudioData(
+            audioDirectory: '/test',
+            duration: const Duration(seconds: 1),
+            audioFile: 'test.m4a',
+            dateTo: now,
+            dateFrom: now,
+          ),
+        ),
+      );
+    });
+
+    setUp(() async {
+      mockJournalDb = MockJournalDb();
+      mockPersistenceLogic = MockPersistenceLogic();
+
+      await getIt.reset();
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
     final testTranscript = AudioTranscript(
       created: DateTime(2025, 1, 21, 13, 9),
       library: 'Gemini',
@@ -326,9 +378,7 @@ void main() {
         if (widget is Text) {
           textWidgets.add(widget);
         } else if (widget is Row) {
-          for (final child in widget.children) {
-            findTextWidgets(child);
-          }
+          widget.children.forEach(findTextWidgets);
         } else if (widget is Flexible) {
           findTextWidgets(widget.child);
         }
@@ -394,6 +444,143 @@ void main() {
         find.byIcon(Icons.keyboard_double_arrow_down_outlined),
         findsNWidgets(3),
       );
+    });
+
+    testWidgets('tapping delete button triggers deletion', (tester) async {
+      const entryId = 'test-entry-id';
+      final now = DateTime(2025, 1, 21, 13, 9);
+
+      // Create a JournalAudio entity with transcripts
+      final audioData = AudioData(
+        audioDirectory: '/test/path',
+        duration: const Duration(seconds: 10),
+        audioFile: 'test.m4a',
+        dateTo: now.add(const Duration(seconds: 10)),
+        dateFrom: now,
+        language: 'en',
+        transcripts: [
+          testTranscript,
+          AudioTranscript(
+            created: DateTime(2025, 1, 21, 14),
+            library: 'Whisper',
+            model: 'small',
+            detectedLanguage: 'en',
+            transcript: 'Another transcript',
+          ),
+        ],
+      );
+
+      final journalAudio = JournalAudio(
+        meta: Metadata(
+          id: entryId,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now.add(const Duration(seconds: 10)),
+        ),
+        data: audioData,
+      );
+
+      // Mock journalEntityById to return the entity
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalAudio);
+
+      // Mock updateMetadata to return updated metadata
+      when(() => mockPersistenceLogic.updateMetadata(any()))
+          .thenAnswer((invocation) async {
+        final meta = invocation.positionalArguments[0] as Metadata;
+        return meta.copyWith(updatedAt: DateTime.now());
+      });
+
+      // Mock updateDbEntity
+      when(() => mockPersistenceLogic.updateDbEntity(any()))
+          .thenAnswer((_) async {
+        return null;
+      });
+
+      await tester.pumpWidget(makeTestableWidget(testTranscript));
+      await tester.pumpAndSettle();
+
+      // Expand to show delete button
+      await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
+      await tester.pumpAndSettle();
+
+      // Tap the delete button
+      await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+      await tester.pumpAndSettle();
+
+      // Verify that updateDbEntity was called
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      expect(captured, hasLength(1));
+
+      final updatedEntity = captured.first as JournalAudio;
+      // The updated entity should not contain testTranscript
+      expect(
+        updatedEntity.data.transcripts
+            ?.any((t) => t.created == testTranscript.created),
+        false,
+      );
+      // But should still contain the other transcript
+      expect(updatedEntity.data.transcripts?.length, 1);
+    });
+
+    testWidgets('hidden delete button does not respond to taps',
+        (tester) async {
+      const entryId = 'test-entry-id';
+      final now = DateTime(2025, 1, 21, 13, 9);
+
+      final audioData = AudioData(
+        audioDirectory: '/test/path',
+        duration: const Duration(seconds: 10),
+        audioFile: 'test.m4a',
+        dateTo: now.add(const Duration(seconds: 10)),
+        dateFrom: now,
+        language: 'en',
+        transcripts: [testTranscript],
+      );
+
+      final journalAudio = JournalAudio(
+        meta: Metadata(
+          id: entryId,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now.add(const Duration(seconds: 10)),
+        ),
+        data: audioData,
+      );
+
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalAudio);
+
+      when(() => mockPersistenceLogic.updateMetadata(any()))
+          .thenAnswer((invocation) async {
+        final meta = invocation.positionalArguments[0] as Metadata;
+        return meta.copyWith(updatedAt: DateTime.now());
+      });
+
+      when(() => mockPersistenceLogic.updateDbEntity(any()))
+          .thenAnswer((_) async {
+        return null;
+      });
+
+      await tester.pumpWidget(makeTestableWidget(testTranscript));
+      await tester.pumpAndSettle();
+
+      // Delete button is hidden (opacity 0) but still in widget tree
+      // Try to tap at the position where the delete button is
+      final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
+      expect(deleteButtonFinder, findsOneWidget);
+
+      // Try to tap the hidden button
+      await tester.tap(deleteButtonFinder);
+      await tester.pumpAndSettle();
+
+      // Verify that updateDbEntity was NOT called
+      verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
     });
   });
 }
