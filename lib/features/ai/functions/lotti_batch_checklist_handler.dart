@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/ai/utils/checklist_validation.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -63,23 +64,11 @@ class LottiBatchChecklistHandler extends FunctionHandler {
         );
       }
 
-      // Sanitize and validate array-of-objects
-      final sanitized = <Map<String, dynamic>>[];
+      // Check for string entries to provide helpful error
       for (final entry in raw) {
-        if (entry is Map<String, dynamic>) {
-          final titleRaw = entry['title'];
-          final isCheckedRaw = entry['isChecked'];
-          if (titleRaw is String) {
-            final title = titleRaw.trim();
-            if (title.isNotEmpty && title.length <= 400) {
-              sanitized.add({
-                'title': title,
-                'isChecked': isCheckedRaw == true,
-              });
-            }
-          }
-        } else if (entry is String) {
-          // Reject arrays of strings to force contract
+        final error = ChecklistValidation.validateItemEntry(entry);
+        if (entry is String) {
+          // Special case: reject arrays of strings with helpful message
           return FunctionCallResult(
             success: false,
             functionName: functionName,
@@ -88,27 +77,24 @@ class LottiBatchChecklistHandler extends FunctionHandler {
               'toolCallId': call.id,
               'taskId': task.id,
             },
-            error:
+            error: error ??
                 'Each item must be an object with a title. Example: {"items": [{"title": "Buy milk"}] }',
           );
         }
       }
 
-      if (sanitized.isEmpty) {
-        return FunctionCallResult(
-          success: false,
-          functionName: functionName,
-          arguments: call.function.arguments,
-          data: {
-            'toolCallId': call.id,
-            'taskId': task.id,
-          },
-          error:
-              'No valid items found. Provide non-empty titles (max 400 chars).',
-        );
-      }
+      // Sanitize and validate array-of-objects
+      final validatedItems = ChecklistValidation.validateItems(raw);
 
-      if (sanitized.length > 20) {
+      // Convert validated items to the expected format
+      final sanitized = validatedItems
+          .map((item) => {
+                'title': item.title,
+                'isChecked': item.isChecked,
+              })
+          .toList();
+
+      if (!ChecklistValidation.isValidBatchSize(sanitized.length)) {
         return FunctionCallResult(
           success: false,
           functionName: functionName,
@@ -117,7 +103,7 @@ class LottiBatchChecklistHandler extends FunctionHandler {
             'toolCallId': call.id,
             'taskId': task.id,
           },
-          error: 'Too many items: max 20 per call.',
+          error: ChecklistValidation.getBatchSizeErrorMessage(sanitized.length),
         );
       }
 

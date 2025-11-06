@@ -32,6 +32,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/utils/checklist_validation.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -1170,24 +1171,11 @@ class UnifiedAiInferenceRepository {
             continue;
           }
 
-          final sanitized = <({String title, bool isChecked})>[];
-          for (final entry in itemsField) {
-            if (entry is Map<String, dynamic>) {
-              final titleRaw = entry['title'];
-              final isCheckedRaw = entry['isChecked'];
-              if (titleRaw is String) {
-                final title = titleRaw.trim();
-                if (title.isNotEmpty && title.length <= 400) {
-                  sanitized
-                      .add((title: title, isChecked: isCheckedRaw == true));
-                }
-              }
-            }
-          }
+          final sanitized = ChecklistValidation.validateItems(itemsField);
 
-          if (sanitized.isEmpty || sanitized.length > 20) {
+          if (!ChecklistValidation.isValidBatchSize(sanitized.length)) {
             developer.log(
-              'No valid items after sanitization or too many (>20). Skipping.',
+              ChecklistValidation.getBatchSizeErrorMessage(sanitized.length),
               name: 'UnifiedAiInferenceRepository',
             );
             continue;
