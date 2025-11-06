@@ -144,7 +144,6 @@ void main() {
         lastEventId: 'b',
         tailLimit: 50,
         lastTimestamp: null,
-        tsGate: const Duration(seconds: 2),
       );
       expect(slice.map((e) => e.eventId), ['c']);
     });
@@ -163,12 +162,11 @@ void main() {
         lastEventId: null,
         tailLimit: 2,
         lastTimestamp: null,
-        tsGate: const Duration(seconds: 2),
       );
       expect(slice.map((e) => e.eventId), ['e3', 'e4']);
     });
 
-    test('buildLiveScanSlice applies timestamp cutoff', () {
+    test('buildLiveScanSlice ignores timestamp cutoff (removed)', () {
       final older = MockEvent();
       when(() => older.eventId).thenReturn('old');
       when(() => older.originServerTs)
@@ -182,19 +180,9 @@ void main() {
         timelineEvents: [older, newer],
         lastEventId: null,
         tailLimit: 10,
-        lastTimestamp: 3000, // cutoff = 3000 - 2000 = 1000
-        tsGate: const Duration(seconds: 2),
+        lastTimestamp: 3000,
       );
       expect(slice.map((e) => e.eventId), ['old', 'new']);
-
-      final slice2 = buildLiveScanSlice(
-        timelineEvents: [older, newer],
-        lastEventId: null,
-        tailLimit: 10,
-        lastTimestamp: 3500, // cutoff = 3500 - 2000 = 1500 -> drop 'old'
-        tsGate: const Duration(seconds: 2),
-      );
-      expect(slice2.map((e) => e.eventId), ['new']);
     });
 
     test('buildLiveScanSlice deduplicates by eventId preserving order', () {
@@ -216,7 +204,6 @@ void main() {
         lastEventId: null,
         tailLimit: 10,
         lastTimestamp: null,
-        tsGate: const Duration(seconds: 2),
       );
       expect(slice.map((e) => e.eventId), ['a', 'b']);
     });

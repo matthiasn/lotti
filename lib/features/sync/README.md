@@ -35,7 +35,7 @@ that keeps the pipeline testable and observable.
 | **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
 | **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, registers the Matrix event IDs it emits, increments send counters, and notifies `MatrixService`. |
 | **SentEventRegistry** (`matrix/sent_event_registry.dart`) | In-memory TTL cache of event IDs produced by this device so timeline ingestion can drop echo events without re-applying them. |
-| **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment prefetch, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
+| **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment descriptor observation, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
 | **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and surfaces precise `applied/skipReason` diagnostics so the pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
@@ -65,9 +65,10 @@ that keeps the pipeline testable and observable.
     scheduling failure, the consumer falls back to `forceRescan()`.
   - Marker advancement happens only from ordered slices returned by
     catch-up/live scans, never directly from the client stream.
-  - Live streaming is micro-batched and ordered chronologically with
-    de-duplication by event ID; attachment prefetch happens before invoking
-    `SyncEventProcessor` so text payloads arrive with their media ready.
+- Live streaming is micro-batched and ordered chronologically with
+    de-duplication by event ID; attachment descriptors are observed and recorded before invoking
+    `SyncEventProcessor`. Media is not downloaded here; retrieval happens later via separate
+    download paths or on-demand processing.
   - Read markers advance monotonically using Matrix timestamps with event IDs as
     tie-breakers. The consumer persists the newest processed ID through
     `SyncReadMarkerService` so fresh sessions resume from the correct position.
@@ -137,8 +138,7 @@ The stream-first consumer replaces the legacy multi-pass drain:
   present, then processes strictly after it (no rewind before the marker).
 - Micro-batches: orders oldest→newest with in-batch de-duplication by event ID.
 - Self-event suppression: consumes locally produced event IDs from `SentEventRegistry` so echoed payloads advance the marker without redundant database or attachment work; suppression counters and logs surface in the pipeline so Matrix Stats reflects the saved work.
-- Attachment prefetch: downloads remote attachments referenced by text payloads
-  before processing to ensure files exist when applying JSON.
+- Attachment descriptors only; descriptors are recorded to speed up local resolution.
 - Marker advancement: monotonic by server timestamp with eventId tie-breaker;
   remote updates are guarded to avoid downgrades.
 - Rescans: schedules a tail rescan on activity without advancement, and after
@@ -239,7 +239,7 @@ Key helpers:
 
 - Metrics (typed + diagnostics)
   - Consumer surfaces counters via `metricsSnapshot()` including:
-    - processed, skipped, failures, prefetch, flushes, catchupBatches,
+    - processed, skipped, failures, flushes, catchupBatches,
       skippedByRetryLimit, retriesScheduled, circuitOpens
     - processed.<type>, droppedByType.<type>
     - dbApplied, dbIgnoredByVectorClock, conflictsCreated
@@ -260,9 +260,7 @@ Key helpers:
   - Initial catch-up is retried with exponential backoff and gives up after
     roughly 15 minutes; logs will indicate `catchup.timeout`.
 - Reliability safeguards
-  - Streaming micro-batches are ordered oldest→newest; attachments are prefetched
-    before processing. Retries apply exponential backoff with TTL and a size cap;
-    a circuit breaker opens after sustained failures to prevent thrash.
+  - Streaming micro-batches are ordered oldest→newest. Retries apply exponential backoff with TTL and a size cap; a circuit breaker opens after sustained failures to prevent thrash.
   - Read-marker advancement is sync-payload only (or valid fallback-decoded JSON)
     to avoid silently skipping payloads when non-sync events arrive late.
   - A heartbeat rescan (every 5s) runs; if the last marker isn’t in the live
@@ -297,7 +295,7 @@ landed fixes, and how to verify behaviour using Matrix Stats and logs.
     path. A best-effort fallback moves an existing target aside as `*.bak` to
     make the rename succeed; temporary/backup files are cleaned up when possible.
   - Attachment writes use the same atomic pattern. Existing non-empty files are
-    not re-downloaded; prefetch and rescan logic gate on “new file written”.
+    not re-downloaded.
 - Read markers
   - `SyncReadMarkerService` gates updates via `client.isLogged()` and prefers
     room-level `setReadMarker`; falls back to timeline-level when available.

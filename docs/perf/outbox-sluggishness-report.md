@@ -2,12 +2,11 @@
 
 This report outlines how to reproduce the issue, the most likely hotspots causing jank, what to measure, and a prioritized plan to fix UI sluggishness observed “when saving something while Sync Outbox is active.”
 
-## Summary
-- Symptom: On the receiving device (mobile), a single edit made on desktop triggers a noticeable scroll stall (~500 ms) shortly thereafter.
-- Focus (updated): This is on the receive path, not send or logging. Disabling logging on mobile had no effect.
-- Top suspect: JSON descriptor prefetch (download+decrypt+atomic write) running on the main isolate before apply.
-- Additional contributors: JSON decode + DB upsert + second JSON write during apply; sync FS checks.
-- Immediate lever validated: Disabling JSON prefetch makes scrolling much smoother during receive.
+## Summary (Updated – Resolved)
+- Symptom: On the receiving device (mobile), a single edit made on desktop triggered a noticeable scroll stall (~500 ms) shortly thereafter.
+- Root cause: The descriptor prefetch path (download + decrypt + atomic write of JSON) on the main isolate before apply.
+- Resolution: We removed the prefetching mechanism entirely from the receive pipeline. The UI feels much snappier during sync receive again.
+- Still relevant contributors: JSON decode + DB upsert and general FS checks remain, but without prefetch the receive path no longer introduces perceptible hitches in typical scenarios.
 
 ## Reproduction Checklist
 - Enable Sync (Matrix) in settings and ensure you’re logged in.
@@ -33,11 +32,8 @@ Why risky:
   - `await file.readAsBytes()` followed by `room.sendFileEvent(...)`.
 - If image/audio files are large, memory spikes and CPU (encryption/compression by the Matrix SDK) can run on the UI isolate. This can introduce frame drops during active user interaction.
 
-2a) Descriptor JSON prefetch (receive side)
-- Path: `lib/features/sync/matrix/pipeline/attachment_ingestor.dart` → `lib/features/sync/matrix/save_attachment.dart`
-  - Calls `event.downloadAndDecryptAttachment()` then `atomicWriteBytes` to save descriptor JSON before apply.
-  - Uses synchronous `existsSync()` / `lengthSync()` checks and a flushy atomic write/rename pattern; all on main isolate.
-  - Even a single descriptor prefetch can introduce a ~500 ms hitch if it overlaps with scrolling.
+2a) Descriptor JSON prefetch (receive side) — Removed
+- This path has been removed. AttachmentIngestor now only records descriptors (in-memory/index) and clears pending jsonPaths. No media or descriptor downloads happen in the receive pipeline.
 
 3) Bursty scheduling and repeated scans
 - Outbox drain and Matrix pipeline both try to make forward progress promptly.
@@ -56,9 +52,7 @@ Why risky:
 - Use Flutter DevTools Performance/TIMELINE:
   - Record from “save” → “first outbox send” → “attachments sent”.
   - Look for long Dart tasks, GC spikes, and frame jank clusters.
-- Compare with logging disabled:
-  - Temporarily disable logging via the config flag and re-record.
-  - If frame times improve, prioritize logging changes.
+- Compare builds before/after prefetch removal to verify improvement; logging changes can be pursued separately if needed.
 - CPU sampling:
   - Check time spent inside Matrix SDK calls during `sendFileEvent` and `sendTextEvent`.
 - Event volume:
@@ -129,11 +123,9 @@ Observed outcome (session)
 - Outbox throughput remains acceptable; when idle, the system catches up quickly.
 - DevTools timeline shows fewer long Dart tasks and reduced GC pressure during sends.
 
-## Rollout Strategy
-- Start with logging changes (buffering + sampling), behind a feature flag.
-- Adjust activity gating thresholds (increase idle requirement; avoid forced progress while scrolling) and measure user-perceived smoothness.
-- Iterate on outbox pacing and, if needed, isolate-based preprocessing for large attachments.
- - For receive: disable JSON prefetch (or JSON-only) and validate that single‑edit stalls are gone or below perceptible levels.
+## Rollout/Status
+- Prefetch removal has shipped in the receive pipeline. No feature flag is required.
+- Post-change observation: sync receive no longer causes noticeable scroll hitches; the UI feels considerably snappier under normal usage.
 
 ## References (code)
 - Logging sinks: `lib/services/logging_service.dart`
@@ -148,9 +140,9 @@ Observed outcome (session)
 If you want, I can next: (a) run a quick profiling session and append a short timeline analysis, or (b) implement JSON-only prefetch off (and/or idle-only prefetch) behind a flag to A/B the receive-path improvement, and (c) separately land the low-risk logging buffering.
 
 ## Session Findings & Open Questions
-- Confirmed: Receive-side pipeline is the jank source; logging off doesn’t help.
-- Disabling JSON prefetch improves smoothness for single edits (receiver-side stall drops significantly).
-- Likely duplicated JSON writes on receive (prefetch write, then apply write) worsen stalls.
+- Confirmed prefetch as primary jank source on receive; logging off didn’t help.
+- Removing prefetch improved smoothness for single edits; the receiver-side stall dropped significantly.
+- Duplicated JSON writes from prefetch + apply are no longer present.
 
 Open questions
 - How long do the individual stages take on device: `downloadAndDecryptAttachment`, `atomicWriteBytes`, `jsonDecode`, and `updateJournalEntity`? Add timeline spans to quantify.

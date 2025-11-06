@@ -14,8 +14,7 @@ void main() {
       'lastIgnoredCount=2',
       'lastIgnored.1=a',
       'lastIgnored.2=bb',
-      'lastPrefetchedCount=1',
-      'lastPrefetched.1=ccc',
+      // Prefetch removed
     ].join('\n');
 
     Future<String> fetch() async => text;
@@ -34,8 +33,7 @@ void main() {
     expect(find.text('Last Ignored:'), findsOneWidget);
     expect(find.text('a'), findsOneWidget);
     expect(find.text('bb'), findsOneWidget);
-    expect(find.text('Last Prefetched:'), findsOneWidget);
-    expect(find.text('ccc'), findsOneWidget);
+    expect(find.text('Last Prefetched:'), findsNothing);
   });
 
   testWidgets('DiagnosticsPanel shows loading indicator', (tester) async {

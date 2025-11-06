@@ -200,7 +200,6 @@ Future<void> registerSingletons() async {
     readMarkerService: readMarkerService,
     eventProcessor: syncEventProcessor,
     secureStorage: secureStorage,
-    documentsDirectory: documentsDirectory,
     collectSyncMetrics: collectSyncMetrics,
     attachmentIndex: attachmentIndex,
   );

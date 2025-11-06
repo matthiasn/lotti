@@ -8,17 +8,14 @@ class MetricsCounters {
   MetricsCounters({
     this.collect = false,
     this.lastIgnoredMax = 10,
-    this.lastPrefetchedMax = 10,
   });
 
   final bool collect;
   final int lastIgnoredMax;
-  final int lastPrefetchedMax;
 
   int processed = 0;
   int skipped = 0;
   int failures = 0;
-  int prefetch = 0;
   int flushes = 0;
   int catchupBatches = 0;
   int skippedByRetryLimit = 0;
@@ -65,7 +62,6 @@ class MetricsCounters {
   final Map<String, int> droppedByType = <String, int>{};
 
   final List<String> lastIgnored = <String>[];
-  final List<String> lastPrefetched = <String>[];
 
   void incProcessed() {
     if (!collect) return;
@@ -98,11 +94,6 @@ class MetricsCounters {
   void incFailures() {
     if (!collect) return;
     failures++;
-  }
-
-  void incPrefetch() {
-    if (!collect) return;
-    prefetch++;
   }
 
   void incFlushes() {
@@ -196,10 +187,6 @@ class MetricsCounters {
     msh.ringBufferAdd(lastIgnored, entry, lastIgnoredMax);
   }
 
-  void addLastPrefetched(String path) {
-    msh.ringBufferAdd(lastPrefetched, path, lastPrefetchedMax);
-  }
-
   Map<String, int> snapshot({
     required int retryStateSize,
     required bool circuitIsOpen,
@@ -208,7 +195,6 @@ class MetricsCounters {
       processed: processed,
       skipped: skipped,
       failures: failures,
-      prefetch: prefetch,
       flushes: flushes,
       catchupBatches: catchupBatches,
       skippedByRetryLimit: skippedByRetryLimit,
@@ -220,7 +206,6 @@ class MetricsCounters {
       dbIgnoredByVectorClock: dbIgnoredByVectorClock,
       conflictsCreated: conflictsCreated,
       lastIgnored: lastIgnored,
-      lastPrefetched: lastPrefetched,
       retryStateSize: retryStateSize,
       circuitOpen: circuitIsOpen,
     )
@@ -250,7 +235,7 @@ class MetricsCounters {
   /// periodic log emission. Includes a signals(...) appendix for quick checks.
   String buildFlushLog({required int retriesPending}) {
     final base =
-        'metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures prefetch=$prefetch catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending signals(client=$signalClientStream,timeline=$signalTimelineCallbacks,net=$signalConnectivity,lat=${signalLatencyLastMs}ms)';
+        'metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending signals(client=$signalClientStream,timeline=$signalTimelineCallbacks,net=$signalConnectivity,lat=${signalLatencyLastMs}ms)';
     // Append a compact processedByType breakdown (e.g., entryLink=3,journalEntity=10)
     if (processedByType.isEmpty) return base;
     final entries = processedByType.entries.toList()

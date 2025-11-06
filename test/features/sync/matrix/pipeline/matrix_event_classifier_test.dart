@@ -44,26 +44,6 @@ void main() {
       expect(MatrixEventClassifier.isSyncPayloadEvent(e), isFalse);
     });
 
-    test('shouldPrefetchAttachment true for media and json (sender agnostic)',
-        () {
-      final image = MockEvent();
-      when(() => image.senderId).thenReturn('@other:server');
-      when(() => image.attachmentMimetype).thenReturn('image/png');
-      expect(
-          MatrixEventClassifier.shouldPrefetchAttachment(image, '@me:server'),
-          isTrue);
-
-      final json = MockEvent();
-      when(() => json.senderId).thenReturn('@me:server');
-      when(() => json.attachmentMimetype).thenReturn('application/json');
-      expect(MatrixEventClassifier.shouldPrefetchAttachment(json, '@me:server'),
-          isTrue);
-
-      final none = MockEvent();
-      when(() => none.senderId).thenReturn('@other:server');
-      when(() => none.attachmentMimetype).thenReturn('');
-      expect(MatrixEventClassifier.shouldPrefetchAttachment(none, '@me:server'),
-          isFalse);
-    });
+    // Prefetch behavior removed.
   });
 }

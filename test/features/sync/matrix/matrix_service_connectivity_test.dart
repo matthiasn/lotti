@@ -124,7 +124,6 @@ void main() {
           readMarkerService: readMarkerService,
           eventProcessor: eventProcessor,
           secureStorage: storage,
-          documentsDirectory: tempDir,
           sentEventRegistry: SentEventRegistry(),
           attachmentIndex: AttachmentIndex(logging: logging),
           roomManager: roomManager,

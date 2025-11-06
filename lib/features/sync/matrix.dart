@@ -8,7 +8,6 @@ export 'matrix/last_read.dart';
 export 'matrix/matrix_message_sender.dart';
 export 'matrix/matrix_service.dart';
 export 'matrix/read_marker_service.dart';
-export 'matrix/save_attachment.dart';
 export 'matrix/session_manager.dart';
 export 'matrix/stats.dart';
 export 'matrix/sync_engine.dart';

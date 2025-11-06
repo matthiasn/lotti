@@ -50,7 +50,6 @@ class SyncMetricsSection extends StatelessWidget {
       'processed': 'Processed',
       'skipped': 'Skipped',
       'failures': 'Failures',
-      'prefetch': 'Prefetched',
       'flushes': 'Flushes',
       'catchupBatches': 'Catch-up Batches',
       'skippedByRetryLimit': 'Skipped (Retry Cap)',
@@ -80,7 +79,6 @@ class SyncMetricsSection extends StatelessWidget {
         v2,
         (k) =>
             k == 'processed' ||
-            k == 'prefetch' ||
             k == 'flushes' ||
             k == 'catchupBatches' ||
             k == 'retriesScheduled' ||

@@ -9,7 +9,6 @@ class MetricsUtils {
     required int processed,
     required int skipped,
     required int failures,
-    required int prefetch,
     required int flushes,
     required int catchupBatches,
     required int skippedByRetryLimit,
@@ -21,7 +20,6 @@ class MetricsUtils {
     required int dbIgnoredByVectorClock,
     required int conflictsCreated,
     required List<String> lastIgnored,
-    required List<String> lastPrefetched,
     required int retryStateSize,
     required bool circuitOpen,
   }) {
@@ -29,7 +27,6 @@ class MetricsUtils {
       'processed': processed,
       'skipped': skipped,
       'failures': failures,
-      'prefetch': prefetch,
       'flushes': flushes,
       'catchupBatches': catchupBatches,
       'skippedByRetryLimit': skippedByRetryLimit,
@@ -49,13 +46,9 @@ class MetricsUtils {
       ))
       ..addEntries(<MapEntry<String, int>>[
         MapEntry('lastIgnoredCount', lastIgnored.length),
-        MapEntry('lastPrefetchedCount', lastPrefetched.length),
       ])
       ..addEntries(lastIgnored.asMap().entries.map(
             (e) => MapEntry('lastIgnored.${e.key + 1}', e.value.length),
-          ))
-      ..addEntries(lastPrefetched.asMap().entries.map(
-            (e) => MapEntry('lastPrefetched.${e.key + 1}', e.value.length),
           ));
   }
 }

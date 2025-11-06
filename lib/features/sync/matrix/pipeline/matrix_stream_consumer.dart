@@ -68,7 +68,7 @@ class _ProcessOutcome {
 ///   limit-escalation fallback for large backlogs.
 /// - Micro-batched streaming with chronological ordering and in-batch
 ///   de-duplication by event ID.
-/// - Attachment prefetch for remote events before text processing.
+/// - Attachment descriptor observation before text processing.
 /// - Monotonic read marker advancement with lexicographical tie-breakers.
 /// - Per-event retries with exponential backoff, TTL pruning, and a size cap
 ///   to bound memory growth; circuit breaker to avoid thrashing.
@@ -86,7 +86,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SettingsDb settingsDb,
     required SyncEventProcessor eventProcessor,
     required SyncReadMarkerService readMarkerService,
-    required Directory documentsDirectory,
     required SentEventRegistry sentEventRegistry,
     AttachmentIndex? attachmentIndex,
     MetricsCounters? metricsCounters,
@@ -114,7 +113,6 @@ class MatrixStreamConsumer implements SyncPipeline {
         _settingsDb = settingsDb,
         _eventProcessor = eventProcessor,
         _readMarkerService = readMarkerService,
-        _documentsDirectory = documentsDirectory,
         _attachmentIndex = attachmentIndex,
         _collectMetrics = collectMetrics,
         _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
@@ -171,7 +169,6 @@ class MatrixStreamConsumer implements SyncPipeline {
   final SettingsDb _settingsDb;
   final SyncEventProcessor _eventProcessor;
   final SyncReadMarkerService _readMarkerService;
-  final Directory _documentsDirectory;
   final AttachmentIndex? _attachmentIndex;
   final bool _collectMetrics;
   final SentEventRegistry _sentEventRegistry;
@@ -219,11 +216,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final MetricsCounters _metrics;
   // Descriptor-focused catch-up helper (manages pending jsonPaths)
   DescriptorCatchUpManager? _descriptorCatchUp;
-  DateTime? _lastAttachmentOnlyRescanAt;
-  static const Duration _minAttachmentOnlyRescanGap =
-      Duration(milliseconds: 500);
   static const int _liveScanTailLimit = 30;
-  static const Duration _attachmentTsGate = Duration(seconds: 2);
   // Live-scan look-behind policy. Can be tuned via constructor (test seams).
   final bool _liveScanIncludeLookBehind;
   int _liveScanAuditScansRemaining;
@@ -922,13 +915,12 @@ class MatrixStreamConsumer implements SyncPipeline {
         _lastSignalAt = null;
       }
       // Build the normal strictly-after slice (no timestamp gating for payload
-      // discovery; gating applies only to attachment prefetch).
+      // discovery).
       final afterSlice = msh.buildLiveScanSlice(
         timelineEvents: tl.events,
         lastEventId: _lastProcessedEventId,
         tailLimit: _liveScanTailLimit,
         lastTimestamp: null,
-        tsGate: _attachmentTsGate,
       );
       List<Event> combined;
       if (_liveScanIncludeLookBehind) {
@@ -944,7 +936,6 @@ class MatrixStreamConsumer implements SyncPipeline {
           lastEventId: null,
           tailLimit: tail,
           lastTimestamp: null,
-          tsGate: _attachmentTsGate,
         );
         if (_collectMetrics) {
           _metrics.recordLookBehindMerge(tail);
@@ -1067,8 +1058,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       return;
     }
 
-    // First pass: prefetch attachments for remote events.
-    var sawAttachmentPrefetch = false; // true only if a new file was written
+    // First pass: observe attachment descriptors for remote events.
     var suppressedCount = 0; // count self-origin/suppressed events
     const ingestor = AttachmentIngestor();
     for (final e in ordered) {
@@ -1085,7 +1075,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         continue;
       }
       if (dup && ec.MatrixEventClassifier.isAttachment(e)) {
-        continue; // skip record/observe/prefetch for duplicate attachments
+        continue; // skip record/observe for duplicate attachments
       }
       // Also skip re-applying the same sync payload event if it already
       // completed on another ingestion path.
@@ -1094,24 +1084,17 @@ class MatrixStreamConsumer implements SyncPipeline {
           continue;
         }
       }
-      // Centralize descriptor record + optional media prefetch logic.
-      final wrote = await ingestor.process(
+      // Centralize descriptor record logic.
+      await ingestor.process(
         event: e,
         logging: _loggingService,
-        documentsDirectory: _documentsDirectory,
         attachmentIndex: _attachmentIndex,
-        collectMetrics: _collectMetrics,
-        metrics: _metrics,
-        lastProcessedTs: _lastProcessedTs,
-        attachmentTsGate: _attachmentTsGate,
-        currentUserId: _client.userID,
         descriptorCatchUp: _descriptorCatchUp,
         scheduleLiveScan: _scheduleLiveScan,
         retryNow: retryNow,
       );
-      if (wrote) sawAttachmentPrefetch = true;
 
-      // (prefetch handled above)
+      // (descriptor observe handled above)
     }
 
     // Emit a compact summary for suppressed items to avoid log spam.
@@ -1225,7 +1208,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           }
         } else {
           // Do not count attachment events as "skipped" — they are part of
-          // the sync flow and are already tracked via the `prefetch` metric.
+          // the sync flow.
           if (!ec.MatrixEventClassifier.isAttachment(e)) {
             if (_collectMetrics) _metrics.incSkipped();
           }
@@ -1314,69 +1297,23 @@ class MatrixStreamConsumer implements SyncPipeline {
       _liveScanTimer = Timer(delay, () {
         unawaited(_scanLiveTimeline());
       });
-    } else if (latestEventId == null &&
-        (sawAttachmentPrefetch || syncPayloadEventsSeen > 0)) {
+    } else if (latestEventId == null && (syncPayloadEventsSeen > 0)) {
       // Defensive: if we saw activity but could not advance and had no explicit
       // failures, schedule a small tail rescan to catch ordering edge-cases.
-      if (syncPayloadEventsSeen == 0 && sawAttachmentPrefetch) {
-        final now = clock.now();
-        final last = _lastAttachmentOnlyRescanAt;
-        if (last == null ||
-            now.difference(last) >= _minAttachmentOnlyRescanGap) {
-          _lastAttachmentOnlyRescanAt = now;
-          if (_collectMetrics) {
-            _loggingService.captureEvent(
-              'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
-              domain: syncLoggingDomain,
-              subDomain: 'noAdvance.rescan',
-            );
-          }
-          _liveScanTimer?.cancel();
-          _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
-            unawaited(_scanLiveTimeline());
-          });
-        }
-      } else {
-        if (_collectMetrics) {
-          _loggingService.captureEvent(
-            'no advancement; scheduling tail rescan (attachments=$sawAttachmentPrefetch, syncEvents=$syncPayloadEventsSeen)',
-            domain: syncLoggingDomain,
-            subDomain: 'noAdvance.rescan',
-          );
-        }
-        _liveScanTimer?.cancel();
-        _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
-          unawaited(_scanLiveTimeline());
-        });
-      }
-    }
-
-    // Double-scan when attachments were prefetched: run an immediate scan and
-    // a second scan shortly after to catch text events that may land after the
-    // attachment in the SDK's live list.
-    if (sawAttachmentPrefetch) {
       if (_collectMetrics) {
         _loggingService.captureEvent(
-          'doubleScan.attachment immediate',
+          'no advancement; scheduling tail rescan (syncEvents=$syncPayloadEventsSeen)',
           domain: syncLoggingDomain,
-          subDomain: 'doubleScan',
+          subDomain: 'noAdvance.rescan',
         );
       }
-      // Run the immediate second scan sequentially to avoid overlapping
-      // scans; the in-flight depth guard also prevents premature clearing.
-      await _scanLiveTimeline();
       _liveScanTimer?.cancel();
-      _liveScanTimer = Timer(const Duration(milliseconds: 200), () {
-        if (_collectMetrics) {
-          _loggingService.captureEvent(
-            'doubleScan.attachment delayed',
-            domain: syncLoggingDomain,
-            subDomain: 'doubleScan',
-          );
-        }
+      _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
         unawaited(_scanLiveTimeline());
       });
     }
+
+    // No double-scan scheduling required.
 
     // Prune retry state map to avoid unbounded growth.
     _retryTracker.prune(clock.now());
@@ -1484,7 +1421,6 @@ class MatrixStreamConsumer implements SyncPipeline {
   Map<String, String> diagnosticsStrings() {
     final map = <String, String>{
       'lastIgnoredCount': _metrics.lastIgnored.length.toString(),
-      'lastPrefetchedCount': _metrics.lastPrefetched.length.toString(),
     };
     // Compact summary lines for quick scanning in diagnostics text.
     try {
@@ -1500,9 +1436,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
     for (var i = 0; i < _metrics.lastIgnored.length; i++) {
       map['lastIgnored.${i + 1}'] = _metrics.lastIgnored[i];
-    }
-    for (var i = 0; i < _metrics.lastPrefetched.length; i++) {
-      map['lastPrefetched.${i + 1}'] = _metrics.lastPrefetched[i];
     }
     return map;
   }

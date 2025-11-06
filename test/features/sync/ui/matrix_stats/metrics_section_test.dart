@@ -14,7 +14,6 @@ void main() {
       'failures': 1,
       'retriesScheduled': 3,
       // Throughput
-      'prefetch': 5,
       'flushes': 2,
       'catchupBatches': 1,
       'processed.journalEntity': 7,
@@ -69,7 +68,7 @@ void main() {
 
     // Friendly labels
     expect(find.text('Processed'), findsWidgets);
-    expect(find.text('Prefetched'), findsOneWidget);
+    expect(find.text('Prefetched'), findsNothing);
     expect(find.text('Catch-up Batches'), findsOneWidget);
     expect(find.text('Dropped (entryLink)'), findsOneWidget);
     expect(find.text('Processed (journalEntity)'), findsOneWidget);

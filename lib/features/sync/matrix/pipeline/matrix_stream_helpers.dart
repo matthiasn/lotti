@@ -136,24 +136,18 @@ List<Event> buildLiveScanSlice({
   required String? lastEventId,
   required int tailLimit,
   required num? lastTimestamp,
-  required Duration tsGate,
 }) {
   final events = List<Event>.from(timelineEvents)
     ..sort(TimelineEventOrdering.compare);
   final idx = tu.findLastIndexByEventId(events, lastEventId);
-  var slice = idx >= 0
+  final slice = idx >= 0
       ? events.sublist(idx + 1)
       : (events.isEmpty
           ? events
           : events.sublist(
               (events.length - tailLimit).clamp(0, events.length),
             ));
-  if (slice.isNotEmpty && lastTimestamp != null) {
-    final cutoff = lastTimestamp.toInt() - tsGate.inMilliseconds;
-    slice = slice
-        .where((e) => TimelineEventOrdering.timestamp(e) >= cutoff)
-        .toList();
-  }
+  // No timestamp gating.
   return tu.dedupEventsByIdPreserveOrder(slice);
 }
 

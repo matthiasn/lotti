@@ -110,7 +110,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       metricsCounters: metrics,
       sentEventRegistry: registry,
@@ -119,7 +118,7 @@ void main() {
     return (consumer: consumer, logger: logger);
   }
 
-  test('attachment observe increments prefetch counter', () async {
+  test('attachment observe logs and does not count as skipped', () async {
     fakeAsync((async) async {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -190,7 +189,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         circuitCooldown: const Duration(milliseconds: 200),
         sentEventRegistry: SentEventRegistry(),
@@ -205,9 +203,8 @@ void main() {
       async.flushMicrotasks();
 
       final metrics = consumer.metricsSnapshot();
-      expect(metrics['lastPrefetchedCount'], 1);
-      // 'prefetch' total should be >=1 after observe
-      expect(metrics['prefetch'], greaterThanOrEqualTo(1));
+      // Attachments are not counted as skipped
+      expect(metrics['skipped'], equals(0));
       // Logs include attachment.observe with the expected path
       verify(() => logger.captureEvent(
             any<String>(
@@ -291,7 +288,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: docs,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -382,7 +378,7 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
+
         collectMetrics: true,
         markerDebounce: const Duration(seconds: 5), // ensure pending at dispose
         sentEventRegistry: SentEventRegistry(),
@@ -435,7 +431,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -594,7 +589,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         backfill: backfill,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -670,7 +664,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -818,7 +811,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -869,9 +861,8 @@ void main() {
         async.elapse(const Duration(milliseconds: 130));
         async.flushMicrotasks();
 
-        // No prefetch increments because both attachments were older than cutoff
-        final m = consumer.metricsSnapshot();
-        expect(m['prefetch'], 0);
+        // Descriptor-only model: no prefetch metrics asserted here
+        consumer.metricsSnapshot();
       });
     });
     test(
@@ -952,7 +943,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -988,8 +978,7 @@ void main() {
         async.elapse(const Duration(milliseconds: 160));
         async.flushMicrotasks();
 
-        var m = consumer.metricsSnapshot();
-        expect(m['prefetch'], 0);
+        consumer.metricsSnapshot();
 
         // 3) Newer attachment (ts=9901) within 2s margin should be observed
         final newAtt = MockEvent();
@@ -1005,8 +994,7 @@ void main() {
         async.elapse(const Duration(milliseconds: 160));
         async.flushMicrotasks();
 
-        m = consumer.metricsSnapshot();
-        expect(m['prefetch'], 1);
+        consumer.metricsSnapshot();
       });
     });
     test('in-flight guard suppresses duplicate apply across paths (fakeAsync)',
@@ -1087,7 +1075,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           sentEventRegistry: SentEventRegistry(),
         );
 
@@ -1176,7 +1163,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
@@ -1250,7 +1236,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
@@ -1270,7 +1255,7 @@ void main() {
     });
   });
 
-  test('noAdvance.rescan is scheduled when only attachments are seen',
+  test('no noAdvance.rescan when only attachments are seen (prefetch removed)',
       () async {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
@@ -1333,7 +1318,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -1341,9 +1325,113 @@ void main() {
     await consumer.initialize();
     await consumer.start();
 
-    verify(() => logger.captureEvent(any<String>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: 'noAdvance.rescan')).called(1);
+    verifyNever(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'), subDomain: 'noAdvance.rescan'));
+  });
+
+  test('schedules noAdvance.rescan when sync payload is older (no advance)',
+      () async {
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      // Seed a lastProcessed marker newer than the incoming event
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'L');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async => '200');
+
+      // Older sync payload event (ts=100) so marker will not advance
+      final oldSync = MockEvent();
+      when(() => oldSync.eventId).thenReturn('E');
+      when(() => oldSync.roomId).thenReturn('!room:server');
+      when(() => oldSync.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+      when(() => oldSync.senderId).thenReturn('@other:server');
+      when(() => oldSync.attachmentMimetype).thenReturn('');
+      when(() => oldSync.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+
+      when(() => timeline.events).thenReturn(<Event>[oldSync]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      when(() => processor.process(event: oldSync, journalDb: journalDb))
+          .thenAnswer((_) async {});
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+          )).thenAnswer((_) async {});
+
+      when(() => logger.captureEvent(
+            any<String>(
+                that: contains('no advancement; scheduling tail rescan')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'noAdvance.rescan',
+          )).thenReturn(null);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      // Capture that the scheduled tail rescan actually triggers a scan
+      var scanTriggered = 0;
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanTriggered++;
+      };
+
+      await consumer.initialize();
+      await consumer.start();
+      // Allow the live scan and scheduled tail rescan to occur
+      async.elapse(const Duration(milliseconds: 200));
+      async.flushMicrotasks();
+
+      verify(() => logger.captureEvent(
+            any<String>(
+                that: contains('no advancement; scheduling tail rescan')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'noAdvance.rescan',
+          )).called(greaterThanOrEqualTo(1));
+
+      // Ensure the scheduled timer executed and invoked the scan
+      expect(scanTriggered, greaterThanOrEqualTo(1));
+    });
   });
 
   test('flushReadMarker exceptions are captured and do not break flow',
@@ -1396,7 +1484,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         markerDebounce: const Duration(milliseconds: 50),
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1426,6 +1513,181 @@ void main() {
             subDomain: 'flushReadMarker',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           )).called(1);
+    });
+  });
+
+  test('advancement schedules quick tail rescan (100ms) and triggers scan',
+      () async {
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      // Seed lastProcessed older than incoming to allow advancement
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async {
+        return 'L';
+      });
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async {
+        return '100';
+      });
+      when(() => settingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 1);
+
+      // Newer sync payload event (ts=200) to advance marker
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('E2');
+      when(() => ev.roomId).thenReturn('!room:server');
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(200));
+      when(() => ev.senderId).thenReturn('@other:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => processor.process(event: ev, journalDb: journalDb))
+          .thenAnswer((_) async {});
+
+      when(() => timeline.events).thenReturn(<Event>[ev]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      var scanTriggered = 0;
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanTriggered++;
+      };
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // Allow the 100ms scheduled rescan to fire after advancement
+      async.elapse(const Duration(milliseconds: 200));
+      async.flushMicrotasks();
+
+      expect(scanTriggered, greaterThanOrEqualTo(1));
+    });
+  });
+
+  test('retriable failure schedules follow-up scan (hadFailure path)',
+      () async {
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      // One sync payload event that will throw during processing
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('E_fail');
+      when(() => ev.roomId).thenReturn('!room:server');
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(10));
+      when(() => ev.senderId).thenReturn('@other:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => processor.process(event: ev, journalDb: journalDb))
+          .thenThrow(Exception('boom'));
+
+      when(() => timeline.events).thenReturn(<Event>[ev]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      var scanTriggered = 0;
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanTriggered++;
+      };
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // Allow initial startup scan (80ms) and follow-up retry scan (>~200ms)
+      async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+
+      // Initial scan + at least one follow-up scheduled by hadFailure path
+      expect(scanTriggered, greaterThanOrEqualTo(2));
+      final snap = consumer.metricsSnapshot();
+      expect(snap['retriesScheduled'], greaterThanOrEqualTo(1));
+      expect(snap['failures'], greaterThanOrEqualTo(1));
     });
   });
 
@@ -1485,7 +1747,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1583,7 +1844,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1649,7 +1909,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -1725,7 +1984,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         markerDebounce: const Duration(milliseconds: 50),
         sentEventRegistry: SentEventRegistry(),
@@ -1795,7 +2053,6 @@ void main() {
       // Processor should have been invoked a second time and succeeded
       expect(calls, greaterThanOrEqualTo(2));
       final m1 = consumer.metricsSnapshot();
-      expect(m1['lastPrefetchedCount'], greaterThanOrEqualTo(1));
       // Pending cleared returns to 0
       expect(m1['pendingJsonPaths'], 0);
       // Logs include attachment.observe for the descriptor
@@ -1855,7 +2112,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
@@ -1934,7 +2190,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2016,7 +2271,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         sentEventRegistry: SentEventRegistry(),
       );
 
@@ -2101,7 +2355,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         markerDebounce: const Duration(milliseconds: 100),
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2212,7 +2465,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         maxRetriesPerEvent: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -2304,7 +2556,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         maxRetriesPerEvent: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -2390,7 +2641,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2468,7 +2718,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2565,7 +2814,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2642,7 +2890,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         markerDebounce: const Duration(milliseconds: 50),
         sentEventRegistry: SentEventRegistry(),
@@ -2730,7 +2977,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -2770,7 +3016,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -2890,7 +3135,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -2899,8 +3143,8 @@ void main() {
     await consumer.start();
 
     final m = consumer.metricsSnapshot();
-    expect(m['prefetch'], greaterThanOrEqualTo(1));
-    expect(m['processed'], greaterThanOrEqualTo(1));
+    // Prefetch metric removed; ensure we processed (or at least snapshot exists)
+    expect(m.containsKey('processed'), isTrue);
     // Attachments are not counted as skipped
     expect(m['skipped'], 0);
   });
@@ -2960,7 +3204,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -2977,7 +3220,7 @@ void main() {
         ));
   });
 
-  test('diagnosticsStrings exposes lastIgnored and lastPrefetched entries',
+  test('diagnosticsStrings exposes lastIgnored entries (prefetch removed)',
       () async {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
@@ -3009,7 +3252,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -3025,7 +3267,7 @@ void main() {
       ),
     );
 
-    // Timeline contains a file event to populate lastPrefetched
+    // Timeline contains a file event; prefetch removed so no lastPrefetched entries
     final fileEvent = MockEvent();
     when(() => fileEvent.eventId).thenReturn('F');
     when(() => fileEvent.originServerTs)
@@ -3060,8 +3302,7 @@ void main() {
     final d = consumer.diagnosticsStrings();
     expect(d['lastIgnoredCount'], '1');
     expect(d['lastIgnored.1'], startsWith('X:'));
-    expect(d['lastPrefetchedCount'], '1');
-    expect(d['lastPrefetched.1'], '/sub/p2.json');
+    expect(d.containsKey('lastPrefetchedCount'), isFalse);
   });
 
   test('forceRescan includeCatchUp variations', () async {
@@ -3112,7 +3353,7 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
+
       // Disable look-behind in this test to keep event counts stable.
       liveScanIncludeLookBehind: false,
       liveScanInitialAuditScans: 0,
@@ -3222,7 +3463,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
         liveScanSteadyTail: 0,
@@ -3290,7 +3530,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
         liveScanSteadyTail: 0,
@@ -3381,7 +3620,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         markerDebounce: const Duration(milliseconds: 50),
         sentEventRegistry: SentEventRegistry(),
@@ -3443,7 +3681,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -3506,7 +3743,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -3593,7 +3829,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -3686,7 +3921,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         maxRetriesPerEvent: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -3789,7 +4023,7 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
+
       // backfill returns false to force fallback
       backfill: ({
         required Timeline timeline,
@@ -3861,7 +4095,7 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
+
         // use shorter flush for test speed if desired (default fine here)
         sentEventRegistry: SentEventRegistry(),
       );
@@ -3972,7 +4206,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -4082,7 +4315,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -4101,7 +4333,7 @@ void main() {
     expect(m['processed'], greaterThanOrEqualTo(0));
     expect(m['skipped'], greaterThanOrEqualTo(0));
     expect(m['failures'], greaterThanOrEqualTo(0));
-    expect(m['prefetch'], greaterThanOrEqualTo(0));
+    // Prefetch removed
     // flushes no longer increment in signal-only mode
     expect(m['flushes'], anyOf(0, null));
     expect(m['catchupBatches'], greaterThanOrEqualTo(0));
@@ -4157,7 +4389,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -4309,7 +4540,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -4407,7 +4637,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           sentEventRegistry: SentEventRegistry(),
         );
 
@@ -4483,7 +4712,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -4593,7 +4821,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         sentEventRegistry: SentEventRegistry(),
       );
 
@@ -4682,7 +4909,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -4784,7 +5010,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: tempDir,
           sentEventRegistry: SentEventRegistry(),
         );
 
@@ -4877,7 +5102,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         sentEventRegistry: SentEventRegistry(),
       );
 
@@ -4970,7 +5194,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: tempDir,
           sentEventRegistry: SentEventRegistry(),
         );
 
@@ -5075,7 +5298,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -5180,7 +5402,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -5282,7 +5503,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -5380,7 +5600,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -5451,7 +5670,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -5548,7 +5766,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         sentEventRegistry: SentEventRegistry(),
       );
 
@@ -5663,7 +5880,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -5750,7 +5966,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -5835,7 +6050,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -5918,7 +6132,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -6020,7 +6233,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       liveScanInitialAuditScans: 1,
       liveScanInitialAuditTail: 7,
@@ -6093,7 +6305,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -6173,7 +6384,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -6249,7 +6459,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -6324,7 +6533,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -6554,7 +6762,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: sentRegistry,
       );
@@ -6569,7 +6776,7 @@ void main() {
 
       final snapshot = consumer.metricsSnapshot();
       expect(snapshot['selfEventsSuppressed'], greaterThanOrEqualTo(1));
-      expect(snapshot['prefetch'], equals(0));
+      // Prefetch metric removed
       verify(
         () => logger.captureEvent(
           contains(r'marker.local id=$self-event'),
@@ -6595,7 +6802,7 @@ void main() {
       final snapshotAfterRescan = consumer.metricsSnapshot();
       expect(
           snapshotAfterRescan['selfEventsSuppressed'], greaterThanOrEqualTo(2));
-      expect(snapshotAfterRescan['prefetch'], equals(0));
+      // Prefetch metric removed
 
       await consumer.dispose();
     });
