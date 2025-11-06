@@ -25,6 +25,7 @@ void handleCalendarEventTap(
   if (linkedFrom != null) {
     if (linkedFrom is Task) {
       // Publish task focus intent before navigation
+      // ignore: avoid_dynamic_calls
       ref
           .read(
             taskFocusControllerProvider(id: linkedFrom.meta.id).notifier,
@@ -33,6 +34,7 @@ void handleCalendarEventTap(
       beamToNamed('/tasks/${linkedFrom.meta.id}');
     } else {
       // Publish journal focus intent before navigation
+      // ignore: avoid_dynamic_calls
       ref
           .read(
             journalFocusControllerProvider(id: linkedFrom.meta.id).notifier,

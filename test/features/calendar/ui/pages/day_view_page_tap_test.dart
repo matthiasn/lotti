@@ -1,7 +1,6 @@
 import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
 import 'package:lotti/features/calendar/state/calendar_event_handler.dart';
 import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';

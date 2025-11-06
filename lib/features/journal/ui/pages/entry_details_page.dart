@@ -60,20 +60,25 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
     );
   }
 
-  void _scrollToEntry(String entryId, double alignment) {
+  void _scrollToEntry(
+    String entryId,
+    double alignment, {
+    VoidCallback? onScrolled,
+  }) {
     // Schedule scroll after frame is built
-    SchedulerBinding.instance.addPostFrameCallback((_) {
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
       final key = _getEntryKey(entryId);
       final context = key.currentContext;
 
       if (context != null) {
         try {
-          Scrollable.ensureVisible(
+          await Scrollable.ensureVisible(
             context,
             alignment: alignment,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
+          onScrolled?.call();
         } catch (e) {
           // Log error if scrolling fails
           debugPrint('Failed to scroll to entry $entryId: $e');
@@ -93,8 +98,11 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
 
     void handleFocus(JournalFocusIntent? intent) {
       if (intent == null) return;
-      _scrollToEntry(intent.entryId, intent.alignment);
-      ref.read(focusProvider.notifier).clearIntent();
+      _scrollToEntry(
+        intent.entryId,
+        intent.alignment,
+        onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+      );
     }
 
     ref.listen<JournalFocusIntent?>(focusProvider, (_, next) => handleFocus(next));
