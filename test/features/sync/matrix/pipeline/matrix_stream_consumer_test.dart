@@ -1516,6 +1516,181 @@ void main() {
     });
   });
 
+  test('advancement schedules quick tail rescan (100ms) and triggers scan',
+      () async {
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      // Seed lastProcessed older than incoming to allow advancement
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async {
+        return 'L';
+      });
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async {
+        return '100';
+      });
+      when(() => settingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 1);
+
+      // Newer sync payload event (ts=200) to advance marker
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('E2');
+      when(() => ev.roomId).thenReturn('!room:server');
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(200));
+      when(() => ev.senderId).thenReturn('@other:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => processor.process(event: ev, journalDb: journalDb))
+          .thenAnswer((_) async {});
+
+      when(() => timeline.events).thenReturn(<Event>[ev]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      var scanTriggered = 0;
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanTriggered++;
+      };
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // Allow the 100ms scheduled rescan to fire after advancement
+      async.elapse(const Duration(milliseconds: 200));
+      async.flushMicrotasks();
+
+      expect(scanTriggered, greaterThanOrEqualTo(1));
+    });
+  });
+
+  test('retriable failure schedules follow-up scan (hadFailure path)',
+      () async {
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      // One sync payload event that will throw during processing
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('E_fail');
+      when(() => ev.roomId).thenReturn('!room:server');
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(10));
+      when(() => ev.senderId).thenReturn('@other:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => processor.process(event: ev, journalDb: journalDb))
+          .thenThrow(Exception('boom'));
+
+      when(() => timeline.events).thenReturn(<Event>[ev]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      var scanTriggered = 0;
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanTriggered++;
+      };
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // Allow initial startup scan (80ms) and follow-up retry scan (>~200ms)
+      async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+
+      // Initial scan + at least one follow-up scheduled by hadFailure path
+      expect(scanTriggered, greaterThanOrEqualTo(2));
+      final snap = consumer.metricsSnapshot();
+      expect(snap['retriesScheduled'], greaterThanOrEqualTo(1));
+      expect(snap['failures'], greaterThanOrEqualTo(1));
+    });
+  });
+
   test('live timeline scan handles events getter exceptions gracefully',
       () async {
     fakeAsync((async) async {

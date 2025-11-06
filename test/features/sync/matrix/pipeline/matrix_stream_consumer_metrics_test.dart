@@ -68,8 +68,7 @@ void main() {
 
   test('recordConnectivitySignal increments signalConnectivity metric', () {
     final metrics = MetricsCounters(collect: true);
-    final snap = (buildConsumer(metrics: metrics)
-          ..recordConnectivitySignal())
+    final snap = (buildConsumer(metrics: metrics)..recordConnectivitySignal())
         .metricsSnapshot();
     expect(snap['signalConnectivity'], 1);
   });
