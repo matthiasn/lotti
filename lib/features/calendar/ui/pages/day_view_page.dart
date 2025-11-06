@@ -16,6 +16,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 const lowerLimit = 0.25;
 const upperLimit = 5.0;
+const kDefaultScrollAlignment = 0.3;
 
 class DayViewPage extends ConsumerStatefulWidget {
   const DayViewPage({
@@ -158,7 +159,7 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
                           taskFocusControllerProvider(id: linkedFrom.meta.id)
                               .notifier,
                         )
-                        .publishTaskFocus(entryId: id, alignment: 0.3);
+                        .publishTaskFocus(entryId: id, alignment: kDefaultScrollAlignment);
                     beamToNamed('/tasks/${linkedFrom.meta.id}');
                   } else {
                     // Publish journal focus intent before navigation
@@ -167,7 +168,7 @@ class _DayViewWidgetState extends ConsumerState<DayViewWidget> {
                           journalFocusControllerProvider(id: linkedFrom.meta.id)
                               .notifier,
                         )
-                        .publishJournalFocus(entryId: id, alignment: 0.3);
+                        .publishJournalFocus(entryId: id, alignment: kDefaultScrollAlignment);
                     beamToNamed('/journal/${linkedFrom.meta.id}');
                   }
                 } else {
