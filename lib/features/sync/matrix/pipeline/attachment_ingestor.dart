@@ -12,18 +12,14 @@ import 'package:matrix/matrix.dart';
 /// Purpose
 /// - Encapsulates first-pass attachment handling for the sync pipeline:
 ///   - Record descriptors into AttachmentIndex and emit observability logs
-///   - Observe/record attachment descriptors (image/audio/video metadata)
 ///   - Clear pending jsonPaths via [DescriptorCatchUpManager] and nudge scans
 ///
-/// This helper has no internal state; it operates on provided arguments and
-/// returns whether a media file was newly written.
+/// This helper has no internal state; it operates on provided arguments.
 class AttachmentIngestor {
   const AttachmentIngestor();
 
   /// Processes attachment-related behavior for an event.
-  ///
-  /// Returns `false` – this component does not download media.
-  Future<bool> process({
+  Future<void> process({
     required Event event,
     required LoggingService logging,
     required AttachmentIndex? attachmentIndex,
@@ -33,13 +29,11 @@ class AttachmentIngestor {
     required void Function() scheduleLiveScan,
     required Future<void> Function() retryNow,
   }) async {
-    const wroteMedia = false;
-
     // Record descriptors when present and emit a compact observability line.
     final rpAny = event.content['relativePath'];
     if (rpAny is String && rpAny.isNotEmpty) {
       attachmentIndex?.record(event);
-      // Prefetch metrics removed.
+      // Observability log for attachment-like events.
       try {
         final mime = event.attachmentMimetype;
         final content = event.content;
@@ -62,9 +56,6 @@ class AttachmentIngestor {
         await retryNow();
       }
     }
-    // Media downloading removed: do not download or write attachments here.
-    // Descriptor recording above is retained for fast local lookups.
-
-    return wroteMedia;
+    // No media downloads here.
   }
 }

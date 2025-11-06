@@ -46,7 +46,7 @@ void main() {
     final desc = MockDescriptorCatchUpManager();
     when(() => desc.removeIfPresent('/p/a.bin')).thenReturn(true);
 
-    final wrote = await const AttachmentIngestor().process(
+    await const AttachmentIngestor().process(
       event: ev,
       logging: logging,
       attachmentIndex: index,
@@ -56,8 +56,6 @@ void main() {
       scheduleLiveScan: () => liveScanCalls++,
       retryNow: () async => retryNowCalls++,
     );
-
-    expect(wrote, isFalse);
     // Prefetch metrics removed
     // Logs emitted
     verify(() => logging.captureEvent(
@@ -102,7 +100,7 @@ void main() {
     final desc = MockDescriptorCatchUpManager();
     when(() => desc.removeIfPresent('/media/x.jpg')).thenReturn(true);
 
-    final wrote = await const AttachmentIngestor().process(
+    await const AttachmentIngestor().process(
       event: ev,
       logging: logging,
       attachmentIndex: index,
@@ -112,8 +110,6 @@ void main() {
       scheduleLiveScan: () => liveScanCalls++,
       retryNow: () async {},
     );
-
-    expect(wrote, isFalse);
     expect(liveScanCalls, 1); // schedule on descriptor removal only
     expect(File('${tmp.path}/media/x.jpg').existsSync(), isFalse);
   });
