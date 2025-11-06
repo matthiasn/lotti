@@ -78,25 +78,24 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
       final key = _getEntryKey(entryId);
       final context = key.currentContext;
 
-      if (context != null) {
-        try {
+      try {
+        if (context != null) {
           await Scrollable.ensureVisible(
             context,
             alignment: alignment,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
-          onScrolled?.call();
-        } catch (e) {
-          // Log error if scrolling fails
-          debugPrint('Failed to scroll to entry $entryId: $e');
-          onScrolled?.call();
+        } else {
+          // Entry not found or not yet rendered
+          debugPrint(
+            'Entry $entryId not found in widget tree, skipping scroll',
+          );
         }
-      } else {
-        // Entry not found or not yet rendered
-        debugPrint(
-          'Entry $entryId not found in widget tree, skipping scroll',
-        );
+      } catch (e) {
+        // Log error if scrolling fails
+        debugPrint('Failed to scroll to entry $entryId: $e');
+      } finally {
         onScrolled?.call();
       }
     });
