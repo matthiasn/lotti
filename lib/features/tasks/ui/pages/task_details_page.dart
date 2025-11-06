@@ -68,29 +68,35 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
     );
   }
 
-  void _scrollToEntry(String entryId, double alignment) {
+  void _scrollToEntry(
+    String entryId,
+    double alignment, {
+    VoidCallback? onScrolled,
+  }) {
     // Schedule scroll after frame is built
-    SchedulerBinding.instance.addPostFrameCallback((_) {
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
       final key = _getEntryKey(entryId);
       final context = key.currentContext;
 
-      if (context != null) {
-        try {
-          Scrollable.ensureVisible(
+      try {
+        if (context != null) {
+          await Scrollable.ensureVisible(
             context,
             alignment: alignment,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
-        } catch (e) {
-          // Log error if scrolling fails
-          debugPrint('Failed to scroll to entry $entryId: $e');
+        } else {
+          // Entry not found or not yet rendered
+          debugPrint(
+            'Entry $entryId not found in widget tree, skipping scroll',
+          );
         }
-      } else {
-        // Entry not found or not yet rendered
-        debugPrint(
-          'Entry $entryId not found in widget tree, skipping scroll',
-        );
+      } catch (e) {
+        // Log error if scrolling fails
+        debugPrint('Failed to scroll to entry $entryId: $e');
+      } finally {
+        onScrolled?.call();
       }
     });
   }
@@ -99,26 +105,21 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
   Widget build(BuildContext context) {
     final focusProvider = taskFocusControllerProvider(id: widget.taskId);
 
-    // Listen for focus intent
-    ref.listen<TaskFocusIntent?>(
-      focusProvider,
-      (previous, next) {
-        if (next != null) {
-          _scrollToEntry(next.entryId, next.alignment);
-          // Clear intent after consumption
-          ref.read(focusProvider.notifier).clearIntent();
-        }
-      },
-    );
+    void handleFocus(TaskFocusIntent? intent) {
+      if (intent == null) return;
+      _scrollToEntry(
+        intent.entryId,
+        intent.alignment,
+        onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+      );
+    }
+
+    ref.listen<TaskFocusIntent?>(focusProvider, (_, next) => handleFocus(next));
 
     // Check for pre-existing intent on first build
-    final currentIntent = ref.read(focusProvider);
-    if (currentIntent != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToEntry(currentIntent.entryId, currentIntent.alignment);
-        ref.read(focusProvider.notifier).clearIntent();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      handleFocus(ref.read(focusProvider));
+    });
 
     final provider = entryControllerProvider(id: widget.taskId);
     final task = ref.watch(provider).value?.entry;

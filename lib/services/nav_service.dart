@@ -179,6 +179,13 @@ Future<String?> getIdFromSavedRoute() async {
   return regExp.firstMatch('$route')?.group(0);
 }
 
+// Global override for testing
+void Function(String)? beamToNamedOverride;
+
 void beamToNamed(String path, {Object? data}) {
+  if (beamToNamedOverride != null) {
+    beamToNamedOverride!(path);
+    return;
+  }
   getIt<NavService>().beamToNamed(path, data: data);
 }

@@ -1,10 +1,12 @@
 import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
+import 'package:lotti/features/calendar/state/calendar_event_handler.dart';
+import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/services/nav_service.dart';
 
 import '../../../../test_data/test_data.dart';
 
@@ -38,7 +40,12 @@ void main() {
     beamToNamedOverride = null;
   });
 
-  group('Calendar onEventTap logic tests', () {
+  group('Calendar event tap handler tests', () {
+    // Note: These tests verify the handleCalendarEventTap function which is
+    // called by DayViewPage's onEventTap callback. Testing at this level avoids
+    // the complexity of mocking the entire app infrastructure (GetIt, database,
+    // etc.) while still ensuring the core tap handling logic is correct.
+
     test('tapping calendar event with Task linkedFrom publishes task focus',
         () {
       // Use existing test data
@@ -60,30 +67,15 @@ void main() {
         ),
       ];
 
-      // Simulate onEventTap logic
-      final event = events.firstOrNull?.event;
-      final id = event?.entity.id;
-      final linkedFrom = event?.linkedFrom;
-
-      expect(id, equals(entryId));
-      expect(linkedFrom, isNotNull);
-      expect(linkedFrom, isA<Task>());
-
-      if (id != null && linkedFrom != null && linkedFrom is Task) {
-        // Publish task focus intent
-        container
-            .read(taskFocusControllerProvider(id: linkedFrom.meta.id).notifier)
-            .publishTaskFocus(entryId: id, alignment: 0.3);
-
-        mockNav.beamToNamed('/tasks/${linkedFrom.meta.id}');
-      }
+      // Call the handler function that DayViewPage uses
+      handleCalendarEventTap(events, DateTime.now(), container);
 
       // Verify task focus was published
       final taskFocusState =
           container.read(taskFocusControllerProvider(id: taskId));
       expect(taskFocusState, isNotNull);
       expect(taskFocusState!.entryId, equals(entryId));
-      expect(taskFocusState.alignment, equals(0.3));
+      expect(taskFocusState.alignment, equals(kDefaultScrollAlignment));
 
       // Verify navigation occurred
       expect(mockNav.navigationHistory, contains('/tasks/$taskId'));
@@ -111,32 +103,15 @@ void main() {
         ),
       ];
 
-      // Simulate onEventTap logic
-      final event = events.firstOrNull?.event;
-      final id = event?.entity.id;
-      final linkedFrom = event?.linkedFrom;
-
-      expect(id, equals(entryId));
-      expect(linkedFrom, isNotNull);
-      expect(linkedFrom, isA<JournalEntry>());
-
-      if (id != null && linkedFrom != null && linkedFrom is! Task) {
-        // Publish journal focus intent
-        container
-            .read(
-              journalFocusControllerProvider(id: linkedFrom.meta.id).notifier,
-            )
-            .publishJournalFocus(entryId: id, alignment: 0.3);
-
-        mockNav.beamToNamed('/journal/${linkedFrom.meta.id}');
-      }
+      // Call the handler function
+      handleCalendarEventTap(events, DateTime.now(), container);
 
       // Verify journal focus was published
       final journalFocusState =
           container.read(journalFocusControllerProvider(id: journalId));
       expect(journalFocusState, isNotNull);
       expect(journalFocusState!.entryId, equals(entryId));
-      expect(journalFocusState.alignment, equals(0.3));
+      expect(journalFocusState.alignment, equals(kDefaultScrollAlignment));
 
       // Verify navigation occurred
       expect(mockNav.navigationHistory, contains('/journal/$journalId'));
@@ -158,22 +133,8 @@ void main() {
         ),
       ];
 
-      // Simulate onEventTap logic
-      final event = events.firstOrNull?.event;
-      final id = event?.entity.id;
-      final linkedFrom = event?.linkedFrom;
-
-      expect(id, equals(entryId));
-      expect(linkedFrom, isNull);
-
-      if (id != null) {
-        if (linkedFrom != null) {
-          // This branch should not execute
-          fail('Should not publish focus when linkedFrom is null');
-        } else {
-          mockNav.beamToNamed('/journal/$id');
-        }
-      }
+      // Call the handler function
+      handleCalendarEventTap(events, DateTime.now(), container);
 
       // Verify no focus was published
       final taskFocusState =
@@ -215,25 +176,8 @@ void main() {
         ),
       ];
 
-      // Simulate onEventTap logic
-      final event = events.firstOrNull?.event;
-      final id = event?.entity.id;
-      final linkedFrom = event?.linkedFrom;
-
-      expect(id, equals(entryId));
-      expect(linkedFrom, isNotNull);
-      expect(linkedFrom, isA<WorkoutEntry>());
-
-      // WorkoutEntry should be treated as journal entry
-      if (id != null && linkedFrom != null && linkedFrom is! Task) {
-        container
-            .read(
-              journalFocusControllerProvider(id: linkedFrom.meta.id).notifier,
-            )
-            .publishJournalFocus(entryId: id, alignment: 0.3);
-
-        mockNav.beamToNamed('/journal/${linkedFrom.meta.id}');
-      }
+      // Call the handler function
+      handleCalendarEventTap(events, DateTime.now(), container);
 
       // Verify journal focus was published
       final journalFocusState =
@@ -248,10 +192,8 @@ void main() {
     test('handles empty events list gracefully', () {
       final events = <CalendarEventData<CalendarEvent>>[];
 
-      // Simulate onEventTap with empty events
-      final event = events.firstOrNull?.event;
-
-      expect(event, isNull);
+      // Call the handler function with empty events
+      handleCalendarEventTap(events, DateTime.now(), container);
 
       // Should not navigate or publish focus
       expect(mockNav.navigationHistory, isEmpty);
@@ -273,7 +215,10 @@ void main() {
       // First tap
       container
           .read(taskFocusControllerProvider(id: taskId).notifier)
-          .publishTaskFocus(entryId: entryId1, alignment: 0.3);
+          .publishTaskFocus(
+            entryId: entryId1,
+            alignment: kDefaultScrollAlignment,
+          );
 
       var focusState = container.read(taskFocusControllerProvider(id: taskId));
       expect(focusState?.entryId, equals(entryId1));
@@ -281,15 +226,13 @@ void main() {
       // Second tap
       container
           .read(taskFocusControllerProvider(id: taskId).notifier)
-          .publishTaskFocus(entryId: entryId2, alignment: 0.3);
+          .publishTaskFocus(
+            entryId: entryId2,
+            alignment: kDefaultScrollAlignment,
+          );
 
       focusState = container.read(taskFocusControllerProvider(id: taskId));
       expect(focusState?.entryId, equals(entryId2));
     });
   });
 }
-
-// Global override for beamToNamed for testing
-void Function(String)? beamToNamedOverride;
-
-// Override the actual beamToNamed function for testing
