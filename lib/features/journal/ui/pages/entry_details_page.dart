@@ -91,26 +91,18 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
   Widget build(BuildContext context) {
     final focusProvider = journalFocusControllerProvider(id: widget.itemId);
 
-    // Listen for focus intent
-    ref.listen<JournalFocusIntent?>(
-      focusProvider,
-      (previous, next) {
-        if (next != null) {
-          _scrollToEntry(next.entryId, next.alignment);
-          // Clear intent after consumption
-          ref.read(focusProvider.notifier).clearIntent();
-        }
-      },
-    );
+    void handleFocus(JournalFocusIntent? intent) {
+      if (intent == null) return;
+      _scrollToEntry(intent.entryId, intent.alignment);
+      ref.read(focusProvider.notifier).clearIntent();
+    }
+
+    ref.listen<JournalFocusIntent?>(focusProvider, (_, next) => handleFocus(next));
 
     // Check for pre-existing intent on first build
-    final currentIntent = ref.read(focusProvider);
-    if (currentIntent != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToEntry(currentIntent.entryId, currentIntent.alignment);
-        ref.read(focusProvider.notifier).clearIntent();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      handleFocus(ref.read(focusProvider));
+    });
 
     final provider = entryControllerProvider(id: widget.itemId);
     final item = ref.watch(provider).value?.entry;
