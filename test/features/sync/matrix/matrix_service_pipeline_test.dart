@@ -1,7 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fake_async/fake_async.dart';
@@ -121,7 +120,6 @@ void main() {
       readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
-      documentsDirectory: Directory.systemTemp,
       collectSyncMetrics: collectMetrics,
       roomManager: roomManager,
       sessionManager: sessionManager,

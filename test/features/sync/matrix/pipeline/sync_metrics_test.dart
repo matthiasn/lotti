@@ -31,7 +31,6 @@ void main() {
       processed: 2,
       skipped: 1,
       failures: 0,
-      prefetch: 3,
       flushes: 1,
       catchupBatches: 4,
       skippedByRetryLimit: 0,

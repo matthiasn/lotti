@@ -53,8 +53,7 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
               final stalePurges = diag['staleAttachmentPurges'] ?? '0';
               final ignoredCount =
                   int.tryParse(diag['lastIgnoredCount'] ?? '0') ?? 0;
-              final prefCount =
-                  int.tryParse(diag['lastPrefetchedCount'] ?? '0') ?? 0;
+              // Prefetch details removed.
               return Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -91,11 +90,7 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
                         Text(diag['lastIgnored.$i'] ?? ''),
                       const SizedBox(height: 6),
                     ],
-                    if (prefCount > 0) ...[
-                      const Text('Last Prefetched:'),
-                      for (var i = 1; i <= prefCount; i++)
-                        Text(diag['lastPrefetched.$i'] ?? ''),
-                    ],
+                    // Prefetch details removed.
                   ],
                 ),
               );

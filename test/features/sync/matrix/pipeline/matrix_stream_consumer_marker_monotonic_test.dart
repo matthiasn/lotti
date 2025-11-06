@@ -1,6 +1,4 @@
 // ignore_for_file: cascade_invocations, unnecessary_lambdas
-import 'dart:io';
-
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -111,7 +109,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );

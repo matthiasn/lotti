@@ -3,7 +3,6 @@ class SyncMetrics {
     required this.processed,
     required this.skipped,
     required this.failures,
-    required this.prefetch,
     required this.flushes,
     required this.catchupBatches,
     required this.skippedByRetryLimit,
@@ -49,7 +48,6 @@ class SyncMetrics {
       processed: (map['processed'] ?? 0) as int,
       skipped: (map['skipped'] ?? 0) as int,
       failures: (map['failures'] ?? 0) as int,
-      prefetch: (map['prefetch'] ?? 0) as int,
       flushes: (map['flushes'] ?? 0) as int,
       catchupBatches: (map['catchupBatches'] ?? 0) as int,
       skippedByRetryLimit: (map['skippedByRetryLimit'] ?? 0) as int,
@@ -81,7 +79,6 @@ class SyncMetrics {
   final int processed;
   final int skipped;
   final int failures;
-  final int prefetch;
   final int flushes;
   final int catchupBatches;
   final int skippedByRetryLimit;
@@ -114,7 +111,6 @@ class SyncMetrics {
         'processed': processed,
         'skipped': skipped,
         'failures': failures,
-        'prefetch': prefetch,
         'flushes': flushes,
         'catchupBatches': catchupBatches,
         'skippedByRetryLimit': skippedByRetryLimit,

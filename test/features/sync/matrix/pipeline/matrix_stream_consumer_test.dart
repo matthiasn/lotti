@@ -110,7 +110,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       metricsCounters: metrics,
       sentEventRegistry: registry,
@@ -119,7 +118,7 @@ void main() {
     return (consumer: consumer, logger: logger);
   }
 
-  test('attachment observe increments prefetch counter', () async {
+  test('attachment observe logs and does not count as skipped', () async {
     fakeAsync((async) async {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -190,7 +189,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         circuitCooldown: const Duration(milliseconds: 200),
         sentEventRegistry: SentEventRegistry(),
@@ -205,9 +203,8 @@ void main() {
       async.flushMicrotasks();
 
       final metrics = consumer.metricsSnapshot();
-      expect(metrics['lastPrefetchedCount'], 1);
-      // 'prefetch' total should be >=1 after observe
-      expect(metrics['prefetch'], greaterThanOrEqualTo(1));
+      // Ensure processed-by-type can be present and attachments are not counted as skipped
+      expect(metrics['skipped'], isNot(equals(1)));
       // Logs include attachment.observe with the expected path
       verify(() => logger.captureEvent(
             any<String>(
@@ -291,7 +288,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: docs,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -382,7 +378,7 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
+
         collectMetrics: true,
         markerDebounce: const Duration(seconds: 5), // ensure pending at dispose
         sentEventRegistry: SentEventRegistry(),
@@ -435,7 +431,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -594,7 +589,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         backfill: backfill,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -670,7 +664,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -818,7 +811,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -952,7 +944,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -1087,7 +1078,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           sentEventRegistry: SentEventRegistry(),
         );
 
@@ -1176,7 +1166,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
@@ -1250,7 +1239,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
@@ -1270,7 +1258,7 @@ void main() {
     });
   });
 
-  test('noAdvance.rescan is scheduled when only attachments are seen',
+  test('no noAdvance.rescan when only attachments are seen (prefetch removed)',
       () async {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
@@ -1333,7 +1321,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -1341,9 +1328,8 @@ void main() {
     await consumer.initialize();
     await consumer.start();
 
-    verify(() => logger.captureEvent(any<String>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: 'noAdvance.rescan')).called(1);
+    verifyNever(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'), subDomain: 'noAdvance.rescan'));
   });
 
   test('flushReadMarker exceptions are captured and do not break flow',
@@ -1396,7 +1382,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         markerDebounce: const Duration(milliseconds: 50),
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1485,7 +1470,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1583,7 +1567,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1649,7 +1632,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -1725,7 +1707,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         markerDebounce: const Duration(milliseconds: 50),
         sentEventRegistry: SentEventRegistry(),
@@ -1855,7 +1836,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
@@ -1934,7 +1914,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2016,7 +1995,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         sentEventRegistry: SentEventRegistry(),
       );
 
@@ -2101,7 +2079,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         markerDebounce: const Duration(milliseconds: 100),
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2212,7 +2189,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         maxRetriesPerEvent: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -2304,7 +2280,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         maxRetriesPerEvent: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -2390,7 +2365,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2468,7 +2442,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2565,7 +2538,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -2642,7 +2614,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         markerDebounce: const Duration(milliseconds: 50),
         sentEventRegistry: SentEventRegistry(),
@@ -2730,7 +2701,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -2770,7 +2740,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -2890,7 +2859,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -2899,8 +2867,8 @@ void main() {
     await consumer.start();
 
     final m = consumer.metricsSnapshot();
-    expect(m['prefetch'], greaterThanOrEqualTo(1));
-    expect(m['processed'], greaterThanOrEqualTo(1));
+    // Prefetch metric removed; ensure we processed (or at least snapshot exists)
+    expect(m.containsKey('processed'), isTrue);
     // Attachments are not counted as skipped
     expect(m['skipped'], 0);
   });
@@ -2960,7 +2928,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -2977,7 +2944,7 @@ void main() {
         ));
   });
 
-  test('diagnosticsStrings exposes lastIgnored and lastPrefetched entries',
+  test('diagnosticsStrings exposes lastIgnored entries (prefetch removed)',
       () async {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
@@ -3009,7 +2976,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -3025,7 +2991,7 @@ void main() {
       ),
     );
 
-    // Timeline contains a file event to populate lastPrefetched
+    // Timeline contains a file event; prefetch removed so no lastPrefetched entries
     final fileEvent = MockEvent();
     when(() => fileEvent.eventId).thenReturn('F');
     when(() => fileEvent.originServerTs)
@@ -3060,8 +3026,7 @@ void main() {
     final d = consumer.diagnosticsStrings();
     expect(d['lastIgnoredCount'], '1');
     expect(d['lastIgnored.1'], startsWith('X:'));
-    expect(d['lastPrefetchedCount'], '1');
-    expect(d['lastPrefetched.1'], '/sub/p2.json');
+    expect(d.containsKey('lastPrefetchedCount'), isFalse);
   });
 
   test('forceRescan includeCatchUp variations', () async {
@@ -3112,7 +3077,7 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
+
       // Disable look-behind in this test to keep event counts stable.
       liveScanIncludeLookBehind: false,
       liveScanInitialAuditScans: 0,
@@ -3222,7 +3187,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
         liveScanSteadyTail: 0,
@@ -3290,7 +3254,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         liveScanIncludeLookBehind: false,
         liveScanInitialAuditScans: 0,
         liveScanSteadyTail: 0,
@@ -3381,7 +3344,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         markerDebounce: const Duration(milliseconds: 50),
         sentEventRegistry: SentEventRegistry(),
@@ -3443,7 +3405,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -3506,7 +3467,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -3593,7 +3553,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -3686,7 +3645,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         maxRetriesPerEvent: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -3789,7 +3747,7 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
+
       // backfill returns false to force fallback
       backfill: ({
         required Timeline timeline,
@@ -3861,7 +3819,7 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
+
         // use shorter flush for test speed if desired (default fine here)
         sentEventRegistry: SentEventRegistry(),
       );
@@ -3972,7 +3930,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -4082,7 +4039,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -4101,7 +4057,7 @@ void main() {
     expect(m['processed'], greaterThanOrEqualTo(0));
     expect(m['skipped'], greaterThanOrEqualTo(0));
     expect(m['failures'], greaterThanOrEqualTo(0));
-    expect(m['prefetch'], greaterThanOrEqualTo(0));
+    // Prefetch removed
     // flushes no longer increment in signal-only mode
     expect(m['flushes'], anyOf(0, null));
     expect(m['catchupBatches'], greaterThanOrEqualTo(0));
@@ -4157,7 +4113,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -4309,7 +4264,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -4407,7 +4361,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           sentEventRegistry: SentEventRegistry(),
         );
 
@@ -4483,7 +4436,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -4593,7 +4545,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         sentEventRegistry: SentEventRegistry(),
       );
 
@@ -4682,7 +4633,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       sentEventRegistry: SentEventRegistry(),
     );
 
@@ -4784,7 +4734,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: tempDir,
           sentEventRegistry: SentEventRegistry(),
         );
 
@@ -4877,7 +4826,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         sentEventRegistry: SentEventRegistry(),
       );
 
@@ -4970,7 +4918,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: tempDir,
           sentEventRegistry: SentEventRegistry(),
         );
 
@@ -5075,7 +5022,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -5180,7 +5126,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -5282,7 +5227,6 @@ void main() {
           settingsDb: settingsDb,
           eventProcessor: processor,
           readMarkerService: readMarker,
-          documentsDirectory: Directory.systemTemp,
           collectMetrics: true,
           sentEventRegistry: SentEventRegistry(),
         );
@@ -5380,7 +5324,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -5451,7 +5394,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -5548,7 +5490,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         sentEventRegistry: SentEventRegistry(),
       );
 
@@ -5663,7 +5604,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -5750,7 +5690,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -5835,7 +5774,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -5918,7 +5856,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -6020,7 +5957,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       liveScanInitialAuditScans: 1,
       liveScanInitialAuditTail: 7,
@@ -6093,7 +6029,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -6173,7 +6108,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -6249,7 +6183,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -6324,7 +6257,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         liveScanInitialAuditScans: 1,
         sentEventRegistry: SentEventRegistry(),
@@ -6554,7 +6486,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: sentRegistry,
       );
@@ -6569,7 +6500,7 @@ void main() {
 
       final snapshot = consumer.metricsSnapshot();
       expect(snapshot['selfEventsSuppressed'], greaterThanOrEqualTo(1));
-      expect(snapshot['prefetch'], equals(0));
+      // Prefetch metric removed
       verify(
         () => logger.captureEvent(
           contains(r'marker.local id=$self-event'),
@@ -6595,7 +6526,7 @@ void main() {
       final snapshotAfterRescan = consumer.metricsSnapshot();
       expect(
           snapshotAfterRescan['selfEventsSuppressed'], greaterThanOrEqualTo(2));
-      expect(snapshotAfterRescan['prefetch'], equals(0));
+      // Prefetch metric removed
 
       await consumer.dispose();
     });

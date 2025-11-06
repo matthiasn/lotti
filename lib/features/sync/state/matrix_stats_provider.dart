@@ -36,7 +36,7 @@ final matrixSyncMetricsFutureProvider =
 });
 
 /// Copy-diagnostics text provider for additional runtime info not represented
-/// in SyncMetrics (e.g., lastIgnored, lastPrefetched, dbMissingBase when not
+/// in SyncMetrics (e.g., lastIgnored, dbMissingBase when not
 /// included in the typed model).
 final matrixDiagnosticsTextProvider = FutureProvider<String>((ref) async {
   final svc = ref.watch(matrixServiceProvider);

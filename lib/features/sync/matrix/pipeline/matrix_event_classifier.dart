@@ -2,8 +2,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_helpers.dart'
     as msh;
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
-import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
-import 'package:lotti/utils/platform.dart' show isTestEnv;
+// Platform toggle no longer needed here.
 import 'package:matrix/matrix.dart';
 
 class MatrixEventClassifier {
@@ -20,11 +19,7 @@ class MatrixEventClassifier {
     return msh.isLikelySyncPayloadEvent(e);
   }
 
-  /// Prefetch policy toggle: default enabled in tests, disabled in app.
-  static bool prefetchEnabled = isTestEnv;
-
-  static bool shouldPrefetchAttachment(Event e, String? userId) =>
-      prefetchEnabled && tu.shouldPrefetchAttachment(e, userId);
+  // Prefetch removed.
 
   static num timestamp(Event e) => TimelineEventOrdering.timestamp(e);
 }

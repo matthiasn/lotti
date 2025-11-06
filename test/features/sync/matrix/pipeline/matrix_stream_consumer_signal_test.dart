@@ -1,7 +1,6 @@
 // ignore_for_file: cascade_invocations
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,7 +83,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -177,7 +175,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -257,7 +254,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -368,7 +364,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -449,7 +444,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -521,7 +515,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -600,7 +593,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -667,7 +659,6 @@ void main() {
       settingsDb: settingsDb,
       eventProcessor: processor,
       readMarkerService: readMarker,
-      documentsDirectory: Directory.systemTemp,
       collectMetrics: true,
       sentEventRegistry: SentEventRegistry(),
     );
@@ -721,7 +712,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -808,7 +798,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -907,7 +896,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1015,7 +1003,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1099,7 +1086,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1212,7 +1198,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1316,7 +1301,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
@@ -1465,7 +1449,6 @@ void main() {
         settingsDb: settingsDb,
         eventProcessor: processor,
         readMarkerService: readMarker,
-        documentsDirectory: Directory.systemTemp,
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
