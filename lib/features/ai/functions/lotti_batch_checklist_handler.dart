@@ -6,7 +6,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
-import 'package:lotti/features/ai/utils/item_list_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -27,6 +26,7 @@ class LottiBatchChecklistHandler extends FunctionHandler {
 
   final Set<String> _createdDescriptions = {};
   final List<String> _successfulItems = [];
+  final List<Map<String, dynamic>> _createdDetails = [];
 
   @override
   String get functionName => 'add_multiple_checklist_items';
@@ -49,16 +49,7 @@ class LottiBatchChecklistHandler extends FunctionHandler {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
       final raw = args['items'];
 
-      List<String> items;
-      if (raw is List) {
-        items = raw
-            .whereType<Object>()
-            .map((e) => e.toString().trim())
-            .where((s) => s.isNotEmpty && s != 'null')
-            .toList();
-      } else if (raw is String && raw.trim().isNotEmpty) {
-        items = parseItemListString(raw);
-      } else {
+      if (raw is! List) {
         return FunctionCallResult(
           success: false,
           functionName: functionName,
@@ -67,32 +58,78 @@ class LottiBatchChecklistHandler extends FunctionHandler {
             'toolCallId': call.id,
             'taskId': task.id,
           },
-          error: 'Missing required field "items" or empty list',
+          error:
+              'Invalid or missing "items". Provide a JSON array of objects: {"items": [{"title": "...", "isChecked": false}] }',
         );
       }
 
-      if (items.isNotEmpty) {
+      // Sanitize and validate array-of-objects
+      final sanitized = <Map<String, dynamic>>[];
+      for (final entry in raw) {
+        if (entry is Map<String, dynamic>) {
+          final titleRaw = entry['title'];
+          final isCheckedRaw = entry['isChecked'];
+          if (titleRaw is String) {
+            final title = titleRaw.trim();
+            if (title.isNotEmpty && title.length <= 400) {
+              sanitized.add({
+                'title': title,
+                'isChecked': isCheckedRaw == true,
+              });
+            }
+          }
+        } else if (entry is String) {
+          // Reject arrays of strings to force contract
+          return FunctionCallResult(
+            success: false,
+            functionName: functionName,
+            arguments: call.function.arguments,
+            data: {
+              'toolCallId': call.id,
+              'taskId': task.id,
+            },
+            error:
+                'Each item must be an object with a title. Example: {"items": [{"title": "Buy milk"}] }',
+          );
+        }
+      }
+
+      if (sanitized.isEmpty) {
         return FunctionCallResult(
-          success: true,
+          success: false,
           functionName: functionName,
           arguments: call.function.arguments,
           data: {
-            'items': items,
             'toolCallId': call.id,
             'taskId': task.id,
           },
+          error:
+              'No valid items found. Provide non-empty titles (max 400 chars).',
+        );
+      }
+
+      if (sanitized.length > 20) {
+        return FunctionCallResult(
+          success: false,
+          functionName: functionName,
+          arguments: call.function.arguments,
+          data: {
+            'toolCallId': call.id,
+            'taskId': task.id,
+          },
+          error: 'Too many items: max 20 per call.',
         );
       }
 
       return FunctionCallResult(
-        success: false,
+        success: true,
         functionName: functionName,
         arguments: call.function.arguments,
         data: {
+          'items': sanitized,
           'toolCallId': call.id,
           'taskId': task.id,
         },
-        error: 'No valid items found in the list',
       );
     } catch (e) {
       return FunctionCallResult(
@@ -117,21 +154,18 @@ class LottiBatchChecklistHandler extends FunctionHandler {
   @override
   String? getDescription(FunctionCallResult result) {
     if (result.success) {
-      final items = result.data['items'] as List<String>?;
-      return items?.join(', ');
+      final items = result.data['items'] as List<dynamic>?;
+      if (items == null) return null;
+      final titles = items
+          .map((e) => e is Map<String, dynamic> ? e['title']?.toString() : null)
+          .whereType<String>()
+          .toList();
+      return titles.join(', ');
     }
     return null;
   }
 
-  @override
-  String createToolResponse(FunctionCallResult result) {
-    if (result.success) {
-      final items = result.data['items'] as List<String>;
-      return 'Ready to create ${items.length} checklist items: ${items.join(', ')}';
-    } else {
-      return 'Error processing checklist items: ${result.error}';
-    }
-  }
+  // Tool response is provided after creation at the end of processing
 
   @override
   String getRetryPrompt({
@@ -141,13 +175,10 @@ class LottiBatchChecklistHandler extends FunctionHandler {
     return '''
 I noticed an error in your function call.
 
-Preferred format for multiple items:
-{"items": ["item1", "item2", "item3"]}
-
-Fallback format (if arrays are not supported):
-{"items": "item1, item2, item3"}
-- If an item contains a comma, escape it with \\, or wrap the item in quotes.
-- Commas inside parentheses/brackets/braces belong to the item and should not split it.
+Required format for multiple items (array of objects):
+{"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3", "isChecked": true}]}
+ - Always use objects with a title (max 400 chars); optional isChecked true if explicitly done.
+ - Do NOT send a comma-separated string or an array of strings.
 
 You already successfully created these checklist items: ${successfulDescriptions.join(', ')}
 
@@ -155,18 +186,14 @@ Do NOT recreate the items that were already successful.''';
   }
 
   /// Create all items from the batch
-  Future<int> createBatchItems(FunctionCallResult result,
-      {Set<String>? existingDescriptions}) async {
+  Future<int> createBatchItems(FunctionCallResult result) async {
     if (!result.success) return 0;
 
-    final items = result.data['items'] as List<String>;
+    final items = (result.data['items'] as List<dynamic>)
+        .whereType<Map<String, dynamic>>()
+        .toList();
     var successCount = 0;
-
-    // Merge with any existing descriptions to prevent duplicates
-    if (existingDescriptions != null) {
-      _createdDescriptions
-          .addAll(existingDescriptions.map((d) => d.toLowerCase().trim()));
-    }
+    _createdDetails.clear();
 
     try {
       // Get current task state
@@ -181,22 +208,15 @@ Do NOT recreate the items that were already successful.''';
       final checklistIds = currentTask.data.checklistIds ?? [];
 
       if (checklistIds.isEmpty) {
-        // Create a new "TODOs" checklist with all items
-        final seenInBatch = <String>{};
-        final checklistItems = <ChecklistItemData>[];
-
-        for (final desc in items) {
-          final normalized = desc.toLowerCase().trim();
-          if (!_createdDescriptions.contains(normalized) &&
-              !seenInBatch.contains(normalized)) {
-            seenInBatch.add(normalized);
-            checklistItems.add(ChecklistItemData(
-              title: desc,
-              isChecked: false,
+        // Create a new "TODOs" checklist with all items (preserve order)
+        final checklistItems = <ChecklistItemData>[
+          for (final item in items)
+            ChecklistItemData(
+              title: item['title'] as String,
+              isChecked: (item['isChecked'] as bool?) ?? false,
               linkedChecklists: [],
-            ));
-          }
-        }
+            )
+        ];
 
         if (checklistItems.isNotEmpty) {
           final createResult = await autoChecklistService.autoCreateChecklist(
@@ -207,9 +227,25 @@ Do NOT recreate the items that were already successful.''';
 
           if (createResult.success) {
             successCount = checklistItems.length;
-            for (final item in checklistItems) {
-              _successfulItems.add(item.title);
-              _createdDescriptions.add(item.title.toLowerCase().trim());
+            // Fetch the newly created checklist to get item IDs
+            final createdChecklist =
+                await journalDb.journalEntityById(createResult.checklistId!);
+            var createdIds = <String>[];
+            if (createdChecklist is Checklist) {
+              createdIds = createdChecklist.data.linkedChecklistItems;
+            }
+            // Map by order (repository preserves insertion order)
+            for (var i = 0; i < checklistItems.length; i++) {
+              final title = checklistItems[i].title;
+              final isChecked = checklistItems[i].isChecked;
+              final id = i < createdIds.length ? createdIds[i] : '';
+              _successfulItems.add(title);
+              _createdDescriptions.add(title.toLowerCase().trim());
+              _createdDetails.add({
+                'id': id,
+                'title': title,
+                'isChecked': isChecked,
+              });
             }
 
             // Refresh the task after creating checklist
@@ -224,26 +260,27 @@ Do NOT recreate the items that were already successful.''';
       } else {
         // Add items to the first existing checklist
         final checklistId = checklistIds.first;
-        final seenInBatch = <String>{};
 
-        for (final desc in items) {
-          final normalized = desc.toLowerCase().trim();
-          if (!_createdDescriptions.contains(normalized) &&
-              !seenInBatch.contains(normalized)) {
-            seenInBatch.add(normalized);
+        for (final item in items) {
+          final title = item['title'] as String;
+          final isChecked = (item['isChecked'] as bool?) ?? false;
 
-            final newItem = await checklistRepository.addItemToChecklist(
-              checklistId: checklistId,
-              title: desc,
-              isChecked: false,
-              categoryId: currentTask.meta.categoryId,
-            );
+          final newItem = await checklistRepository.addItemToChecklist(
+            checklistId: checklistId,
+            title: title,
+            isChecked: isChecked,
+            categoryId: currentTask.meta.categoryId,
+          );
 
-            if (newItem != null) {
-              successCount++;
-              _successfulItems.add(desc);
-              _createdDescriptions.add(normalized);
-            }
+          if (newItem != null) {
+            successCount++;
+            _successfulItems.add(title);
+            _createdDescriptions.add(title.toLowerCase().trim());
+            _createdDetails.add({
+              'id': newItem.id,
+              'title': title,
+              'isChecked': isChecked,
+            });
           }
         }
 
@@ -282,5 +319,14 @@ Do NOT recreate the items that were already successful.''';
   void reset() {
     _createdDescriptions.clear();
     _successfulItems.clear();
+    _createdDetails.clear();
+  }
+
+  @override
+  String createToolResponse(FunctionCallResult result) {
+    if (result.success) {
+      return jsonEncode({'createdItems': _createdDetails});
+    }
+    return 'Error creating checklist items: ${result.error}';
   }
 }

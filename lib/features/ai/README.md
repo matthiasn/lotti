@@ -105,14 +105,13 @@ The repository layer has been refactored for better separation of concerns:
 #### Functions (`functions/`)
 - **`checklist_completion_functions.dart`**: OpenAI-style function definitions for checklist operations
   - `suggest_checklist_completion`: Suggests items that appear completed
-  - `add_checklist_item`: Adds new items to checklists
+  - `add_multiple_checklist_items`: Adds one or more items to checklists via an array of objects `{ title, isChecked? }`
 - **`task_functions.dart`**: Function definitions for task operations
   - `set_task_language`: Automatically detects and sets task language
 - **`lotti_conversation_processor.dart`**: Conversation-based processing for better batching
   - Handles multiple checklist items efficiently
   - Provides error recovery and retry mechanisms
   - Supports batch operations with `add_multiple_checklist_items`
-- **`lotti_checklist_handler.dart`**: Single checklist item creation handler
 - **`lotti_batch_checklist_handler.dart`**: Batch checklist item creation handler
 - **`function_handler.dart`**: Abstract base class for extensible function handling
   - Provides common interface for processing function calls

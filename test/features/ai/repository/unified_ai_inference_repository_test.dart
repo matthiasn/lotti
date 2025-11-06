@@ -415,12 +415,11 @@ void main() {
           ),
         );
 
-        // Verify tools passed exclude multi-item
+        // Verify tools passed include multi-item (array-only)
         final names =
             (capturedTools ?? []).map((t) => t.function.name).toList();
-        expect(names, contains('add_checklist_item'));
+        expect(names, contains('add_multiple_checklist_items'));
         expect(names, contains('suggest_checklist_completion'));
-        expect(names, isNot(contains('add_multiple_checklist_items')));
 
         // Verify log line includes provider/model and tool list
         final logged = logs.join('\n');
@@ -428,7 +427,7 @@ void main() {
         expect(logged, contains('Checklist tools:'));
         expect(logged, contains('provider=InferenceProviderType.openAi'));
         expect(logged, contains('model=gpt-4'));
-        expect(logged, isNot(contains('add_multiple_checklist_items')));
+        expect(logged, contains('add_multiple_checklist_items'));
       });
 
       test('legacy task path logs tool list without multi-item', () async {
@@ -517,7 +516,7 @@ void main() {
         final logged = logs.join('\n');
         expect(
             logged, contains('Including checklist completion and task tools'));
-        expect(logged, isNot(contains('add_multiple_checklist_items')));
+        expect(logged, contains('add_multiple_checklist_items'));
       });
 
       test('conversation path logs OpenAI tools without multi-item', () async {
@@ -607,7 +606,7 @@ void main() {
 
         final logged = logs.join('\n');
         expect(logged, contains('Conversation tool set. Checklist tools:'));
-        expect(logged, isNot(contains('add_multiple_checklist_items')));
+        expect(logged, contains('add_multiple_checklist_items'));
       });
     });
     group('getActivePromptsForContext', () {
@@ -5419,7 +5418,7 @@ Take into account the following task context:
       when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
           .thenAnswer((_) async => '{"task": "details"}');
 
-      // Stream with one tool call using string fallback that includes grouped comma
+      // Stream with one tool call using array-of-objects; grouped comma stays within title
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
             ..add(_createStreamChunkWithToolCalls([
@@ -5428,7 +5427,7 @@ Take into account the following task context:
                 id: 'call-1',
                 functionName: 'add_multiple_checklist_items',
                 arguments:
-                    '{"items": "Start database (index cache, warm), Verify"}',
+                    '{"items": [{"title": "Start database (index cache, warm)"}, {"title": "Verify"}]}',
               ),
             ]))
             ..add(_createStreamChunk('Done'))
@@ -5536,15 +5535,15 @@ Take into account the following task context:
             error: null,
           ));
 
-      // Create stream with add_checklist_item tool call
+      // Create stream with add_multiple_checklist_items tool call
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
             ..add(_createStreamChunkWithToolCalls([
               _createMockToolCall(
                 index: 0,
                 id: 'call-1',
-                functionName: 'add_checklist_item',
-                arguments: '{"actionItemDescription":"Review documentation"}',
+                functionName: 'add_multiple_checklist_items',
+                arguments: '{"items": [{"title": "Review documentation"}]}',
               ),
             ]))
             ..add(_createStreamChunk('Task analysis complete'))
@@ -5652,15 +5651,15 @@ Take into account the following task context:
             categoryId: taskEntity.meta.categoryId,
           )).thenAnswer((_) async => newChecklistItem);
 
-      // Create stream with add_checklist_item tool call
+      // Create stream with add_multiple_checklist_items tool call
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
             ..add(_createStreamChunkWithToolCalls([
               _createMockToolCall(
                 index: 0,
                 id: 'call-1',
-                functionName: 'add_checklist_item',
-                arguments: '{"actionItemDescription":"New checklist item"}',
+                functionName: 'add_multiple_checklist_items',
+                arguments: '{"items": [{"title": "New checklist item"}]}',
               ),
             ]))
             ..add(_createStreamChunk('Task analysis complete'))
@@ -5696,7 +5695,7 @@ Take into account the following task context:
     });
 
     test(
-        'creates only one checklist when processing multiple add_checklist_item calls',
+        'creates only one checklist when processing a single batch multi-item call',
         () async {
       final taskEntity = Task(
         meta: _createMetadata(),
@@ -5778,27 +5777,28 @@ Take into account the following task context:
             ),
           ));
 
-      // Create stream with multiple add_checklist_item tool calls
+      // Create stream with a single add_multiple_checklist_items tool call containing multiple items
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
             ..add(_createStreamChunkWithToolCalls([
               _createMockToolCall(
                 index: 0,
                 id: 'call-1',
-                functionName: 'add_checklist_item',
-                arguments: '{"actionItemDescription":"First item"}',
+                functionName: 'add_multiple_checklist_items',
+                arguments:
+                    '{"items": [{"title": "First item"}, {"title": "Second item"}, {"title": "Third item"}]}',
               ),
               _createMockToolCall(
                 index: 1,
                 id: 'call-2',
-                functionName: 'add_checklist_item',
-                arguments: '{"actionItemDescription":"Second item"}',
+                functionName: 'add_multiple_checklist_items',
+                arguments: '{"items": [{"title": "noop"}]}',
               ),
               _createMockToolCall(
                 index: 2,
                 id: 'call-3',
-                functionName: 'add_checklist_item',
-                arguments: '{"actionItemDescription":"Third item"}',
+                functionName: 'add_multiple_checklist_items',
+                arguments: '{"items": [{"title": "noop2"}]}',
               ),
             ]))
             ..add(_createStreamChunk('Task analysis complete'))
@@ -6382,7 +6382,7 @@ Take into account the following task context:
                       type:
                           ChatCompletionStreamMessageToolCallChunkType.function,
                       function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'add_checklist_item',
+                        name: 'add_multiple_checklist_items',
                         arguments: '{"title":',
                       ),
                     ),
@@ -6424,7 +6424,7 @@ Take into account the following task context:
       await inferenceFuture;
 
       // Verify that tool calls were processed
-      // In real implementation, this would have processed the add_checklist_item tool call
+      // In real implementation, this would have processed the add_multiple_checklist_items tool call
     });
 
     test('handles tool call with no ID but with function name', () async {
@@ -6494,7 +6494,7 @@ Take into account the following task context:
                     type: ChatCompletionStreamMessageToolCallChunkType.function,
                     function: ChatCompletionStreamMessageFunctionCall(
                       name:
-                          'add_checklist_item', // Has name - indicates new tool call
+                          'add_multiple_checklist_items', // Has name - indicates new tool call
                       arguments: '{"title": "Item with name but no ID"}',
                     ),
                   ),
@@ -6511,7 +6511,7 @@ Take into account the following task context:
       await inferenceFuture;
 
       // Verify that tool call was processed
-      // In real implementation, this would have processed the add_checklist_item tool call
+      // In real implementation, this would have processed the add_multiple_checklist_items tool call
     });
 
     test('handles provider not found error properly', () async {

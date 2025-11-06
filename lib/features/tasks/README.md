@@ -280,7 +280,7 @@ The AI-powered checklist features consist of:
 
 1. **ChecklistCompletionFunctions**: Defines OpenAI-compatible functions:
    - `suggest_checklist_completion`: For marking items as complete
-   - `add_checklist_item`: For creating new checklist items
+   - `add_multiple_checklist_items`: Create one or more checklist items in a single call using an array of objects: `{ "items": [{"title": "...", "isChecked": true?}] }`
 2. **ChecklistCompletionService**: Manages suggestion state and notifications
 3. **ChecklistItemWithSuggestionWidget**: Provides visual indication and interaction
 4. **UnifiedAiInferenceRepository**: Processes tool calls and handles:

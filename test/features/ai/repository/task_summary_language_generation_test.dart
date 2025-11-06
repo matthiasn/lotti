@@ -68,7 +68,7 @@ void main() {
       );
       expect(
         checklistUpdatesPrompt.systemMessage,
-        contains('add_checklist_item'),
+        contains('add_multiple_checklist_items'),
       );
     });
 
