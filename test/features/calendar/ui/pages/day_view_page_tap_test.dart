@@ -40,7 +40,12 @@ void main() {
     beamToNamedOverride = null;
   });
 
-  group('Calendar onEventTap logic tests', () {
+  group('Calendar event tap handler tests', () {
+    // Note: These tests verify the handleCalendarEventTap function which is
+    // called by DayViewPage's onEventTap callback. Testing at this level avoids
+    // the complexity of mocking the entire app infrastructure (GetIt, database,
+    // etc.) while still ensuring the core tap handling logic is correct.
+
     test('tapping calendar event with Task linkedFrom publishes task focus',
         () {
       // Use existing test data
@@ -62,7 +67,7 @@ void main() {
         ),
       ];
 
-      // Call the handler function
+      // Call the handler function that DayViewPage uses
       handleCalendarEventTap(events, DateTime.now(), container);
 
       // Verify task focus was published

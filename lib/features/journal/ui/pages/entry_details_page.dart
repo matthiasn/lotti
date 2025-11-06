@@ -105,7 +105,8 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
       );
     }
 
-    ref.listen<JournalFocusIntent?>(focusProvider, (_, next) => handleFocus(next));
+    ref.listen<JournalFocusIntent?>(
+        focusProvider, (_, next) => handleFocus(next));
 
     // Check for pre-existing intent on first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
