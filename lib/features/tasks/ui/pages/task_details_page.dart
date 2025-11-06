@@ -90,12 +90,14 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
         } catch (e) {
           // Log error if scrolling fails
           debugPrint('Failed to scroll to entry $entryId: $e');
+          onScrolled?.call();
         }
       } else {
         // Entry not found or not yet rendered
         debugPrint(
           'Entry $entryId not found in widget tree, skipping scroll',
         );
+        onScrolled?.call();
       }
     });
   }
