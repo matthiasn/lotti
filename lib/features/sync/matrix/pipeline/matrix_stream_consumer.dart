@@ -216,9 +216,6 @@ class MatrixStreamConsumer implements SyncPipeline {
   final MetricsCounters _metrics;
   // Descriptor-focused catch-up helper (manages pending jsonPaths)
   DescriptorCatchUpManager? _descriptorCatchUp;
-  DateTime? _lastAttachmentOnlyRescanAt;
-  static const Duration _minAttachmentOnlyRescanGap =
-      Duration(milliseconds: 500);
   static const int _liveScanTailLimit = 30;
   // Live-scan look-behind policy. Can be tuned via constructor (test seams).
   final bool _liveScanIncludeLookBehind;
@@ -1092,8 +1089,6 @@ class MatrixStreamConsumer implements SyncPipeline {
         event: e,
         logging: _loggingService,
         attachmentIndex: _attachmentIndex,
-        collectMetrics: _collectMetrics,
-        metrics: _metrics,
         descriptorCatchUp: _descriptorCatchUp,
         scheduleLiveScan: _scheduleLiveScan,
         retryNow: retryNow,
@@ -1305,37 +1300,17 @@ class MatrixStreamConsumer implements SyncPipeline {
     } else if (latestEventId == null && (syncPayloadEventsSeen > 0)) {
       // Defensive: if we saw activity but could not advance and had no explicit
       // failures, schedule a small tail rescan to catch ordering edge-cases.
-      if (syncPayloadEventsSeen == 0) {
-        final now = clock.now();
-        final last = _lastAttachmentOnlyRescanAt;
-        if (last == null ||
-            now.difference(last) >= _minAttachmentOnlyRescanGap) {
-          _lastAttachmentOnlyRescanAt = now;
-          if (_collectMetrics) {
-            _loggingService.captureEvent(
-              'no advancement; scheduling tail rescan (syncEvents=$syncPayloadEventsSeen)',
-              domain: syncLoggingDomain,
-              subDomain: 'noAdvance.rescan',
-            );
-          }
-          _liveScanTimer?.cancel();
-          _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
-            unawaited(_scanLiveTimeline());
-          });
-        }
-      } else {
-        if (_collectMetrics) {
-          _loggingService.captureEvent(
-            'no advancement; scheduling tail rescan (syncEvents=$syncPayloadEventsSeen)',
-            domain: syncLoggingDomain,
-            subDomain: 'noAdvance.rescan',
-          );
-        }
-        _liveScanTimer?.cancel();
-        _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
-          unawaited(_scanLiveTimeline());
-        });
+      if (_collectMetrics) {
+        _loggingService.captureEvent(
+          'no advancement; scheduling tail rescan (syncEvents=$syncPayloadEventsSeen)',
+          domain: syncLoggingDomain,
+          subDomain: 'noAdvance.rescan',
+        );
       }
+      _liveScanTimer?.cancel();
+      _liveScanTimer = Timer(const Duration(milliseconds: 150), () {
+        unawaited(_scanLiveTimeline());
+      });
     }
 
     // No double-scan scheduling required.
@@ -1462,7 +1437,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     for (var i = 0; i < _metrics.lastIgnored.length; i++) {
       map['lastIgnored.${i + 1}'] = _metrics.lastIgnored[i];
     }
-    // Prefetch details removed.
     return map;
   }
 

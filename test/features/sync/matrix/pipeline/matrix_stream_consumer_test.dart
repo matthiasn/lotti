@@ -203,8 +203,8 @@ void main() {
       async.flushMicrotasks();
 
       final metrics = consumer.metricsSnapshot();
-      // Ensure processed-by-type can be present and attachments are not counted as skipped
-      expect(metrics['skipped'], isNot(equals(1)));
+      // Attachments are not counted as skipped
+      expect(metrics['skipped'], equals(0));
       // Logs include attachment.observe with the expected path
       verify(() => logger.captureEvent(
             any<String>(
@@ -861,9 +861,8 @@ void main() {
         async.elapse(const Duration(milliseconds: 130));
         async.flushMicrotasks();
 
-        // No prefetch increments because both attachments were older than cutoff
-        final m = consumer.metricsSnapshot();
-        expect(m['prefetch'], 0);
+        // Descriptor-only model: no prefetch metrics asserted here
+        consumer.metricsSnapshot();
       });
     });
     test(
@@ -979,8 +978,7 @@ void main() {
         async.elapse(const Duration(milliseconds: 160));
         async.flushMicrotasks();
 
-        var m = consumer.metricsSnapshot();
-        expect(m['prefetch'], 0);
+        consumer.metricsSnapshot();
 
         // 3) Newer attachment (ts=9901) within 2s margin should be observed
         final newAtt = MockEvent();
@@ -996,8 +994,7 @@ void main() {
         async.elapse(const Duration(milliseconds: 160));
         async.flushMicrotasks();
 
-        m = consumer.metricsSnapshot();
-        expect(m['prefetch'], 1);
+        consumer.metricsSnapshot();
       });
     });
     test('in-flight guard suppresses duplicate apply across paths (fakeAsync)',
@@ -1330,6 +1327,111 @@ void main() {
 
     verifyNever(() => logger.captureEvent(any<String>(),
         domain: any<String>(named: 'domain'), subDomain: 'noAdvance.rescan'));
+  });
+
+  test('schedules noAdvance.rescan when sync payload is older (no advance)',
+      () async {
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      // Seed a lastProcessed marker newer than the incoming event
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'L');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+          .thenAnswer((_) async => '200');
+
+      // Older sync payload event (ts=100) so marker will not advance
+      final oldSync = MockEvent();
+      when(() => oldSync.eventId).thenReturn('E');
+      when(() => oldSync.roomId).thenReturn('!room:server');
+      when(() => oldSync.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+      when(() => oldSync.senderId).thenReturn('@other:server');
+      when(() => oldSync.attachmentMimetype).thenReturn('');
+      when(() => oldSync.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+
+      when(() => timeline.events).thenReturn(<Event>[oldSync]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      when(() => processor.process(event: oldSync, journalDb: journalDb))
+          .thenAnswer((_) async {});
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+          )).thenAnswer((_) async {});
+
+      when(() => logger.captureEvent(
+            any<String>(
+                that: contains('no advancement; scheduling tail rescan')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'noAdvance.rescan',
+          )).thenReturn(null);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      // Capture that the scheduled tail rescan actually triggers a scan
+      var scanTriggered = 0;
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanTriggered++;
+      };
+
+      await consumer.initialize();
+      await consumer.start();
+      // Allow the live scan and scheduled tail rescan to occur
+      async.elapse(const Duration(milliseconds: 200));
+      async.flushMicrotasks();
+
+      verify(() => logger.captureEvent(
+            any<String>(
+                that: contains('no advancement; scheduling tail rescan')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'noAdvance.rescan',
+          )).called(greaterThanOrEqualTo(1));
+
+      // Ensure the scheduled timer executed and invoked the scan
+      expect(scanTriggered, greaterThanOrEqualTo(1));
+    });
   });
 
   test('flushReadMarker exceptions are captured and do not break flow',
@@ -1776,7 +1878,6 @@ void main() {
       // Processor should have been invoked a second time and succeeded
       expect(calls, greaterThanOrEqualTo(2));
       final m1 = consumer.metricsSnapshot();
-      expect(m1['lastPrefetchedCount'], greaterThanOrEqualTo(1));
       // Pending cleared returns to 0
       expect(m1['pendingJsonPaths'], 0);
       // Logs include attachment.observe for the descriptor

@@ -65,9 +65,10 @@ that keeps the pipeline testable and observable.
     scheduling failure, the consumer falls back to `forceRescan()`.
   - Marker advancement happens only from ordered slices returned by
     catch-up/live scans, never directly from the client stream.
-  - Live streaming is micro-batched and ordered chronologically with
-    de-duplication by event ID; attachment descriptors are observed before invoking
-    `SyncEventProcessor` so text payloads arrive with their media ready.
+- Live streaming is micro-batched and ordered chronologically with
+    de-duplication by event ID; attachment descriptors are observed and recorded before invoking
+    `SyncEventProcessor`. Media is not downloaded here; retrieval happens later via separate
+    download paths or on-demand processing.
   - Read markers advance monotonically using Matrix timestamps with event IDs as
     tie-breakers. The consumer persists the newest processed ID through
     `SyncReadMarkerService` so fresh sessions resume from the correct position.
@@ -138,7 +139,6 @@ The stream-first consumer replaces the legacy multi-pass drain:
 - Micro-batches: orders oldest→newest with in-batch de-duplication by event ID.
 - Self-event suppression: consumes locally produced event IDs from `SentEventRegistry` so echoed payloads advance the marker without redundant database or attachment work; suppression counters and logs surface in the pipeline so Matrix Stats reflects the saved work.
 - Attachment descriptors only; descriptors are recorded to speed up local resolution.
-  before processing to ensure files exist when applying JSON.
 - Marker advancement: monotonic by server timestamp with eventId tie-breaker;
   remote updates are guarded to avoid downgrades.
 - Rescans: schedules a tail rescan on activity without advancement, and after
@@ -260,9 +260,7 @@ Key helpers:
   - Initial catch-up is retried with exponential backoff and gives up after
     roughly 15 minutes; logs will indicate `catchup.timeout`.
 - Reliability safeguards
-  - Streaming micro-batches are ordered oldest→newest.
-    before processing. Retries apply exponential backoff with TTL and a size cap;
-    a circuit breaker opens after sustained failures to prevent thrash.
+  - Streaming micro-batches are ordered oldest→newest. Retries apply exponential backoff with TTL and a size cap; a circuit breaker opens after sustained failures to prevent thrash.
   - Read-marker advancement is sync-payload only (or valid fallback-decoded JSON)
     to avoid silently skipping payloads when non-sync events arrive late.
   - A heartbeat rescan (every 5s) runs; if the last marker isn’t in the live

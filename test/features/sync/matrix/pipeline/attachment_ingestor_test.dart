@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
-import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -40,7 +39,6 @@ void main() {
     when(() => ev.senderId).thenReturn('@other:u');
 
     final index = AttachmentIndex(logging: logging);
-    final metrics = MetricsCounters(collect: true);
     var liveScanCalls = 0;
     var retryNowCalls = 0;
     final desc = MockDescriptorCatchUpManager();
@@ -50,8 +48,6 @@ void main() {
       event: ev,
       logging: logging,
       attachmentIndex: index,
-      collectMetrics: true,
-      metrics: metrics,
       descriptorCatchUp: desc,
       scheduleLiveScan: () => liveScanCalls++,
       retryNow: () async => retryNowCalls++,
@@ -95,7 +91,6 @@ void main() {
     // No media prefetch: any SDK download paths are unused
 
     final index = AttachmentIndex(logging: logging);
-    final metrics = MetricsCounters();
     var liveScanCalls = 0;
     final desc = MockDescriptorCatchUpManager();
     when(() => desc.removeIfPresent('/media/x.jpg')).thenReturn(true);
@@ -104,8 +99,6 @@ void main() {
       event: ev,
       logging: logging,
       attachmentIndex: index,
-      collectMetrics: false,
-      metrics: metrics,
       descriptorCatchUp: desc,
       scheduleLiveScan: () => liveScanCalls++,
       retryNow: () async {},
@@ -123,7 +116,6 @@ void main() {
     when(() => ev.senderId).thenReturn('@other:u');
 
     final index = AttachmentIndex();
-    final metrics = MetricsCounters(collect: true);
     var liveScanCalls = 0;
     var retryNowCalls = 0;
     final desc = MockDescriptorCatchUpManager();
@@ -133,8 +125,6 @@ void main() {
       event: ev,
       logging: logging,
       attachmentIndex: index,
-      collectMetrics: true,
-      metrics: metrics,
       descriptorCatchUp: desc,
       scheduleLiveScan: () => liveScanCalls++,
       retryNow: () async => retryNowCalls++,

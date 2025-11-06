@@ -1,9 +1,8 @@
-// Descriptor observation only; no filesystem access here.
+// Records attachment descriptors; no filesystem access here.
 
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
-import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -23,8 +22,6 @@ class AttachmentIngestor {
     required Event event,
     required LoggingService logging,
     required AttachmentIndex? attachmentIndex,
-    required bool collectMetrics,
-    required MetricsCounters metrics,
     required DescriptorCatchUpManager? descriptorCatchUp,
     required void Function() scheduleLiveScan,
     required Future<void> Function() retryNow,
