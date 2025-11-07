@@ -24,7 +24,8 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
   /// The currently highlighted entry ID (used for temporary scroll highlights)
   String? get highlightedEntryId => _highlightedEntryId;
 
-  /// Set the highlighted entry ID (typically not called directly - use scrollToEntry)
+  /// Set the highlighted entry ID (for testing purposes only - use scrollToEntry in production code)
+  @visibleForTesting
   set highlightedEntryId(String? value) => _highlightedEntryId = value;
 
   /// Disposes of highlight-related resources. Call this from your widget's dispose().
