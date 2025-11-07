@@ -188,5 +188,4 @@ void main() {
       expect(highlightedEntryId, equals('test'));
     });
   });
-
 }

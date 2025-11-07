@@ -33,8 +33,8 @@ class FakeTimeService extends TimeService {
     _controller.add(entity);
   }
 
-  void dispose() {
-    _controller.close();
+  Future<void> dispose() async {
+    await _controller.close();
   }
 }
 
@@ -122,9 +122,9 @@ void main() {
           .thenAnswer((_) async => []);
     });
 
-    tearDown(() {
-      fakeTimeService.dispose();
-      getIt.reset();
+    tearDown(() async {
+      await fakeTimeService.dispose();
+      await getIt.reset();
     });
 
     test('TimeService stream emits null when no timer running', () async {
