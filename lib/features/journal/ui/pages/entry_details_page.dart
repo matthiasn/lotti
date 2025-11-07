@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -10,11 +7,12 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
+import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
@@ -22,7 +20,6 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/services/time_service.dart';
 
 class EntryDetailsPage extends ConsumerStatefulWidget {
   const EntryDetailsPage({
@@ -36,12 +33,10 @@ class EntryDetailsPage extends ConsumerStatefulWidget {
   ConsumerState<EntryDetailsPage> createState() => _EntryDetailsPageState();
 }
 
-class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
+class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
+    with HighlightScrollMixin {
   final _scrollController = ScrollController();
   final Map<String, GlobalKey> _entryKeys = {};
-  String? _highlightedEntryId;
-  Timer? _highlightTimer;
-  bool _disposed = false;
 
   @override
   void initState() {
@@ -61,8 +56,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
 
   @override
   void dispose() {
-    _disposed = true;
-    _highlightTimer?.cancel();
+    disposeHighlight();
     _scrollController.dispose();
     super.dispose();
   }
@@ -74,77 +68,16 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
     );
   }
 
-  void _scrollToEntry(
-    String entryId,
-    double alignment, {
-    VoidCallback? onScrolled,
-  }) {
-    // Clear focus intent immediately on next frame
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      onScrolled?.call();
-    });
-
-    // Attempt to scroll with retry logic
-    _scrollToEntryWithRetry(entryId, alignment, attempt: 0);
-  }
-
-  void _scrollToEntryWithRetry(
-    String entryId,
-    double alignment, {
-    required int attempt,
-  }) {
-    if (_disposed || attempt >= 5) return;
-
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      if (_disposed) return;
-
-      final key = _getEntryKey(entryId);
-      final context = key.currentContext;
-
-      if (context != null) {
-        try {
-          await Scrollable.ensureVisible(
-            context,
-            alignment: alignment,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-
-          // Trigger highlight animation after scroll completes
-          if (mounted && !_disposed) {
-            setState(() {
-              _highlightedEntryId = entryId;
-            });
-
-            // Clear highlight after 2 seconds using Timer
-            _highlightTimer?.cancel();
-            _highlightTimer = Timer(const Duration(seconds: 2), () {
-              if (mounted && !_disposed) {
-                setState(() {
-                  _highlightedEntryId = null;
-                });
-              }
-            });
-          }
-        } catch (e) {
-          debugPrint('Failed to scroll to entry $entryId: $e');
-        }
-      } else if (attempt < 4) {
-        // Entry not found, schedule retry
-        _scrollToEntryWithRetry(entryId, alignment, attempt: attempt + 1);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final focusProvider = journalFocusControllerProvider(id: widget.itemId);
 
     void handleFocus(JournalFocusIntent? intent) {
       if (intent == null) return;
-      _scrollToEntry(
+      scrollToEntry(
         intent.entryId,
         intent.alignment,
+        getEntryKey: _getEntryKey,
         onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
       );
     }
@@ -164,87 +97,76 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
       return const EmptyScaffoldWithTitle('');
     }
 
-    final timeService = getIt<TimeService>();
-
-    return StreamBuilder<JournalEntity?>(
-      stream: timeService.getStream(),
-      builder: (context, snapshot) {
-        final runningTimer = snapshot.data;
-        final activeTimerEntryId = runningTimer?.meta.id;
-
-        return DropTarget(
-          onDragDone: (data) {
-            handleDroppedMedia(
-              data: data,
-              linkedId: item.meta.id,
-              categoryId: item.meta.categoryId,
-            );
-          },
-          child: Scaffold(
-            floatingActionButton: FloatingAddActionButton(
-              linkedFromId: item.meta.id,
-              categoryId: item.meta.categoryId,
-            ),
-            body: Stack(
-              children: [
-                CustomScrollView(
-                  controller: _scrollController,
-                  slivers: [
-                    JournalSliverAppBar(entryId: widget.itemId),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          top: 8,
-                          bottom: 200,
-                          left: 5,
-                          right: 5,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            EntryDetailsWidget(
-                              itemId: widget.itemId,
-                              showTaskDetails: true,
-                              showAiEntry: true,
-                            ),
-                            LinkedEntriesWidget(
-                              item,
-                              entryKeyBuilder: _getEntryKey,
-                              highlightedEntryId: _highlightedEntryId,
-                              activeTimerEntryId: activeTimerEntryId,
-                            ),
-                            LinkedFromEntriesWidget(item),
-                            if (item is ChecklistItem)
-                              LinkedFromChecklistWidget(item),
-                            if (item is Checklist) LinkedFromTaskWidget(item),
-                          ],
-                        ).animate().fadeIn(
-                              duration: const Duration(
-                                milliseconds: 100,
-                              ),
-                            ),
-                      ),
+    return DropTarget(
+      onDragDone: (data) {
+        handleDroppedMedia(
+          data: data,
+          linkedId: item.meta.id,
+          categoryId: item.meta.categoryId,
+        );
+      },
+      child: Scaffold(
+        floatingActionButton: FloatingAddActionButton(
+          linkedFromId: item.meta.id,
+          categoryId: item.meta.categoryId,
+        ),
+        body: Stack(
+          children: [
+            CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                JournalSliverAppBar(entryId: widget.itemId),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: 8,
+                      bottom: 200,
+                      left: 5,
+                      right: 5,
                     ),
-                  ],
-                ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: AiRunningAnimationWrapperCard(
-                    entryId: widget.itemId,
-                    height: 50,
-                    isInteractive: true,
-                    responseTypes: const {
-                      AiResponseType.taskSummary,
-                      AiResponseType.imageAnalysis,
-                      AiResponseType.audioTranscription,
-                    },
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        EntryDetailsWidget(
+                          itemId: widget.itemId,
+                          showTaskDetails: true,
+                          showAiEntry: true,
+                        ),
+                        LinkedEntriesWithTimer(
+                          item: item,
+                          entryKeyBuilder: _getEntryKey,
+                          highlightedEntryId: highlightedEntryId,
+                        ),
+                        LinkedFromEntriesWidget(item),
+                        if (item is ChecklistItem)
+                          LinkedFromChecklistWidget(item),
+                        if (item is Checklist) LinkedFromTaskWidget(item),
+                      ],
+                    ).animate().fadeIn(
+                          duration: const Duration(
+                            milliseconds: 100,
+                          ),
+                        ),
                   ),
                 ),
               ],
             ),
-          ),
-        );
-      },
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AiRunningAnimationWrapperCard(
+                entryId: widget.itemId,
+                height: 50,
+                isInteractive: true,
+                responseTypes: const {
+                  AiResponseType.taskSummary,
+                  AiResponseType.imageAnalysis,
+                  AiResponseType.audioTranscription,
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
