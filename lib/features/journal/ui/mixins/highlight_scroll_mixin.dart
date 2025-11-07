@@ -10,14 +10,16 @@ import 'package:flutter/scheduler.dart';
 /// - Retry logic for scrolling to entries that may not be rendered yet
 /// - Proper cleanup of timers and state on disposal
 mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
-  // Constants
-  static const _highlightDuration = Duration(seconds: 2);
-  static const _scrollDuration = Duration(milliseconds: 300);
-  static const _maxScrollRetries = 5;
+  // Tunable timings (override in the host State if needed)
+  Duration get highlightDuration => const Duration(seconds: 2);
+  Duration get scrollDuration => const Duration(milliseconds: 300);
+  int get maxScrollRetries => 5;
+  Duration get scrollRetryDelay => const Duration(milliseconds: 60);
 
   // State
   String? _highlightedEntryId;
   Timer? _highlightTimer;
+  Timer? _retryTimer;
   bool _disposed = false;
   String? _scrollingToEntryId;
 
@@ -31,6 +33,7 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
   void disposeHighlight() {
     _disposed = true;
     _highlightTimer?.cancel();
+    _retryTimer?.cancel();
   }
 
   /// Scrolls to an entry and triggers a temporary highlight animation.
@@ -44,21 +47,24 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
     required GlobalKey Function(String) getEntryKey,
     VoidCallback? onScrolled,
   }) {
-    // Clear focus intent immediately on next frame
+    // Clear focus intent early on next frame to maintain previous UX
+    // and allow subsequent intents to be published while scrolling resolves.
     SchedulerBinding.instance.addPostFrameCallback((_) {
       onScrolled?.call();
     });
-
     // Prevent duplicate concurrent scroll operations to the same entry
     if (_scrollingToEntryId == entryId) return;
 
     // Attempt to scroll with retry logic
     _scrollingToEntryId = entryId;
+    // Cancel any pending retry from previous attempts
+    _retryTimer?.cancel();
     _scrollToEntryWithRetry(
       entryId,
       alignment,
       getEntryKey: getEntryKey,
       attempt: 0,
+      onScrolled: onScrolled,
     );
   }
 
@@ -67,14 +73,17 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
     double alignment, {
     required GlobalKey Function(String) getEntryKey,
     required int attempt,
+    VoidCallback? onScrolled,
   }) {
-    if (_disposed || attempt >= _maxScrollRetries) {
+    if (_disposed || attempt >= maxScrollRetries) {
       _scrollingToEntryId = null;
-      if (attempt >= _maxScrollRetries) {
+      if (attempt >= maxScrollRetries) {
         debugPrint(
-          'Failed to scroll to entry $entryId after $_maxScrollRetries attempts',
+          'Failed to scroll to entry $entryId after $maxScrollRetries attempts',
         );
       }
+      // Clear intent on terminal failure if requested
+      onScrolled?.call();
       return;
     }
 
@@ -89,7 +98,7 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
           await Scrollable.ensureVisible(
             context,
             alignment: alignment,
-            duration: _scrollDuration,
+            duration: scrollDuration,
             curve: Curves.easeInOut,
           );
 
@@ -101,7 +110,7 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
 
             // Clear highlight after duration
             _highlightTimer?.cancel();
-            _highlightTimer = Timer(_highlightDuration, () {
+            _highlightTimer = Timer(highlightDuration, () {
               if (mounted && !_disposed) {
                 setState(() {
                   _highlightedEntryId = null;
@@ -110,20 +119,33 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
             });
           }
           _scrollingToEntryId = null;
+          _retryTimer?.cancel();
+          // Clear intent on success if requested
+          onScrolled?.call();
         } catch (e) {
           debugPrint('Failed to scroll to entry $entryId: $e');
           _scrollingToEntryId = null;
+          _retryTimer?.cancel();
+          // Treat exception as terminal and clear intent if requested
+          onScrolled?.call();
         }
-      } else if (attempt < _maxScrollRetries - 1) {
+      } else if (attempt < maxScrollRetries - 1) {
         // Entry not found, schedule retry
-        _scrollToEntryWithRetry(
-          entryId,
-          alignment,
-          getEntryKey: getEntryKey,
-          attempt: attempt + 1,
-        );
+        _retryTimer?.cancel();
+        _retryTimer = Timer(scrollRetryDelay, () {
+          _scrollToEntryWithRetry(
+            entryId,
+            alignment,
+            getEntryKey: getEntryKey,
+            attempt: attempt + 1,
+            onScrolled: onScrolled,
+          );
+        });
       } else {
         _scrollingToEntryId = null;
+        _retryTimer?.cancel();
+        // Final attempt failed: clear intent if requested
+        onScrolled?.call();
       }
     });
   }

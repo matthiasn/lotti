@@ -23,11 +23,14 @@ class LinkedEntriesWithTimer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final timeService = getIt<TimeService>();
 
-    return StreamBuilder<JournalEntity?>(
-      stream: timeService.getStream(),
+    // Only react to changes of the active timer entry ID, not every tick.
+    return StreamBuilder<String?>(
+      stream: timeService
+          .getStream()
+          .map((e) => e?.meta.id)
+          .distinct(),
       builder: (context, snapshot) {
-        final runningTimer = snapshot.data;
-        final activeTimerEntryId = runningTimer?.meta.id;
+        final activeTimerEntryId = snapshot.data;
 
         return LinkedEntriesWidget(
           item,

@@ -65,6 +65,8 @@ The main interface for viewing and editing tasks, featuring:
 - Linked entries timeline
 - AI-powered features menu
 - Auto-scroll to running timer entry when tapping the timer indicator
+- Entry highlighting: When auto-scrolling to a linked entry, it briefly glows; the entry linked to the currently running timer shows a persistent red glow.
+- Efficiency: `LinkedEntriesWithTimer` rebuilds only the linked entries section on timer state changes; scroll behavior and highlight timing are centralized in `HighlightScrollMixin` with retry/backoff and tunable durations.
 
 #### Task Labels
 
