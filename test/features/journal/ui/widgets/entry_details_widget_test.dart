@@ -519,7 +519,8 @@ void main() {
       expect(widget.isHighlighted, isTrue);
     });
 
-    testWidgets('timer highlight renders a glowing border overlay', (tester) async {
+    testWidgets('timer highlight renders a glowing border overlay',
+        (tester) async {
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testTextEntry);
 

@@ -25,10 +25,7 @@ class LinkedEntriesWithTimer extends ConsumerWidget {
 
     // Only react to changes of the active timer entry ID, not every tick.
     return StreamBuilder<String?>(
-      stream: timeService
-          .getStream()
-          .map((e) => e?.meta.id)
-          .distinct(),
+      stream: timeService.getStream().map((e) => e?.meta.id).distinct(),
       builder: (context, snapshot) {
         final activeTimerEntryId = snapshot.data;
 
