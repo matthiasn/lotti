@@ -2746,16 +2746,3 @@ Added:
 
 ### Tests
 - Added widget tests for checklist visuals (strikethrough on check, row wrapper presence) and suggestion overlay rendering; kept behavioural tests green.
-## Unreleased
-
-### Tests & Stability
-- AI checklist conversation tests stabilized by replacing brittle streaming mocks with a deterministic
-  `sendMessage` stub that invokes `LottiChecklistStrategy` with predefined tool calls. This preserves
-  the production strategy/handler flow and avoids stream chunk assembly brittleness.
-  - Added: `test/features/ai/functions/lotti_conversation_processor_via_repo_test.dart` (five scenarios: single via batch, batch, GPT‑OSS batch, language+create, non‑GPT batch).
-  - Removed: legacy skipped cases in `test/features/ai/functions/lotti_conversation_processor_test.dart`.
-- Batch handler tests updated to assert callback/task refresh paths; analyzer warnings fixed.
-
-### Docs
-- Implementation plan updated: `docs/implementation_plans/2025-11-06_checklist_multi_create_array_only_unification.md`
-  now documents the deterministic test approach and removal of flaky tests.
