@@ -173,6 +173,10 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+      // Allow scroll retry/backoff to reach success/terminal outcome over multiple frames
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       // Verify intent was cleared after consumption
       expect(container.read(focusProvider), isNull);
@@ -205,7 +209,10 @@ void main() {
             alignment: 0.3,
           );
 
-      await tester.pump();
+      // Allow scroll retry/backoff to complete and clear intent
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       // Intent should be consumed and cleared
       expect(container.read(focusProvider), isNull);
@@ -254,7 +261,9 @@ void main() {
       container.read(focusProvider.notifier).publishJournalFocus(
             entryId: 'entry-1',
           );
-      await tester.pump();
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(container.read(focusProvider), isNull);
 
       // Test with alignment 0.5 (center)
@@ -262,7 +271,9 @@ void main() {
             entryId: 'entry-2',
             alignment: 0.5,
           );
-      await tester.pump();
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(container.read(focusProvider), isNull);
 
       // Test with alignment 1.0 (bottom)
@@ -270,7 +281,9 @@ void main() {
             entryId: 'entry-3',
             alignment: 1,
           );
-      await tester.pump();
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(container.read(focusProvider), isNull);
 
       container.dispose();
@@ -300,14 +313,18 @@ void main() {
       container.read(focusProvider.notifier).publishJournalFocus(
             entryId: 'entry-1',
           );
-      await tester.pump();
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(container.read(focusProvider), isNull);
 
       // Publish second intent
       container.read(focusProvider.notifier).publishJournalFocus(
             entryId: 'entry-2',
           );
-      await tester.pump();
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(container.read(focusProvider), isNull);
 
       container.dispose();

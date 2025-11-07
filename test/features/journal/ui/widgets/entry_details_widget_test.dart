@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+// animation library is not required for these assertions
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -518,7 +519,7 @@ void main() {
       expect(widget.isHighlighted, isTrue);
     });
 
-    testWidgets('timer highlight renders Container wrapper', (tester) async {
+    testWidgets('timer highlight renders a glowing border overlay', (tester) async {
       when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
           .thenAnswer((_) async => testTextEntry);
 
@@ -537,8 +538,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Verify Container is rendered for timer highlight
-      expect(find.byType(Container), findsAtLeastNWidgets(1));
+      // Verify a CustomPaint overlay is rendered for the glow
+      expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
     });
 
     testWidgets('no highlight renders plain card', (tester) async {
@@ -583,8 +584,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Verify highlight animation container exists
-      expect(find.byType(Container), findsAtLeastNWidgets(1));
+      // Verify a CustomPaint overlay is rendered for the glow
+      expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
     });
 
     testWidgets('timer highlight takes precedence in rendering order',
@@ -610,7 +611,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
-      expect(find.byType(Container), findsAtLeastNWidgets(1));
+      expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
     });
   });
 }

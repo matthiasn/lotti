@@ -305,7 +305,10 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // Allow scroll retry/backoff to complete and clear intent over multiple frames
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       // Publish focus intent
       final container = ProviderScope.containerOf(
@@ -319,6 +322,9 @@ void main() {
           );
 
       await tester.pumpAndSettle();
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       // Verify intent was cleared after consumption
       final intent =
@@ -384,6 +390,9 @@ void main() {
             );
 
         await tester.pumpAndSettle();
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
 
         // Verify intent was processed
         final intent =
@@ -400,6 +409,9 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       final container = ProviderScope.containerOf(
         tester.element(find.byType(TaskDetailsPage)),
@@ -413,6 +425,9 @@ void main() {
           );
 
       await tester.pumpAndSettle();
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       final intent1 =
           container.read(taskFocusControllerProvider(id: testTask.id));

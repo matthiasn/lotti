@@ -1,5 +1,5 @@
+// No direct blur usage; keep imports minimal
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -46,31 +46,6 @@ class EntryDetailsWidget extends ConsumerWidget {
   final EntryLink? link;
   final Set<String>? parentTags;
 
-  Widget _buildHighlightedCard(
-    BuildContext context, {
-    required Widget card,
-    required Color color,
-    required double beginAlpha,
-    required double endAlpha,
-  }) {
-    return Container(child: card)
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .boxShadow(
-          begin: BoxShadow(
-            color: color.withValues(alpha: beginAlpha),
-            blurRadius: 8,
-            spreadRadius: 1,
-          ),
-          end: BoxShadow(
-            color: color.withValues(alpha: endAlpha),
-            blurRadius: 16,
-            spreadRadius: 2,
-          ),
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOut,
-        );
-  }
-
   @override
   Widget build(
     BuildContext context,
@@ -104,13 +79,15 @@ class EntryDetailsWidget extends ConsumerWidget {
       );
     }
 
+    const cardMargin = EdgeInsets.only(
+      left: AppTheme.spacingXSmall,
+      right: AppTheme.spacingXSmall,
+      bottom: AppTheme.spacingMedium,
+    );
+
     final card = ModernBaseCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
-      margin: const EdgeInsets.only(
-        left: AppTheme.spacingXSmall,
-        right: AppTheme.spacingXSmall,
-        bottom: AppTheme.spacingMedium,
-      ),
+      margin: cardMargin,
       padding:
           const EdgeInsets.symmetric(horizontal: AppTheme.cardPaddingCompact),
       child: Column(
@@ -126,29 +103,166 @@ class EntryDetailsWidget extends ConsumerWidget {
       ),
     );
 
-    // Timer highlight takes precedence (persistent red glow)
+    // Timer highlight takes precedence (persistent, border-centric glow)
     if (isActiveTimer) {
-      return _buildHighlightedCard(
-        context,
-        card: card,
-        color: context.colorScheme.error,
-        beginAlpha: 0.2,
-        endAlpha: 0.5,
+      final color = context.colorScheme.error;
+      return Stack(
+        children: [
+          card,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Padding(
+                padding: cardMargin,
+                child: _PulsingBorder(
+                  color: color,
+                  radius: AppTheme.cardBorderRadius,
+                  strokeWidth: 1,
+                  glowSigma: 0,
+                  duration: const Duration(milliseconds: 1200),
+                ),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
-    // Scroll highlight (temporary neutral glow)
+    // Scroll highlight (temporary, border-centric; color differs from timer)
     if (isHighlighted) {
-      return _buildHighlightedCard(
-        context,
-        card: card,
-        color: context.colorScheme.onSecondary,
-        beginAlpha: 0.1,
-        endAlpha: 0.4,
+      return Stack(
+        children: [
+          card,
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: Padding(
+                padding: cardMargin,
+                child: _PulsingBorder(
+                  color: Colors.pink,
+                  radius: AppTheme.cardBorderRadius,
+                  strokeWidth: 1,
+                  glowSigma: 0,
+                  duration: Duration(milliseconds: 1200),
+                ),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
     return card;
+  }
+}
+
+class _GlowBorderPainter extends CustomPainter {
+  _GlowBorderPainter({
+    required this.color,
+    required this.radius,
+    required this.strokeWidth,
+    required this.glowSigma,
+    required this.devicePixelRatio,
+  });
+
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+  final double glowSigma;
+  final double devicePixelRatio;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Align to device pixels for crisp corners/edges
+    final dpr = devicePixelRatio <= 0 ? 1.0 : devicePixelRatio;
+    final alignedWidth = (size.width * dpr).round() / dpr;
+    final alignedHeight = (size.height * dpr).round() / dpr;
+
+    // Choose nearest whole-physical-pixel thickness to requested width (min 1px)
+    final requestedPx = strokeWidth * dpr;
+    final ringPx = requestedPx < 1 ? 1.0 : requestedPx.roundToDouble();
+    final ringLogical = ringPx / dpr;
+
+    final outer = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, alignedWidth, alignedHeight),
+      Radius.circular(radius),
+    );
+    final inner = outer.deflate(ringLogical);
+
+    final path = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRRect(outer)
+      ..addRRect(inner);
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlowBorderPainter oldDelegate) {
+    return color != oldDelegate.color ||
+        radius != oldDelegate.radius ||
+        strokeWidth != oldDelegate.strokeWidth ||
+        glowSigma != oldDelegate.glowSigma;
+  }
+}
+
+class _PulsingBorder extends StatefulWidget {
+  const _PulsingBorder({
+    required this.color,
+    required this.radius,
+    required this.strokeWidth,
+    required this.glowSigma,
+    required this.duration,
+  });
+
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+  final double glowSigma;
+  final Duration duration;
+
+  @override
+  State<_PulsingBorder> createState() => _PulsingBorderState();
+}
+
+class _PulsingBorderState extends State<_PulsingBorder>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: widget.duration,
+  )..repeat(reverse: true);
+
+  // Larger amplitude for more pronounced pulse (no blur; opacity only)
+  late final Animation<double> _opacity = Tween<double>(begin: 0.4, end: 1)
+      .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine));
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ??
+        View.of(context).devicePixelRatio;
+    return FadeTransition(
+      opacity: _opacity,
+      child: RepaintBoundary(
+        child: CustomPaint(
+          painter: _GlowBorderPainter(
+            color: widget.color,
+            radius: widget.radius,
+            strokeWidth: widget.strokeWidth,
+            glowSigma: 0, // sharp edges; no blur
+            devicePixelRatio: dpr,
+          ),
+        ),
+      ),
+    );
   }
 }
 
