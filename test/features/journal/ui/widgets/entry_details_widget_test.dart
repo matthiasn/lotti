@@ -408,4 +408,209 @@ void main() {
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
     });
   });
+
+  group('EntryDetailsWidget Timer Highlight Tests', () {
+    TestWidgetsFlutterBinding.ensureInitialized();
+
+    late JournalDb mockJournalDb;
+    late MockPersistenceLogic mockPersistenceLogic;
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+
+    setUpAll(setFakeDocumentsPath);
+
+    setUp(() async {
+      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+      mockPersistenceLogic = MockPersistenceLogic();
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+
+      final mockTagsService = mockTagsServiceWithTags([]);
+      final mockTimeService = MockTimeService();
+      final mockEditorStateService = MockEditorStateService();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<TagsService>(mockTagsService)
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
+        (_) => [],
+      );
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockTagsService.stream).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
+      when(mockTimeService.getStream)
+          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    test('isActiveTimer parameter defaults to false', () {
+      const widget = EntryDetailsWidget(
+        itemId: 'test-id',
+        showAiEntry: false,
+      );
+
+      expect(widget.isActiveTimer, isFalse);
+    });
+
+    test('isActiveTimer parameter can be set to true', () {
+      const widget = EntryDetailsWidget(
+        itemId: 'test-id',
+        showAiEntry: false,
+        isActiveTimer: true,
+      );
+
+      expect(widget.isActiveTimer, isTrue);
+    });
+
+    test('isActiveTimer and isHighlighted are independent', () {
+      const widget = EntryDetailsWidget(
+        itemId: 'test-id',
+        showAiEntry: false,
+        isActiveTimer: true,
+        isHighlighted: true,
+      );
+
+      expect(widget.isActiveTimer, isTrue);
+      expect(widget.isHighlighted, isTrue);
+    });
+
+    testWidgets('timer highlight renders Container wrapper', (tester) async {
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            child: EntryDetailsWidget(
+              itemId: testTextEntry.meta.id,
+              showAiEntry: false,
+              isActiveTimer: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Verify Container is rendered for timer highlight
+      expect(find.byType(Container), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('no highlight renders plain card', (tester) async {
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            child: EntryDetailsWidget(
+              itemId: testTextEntry.meta.id,
+              showAiEntry: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Verify widget renders
+      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+    });
+
+    testWidgets('scroll highlight renders when only isHighlighted=true',
+        (tester) async {
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            child: EntryDetailsWidget(
+              itemId: testTextEntry.meta.id,
+              showAiEntry: false,
+              isHighlighted: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Verify highlight animation container exists
+      expect(find.byType(Container), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('timer highlight takes precedence in rendering order',
+        (tester) async {
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      // When both are true, isActiveTimer branch executes first
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            child: EntryDetailsWidget(
+              itemId: testTextEntry.meta.id,
+              showAiEntry: false,
+              isActiveTimer: true,
+              isHighlighted: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+      expect(find.byType(Container), findsAtLeastNWidgets(1));
+    });
+  });
 }

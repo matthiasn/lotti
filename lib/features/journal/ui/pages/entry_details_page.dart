@@ -22,6 +22,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/services/time_service.dart';
 
 class EntryDetailsPage extends ConsumerStatefulWidget {
   const EntryDetailsPage({
@@ -163,76 +164,87 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
       return const EmptyScaffoldWithTitle('');
     }
 
-    return DropTarget(
-      onDragDone: (data) {
-        handleDroppedMedia(
-          data: data,
-          linkedId: item.meta.id,
-          categoryId: item.meta.categoryId,
-        );
-      },
-      child: Scaffold(
-        floatingActionButton: FloatingAddActionButton(
-          linkedFromId: item.meta.id,
-          categoryId: item.meta.categoryId,
-        ),
-        body: Stack(
-          children: [
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                JournalSliverAppBar(entryId: widget.itemId),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 8,
-                      bottom: 200,
-                      left: 5,
-                      right: 5,
+    final timeService = getIt<TimeService>();
+
+    return StreamBuilder<JournalEntity?>(
+      stream: timeService.getStream(),
+      builder: (context, snapshot) {
+        final runningTimer = snapshot.data;
+        final activeTimerEntryId = runningTimer?.meta.id;
+
+        return DropTarget(
+          onDragDone: (data) {
+            handleDroppedMedia(
+              data: data,
+              linkedId: item.meta.id,
+              categoryId: item.meta.categoryId,
+            );
+          },
+          child: Scaffold(
+            floatingActionButton: FloatingAddActionButton(
+              linkedFromId: item.meta.id,
+              categoryId: item.meta.categoryId,
+            ),
+            body: Stack(
+              children: [
+                CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    JournalSliverAppBar(entryId: widget.itemId),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          top: 8,
+                          bottom: 200,
+                          left: 5,
+                          right: 5,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            EntryDetailsWidget(
+                              itemId: widget.itemId,
+                              showTaskDetails: true,
+                              showAiEntry: true,
+                            ),
+                            LinkedEntriesWidget(
+                              item,
+                              entryKeyBuilder: _getEntryKey,
+                              highlightedEntryId: _highlightedEntryId,
+                              activeTimerEntryId: activeTimerEntryId,
+                            ),
+                            LinkedFromEntriesWidget(item),
+                            if (item is ChecklistItem)
+                              LinkedFromChecklistWidget(item),
+                            if (item is Checklist) LinkedFromTaskWidget(item),
+                          ],
+                        ).animate().fadeIn(
+                              duration: const Duration(
+                                milliseconds: 100,
+                              ),
+                            ),
+                      ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        EntryDetailsWidget(
-                          itemId: widget.itemId,
-                          showTaskDetails: true,
-                          showAiEntry: true,
-                        ),
-                        LinkedEntriesWidget(
-                          item,
-                          entryKeyBuilder: _getEntryKey,
-                          highlightedEntryId: _highlightedEntryId,
-                        ),
-                        LinkedFromEntriesWidget(item),
-                        if (item is ChecklistItem)
-                          LinkedFromChecklistWidget(item),
-                        if (item is Checklist) LinkedFromTaskWidget(item),
-                      ],
-                    ).animate().fadeIn(
-                          duration: const Duration(
-                            milliseconds: 100,
-                          ),
-                        ),
+                  ],
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: AiRunningAnimationWrapperCard(
+                    entryId: widget.itemId,
+                    height: 50,
+                    isInteractive: true,
+                    responseTypes: const {
+                      AiResponseType.taskSummary,
+                      AiResponseType.imageAnalysis,
+                      AiResponseType.audioTranscription,
+                    },
                   ),
                 ),
               ],
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: AiRunningAnimationWrapperCard(
-                entryId: widget.itemId,
-                height: 50,
-                isInteractive: true,
-                responseTypes: const {
-                  AiResponseType.taskSummary,
-                  AiResponseType.imageAnalysis,
-                  AiResponseType.audioTranscription,
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

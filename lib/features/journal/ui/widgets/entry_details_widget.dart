@@ -33,12 +33,14 @@ class EntryDetailsWidget extends ConsumerWidget {
     this.linkedFrom,
     this.link,
     this.isHighlighted = false,
+    this.isActiveTimer = false,
   });
 
   final String itemId;
   final bool showTaskDetails;
   final bool showAiEntry;
   final bool isHighlighted;
+  final bool isActiveTimer;
 
   final JournalEntity? linkedFrom;
   final EntryLink? link;
@@ -99,6 +101,27 @@ class EntryDetailsWidget extends ConsumerWidget {
       ),
     );
 
+    // Timer highlight takes precedence (persistent red glow)
+    if (isActiveTimer) {
+      return Container(child: card)
+          .animate(onPlay: (controller) => controller.repeat(reverse: true))
+          .boxShadow(
+            begin: BoxShadow(
+              color: context.colorScheme.error.withValues(alpha: 0.2),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+            end: BoxShadow(
+              color: context.colorScheme.error.withValues(alpha: 0.5),
+              blurRadius: 16,
+              spreadRadius: 2,
+            ),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+          );
+    }
+
+    // Scroll highlight (temporary neutral glow)
     if (isHighlighted) {
       return Container(child: card)
           .animate(onPlay: (controller) => controller.repeat(reverse: true))

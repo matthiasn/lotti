@@ -21,6 +21,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/services/time_service.dart';
 
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
@@ -164,80 +165,91 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
       return const EmptyScaffoldWithTitle('');
     }
 
-    return DropTarget(
-      onDragDone: (data) {
-        handleDroppedMedia(
-          data: data,
-          linkedId: task.meta.id,
-          categoryId: task.meta.categoryId,
-        );
-      },
-      child: Scaffold(
-        floatingActionButton: FloatingAddActionButton(
-          linkedFromId: task.meta.id,
-          categoryId: task.meta.categoryId,
-        ),
-        body: Stack(
-          children: [
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                TaskSliverAppBar(taskId: widget.taskId),
-                PinnedHeaderSliver(
-                  child: TaskTitleHeader(taskId: widget.taskId),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 15,
-                      right: 15,
-                      top: 10,
+    final timeService = getIt<TimeService>();
+
+    return StreamBuilder<JournalEntity?>(
+      stream: timeService.getStream(),
+      builder: (context, snapshot) {
+        final runningTimer = snapshot.data;
+        final activeTimerEntryId = runningTimer?.meta.id;
+
+        return DropTarget(
+          onDragDone: (data) {
+            handleDroppedMedia(
+              data: data,
+              linkedId: task.meta.id,
+              categoryId: task.meta.categoryId,
+            );
+          },
+          child: Scaffold(
+            floatingActionButton: FloatingAddActionButton(
+              linkedFromId: task.meta.id,
+              categoryId: task.meta.categoryId,
+            ),
+            body: Stack(
+              children: [
+                CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    TaskSliverAppBar(taskId: widget.taskId),
+                    PinnedHeaderSliver(
+                      child: TaskTitleHeader(taskId: widget.taskId),
                     ),
-                    child: TaskForm(taskId: widget.taskId),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 8,
-                      bottom: 200,
-                      left: 10,
-                      right: 10,
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          left: 15,
+                          right: 15,
+                          top: 10,
+                        ),
+                        child: TaskForm(taskId: widget.taskId),
+                      ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        LinkedEntriesWidget(
-                          task,
-                          entryKeyBuilder: _getEntryKey,
-                          highlightedEntryId: _highlightedEntryId,
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          top: 8,
+                          bottom: 200,
+                          left: 10,
+                          right: 10,
                         ),
-                        LinkedFromEntriesWidget(task),
-                      ],
-                    ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 100),
-                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            LinkedEntriesWidget(
+                              task,
+                              entryKeyBuilder: _getEntryKey,
+                              highlightedEntryId: _highlightedEntryId,
+                              activeTimerEntryId: activeTimerEntryId,
+                            ),
+                            LinkedFromEntriesWidget(task),
+                          ],
+                        ).animate().fadeIn(
+                              duration: const Duration(milliseconds: 100),
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: AiRunningAnimationWrapperCard(
+                    entryId: widget.taskId,
+                    height: 50,
+                    isInteractive: true,
+                    responseTypes: const {
+                      AiResponseType.taskSummary,
+                      AiResponseType.checklistUpdates,
+                      AiResponseType.imageAnalysis,
+                      AiResponseType.audioTranscription,
+                    },
                   ),
                 ),
               ],
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: AiRunningAnimationWrapperCard(
-                entryId: widget.taskId,
-                height: 50,
-                isInteractive: true,
-                responseTypes: const {
-                  AiResponseType.taskSummary,
-                  AiResponseType.checklistUpdates,
-                  AiResponseType.imageAnalysis,
-                  AiResponseType.audioTranscription,
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
