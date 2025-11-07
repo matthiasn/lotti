@@ -171,7 +171,26 @@ You already successfully created these checklist items: ${successfulDescriptions
 Do NOT recreate the items that were already successful.''';
   }
 
-  /// Create all items from the batch
+  /// Creates all items from the batch, maintaining exact order.
+  ///
+  /// CRITICAL: This method relies on the repository's guarantee that items
+  /// are created and their IDs returned in the exact order provided.
+  ///
+  /// The implementation maps created item IDs back to their titles using
+  /// index-based matching. This means:
+  /// - checklistItems[0] corresponds to createdIds[0]
+  /// - checklistItems[1] corresponds to createdIds[1]
+  /// - And so on...
+  ///
+  /// If the repository ever changes to return IDs in a different order
+  /// (e.g., sorted alphabetically, random order), this mapping will break
+  /// silently, causing incorrect ID-title associations.
+  ///
+  /// This contract is enforced by the test:
+  /// 'CRITICAL: preserves item ordering - handler relies on this contract'
+  /// in auto_checklist_service_test.dart
+  ///
+  /// Returns the number of successfully created items.
   Future<int> createBatchItems(FunctionCallResult result) async {
     if (!result.success) return 0;
 
@@ -220,7 +239,8 @@ Do NOT recreate the items that were already successful.''';
             if (createdChecklist is Checklist) {
               createdIds = createdChecklist.data.linkedChecklistItems;
             }
-            // Map by order (repository preserves insertion order)
+            // CRITICAL: Map by index - relies on repository preserving exact insertion order
+            // See method documentation for why this ordering guarantee is essential
             for (var i = 0; i < checklistItems.length; i++) {
               final title = checklistItems[i].title;
               final isChecked = checklistItems[i].isChecked;

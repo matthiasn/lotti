@@ -793,6 +793,25 @@ Comprehensive test coverage includes:
 - Whisper: Transcription, error handling, response formatting
 - Cloud providers: Streaming, function calls, authentication
 
+### Deterministic Conversation Tests
+
+Conversation tests that validate `LottiChecklistStrategy` and handlers should avoid brittle
+streaming mocks. Instead, stub `ConversationRepository.sendMessage` to directly invoke
+`strategy.processToolCalls(...)` with predefined `ChatCompletionMessageToolCall` objects. This
+preserves the real strategy/handler execution while removing chunk‑assembly fragility.
+
+- Reference: `test/features/ai/functions/lotti_conversation_processor_via_repo_test.dart`
+- Helper pattern used in tests:
+  - `stubSendMessageToInvokeStrategy({ repo, manager, toolCalls })` → stubs
+    `sendMessage(...)` and synchronously calls `strategy.processToolCalls(toolCalls, manager)`.
+- Register mocktail fallbacks for types passed via `any<T>()`:
+  - `Task`, `InferenceRepositoryInterface`, `AiConfigInferenceProvider`,
+    `List<ChatCompletionMessage>`, `List<ChatCompletionTool>`.
+- Use repo/db mocks to reflect state transitions (e.g., task acquires `checklistIds` after create).
+
+Use full streaming only when you explicitly want to exercise chunk accumulation and tool‑call ID
+stitching across providers; keep those focused and deterministic (stable tool‑call ids/indices).
+
 ## Security Considerations
 
 - API keys stored via OS secure storage (`flutter_secure_storage`): Keychain (iOS/macOS), Android Keystore, Windows Credential Locker (DPAPI), Linux Secret Service (libsecret)

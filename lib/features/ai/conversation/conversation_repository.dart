@@ -11,7 +11,16 @@ import 'package:uuid/uuid.dart';
 
 part 'conversation_repository.g.dart';
 
-/// Repository for managing AI conversations
+/// Repository for managing AI conversations.
+///
+/// Streaming expectations for tool calls (for providers and tests):
+/// - Tool calls may arrive across multiple streamed chunks. The repository stitches
+///   chunks using a stable `id` or `index` per tool call and accumulates `function.arguments`.
+/// - Providers emitting OpenAI‑style deltas should keep id/index stable across chunks.
+/// - In tests, you can bypass stream chunking complexity by stubbing `sendMessage` and directly
+///   invoking the provided `ConversationStrategy` with predefined
+///   `ChatCompletionMessageToolCall` objects. This preserves the strategy/handler execution path
+///   while avoiding brittle mock setups.
 @riverpod
 class ConversationRepository extends _$ConversationRepository {
   final _conversations = <String, ConversationManager>{};

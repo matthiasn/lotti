@@ -25,7 +25,18 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-/// Processes AI function calls using conversation approach for better batching and error handling
+/// Processes AI function calls using the conversation approach for better batching and error
+/// handling.
+///
+/// Notes for maintainers and test authors:
+/// - The conversation is driven by a `ConversationStrategy` (here
+///   `LottiChecklistStrategy`) which consumes tool calls and delegates to handlers
+///   (`LottiChecklistItemHandler`, `LottiBatchChecklistHandler`).
+/// - Providers may stream tool call deltas (OpenAI‑style). The repository assembles them
+///   before invoking the strategy. In unit tests, prefer a deterministic approach: stub
+///   `ConversationRepository.sendMessage` to call `strategy.processToolCalls` directly with
+///   predefined `ChatCompletionMessageToolCall` objects. This reliably exercises the same
+///   strategy/handler code paths without depending on chunk assembly in mocks.
 class LottiConversationProcessor {
   LottiConversationProcessor({
     required this.ref,

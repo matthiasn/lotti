@@ -46,6 +46,23 @@ class ChecklistRepository {
     }
   }
 
+  /// Creates a new checklist and optionally populates it with items.
+  ///
+  /// CRITICAL CONTRACT: Item ordering is preserved exactly as provided.
+  /// When [items] is provided, they are created sequentially in the exact
+  /// order given, and the returned checklist's linkedChecklistItems will
+  /// contain the IDs in the same order.
+  ///
+  /// This ordering guarantee is a critical dependency for consumers like
+  /// LottiBatchChecklistHandler which rely on index-based mapping between
+  /// items and their generated IDs.
+  ///
+  /// Parameters:
+  /// - [taskId]: The task to attach this checklist to
+  /// - [items]: Optional items to create with the checklist (order preserved)
+  /// - [title]: Optional title for the checklist (defaults to 'TODOs')
+  ///
+  /// Returns the created [Checklist] entity or null if creation failed.
   Future<JournalEntity?> createChecklist({
     required String? taskId,
     List<ChecklistItemData>? items,

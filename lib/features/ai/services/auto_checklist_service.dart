@@ -1,3 +1,5 @@
+// ignore_for_file: comment_references
+
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -39,6 +41,19 @@ class AutoChecklistService {
     }
   }
 
+  /// Creates a new checklist with the provided suggestions for a task.
+  ///
+  /// CRITICAL CONTRACT: This method preserves the exact ordering of items.
+  /// Items in [suggestions] will be created in the same order, and the
+  /// returned checklist will have linkedChecklistItems IDs in the same order.
+  ///
+  /// This ordering guarantee is relied upon by LottiBatchChecklistHandler
+  /// to map created item IDs back to their original titles.
+  ///
+  /// Returns a record with:
+  /// - [success]: Whether the checklist was created successfully
+  /// - [checklistId]: The ID of the created checklist if successful
+  /// - [error]: Error message if creation failed
   Future<({bool success, String? checklistId, String? error})>
       autoCreateChecklist({
     required String taskId,
