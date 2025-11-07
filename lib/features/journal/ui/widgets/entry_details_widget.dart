@@ -46,6 +46,31 @@ class EntryDetailsWidget extends ConsumerWidget {
   final EntryLink? link;
   final Set<String>? parentTags;
 
+  Widget _buildHighlightedCard(
+    BuildContext context, {
+    required Widget card,
+    required Color color,
+    required double beginAlpha,
+    required double endAlpha,
+  }) {
+    return Container(child: card)
+        .animate(onPlay: (controller) => controller.repeat(reverse: true))
+        .boxShadow(
+          begin: BoxShadow(
+            color: color.withValues(alpha: beginAlpha),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+          end: BoxShadow(
+            color: color.withValues(alpha: endAlpha),
+            blurRadius: 16,
+            spreadRadius: 2,
+          ),
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+  }
+
   @override
   Widget build(
     BuildContext context,
@@ -103,42 +128,24 @@ class EntryDetailsWidget extends ConsumerWidget {
 
     // Timer highlight takes precedence (persistent red glow)
     if (isActiveTimer) {
-      return Container(child: card)
-          .animate(onPlay: (controller) => controller.repeat(reverse: true))
-          .boxShadow(
-            begin: BoxShadow(
-              color: context.colorScheme.error.withValues(alpha: 0.2),
-              blurRadius: 8,
-              spreadRadius: 1,
-            ),
-            end: BoxShadow(
-              color: context.colorScheme.error.withValues(alpha: 0.5),
-              blurRadius: 16,
-              spreadRadius: 2,
-            ),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeInOut,
-          );
+      return _buildHighlightedCard(
+        context,
+        card: card,
+        color: context.colorScheme.error,
+        beginAlpha: 0.2,
+        endAlpha: 0.5,
+      );
     }
 
     // Scroll highlight (temporary neutral glow)
     if (isHighlighted) {
-      return Container(child: card)
-          .animate(onPlay: (controller) => controller.repeat(reverse: true))
-          .boxShadow(
-            begin: BoxShadow(
-              color: context.colorScheme.onSecondary.withValues(alpha: 0.1),
-              blurRadius: 8,
-              spreadRadius: 1,
-            ),
-            end: BoxShadow(
-              color: context.colorScheme.onSecondary.withValues(alpha: 0.4),
-              blurRadius: 16,
-              spreadRadius: 2,
-            ),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeInOut,
-          );
+      return _buildHighlightedCard(
+        context,
+        card: card,
+        color: context.colorScheme.onSecondary,
+        beginAlpha: 0.1,
+        endAlpha: 0.4,
+      );
     }
 
     return card;
