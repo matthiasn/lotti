@@ -69,6 +69,9 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
     required GlobalKey Function(String) getEntryKey,
     required int attempt,
   }) {
+    // Guard: bail out if this retry is for a stale scroll operation
+    if (_scrollingToEntryId != entryId) return;
+
     if (_disposed || attempt >= _maxScrollRetries) {
       _scrollingToEntryId = null;
       if (attempt >= _maxScrollRetries) {
@@ -81,6 +84,9 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
 
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       if (_disposed) return;
+
+      // Guard: bail out if a newer scroll operation has started
+      if (_scrollingToEntryId != entryId) return;
 
       final key = getEntryKey(entryId);
       final context = key.currentContext;
