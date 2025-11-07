@@ -11,7 +11,8 @@ import 'package:flutter/scheduler.dart';
 /// - Proper cleanup of timers and state on disposal
 mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
   // Tunable timings (override in the host State if needed)
-  Duration get highlightDuration => const Duration(seconds: 2);
+  // Keep scroll highlight visible long enough for multi-pulse sequences (4x1200ms)
+  Duration get highlightDuration => const Duration(milliseconds: 4800);
   Duration get scrollDuration => const Duration(milliseconds: 300);
   int get maxScrollRetries => 5;
   Duration get scrollRetryDelay => const Duration(milliseconds: 60);

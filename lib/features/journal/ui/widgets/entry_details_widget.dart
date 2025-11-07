@@ -19,7 +19,10 @@ import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
@@ -129,19 +132,28 @@ class EntryDetailsWidget extends ConsumerWidget {
 
     // Scroll highlight (temporary, border-centric; color differs from timer)
     if (isHighlighted) {
+      // Use the category color for the entry to match calendar tint
+      final categoryId = item.meta.categoryId;
+      final category =
+          getIt<EntitiesCacheService>().getCategoryById(categoryId);
+      const fallback = Colors.pink;
+      final categoryColor =
+          category != null ? colorFromCssHex(category.color) : fallback;
       return Stack(
         children: [
           card,
-          const Positioned.fill(
+          Positioned.fill(
             child: IgnorePointer(
               child: Padding(
                 padding: cardMargin,
                 child: _PulsingBorder(
-                  color: Colors.pink,
+                  color: categoryColor,
                   radius: AppTheme.cardBorderRadius,
                   strokeWidth: 1,
                   glowSigma: 0,
-                  duration: Duration(milliseconds: 1200),
+                  duration: const Duration(milliseconds: 4800),
+                  loop: false,
+                  loopCount: 4,
                 ),
               ),
             ),
@@ -216,6 +228,8 @@ class _PulsingBorder extends StatefulWidget {
     required this.strokeWidth,
     required this.glowSigma,
     required this.duration,
+    this.loop = true,
+    this.loopCount,
   });
 
   final Color color;
@@ -223,6 +237,8 @@ class _PulsingBorder extends StatefulWidget {
   final double strokeWidth;
   final double glowSigma;
   final Duration duration;
+  final bool loop;
+  final int? loopCount; // if set, run this many loops, then stop
 
   @override
   State<_PulsingBorder> createState() => _PulsingBorderState();
@@ -233,11 +249,71 @@ class _PulsingBorderState extends State<_PulsingBorder>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: widget.duration,
-  )..repeat(reverse: true);
+  );
 
-  // Larger amplitude for more pronounced pulse (no blur; opacity only)
-  late final Animation<double> _opacity = Tween<double>(begin: 0.4, end: 1)
-      .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine));
+  late final Animation<double> _opacity = () {
+    const low = 0.4;
+    const high = 1.0;
+    if (widget.loopCount != null) {
+      // Build N loops (low->high->low), but end last loop by fading to 0
+      final n = widget.loopCount!.clamp(1, 10);
+      final items = <TweenSequenceItem<double>>[];
+      for (var i = 0; i < n; i++) {
+        final isLast = i == n - 1;
+        final upTween = Tween<double>(begin: low, end: high)
+            .chain(CurveTween(curve: Curves.easeInOutSine));
+        final downCurve = isLast ? Curves.easeOutCubic : Curves.easeInOutSine;
+        final downEnd = isLast ? 0.0 : low;
+        final downTween = Tween<double>(begin: high, end: downEnd)
+            .chain(CurveTween(curve: downCurve));
+
+        items
+          ..add(TweenSequenceItem(tween: upTween, weight: 50))
+          ..add(TweenSequenceItem(tween: downTween, weight: 50));
+      }
+      final sequence = TweenSequence<double>(items);
+      return _controller.drive(sequence);
+    }
+    if (widget.loop) {
+      // Looping: simple tween; controller repeats elsewhere
+      return Tween<double>(begin: low, end: high).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+      );
+    }
+    // One-shot: low -> high (brief hold) -> long, gentle fade to low
+    return TweenSequence<double>([
+      // Rise
+      TweenSequenceItem(
+        tween: Tween<double>(begin: low, end: high)
+            .chain(CurveTween(curve: Curves.easeInSine)),
+        weight: 25,
+      ),
+      // Brief plateau at peak to reduce perceived abruptness
+      TweenSequenceItem(
+        tween: ConstantTween<double>(high),
+        weight: 10,
+      ),
+      // Long fade with slow tail for softness
+      TweenSequenceItem(
+        tween: Tween<double>(begin: high, end: low)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 65,
+      ),
+    ]).animate(_controller);
+  }();
+
+  @override
+  void initState() {
+    super.initState();
+    // Start the animation sequence once; let loopCount/loop dictate behavior.
+    if (widget.loopCount != null) {
+      _controller.forward();
+    } else if (widget.loop) {
+      _controller.repeat(reverse: true);
+    } else {
+      _controller.forward();
+    }
+  }
 
   @override
   void dispose() {
@@ -249,12 +325,17 @@ class _PulsingBorderState extends State<_PulsingBorder>
   Widget build(BuildContext context) {
     final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ??
         View.of(context).devicePixelRatio;
+    // Derive a slight tint shift based on current opacity to increase visibility
+    const low = 0.4;
+    final p = ((_opacity.value - low) / (1 - low)).clamp(0.0, 1.0);
+    final tinted = Color.lerp(widget.color, Colors.white, 0.15 * p)!;
+
     return FadeTransition(
       opacity: _opacity,
       child: RepaintBoundary(
         child: CustomPaint(
           painter: _GlowBorderPainter(
-            color: widget.color,
+            color: tinted,
             radius: widget.radius,
             strokeWidth: widget.strokeWidth,
             glowSigma: 0, // sharp edges; no blur
