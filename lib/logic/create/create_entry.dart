@@ -35,11 +35,11 @@ Future<JournalEntity?> createChecklist({
   required Task task,
   required WidgetRef ref,
 }) async {
-  final entry = await ref.read(checklistRepositoryProvider).createChecklist(
+  final result = await ref.read(checklistRepositoryProvider).createChecklist(
         taskId: task.id,
       );
 
-  return entry;
+  return result.checklist;
 }
 
 Future<JournalEntity?> createTimerEntry({JournalEntity? linked}) async {

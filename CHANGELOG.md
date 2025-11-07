@@ -117,6 +117,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Waveform: show visualization for recordings longer than 3 minutes by removing the duration gate
   and introducing dynamic zoom scaling for long clips; updated tests and docs accordingly.
 
+### Changed
+- AI (checklist): Unified to array‑only batch creation. The single‑item tool is no longer used in
+  conversations; tests and prompts now require `{ "items": [{"title": "...", "isChecked"?: bool}] }`.
+- AI (tests): Stabilized checklist conversation tests by stubbing `ConversationRepository.sendMessage`
+  to invoke `LottiChecklistStrategy.processToolCalls(...)` with predefined tool calls, avoiding
+  brittle streaming mocks.
+- AI (tests): Removed legacy skipped tests in
+  `test/features/ai/functions/lotti_conversation_processor_test.dart` in favor of repo‑wired cases in
+  `test/features/ai/functions/lotti_conversation_processor_via_repo_test.dart`.
+
+### Tests
+- Added deterministic scenarios: non‑GPT‑OSS batch, single via batch, 3‑item batch, GPT‑OSS batch,
+  and language detection → create. All pass reliably.
+- Hardened `lotti_batch_checklist_handler_test.dart`: assert non‑null item creation when appending
+  to existing checklists; verify callback and payload; analyzer clean.
+
+### Documentation
+- Updated `lib/features/ai/README.md` with deterministic conversation testing guidance and file
+  references.
+- Expanded inline docs in `lib/features/ai/conversation/conversation_repository.dart` and
+  `lib/features/ai/functions/lotti_conversation_processor.dart` to document streaming expectations
+  and deterministic testing.
+
 ## [0.9.704] - 2025-10-24
 ### Added
 - Comprehensive Fts5Db coverage with insert and search stream tests to guarantee new database behaviour.

@@ -105,14 +105,13 @@ The repository layer has been refactored for better separation of concerns:
 #### Functions (`functions/`)
 - **`checklist_completion_functions.dart`**: OpenAI-style function definitions for checklist operations
   - `suggest_checklist_completion`: Suggests items that appear completed
-  - `add_checklist_item`: Adds new items to checklists
+  - `add_multiple_checklist_items`: Adds one or more items to checklists via an array of objects `{ title, isChecked? }`
 - **`task_functions.dart`**: Function definitions for task operations
   - `set_task_language`: Automatically detects and sets task language
 - **`lotti_conversation_processor.dart`**: Conversation-based processing for better batching
   - Handles multiple checklist items efficiently
   - Provides error recovery and retry mechanisms
   - Supports batch operations with `add_multiple_checklist_items`
-- **`lotti_checklist_handler.dart`**: Single checklist item creation handler
 - **`lotti_batch_checklist_handler.dart`**: Batch checklist item creation handler
 - **`function_handler.dart`**: Abstract base class for extensible function handling
   - Provides common interface for processing function calls
@@ -793,6 +792,25 @@ Comprehensive test coverage includes:
 - Ollama: Model management, retries, endpoint selection
 - Whisper: Transcription, error handling, response formatting
 - Cloud providers: Streaming, function calls, authentication
+
+### Deterministic Conversation Tests
+
+Conversation tests that validate `LottiChecklistStrategy` and handlers should avoid brittle
+streaming mocks. Instead, stub `ConversationRepository.sendMessage` to directly invoke
+`strategy.processToolCalls(...)` with predefined `ChatCompletionMessageToolCall` objects. This
+preserves the real strategy/handler execution while removing chunk‑assembly fragility.
+
+- Reference: `test/features/ai/functions/lotti_conversation_processor_via_repo_test.dart`
+- Helper pattern used in tests:
+  - `stubSendMessageToInvokeStrategy({ repo, manager, toolCalls })` → stubs
+    `sendMessage(...)` and synchronously calls `strategy.processToolCalls(toolCalls, manager)`.
+- Register mocktail fallbacks for types passed via `any<T>()`:
+  - `Task`, `InferenceRepositoryInterface`, `AiConfigInferenceProvider`,
+    `List<ChatCompletionMessage>`, `List<ChatCompletionTool>`.
+- Use repo/db mocks to reflect state transitions (e.g., task acquires `checklistIds` after create).
+
+Use full streaming only when you explicitly want to exercise chunk accumulation and tool‑call ID
+stitching across providers; keep those focused and deterministic (stable tool‑call ids/indices).
 
 ## Security Considerations
 

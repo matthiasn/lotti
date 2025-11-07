@@ -28,31 +28,18 @@ void main() {
       );
 
   group('getChecklistToolsForProvider', () {
-    test('returns all checklist tools for Ollama + GPT-OSS', () {
+    test('returns checklist tools universally (array-only batch)', () {
       final provider = makeProvider(InferenceProviderType.ollama);
       final model = makeModel('gpt-oss:20b');
       final tools =
           getChecklistToolsForProvider(provider: provider, model: model);
       final names = tools.map((t) => t.function.name).toList();
       expect(names, contains('suggest_checklist_completion'));
-      expect(names, contains('add_checklist_item'));
       expect(names, contains('add_multiple_checklist_items'));
-      expect(names.length, 3);
-    });
-
-    test('excludes multi-item tool for Ollama + non-GPT-OSS', () {
-      final provider = makeProvider(InferenceProviderType.ollama);
-      final model = makeModel('llama3.2:3b');
-      final tools =
-          getChecklistToolsForProvider(provider: provider, model: model);
-      final names = tools.map((t) => t.function.name).toList();
-      expect(names, contains('suggest_checklist_completion'));
-      expect(names, contains('add_checklist_item'));
-      expect(names, isNot(contains('add_multiple_checklist_items')));
       expect(names.length, 2);
     });
 
-    test('excludes multi-item tool for all non-Ollama providers', () {
+    test('returns same checklist tools for all providers', () {
       final nonOllamaProviders = [
         InferenceProviderType.openAi,
         InferenceProviderType.anthropic,
@@ -71,8 +58,7 @@ void main() {
             getChecklistToolsForProvider(provider: provider, model: model);
         final names = tools.map((t) => t.function.name).toList();
         expect(names, contains('suggest_checklist_completion'));
-        expect(names, contains('add_checklist_item'));
-        expect(names, isNot(contains('add_multiple_checklist_items')));
+        expect(names, contains('add_multiple_checklist_items'));
         expect(names.length, 2);
       }
     });

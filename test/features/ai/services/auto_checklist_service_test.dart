@@ -114,6 +114,7 @@ void main() {
         // Assert
         expect(result.success, isFalse);
         expect(result.checklistId, isNull);
+        expect(result.createdItems, isNull);
         expect(result.error, equals('No suggestions provided'));
       });
 
@@ -160,7 +161,13 @@ void main() {
               taskId: taskId,
               items: any(named: 'items'),
               title: 'TODOs',
-            )).thenAnswer((_) async => createdChecklist);
+            )).thenAnswer((_) async => (
+              checklist: createdChecklist,
+              createdItems: [
+                (id: 'item-1', title: 'Review code', isChecked: false),
+                (id: 'item-2', title: 'Write tests', isChecked: true),
+              ],
+            ));
 
         // Act
         final result = await service.autoCreateChecklist(
@@ -171,6 +178,9 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.checklistId, equals('checklist-123'));
+        expect(result.createdItems?.length, equals(2));
+        expect(result.createdItems?[0].title, equals('Review code'));
+        expect(result.createdItems?[1].title, equals('Write tests'));
         expect(result.error, isNull);
         verify(() => mockChecklistRepository.createChecklist(
               taskId: taskId,
@@ -212,6 +222,7 @@ void main() {
         // Assert
         expect(result.success, isFalse);
         expect(result.checklistId, isNull);
+        expect(result.createdItems, isNull);
         expect(result.error, equals('Checklists already exist'));
         verifyNever(() => mockChecklistRepository.createChecklist(
               taskId: any(named: 'taskId'),
@@ -242,7 +253,10 @@ void main() {
               taskId: taskId,
               items: any(named: 'items'),
               title: 'TODOs',
-            )).thenAnswer((_) async => null);
+            )).thenAnswer((_) async => (
+              checklist: null,
+              createdItems: <({String id, String title, bool isChecked})>[],
+            ));
 
         // Act
         final result = await service.autoCreateChecklist(
@@ -253,6 +267,7 @@ void main() {
         // Assert
         expect(result.success, isFalse);
         expect(result.checklistId, isNull);
+        expect(result.createdItems, isNull);
         expect(result.error, equals('Failed to create checklist'));
         verify(() => mockChecklistRepository.createChecklist(
               taskId: taskId,
@@ -384,7 +399,25 @@ void main() {
               taskId: taskId,
               items: any(named: 'items'),
               title: customTitle,
-            )).thenAnswer((_) async => createdChecklist);
+            )).thenAnswer((invocation) async {
+          final items = (invocation.namedArguments[#items] as List)
+              .cast<ChecklistItemData>();
+          final created = <({String id, String title, bool isChecked})>[
+            if (items.isNotEmpty)
+              (
+                id: 'item-1',
+                title: items[0].title,
+                isChecked: items[0].isChecked
+              ),
+            if (items.length > 1)
+              (
+                id: 'item-2',
+                title: items[1].title,
+                isChecked: items[1].isChecked
+              ),
+          ];
+          return (checklist: createdChecklist, createdItems: created);
+        });
 
         // Act
         final result = await service.autoCreateChecklist(
@@ -396,6 +429,9 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.checklistId, equals('checklist-456'));
+        expect(result.createdItems?.length, equals(2));
+        expect(result.createdItems?[0].title, equals('Review code'));
+        expect(result.createdItems?[1].title, equals('Write tests'));
         expect(result.error, isNull);
 
         // Verify checklist creation with custom title
@@ -451,7 +487,19 @@ void main() {
               taskId: taskId,
               items: any(named: 'items'),
               title: 'TODOs',
-            )).thenAnswer((_) async => createdChecklist);
+            )).thenAnswer((invocation) async {
+          final items = (invocation.namedArguments[#items] as List)
+              .cast<ChecklistItemData>();
+          final created = <({String id, String title, bool isChecked})>[
+            if (items.isNotEmpty)
+              (
+                id: 'item-1',
+                title: items[0].title,
+                isChecked: items[0].isChecked
+              ),
+          ];
+          return (checklist: createdChecklist, createdItems: created);
+        });
 
         // Act - pass shouldAutoCreate as true to skip database lookup
         final result = await service.autoCreateChecklist(
@@ -497,6 +545,7 @@ void main() {
         // Assert
         expect(result.success, isFalse);
         expect(result.checklistId, isNull);
+        expect(result.createdItems, isNull);
         expect(result.error, equals('Checklists already exist'));
 
         // Verify that journalEntityById was NOT called (optimized path)
@@ -508,6 +557,150 @@ void main() {
               items: any(named: 'items'),
               title: any(named: 'title'),
             ));
+      });
+
+      test(
+          'verifies item ordering is preserved and items are returned with IDs',
+          () async {
+        // This test verifies that:
+        // 1. Items are created in the exact order they are provided
+        // 2. The created items are returned with their generated IDs
+        //
+        // With the new robust solution, LottiBatchChecklistHandler no longer
+        // needs to rely on fragile index-based mapping. Instead, it directly
+        // uses the returned items with their IDs.
+
+        // Arrange
+        const taskId = 'test-task-id';
+        final task = testTask.copyWith(
+          data: testTask.data.copyWith(checklistIds: []),
+        );
+
+        // Create items with specific ordering to verify preservation
+        final orderedSuggestions = [
+          const ChecklistItemData(
+            title: 'First item - should be at index 0',
+            isChecked: false,
+            linkedChecklists: [],
+          ),
+          const ChecklistItemData(
+            title: 'Second item - should be at index 1',
+            isChecked: true,
+            linkedChecklists: [],
+          ),
+          const ChecklistItemData(
+            title: 'Third item - should be at index 2',
+            isChecked: false,
+            linkedChecklists: [],
+          ),
+          const ChecklistItemData(
+            title: 'Fourth item - should be at index 3',
+            isChecked: true,
+            linkedChecklists: [],
+          ),
+        ];
+
+        final createdChecklist = JournalEntity.checklist(
+          meta: Metadata(
+            id: 'checklist-ordered',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            starred: false,
+            flag: EntryFlag.none,
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            // Critical: These IDs must be in the exact order of creation
+            linkedChecklistItems: ['item-0', 'item-1', 'item-2', 'item-3'],
+            linkedTasks: [taskId],
+          ),
+        );
+
+        when(() => mockJournalDb.journalEntityById(taskId))
+            .thenAnswer((_) async => task);
+        when(() => mockChecklistRepository.createChecklist(
+              taskId: taskId,
+              items: any(named: 'items'),
+              title: 'TODOs',
+            )).thenAnswer((invocation) async {
+          final items = (invocation.namedArguments[#items] as List)
+              .cast<ChecklistItemData>();
+          // Critical: Return items in the exact order they were provided
+          final created = <({String id, String title, bool isChecked})>[];
+          for (var i = 0; i < items.length; i++) {
+            created.add((
+              id: 'item-$i',
+              title: items[i].title,
+              isChecked: items[i].isChecked,
+            ));
+          }
+          return (checklist: createdChecklist, createdItems: created);
+        });
+
+        // Act
+        final result = await service.autoCreateChecklist(
+          taskId: taskId,
+          suggestions: orderedSuggestions,
+        );
+
+        // Assert
+        expect(result.success, isTrue);
+        expect(result.checklistId, equals('checklist-ordered'));
+
+        // NEW: Verify the robust solution returns items with IDs directly
+        expect(result.createdItems?.length, equals(4));
+        expect(result.createdItems?[0].id, equals('item-0'));
+        expect(result.createdItems?[0].title,
+            equals('First item - should be at index 0'));
+        expect(result.createdItems?[1].id, equals('item-1'));
+        expect(result.createdItems?[1].title,
+            equals('Second item - should be at index 1'));
+        expect(result.createdItems?[2].id, equals('item-2'));
+        expect(result.createdItems?[2].title,
+            equals('Third item - should be at index 2'));
+        expect(result.createdItems?[3].id, equals('item-3'));
+        expect(result.createdItems?[3].title,
+            equals('Fourth item - should be at index 3'));
+
+        // Verify the items were passed in the correct order
+        final captured = verify(() => mockChecklistRepository.createChecklist(
+              taskId: taskId,
+              items: captureAny(named: 'items'),
+              title: 'TODOs',
+            )).captured;
+
+        final capturedItems = captured.first as List<ChecklistItemData>;
+        expect(capturedItems.length, equals(4));
+
+        // Critical assertions: verify ordering is preserved
+        expect(capturedItems[0].title,
+            equals('First item - should be at index 0'));
+        expect(capturedItems[1].title,
+            equals('Second item - should be at index 1'));
+        expect(capturedItems[2].title,
+            equals('Third item - should be at index 2'));
+        expect(capturedItems[3].title,
+            equals('Fourth item - should be at index 3'));
+
+        // Verify isChecked values are also preserved
+        expect(capturedItems[0].isChecked, false);
+        expect(capturedItems[1].isChecked, true);
+        expect(capturedItems[2].isChecked, false);
+        expect(capturedItems[3].isChecked, true);
+
+        // The created checklist should have IDs in the same order
+        // This is what LottiBatchChecklistHandler depends on
+        final checklist = createdChecklist as Checklist;
+        expect(
+          checklist.data.linkedChecklistItems.length,
+          equals(orderedSuggestions.length),
+        );
+        expect(checklist.data.linkedChecklistItems[0], equals('item-0'));
+        expect(checklist.data.linkedChecklistItems[1], equals('item-1'));
+        expect(checklist.data.linkedChecklistItems[2], equals('item-2'));
+        expect(checklist.data.linkedChecklistItems[3], equals('item-3'));
       });
     });
   });

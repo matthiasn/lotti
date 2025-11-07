@@ -8,7 +8,6 @@ part 'checklist_completion_functions.g.dart';
 class ChecklistCompletionFunctions {
   static const String suggestChecklistCompletion =
       'suggest_checklist_completion';
-  static const String addChecklistItem = 'add_checklist_item';
   static const String addMultipleChecklistItems =
       'add_multiple_checklist_items';
 
@@ -47,48 +46,35 @@ class ChecklistCompletionFunctions {
       const ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(
-          name: addChecklistItem,
-          description:
-              'Add a new checklist item to the task. If no checklist exists, create a "to-do" checklist first.',
-          parameters: {
-            'type': 'object',
-            'properties': {
-              'actionItemDescription': {
-                'type': 'string',
-                'description': 'The description of the checklist item to add',
-              },
-            },
-            'required': ['actionItemDescription'],
-          },
-        ),
-      ),
-      const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
           name: addMultipleChecklistItems,
           description:
-              'Add multiple checklist items to the task at once. Prefer a JSON array of strings for items; alternatively, a comma-separated string is accepted. If no checklist exists, create a "TODOs" checklist first.',
+              'Add one or more checklist items to the task in a single call. Always pass a JSON array of objects. If no checklist exists, create a "TODOs" checklist first.',
           parameters: {
             'type': 'object',
             'properties': {
               'items': {
-                'oneOf': [
-                  {
-                    'type': 'array',
-                    'items': {
+                'type': 'array',
+                'minItems': 1,
+                'items': {
+                  'type': 'object',
+                  'properties': {
+                    'title': {
                       'type': 'string',
                       'minLength': 1,
+                      'maxLength': 400,
+                      'description':
+                          'Checklist item title (trimmed, non-empty, max 400 chars)',
                     },
-                    'description':
-                        'Array of checklist item descriptions (preferred). Example: ["cheese", "tomatoes, sliced", "pepperoni"]',
+                    'isChecked': {
+                      'type': 'boolean',
+                      'description':
+                          'Whether the item is already checked (default: false)'
+                    },
                   },
-                  {
-                    'type': 'string',
-                    'description':
-                        r'Comma-separated list (fallback). Escape commas inside an item with \\ or wrap items in quotes. Commas inside parentheses/brackets/braces are treated as part of the item.',
-                  },
-                ],
-                'description': 'List of checklist items to add',
+                  'required': ['title'],
+                },
+                'description':
+                    'Array of checklist item objects. Example: {"items": [{"title": "Buy milk"}, {"title": "Write tests", "isChecked": true}] }',
               },
             },
             'required': ['items'],

@@ -260,8 +260,9 @@ void main() {
 
       expect(functionNames,
           contains(ChecklistCompletionFunctions.suggestChecklistCompletion));
+      // Single-item tool removed; only batch tool is exposed
       expect(functionNames,
-          contains(ChecklistCompletionFunctions.addChecklistItem));
+          contains(ChecklistCompletionFunctions.addMultipleChecklistItems));
       expect(functionNames, contains(TaskFunctions.setTaskLanguage));
 
       // By default label assignment tool is gated off; should not be present

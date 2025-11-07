@@ -205,6 +205,9 @@ void main() {
             )).thenAnswer((_) async => (
               success: true,
               checklistId: 'new-checklist',
+              createdItems: [
+                (id: 'item-1', title: 'Buy milk', isChecked: false)
+              ],
               error: null,
             ));
 
@@ -292,6 +295,7 @@ void main() {
             )).thenAnswer((_) async => (
               success: false,
               checklistId: null,
+              createdItems: null,
               error: 'Creation failed',
             ));
 

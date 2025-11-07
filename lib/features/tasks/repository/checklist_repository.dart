@@ -1,3 +1,5 @@
+// ignore_for_file: comment_references
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -46,20 +48,40 @@ class ChecklistRepository {
     }
   }
 
-  Future<JournalEntity?> createChecklist({
+  /// Creates a new checklist and optionally populates it with items.
+  ///
+  /// Parameters:
+  /// - [taskId]: The task to attach this checklist to
+  /// - [items]: Optional items to create with the checklist
+  /// - [title]: Optional title for the checklist (defaults to 'TODOs')
+  ///
+  /// Returns a record containing:
+  /// - [checklist]: The created Checklist entity or null if creation failed
+  /// - [createdItems]: List of created items with their generated IDs
+  Future<
+      ({
+        JournalEntity? checklist,
+        List<({String id, String title, bool isChecked})> createdItems,
+      })> createChecklist({
     required String? taskId,
     List<ChecklistItemData>? items,
     String? title,
   }) async {
     try {
       if (taskId == null) {
-        return null;
+        return (
+          checklist: null,
+          createdItems: <({String id, String title, bool isChecked})>[]
+        );
       }
 
       final task = await getIt<JournalDb>().journalEntityById(taskId);
 
       if (task is! Task) {
-        return null;
+        return (
+          checklist: null,
+          createdItems: <({String id, String title, bool isChecked})>[]
+        );
       }
 
       final categoryId = task.meta.categoryId;
@@ -87,6 +109,8 @@ class ChecklistRepository {
         ),
       );
 
+      final createdItemsList = <({String id, String title, bool isChecked})>[];
+
       if (items != null) {
         final createdIds = <String>[];
 
@@ -99,6 +123,11 @@ class ChecklistRepository {
           );
           if (checklistItem != null) {
             createdIds.add(checklistItem.id);
+            createdItemsList.add((
+              id: checklistItem.id,
+              title: item.title,
+              isChecked: item.isChecked,
+            ));
           }
         }
 
@@ -110,7 +139,7 @@ class ChecklistRepository {
         );
       }
 
-      return newChecklist;
+      return (checklist: newChecklist, createdItems: createdItemsList);
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -118,7 +147,10 @@ class ChecklistRepository {
         subDomain: 'createChecklistEntry',
         stackTrace: stackTrace,
       );
-      return null;
+      return (
+        checklist: null,
+        createdItems: <({String id, String title, bool isChecked})>[]
+      );
     }
   }
 

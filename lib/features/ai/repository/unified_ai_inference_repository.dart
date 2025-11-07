@@ -32,7 +32,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai/utils/item_list_parsing.dart';
+import 'package:lotti/features/ai/utils/checklist_validation.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -1155,70 +1155,41 @@ class UnifiedAiInferenceRepository {
           }
         }
       } else if (toolCall.function.name ==
-              ChecklistCompletionFunctions.addChecklistItem ||
-          toolCall.function.name == 'add_multiple_checklist_items') {
+          ChecklistCompletionFunctions.addMultipleChecklistItems) {
         // Handle add checklist item(s)
         try {
           final arguments =
               jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
 
-          // Determine if this is single or multiple items
-          final isBatch =
-              toolCall.function.name == 'add_multiple_checklist_items';
-          final itemDescriptions = <String>[];
-
-          if (isBatch) {
-            // Prefer JSON array, fallback to robustly parsed string
-            final itemsField = arguments['items'];
-            if (itemsField is List) {
-              itemDescriptions.addAll(
-                itemsField
-                    .whereType<Object>()
-                    .map((e) => e.toString().trim())
-                    .where((e) => e.isNotEmpty && e != 'null'),
-              );
-            } else if (itemsField is String && itemsField.trim().isNotEmpty) {
-              // Use the same robust parsing as the batch handler
-              itemDescriptions.addAll(
-                parseItemListString(itemsField),
-              );
-            } else {
-              developer.log(
-                'Unexpected type for "items": ${itemsField?.runtimeType}',
-                name: 'UnifiedAiInferenceRepository',
-              );
-            }
+          // Array-of-objects only
+          final itemsField = arguments['items'];
+          if (itemsField is! List) {
             developer.log(
-              'Processing batch checklist items: ${itemDescriptions.length} items',
+              'Invalid or missing items for add_multiple_checklist_items',
               name: 'UnifiedAiInferenceRepository',
             );
-          } else {
-            // Single item
-            final actionItemDescription =
-                arguments['actionItemDescription'] as String?;
-            if (actionItemDescription != null &&
-                actionItemDescription.trim().isNotEmpty) {
-              itemDescriptions.add(actionItemDescription);
-            }
+            continue;
           }
 
-          if (itemDescriptions.isEmpty) {
+          final sanitized = ChecklistValidation.validateItems(itemsField);
+
+          if (!ChecklistValidation.isValidBatchSize(sanitized.length)) {
             developer.log(
-              'No valid items found in tool call',
+              ChecklistValidation.getBatchSizeErrorMessage(sanitized.length),
               name: 'UnifiedAiInferenceRepository',
             );
             continue;
           }
 
           developer.log(
-            'Processing ${itemDescriptions.length} checklist items',
+            'Processing ${sanitized.length} checklist items (array-of-objects)',
             name: 'UnifiedAiInferenceRepository',
           );
 
           // Process each item
-          for (final itemDescription in itemDescriptions) {
+          for (final item in sanitized) {
             developer.log(
-              'Adding checklist item: $itemDescription',
+              'Adding checklist item: ${item.title} (isChecked=${item.isChecked})',
               name: 'UnifiedAiInferenceRepository',
             );
 
@@ -1236,8 +1207,8 @@ class UnifiedAiInferenceRepository {
                 taskId: currentTask.id,
                 suggestions: [
                   ChecklistItemData(
-                    title: itemDescription,
-                    isChecked: false,
+                    title: item.title,
+                    isChecked: item.isChecked,
                     linkedChecklists: [],
                   ),
                 ],
@@ -1287,8 +1258,8 @@ class UnifiedAiInferenceRepository {
               final checklistRepository = ref.read(checklistRepositoryProvider);
               final newItem = await checklistRepository.addItemToChecklist(
                 checklistId: checklistId,
-                title: itemDescription,
-                isChecked: false,
+                title: item.title,
+                isChecked: item.isChecked,
                 categoryId: currentTask.meta.categoryId,
               );
 

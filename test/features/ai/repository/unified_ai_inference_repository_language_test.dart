@@ -354,7 +354,7 @@ void main() {
 
       expect(toolNames, contains(TaskFunctions.setTaskLanguage));
       expect(toolNames, contains('suggest_checklist_completion'));
-      expect(toolNames, contains('add_checklist_item'));
+      expect(toolNames, contains('add_multiple_checklist_items'));
     });
 
     test('handles set_task_language function call in checklist updates',

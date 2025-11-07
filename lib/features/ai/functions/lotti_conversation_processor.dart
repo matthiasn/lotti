@@ -25,7 +25,18 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-/// Processes AI function calls using conversation approach for better batching and error handling
+/// Processes AI function calls using the conversation approach for better batching and error
+/// handling.
+///
+/// Notes for maintainers and test authors:
+/// - The conversation is driven by a `ConversationStrategy` (here
+///   `LottiChecklistStrategy`) which consumes tool calls and delegates to handlers
+///   (`LottiChecklistItemHandler`, `LottiBatchChecklistHandler`).
+/// - Providers may stream tool call deltas (OpenAI‑style). The repository assembles them
+///   before invoking the strategy. In unit tests, prefer a deterministic approach: stub
+///   `ConversationRepository.sendMessage` to call `strategy.processToolCalls` directly with
+///   predefined `ChatCompletionMessageToolCall` objects. This reliably exercises the same
+///   strategy/handler code paths without depending on chunk assembly in mocks.
 class LottiConversationProcessor {
   LottiConversationProcessor({
     required this.ref,
@@ -133,8 +144,12 @@ class LottiConversationProcessor {
       hasErrors = strategy.hadErrors;
       responseText = strategy.getResponseSummary();
 
-      // Use only checklistHandler items since batch items are copied there
-      final totalItems = checklistHandler.successfulItems.length;
+      // Merge items from both handlers for robustness
+      final mergedItems = <String>{
+        ...checklistHandler.successfulItems,
+        ...batchChecklistHandler.successfulItems,
+      }.toList();
+      final totalItems = mergedItems.length;
 
       developer.log(
         'Conversation completed: $totalItems items created '
@@ -147,8 +162,11 @@ class LottiConversationProcessor {
       // Store messages before cleanup
       final messages = List<ChatCompletionMessage>.from(manager.messages);
 
-      // Use only checklistHandler items since batch items are copied there
-      final allItems = checklistHandler.successfulItems;
+      // Merge items from both handlers
+      final allItems = <String>{
+        ...checklistHandler.successfulItems,
+        ...batchChecklistHandler.successfulItems,
+      }.toList();
 
       return ConversationResult(
         totalCreated: allItems.length,
@@ -224,8 +242,11 @@ class LottiChecklistStrategy extends ConversationStrategy {
   bool get hadErrors => _hadErrors;
 
   String getResponseSummary() {
-    // Use only checklistHandler items since batch items are copied there
-    final allItems = checklistHandler.successfulItems;
+    // Merge items from both handlers
+    final allItems = <String>{
+      ...checklistHandler.successfulItems,
+      ...batchChecklistHandler.successfulItems,
+    }.toList();
 
     if (allItems.isEmpty) {
       return 'No checklist items were created.';
@@ -290,29 +311,15 @@ class LottiChecklistStrategy extends ConversationStrategy {
         );
 
         if (result.success) {
-          // Pass existing descriptions to prevent duplicates
-          final existingDescriptions = checklistHandler.successfulItems
-              .map((item) => item.toLowerCase().trim())
-              .toSet();
-          final createdCount = await batchChecklistHandler.createBatchItems(
-            result,
-            existingDescriptions: existingDescriptions,
-          );
+          final createdCount =
+              await batchChecklistHandler.createBatchItems(result);
           developer.log(
             'Batch creation result: created $createdCount items',
             name: 'LottiConversationProcessor',
           );
-          // Only flag as error if we tried to create items but failed
-          // (not if all items were duplicates)
-          final items = result.data['items'] as List<String>?;
+          final items = result.data['items'] as List<dynamic>?;
           if (createdCount == 0 && items != null && items.isNotEmpty) {
-            // Check if all items were duplicates
-            final allDuplicates = items.every((item) =>
-                existingDescriptions.contains(item.toLowerCase().trim()));
-            if (!allDuplicates) {
-              // Some items should have been created but weren't
-              _hadErrors = true;
-            }
+            _hadErrors = true;
           }
           // Copy successful items to the single item handler for consistency
           checklistHandler
@@ -524,11 +531,11 @@ class LottiChecklistStrategy extends ConversationStrategy {
                 .join(', ');
 
             detailedResponse = suggestions.length > 5
-                ? 'Found ${suggestions.length} suggested items ($itemDescriptions, ...). Please use add_checklist_item or add_multiple_checklist_items to create these items.'
-                : 'Found ${suggestions.length} suggested items: $itemDescriptions. Please use add_checklist_item or add_multiple_checklist_items to create these items.';
+                ? 'Found ${suggestions.length} suggested items ($itemDescriptions, ...). Please use add_multiple_checklist_items (array of objects) to create these items.'
+                : 'Found ${suggestions.length} suggested items: $itemDescriptions. Please use add_multiple_checklist_items (array of objects) to create these items.';
           } else {
             detailedResponse =
-                'No items to suggest. Please use add_checklist_item if you want to create new items.';
+                'No items to suggest. To create new items, call add_multiple_checklist_items with {"items": [{"title": "..."}]}.';
           }
         } catch (e) {
           // If we can't parse the arguments, use a generic response
@@ -548,7 +555,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
         manager.addToolResponse(
           toolCallId: call.id,
           response:
-              'Unknown function. Please use add_checklist_item to create checklist items.',
+              'Unknown function. Please use add_multiple_checklist_items with the required array-of-objects format.',
         );
       }
     }
@@ -604,40 +611,34 @@ class LottiChecklistStrategy extends ConversationStrategy {
       return retryPrompt;
     }
 
-    // Use only checklistHandler items since batch items are copied there
-    final allSuccessfulItems = checklistHandler.successfulItems;
+    // Merge items from both handlers
+    final allSuccessfulItems = <String>{
+      ...checklistHandler.successfulItems,
+      ...batchChecklistHandler.successfulItems,
+    }.toList();
 
     // If no items created yet, provide explicit instructions
     if (allSuccessfulItems.isEmpty) {
-      return r'''
+      return '''
 You haven't created any checklist items yet. Please review the user's original request.
 
-IMPORTANT: When you have multiple items to add (2 or more), you MUST use add_multiple_checklist_items for efficiency.
+IMPORTANT: When you have multiple items to add (2 or more), you MUST use add_multiple_checklist_items in a SINGLE call.
 
-Preferred format for multiple items:
-{"items": ["item1", "item2", "item3"]}
-
-Fallback format (if arrays are not supported):
-- {"items": "item1, item2, item3"}
-- If an item contains a comma, escape it with \\, or wrap the item in quotes.
-- Commas inside parentheses/brackets/braces belong to the item and should not split it.
+Required format (array of objects):
+{"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3", "isChecked": true}]}
 
 Example: If the user asked for a pizza shopping list with cheese, pepperoni, and dough, use ONE call:
-add_multiple_checklist_items with {"items": ["cheese", "pepperoni", "dough"]}
+add_multiple_checklist_items with {"items": [{"title": "cheese"}, {"title": "pepperoni"}, {"title": "dough"}]}
 
-Only use add_checklist_item for single items:
-{"actionItemDescription": "single item"}
-
-Please create the checklist items now using the appropriate function.''';
+Please create the checklist items now using the required function and format.''';
     }
 
     return '''
 Great! You've created ${allSuccessfulItems.length} checklist item(s) so far: ${allSuccessfulItems.join(', ')}.
 
 If there are more items to add from the user's original request:
-- For multiple remaining items: Use add_multiple_checklist_items with {"items": ["item1", "item2", "item3"]} (preferred)
-- If arrays are not supported, use {"items": "item1, item2, item3"} and escape commas within an item as \\, or wrap the item in quotes
-- For a single remaining item: Use add_checklist_item with {"actionItemDescription": "item"}
+- Use add_multiple_checklist_items with {"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3"}]}
+- When an item is explicitly mentioned as already done, set {"isChecked": true} for that item
 
 Continue until all items from the user's request have been added.''';
   }

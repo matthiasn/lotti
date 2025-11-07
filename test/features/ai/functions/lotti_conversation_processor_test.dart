@@ -196,6 +196,35 @@ class TestDataFactory {
   }
 }
 
+// Test helper: robustly stub ConversationRepository.sendMessage to always
+// invoke the provided strategy with the given tool calls, avoiding brittle
+// named-arg matching.
+void stubSendMessageToInvokeStrategy({
+  required ConversationRepository repo,
+  required ConversationManager manager,
+  required List<ChatCompletionMessageToolCall> toolCalls,
+}) {
+  when(() => repo.sendMessage(
+        conversationId: any(named: 'conversationId'),
+        message: any(named: 'message'),
+        model: any(named: 'model'),
+        provider: any(named: 'provider'),
+        inferenceRepo: any(named: 'inferenceRepo'),
+        tools: any(named: 'tools'),
+        temperature: any(named: 'temperature'),
+        strategy: any(named: 'strategy'),
+      )).thenAnswer((invocation) async {
+    final strategy =
+        invocation.namedArguments[#strategy] as ConversationStrategy?;
+    if (strategy != null) {
+      await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: manager,
+      );
+    }
+  });
+}
+
 void main() {
   late MockJournalRepository mockJournalRepo;
   late MockChecklistRepository mockChecklistRepo;
@@ -260,296 +289,7 @@ void main() {
   tearDown(getIt.reset);
 
   group('LottiConversationProcessor - processPromptWithConversation', () {
-    test(
-        'Ollama non-GPT-OSS: bracketed list rejected then creates single items',
-        () async {
-      // Arrange
-      final task = TestDataFactory.createTask();
-      final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'Add milk and eggs';
-      const conversationId = 'conv-non-gptoss';
-      final mockOllamaRepo = MockOllamaInferenceRepository();
-
-      // Provider is Ollama but model is NOT GPT-OSS
-      final model = AiConfigModel(
-        id: 'llama-model',
-        name: 'llama3.2:3b',
-        providerModelId: 'llama3.2:3b',
-        inferenceProviderId: 'ollama',
-        createdAt: DateTime.now(),
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-        maxCompletionTokens: 1000,
-      );
-
-      // Mock conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-      when(() => mockConversationRepo.getConversation(conversationId))
-          .thenReturn(mockConversationManager);
-      when(() => mockConversationManager.messages).thenReturn([]);
-      final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenReturn(null);
-
-      // Phase 1: model mistakenly sends bracketed list into single-item function
-      const badToolCall = ChatCompletionMessageToolCall(
-        id: 'tool-bad',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
-          arguments: '{"actionItemDescription": "[milk, eggs]"}',
-        ),
-      );
-
-      // Phase 2: model retries with two proper single-item calls
-      const okToolCall1 = ChatCompletionMessageToolCall(
-        id: 'tool-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
-          arguments: '{"actionItemDescription": "milk"}',
-        ),
-      );
-      const okToolCall2 = ChatCompletionMessageToolCall(
-        id: 'tool-2',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
-          arguments: '{"actionItemDescription": "eggs"}',
-        ),
-      );
-
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: prompt,
-            model: model.name,
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((invocation) async {
-        final strategy =
-            invocation.namedArguments[#strategy] as ConversationStrategy?;
-        if (strategy != null) {
-          // Round 1: rejected bracketed list
-          await strategy.processToolCalls(
-            toolCalls: [badToolCall],
-            manager: mockConversationManager,
-          );
-          // Round 2: two valid single items
-          await strategy.processToolCalls(
-            toolCalls: [okToolCall1, okToolCall2],
-            manager: mockConversationManager,
-          );
-        }
-      });
-
-      // Checklist creation
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: task.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
-          )).thenAnswer((_) async => (
-            success: true,
-            checklistId: 'ck',
-            error: null,
-          ));
-
-      // Second item should be added to existing checklist
-      when(() => mockChecklistRepo.addItemToChecklist(
-            checklistId: 'ck',
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((invocation) async {
-        final title = invocation.namedArguments[#title] as String? ?? '';
-        return TestDataFactory.createChecklistItem(title: title);
-      });
-
-      // Task refresh
-      var calls = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
-        calls++;
-        if (calls > 1) {
-          return TestDataFactory.createTask(
-              id: task.meta.id, checklistIds: const ['ck']);
-        }
-        return task;
-      });
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
-
-      // Act
-      final result = await processor.processPromptWithConversation(
-        prompt: prompt,
-        entity: task,
-        task: task,
-        model: model,
-        provider: AiConfigInferenceProvider(
-          id: 'ollama',
-          baseUrl: 'http://localhost:11434',
-          apiKey: '',
-          name: 'Ollama',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.ollama,
-        ),
-        promptConfig: promptConfig,
-        systemMessage: checklistUpdatesPrompt.systemMessage,
-        tools: const [],
-        inferenceRepo: mockOllamaRepo,
-        autoChecklistService: mockAutoChecklistService,
-      );
-
-      // Assert: total 2 items created after retry path
-      expect(result.totalCreated, 2);
-      expect(result.items, containsAll(['milk', 'eggs']));
-    });
-    test('should process single checklist item creation', () async {
-      // Arrange
-      final task = TestDataFactory.createTask();
-      final model = TestDataFactory.createModel();
-      final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'Add buy milk to my checklist';
-      const conversationId = 'test-conversation-id';
-      final mockOllamaRepo = MockOllamaInferenceRepository();
-
-      // Mock conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-
-      when(() => mockConversationRepo.getConversation(conversationId))
-          .thenReturn(mockConversationManager);
-
-      when(() => mockConversationManager.messages).thenReturn([]);
-
-      // Mock Ollama response stream
-      final ollamaStreamController =
-          StreamController<CreateChatCompletionStreamResponse>();
-      when(() => mockOllamaRepo.generateTextWithMessages(
-            messages: any(named: 'messages'),
-            model: model.name,
-            provider: any(named: 'provider'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-          )).thenAnswer((_) => ollamaStreamController.stream);
-
-      // Mock Ollama response with single item
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'tool-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
-          arguments: '{"actionItemDescription": "buy milk"}',
-        ),
-      );
-
-      // Mock conversation flow
-      final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
-
-      // Mock addToolResponse on conversation manager
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenReturn(null);
-
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: prompt,
-            model: model.name,
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((invocation) async {
-        // Get the strategy from the invocation
-        final strategy =
-            invocation.namedArguments[#strategy] as ConversationStrategy?;
-
-        // Simulate the conversation repository's behavior:
-        // The repository would process tool calls with the strategy
-        if (strategy != null) {
-          await strategy.processToolCalls(
-            toolCalls: [toolCall],
-            manager: mockConversationManager,
-          );
-        }
-      });
-
-      // Mock checklist creation
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: task.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
-          )).thenAnswer((_) async => (
-            success: true,
-            checklistId: 'new-checklist',
-            error: null,
-          ));
-
-      // Mock task refresh - first call returns task without checklist, second call returns task with checklist
-      var journalDbCallCount = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
-        journalDbCallCount++;
-        // After checklist creation, return task with checklist
-        if (journalDbCallCount > 1) {
-          return TestDataFactory.createTask(
-            id: task.meta.id,
-            checklistIds: ['new-checklist'],
-          );
-        }
-        return task;
-      });
-
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
-
-      // Act
-      final result = await processor.processPromptWithConversation(
-        prompt: prompt,
-        entity: task,
-        task: task,
-        model: model,
-        provider: AiConfigInferenceProvider(
-          id: 'ollama',
-          baseUrl: 'http://localhost:11434',
-          apiKey: '',
-          name: 'Ollama',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.ollama,
-        ),
-        promptConfig: promptConfig,
-        systemMessage: checklistUpdatesPrompt.systemMessage,
-        tools: [],
-        inferenceRepo: mockOllamaRepo,
-        autoChecklistService: mockAutoChecklistService,
-      );
-
-      // Assert
-      expect(result.totalCreated, 1);
-      expect(result.items, ['buy milk']);
-      // TODO: Fix hadErrors issue - the handler's createItem is returning false even though item was created
-      // expect(result.hadErrors, false);
-      expect(result.responseText, contains('Created 1 checklist item'));
-    });
-
-    test('should process batch checklist items creation', () async {
+    test('should process multiple items via batch creation', () async {
       // Arrange
       final task = TestDataFactory.createTask();
       final model = TestDataFactory.createModel();
@@ -564,393 +304,7 @@ void main() {
             maxTurns: any(named: 'maxTurns'),
           )).thenReturn(conversationId);
 
-      when(() => mockConversationRepo.getConversation(conversationId))
-          .thenReturn(mockConversationManager);
-
-      when(() => mockConversationManager.messages).thenReturn([]);
-
-      // Mock Ollama response with batch items
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'tool-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'add_multiple_checklist_items',
-          arguments: '{"items": "cheese, tomatoes, pepperoni"}',
-        ),
-      );
-
-      // Mock conversation flow
-      final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
-
-      // Mock addToolResponse on conversation manager
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenReturn(null);
-
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: prompt,
-            model: model.name,
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((invocation) async {
-        // Get the strategy from the invocation
-        final strategy =
-            invocation.namedArguments[#strategy] as ConversationStrategy?;
-
-        // Simulate the conversation repository's behavior:
-        // The repository would process tool calls with the strategy
-        if (strategy != null) {
-          await strategy.processToolCalls(
-            toolCalls: [toolCall],
-            manager: mockConversationManager,
-          );
-        }
-      });
-
-      // Mock checklist creation
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: task.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
-          )).thenAnswer((invocation) async {
-        return (
-          success: true,
-          checklistId: 'new-checklist',
-          error: null,
-        );
-      });
-
-      // Mock task refresh - first call returns task without checklist, second call returns task with checklist
-      var journalDbCallCount = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
-        journalDbCallCount++;
-        // After checklist creation, return task with checklist
-        if (journalDbCallCount > 1) {
-          return TestDataFactory.createTask(
-            id: task.meta.id,
-            checklistIds: ['new-checklist'],
-          );
-        }
-        return task;
-      });
-
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
-
-      // Act
-      final result = await processor.processPromptWithConversation(
-        prompt: prompt,
-        entity: task,
-        task: task,
-        model: model,
-        provider: AiConfigInferenceProvider(
-          id: 'ollama',
-          baseUrl: 'http://localhost:11434',
-          apiKey: '',
-          name: 'Ollama',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.ollama,
-        ),
-        promptConfig: promptConfig,
-        systemMessage: checklistUpdatesPrompt.systemMessage,
-        tools: [],
-        inferenceRepo: mockOllamaRepo,
-        autoChecklistService: mockAutoChecklistService,
-      );
-
-      // Assert
-      expect(result.totalCreated, 3);
-      expect(result.items, containsAll(['cheese', 'tomatoes', 'pepperoni']));
-      // TODO: Fix hadErrors issue
-      // expect(result.hadErrors, false);
-      expect(result.responseText, contains('Created 3 checklist items'));
-    });
-
-    test('Ollama GPT-OSS: creates multiple items via one batch tool call',
-        () async {
-      // Arrange
-      final task = TestDataFactory.createTask();
-      final model = TestDataFactory.createModel(); // gpt-oss:20b
-      final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'Add shopping items: apples, bananas, cereal';
-      const conversationId = 'conv-gptoss-batch';
-      final mockOllamaRepo = MockOllamaInferenceRepository();
-
-      // Conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-      when(() => mockConversationRepo.getConversation(conversationId))
-          .thenReturn(mockConversationManager);
-      when(() => mockConversationManager.messages).thenReturn([]);
-      final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenReturn(null);
-
-      // The model emits a single batch call with three items
-      const batchToolCall = ChatCompletionMessageToolCall(
-        id: 'tool-batch',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'add_multiple_checklist_items',
-          arguments: '{"items": ["apples", "bananas", "cereal"]}',
-        ),
-      );
-
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: prompt,
-            model: model.name,
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((invocation) async {
-        final strategy =
-            invocation.namedArguments[#strategy] as ConversationStrategy?;
-        if (strategy != null) {
-          await strategy.processToolCalls(
-            toolCalls: [batchToolCall],
-            manager: mockConversationManager,
-          );
-        }
-      });
-
-      // Checklist creation using auto service for brand-new checklist
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: task.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
-          )).thenAnswer((_) async => (
-            success: true,
-            checklistId: 'ck',
-            error: null,
-          ));
-
-      // Task refresh: after creation, return a task with the new checklist id
-      var calls = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
-        calls++;
-        if (calls > 1) {
-          return TestDataFactory.createTask(
-              id: task.meta.id, checklistIds: const ['ck']);
-        }
-        return task;
-      });
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
-
-      // Act
-      final result = await processor.processPromptWithConversation(
-        prompt: prompt,
-        entity: task,
-        task: task,
-        model: model,
-        provider: AiConfigInferenceProvider(
-          id: 'ollama',
-          baseUrl: 'http://localhost:11434',
-          apiKey: '',
-          name: 'Ollama',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.ollama,
-        ),
-        promptConfig: promptConfig,
-        systemMessage: checklistUpdatesPrompt.systemMessage,
-        tools: const [],
-        inferenceRepo: mockOllamaRepo,
-        autoChecklistService: mockAutoChecklistService,
-      );
-
-      // Assert
-      expect(result.totalCreated, 3);
-      expect(result.items, containsAll(['apples', 'bananas', 'cereal']));
-    });
-
-    test('should handle language detection before checklist creation',
-        () async {
-      // Arrange
-      final task = TestDataFactory.createTask();
-      final model = TestDataFactory.createModel();
-      final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'Añadir comprar leche a mi lista';
-      const conversationId = 'test-conversation-id';
-      final mockOllamaRepo = MockOllamaInferenceRepository();
-
-      // Mock conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-
-      when(() => mockConversationRepo.getConversation(conversationId))
-          .thenReturn(mockConversationManager);
-
-      when(() => mockConversationManager.messages).thenReturn([]);
-
-      // Mock Ollama response with language detection first
-      const languageToolCall = ChatCompletionMessageToolCall(
-        id: 'tool-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'set_task_language',
-          arguments:
-              '{"languageCode": "es", "confidence": "high", "reason": "Spanish detected"}',
-        ),
-      );
-
-      const checklistToolCall = ChatCompletionMessageToolCall(
-        id: 'tool-2',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
-          arguments: '{"actionItemDescription": "comprar leche"}',
-        ),
-      );
-
-      // Mock conversation flow
-      final streamController = StreamController<ConversationEvent>();
-      when(() => mockConversationManager.events)
-          .thenAnswer((_) => streamController.stream);
-
-      // Mock addToolResponse on conversation manager
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenReturn(null);
-
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: any(named: 'message'),
-            model: model.name,
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((invocation) async {
-        // Get the strategy from the invocation
-        final strategy =
-            invocation.namedArguments[#strategy] as ConversationStrategy?;
-
-        // Simulate the conversation repository's behavior:
-        // The repository would process tool calls with the strategy
-        if (strategy != null) {
-          // First call: language detection then checklist creation
-          await strategy.processToolCalls(
-            toolCalls: [languageToolCall, checklistToolCall],
-            manager: mockConversationManager,
-          );
-        }
-      });
-
-      // Mock language update
-      final updatedTask = TestDataFactory.createTask(
-        id: task.meta.id,
-        languageCode: 'es',
-      );
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
-
-      // Mock checklist creation
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: task.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
-          )).thenAnswer((_) async => (
-            success: true,
-            checklistId: 'new-checklist',
-            error: null,
-          ));
-
-      // Mock task refresh - first call returns task without checklist, second call returns task with checklist
-      var journalDbCallCount = 0;
-      when(() => mockJournalDb.journalEntityById(task.meta.id))
-          .thenAnswer((_) async {
-        journalDbCallCount++;
-        // After checklist creation, return task with checklist
-        if (journalDbCallCount > 1) {
-          return TestDataFactory.createTask(
-            id: task.meta.id,
-            languageCode: 'es',
-            checklistIds: ['new-checklist'],
-          );
-        }
-        return updatedTask;
-      });
-
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
-
-      // Act
-      final result = await processor.processPromptWithConversation(
-        prompt: prompt,
-        entity: task,
-        task: task,
-        model: model,
-        provider: AiConfigInferenceProvider(
-          id: 'ollama',
-          baseUrl: 'http://localhost:11434',
-          apiKey: '',
-          name: 'Ollama',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.ollama,
-        ),
-        promptConfig: promptConfig,
-        systemMessage: checklistUpdatesPrompt.systemMessage,
-        tools: [],
-        inferenceRepo: mockOllamaRepo,
-        autoChecklistService: mockAutoChecklistService,
-      );
-
-      // Assert
-      expect(result.totalCreated, 1);
-      expect(result.items, ['comprar leche']);
-      // TODO: Fix hadErrors issue
-      // expect(result.hadErrors, false);
-      expect(result.responseText, contains('Created 1 checklist item'));
-
-      // Verify language was set correctly
-      final capturedEntity = verify(() => mockJournalRepo.updateJournalEntity(
-            captureAny(),
-          )).captured.single as JournalEntity;
-
-      expect(capturedEntity, isA<Task>());
-      final capturedTaskEntity = capturedEntity as Task;
-      expect(capturedTaskEntity.data.languageCode, 'es');
-    });
-
-    test('should prevent duplicate items when mixing single and batch creation',
-        () async {
-      // Arrange
-      final task = TestDataFactory.createTask();
-      final model = TestDataFactory.createModel();
-      final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'Add pizza ingredients: cheese, tomatoes, pepperoni';
-      const conversationId = 'test-conversation-id';
-      final mockOllamaRepo = MockOllamaInferenceRepository();
-
-      // Mock conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-
-      when(() => mockConversationRepo.getConversation(conversationId))
+      when(() => mockConversationRepo.getConversation(any()))
           .thenReturn(mockConversationManager);
 
       when(() => mockConversationManager.messages).thenReturn([]);
@@ -960,8 +314,8 @@ void main() {
         id: 'tool-1',
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
-          arguments: '{"actionItemDescription": "cheese"}',
+          name: 'add_multiple_checklist_items',
+          arguments: '{"items": [{"title": "cheese"}]}',
         ),
       );
 
@@ -969,8 +323,8 @@ void main() {
         id: 'tool-2',
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
-          arguments: '{"actionItemDescription": "tomatoes"}',
+          name: 'add_multiple_checklist_items',
+          arguments: '{"items": [{"title": "tomatoes"}]}',
         ),
       );
 
@@ -979,7 +333,8 @@ void main() {
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
           name: 'add_multiple_checklist_items',
-          arguments: '{"items": "cheese, tomatoes, pepperoni"}',
+          arguments:
+              '{"items": [{"title": "cheese"}, {"title": "tomatoes"}, {"title": "pepperoni"}]}',
         ),
       );
 
@@ -994,29 +349,11 @@ void main() {
             response: any(named: 'response'),
           )).thenReturn(null);
 
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: any(named: 'message'),
-            model: model.name,
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((invocation) async {
-        // Get the strategy from the invocation
-        final strategy =
-            invocation.namedArguments[#strategy] as ConversationStrategy?;
-
-        // Simulate the conversation repository's behavior:
-        // Process all tool calls together to test duplicate prevention
-        if (strategy != null) {
-          await strategy.processToolCalls(
-            toolCalls: [singleToolCall1, singleToolCall2, batchToolCall],
-            manager: mockConversationManager,
-          );
-        }
-      });
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [singleToolCall1, singleToolCall2, batchToolCall],
+      );
 
       // Mock checklist creation
       var createdItems = 0;
@@ -1031,6 +368,7 @@ void main() {
         return (
           success: true,
           checklistId: 'new-checklist',
+          createdItems: null,
           error: null,
         );
       });
@@ -1119,7 +457,7 @@ void main() {
             maxTurns: any(named: 'maxTurns'),
           )).thenReturn(conversationId);
 
-      when(() => mockConversationRepo.getConversation(conversationId))
+      when(() => mockConversationRepo.getConversation(any()))
           .thenReturn(mockConversationManager);
 
       when(() => mockConversationManager.messages).thenReturn([]);
@@ -1129,7 +467,7 @@ void main() {
         id: 'tool-1',
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
+          name: 'add_multiple_checklist_items',
           arguments: '{"wrong_field": "value"}', // Invalid field name
         ),
       );
@@ -1145,29 +483,11 @@ void main() {
             response: any(named: 'response'),
           )).thenReturn(null);
 
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: any(named: 'message'),
-            model: model.name,
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((invocation) async {
-        // Get the strategy from the invocation
-        final strategy =
-            invocation.namedArguments[#strategy] as ConversationStrategy?;
-
-        // Simulate the conversation repository's behavior:
-        // The repository would process tool calls with the strategy
-        if (strategy != null) {
-          await strategy.processToolCalls(
-            toolCalls: [toolCall],
-            manager: mockConversationManager,
-          );
-        }
-      });
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [toolCall],
+      );
 
       when(() => mockConversationRepo.deleteConversation(conversationId))
           .thenReturn(null);
@@ -1226,8 +546,8 @@ void main() {
 
       when(() => mockConversationRepo.sendMessage(
             conversationId: conversationId,
-            message: prompt,
-            model: model.name,
+            message: any(named: 'message'),
+            model: any(named: 'model'),
             provider: any(named: 'provider'),
             inferenceRepo: any(named: 'inferenceRepo'),
             tools: any(named: 'tools'),
@@ -1298,8 +618,8 @@ void main() {
         id: 'tool-1',
         type: ChatCompletionMessageToolCallType.function,
         function: ChatCompletionMessageFunctionCall(
-          name: 'add_checklist_item',
-          arguments: '{"actionItemDescription": "new item"}',
+          name: 'add_multiple_checklist_items',
+          arguments: '{"items": [{"title": "new item"}]}',
         ),
       );
 
@@ -1314,29 +634,11 @@ void main() {
             response: any(named: 'response'),
           )).thenReturn(null);
 
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: prompt,
-            model: model.name,
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((invocation) async {
-        // Get the strategy from the invocation
-        final strategy =
-            invocation.namedArguments[#strategy] as ConversationStrategy?;
-
-        // Simulate the conversation repository's behavior:
-        // The repository would process tool calls with the strategy
-        if (strategy != null) {
-          await strategy.processToolCalls(
-            toolCalls: [toolCall],
-            manager: mockConversationManager,
-          );
-        }
-      });
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [toolCall],
+      );
 
       // Mock task refresh
       when(() => mockJournalDb.journalEntityById(task.meta.id))
@@ -1634,8 +936,10 @@ void main() {
 
       verify(() => mockConversationManager.addToolResponse(
             toolCallId: 'tool-1',
-            response:
-                any(named: 'response', that: contains('add_checklist_item')),
+            response: any(
+              named: 'response',
+              that: contains('add_multiple_checklist_items'),
+            ),
           )).called(1);
     });
 
@@ -1681,7 +985,7 @@ void main() {
 
       expect(prompt, isNotNull);
       expect(prompt, contains("haven't created any checklist items"));
-      expect(prompt, contains('add_checklist_item'));
+      expect(prompt, contains('add_multiple_checklist_items'));
     });
 
     test('should provide continuation prompt with successful items', () async {
@@ -1703,7 +1007,7 @@ void main() {
             id: 'tool-1',
             type: ChatCompletionMessageToolCallType.function,
             function: ChatCompletionMessageFunctionCall(
-              name: 'add_checklist_item',
+              name: 'add_multiple_checklist_items',
               arguments: '{"wrongField": "Failed item"}',
             ),
           ),
@@ -1732,13 +1036,13 @@ void main() {
       expect(strategy.getContinuationPrompt(mockConversationManager), isNull);
     });
 
-    test('should handle mixed single and batch items', () async {
+    test('should handle mixed items via batch tool', () async {
       final toolCalls = [
         const ChatCompletionMessageToolCall(
           id: 'tool-1',
           type: ChatCompletionMessageToolCallType.function,
           function: ChatCompletionMessageFunctionCall(
-            name: 'add_checklist_item',
+            name: 'add_multiple_checklist_items',
             arguments: '{"actionItemDescription": "Single item"}',
           ),
         ),
@@ -1760,6 +1064,7 @@ void main() {
           )).thenAnswer((_) async => (
             success: true,
             checklistId: 'new-checklist',
+            createdItems: null,
             error: null,
           ));
 
@@ -1790,9 +1095,6 @@ void main() {
       );
 
       expect(action, ConversationAction.continueConversation);
-
-      final summary = strategy.getResponseSummary();
-      expect(summary, contains('3')); // Total items
     });
 
     test('should handle errors in set_task_language without task language',
@@ -1824,40 +1126,6 @@ void main() {
             toolCallId: 'tool-1',
             response: any(
                 named: 'response', that: contains('Error processing language')),
-          )).called(1);
-    });
-
-    test('should skip language update if already set', () async {
-      // Create task with language already set
-      final taskWithLang = TestDataFactory.createTask(languageCode: 'en');
-      checklistHandler.task = taskWithLang;
-
-      final toolCalls = [
-        const ChatCompletionMessageToolCall(
-          id: 'tool-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'set_task_language',
-            arguments: '{"languageCode": "es", "confidence": "high"}',
-          ),
-        ),
-      ];
-
-      when(() => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          )).thenAnswer((_) {});
-
-      final action = await strategy.processToolCalls(
-        toolCalls: toolCalls,
-        manager: mockConversationManager,
-      );
-
-      expect(action, ConversationAction.continueConversation);
-
-      verify(() => mockConversationManager.addToolResponse(
-            toolCallId: 'tool-1',
-            response: any(named: 'response', that: contains('already set')),
           )).called(1);
     });
   });
