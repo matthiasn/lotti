@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -31,11 +32,13 @@ class EntryDetailsWidget extends ConsumerWidget {
     this.parentTags,
     this.linkedFrom,
     this.link,
+    this.isHighlighted = false,
   });
 
   final String itemId;
   final bool showTaskDetails;
   final bool showAiEntry;
+  final bool isHighlighted;
 
   final JournalEntity? linkedFrom;
   final EntryLink? link;
@@ -74,7 +77,7 @@ class EntryDetailsWidget extends ConsumerWidget {
       );
     }
 
-    return ModernBaseCard(
+    final card = ModernBaseCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: const EdgeInsets.only(
         left: AppTheme.spacingXSmall,
@@ -95,6 +98,27 @@ class EntryDetailsWidget extends ConsumerWidget {
         ],
       ),
     );
+
+    if (isHighlighted) {
+      return Container(child: card)
+          .animate(onPlay: (controller) => controller.repeat(reverse: true))
+          .boxShadow(
+            begin: BoxShadow(
+              color: context.colorScheme.onSecondary.withValues(alpha: 0.1),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+            end: BoxShadow(
+              color: context.colorScheme.onSecondary.withValues(alpha: 0.4),
+              blurRadius: 16,
+              spreadRadius: 2,
+            ),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+          );
+    }
+
+    return card;
   }
 }
 

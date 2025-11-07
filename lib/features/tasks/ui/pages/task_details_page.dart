@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -37,6 +39,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
   final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
   final Map<String, GlobalKey> _entryKeys = {};
+  String? _highlightedEntryId;
+  Timer? _highlightTimer;
+  bool _disposed = false;
 
   @override
   void initState() {
@@ -54,6 +59,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
 
   @override
   void dispose() {
+    _disposed = true;
+    _highlightTimer?.cancel();
     _scrollController
       ..removeListener(_listener)
       ..removeListener(_updateOffsetListener)
@@ -73,30 +80,59 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
     double alignment, {
     VoidCallback? onScrolled,
   }) {
-    // Schedule scroll after frame is built
+    // Clear focus intent immediately on next frame
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      onScrolled?.call();
+    });
+
+    // Attempt to scroll with retry logic
+    _scrollToEntryWithRetry(entryId, alignment, attempt: 0);
+  }
+
+  void _scrollToEntryWithRetry(
+    String entryId,
+    double alignment, {
+    required int attempt,
+  }) {
+    if (_disposed || attempt >= 5) return;
+
     SchedulerBinding.instance.addPostFrameCallback((_) async {
+      if (_disposed) return;
+
       final key = _getEntryKey(entryId);
       final context = key.currentContext;
 
-      try {
-        if (context != null) {
+      if (context != null) {
+        try {
           await Scrollable.ensureVisible(
             context,
             alignment: alignment,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
-        } else {
-          // Entry not found or not yet rendered
-          debugPrint(
-            'Entry $entryId not found in widget tree, skipping scroll',
-          );
+
+          // Trigger highlight animation after scroll completes
+          if (mounted && !_disposed) {
+            setState(() {
+              _highlightedEntryId = entryId;
+            });
+
+            // Clear highlight after 2 seconds using Timer
+            _highlightTimer?.cancel();
+            _highlightTimer = Timer(const Duration(seconds: 2), () {
+              if (mounted && !_disposed) {
+                setState(() {
+                  _highlightedEntryId = null;
+                });
+              }
+            });
+          }
+        } catch (e) {
+          debugPrint('Failed to scroll to entry $entryId: $e');
         }
-      } catch (e) {
-        // Log error if scrolling fails
-        debugPrint('Failed to scroll to entry $entryId: $e');
-      } finally {
-        onScrolled?.call();
+      } else if (attempt < 4) {
+        // Entry not found, schedule retry
+        _scrollToEntryWithRetry(entryId, alignment, attempt: attempt + 1);
       }
     });
   }
@@ -174,6 +210,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
                         LinkedEntriesWidget(
                           task,
                           entryKeyBuilder: _getEntryKey,
+                          highlightedEntryId: _highlightedEntryId,
                         ),
                         LinkedFromEntriesWidget(task),
                       ],

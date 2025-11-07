@@ -11,11 +11,13 @@ class LinkedEntriesWidget extends ConsumerWidget {
   const LinkedEntriesWidget(
     this.item, {
     this.entryKeyBuilder,
+    this.highlightedEntryId,
     super.key,
   });
 
   final JournalEntity item;
   final GlobalKey Function(String entryId)? entryKeyBuilder;
+  final String? highlightedEntryId;
 
   @override
   Widget build(
@@ -70,6 +72,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
               linkedFrom: item,
               link: link,
               showAiEntry: includeAiEntries,
+              isHighlighted: highlightedEntryId == toId,
             );
           },
         ),
