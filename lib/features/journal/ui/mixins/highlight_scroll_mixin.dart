@@ -114,7 +114,7 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
           debugPrint('Failed to scroll to entry $entryId: $e');
           _scrollingToEntryId = null;
         }
-      } else if (attempt < _maxScrollRetries - 1) {
+      } else if (attempt < _maxScrollRetries) {
         // Entry not found, schedule retry
         _scrollToEntryWithRetry(
           entryId,
@@ -122,8 +122,6 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
           getEntryKey: getEntryKey,
           attempt: attempt + 1,
         );
-      } else {
-        _scrollingToEntryId = null;
       }
     });
   }
