@@ -331,8 +331,29 @@ void main() {
 
     testWidgets('calls createChecklist when add button is pressed',
         (tester) async {
-      when(() => mockChecklistRepository.createChecklist(
-          taskId: any(named: 'taskId'))).thenAnswer((_) async => mockTask);
+      final newChecklist = JournalEntity.checklist(
+        meta: Metadata(
+          id: 'new-checklist',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          starred: false,
+          private: false,
+        ),
+        data: const ChecklistData(
+          title: 'TODOs',
+          linkedChecklistItems: [],
+          linkedTasks: ['task1'],
+        ),
+      );
+
+      when(() => mockChecklistRepository
+              .createChecklist(taskId: any(named: 'taskId')))
+          .thenAnswer((_) async => (
+                checklist: newChecklist,
+                createdItems: <({String id, String title, bool isChecked})>[],
+              ));
 
       await tester.pumpWidget(createTestWidget());
 

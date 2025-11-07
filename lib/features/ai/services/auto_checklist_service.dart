@@ -43,19 +43,18 @@ class AutoChecklistService {
 
   /// Creates a new checklist with the provided suggestions for a task.
   ///
-  /// CRITICAL CONTRACT: This method preserves the exact ordering of items.
-  /// Items in [suggestions] will be created in the same order, and the
-  /// returned checklist will have linkedChecklistItems IDs in the same order.
-  ///
-  /// This ordering guarantee is relied upon by LottiBatchChecklistHandler
-  /// to map created item IDs back to their original titles.
-  ///
   /// Returns a record with:
   /// - [success]: Whether the checklist was created successfully
   /// - [checklistId]: The ID of the created checklist if successful
+  /// - [createdItems]: List of items with their generated IDs and details
   /// - [error]: Error message if creation failed
-  Future<({bool success, String? checklistId, String? error})>
-      autoCreateChecklist({
+  Future<
+      ({
+        bool success,
+        String? checklistId,
+        List<({String id, String title, bool isChecked})>? createdItems,
+        String? error,
+      })> autoCreateChecklist({
     required String taskId,
     required List<ChecklistItemData> suggestions,
     String? title,
@@ -66,6 +65,7 @@ class AutoChecklistService {
         return (
           success: false,
           checklistId: null,
+          createdItems: null,
           error: 'No suggestions provided'
         );
       }
@@ -77,31 +77,38 @@ class AutoChecklistService {
         return (
           success: false,
           checklistId: null,
+          createdItems: null,
           error: 'Checklists already exist'
         );
       }
 
-      final createdChecklist = await _checklistRepository.createChecklist(
+      final result = await _checklistRepository.createChecklist(
         taskId: taskId,
         items: suggestions,
         title: title ?? 'TODOs',
       );
 
-      if (createdChecklist == null) {
+      if (result.checklist == null) {
         return (
           success: false,
           checklistId: null,
+          createdItems: null,
           error: 'Failed to create checklist'
         );
       }
 
       _loggingService.captureEvent(
-        'auto_checklist_created: taskId=$taskId, checklistId=${createdChecklist.id}, itemCount=${suggestions.length}',
+        'auto_checklist_created: taskId=$taskId, checklistId=${result.checklist!.id}, itemCount=${result.createdItems.length}',
         domain: 'auto_checklist_service',
         subDomain: 'autoCreateChecklist',
       );
 
-      return (success: true, checklistId: createdChecklist.id, error: null);
+      return (
+        success: true,
+        checklistId: result.checklist!.id,
+        createdItems: result.createdItems,
+        error: null
+      );
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -109,7 +116,12 @@ class AutoChecklistService {
         subDomain: 'autoCreateChecklist',
         stackTrace: stackTrace,
       );
-      return (success: false, checklistId: null, error: exception.toString());
+      return (
+        success: false,
+        checklistId: null,
+        createdItems: null,
+        error: exception.toString()
+      );
     }
   }
 }

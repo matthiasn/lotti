@@ -351,11 +351,22 @@ void main() {
               taskId: testTask.meta.id,
               suggestions: any(named: 'suggestions'),
               title: 'TODOs',
-            )).thenAnswer((_) async => (
-              success: true,
-              checklistId: 'new-checklist',
-              error: null,
-            ));
+            )).thenAnswer((invocation) async {
+          final suggestions = invocation.namedArguments[#suggestions]
+              as List<ChecklistItemData>;
+          return (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: suggestions
+                .map((s) => (
+                      id: _uuid.v4(),
+                      title: s.title,
+                      isChecked: s.isChecked,
+                    ))
+                .toList(),
+            error: null,
+          );
+        });
 
         // Return a non-null item so successCount > 0 and callback is fired
         when(() => mockChecklistRepository.addItemToChecklist(
@@ -637,11 +648,22 @@ void main() {
               taskId: testTask.meta.id,
               suggestions: any(named: 'suggestions'),
               title: 'TODOs',
-            )).thenAnswer((_) async => (
-              success: true,
-              checklistId: 'new-checklist',
-              error: null,
-            ));
+            )).thenAnswer((invocation) async {
+          final suggestions = invocation.namedArguments[#suggestions]
+              as List<ChecklistItemData>;
+          return (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: suggestions
+                .map((s) => (
+                      id: _uuid.v4(),
+                      title: s.title,
+                      isChecked: s.isChecked,
+                    ))
+                .toList(),
+            error: null,
+          );
+        });
 
         // Return a non-null item so successCount > 0 and callback is fired
         when(() => mockChecklistRepository.addItemToChecklist(
@@ -710,11 +732,22 @@ void main() {
               taskId: testTask.meta.id,
               suggestions: any(named: 'suggestions'),
               title: 'TODOs',
-            )).thenAnswer((_) async => (
-              success: true,
-              checklistId: 'new-checklist',
-              error: null,
-            ));
+            )).thenAnswer((invocation) async {
+          final suggestions = invocation.namedArguments[#suggestions]
+              as List<ChecklistItemData>;
+          return (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: suggestions
+                .map((s) => (
+                      id: _uuid.v4(),
+                      title: s.title,
+                      isChecked: s.isChecked,
+                    ))
+                .toList(),
+            error: null,
+          );
+        });
 
         // Act
         final count = await handler.createBatchItems(result);
@@ -760,11 +793,22 @@ void main() {
               taskId: testTask.meta.id,
               suggestions: any(named: 'suggestions'),
               title: 'TODOs',
-            )).thenAnswer((_) async => (
-              success: true,
-              checklistId: 'new-checklist',
-              error: null,
-            ));
+            )).thenAnswer((invocation) async {
+          final suggestions = invocation.namedArguments[#suggestions]
+              as List<ChecklistItemData>;
+          return (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: suggestions
+                .map((s) => (
+                      id: _uuid.v4(),
+                      title: s.title,
+                      isChecked: s.isChecked,
+                    ))
+                .toList(),
+            error: null,
+          );
+        });
 
         // Act
         final count = await handler.createBatchItems(result);
@@ -848,11 +892,22 @@ void main() {
               taskId: testTask.meta.id,
               suggestions: any(named: 'suggestions'),
               title: 'TODOs',
-            )).thenAnswer((_) async => (
-              success: true,
-              checklistId: 'new-checklist',
-              error: null,
-            ));
+            )).thenAnswer((invocation) async {
+          final suggestions = invocation.namedArguments[#suggestions]
+              as List<ChecklistItemData>;
+          return (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: suggestions
+                .map((s) => (
+                      id: _uuid.v4(),
+                      title: s.title,
+                      isChecked: s.isChecked,
+                    ))
+                .toList(),
+            error: null,
+          );
+        });
 
         // Ensure adding items to existing checklist returns a non-null item
         when(() => mockChecklistRepository.addItemToChecklist(
@@ -982,11 +1037,22 @@ void main() {
               taskId: testTask.meta.id,
               suggestions: any(named: 'suggestions'),
               title: 'TODOs',
-            )).thenAnswer((_) async => (
-              success: true,
-              checklistId: 'new-checklist',
-              error: null,
-            ));
+            )).thenAnswer((invocation) async {
+          final suggestions = invocation.namedArguments[#suggestions]
+              as List<ChecklistItemData>;
+          return (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: suggestions
+                .map((s) => (
+                      id: _uuid.v4(),
+                      title: s.title,
+                      isChecked: s.isChecked,
+                    ))
+                .toList(),
+            error: null,
+          );
+        });
 
         // Populate created details
         await handler.createBatchItems(result);
@@ -1074,11 +1140,22 @@ void main() {
               taskId: any(named: 'taskId'),
               suggestions: any(named: 'suggestions'),
               title: any(named: 'title'),
-            )).thenAnswer((_) async => (
-              success: true,
-              checklistId: 'new-checklist',
-              error: null,
-            ));
+            )).thenAnswer((invocation) async {
+          final suggestions = invocation.namedArguments[#suggestions]
+              as List<ChecklistItemData>;
+          return (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: suggestions
+                .map((s) => (
+                      id: _uuid.v4(),
+                      title: s.title,
+                      isChecked: s.isChecked,
+                    ))
+                .toList(),
+            error: null,
+          );
+        });
 
         await handler.createBatchItems(result);
 

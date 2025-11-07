@@ -171,24 +171,10 @@ You already successfully created these checklist items: ${successfulDescriptions
 Do NOT recreate the items that were already successful.''';
   }
 
-  /// Creates all items from the batch, maintaining exact order.
+  /// Creates all items from the batch.
   ///
-  /// CRITICAL: This method relies on the repository's guarantee that items
-  /// are created and their IDs returned in the exact order provided.
-  ///
-  /// The implementation maps created item IDs back to their titles using
-  /// index-based matching. This means:
-  /// - checklistItems[0] corresponds to createdIds[0]
-  /// - checklistItems[1] corresponds to createdIds[1]
-  /// - And so on...
-  ///
-  /// If the repository ever changes to return IDs in a different order
-  /// (e.g., sorted alphabetically, random order), this mapping will break
-  /// silently, causing incorrect ID-title associations.
-  ///
-  /// This contract is enforced by the test:
-  /// 'CRITICAL: preserves item ordering - handler relies on this contract'
-  /// in auto_checklist_service_test.dart
+  /// Uses the improved repository API that returns created items with their IDs,
+  /// eliminating the need for fragile index-based mapping.
   ///
   /// Returns the number of successfully created items.
   Future<int> createBatchItems(FunctionCallResult result) async {
@@ -230,27 +216,16 @@ Do NOT recreate the items that were already successful.''';
             title: 'TODOs',
           );
 
-          if (createResult.success) {
-            successCount = checklistItems.length;
-            // Fetch the newly created checklist to get item IDs
-            final createdChecklist =
-                await journalDb.journalEntityById(createResult.checklistId!);
-            var createdIds = <String>[];
-            if (createdChecklist is Checklist) {
-              createdIds = createdChecklist.data.linkedChecklistItems;
-            }
-            // CRITICAL: Map by index - relies on repository preserving exact insertion order
-            // See method documentation for why this ordering guarantee is essential
-            for (var i = 0; i < checklistItems.length; i++) {
-              final title = checklistItems[i].title;
-              final isChecked = checklistItems[i].isChecked;
-              final id = i < createdIds.length ? createdIds[i] : '';
-              _successfulItems.add(title);
-              _createdDescriptions.add(title.toLowerCase().trim());
+          if (createResult.success && createResult.createdItems != null) {
+            successCount = createResult.createdItems!.length;
+            // Use the returned items directly - no need for fragile mapping
+            for (final item in createResult.createdItems!) {
+              _successfulItems.add(item.title);
+              _createdDescriptions.add(item.title.toLowerCase().trim());
               _createdDetails.add({
-                'id': id,
-                'title': title,
-                'isChecked': isChecked,
+                'id': item.id,
+                'title': item.title,
+                'isChecked': item.isChecked,
               });
             }
 

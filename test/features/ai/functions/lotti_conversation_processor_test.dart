@@ -368,6 +368,7 @@ void main() {
         return (
           success: true,
           checklistId: 'new-checklist',
+          createdItems: null,
           error: null,
         );
       });
@@ -1063,6 +1064,7 @@ void main() {
           )).thenAnswer((_) async => (
             success: true,
             checklistId: 'new-checklist',
+            createdItems: null,
             error: null,
           ));
 

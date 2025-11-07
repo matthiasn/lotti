@@ -268,7 +268,7 @@ void main() {
           )).thenAnswer((invocation) async {
         final items = (invocation.namedArguments[#items] as List)
             .cast<ChecklistItemData>();
-        return Checklist(
+        final checklist = Checklist(
           meta: Metadata(
             id: 'ck',
             createdAt: DateTime.now(),
@@ -284,6 +284,15 @@ void main() {
             linkedTasks: const [],
           ),
         );
+        final created = <({String id, String title, bool isChecked})>[];
+        for (var i = 0; i < items.length; i++) {
+          created.add((
+            id: 'id${i + 1}',
+            title: items[i].title,
+            isChecked: items[i].isChecked
+          ));
+        }
+        return (checklist: checklist, createdItems: created);
       });
       var callsTaskLookup1 = 0;
       when(() => mockJournalDb.journalEntityById(task.meta.id))
@@ -395,7 +404,9 @@ void main() {
             items: any(named: 'items'),
             title: any(named: 'title'),
           )).thenAnswer((invocation) async {
-        return Checklist(
+        final items = (invocation.namedArguments[#items] as List)
+            .cast<ChecklistItemData>();
+        final checklist = Checklist(
           meta: Metadata(
             id: 'new-ck',
             createdAt: DateTime.now(),
@@ -410,6 +421,15 @@ void main() {
             linkedTasks: [],
           ),
         );
+        final created = <({String id, String title, bool isChecked})>[
+          if (items.isNotEmpty)
+            (
+              id: 'id1',
+              title: items.first.title,
+              isChecked: items.first.isChecked
+            ),
+        ];
+        return (checklist: checklist, createdItems: created);
       });
       when(() => mockJournalDb.journalEntityById('new-ck'))
           .thenAnswer((_) async => Checklist(
@@ -480,21 +500,31 @@ void main() {
             taskId: any(named: 'taskId'),
             items: any(named: 'items'),
             title: any(named: 'title'),
-          )).thenAnswer((_) async => Checklist(
-            meta: Metadata(
-              id: 'ck-batch',
-              createdAt: DateTime(2024),
-              updatedAt: DateTime(2024),
-              dateFrom: DateTime(2024),
-              dateTo: DateTime(2024),
-              categoryId: 'test-category',
-            ),
-            data: const ChecklistData(
-              title: 'TODOs',
-              linkedChecklistItems: ['id1', 'id2', 'id3'],
-              linkedTasks: [],
-            ),
-          ));
+          )).thenAnswer((invocation) async {
+        final items = (invocation.namedArguments[#items] as List)
+            .cast<ChecklistItemData>();
+        final checklist = Checklist(
+          meta: Metadata(
+            id: 'ck-batch',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: ['id1', 'id2', 'id3'],
+            linkedTasks: [],
+          ),
+        );
+        final created = <({String id, String title, bool isChecked})>[
+          (id: 'id1', title: items[0].title, isChecked: items[0].isChecked),
+          (id: 'id2', title: items[1].title, isChecked: items[1].isChecked),
+          (id: 'id3', title: items[2].title, isChecked: items[2].isChecked),
+        ];
+        return (checklist: checklist, createdItems: created);
+      });
       when(() => mockJournalDb.journalEntityById('ck-batch'))
           .thenAnswer((_) async => Checklist(
                 meta: Metadata(
@@ -566,21 +596,31 @@ void main() {
             taskId: any(named: 'taskId'),
             items: any(named: 'items'),
             title: any(named: 'title'),
-          )).thenAnswer((_) async => Checklist(
-            meta: Metadata(
-              id: 'ck',
-              createdAt: DateTime(2024),
-              updatedAt: DateTime(2024),
-              dateFrom: DateTime(2024),
-              dateTo: DateTime(2024),
-              categoryId: 'test-category',
-            ),
-            data: const ChecklistData(
-              title: 'TODOs',
-              linkedChecklistItems: ['id1', 'id2', 'id3'],
-              linkedTasks: [],
-            ),
-          ));
+          )).thenAnswer((invocation) async {
+        final items = (invocation.namedArguments[#items] as List)
+            .cast<ChecklistItemData>();
+        final checklist = Checklist(
+          meta: Metadata(
+            id: 'ck',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: ['id1', 'id2', 'id3'],
+            linkedTasks: [],
+          ),
+        );
+        final created = <({String id, String title, bool isChecked})>[
+          (id: 'id1', title: items[0].title, isChecked: items[0].isChecked),
+          (id: 'id2', title: items[1].title, isChecked: items[1].isChecked),
+          (id: 'id3', title: items[2].title, isChecked: items[2].isChecked),
+        ];
+        return (checklist: checklist, createdItems: created);
+      });
       when(() => mockJournalDb.journalEntityById('ck'))
           .thenAnswer((_) async => Checklist(
                 meta: Metadata(
@@ -665,21 +705,34 @@ void main() {
             taskId: any(named: 'taskId'),
             items: any(named: 'items'),
             title: any(named: 'title'),
-          )).thenAnswer((_) async => Checklist(
-            meta: Metadata(
-              id: 'ck-new',
-              createdAt: DateTime(2024),
-              updatedAt: DateTime(2024),
-              dateFrom: DateTime(2024),
-              dateTo: DateTime(2024),
-              categoryId: 'test-category',
+          )).thenAnswer((invocation) async {
+        final items = (invocation.namedArguments[#items] as List)
+            .cast<ChecklistItemData>();
+        final checklist = Checklist(
+          meta: Metadata(
+            id: 'ck-new',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: 'test-category',
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: ['id1'],
+            linkedTasks: [],
+          ),
+        );
+        final created = <({String id, String title, bool isChecked})>[
+          if (items.isNotEmpty)
+            (
+              id: 'id1',
+              title: items.first.title,
+              isChecked: items.first.isChecked
             ),
-            data: const ChecklistData(
-              title: 'TODOs',
-              linkedChecklistItems: ['id1'],
-              linkedTasks: [],
-            ),
-          ));
+        ];
+        return (checklist: checklist, createdItems: created);
+      });
       when(() => mockJournalDb.journalEntityById('ck-new'))
           .thenAnswer((_) async => Checklist(
                 meta: Metadata(

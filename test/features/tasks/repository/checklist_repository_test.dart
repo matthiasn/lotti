@@ -101,16 +101,17 @@ void main() {
   tearDown(getIt.reset);
 
   group('createChecklist', () {
-    test('returns null when taskId is null', () async {
+    test('returns null checklist when taskId is null', () async {
       // Act
       final result = await repository.createChecklist(taskId: null);
 
       // Assert
-      expect(result, isNull);
+      expect(result.checklist, isNull);
+      expect(result.createdItems, isEmpty);
       verifyNever(() => mockJournalDb.journalEntityById(any()));
     });
 
-    test('returns null when task not found', () async {
+    test('returns null checklist when task not found', () async {
       // Arrange
       const taskId = 'non-existent-task-id';
       when(() => mockJournalDb.journalEntityById(taskId))
@@ -120,11 +121,12 @@ void main() {
       final result = await repository.createChecklist(taskId: taskId);
 
       // Assert
-      expect(result, isNull);
+      expect(result.checklist, isNull);
+      expect(result.createdItems, isEmpty);
       verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
     });
 
-    test('returns null when entity is not a Task', () async {
+    test('returns null checklist when entity is not a Task', () async {
       // Arrange
       final entryId = testTextEntry.id;
       when(() => mockJournalDb.journalEntityById(entryId))
@@ -134,7 +136,8 @@ void main() {
       final result = await repository.createChecklist(taskId: entryId);
 
       // Assert
-      expect(result, isNull);
+      expect(result.checklist, isNull);
+      expect(result.createdItems, isEmpty);
       verify(() => mockJournalDb.journalEntityById(entryId)).called(1);
     });
 
@@ -162,9 +165,12 @@ void main() {
 
       // Assert
       expect(result, isNotNull);
-      expect(result!.meta.id, equals(metadata.id));
-      expect((result as Checklist).data.title, equals('TODOs'));
-      expect(result.data.linkedTasks, contains(taskId));
+      expect(result.checklist, isNotNull);
+      expect(result.checklist!.meta.id, equals(metadata.id));
+      final checklist = result.checklist! as Checklist;
+      expect(checklist.data.title, equals('TODOs'));
+      expect(checklist.data.linkedTasks, contains(taskId));
+      expect(result.createdItems, isEmpty);
 
       verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
       verify(() => mockPersistenceLogic.createMetadata()).called(1);
@@ -241,7 +247,8 @@ void main() {
       );
 
       // Assert
-      expect(result, isNotNull);
+      expect(result.checklist, isNotNull);
+      expect(result.createdItems, hasLength(items.length));
       verify(() => mockPersistenceLogic.createDbEntity(any()))
           .called(greaterThan(1));
     });
@@ -311,7 +318,7 @@ void main() {
       );
 
       // Assert
-      expect(result, isNotNull);
+      expect(result.checklist, isNotNull);
       // Verify that the exception was caught
       verify(
         () => mockLoggingService.captureException(
@@ -323,7 +330,11 @@ void main() {
       ).called(1);
 
       // The checklist was still created even though the items failed
-      expect((result as Checklist?)?.data.linkedChecklistItems, isEmpty);
+      final createdChecklist = result.checklist;
+      expect(createdChecklist, isNotNull);
+      expect(
+          (createdChecklist! as Checklist).data.linkedChecklistItems, isEmpty);
+      expect(result.createdItems, isEmpty);
     });
 
     test('handles exceptions gracefully', () async {
@@ -345,7 +356,8 @@ void main() {
       final result = await repository.createChecklist(taskId: taskId);
 
       // Assert
-      expect(result, isNull);
+      expect(result.checklist, isNull);
+      expect(result.createdItems, isEmpty);
       verify(
         () => mockLoggingService.captureException(
           exception,

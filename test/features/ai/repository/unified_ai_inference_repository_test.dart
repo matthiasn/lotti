@@ -5453,6 +5453,7 @@ Take into account the following task context:
           )).thenAnswer((_) async => (
             success: true,
             checklistId: 'new-checklist',
+            createdItems: <({String id, String title, bool isChecked})>[],
             error: null,
           ));
 
@@ -5532,6 +5533,7 @@ Take into account the following task context:
           )).thenAnswer((_) async => (
             success: true,
             checklistId: 'new-checklist-id',
+            createdItems: <({String id, String title, bool isChecked})>[],
             error: null,
           ));
 
@@ -5748,6 +5750,7 @@ Take into account the following task context:
           )).thenAnswer((_) async => (
             success: true,
             checklistId: newChecklistId,
+            createdItems: <({String id, String title, bool isChecked})>[],
             error: null,
           ));
 
