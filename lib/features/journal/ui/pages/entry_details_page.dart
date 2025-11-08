@@ -72,26 +72,34 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
   Widget build(BuildContext context) {
     final focusProvider = journalFocusControllerProvider(id: widget.itemId);
 
-    void handleFocus(JournalFocusIntent? intent) {
+    void handleFocus(JournalFocusIntent? intent, {bool isInitialLoad = false}) {
       if (intent == null) return;
       scrollToEntry(
         intent.entryId,
         intent.alignment,
         getEntryKey: _getEntryKey,
         onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+        isInitialLoad: isInitialLoad,
       );
     }
 
     ref.listen<JournalFocusIntent?>(
         focusProvider, (_, next) => handleFocus(next));
 
-    // Check for pre-existing intent on first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      handleFocus(ref.read(focusProvider));
-    });
-
     final provider = entryControllerProvider(id: widget.itemId);
-    final item = ref.watch(provider).value?.entry;
+    final asyncItem = ref.watch(provider);
+    final item = asyncItem.value?.entry;
+
+    // Only attempt to scroll after entry data is loaded
+    if (asyncItem.hasValue && item != null) {
+      // Check for pre-existing intent after data is loaded (navigation from calendar)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final intent = ref.read(focusProvider);
+        if (intent != null) {
+          handleFocus(intent, isInitialLoad: true);
+        }
+      });
+    }
 
     if (item == null) {
       return const EmptyScaffoldWithTitle('');

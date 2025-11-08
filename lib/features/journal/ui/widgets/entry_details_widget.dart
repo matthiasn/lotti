@@ -1,4 +1,6 @@
 // No direct blur usage; keep imports minimal
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -153,6 +155,7 @@ class EntryDetailsWidget extends ConsumerWidget {
                   glowSigma: 0,
                   duration: const Duration(milliseconds: 4800),
                   loop: false,
+                  startDelay: const Duration(milliseconds: 1000),
                   loopCount: 4,
                 ),
               ),
@@ -230,6 +233,7 @@ class _PulsingBorder extends StatefulWidget {
     required this.duration,
     this.loop = true,
     this.loopCount,
+    this.startDelay = Duration.zero,
   });
 
   final Color color;
@@ -239,6 +243,7 @@ class _PulsingBorder extends StatefulWidget {
   final Duration duration;
   final bool loop;
   final int? loopCount; // if set, run this many loops, then stop
+  final Duration startDelay;
 
   @override
   State<_PulsingBorder> createState() => _PulsingBorderState();
@@ -250,6 +255,7 @@ class _PulsingBorderState extends State<_PulsingBorder>
     vsync: this,
     duration: widget.duration,
   );
+  Timer? _startDelayTimer;
 
   late final Animation<double> _opacity = () {
     const low = 0.4;
@@ -306,17 +312,21 @@ class _PulsingBorderState extends State<_PulsingBorder>
   void initState() {
     super.initState();
     // Start the animation sequence once; let loopCount/loop dictate behavior.
-    if (widget.loopCount != null) {
-      _controller.forward();
-    } else if (widget.loop) {
-      _controller.repeat(reverse: true);
-    } else {
-      _controller.forward();
-    }
+    _startDelayTimer = Timer(widget.startDelay, () {
+      if (!mounted) return;
+      if (widget.loopCount != null) {
+        _controller.forward();
+      } else if (widget.loop) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.forward();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _startDelayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

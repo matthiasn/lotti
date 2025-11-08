@@ -207,7 +207,8 @@ void main() {
       expect(state.highlightedEntryId, equals('entry-1'));
     });
 
-    testWidgets('highlight auto-clears after 2 seconds', (tester) async {
+    testWidgets('highlight auto-clears after highlight duration',
+        (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home:
@@ -222,8 +223,8 @@ void main() {
 
       expect(state.highlightedEntryId, equals('entry-1'));
 
-      // Wait for highlight duration (2 seconds)
-      await tester.pump(const Duration(seconds: 2));
+      // Wait for highlight duration (4.8 seconds to match multi-pulse sequences)
+      await tester.pump(const Duration(milliseconds: 4800));
 
       expect(state.highlightedEntryId, isNull);
     });
