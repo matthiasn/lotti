@@ -159,6 +159,17 @@ The journal provides powerful search capabilities:
 - **Saved filters**: Store and reuse complex filters
 
 ## Key Features
+### Entry Highlighting (Scroll + Timer)
+
+The journal surfaces two entry-level highlights to improve navigation and time tracking awareness:
+
+- Temporary scroll highlight: When the app scrolls to a specific linked entry (e.g., from a focus intent), the target entry briefly glows to confirm focus.
+- Active timer highlight: If a running timer points to a linked entry, that entry shows a persistent red glow until the timer stops or changes.
+
+Implementation details:
+- Logic is centralized in `HighlightScrollMixin`, which handles scroll-to-entry with retry/backoff and temporary highlight timing.
+- Pages use `LinkedEntriesWithTimer` to listen for timer changes and rebuild only the linked entries section.
+- Tunables: highlight duration, scroll duration, retry count, and retry delay can be overridden by the host State if needed.
 
 ### Editor Toolbar Behavior
 

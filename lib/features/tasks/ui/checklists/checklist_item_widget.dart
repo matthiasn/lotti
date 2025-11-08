@@ -73,7 +73,7 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
         splashColor: Colors.transparent,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 2),
         child: MouseRegion(
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),
@@ -98,7 +98,7 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
               clipBehavior: Clip.antiAlias,
               child: CheckboxListTile(
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                 title: AnimatedCrossFade(
                   duration: checklistCrossFadeDuration,
                   firstChild: TitleTextField(

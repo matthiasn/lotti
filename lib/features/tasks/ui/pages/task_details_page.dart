@@ -1,15 +1,15 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_title_header.dart';
@@ -32,7 +32,8 @@ class TaskDetailsPage extends ConsumerStatefulWidget {
   ConsumerState<TaskDetailsPage> createState() => _TaskDetailsPageState();
 }
 
-class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
+class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
+    with HighlightScrollMixin {
   final _scrollController = ScrollController();
   final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
@@ -54,6 +55,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
 
   @override
   void dispose() {
+    disposeHighlight();
     _scrollController
       ..removeListener(_listener)
       ..removeListener(_updateOffsetListener)
@@ -68,61 +70,37 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
     );
   }
 
-  void _scrollToEntry(
-    String entryId,
-    double alignment, {
-    VoidCallback? onScrolled,
-  }) {
-    // Schedule scroll after frame is built
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      final key = _getEntryKey(entryId);
-      final context = key.currentContext;
-
-      try {
-        if (context != null) {
-          await Scrollable.ensureVisible(
-            context,
-            alignment: alignment,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        } else {
-          // Entry not found or not yet rendered
-          debugPrint(
-            'Entry $entryId not found in widget tree, skipping scroll',
-          );
-        }
-      } catch (e) {
-        // Log error if scrolling fails
-        debugPrint('Failed to scroll to entry $entryId: $e');
-      } finally {
-        onScrolled?.call();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final focusProvider = taskFocusControllerProvider(id: widget.taskId);
 
-    void handleFocus(TaskFocusIntent? intent) {
+    void handleFocus(TaskFocusIntent? intent, {bool isInitialLoad = false}) {
       if (intent == null) return;
-      _scrollToEntry(
+      scrollToEntry(
         intent.entryId,
         intent.alignment,
+        getEntryKey: _getEntryKey,
         onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+        isInitialLoad: isInitialLoad,
       );
     }
 
     ref.listen<TaskFocusIntent?>(focusProvider, (_, next) => handleFocus(next));
 
-    // Check for pre-existing intent on first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      handleFocus(ref.read(focusProvider));
-    });
-
     final provider = entryControllerProvider(id: widget.taskId);
-    final task = ref.watch(provider).value?.entry;
+    final asyncTask = ref.watch(provider);
+    final task = asyncTask.value?.entry;
+
+    // Only attempt to scroll after task data is loaded
+    if (asyncTask.hasValue && task != null && task is Task) {
+      // Check for pre-existing intent after task is loaded (navigation from calendar)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final intent = ref.read(focusProvider);
+        if (intent != null) {
+          handleFocus(intent, isInitialLoad: true);
+        }
+      });
+    }
 
     if (task == null || task is! Task) {
       return const EmptyScaffoldWithTitle('');
@@ -171,9 +149,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
-                        LinkedEntriesWidget(
-                          task,
+                        LinkedEntriesWithTimer(
+                          item: task,
                           entryKeyBuilder: _getEntryKey,
+                          highlightedEntryId: highlightedEntryId,
                         ),
                         LinkedFromEntriesWidget(task),
                       ],

@@ -213,4 +213,111 @@ void main() {
       expect(find.byType(LinkedEntriesWidget), findsOneWidget);
     });
   });
+
+  group('LinkedEntriesWidget activeTimerEntryId Tests - ', () {
+    setUpAll(() {
+      setFakeDocumentsPath();
+      registerFallbackValue(FakeMeasurementData());
+    });
+
+    setUp(() async {
+      mockJournalDb = mockJournalDbWithMeasurableTypes([
+        measurableWater,
+        measurableChocolate,
+      ]);
+      mockPersistenceLogic = MockPersistenceLogic();
+
+      final mockTagsService = mockTagsServiceWithTags([]);
+      final mockTimeService = MockTimeService();
+      final mockEditorStateService = MockEditorStateService();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<TagsService>(mockTagsService)
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
+        (_) => [categoryMindfulness],
+      );
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([
+          [testStoryTag1],
+        ]),
+      );
+
+      when(() => mockTagsService.stream).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          }
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
+      when(mockTimeService.getStream)
+          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    test('activeTimerEntryId parameter defaults to null', () {
+      final widget = LinkedEntriesWidget(testTask);
+
+      expect(widget.activeTimerEntryId, isNull);
+    });
+
+    test('activeTimerEntryId parameter can be set', () {
+      const timerId = 'timer-entry-123';
+      final widget = LinkedEntriesWidget(
+        testTask,
+        activeTimerEntryId: timerId,
+      );
+
+      expect(widget.activeTimerEntryId, equals(timerId));
+    });
+
+    test('highlightedEntryId and activeTimerEntryId are independent', () {
+      const timerId = 'timer-123';
+      const highlightId = 'highlight-456';
+      final widget = LinkedEntriesWidget(
+        testTask,
+        activeTimerEntryId: timerId,
+        highlightedEntryId: highlightId,
+      );
+
+      expect(widget.activeTimerEntryId, equals(timerId));
+      expect(widget.highlightedEntryId, equals(highlightId));
+    });
+  });
 }

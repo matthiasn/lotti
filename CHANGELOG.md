@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
+- Journal/Tasks: Active timer highlight — linked entries that match the running timer now render with a persistent red glow for quick visual identification.
+- Journal/Tasks: Temporary scroll highlight — after auto-scrolling to a linked entry, the target briefly glows to confirm focus.
 - AI label assignment: Category-scoped label suggestions (Phase 1 guardrails)
   - AI only suggests labels applicable to the task's category (global ∪ scoped labels)
   - Prompt includes category-filtered labels; ingestion enforces category scope
@@ -67,6 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tests: service unit tests and widget tests updated; i18n keys added with missing translations noted
 
 ### Changed
+- Journal/Tasks: Refactored scroll-to-entry and highlight logic into `HighlightScrollMixin` with configurable durations and a small retry backoff; `LinkedEntriesWithTimer` scopes rebuilds to the linked entries section only. Focus intent is cleared early (next frame) for responsiveness and also on success/terminal failure for robustness.
+- Tasks UI: Checklist item vertical spacing reduced (outer padding 2px; content padding vertical 2px) for a more compact list.
 - UI/Tasks: Redesigned the active label filters header below the search bar
   - Compact card-style container (rounded, `surfaceContainerHighest`) with smooth `AnimatedSize`
   - Header shows a subtle filter icon and “Active label filters (n)”

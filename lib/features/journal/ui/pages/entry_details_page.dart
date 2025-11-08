@@ -1,6 +1,5 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,11 +7,12 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
+import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
@@ -33,7 +33,8 @@ class EntryDetailsPage extends ConsumerStatefulWidget {
   ConsumerState<EntryDetailsPage> createState() => _EntryDetailsPageState();
 }
 
-class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
+class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
+    with HighlightScrollMixin {
   final _scrollController = ScrollController();
   final Map<String, GlobalKey> _entryKeys = {};
 
@@ -53,6 +54,13 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    disposeHighlight();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   GlobalKey _getEntryKey(String entryId) {
     return _entryKeys.putIfAbsent(
       entryId,
@@ -60,62 +68,38 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
     );
   }
 
-  void _scrollToEntry(
-    String entryId,
-    double alignment, {
-    VoidCallback? onScrolled,
-  }) {
-    // Schedule scroll after frame is built
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      final key = _getEntryKey(entryId);
-      final context = key.currentContext;
-
-      try {
-        if (context != null) {
-          await Scrollable.ensureVisible(
-            context,
-            alignment: alignment,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        } else {
-          // Entry not found or not yet rendered
-          debugPrint(
-            'Entry $entryId not found in widget tree, skipping scroll',
-          );
-        }
-      } catch (e) {
-        // Log error if scrolling fails
-        debugPrint('Failed to scroll to entry $entryId: $e');
-      } finally {
-        onScrolled?.call();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final focusProvider = journalFocusControllerProvider(id: widget.itemId);
 
-    void handleFocus(JournalFocusIntent? intent) {
+    void handleFocus(JournalFocusIntent? intent, {bool isInitialLoad = false}) {
       if (intent == null) return;
-      _scrollToEntry(
+      scrollToEntry(
         intent.entryId,
         intent.alignment,
+        getEntryKey: _getEntryKey,
         onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+        isInitialLoad: isInitialLoad,
       );
     }
 
     ref.listen<JournalFocusIntent?>(
         focusProvider, (_, next) => handleFocus(next));
 
-    // Check for pre-existing intent on first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      handleFocus(ref.read(focusProvider));
-    });
-
     final provider = entryControllerProvider(id: widget.itemId);
-    final item = ref.watch(provider).value?.entry;
+    final asyncItem = ref.watch(provider);
+    final item = asyncItem.value?.entry;
+
+    // Only attempt to scroll after entry data is loaded
+    if (asyncItem.hasValue && item != null) {
+      // Check for pre-existing intent after data is loaded (navigation from calendar)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final intent = ref.read(focusProvider);
+        if (intent != null) {
+          handleFocus(intent, isInitialLoad: true);
+        }
+      });
+    }
 
     if (item == null) {
       return const EmptyScaffoldWithTitle('');
@@ -156,9 +140,10 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage> {
                           showTaskDetails: true,
                           showAiEntry: true,
                         ),
-                        LinkedEntriesWidget(
-                          item,
+                        LinkedEntriesWithTimer(
+                          item: item,
                           entryKeyBuilder: _getEntryKey,
+                          highlightedEntryId: highlightedEntryId,
                         ),
                         LinkedFromEntriesWidget(item),
                         if (item is ChecklistItem)
