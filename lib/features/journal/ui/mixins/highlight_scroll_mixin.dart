@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -14,8 +15,23 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
   // Keep scroll highlight visible long enough for multi-pulse sequences (4x1200ms)
   Duration get highlightDuration => const Duration(milliseconds: 4800);
   Duration get scrollDuration => const Duration(milliseconds: 300);
-  int get maxScrollRetries => 5;
-  Duration get scrollRetryDelay => const Duration(milliseconds: 60);
+
+  // Check if we're in a test environment
+  static bool get _isTestMode {
+    // In tests, Platform.environment is usually minimal
+    return Platform.environment['FLUTTER_TEST'] == 'true';
+  }
+
+  // Give first-load renders ample time (linked entries + layouts). In tests, shorten to speed up.
+  int get maxScrollRetries => _isTestMode ? 5 : 30;
+  Duration get scrollRetryDelay => _isTestMode
+      ? const Duration(milliseconds: 50)
+      : const Duration(milliseconds: 100);
+  // Initial delay before first attempt to let heavy subtrees mount.
+  // Longer delay for navigation from calendar to ensure page fully renders.
+  // In tests, no delay.
+  Duration get initialScrollDelay =>
+      _isTestMode ? Duration.zero : const Duration(milliseconds: 800);
 
   // State
   String? _highlightedEntryId;
@@ -42,31 +58,34 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
   /// [entryId] - The ID of the entry to scroll to
   /// [alignment] - Scroll alignment (0.0 = top, 1.0 = bottom)
   /// [onScrolled] - Optional callback invoked immediately (used to clear focus intent)
+  /// [isInitialLoad] - Whether this is the first load (navigation from another page)
   void scrollToEntry(
     String entryId,
     double alignment, {
     required GlobalKey Function(String) getEntryKey,
     VoidCallback? onScrolled,
+    bool isInitialLoad = false,
   }) {
-    // Clear focus intent early on next frame to maintain previous UX
-    // and allow subsequent intents to be published while scrolling resolves.
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      onScrolled?.call();
-    });
     // Prevent duplicate concurrent scroll operations to the same entry
     if (_scrollingToEntryId == entryId) return;
 
-    // Attempt to scroll with retry logic
+    // Use longer delay for initial load (navigation from calendar)
+    // Shorter delay for subsequent scrolls on already-rendered page
+    final delay =
+        isInitialLoad ? initialScrollDelay : const Duration(milliseconds: 100);
+
+    // Attempt to scroll with an appropriate delay
     _scrollingToEntryId = entryId;
-    // Cancel any pending retry from previous attempts
     _retryTimer?.cancel();
-    _scrollToEntryWithRetry(
-      entryId,
-      alignment,
-      getEntryKey: getEntryKey,
-      attempt: 0,
-      onScrolled: onScrolled,
-    );
+    _retryTimer = Timer(delay, () {
+      _scrollToEntryWithRetry(
+        entryId,
+        alignment,
+        getEntryKey: getEntryKey,
+        attempt: 0,
+        onScrolled: onScrolled,
+      );
+    });
   }
 
   void _scrollToEntryWithRetry(

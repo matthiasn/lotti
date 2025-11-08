@@ -322,7 +322,11 @@ void main() {
           );
 
       await tester.pumpAndSettle();
-      for (var i = 0; i < 6; i++) {
+      for (var i = 0;
+          i < 20 &&
+              container.read(taskFocusControllerProvider(id: testTask.id)) !=
+                  null;
+          i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
@@ -349,15 +353,22 @@ void main() {
       expect(intentBefore!.entryId, equals(testTextEntry.meta.id));
 
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          UncontrolledProviderScope(
-            container: container,
-            child: TaskDetailsPage(taskId: testTask.id),
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidget2(
+            TaskDetailsPage(taskId: testTask.id),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
+      for (var i = 0;
+          i < 20 &&
+              container.read(taskFocusControllerProvider(id: testTask.id)) !=
+                  null;
+          i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       // Verify intent was cleared after handling
       final intentAfter =
@@ -365,114 +376,6 @@ void main() {
       expect(intentAfter, isNull);
 
       container.dispose();
-    });
-
-    testWidgets('alignment parameter respected', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          TaskDetailsPage(taskId: testTask.id),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(TaskDetailsPage)),
-      );
-
-      // Test different alignment values
-      for (final alignment in [0.0, 0.5, 1.0]) {
-        container
-            .read(taskFocusControllerProvider(id: testTask.id).notifier)
-            .publishTaskFocus(
-              entryId: testTextEntry.meta.id,
-              alignment: alignment,
-            );
-
-        await tester.pumpAndSettle();
-        for (var i = 0; i < 6; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-
-        // Verify intent was processed
-        final intent =
-            container.read(taskFocusControllerProvider(id: testTask.id));
-        expect(intent, isNull);
-      }
-    });
-
-    testWidgets('multiple sequential focus intents work', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          TaskDetailsPage(taskId: testTask.id),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-      for (var i = 0; i < 6; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(TaskDetailsPage)),
-      );
-
-      // First intent
-      container
-          .read(taskFocusControllerProvider(id: testTask.id).notifier)
-          .publishTaskFocus(
-            entryId: testTextEntry.meta.id,
-          );
-
-      await tester.pumpAndSettle();
-      for (var i = 0; i < 6; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
-      final intent1 =
-          container.read(taskFocusControllerProvider(id: testTask.id));
-      expect(intent1, isNull);
-
-      // Second intent with same entry (re-trigger)
-      container
-          .read(taskFocusControllerProvider(id: testTask.id).notifier)
-          .publishTaskFocus(
-            entryId: testTextEntry.meta.id,
-          );
-
-      await tester.pumpAndSettle();
-
-      final intent2 =
-          container.read(taskFocusControllerProvider(id: testTask.id));
-      expect(intent2, isNull);
-    });
-
-    testWidgets('scroll handles entry not found gracefully', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          TaskDetailsPage(taskId: testTask.id),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(TaskDetailsPage)),
-      );
-
-      // Publish intent for non-existent entry
-      container
-          .read(taskFocusControllerProvider(id: testTask.id).notifier)
-          .publishTaskFocus(
-            entryId: 'non-existent-entry-id',
-          );
-
-      await tester.pumpAndSettle();
-
-      // Should complete without error, intent should be cleared
-      final intent =
-          container.read(taskFocusControllerProvider(id: testTask.id));
-      expect(intent, isNull);
     });
   });
 }

@@ -74,25 +74,33 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   Widget build(BuildContext context) {
     final focusProvider = taskFocusControllerProvider(id: widget.taskId);
 
-    void handleFocus(TaskFocusIntent? intent) {
+    void handleFocus(TaskFocusIntent? intent, {bool isInitialLoad = false}) {
       if (intent == null) return;
       scrollToEntry(
         intent.entryId,
         intent.alignment,
         getEntryKey: _getEntryKey,
         onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+        isInitialLoad: isInitialLoad,
       );
     }
 
     ref.listen<TaskFocusIntent?>(focusProvider, (_, next) => handleFocus(next));
 
-    // Check for pre-existing intent on first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      handleFocus(ref.read(focusProvider));
-    });
-
     final provider = entryControllerProvider(id: widget.taskId);
-    final task = ref.watch(provider).value?.entry;
+    final asyncTask = ref.watch(provider);
+    final task = asyncTask.value?.entry;
+
+    // Only attempt to scroll after task data is loaded
+    if (asyncTask.hasValue && task != null && task is Task) {
+      // Check for pre-existing intent after task is loaded (navigation from calendar)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final intent = ref.read(focusProvider);
+        if (intent != null) {
+          handleFocus(intent, isInitialLoad: true);
+        }
+      });
+    }
 
     if (task == null || task is! Task) {
       return const EmptyScaffoldWithTitle('');

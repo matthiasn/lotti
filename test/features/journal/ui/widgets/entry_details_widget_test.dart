@@ -296,7 +296,7 @@ void main() {
       );
 
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300)); // Animation repeats
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
     });
@@ -336,8 +336,8 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Highlight'));
-      await tester.pump(); // Just pump once, animation repeats forever
-      await tester.pump(const Duration(milliseconds: 300)); // Let animation run
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
     });
@@ -404,7 +404,7 @@ void main() {
       );
 
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300)); // Animation repeats
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
     });
@@ -537,7 +537,7 @@ void main() {
       );
 
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Verify a CustomPaint overlay is rendered for the glow
       expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
