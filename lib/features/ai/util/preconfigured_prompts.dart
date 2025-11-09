@@ -174,6 +174,15 @@ IMPORTANT RULES:
 - If you receive an unknown function name error, use only the functions listed above
 - Do NOT use suggest_checklist_completion for creating new items
 
+ENTRY-SCOPED DIRECTIVES (PER ENTRY):
+The user's request is composed of multiple entries; treat each entry independently. Each entry is the unit of scope.
+Before extracting items from an entry, first check for directive phrases (case-insensitive):
+- Ignore for checklist: "Don't consider this for checklist items", "Ignore for checklist", "No checklist extraction here" → ignore that entry for item extraction entirely.
+- Plan-only single item: "The rest is an implementation plan", "Treat as plan only", "Single checklist item for this plan" → for this entry, create at most ONE new checklist item (regardless of its internal length or bullets).
+  - If the user provides an explicit title via "Single checklist item: <title>", use that exact title.
+  - Otherwise, create a single generic item such as "Draft implementation plan" (use the request's language).
+Do NOT blend directives across entries. If no directives are present on an entry, follow normal extraction rules for that entry.
+
 Tools for checklist updates:
 1. add_multiple_checklist_items: Create one or more items at once (array of objects with title, optional isChecked)
 2. suggest_checklist_completion: Suggest marking items as done when evidence exists
@@ -223,6 +232,11 @@ Available Labels (id and name):
 ```json
 {{labels}}
 ```
+
+Directive reminder:
+- Scope directives to the entry they appear in (entries are provided separately).
+- If the request says things like "Don't consider this for checklist items" or "Ignore for checklist", skip that text for extraction.
+- If it says "The rest is an implementation plan" or "Single checklist item for this plan", produce at most one item (use explicit title if given).
 
 REMEMBER:
 - Count the items first: if 2 or more, use add_multiple_checklist_items

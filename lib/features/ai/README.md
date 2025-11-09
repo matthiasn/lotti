@@ -578,6 +578,16 @@ AI can automatically create new checklist items based on content analysis:
 - **Batch Processing**: Uses conversation-based approach for efficient handling
 - **Error Recovery**: Automatic retry with corrected format on failures
 
+#### Per-Entry Directive Behavior (Checklist Updates)
+
+When running Checklist Updates, the user's request is provided as a list of entries. Directives are scoped per entry:
+
+- Ignore for checklist: If an entry contains phrases like "Don't consider this for checklist items" or "Ignore for checklist", that entry is ignored for item extraction.
+- Plan-only single item: If an entry contains phrases like "The rest is an implementation plan" or "Single checklist item for this plan", that entire entry collapses to at most one created item. If the entry specifies "Single checklist item: <title>", that exact title is used; otherwise a generic "Draft implementation plan" is created (in the request's language).
+- Isolation: Do not blend directives across entries; each entry is evaluated independently.
+
+This keeps long implementation plans from exploding into many items while allowing adjacent entries to produce normal actionable items.
+
 ### Language Detection
 
 Automatic language detection for multilingual support:

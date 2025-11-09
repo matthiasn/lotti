@@ -15,4 +15,16 @@ void main() {
     expect(user, contains('Assigned Labels'));
     expect(user, contains('{{assigned_labels}}'));
   });
+
+  test('Checklist updates prompt includes entry-scoped directive guidance', () {
+    final sys = checklistUpdatesPrompt.systemMessage;
+    expect(sys, contains('ENTRY-SCOPED DIRECTIVES'));
+    expect(sys, contains("Don't consider this for checklist items"));
+    expect(sys, contains('Single checklist item'));
+
+    final user = checklistUpdatesPrompt.userMessage;
+    expect(user, contains('Directive reminder'));
+    expect(user, contains('Ignore for checklist'));
+    expect(user, contains('The rest is an implementation plan'));
+  });
 }
