@@ -48,7 +48,7 @@ case‑insensitively.
 Scope rules:
 
 - “Ignore …” applies to the entire current entry text.
-- “Plan‑only …” applies to the remainder of the current entry text and results in at most a single
+- “Plan‑only …” applies to the entire current entry text and results in at most a single
   item.
 
 ## Design
