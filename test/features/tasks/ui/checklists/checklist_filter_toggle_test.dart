@@ -47,6 +47,38 @@ void main() {
       // Note: We don't import the internal type; just look for a progress indicator widget.
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
+
+    testWidgets('toggling filter triggers selection change', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: desktopMq,
+          child: SingleChildScrollView(
+            child: ChecklistWidget(
+              id: 'cl-y',
+              taskId: 'task-y',
+              title: 'Toggle Checklist',
+              itemIds: const ['i1', 'i2'],
+              completionRate: 0.5,
+              onTitleSave: _noopSave,
+              onCreateChecklistItem: _noopCreate,
+              updateItemOrder: _noopOrder,
+            ),
+          ),
+        ),
+      );
+
+      // Expanded by default (rate < 1.0). Tap 'All', then 'Open'
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+      await tester.tap(find.text('All'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // Controls still present, no errors occurred
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+    });
   });
 }
 

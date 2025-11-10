@@ -248,6 +248,43 @@ void main() {
       expect(deleteActionCalled, isTrue);
     });
 
+    testWidgets('canceling delete does not call onDelete', (tester) async {
+      var deleteActionCalled = false;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: mockState.title,
+              itemIds: const [],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5,
+              updateItemOrder: (_) async {},
+              onDelete: () {
+                deleteActionCalled = true;
+              },
+            ),
+          ),
+        ),
+      );
+
+      // Open the overflow menu and choose Delete
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete checklist?'));
+      await tester.pump();
+
+      // Cancel deletion by tapping the 'Cancel' action
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(deleteActionCalled, isFalse);
+    });
+
     testWidgets('proxyDecorator applies correct styling during reorder',
         (tester) async {
       await tester.pumpWidget(
