@@ -9,6 +9,8 @@ import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
+// Active checklist count is computed inside a small Consumer below to isolate rebuilds.
+
 class ChecklistsWidget extends ConsumerStatefulWidget {
   const ChecklistsWidget({
     required this.entryId,
@@ -38,15 +40,6 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     }
 
     final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];
-    final activeCount = checklistIds
-        .where((id) =>
-            ref
-                .watch(
-                  checklistControllerProvider(id: id, taskId: widget.task.id),
-                )
-                .value !=
-            null)
-        .length;
     final color = context.colorScheme.outline;
 
     return Column(
@@ -63,8 +56,26 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
               onPressed: () => createChecklist(task: widget.task, ref: ref),
               icon: Icon(Icons.add_rounded, color: color),
             ),
-            if (activeCount > 1)
-              IconButton(
+            Consumer(builder: (context, ref, _) {
+              final entryState =
+                  ref.watch(entryControllerProvider(id: widget.entryId)).value;
+              final entry = entryState?.entry;
+              if (entry is! Task) return const SizedBox.shrink();
+              final ids = entry.data.checklistIds ?? const <String>[];
+              var count = 0;
+              for (final id in ids) {
+                final value = ref
+                    .watch(
+                      checklistControllerProvider(
+                        id: id,
+                        taskId: widget.task.id,
+                      ),
+                    )
+                    .value;
+                if (value != null) count++;
+              }
+              if (count <= 1) return const SizedBox.shrink();
+              return IconButton(
                 tooltip: context.messages.checklistsReorder,
                 onPressed: () {
                   setState(() {
@@ -72,7 +83,8 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                   });
                 },
                 icon: Icon(Icons.reorder, color: color),
-              ),
+              );
+            }),
           ],
         ),
         ReorderableListView(
