@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
+import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -139,9 +141,21 @@ class CreateTimerItem extends ConsumerWidget {
     return ModernModalEntryTypeItem(
       icon: Icons.timer_outlined,
       title: context.messages.addActionAddTimer,
-      onTap: () {
-        createTimerEntry(linked: linked);
+      onTap: () async {
+        final timerEntry = await createTimerEntry(linked: linked);
+        if (!context.mounted) return;
+
         Navigator.of(context).pop();
+
+        // Auto-scroll to the newly created timer entry
+        if (timerEntry != null && linked != null) {
+          ref
+              .read(journalFocusControllerProvider(id: linked.meta.id).notifier)
+              .publishJournalFocus(
+                entryId: timerEntry.meta.id,
+                alignment: kDefaultScrollAlignment,
+              );
+        }
       },
     );
   }
