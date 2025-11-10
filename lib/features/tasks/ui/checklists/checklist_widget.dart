@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
@@ -414,6 +415,20 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                         }
                       });
                       _isCreatingItem = false;
+                      // Ensure the add field truly regains keyboard focus after rebuilds
+                      WidgetsBinding.instance.addPostFrameCallback((_) async {
+                        if (!mounted) return;
+                        _focusNode.unfocus();
+                        FocusScope.of(context).requestFocus(_focusNode);
+                        try {
+                          await SystemChannels.textInput
+                              .invokeMethod('TextInput.show');
+                        } catch (_) {}
+                        final editable = FocusManager
+                            .instance.primaryFocus?.context
+                            ?.findAncestorStateOfType<EditableTextState>();
+                        editable?.requestKeyboard();
+                      });
                     },
                     clearOnSave: true,
                     keepFocusOnSave: true,
