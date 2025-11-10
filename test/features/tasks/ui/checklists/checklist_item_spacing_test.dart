@@ -56,10 +56,10 @@ void main() {
       final checkboxListTile =
           tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
 
-      // Verify contentPadding is exactly as specified
+      // Verify contentPadding matches the compact style (reduced left/right, no vertical)
       expect(
         checkboxListTile.contentPadding,
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        const EdgeInsets.symmetric(horizontal: 5),
       );
     });
 
@@ -80,7 +80,7 @@ void main() {
           tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
       expect(
         checkboxListTile.contentPadding,
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        const EdgeInsets.symmetric(horizontal: 5),
       );
 
       // Verify outer padding
@@ -130,7 +130,7 @@ void main() {
       expect(checkboxListTile.contentPadding, initialPadding);
       expect(
         checkboxListTile.contentPadding,
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        const EdgeInsets.symmetric(horizontal: 5),
       );
     });
 
@@ -155,7 +155,7 @@ void main() {
           tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
       expect(
         checkboxListTile.contentPadding,
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        const EdgeInsets.symmetric(horizontal: 5),
       );
 
       final paddingFinder = find.descendant(
@@ -242,7 +242,7 @@ void main() {
       for (final tile in checkboxTiles) {
         expect(
           tile.contentPadding,
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          const EdgeInsets.symmetric(horizontal: 5),
         );
       }
 
@@ -260,8 +260,8 @@ void main() {
       expect(outerPaddings.length, 3);
     });
 
-    testWidgets('vertical space per item is 2+2+2+2=8px total', (tester) async {
-      // outer padding (2 top, 2 bottom) + contentPadding (2 top, 2 bottom) = 8px vertical
+    testWidgets('vertical space per item is 2+2=4px total', (tester) async {
+      // outer padding (2 top, 2 bottom) + contentPadding (0 top, 0 bottom) = 4px vertical
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -290,7 +290,7 @@ void main() {
 
       // Total vertical space = outer + content
       final totalVertical = outerEdgeInsets.vertical + contentPadding.vertical;
-      expect(totalVertical, 8.0); // Down from 16.0 in legacy (4+4+4+4)
+      expect(totalVertical, 4.0);
     });
   });
 }

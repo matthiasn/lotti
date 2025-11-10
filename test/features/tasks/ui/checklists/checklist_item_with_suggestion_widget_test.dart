@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
@@ -123,9 +124,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.edit));
       await tester.pumpAndSettle();
 
-      // Enter new text
+      // Enter new text and save via Enter (SaveIntent)
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
       await tester.enterText(find.byType(TextField), 'New title');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
       expect(newTitle, equals('New title'));

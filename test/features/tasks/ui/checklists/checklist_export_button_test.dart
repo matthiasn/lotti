@@ -1,15 +1,17 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../test_helper.dart';
 
 void main() {
-  testWidgets('shows export icon and triggers callback', (tester) async {
+  testWidgets('shows export in overflow menu and triggers callback',
+      (tester) async {
     var called = 0;
 
     await tester.pumpWidget(
       WidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
         child: ChecklistWidget(
           id: 'id',
           taskId: 'tid',
@@ -26,19 +28,20 @@ void main() {
       ),
     );
 
-    final iconFinder = find.byIcon(MdiIcons.exportVariant);
-    expect(iconFinder, findsOneWidget);
-
-    await tester.tap(iconFinder);
+    // Open overflow and tap Export
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Export checklist as Markdown'));
     await tester.pump();
 
     expect(called, 1);
   });
 
-  testWidgets('does not show export icon when callback is null',
+  testWidgets('does not show export item when callback is null',
       (tester) async {
     await tester.pumpWidget(
       WidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
         child: ChecklistWidget(
           id: 'id',
           taskId: 'tid',
@@ -53,7 +56,9 @@ void main() {
       ),
     );
 
-    // No export icon should be rendered when callback is not provided
-    expect(find.byIcon(MdiIcons.exportVariant), findsNothing);
+    // Opening overflow should not show Export
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Export checklist as Markdown'), findsNothing);
   });
 }

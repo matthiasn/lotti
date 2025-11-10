@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
+
+// Active checklist count is computed inside a small Consumer below to isolate rebuilds.
 
 class ChecklistsWidget extends ConsumerStatefulWidget {
   const ChecklistsWidget({
@@ -53,8 +56,26 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
               onPressed: () => createChecklist(task: widget.task, ref: ref),
               icon: Icon(Icons.add_rounded, color: color),
             ),
-            if (checklistIds.length > 1)
-              IconButton(
+            Consumer(builder: (context, ref, _) {
+              final entryState =
+                  ref.watch(entryControllerProvider(id: widget.entryId)).value;
+              final entry = entryState?.entry;
+              if (entry is! Task) return const SizedBox.shrink();
+              final ids = entry.data.checklistIds ?? const <String>[];
+              var count = 0;
+              for (final id in ids) {
+                final value = ref
+                    .watch(
+                      checklistControllerProvider(
+                        id: id,
+                        taskId: widget.task.id,
+                      ),
+                    )
+                    .value;
+                if (value != null) count++;
+              }
+              if (count <= 1) return const SizedBox.shrink();
+              return IconButton(
                 tooltip: context.messages.checklistsReorder,
                 onPressed: () {
                   setState(() {
@@ -62,7 +83,8 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                   });
                 },
                 icon: Icon(Icons.reorder, color: color),
-              ),
+              );
+            }),
           ],
         ),
         ReorderableListView(

@@ -2532,4 +2532,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tasksPriorityP3Description => 'Low (Whenever)';
+
+  @override
+  String get checklistFilterShowAll => 'Show all items';
+
+  @override
+  String get checklistFilterShowOpen => 'Show open items';
+
+  @override
+  String get checklistFilterStateOpenOnly => 'Showing open items';
+
+  @override
+  String get checklistFilterStateAll => 'Showing all items';
+
+  @override
+  String checklistFilterToggleSemantics(String state) {
+    return 'Toggle checklist filter (current: $state)';
+  }
+
+  @override
+  String checklistCompletedShort(int completed, int total) {
+    return '$completed/$total done';
+  }
+
+  @override
+  String get checklistAllDone => 'All items completed!';
 }

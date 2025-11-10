@@ -329,7 +329,7 @@ void main() {
       expect(borderRadius.topLeft.x, equals(12.0));
     });
 
-    testWidgets('shows correct spacing after edit icon', (tester) async {
+    testWidgets('renders edit icon without extra spacer', (tester) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -340,19 +340,13 @@ void main() {
         ),
       );
 
-      // Find all SizedBox widgets
-      final sizedBoxes = find.byType(SizedBox);
+      // Edit affordance should be present
+      expect(find.byIcon(Icons.edit), findsWidgets);
 
-      // Verify at least one SizedBox exists (the spacing after edit icon)
-      expect(sizedBoxes, findsWidgets);
-
-      // Find the SizedBox with width: 8 (spacing after edit icon)
-      final sizedBoxWidgets = tester
-          .widgetList<SizedBox>(sizedBoxes)
-          .where((widget) => widget.width == 8.0);
-
-      // Verify the spacing exists when showEditIcon is true
-      expect(sizedBoxWidgets.isNotEmpty, isTrue);
+      // No dedicated SizedBox spacer of width 8 is used after the edit icon in the compact layout
+      final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+      final hasEightPxSpacer = sizedBoxes.any((w) => w.width == 8.0);
+      expect(hasEightPxSpacer, isFalse);
     });
 
     testWidgets('does not show spacing when showEditIcon is false',

@@ -65,6 +65,15 @@ class ChecklistWrapper extends ConsumerWidget {
         )
         .value;
 
+    final completionCounts = ref
+        .watch(
+          checklistCompletionControllerProvider(
+            id: entryId,
+            taskId: taskId,
+          ),
+        )
+        .value;
+
     if (checklist == null || completionRate == null) {
       return const SizedBox.shrink();
     }
@@ -97,6 +106,8 @@ class ChecklistWrapper extends ConsumerWidget {
         ),
         updateItemOrder: notifier.updateItemOrder,
         completionRate: completionRate,
+        completedCount: completionCounts?.completedCount,
+        totalCount: completionCounts?.totalCount,
         onDelete: ref.read(provider.notifier).delete,
         onExportMarkdown: () async {
           final messenger = ScaffoldMessenger.of(context);

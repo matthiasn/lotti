@@ -1,4 +1,4 @@
-import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -10,7 +10,6 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/services/share_service.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../test_helper.dart';
 
@@ -42,6 +41,8 @@ class _MockChecklistItemController extends ChecklistItemController {
 // Note: no need for a null-item controller in current tests
 
 void main() {
+  const desktopMq = MediaQueryData(size: Size(1280, 1000));
+
   group('ChecklistWrapper', () {
     testWidgets('copies markdown and shows success SnackBar', (tester) async {
       const checklistId = 'cl1';
@@ -113,6 +114,7 @@ void main() {
                 .overrideWith(() => _MockChecklistItemController(item2)),
           ],
           child: const WidgetTestBench(
+            mediaQueryData: desktopMq,
             child: ChecklistWrapper(
               entryId: checklistId,
               taskId: taskId,
@@ -123,16 +125,17 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final exportButton = find.byTooltip('Export checklist as Markdown');
-      expect(exportButton, findsOneWidget);
-      await tester.tap(exportButton);
+      // Open overflow and choose Export
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Export checklist as Markdown'));
       await tester.pumpAndSettle();
 
       expect(copied, '- [ ] First\n- [x] Second');
       expect(find.text('Checklist copied as Markdown'), findsOneWidget);
     });
 
-    testWidgets('long-press triggers share with emoji list', (tester) async {
+    testWidgets('overflow Share triggers emoji list', (tester) async {
       const checklistId = 'cl2';
       const taskId = 't2';
       const itemId1 = 'a1';
@@ -206,6 +209,7 @@ void main() {
                 .overrideWith(() => _MockChecklistItemController(item2)),
           ],
           child: const WidgetTestBench(
+            mediaQueryData: desktopMq,
             child: ChecklistWrapper(
               entryId: checklistId,
               taskId: taskId,
@@ -216,12 +220,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final exportIcon = find.byIcon(MdiIcons.exportVariant);
-      expect(exportIcon, findsOneWidget);
-      final center = tester.getCenter(exportIcon);
-      final gesture =
-          await tester.startGesture(center, buttons: kSecondaryMouseButton);
-      await gesture.up();
+      // Open overflow and choose Share
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Share'));
       await tester.pumpAndSettle();
 
       expect(sharedSubject, 'Share Me');
@@ -259,6 +261,7 @@ void main() {
             ).overrideWith(() => _MockChecklistController(checklist)),
           ],
           child: const WidgetTestBench(
+            mediaQueryData: desktopMq,
             child: ChecklistWrapper(
               entryId: checklistId,
               taskId: taskId,
@@ -268,9 +271,9 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      final exportIcon = find.byIcon(MdiIcons.exportVariant);
-      expect(exportIcon, findsOneWidget);
-      await tester.tap(exportIcon);
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Export checklist as Markdown'));
       await tester.pumpAndSettle();
 
       expect(find.text('No items to export'), findsOneWidget);
@@ -312,6 +315,7 @@ void main() {
             ).overrideWith(() => _MockChecklistController(checklist)),
           ],
           child: const WidgetTestBench(
+            mediaQueryData: desktopMq,
             child: ChecklistWrapper(
               entryId: checklistId,
               taskId: taskId,
@@ -321,11 +325,9 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      final exportIcon = find.byIcon(MdiIcons.exportVariant);
-      final center = tester.getCenter(exportIcon);
-      final gesture =
-          await tester.startGesture(center, buttons: kSecondaryMouseButton);
-      await gesture.up();
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Share'));
       await tester.pumpAndSettle();
 
       expect(called, isFalse);
@@ -385,6 +387,7 @@ void main() {
                 .overrideWith(() => _MockChecklistItemController(item1)),
           ],
           child: const WidgetTestBench(
+            mediaQueryData: desktopMq,
             child: ChecklistWrapper(
               entryId: checklistId,
               taskId: taskId,
@@ -394,11 +397,9 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      final exportIcon = find.byIcon(MdiIcons.exportVariant);
-      final center = tester.getCenter(exportIcon);
-      final gesture =
-          await tester.startGesture(center, buttons: kSecondaryMouseButton);
-      await gesture.up();
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Share'));
 
       // If exceptions leaked, the test would fail. Reaching here implies they
       // were caught and suppressed.
@@ -467,8 +468,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final exportButton = find.byTooltip('Export checklist as Markdown');
-      await tester.tap(exportButton);
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Export checklist as Markdown'));
       await tester.pumpAndSettle();
 
       expect(find.text('Export failed'), findsOneWidget);
