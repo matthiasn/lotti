@@ -22,9 +22,11 @@
 
 ## Non‑Goals
 
-- Persisting filter choice across sessions (future enhancement).
 - Changing underlying data model or storage for checklists.
 - Adding new visual grouping/sections beyond the open/all toggle.
+
+Note: The filter choice is persisted per‑checklist (via AppPrefsService) and restored on revisit. A
+global app‑wide preference is out of scope for this iteration.
 
 ## UX & Interaction
 
@@ -50,8 +52,8 @@
     remains unchanged.
 
 - Defaults:
-  - Default filter is always “Open only”. Persist choice only within the widget’s lifetime plus 
-    15 minutes (provider with keep-alive).
+  - Default filter is “Open only”. The selected filter is persisted per checklist ID (via
+    AppPrefsService) and restored when reopening the task.
 
 ## Design & Architecture
 
@@ -85,8 +87,6 @@
   `ChecklistCompletionController` to avoid recomputation. Tooltip on desktop clarifies the meaning
   and that open‑only hides completed items.
 - Debounce rapid toggles: ignore toggles within ~150ms of the previous one to reduce jank on large lists.
-- Debounce rapid toggles: ignore toggles within 150ms of the previous one to reduce jank on large
-  lists.
 
 3) ChecklistItemWrapper — conditional hide
 

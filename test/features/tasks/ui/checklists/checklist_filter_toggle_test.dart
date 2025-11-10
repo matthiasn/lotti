@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_const_constructors
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
@@ -11,7 +12,7 @@ void main() {
         'segmented control visible when expanded and hidden when collapsed',
         (tester) async {
       await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
+        RiverpodWidgetTestBench(
           mediaQueryData: desktopMq,
           child: SingleChildScrollView(
             child: ChecklistWidget(

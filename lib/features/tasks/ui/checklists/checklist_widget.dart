@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
@@ -293,15 +292,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                           position: PopupMenuPosition.under,
                           icon: const Icon(Icons.more_vert_rounded, size: 18),
                           onSelected: (value) async {
-                            if (value == 'export') {
-                              widget.onExportMarkdown?.call();
-                              return;
-                            }
-                            if (value == 'share') {
-                              widget.onShareMarkdown?.call();
-                              return;
-                            }
-                            if (value == 'delete') {
+                            Future<void> deleteAction() async {
                               final result = await showDialog<bool>(
                                 context: context,
                                 builder: (context) {
@@ -332,8 +323,16 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                               if (result ?? false) {
                                 widget.onDelete?.call();
                               }
-                              return;
                             }
+
+                            final actions = <String, Future<void> Function()>{
+                              'export': () async =>
+                                  widget.onExportMarkdown?.call(),
+                              'share': () async =>
+                                  widget.onShareMarkdown?.call(),
+                              'delete': deleteAction,
+                            };
+                            await actions[value]?.call();
                           },
                           itemBuilder: (context) => <PopupMenuEntry<String>>[
                             if (widget.onExportMarkdown != null)
@@ -415,20 +414,6 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                         }
                       });
                       _isCreatingItem = false;
-                      // Ensure the add field truly regains keyboard focus after rebuilds
-                      WidgetsBinding.instance.addPostFrameCallback((_) async {
-                        if (!mounted) return;
-                        _focusNode.unfocus();
-                        FocusScope.of(context).requestFocus(_focusNode);
-                        try {
-                          await SystemChannels.textInput
-                              .invokeMethod('TextInput.show');
-                        } catch (_) {}
-                        final editable = FocusManager
-                            .instance.primaryFocus?.context
-                            ?.findAncestorStateOfType<EditableTextState>();
-                        editable?.requestKeyboard();
-                      });
                     },
                     clearOnSave: true,
                     keepFocusOnSave: true,

@@ -95,21 +95,6 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
             checklistIds.length,
             (int index) {
               final checklistId = checklistIds.elementAt(index);
-              final checklist = ref
-                  .watch(
-                    checklistControllerProvider(
-                      id: checklistId,
-                      taskId: widget.task.id,
-                    ),
-                  )
-                  .value;
-
-              if (checklist == null) {
-                return SizedBox.shrink(
-                  key: Key('deleted-$checklistId${widget.entryId}$index'),
-                );
-              }
-
               return ModernBaseCard(
                 key: Key('$checklistId${widget.entryId}$index'),
                 margin: const EdgeInsets.only(
