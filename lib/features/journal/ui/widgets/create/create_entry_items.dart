@@ -5,9 +5,9 @@ import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -109,12 +109,14 @@ class CreateAudioItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final entryCreationService = ref.read(entryCreationServiceProvider);
+
     return ModernModalEntryTypeItem(
       icon: Icons.mic_none_rounded,
       title: context.messages.addActionAddAudioRecording,
       onTap: () {
         Navigator.of(context).pop();
-        AudioRecordingModal.show(
+        entryCreationService.showAudioRecordingModal(
           context,
           linkedId: linkedFromId,
           categoryId: categoryId,
@@ -137,12 +139,14 @@ class CreateTimerItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final linked =
         ref.watch(entryControllerProvider(id: linkedFromId)).value?.entry;
+    final entryCreationService = ref.read(entryCreationServiceProvider);
 
     return ModernModalEntryTypeItem(
       icon: Icons.timer_outlined,
       title: context.messages.addActionAddTimer,
       onTap: () async {
-        final timerEntry = await createTimerEntry(linked: linked);
+        final timerEntry =
+            await entryCreationService.createTimerEntry(linked: linked);
         if (!context.mounted) return;
 
         Navigator.of(context).pop();
@@ -174,11 +178,13 @@ class CreateTextItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final entryCreationService = ref.read(entryCreationServiceProvider);
+
     return ModernModalEntryTypeItem(
       icon: Icons.notes_rounded,
       title: context.messages.addActionAddText,
       onTap: () async {
-        await createTextEntry(
+        await entryCreationService.createTextEntry(
           linkedId: linkedFromId,
           categoryId: categoryId,
         );
