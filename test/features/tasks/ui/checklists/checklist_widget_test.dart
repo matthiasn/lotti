@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../test_helper.dart';
 
@@ -33,6 +33,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
@@ -66,6 +67,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
@@ -109,6 +111,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
@@ -141,11 +144,11 @@ void main() {
       );
       expect(textFields, findsOneWidget);
 
-      // Enter new text
+      // Enter new text and save via Enter (SaveIntent)
+      await tester.tap(textFields);
+      await tester.pump();
       await tester.enterText(textFields, 'Updated Checklist Title');
-
-      // Submit the form (simulating done button press)
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
       // Verify the title was saved
@@ -159,6 +162,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
@@ -190,11 +194,11 @@ void main() {
       );
       expect(textField, findsOneWidget);
 
-      // Enter new text for the item
+      // Enter new text for the item and save via Enter (SaveIntent)
+      await tester.tap(textField);
+      await tester.pump();
       await tester.enterText(textField, 'New checklist item');
-
-      // Submit the form
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
       // Verify the item creation callback was called with the expected text
@@ -209,6 +213,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
@@ -226,26 +231,17 @@ void main() {
         ),
       );
 
-      // Enter edit mode to see the delete button
-      await tester.tap(find.byIcon(Icons.edit));
-      await tester.pump();
-
-      // Find and tap the delete button - using MdiIcons
-      await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+      // Open the overflow menu and choose Delete
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete checklist?'));
       await tester.pump();
 
       // Verify the dialog is shown
       expect(find.byType(AlertDialog), findsOneWidget);
 
-      // Find and tap the confirm button (second button in dialog)
-      final buttons = find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(TextButton),
-      );
-      expect(buttons, findsAtLeastNWidgets(1));
-
-      // Tap the last button (confirm)
-      await tester.tap(find.byType(TextButton).last);
+      // Confirm deletion by tapping the 'Confirm' action
+      await tester.tap(find.text('Confirm'));
       await tester.pump();
 
       // Verify delete action was called
@@ -257,6 +253,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
@@ -304,7 +301,8 @@ void main() {
       expect(decoration.borderRadius, BorderRadius.circular(12));
     });
 
-    testWidgets('shows export button when onExportMarkdown is provided',
+    testWidgets(
+        'shows export in overflow menu when onExportMarkdown is provided',
         (tester) async {
       var exportCalled = false;
 
@@ -328,18 +326,17 @@ void main() {
         ),
       );
 
-      // Find the export icon (MdiIcons.exportVariant)
-      expect(find.byIcon(MdiIcons.exportVariant), findsOneWidget);
-
-      // Tap the export button
-      await tester.tap(find.byIcon(MdiIcons.exportVariant));
+      // Open the overflow menu and tap Export
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Export checklist as Markdown'));
       await tester.pump();
 
       // Verify callback was called
       expect(exportCalled, isTrue);
     });
 
-    testWidgets('does not show export button when onExportMarkdown is null',
+    testWidgets('does not show export item when onExportMarkdown is null',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -358,11 +355,14 @@ void main() {
         ),
       );
 
-      // Export icon should not be present
-      expect(find.byIcon(MdiIcons.exportVariant), findsNothing);
+      // The overflow menu should not include Export
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Export checklist as Markdown'), findsNothing);
     });
 
-    testWidgets('has GestureDetector for share on long press', (tester) async {
+    testWidgets('has Share item in overflow when onShareMarkdown provided',
+        (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -382,18 +382,10 @@ void main() {
         ),
       );
 
-      // Verify export icon exists
-      expect(find.byIcon(MdiIcons.exportVariant), findsOneWidget);
-
-      // Find GestureDetector wrapping the export IconButton
-      final gestureDetectors = find.ancestor(
-        of: find.byIcon(MdiIcons.exportVariant),
-        matching: find.byType(GestureDetector),
-      );
-
-      // Verify GestureDetector exists (enables long press and secondary click)
-      // There may be multiple due to Flutter's widget hierarchy
-      expect(gestureDetectors, findsWidgets);
+      // Open the overflow menu and ensure Share is present
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Share'), findsOneWidget);
     });
 
     testWidgets('checklist expands by default when incomplete', (tester) async {

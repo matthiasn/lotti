@@ -4773,6 +4773,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Low (Whenever)'**
   String get tasksPriorityP3Description;
+
+  /// No description provided for @checklistFilterShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all items'**
+  String get checklistFilterShowAll;
+
+  /// No description provided for @checklistFilterShowOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Show open items'**
+  String get checklistFilterShowOpen;
+
+  /// No description provided for @checklistFilterStateOpenOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing open items'**
+  String get checklistFilterStateOpenOnly;
+
+  /// No description provided for @checklistFilterStateAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing all items'**
+  String get checklistFilterStateAll;
+
+  /// No description provided for @checklistFilterToggleSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle checklist filter (current: {state})'**
+  String checklistFilterToggleSemantics(String state);
+
+  /// No description provided for @checklistCompletedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed}/{total} done'**
+  String checklistCompletedShort(int completed, int total);
+
+  /// No description provided for @checklistAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All items completed!'**
+  String get checklistAllDone;
 }
 
 class _AppLocalizationsDelegate

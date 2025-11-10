@@ -895,4 +895,23 @@
   "tasksPriorityP1Description": "High (Soon)",
   "tasksPriorityP2Description": "Medium (Default)",
   "tasksPriorityP3Description": "Low (Whenever)"
+  ,
+  "checklistFilterShowAll": "Show all items",
+  "checklistFilterShowOpen": "Show open items",
+  "checklistFilterStateOpenOnly": "Showing open items",
+  "checklistFilterStateAll": "Showing all items",
+  "checklistFilterToggleSemantics": "Toggle checklist filter (current: {state})",
+  "@checklistFilterToggleSemantics": {
+    "placeholders": {
+      "state": { "type": "String" }
+    }
+  },
+  "checklistCompletedShort": "{completed}/{total} done",
+  "@checklistCompletedShort": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "checklistAllDone": "All items completed!"
 }

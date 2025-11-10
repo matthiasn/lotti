@@ -97,8 +97,7 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
               borderRadius: BorderRadius.circular(12),
               clipBehavior: Clip.antiAlias,
               child: CheckboxListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 5),
                 title: AnimatedCrossFade(
                   duration: checklistCrossFadeDuration,
                   firstChild: TitleTextField(
@@ -139,7 +138,7 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                             }(),
                           ),
                         ),
-                        if (widget.showEditIcon) ...[
+                        if (widget.showEditIcon)
                           IconButton(
                             icon: Icon(
                               Icons.edit,
@@ -152,8 +151,6 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                               });
                             },
                           ),
-                          const SizedBox(width: 8),
-                        ],
                       ],
                     ),
                   ),

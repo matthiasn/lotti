@@ -15,12 +15,14 @@ class ChecklistItemWrapper extends ConsumerWidget {
     this.itemId, {
     required this.checklistId,
     required this.taskId,
+    this.hideIfChecked = false,
     super.key,
   });
 
   final String itemId;
   final String taskId;
   final String checklistId;
+  final bool hideIfChecked;
 
   @override
   Widget build(
@@ -37,6 +39,10 @@ class ChecklistItemWrapper extends ConsumerWidget {
       data: (data) {
         final item = data.value;
         if (item == null || item.isDeleted) {
+          return const SizedBox.shrink();
+        }
+
+        if (hideIfChecked && item.data.isChecked) {
           return const SizedBox.shrink();
         }
 

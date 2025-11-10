@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -37,6 +38,15 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     }
 
     final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];
+    final activeCount = checklistIds
+        .where((id) =>
+            ref
+                .watch(
+                  checklistControllerProvider(id: id, taskId: widget.task.id),
+                )
+                .value !=
+            null)
+        .length;
     final color = context.colorScheme.outline;
 
     return Column(
@@ -53,7 +63,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
               onPressed: () => createChecklist(task: widget.task, ref: ref),
               icon: Icon(Icons.add_rounded, color: color),
             ),
-            if (checklistIds.length > 1)
+            if (activeCount > 1)
               IconButton(
                 tooltip: context.messages.checklistsReorder,
                 onPressed: () {
@@ -85,6 +95,21 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
             checklistIds.length,
             (int index) {
               final checklistId = checklistIds.elementAt(index);
+              final checklist = ref
+                  .watch(
+                    checklistControllerProvider(
+                      id: checklistId,
+                      taskId: widget.task.id,
+                    ),
+                  )
+                  .value;
+
+              if (checklist == null) {
+                return SizedBox.shrink(
+                  key: Key('deleted-$checklistId${widget.entryId}$index'),
+                );
+              }
+
               return ModernBaseCard(
                 key: Key('$checklistId${widget.entryId}$index'),
                 margin: const EdgeInsets.only(

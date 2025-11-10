@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # [Unreleased]
 ### Added
+- Checklists: Ergonomics improvements
+  - TitleTextField: Cmd/Ctrl+S saves; add‑item field retains focus after save for rapid entry
+  - Filter: default “Open only” with header toggle and completed count (N/M done)
+  - Accessibility: keyboard toggle (Cmd+Shift+H / Ctrl+H) + screen reader announcements
+  - Persistence: per‑checklist filter mode is remembered
+  - Empty state: “All items completed!” message when open‑only has no items
+
 - Journal/Tasks: Active timer highlight — linked entries that match the running timer now render with a persistent red glow for quick visual identification.
 - Journal/Tasks: Temporary scroll highlight — after auto-scrolling to a linked entry, the target briefly glows to confirm focus.
 - AI label assignment: Category-scoped label suggestions (Phase 1 guardrails)

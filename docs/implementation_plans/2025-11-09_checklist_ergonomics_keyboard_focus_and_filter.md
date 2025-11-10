@@ -84,12 +84,7 @@
   with outline color): “{completed}/{total} done”. Source counts from
   `ChecklistCompletionController` to avoid recomputation. Tooltip on desktop clarifies the meaning
   and that open‑only hides completed items.
-- Keyboard toggle for accessibility: add a `Shortcuts`/`Actions` mapping to toggle filter via
-  keyboard.
-  - macOS: `Cmd+Shift+H` (avoid OS “Hide App” on `Cmd+H`)
-  - Windows/Linux: `Ctrl+H`
-- Announce state changes: after toggling, call `SemanticsService.announce` with localized text, and
-  ensure the toggle button has a clear `semanticsLabel` that includes current state.
+- Debounce rapid toggles: ignore toggles within ~150ms of the previous one to reduce jank on large lists.
 - Debounce rapid toggles: ignore toggles within 150ms of the previous one to reduce jank on large
   lists.
 
@@ -151,9 +146,7 @@ Run `make l10n` and update `missing_translations.txt` if needed.
 
 3) Accessibility
 
-- Keyboard shortcut toggles filter (`Cmd+Shift+H` on macOS, `Ctrl+H` elsewhere).
-- `SemanticsService.announce` is invoked with the correct localized message on each toggle.
-- The toggle has a `semanticsLabel` that includes current state.
+- Provide helpful tooltips. No dedicated keyboard shortcut or screen reader announcements in this pass.
 
 3) Completed count indicator
 
@@ -183,7 +176,7 @@ Use targeted widget tests under `test/features/tasks/ui/checklists/` and unit te
     progress/filter
   - `TitleTextField` (add field): add `keepFocusOnSave: true`
   - Add `_isCreatingItem` to guard rapid double‑save for add‑item field
-  - Handle keyboard toggle + announcements + debounce
+- Handle debounce on the filter toggle
 - Update: `lib/features/tasks/ui/checklists/checklist_item_wrapper.dart`
   - Add `hideIfChecked` and hide completed items when requested
 - i18n: `lib/l10n/app_*.arb` (keys above); run `make l10n`
@@ -202,7 +195,6 @@ Use targeted widget tests under `test/features/tasks/ui/checklists/` and unit te
 - Default filter is “Open only”.
 - Header shows a completed count (e.g., “N/M done”) that updates with state.
 - While editing/reordering, all items remain visible; reordering behaves unchanged.
-- Keyboard shortcut toggles filter; screen reader announces state changes.
 - When no open items remain, an empty‑state message is shown.
 - Analyzer reports zero warnings; new tests are green.
 
