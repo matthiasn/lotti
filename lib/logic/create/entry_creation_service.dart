@@ -27,8 +27,8 @@ class EntryCreationService {
       started: DateTime.now(),
     );
 
-    if (linkedId == null) {
-      beamToNamed('/journal/${entry?.meta.id}');
+    if (linkedId == null && entry != null) {
+      beamToNamed('/journal/${entry.meta.id}');
     }
 
     return entry;
