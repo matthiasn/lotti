@@ -103,6 +103,12 @@ class JournalRepository {
         ),
       );
 
+      // Stop timer if the deleted entry is currently running
+      final timeService = getIt<TimeService>();
+      if (timeService.getCurrent()?.id == journalEntityId) {
+        await timeService.stop();
+      }
+
       await getIt<NotificationService>().updateBadge();
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
