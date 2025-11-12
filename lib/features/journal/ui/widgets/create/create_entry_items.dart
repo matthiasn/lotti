@@ -16,6 +16,11 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 
+// Constants for timer auto-scroll polling behavior
+const _kTimerScrollPollInterval = Duration(milliseconds: 100);
+const _kTimerScrollMaxAttempts = 30;
+const _kTimerScrollInitialDelay = Duration(milliseconds: 200);
+
 /// Modern version of create event item
 class CreateEventItem extends ConsumerWidget {
   const CreateEventItem(
@@ -152,13 +157,18 @@ class CreateTimerItem extends ConsumerWidget {
             await entryCreationService.createTimerEntry(linked: linked);
         if (!context.mounted) return;
 
+        // Capture the container before popping so we can continue to access providers
+        // after this widget is disposed
+        final container = ProviderScope.containerOf(context, listen: false);
+
         Navigator.of(context).pop();
 
         // Auto-scroll to the newly created timer entry
         if (timerEntry != null && linked != null) {
           // Wait for LinkedEntriesController to update with the new timer before scrolling
+          // Fire-and-forget: scrolling is a best-effort operation that shouldn't block navigation
           _waitForTimerAndScroll(
-            ref: ref,
+            container: container,
             parentId: linked.meta.id,
             timerEntryId: timerEntry.meta.id,
             isTask: linked is Task,
@@ -295,20 +305,18 @@ class PasteImageItem extends ConsumerWidget {
 
 /// Waits for the timer entry to appear in LinkedEntriesController, then publishes focus intent
 void _waitForTimerAndScroll({
-  required WidgetRef ref,
+  required ProviderContainer container,
   required String parentId,
   required String timerEntryId,
   required bool isTask,
 }) {
   // Poll the LinkedEntriesController to check if the timer entry has appeared
   var attempts = 0;
-  const maxAttempts = 30; // 3 seconds total (100ms * 30)
-  const pollInterval = Duration(milliseconds: 100);
 
   void checkAndScroll() {
-    if (attempts >= maxAttempts) {
+    if (attempts >= _kTimerScrollMaxAttempts) {
       debugPrint(
-        'Failed to find timer entry $timerEntryId after $maxAttempts attempts',
+        'Failed to find timer entry $timerEntryId after $_kTimerScrollMaxAttempts attempts',
       );
       return;
     }
@@ -316,21 +324,22 @@ void _waitForTimerAndScroll({
     attempts++;
 
     // Check if the timer entry is in the linked entries
-    final linkedEntries =
-        ref.read(linkedEntriesControllerProvider(id: parentId)).valueOrNull;
+    final linkedEntries = container
+        .read(linkedEntriesControllerProvider(id: parentId))
+        .valueOrNull;
 
     if (linkedEntries != null &&
         linkedEntries.any((link) => link.toId == timerEntryId)) {
       // Timer entry found! Publish focus intent
       if (isTask) {
-        publishTaskFocus(
-          taskId: parentId,
-          entryId: timerEntryId,
-          ref: ref,
-          alignment: kDefaultScrollAlignment,
-        );
+        container
+            .read(taskFocusControllerProvider(id: parentId).notifier)
+            .publishTaskFocus(
+              entryId: timerEntryId,
+              alignment: kDefaultScrollAlignment,
+            );
       } else {
-        ref
+        container
             .read(journalFocusControllerProvider(id: parentId).notifier)
             .publishJournalFocus(
               entryId: timerEntryId,
@@ -339,10 +348,10 @@ void _waitForTimerAndScroll({
       }
     } else {
       // Not found yet, try again
-      Future.delayed(pollInterval, checkAndScroll);
+      Future.delayed(_kTimerScrollPollInterval, checkAndScroll);
     }
   }
 
   // Start polling after a short delay to allow database write to complete
-  Future.delayed(const Duration(milliseconds: 200), checkAndScroll);
+  Future.delayed(_kTimerScrollInitialDelay, checkAndScroll);
 }

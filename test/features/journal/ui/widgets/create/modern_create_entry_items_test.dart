@@ -1498,6 +1498,69 @@ void main() {
       await tester.tap(find.byType(ModernModalEntryTypeItem));
       await tester.pump();
 
+      // Wait for async operation to complete
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Verify createTimerEntry was called
+      verify(() =>
+              mockEntryCreationService.createTimerEntry(linked: parentEntry))
+          .called(1);
+
+      // Wait for the _waitForTimerAndScroll polling to complete or timeout
+      // This prevents "Bad state: Cannot use ref after widget disposed" errors
+      // The polling will fail to find the timer (since we don't mock LinkedEntriesController)
+      // and will timeout after 3 seconds (30 attempts * 100ms)
+      await tester.pump(const Duration(seconds: 4));
+
+      // Note: The actual auto-scroll functionality is tested through
+      // the Auto-Scroll Logic Tests group above.
+    });
+
+    testWidgets('does not crash when timer creation returns null',
+        (tester) async {
+      const parentId = 'parent-entry-id';
+
+      final parentEntry = JournalEntry(
+        meta: Metadata(
+          id: parentId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+        entryText: const EntryText(plainText: 'Parent'),
+      );
+
+      final mockEntryCreationService = MockEntryCreationService();
+      // Timer creation fails and returns null
+      when(() => mockEntryCreationService.createTimerEntry(linked: parentEntry))
+          .thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryCreationServiceProvider
+                .overrideWithValue(mockEntryCreationService),
+            entryControllerProvider(id: parentId).overrideWith(
+              () => TestEntryController(parentEntry),
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: CreateTimerItem(parentId),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap the timer item
+      await tester.tap(find.byType(ModernModalEntryTypeItem));
+      await tester.pump();
+
       // Wait for async operation
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -1505,6 +1568,9 @@ void main() {
       verify(() =>
               mockEntryCreationService.createTimerEntry(linked: parentEntry))
           .called(1);
+
+      // The test passing without errors confirms _waitForTimerAndScroll
+      // guards against null timer entry
     });
   });
 
