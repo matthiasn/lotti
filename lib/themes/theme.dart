@@ -82,6 +82,11 @@ class AppTheme {
   static const double statusIndicatorIconSize = 16; // Larger icons
   static const double statusIndicatorIconSizeCompact = 14;
 
+  // Label chip padding (Linear-style)
+  static const double labelChipPaddingLeft = 8;
+  static const double labelChipPaddingRight = 10;
+  static const double labelChipPaddingVertical = 4;
+
   // Status indicator alpha values
   static const double alphaPrimaryContainerLight = 0.3; // Enhanced
   static const double alphaPrimaryContainerDark = 0.2;

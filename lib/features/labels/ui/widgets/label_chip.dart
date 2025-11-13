@@ -43,10 +43,10 @@ class LabelChip extends StatelessWidget {
         excludeFromSemantics: true,
         child: Container(
           padding: const EdgeInsets.only(
-            left: 8,
-            right: 10,
-            top: 4,
-            bottom: 4,
+            left: AppTheme.labelChipPaddingLeft,
+            right: AppTheme.labelChipPaddingRight,
+            top: AppTheme.labelChipPaddingVertical,
+            bottom: AppTheme.labelChipPaddingVertical,
           ),
           decoration: BoxDecoration(
             color: backgroundColor,
