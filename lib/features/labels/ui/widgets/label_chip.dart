@@ -19,13 +19,14 @@ class LabelChip extends StatelessWidget {
     final color = colorFromCssHex(label.color, substitute: Colors.blue);
     final isDarkTheme = theme.brightness == Brightness.dark;
 
-    // Make the frame more prominent when we don't show the dot.
-    final backgroundColor = showDot
-        ? color.withValues(alpha: isDarkTheme ? 0.25 : 0.15)
-        : color.withValues(alpha: isDarkTheme ? 0.35 : 0.22);
-    final borderColor =
-        showDot ? color.withValues(alpha: 0.35) : color.withValues(alpha: 0.55);
-    final textColor = isDarkTheme ? Colors.white : Colors.black;
+    // Linear-style: subtle neutral background and border, colored dot only
+    final backgroundColor = isDarkTheme
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+    final borderColor = isDarkTheme
+        ? theme.colorScheme.outline.withValues(alpha: 0.25)
+        : theme.colorScheme.outline.withValues(alpha: 0.2);
+    final textColor = theme.colorScheme.onSurface.withValues(alpha: 0.85);
     final description = label.description?.trim();
     final tooltipMessage = (description != null && description.isNotEmpty)
         ? description
@@ -41,11 +42,11 @@ class LabelChip extends StatelessWidget {
         waitDuration: const Duration(milliseconds: 400),
         excludeFromSemantics: true,
         child: Container(
-          padding: EdgeInsets.only(
-            left: AppTheme.statusIndicatorPaddingHorizontal + (showDot ? 0 : 6),
-            right: AppTheme.statusIndicatorPaddingHorizontal,
-            top: AppTheme.statusIndicatorPaddingVertical,
-            bottom: AppTheme.statusIndicatorPaddingVertical,
+          padding: const EdgeInsets.only(
+            left: 8,
+            right: 10,
+            top: 4,
+            bottom: 4,
           ),
           decoration: BoxDecoration(
             color: backgroundColor,
@@ -54,37 +55,21 @@ class LabelChip extends StatelessWidget {
             ),
             border: Border.all(
               color: borderColor,
-              width: AppTheme.statusIndicatorBorderWidth,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (showDot) ...[
-                Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        color,
-                        color.withValues(alpha: 0.75),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.35),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+              // Always show the colored dot (Linear style)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color,
                 ),
-                const SizedBox(width: 6),
-              ],
+              ),
+              const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   label.name,
@@ -93,8 +78,8 @@ class LabelChip extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontSize: AppTheme.statusIndicatorFontSize,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.1,
                     color: textColor,
                   ),
                 ),
