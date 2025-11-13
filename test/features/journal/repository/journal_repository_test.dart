@@ -423,6 +423,243 @@ void main() {
         verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
         verifyNever(() => mockNotificationService.updateBadge());
       });
+
+      test('stops timer when deleting an active timer entry', () async {
+        // Arrange
+        const journalEntityId = 'active-timer-id';
+
+        final testEntity = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Timer entry',
+            markdown: 'timer',
+          ),
+          meta: Metadata(
+            id: journalEntityId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            private: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        final updatedMeta = testEntity.meta.copyWith(
+          deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        // Mock the journalEntityById call
+        when(() => mockJournalDb.journalEntityById(journalEntityId))
+            .thenAnswer((_) async => testEntity);
+
+        // Mock the updateMetadata call
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            testEntity.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => updatedMeta);
+
+        // Mock the updateDbEntity call
+        when(() => mockPersistenceLogic.updateDbEntity(any()))
+            .thenAnswer((_) async => true);
+
+        // Mock the updateBadge call
+        when(() => mockNotificationService.updateBadge())
+            .thenAnswer((_) async {});
+
+        // Mock TimeService.getCurrent to return the current timer entry
+        when(() => mockTimeService.getCurrent()).thenReturn(testEntity);
+
+        // Mock TimeService.stop
+        when(() => mockTimeService.stop()).thenAnswer((_) async {});
+
+        // Act
+        final result = await repository.deleteJournalEntity(journalEntityId);
+
+        // Assert
+        expect(result, isTrue);
+        verify(() => mockJournalDb.journalEntityById(journalEntityId))
+            .called(1);
+        verify(
+          () => mockPersistenceLogic.updateMetadata(
+            testEntity.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).called(1);
+        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
+        verify(() => mockNotificationService.updateBadge()).called(1);
+
+        // Verify timer was stopped
+        verify(() => mockTimeService.getCurrent()).called(1);
+        verify(() => mockTimeService.stop()).called(1);
+      });
+
+      test('does not stop timer when deleting a non-active entry', () async {
+        // Arrange
+        const journalEntityId = 'non-active-timer-id';
+        const activeTimerId = 'different-active-timer-id';
+
+        final testEntity = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Non-active entry',
+            markdown: 'test',
+          ),
+          meta: Metadata(
+            id: journalEntityId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            private: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        final activeTimer = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Active timer',
+            markdown: 'timer',
+          ),
+          meta: Metadata(
+            id: activeTimerId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            private: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        final updatedMeta = testEntity.meta.copyWith(
+          deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        // Mock the journalEntityById call
+        when(() => mockJournalDb.journalEntityById(journalEntityId))
+            .thenAnswer((_) async => testEntity);
+
+        // Mock the updateMetadata call
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            testEntity.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => updatedMeta);
+
+        // Mock the updateDbEntity call
+        when(() => mockPersistenceLogic.updateDbEntity(any()))
+            .thenAnswer((_) async => true);
+
+        // Mock the updateBadge call
+        when(() => mockNotificationService.updateBadge())
+            .thenAnswer((_) async {});
+
+        // Mock TimeService.getCurrent to return a DIFFERENT active timer
+        when(() => mockTimeService.getCurrent()).thenReturn(activeTimer);
+
+        // Mock TimeService.stop (should NOT be called)
+        when(() => mockTimeService.stop()).thenAnswer((_) async {});
+
+        // Act
+        final result = await repository.deleteJournalEntity(journalEntityId);
+
+        // Assert
+        expect(result, isTrue);
+        verify(() => mockJournalDb.journalEntityById(journalEntityId))
+            .called(1);
+        verify(
+          () => mockPersistenceLogic.updateMetadata(
+            testEntity.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).called(1);
+        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
+        verify(() => mockNotificationService.updateBadge()).called(1);
+
+        // Verify timer was NOT stopped (different ID)
+        verify(() => mockTimeService.getCurrent()).called(1);
+        verifyNever(() => mockTimeService.stop());
+      });
+
+      test('handles null timer when deleting entry', () async {
+        // Arrange
+        const journalEntityId = 'test-id';
+
+        final testEntity = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Test content',
+            markdown: 'test',
+          ),
+          meta: Metadata(
+            id: journalEntityId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            private: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        final updatedMeta = testEntity.meta.copyWith(
+          deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        // Mock the journalEntityById call
+        when(() => mockJournalDb.journalEntityById(journalEntityId))
+            .thenAnswer((_) async => testEntity);
+
+        // Mock the updateMetadata call
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            testEntity.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => updatedMeta);
+
+        // Mock the updateDbEntity call
+        when(() => mockPersistenceLogic.updateDbEntity(any()))
+            .thenAnswer((_) async => true);
+
+        // Mock the updateBadge call
+        when(() => mockNotificationService.updateBadge())
+            .thenAnswer((_) async {});
+
+        // Mock TimeService.getCurrent to return null (no active timer)
+        when(() => mockTimeService.getCurrent()).thenReturn(null);
+
+        // Mock TimeService.stop (should NOT be called)
+        when(() => mockTimeService.stop()).thenAnswer((_) async {});
+
+        // Act
+        final result = await repository.deleteJournalEntity(journalEntityId);
+
+        // Assert
+        expect(result, isTrue);
+        verify(() => mockJournalDb.journalEntityById(journalEntityId))
+            .called(1);
+        verify(
+          () => mockPersistenceLogic.updateMetadata(
+            testEntity.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).called(1);
+        verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
+        verify(() => mockNotificationService.updateBadge()).called(1);
+
+        // Verify timer was NOT stopped (no active timer)
+        verify(() => mockTimeService.getCurrent()).called(1);
+        verifyNever(() => mockTimeService.stop());
+      });
     });
 
     group('updateJournalEntityDate', () {
