@@ -65,7 +65,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: assignedLabelsForToast
-                    .map((label) => LabelChip(label: label, showDot: false))
+                    .map((label) => LabelChip(label: label))
                     .toList(),
               ),
             ),
@@ -198,7 +198,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
                         ? () => _showLabelDescription(context, label)
                         : null,
                     behavior: HitTestBehavior.opaque,
-                    child: LabelChip(label: label, showDot: false),
+                    child: LabelChip(label: label),
                   ),
                 )
                 .toList(),
