@@ -6,12 +6,10 @@ import 'package:lotti/utils/color.dart';
 class LabelChip extends StatelessWidget {
   const LabelChip({
     required this.label,
-    this.showDot = true,
     super.key,
   });
 
   final LabelDefinition label;
-  final bool showDot;
 
   @override
   Widget build(BuildContext context) {

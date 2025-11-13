@@ -35,18 +35,18 @@ void main() {
       expect(dotContainer.constraints?.minHeight, equals(8.0));
     });
 
-    testWidgets('renders colored dot even when showDot=false', (tester) async {
+    testWidgets('renders colored dot consistently', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: Center(
-              child: LabelChip(label: testLabelDefinition1, showDot: false),
+              child: LabelChip(label: testLabelDefinition1),
             ),
           ),
         ),
       );
 
-      // Dot should still be present (showDot parameter ignored in new design)
+      // Dot should always be present (Linear-style design)
       final dotFinder = find.byWidgetPredicate((widget) {
         if (widget is! Container) return false;
         final decoration = widget.decoration;
