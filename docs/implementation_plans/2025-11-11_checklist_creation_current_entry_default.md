@@ -1,14 +1,19 @@
-# Checklist Suggestions — Current‑Entry Default Scope, Back‑References, and Completion Tools (2025‑11‑11)
+# Checklist Suggestions — Current‑Entry Hint + Fallback to Task, Back‑References, and Completion Tools (2025‑11‑11)
 
 ## Summary
 
-- Default scope change: new checklist items are created from the “current entry” only (recording/text/image being processed), not from the entire task log. Task context remains
-  available for de‑duplication, completions, and language/labels.
-- Explicit back‑references: allow users to reference prior entries (by timestamp/ID) when they want items extracted from earlier context.
-- Tooling: keep `add_multiple_checklist_items` (array‑only); add `complete_checklist_items` for
-  direct check‑offs; retain `suggest_checklist_completion` for model‑proposed completions.
+- Invocation semantics:
+  - When the user runs Checklist Updates from the recording modal for a task (new audio with transcript), we pass that entry as Current Entry and prioritize extracting new items from it.
+  - When the user runs Checklist Updates from the task‑level AI popup (no specific entry selected), there is no Current Entry; analyze the full task context instead.
+  - We do NOT introduce a new prompt type; the same prompt accepts an optional Current Entry hint and degrades gracefully when it’s absent. Task context remains available for de‑duplication, completions, and language/labels.
+- Explicit back‑references: allow users to reference prior entries when they want items 
+  extracted from earlier context. Example could be "in the previous two entries" or "in the entry from around lunchtime".
+- Tooling: keep `add_multiple_checklist_items` (array‑only); add `complete_checklist_items` for direct check‑offs; retain `suggest_checklist_completion` for model‑proposed completions.
 - Guard against re‑creation of deleted items by passing a deleted‑items list to prompts and adding an app‑side filter.
 - Minimal surface changes: prompt template and prompt‑builder injection; optionally thread the linked entry through the unified AI pipeline; avoid DB schema changes.
+
+Terminology
+- currentEntryId (aka linkedEntityId in code): optional ID of the entry (audio/text/image) that should be treated as the Current Entry hint while the prompt still runs on the task. This is a runtime hint only.
 
 Related prior work to respect and build on:
 
@@ -19,16 +24,21 @@ Related prior work to respect and build on:
 
 ## Problem
 
-When running “Checklist Updates” with full task context, the model sometimes derives items from older log entries, already removed items, or meta/plan‑style notes. Even with entry‑scoped directives, the model still sees the entire task log, which increases noise. Users want the default behavior to only consider the current entry for new items while retaining task context for de‑duplication, completion hints, and language/labels.
+When running “Checklist Updates” with full task context, the model sometimes derives items from
+older log entries, already removed items, or meta/plan‑style notes. Even with entry‑scoped
+directives, the model still sees the entire task log, which increases noise. Users want the default
+behavior to only consider the current entry for new items while retaining task context for
+de‑duplication, completion hints, and language/labels.
 
 ## Goals
 
-- Default: create new items from the current entry only.
+- Prioritize: when provided, create new items from the Current Entry (e.g., the latest recording transcript run from the recording modal).
+- Fallback: when no Current Entry is provided (e.g., invoked from the task AI popup), analyze the entire task including all linked entries.
 - Keep task context available to: prevent duplicates, suggest completions of existing items, set
   language, and propose labels (when enabled).
-- Allow explicit back‑reference to earlier entries (by timestamp/ID) when the user asks.
+- Allow explicit back‑reference to earlier entries when the user asks mentions them.
 - Add a direct completion tool for existing items to pair with suggestion‑only flows.
-- Avoid re‑creating deleted items by providing visibility of recently deleted titles to the model and filtering on the app side.
+- Avoid re‑creating deleted items by providing visibility of recently deleted titles to the model.
 
 ## Non‑Goals
 
@@ -41,10 +51,11 @@ When running “Checklist Updates” with full task context, the model sometimes
 1) Prompt Template Adjustments (Checklist Updates)
 
 - System message: strengthen scope rules
-  - Default: “Create new items only from the Current Entry section. Use Task Details only for de‑duplication, evidence to mark existing items complete, language detection, and labels.”
+  - If a Current Entry section is present, prioritize new items from that section. Use Task Details primarily for de‑duplication, evidence to mark existing items complete, language detection, and labels. Only extract new items outside of Current Entry when explicitly back‑referenced or when no Current Entry is provided.
   - Keep and reference the existing “Entry‑Scoped Directives” (ignore/plan‑only) from 2025‑11‑09.
-  - Add “Back‑reference” guidance: when the user explicitly references a prior entry by timestamp or ID, the model may extract items from that referenced entry as well.
-- User message: add a dedicated Current Entry section (machine‑readable JSON)
+  - Add “Back‑reference” guidance: when the user explicitly references a prior entry by timestamp or
+    ID, the model may extract items from that referenced entry as well.
+- User message: add an optional Current Entry section (machine‑readable JSON)
   - Example block:
     ```
     Current Entry:
@@ -52,35 +63,41 @@ When running “Checklist Updates” with full task context, the model sometimes
       "id": "<entryId>",
       "createdAt": "2025-11-11T17:20:00Z",
       "entryType": "audio|text|image",
-      "text": "…", // plain text body
+      "text": "…", // plain text body; for audio use entry.entryText (user‑edited), NOT latest auto transcript
     }
     ```
   - Keep Task Details (existing `{{task}}`) as a separate block.
   - Include Active Checklist Items and Deleted Checklist Items lists (see 3).
+  - Template change: introduce a new `{{current_entry}}` placeholder and remove the unused `{{prompt}}` block from the default template to avoid leaking an unresolved token. When no Current Entry is available, replace `{{current_entry}}` with an empty string.
 - Function usage priority (unchanged intent, tightened wording):
-  - First: add new items (array‑only) from Current Entry; then complete existing items; finally set language and label assignments.
+  - First: if Current Entry is present, add new items (array‑only) from it; otherwise scan Task Details; then complete existing items if mentioned as completed; finally set language and label assignments.
 
 2) Pipeline Threading (minimal change path)
 
-- Option A (recommended now): keep invoking Checklist Updates on the task entity but thread the “current entry” as a separate context into the prompt builder.
-  - Pass `linkedEntityId` (the recorder/text/image entry) along to prompt building so
-    `Current Entry` can be injected even when the primary entity is the task.
-- Option B (follow‑up, optional): allow prompts that require `task` context to run on entry
-  entities (audio/text/image) if they are linked to a task. This needs a small relaxation in `getActivePromptsForContext` or dual‑modality requirement on the prompt.
+- Option A (recording modal and task popup): keep invoking Checklist Updates on the task entity but thread the optional “current entry” as a separate context into the prompt builder.
+  - Recording modal: pass `linkedEntityId` (the audio/text/image entry) so the builder injects the Current Entry block. Users may skip auto‑trigger and run later from the audio entry popup; editing the transcript is optional — often recommended for terminology/spelling, especially when words are used for the first time in a task — but not required.
+  - Task‑level AI popup: do not pass a `linkedEntityId`; the builder omits the Current Entry block and the model analyzes the entire task.
+- Enable audio entry popup: allow invoking the same prompt from an audio entry card linked to a task (manual run; editing optional — often recommended for terminology/spelling, especially for first‑use words). Implementation: relax the active‑prompt check so prompts with `requiredInputData: [task]` appear for `JournalAudio` (and `JournalImage`) entries that are linked to a task; still run the prompt “on the task” while passing that entry as `linkedEntityId`.
+
+Required signature updates for threading the hint cleanly:
+- `UnifiedAiInferenceRepository.runInference(..., { String? linkedEntityId })`
+- `PromptBuilderHelper.buildPromptWithData(..., { String? linkedEntityId })`
 
 3) Prompt Builder Enhancements
 
 - New placeholders/sections injected when AiResponseType == ChecklistUpdates:
-  - `Current Entry` JSON block as above (sourced from `linkedEntityId` when provided, or from the
-    entity itself if the entity is the entry).
+  - Optional `Current Entry` JSON block injected via `{{current_entry}}` (sourced by fetching the entry by `linkedEntityId`). Omit entirely when not available by substituting an empty string.
   - `Active Checklist Items` (id/title/isChecked) — already available via
     `AiInputTaskObject.actionItems`; keep.
-  - `Deleted Checklist Items` (titles and deletedAt) — new helper that resolves deleted 
-    checklist items linked to the task and emits a compact array of `{ title, deletedAt }`. If 
-    fetching deleted items is expensive, include last N (e.g., 50) or recent time window (e.g.,  
-    30 days). <= not a problem, there
-- Maintain existing labels blocks (`assigned_labels`, `suppressed_labels`, `labels`) and language
-  handling.
+  - `Deleted Checklist Items` (titles and deletedAt) — new helper that resolves all deleted checklist
+    items linked to the task and emits a compact array of `{ title, deletedAt }`.
+  - Maintain existing labels blocks (`assigned_labels`, `suppressed_labels`, `labels`) and language
+    handling.
+
+Notes:
+- The Current Entry block is populated by directly loading the entry referenced by `linkedEntityId` and extracting: `id`, `createdAt`, `entryType`, and `text`.
+- For audio entries, use the user‑editable entry text (`entry.entryText?.plainText`), NOT the latest auto transcript. For text entries, use the plain text body. For images, use an empty string or a caption if available.
+- This does not require adding `id` to `AiInputLogEntryObject`. Optional enhancement: add `id` later for better back‑reference UX; not required for this phase.
 
 4) Tools: add direct completion and keep array‑only create
 
@@ -100,9 +117,7 @@ When running “Checklist Updates” with full task context, the model sometimes
 - Prompt‑side: include the “Deleted Checklist Items” list and instruct the model: “Do not re‑create
   titles from this list unless explicitly asked (e.g., ‘Re‑add <title>’)”. Allow near‑duplicate
   detection heuristics (basic string‑similarity guidance).
-- App‑side: before creation, drop proposals whose title is exactly equal to a recently deleted
-  title (within a configurable window). Log denominator to telemetry (how many items dropped) to
-  tune prompts later.
+- App‑side: no hard drop filter. Rely on the model to avoid re‑creating previously deleted items by example and instruction. Consider telemetry to monitor any regressions (e.g., how often proposals resemble recently deleted titles) and refine prompts accordingly.
 
 6) UI/UX Notes (small clarifications only)
 
@@ -116,24 +131,26 @@ When running “Checklist Updates” with full task context, the model sometimes
 Phase 1 — Prompt + Builder Foundations
 
 - Update `lib/features/ai/util/preconfigured_prompts.dart` (Checklist Updates):
-  - Add “Current Entry” section and strengthen scope language.
+  - Add an optional “Current Entry” section and strengthen scope language (prioritize Current Entry when present; otherwise analyze Task Details).
+  - Introduce `{{current_entry}}` placeholder and remove the unused `{{prompt}}` block from the default template.
   - Keep Entry‑Scoped Directives block from 2025‑11‑09.
 - Extend `PromptBuilderHelper.buildPromptWithData`:
-  - Accept an optional `currentEntry` (looked up from `linkedEntityId` when provided) and inject the
-    JSON block.
+  - Accept an optional `linkedEntityId` and inject the `{{current_entry}}` JSON block when present; omit when absent.
   - Add helper to build Deleted Checklist Items JSON.
   - Leave existing labels/assigned/suppressed injection untouched.
-- Add unit tests to assert new blocks are present with realistic content when an entry is supplied.
+  - Add unit tests to assert: when an entry is supplied, blocks are present and prioritized; when no entry is supplied, prompt contains only Task Details.
 
 Phase 2 — Thread Current Entry Through the Pipeline
 
 - `UnifiedAiController`/`UnifiedAiInferenceRepository`:
-  - Thread `linkedEntityId` to the prompt builder for Checklist Updates when present.
-  - Automatic audio flow: in `automatic_prompt_trigger.dart`, keep invoking Checklist Updates on the
-    task entity, but pass the audio entry’s ID as `linkedEntityId` so Current Entry is populated
-    with its latest transcript.
-- Tests: targeted integration verifying that an audio recording triggers Checklist Updates that
-  contain the correct Current Entry block and only create items from that content by default.
+  - Thread `linkedEntityId` to the prompt builder for Checklist Updates when present (update signatures as noted above).
+  - Recording modal/manual run: pass the audio entry’s ID as `linkedEntityId` so Current Entry is populated with the user‑edited entry text.
+  - Task‑level AI popup: do not pass `linkedEntityId` — prompt runs on entire task.
+  - Audio entry popup: with the relaxed availability rule, allow running the same prompt from an audio entry linked to a task; pass that entry ID as `linkedEntityId` and run for the linked task.
+- Tests: targeted integration verifying both flows:
+  - Recording‑modal path: prompt contains the correct Current Entry block and primarily creates items from that content by default.
+  - Task‑level path: prompt contains no Current Entry block and considers the full task context.
+  - Audio entry popup path: prompt is available on audio entries linked to a task; Current Entry block reflects the audio entry’s user‑edited text.
 
 Phase 3 — New Tool: `complete_checklist_items`
 
@@ -149,12 +166,11 @@ Phase 3 — New Tool: `complete_checklist_items`
 
 Phase 4 — Deleted Items Guardrails
 
-- Add builder helper to fetch and expose deleted checklist items for the task (titles + deletedAt;
-  window: last 30 days or last 50 deletions).
+- Add builder helper to fetch and expose deleted checklist items for the task (titles + deletedAt; include all deleted items linked to the task's checklists).
+- Database note: deleted checklist items remain in the DB until purged. Add a repository/DB query that includes soft‑deleted rows (e.g., `deleted = true`) scoped to checklist items linked to the task’s checklists.
 - Update Checklist Updates prompt: “Do not re‑create titles from this list unless explicitly asked;
   prefer editing an existing item instead.”
-- Apply app‑side filter in the add‑items handler to drop exact‑title matches within the window; log
-  counts.
+- No app‑side exact‑title drop. Favor LLM‑side avoidance via examples and explicit instruction. Add optional telemetry/statistics to observe re‑creation attempts for tuning.
 - Tests: ensure prompt contains deleted list; handler drops exact matches; verify opt‑in re‑add
   behavior when the entry explicitly asks.
 
@@ -189,11 +205,11 @@ Phase 5 — Polish, Docs, and Rollout
   - Deleted‑items helper: windowing, empty states.
   - `complete_checklist_items`: schema + handler (valid/invalid IDs, already checked, batch cap).
   - Prompt text assertions for scope rules and examples.
-- Integration tests
-  - Audio → transcription → checklist updates: created items come from Current Entry only by
-    default.
-  - Back‑reference case: explicit timestamp/ID reference enables extraction from a prior entry.
-  - Deleted‑items guard: proposals matching recent deletions are dropped unless explicitly re‑add.
+- Integration tests (focus on seams; defer heavy LLM stubbing)
+  - Recording modal flow (with Current Entry): repository/controller pass `linkedEntityId` through to the builder; prompt contains the Current Entry block.
+  - Task‑level AI popup flow (without Current Entry): prompt contains no Current Entry block; only Task Details.
+  - Deleted‑items guard: verify prompt injection and system/user instructions are present; rely on manual/telemetry validation for LLM behavior (no time/window limits).
+  - Back‑reference: covered by prompt text rules; deeper LLM behavior can be added later.
 
 ## Risks & Mitigations
 
@@ -205,15 +221,12 @@ Phase 5 — Polish, Docs, and Rollout
 
 ## Open Questions (for maintainer)
 
-1) Back‑reference format: prefer “previous entry at 2025‑11‑10 17:46” (local time) or stable IDs?
-   Should we expose entry IDs in the prompt for copyability?
+1) Back‑reference format (v2 scope): prefer “previous entry at 2025‑11‑10 17:46” (local time) or stable IDs? For v1, rely on Task Details log and the single Current Entry hint; add structured back‑reference support later if needed.
 2) Deleted‑items window: 30 days vs last 50 deletions vs both? OK to make this configurable via a
    flag?
 3) Auto‑apply completion suggestions with high confidence (e.g., ≥ high) or always require a direct
    function call? If auto‑apply, where should this policy live?
-4) Should Checklist Updates prompts be made valid on entry entities (audio/text/image) without
-   adding `audioFiles/images` to requiredInputData (Option B), or do we stick with threading
-   `linkedEntityId` (Option A)?
+4) Option B vs A: keep Option A (thread `linkedEntityId`) for v1 to avoid prompt proliferation; evaluate Option B (run on entry entity) later if UX/data warrants.
 5) Any preference for the default single “plan only” item title (localized), e.g., “Draft
    implementation plan”?
 6) Should the UI surface directive quick‑chips in the recorder (Ignore / Plan only), or keep it
@@ -221,12 +234,11 @@ Phase 5 — Polish, Docs, and Rollout
 
 ## Acceptance Criteria
 
-- By default, Checklist Updates only creates items from the current entry; older logs do not produce
-  new items unless explicitly referenced.
+- When invoked with a Current Entry (recording modal), Checklist Updates prioritizes creating items from that entry; older logs do not produce new items unless explicitly back‑referenced.
+- When invoked without a Current Entry (task‑level AI popup), Checklist Updates analyzes the entire task context.
 - Function set includes `add_multiple_checklist_items` (array‑only) and `complete_checklist_items`;
   suggestion flow remains available.
-- Deleted items are not silently re‑created by default; prompt and app‑side guard prevent it unless
-  explicitly asked.
+- Deleted items are not silently re‑created by default; prompt includes examples and explicit instructions to avoid re‑creation unless explicitly asked (no app‑side exact‑title drop).
 - Analyzer clean; targeted tests for builder, handlers, and conversation path pass; manual sanity
   verified.
 

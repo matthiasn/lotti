@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:drift/drift.dart' show Variable;
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -123,6 +124,17 @@ class PromptBuilderHelper {
       }
     }
 
+    // Inject deleted checklist items (recent) if requested
+    if (prompt.contains('{{deleted_checklist_items}}') &&
+        promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
+      try {
+        final deleted = await _buildDeletedChecklistItemsJson(entity);
+        prompt = prompt.replaceAll('{{deleted_checklist_items}}', deleted);
+      } catch (_) {
+        prompt = prompt.replaceAll('{{deleted_checklist_items}}', '[]');
+      }
+    }
+
     return prompt;
   }
 
@@ -160,6 +172,72 @@ class PromptBuilderHelper {
       (entity) => entity is Task,
     ) as Task?;
     return task;
+  }
+
+  /// Build JSON array of deleted checklist item titles for the task.
+  /// Each item: {"title": String, "deletedAt": ISO8601 String}
+  Future<String> _buildDeletedChecklistItemsJson(JournalEntity entity) async {
+    // Resolve task for this context
+    Task? task;
+    if (entity is Task) {
+      task = entity;
+    } else {
+      task = await _findLinkedTask(entity);
+    }
+
+    if (task == null) return '[]';
+
+    final checklistIds = task.data.checklistIds ?? const <String>[];
+    if (checklistIds.isEmpty) return '[]';
+
+    // Build dynamic IN clause for checklist IDs
+    final placeholders = List.filled(checklistIds.length, '?').join(', ');
+    final sql = '''
+SELECT j.serialized AS serialized, j.updated_at AS updatedAt
+FROM journal j
+JOIN linked_entries le ON le.to_id = j.id
+WHERE j.deleted = TRUE
+  AND j.type = 'ChecklistItem'
+  AND le.hidden = FALSE
+  AND le.from_id IN ($placeholders)
+ORDER BY j.updated_at DESC
+''';
+
+    final db = getIt<JournalDb>();
+    final vars = checklistIds.map(Variable.withString).toList();
+    final rows = await db.customSelect(sql, variables: vars).get();
+
+    final results = <Map<String, String>>[];
+
+    for (final row in rows) {
+      final serialized = row.read<String>('serialized');
+      final updatedAt = row.read<DateTime>('updatedAt');
+      try {
+        final map = jsonDecode(serialized) as Map<String, dynamic>;
+        final data = map['data'] as Map<String, dynamic>?;
+        final meta = map['meta'] as Map<String, dynamic>?;
+        final title = (data?['title'] as String?)?.trim();
+        if (title == null || title.isEmpty) continue;
+
+        // Prefer meta.deletedAt if present, else fall back to updatedAt
+        String? deletedAtIso;
+        final deletedAtRaw = meta?['deletedAt'];
+        if (deletedAtRaw is String && deletedAtRaw.isNotEmpty) {
+          deletedAtIso = deletedAtRaw;
+        } else {
+          deletedAtIso = updatedAt.toUtc().toIso8601String();
+        }
+
+        results.add({
+          'title': title,
+          'deletedAt': deletedAtIso!,
+        });
+      } catch (_) {
+        // ignore malformed rows
+      }
+    }
+
+    return jsonEncode(results);
   }
 
   // Note: the legacy global labels builder was removed. The category-scoped
