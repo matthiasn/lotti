@@ -253,7 +253,15 @@ void main() {
       taskId: 'task-123',
       assignedIds: ['label-1'],
     ));
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+
+    // Verify first toast is showing
+    expect(find.text('Label 1'), findsOneWidget);
+
+    // Clear the first SnackBar to ensure clean state for second
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold)))
+        .clearSnackBars();
+    await tester.pumpAndSettle();
 
     // Second event supersedes toast
     eventService.publish(const LabelAssignmentEvent(
@@ -261,13 +269,11 @@ void main() {
       assignedIds: ['label-2', 'label-3'],
     ));
     await tester.pumpAndSettle();
-    // Let the first SnackBar auto-dismiss (default ~4s) and the second one show
-    await tester.pump(const Duration(seconds: 6));
-    await tester.pumpAndSettle();
 
     // Assert latest toast shows only the most recent assignment (via chip text)
     expect(find.text('Assigned:'), findsOneWidget);
     expect(find.text('Label 2'), findsOneWidget);
+    expect(find.text('Label 3'), findsOneWidget);
     expect(find.text('Label 1'), findsNothing);
   });
 

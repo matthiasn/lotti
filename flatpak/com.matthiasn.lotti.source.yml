@@ -126,7 +126,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/flutter/flutter.git
-        tag: 3.35.7
+        tag: 3.38.0
         dest: flutter
   - name: lotti
     buildsystem: simple
