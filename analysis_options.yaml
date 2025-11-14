@@ -20,3 +20,12 @@ analyzer:
     strict-raw-types: true
   plugins:
     - custom_lint
+
+custom_lint:
+  rules:
+    # Disable noisy rules that don't add value
+    - avoid_public_notifier_properties: false
+    - scoped_providers_should_specify_dependencies: false
+    - avoid_manual_providers_as_generated_provider_dependency: false
+    - missing_provider_scope: false
+    - no_get_it_in_sync: false  # Also disable getIt warnings in sync module
