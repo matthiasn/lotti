@@ -115,6 +115,7 @@ void main() {
       );
 
       var capturedEntityId = '';
+      var capturedLinkedEntityId = '';
       var inferenceStatusUpdates = 0;
 
       when(
@@ -124,9 +125,12 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         capturedEntityId = invocation.namedArguments[#entityId] as String;
+        capturedLinkedEntityId =
+            (invocation.namedArguments[#linkedEntityId] as String?) ?? '';
         final onStatusChange = invocation.namedArguments[#onStatusChange]
             as void Function(InferenceStatus);
 
@@ -158,6 +162,7 @@ void main() {
       // Assert
       expect(
           capturedEntityId, audioEntryId); // Main entity is used for inference
+      expect(capturedLinkedEntityId, linkedTaskId);
       expect(inferenceStatusUpdates,
           greaterThan(0)); // Linked entity received updates
 
@@ -227,6 +232,7 @@ void main() {
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
             useConversationApproach: any(named: 'useConversationApproach'),
+            linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
           final onStatusChange = invocation.namedArguments[#onStatusChange]
@@ -321,6 +327,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenThrow(Exception('Network error'));
 
@@ -374,6 +381,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         final promptConfig =
@@ -474,6 +482,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         final promptConfig =
@@ -595,6 +604,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         final promptConfig =

@@ -77,7 +77,7 @@ de‑duplication, completion hints, and language/labels.
 - Option A (recording modal and task popup): keep invoking Checklist Updates on the task entity but thread the optional “current entry” as a separate context into the prompt builder.
   - Recording modal: pass `linkedEntityId` (the audio/text/image entry) so the builder injects the Current Entry block. Users may skip auto‑trigger and run later from the audio entry popup; editing the transcript is optional — often recommended for terminology/spelling, especially when words are used for the first time in a task — but not required.
   - Task‑level AI popup: do not pass a `linkedEntityId`; the builder omits the Current Entry block and the model analyzes the entire task.
-- Enable audio entry popup: allow invoking the same prompt from an audio entry card linked to a task (manual run; editing optional — often recommended for terminology/spelling, especially for first‑use words). Implementation: relax the active‑prompt check so prompts with `requiredInputData: [task]` appear for `JournalAudio` (and `JournalImage`) entries that are linked to a task; still run the prompt “on the task” while passing that entry as `linkedEntityId`.
+- Enable audio entry popup (Checklist Updates only): allow invoking the Checklist Updates prompt from an audio entry card linked to a task (manual run; editing optional — often recommended for terminology/spelling, especially for first‑use words). Implementation: relax the active‑prompt check **only** for prompts with `aiResponseType == ChecklistUpdates` so they appear for `JournalAudio` entries linked to a task; still run the prompt “on the task” while passing that entry as `linkedEntityId`.
 
 Required signature updates for threading the hint cleanly:
 - `UnifiedAiInferenceRepository.runInference(..., { String? linkedEntityId })`
@@ -154,25 +154,17 @@ Phase 2 — Thread Current Entry Through the Pipeline
 
 Phase 3 — New Tool: `complete_checklist_items`
 
-- Add function definition in `lib/features/ai/functions/checklist_completion_functions.dart` (or a
-  dedicated file): array of IDs, optional reason, batch semantics, 20‑item cap.
-- Implement handler path in conversation and non‑conversation flows:
-  - Conversation: `LottiConversationProcessor` strategy delegates to a repository method that
-    performs batched completion (reusing `ChecklistRepository.updateChecklistItem`).
-  - Non‑conversation fallback: extend the streamed tool‑call processing path to handle this
-    function.
-- Tests: tool schema, handler unit tests (valid/invalid IDs, already checked, batch caps),
-  end‑to‑end test with a short transcript stating completion.
+- ✅ Add function definition in `lib/features/ai/functions/checklist_completion_functions.dart` including schema + 20-item cap.
+- ✅ Conversation path: `LottiConversationProcessor` now handles `complete_checklist_items` by delegating to `ChecklistRepository.completeChecklistItemsForTask` and returning structured responses.
+- ✅ Non-conversation path: `UnifiedAiInferenceRepository.processToolCalls` parses the payload, calls the repository helper, and invalidates checklist controllers.
+- ✅ Tests updated (conversation strategy, repository, tool schema, inference repository).
 
 Phase 4 — Deleted Items Guardrails
 
-- Add builder helper to fetch and expose deleted checklist items for the task (titles + deletedAt; include all deleted items linked to the task's checklists).
-- Database note: deleted checklist items remain in the DB until purged. Add a repository/DB query that includes soft‑deleted rows (e.g., `deleted = true`) scoped to checklist items linked to the task’s checklists.
-- Update Checklist Updates prompt: “Do not re‑create titles from this list unless explicitly asked;
-  prefer editing an existing item instead.”
-- No app‑side exact‑title drop. Favor LLM‑side avoidance via examples and explicit instruction. Add optional telemetry/statistics to observe re‑creation attempts for tuning.
-- Tests: ensure prompt contains deleted list; handler drops exact matches; verify opt‑in re‑add
-  behavior when the entry explicitly asks.
+- ✅ Builder helper fetches and exposes the deleted checklist items list for the task (titles + deletedAt; includes all task-linked items).
+- ✅ Database query pulls soft-deleted checklist items joined via `linked_entries`.
+- ✅ Prompt updated with the deleted list and explicit instruction; model-side avoidance only (no app drop).
+- Additional telemetry/monitoring can be added later if needed.
 
 Phase 5 — Polish, Docs, and Rollout
 

@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'package:drift/drift.dart' show Variable;
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -14,6 +14,7 @@ import 'package:lotti/features/labels/constants/label_assignment_constants.dart'
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// Helper class for building AI prompts with support for template tracking
@@ -33,6 +34,8 @@ class PromptBuilderHelper {
   final AiInputRepository aiInputRepository;
   final JournalRepository? journalRepository;
   final LabelFilterFn? labelFilterForCategory;
+  LoggingService? get _loggingService =>
+      getIt.isRegistered<LoggingService>() ? getIt<LoggingService>() : null;
 
   /// Get effective message from prompt config, using preconfigured if tracking is enabled
   String getEffectiveMessage({
@@ -60,6 +63,7 @@ class PromptBuilderHelper {
   Future<String?> buildPromptWithData({
     required AiConfigPrompt promptConfig,
     required JournalEntity entity,
+    String? linkedEntityId,
   }) async {
     // Get user message - use preconfigured if tracking is enabled
     final userMessage = getEffectiveMessage(
@@ -85,6 +89,34 @@ class PromptBuilderHelper {
       prompt = '$userMessage \n $jsonString';
     }
 
+    // Inject current entry if requested and linkedEntityId provided
+    if (prompt.contains('{{current_entry}}') &&
+        promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
+      try {
+        final repo = journalRepository;
+        if (linkedEntityId != null && repo != null) {
+          final current = await repo.getJournalEntityById(linkedEntityId);
+          if (current != null) {
+            final json = await _buildCurrentEntryJson(current);
+            prompt = prompt.replaceAll('{{current_entry}}', json);
+          } else {
+            prompt = prompt.replaceAll('{{current_entry}}', '');
+          }
+        } else {
+          prompt = prompt.replaceAll('{{current_entry}}', '');
+        }
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'current_entry',
+          error: error,
+          stackTrace: stackTrace,
+          context: 'linkedEntityId=$linkedEntityId',
+        );
+        prompt = prompt.replaceAll('{{current_entry}}', '');
+      }
+    }
+
     // Inject labels list if requested and enabled via feature flag
     if (prompt.contains('{{labels}}') &&
         promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
@@ -108,7 +140,13 @@ class PromptBuilderHelper {
       try {
         final assigned = await _buildAssignedLabelsJson(entity);
         prompt = prompt.replaceAll('{{assigned_labels}}', assigned);
-      } catch (_) {
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'assigned_labels',
+          error: error,
+          stackTrace: stackTrace,
+        );
         prompt = prompt.replaceAll('{{assigned_labels}}', '[]');
       }
     }
@@ -119,7 +157,13 @@ class PromptBuilderHelper {
       try {
         final suppressed = await _buildSuppressedLabelsJson(entity);
         prompt = prompt.replaceAll('{{suppressed_labels}}', suppressed);
-      } catch (_) {
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'suppressed_labels',
+          error: error,
+          stackTrace: stackTrace,
+        );
         prompt = prompt.replaceAll('{{suppressed_labels}}', '[]');
       }
     }
@@ -130,9 +174,22 @@ class PromptBuilderHelper {
       try {
         final deleted = await _buildDeletedChecklistItemsJson(entity);
         prompt = prompt.replaceAll('{{deleted_checklist_items}}', deleted);
-      } catch (_) {
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'deleted_checklist_items',
+          error: error,
+          stackTrace: stackTrace,
+        );
         prompt = prompt.replaceAll('{{deleted_checklist_items}}', '[]');
       }
+    }
+
+    if (promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
+      // Temporary logging to inspect prompt contents (remove after debugging)
+      print(
+        '[PromptBuilderHelper] checklistUpdates prompt for ${entity.id}:\n$prompt',
+      );
     }
 
     return prompt;
@@ -159,17 +216,22 @@ class PromptBuilderHelper {
 
   /// Find a task linked to the given entity
   Future<Task?> _findLinkedTask(JournalEntity entity) async {
-    if (journalRepository == null) {
-      return null;
+    List<JournalEntity> linkedEntities;
+    if (journalRepository != null) {
+      linkedEntities =
+          await journalRepository!.getLinkedToEntities(linkedTo: entity.id);
+    } else {
+      try {
+        final rows =
+            await getIt<JournalDb>().linkedToJournalEntities(entity.id).get();
+        linkedEntities = rows.map(fromDbEntity).toList();
+      } catch (_) {
+        return null;
+      }
     }
 
-    final linkedFromEntities = await journalRepository!.getLinkedToEntities(
-      linkedTo: entity.id,
-    );
-
-    // Find if any linked entity is a task
-    final task = linkedFromEntities.firstWhereOrNull(
-      (entity) => entity is Task,
+    final task = linkedEntities.firstWhereOrNull(
+      (linked) => linked is Task,
     ) as Task?;
     return task;
   }
@@ -177,7 +239,34 @@ class PromptBuilderHelper {
   /// Build JSON array of deleted checklist item titles for the task.
   /// Each item: {"title": String, "deletedAt": ISO8601 String}
   Future<String> _buildDeletedChecklistItemsJson(JournalEntity entity) async {
-    // Resolve task for this context
+    final checklistItems = await _getChecklistItemsForTask(
+      entity: entity,
+      deletedOnly: true,
+    );
+    if (checklistItems.isEmpty) {
+      return '[]';
+    }
+
+    final results = <Map<String, String>>[];
+    for (final item in checklistItems) {
+      final title = item.data.title.trim();
+      if (title.isEmpty) continue;
+      final deletedAt = (item.meta.deletedAt ?? item.meta.updatedAt)
+          .toUtc()
+          .toIso8601String();
+      results.add({
+        'title': title,
+        'deletedAt': deletedAt,
+      });
+    }
+
+    return jsonEncode(results);
+  }
+
+  Future<List<ChecklistItem>> _getChecklistItemsForTask({
+    required JournalEntity entity,
+    required bool deletedOnly,
+  }) async {
     Task? task;
     if (entity is Task) {
       task = entity;
@@ -185,59 +274,75 @@ class PromptBuilderHelper {
       task = await _findLinkedTask(entity);
     }
 
-    if (task == null) return '[]';
+    if (task == null) {
+      return const [];
+    }
 
     final checklistIds = task.data.checklistIds ?? const <String>[];
-    if (checklistIds.isEmpty) return '[]';
+    if (checklistIds.isEmpty) {
+      return const [];
+    }
 
-    // Build dynamic IN clause for checklist IDs
-    final placeholders = List.filled(checklistIds.length, '?').join(', ');
-    final sql = '''
-SELECT j.serialized AS serialized, j.updated_at AS updatedAt
-FROM journal j
-JOIN linked_entries le ON le.to_id = j.id
-WHERE j.deleted = TRUE
-  AND j.type = 'ChecklistItem'
-  AND le.hidden = FALSE
-  AND le.from_id IN ($placeholders)
-ORDER BY j.updated_at DESC
-''';
-
-    final db = getIt<JournalDb>();
-    final vars = checklistIds.map(Variable.withString).toList();
-    final rows = await db.customSelect(sql, variables: vars).get();
-
-    final results = <Map<String, String>>[];
-
-    for (final row in rows) {
-      final serialized = row.read<String>('serialized');
-      final updatedAt = row.read<DateTime>('updatedAt');
-      try {
-        final map = jsonDecode(serialized) as Map<String, dynamic>;
-        final data = map['data'] as Map<String, dynamic>?;
-        final meta = map['meta'] as Map<String, dynamic>?;
-        final title = (data?['title'] as String?)?.trim();
-        if (title == null || title.isEmpty) continue;
-
-        // Prefer meta.deletedAt if present, else fall back to updatedAt
-        String? deletedAtIso;
-        final deletedAtRaw = meta?['deletedAt'];
-        if (deletedAtRaw is String && deletedAtRaw.isNotEmpty) {
-          deletedAtIso = deletedAtRaw;
-        } else {
-          deletedAtIso = updatedAt.toUtc().toIso8601String();
-        }
-
-        results.add({
-          'title': title,
-          'deletedAt': deletedAtIso!,
-        });
-      } catch (_) {
-        // ignore malformed rows
+    final journalDb = getIt<JournalDb>();
+    final itemIds = <String>{};
+    for (final checklistId in checklistIds) {
+      final links = await journalDb
+          .linksFromId(checklistId, deletedOnly ? [false, true] : [false])
+          .get();
+      for (final link in links.map(entryLinkFromLinkedDbEntry)) {
+        itemIds.add(link.toId);
       }
     }
 
-    return jsonEncode(results);
+    if (itemIds.isEmpty) {
+      return const [];
+    }
+
+    final rows = await journalDb.entriesForIds(itemIds.toList()).get();
+    final results = <ChecklistItem>[];
+
+    for (final row in rows) {
+      try {
+        final entity = fromDbEntity(row);
+        if (entity is ChecklistItem &&
+            entity.data.linkedChecklists
+                .any((id) => checklistIds.contains(id))) {
+          results.add(entity);
+        }
+      } catch (error, stackTrace) {
+        _loggingService?.captureException(
+          'Failed to load checklist item ${row.id}: $error',
+          domain: 'prompt_builder_helper',
+          subDomain: 'loadChecklistItems',
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
+    results.sort(
+      (a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom),
+    );
+    return results;
+  }
+
+  /// Build Current Entry JSON with id, createdAt, entryType, and text.
+  Future<String> _buildCurrentEntryJson(JournalEntity entry) async {
+    final entryType = switch (entry) {
+      JournalAudio() => 'audio',
+      JournalImage() => 'image',
+      JournalEntry() => 'text',
+      _ => 'text',
+    };
+
+    final text = _resolveEntryText(entry);
+
+    final jsonMap = {
+      'id': entry.id,
+      'createdAt': entry.meta.dateFrom.toUtc().toIso8601String(),
+      'entryType': entryType,
+      'text': text,
+    };
+    return jsonEncode(jsonMap);
   }
 
   // Note: the legacy global labels builder was removed. The category-scoped
@@ -407,5 +512,44 @@ ORDER BY j.updated_at DESC
       // ignore and use default
     }
     return defaultValue;
+  }
+
+  String _resolveEntryText(JournalEntity entry) {
+    final editedText = entry.entryText?.plainText.trim();
+    if (editedText != null && editedText.isNotEmpty) {
+      return editedText;
+    }
+
+    if (entry is JournalAudio) {
+      final transcripts = entry.data.transcripts;
+      if (transcripts != null && transcripts.isNotEmpty) {
+        final latestTranscript = transcripts.reduce(
+          (current, candidate) =>
+              candidate.created.isAfter(current.created) ? candidate : current,
+        );
+        final transcriptText = latestTranscript.transcript.trim();
+        if (transcriptText.isNotEmpty) {
+          return transcriptText;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  void _logPlaceholderFailure({
+    required JournalEntity entity,
+    required String placeholder,
+    required Object error,
+    required StackTrace stackTrace,
+    String? context,
+  }) {
+    final suffix = (context == null || context.isEmpty) ? '' : ' $context';
+    _loggingService?.captureException(
+      'Failed to inject {{$placeholder}} for entity=${entity.id}$suffix: $error',
+      domain: 'prompt_builder_helper',
+      subDomain: 'placeholder_injection',
+      stackTrace: stackTrace,
+    );
   }
 }

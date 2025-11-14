@@ -1,5 +1,7 @@
 // ignore_for_file: comment_references
 
+import 'dart:collection';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -334,6 +336,71 @@ class ChecklistRepository {
         stackTrace: stackTrace,
       );
       return null;
+    }
+  }
+
+  /// Mark existing checklist items as completed for the given task.
+  Future<({List<String> updated, List<String> skipped})>
+      completeChecklistItemsForTask({
+    required Task task,
+    required List<String> itemIds,
+  }) async {
+    try {
+      final allowedChecklistIds = task.data.checklistIds ?? const <String>[];
+      if (allowedChecklistIds.isEmpty || itemIds.isEmpty) {
+        return (updated: const <String>[], skipped: itemIds);
+      }
+
+      const maxBatchSize = 20;
+      final normalizedIds =
+          LinkedHashSet<String>.from(itemIds).take(maxBatchSize).toList();
+
+      final updated = <String>[];
+      final skipped = <String>[];
+
+      for (final id in normalizedIds) {
+        final entity = await _journalDb.journalEntityById(id);
+        if (entity is! ChecklistItem) {
+          skipped.add(id);
+          continue;
+        }
+
+        final linkedChecklistIds = entity.data.linkedChecklists;
+        final belongsToTask =
+            linkedChecklistIds.any(allowedChecklistIds.contains);
+
+        if (!belongsToTask || entity.data.isChecked) {
+          skipped.add(id);
+          continue;
+        }
+
+        final success = await updateChecklistItem(
+          checklistItemId: entity.id,
+          data: entity.data.copyWith(isChecked: true),
+          taskId: task.id,
+        );
+
+        if (success) {
+          updated.add(id);
+        } else {
+          skipped.add(id);
+        }
+      }
+
+      // Any IDs beyond the batch limit are treated as skipped
+      if (itemIds.length > maxBatchSize) {
+        skipped.addAll(itemIds.skip(maxBatchSize));
+      }
+
+      return (updated: updated, skipped: skipped);
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: _callingDomain,
+        subDomain: 'completeChecklistItemsForTask',
+        stackTrace: stackTrace,
+      );
+      return (updated: const <String>[], skipped: itemIds);
     }
   }
 }

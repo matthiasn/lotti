@@ -182,7 +182,8 @@ class UnifiedAiInferenceRepository {
     // For prompts that require task context
     if (hasTask) {
       if (entity is Task) {
-        // Direct task entity - always valid
+        // Direct task entity - always valid as long as additional modality
+        // requirements are satisfied.
         return !hasImages && !hasAudio;
       } else if (entity is JournalImage && hasImages) {
         // Image with task requirement - check if linked to task
@@ -197,6 +198,17 @@ class UnifiedAiInferenceRepository {
             .getLinkedToEntities(linkedTo: entity.id);
         return linkedEntities.any((e) => e is Task);
       }
+
+      // Special case: Checklist Updates prompt may be triggered from an
+      // audio entry popup even though it only requires task context.
+      if (entity is JournalAudio &&
+          prompt.aiResponseType == AiResponseType.checklistUpdates) {
+        final linkedEntities = await ref
+            .read(journalRepositoryProvider)
+            .getLinkedToEntities(linkedTo: entity.id);
+        return linkedEntities.any((e) => e is Task);
+      }
+
       return false;
     }
 
@@ -215,6 +227,7 @@ class UnifiedAiInferenceRepository {
     required void Function(InferenceStatus) onStatusChange,
     bool useConversationApproach =
         false, // Flag to enable new conversation approach
+    String? linkedEntityId,
   }) async {
     await _runInferenceInternal(
       entityId: entityId,
@@ -223,6 +236,7 @@ class UnifiedAiInferenceRepository {
       onStatusChange: onStatusChange,
       isRerun: false,
       useConversationApproach: useConversationApproach,
+      linkedEntityId: linkedEntityId,
     );
   }
 
@@ -235,6 +249,7 @@ class UnifiedAiInferenceRepository {
     required bool isRerun,
     bool useConversationApproach = false,
     JournalEntity? entity, // Optional entity to avoid redundant fetches
+    String? linkedEntityId,
   }) async {
     final start = DateTime.now();
 
@@ -270,6 +285,7 @@ class UnifiedAiInferenceRepository {
       final prompt = await promptBuilderHelper.buildPromptWithData(
         promptConfig: promptConfig,
         entity: entity,
+        linkedEntityId: linkedEntityId,
       );
 
       if (prompt == null) {
@@ -1279,6 +1295,56 @@ class UnifiedAiInferenceRepository {
             'Error processing add checklist item(s): $e',
             name: 'UnifiedAiInferenceRepository',
             error: e,
+          );
+        }
+      } else if (toolCall.function.name ==
+          ChecklistCompletionFunctions.completeChecklistItems) {
+        try {
+          final arguments =
+              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
+          final itemsField = arguments['items'];
+          if (itemsField is! List) {
+            developer.log(
+              'Invalid or missing items for complete_checklist_items',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
+
+          final normalizedIds = <String>[];
+          for (final value in itemsField) {
+            if (value is String && value.trim().isNotEmpty) {
+              normalizedIds.add(value.trim());
+            }
+          }
+
+          if (normalizedIds.isEmpty) {
+            developer.log(
+              'No valid checklist item IDs provided for completion',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
+
+          final result = await ref
+              .read(checklistRepositoryProvider)
+              .completeChecklistItemsForTask(
+                task: currentTask,
+                itemIds: normalizedIds,
+              );
+
+          developer.log(
+            'Completed ${result.updated.length} checklist items, skipped ${result.skipped.length}',
+            name: 'UnifiedAiInferenceRepository',
+          );
+
+          ref.invalidate(checklistItemControllerProvider);
+        } catch (e, stackTrace) {
+          developer.log(
+            'Error processing complete_checklist_items: $e',
+            name: 'UnifiedAiInferenceRepository',
+            error: e,
+            stackTrace: stackTrace,
           );
         }
       } else if (toolCall.function.name == TaskFunctions.setTaskLanguage) {

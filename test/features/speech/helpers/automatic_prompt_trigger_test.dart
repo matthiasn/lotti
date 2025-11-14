@@ -537,6 +537,7 @@ void main() {
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
+              linkedEntityId: entryId,
             ).overrideWith((ref) async {
               inferenceTriggered = true;
             }),
@@ -621,6 +622,7 @@ void main() {
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
+              linkedEntityId: entryId,
             ).overrideWith((ref) async {
               // Verify transcription completed before checklist
               expect(transcriptionCompleted, isTrue,
@@ -705,6 +707,7 @@ void main() {
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
+              linkedEntityId: entryId,
             ).overrideWith((ref) async {
               await Future<void>(() {});
               checklistCompleted = true;
@@ -810,6 +813,7 @@ void main() {
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
+              linkedEntityId: entryId,
             ).overrideWith((ref) async {
               executionOrder.add('checklist-start');
               expect(transcriptionCompleted, isTrue);
@@ -1115,6 +1119,7 @@ void main() {
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
+              linkedEntityId: entryId,
             ).overrideWith((ref) async {
               checklistTriggered = true;
             }),
@@ -1362,6 +1367,7 @@ void main() {
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
+              linkedEntityId: entryId,
             ).overrideWith((ref) async {
               await Future<void>(() {});
               checklistCompleted = true;
@@ -1495,6 +1501,7 @@ void main() {
             triggerNewInferenceProvider(
               entityId: taskId,
               promptId: checklistPromptId,
+              linkedEntityId: entryId,
             ).overrideWith((ref) async {
               await Future<void>(() {});
               checklistCompleted = true;

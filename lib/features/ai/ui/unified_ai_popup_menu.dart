@@ -75,13 +75,16 @@ class UnifiedAiModal {
             name: 'UnifiedAiPopUpMenu',
           );
 
+          final targetLinkedEntityId =
+              journalEntity is Task ? linkedFromId : journalEntity.id;
+
           // Trigger inference in the background
           unawaited(
             ref.read(
               triggerNewInferenceProvider(
                 entityId: journalEntity.id,
                 promptId: prompt.id,
-                linkedEntityId: linkedFromId,
+                linkedEntityId: targetLinkedEntityId,
               ).future,
             ),
           );

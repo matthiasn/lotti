@@ -116,7 +116,6 @@ class AiConfigRepository {
       } catch (e) {
         // Log the error for debugging purposes
         // Note: In a real implementation, you might want to use a proper logging framework
-        // ignore: avoid_print
         print(
             'Error in deleteInferenceProviderWithModels for provider $providerId: $e');
         rethrow; // Re-throw to let the caller handle the error

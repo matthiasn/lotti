@@ -369,6 +369,74 @@ void main() {
     });
   });
 
+  group('completeChecklistItemsForTask', () {
+    late Task taskWithChecklist;
+    late ChecklistItem checklistItem;
+
+    setUp(() {
+      taskWithChecklist = testTask.copyWith(
+        data: testTask.data.copyWith(
+          checklistIds: const ['checklist-1'],
+        ),
+      );
+
+      checklistItem = ChecklistItem(
+        meta: testTask.meta.copyWith(id: 'item-1'),
+        data: const ChecklistItemData(
+          title: 'Item 1',
+          isChecked: false,
+          linkedChecklists: ['checklist-1'],
+        ),
+      );
+
+      when(() => mockJournalDb.journalEntityById('item-1'))
+          .thenAnswer((_) async => checklistItem);
+      when(() => mockJournalDb.journalEntityById('other'))
+          .thenAnswer((_) async => null);
+
+      when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
+          (invocation) async => invocation.positionalArguments[0] as Metadata);
+      when(() => mockPersistenceLogic.updateDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          )).thenAnswer((_) async => true);
+    });
+
+    test('marks items complete when they belong to the task', () async {
+      final result = await repository.completeChecklistItemsForTask(
+        task: taskWithChecklist,
+        itemIds: const ['item-1', 'other'],
+      );
+
+      expect(result.updated, equals(const ['item-1']));
+      expect(result.skipped, equals(const ['other']));
+      verify(() => mockPersistenceLogic.updateDbEntity(
+            any(),
+            linkedId: taskWithChecklist.id,
+          )).called(1);
+    });
+
+    test('skips items not linked to task checklists', () async {
+      final foreignItem = checklistItem.copyWith(
+        meta: checklistItem.meta.copyWith(id: 'foreign'),
+        data: checklistItem.data.copyWith(
+          linkedChecklists: const ['checklist-99'],
+        ),
+      );
+      when(() => mockJournalDb.journalEntityById('foreign'))
+          .thenAnswer((_) async => foreignItem);
+
+      final result = await repository.completeChecklistItemsForTask(
+        task: taskWithChecklist,
+        itemIds: const ['foreign'],
+      );
+
+      expect(result.updated, isEmpty);
+      expect(result.skipped, equals(const ['foreign']));
+      verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+    });
+  });
+
   group('createChecklistItem', () {
     test('creates checklist item successfully', () async {
       // Arrange

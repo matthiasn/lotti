@@ -209,10 +209,12 @@ CONTINUATION PROMPTS:
 If asked to continue and you haven't created items yet, review the original request and create the items now.
 If you've already created some items, check if there are more to add from the original request.''',
   userMessage: '''
-Create checklist items based on the user's request below.
+Create checklist updates based on the context below.
 
-**User Request:**
-{{prompt}}
+Current Entry (optional):
+```json
+{{current_entry}}
+```
 
 **Task Details:**
 ```json

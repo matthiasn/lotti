@@ -36,7 +36,8 @@ void main() {
       final names = tools.map((t) => t.function.name).toList();
       expect(names, contains('suggest_checklist_completion'));
       expect(names, contains('add_multiple_checklist_items'));
-      expect(names.length, 2);
+      expect(names, contains('complete_checklist_items'));
+      expect(names.length, 3);
     });
 
     test('returns same checklist tools for all providers', () {
@@ -59,7 +60,8 @@ void main() {
         final names = tools.map((t) => t.function.name).toList();
         expect(names, contains('suggest_checklist_completion'));
         expect(names, contains('add_multiple_checklist_items'));
-        expect(names.length, 2);
+        expect(names, contains('complete_checklist_items'));
+        expect(names.length, 3);
       }
     });
   });

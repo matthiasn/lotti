@@ -109,10 +109,12 @@ class AutomaticPromptTrigger {
               ).future,
             );
 
-            // If neither checklist updates nor task summary is needed, await transcription
-            // Otherwise, we'll wait for it before triggering the next steps
-            if (!shouldTriggerChecklistUpdates && !shouldTriggerTaskSummary ||
-                linkedTaskId == null) {
+            final shouldAwaitTranscriptionImmediately = linkedTaskId == null ||
+                (!shouldTriggerChecklistUpdates && !shouldTriggerTaskSummary);
+            // If no follow-up prompts require the transcript, await it now to
+            // keep recorder state consistent. Otherwise subsequent steps will
+            // await before firing.
+            if (shouldAwaitTranscriptionImmediately) {
               await transcriptionFuture;
             }
           }
@@ -164,11 +166,12 @@ class AutomaticPromptTrigger {
               );
             }
 
-            // Trigger checklist updates on the task entity
+            // Trigger checklist updates on the task entity, but pass the audio entry as linkedEntityId
             checklistUpdatesFuture = ref.read(
               triggerNewInferenceProvider(
                 entityId: linkedTaskId,
                 promptId: promptId,
+                linkedEntityId: entryId,
               ).future,
             );
 
