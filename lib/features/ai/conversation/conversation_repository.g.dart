@@ -326,7 +326,16 @@ class _ConversationMessagesProviderElement
 String _$conversationRepositoryHash() =>
     r'7aabed8fee944aca696abb0f11bdfb650e885bcf';
 
-/// Repository for managing AI conversations
+/// Repository for managing AI conversations.
+///
+/// Streaming expectations for tool calls (for providers and tests):
+/// - Tool calls may arrive across multiple streamed chunks. The repository stitches
+///   chunks using a stable `id` or `index` per tool call and accumulates `function.arguments`.
+/// - Providers emitting OpenAI‑style deltas should keep id/index stable across chunks.
+/// - In tests, you can bypass stream chunking complexity by stubbing `sendMessage` and directly
+///   invoking the provided `ConversationStrategy` with predefined
+///   `ChatCompletionMessageToolCall` objects. This preserves the strategy/handler execution path
+///   while avoiding brittle mock setups.
 ///
 /// Copied from [ConversationRepository].
 @ProviderFor(ConversationRepository)

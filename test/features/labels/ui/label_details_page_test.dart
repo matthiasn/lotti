@@ -227,6 +227,11 @@ void main() {
         selectedCategoryIds: {},
       );
 
+      // Stub sortedCategories for the modal
+      final cacheService = getIt<EntitiesCacheService>();
+      when(() => (cacheService as MockEntitiesCacheService).sortedCategories)
+          .thenReturn(<CategoryDefinition>[]);
+
       final container = ProviderContainer(
         overrides: [
           labelEditorControllerProvider.overrideWith(
@@ -245,7 +250,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the Add category button (label is localized). We only assert it exists and is tappable.
-      final addButton = find.byType(OutlinedButton);
+      final addButton = find.widgetWithIcon(OutlinedButton, Icons.add);
       expect(addButton, findsOneWidget);
       await tester.ensureVisible(addButton);
       await tester.tap(addButton);

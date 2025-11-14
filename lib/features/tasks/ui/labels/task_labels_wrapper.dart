@@ -88,6 +88,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
               right: 12,
               bottom: 12 + MediaQuery.of(context).padding.bottom,
             ),
+            showCloseIcon: true,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
