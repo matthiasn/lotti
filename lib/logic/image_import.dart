@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:exif/exif.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -193,6 +194,58 @@ Future<void> importDroppedImages({
   }
 }
 
+/// Extracts original timestamp from image EXIF data
+///
+/// Attempts to read DateTimeOriginal or DateTime from EXIF metadata.
+/// Returns the parsed DateTime if found, otherwise returns current time.
+Future<DateTime> _extractImageTimestamp(Uint8List data) async {
+  try {
+    final exifData = await readExifFromBytes(data);
+
+    // Try DateTimeOriginal first (preferred for photos)
+    if (exifData.containsKey('EXIF DateTimeOriginal')) {
+      final dateTimeStr = exifData['EXIF DateTimeOriginal'].toString();
+      return _parseExifDateTime(dateTimeStr);
+    }
+
+    // Fallback to DateTime (file modification time)
+    if (exifData.containsKey('Image DateTime')) {
+      final dateTimeStr = exifData['Image DateTime'].toString();
+      return _parseExifDateTime(dateTimeStr);
+    }
+  } catch (exception, stackTrace) {
+    // Log but don't fail - return current time as fallback
+    getIt<LoggingService>().captureException(
+      exception,
+      domain: MediaImportConstants.loggingDomain,
+      subDomain: 'extractImageTimestamp',
+      stackTrace: stackTrace,
+    );
+  }
+
+  // Fallback to current time if EXIF extraction fails
+  return DateTime.now();
+}
+
+/// Parses EXIF DateTime string format (yyyy:MM:dd HH:mm:ss)
+DateTime _parseExifDateTime(String exifDateTimeStr) {
+  try {
+    // EXIF format: "2023:12:25 14:30:45"
+    // Replace colons in date part with dashes for standard parsing
+    final parts = exifDateTimeStr.split(' ');
+    if (parts.length == 2) {
+      final datePart = parts[0].replaceAll(':', '-');
+      final timePart = parts[1];
+      final standardFormat = '$datePart $timePart';
+      return DateTime.parse(standardFormat);
+    }
+  } catch (e) {
+    // If parsing fails, return current time
+    return DateTime.now();
+  }
+  return DateTime.now();
+}
+
 /// Imports pasted image data from clipboard and creates journal entry
 ///
 /// Validates file size before importing.
@@ -212,7 +265,8 @@ Future<void> importPastedImages({
     return;
   }
 
-  final capturedAt = DateTime.now();
+  // Extract original timestamp from EXIF data, fallback to current time
+  final capturedAt = await _extractImageTimestamp(data);
   final id = uuid.v1();
 
   final day =
