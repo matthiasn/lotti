@@ -86,7 +86,6 @@ class LabelAssignmentProcessor {
     required String taskId,
     required List<String> proposedIds,
     required List<String> existingIds,
-    bool shadowMode = false,
     // Optional task context to avoid redundant DB lookups
     String? categoryId,
     // Optional Phase 2 parser metrics for telemetry
@@ -266,7 +265,7 @@ class LabelAssignmentProcessor {
       subDomain: 'processor',
     );
 
-    if (!shadowMode && assigned.isNotEmpty) {
+    if (assigned.isNotEmpty) {
       await _repository.addLabels(
         journalEntityId: taskId,
         addedLabelIds: assigned,

@@ -73,13 +73,11 @@ void main() {
       taskId: 't1',
       proposedIds: const ['a'],
       existingIds: const [],
-      shadowMode: false,
     );
     final f2 = processor.processAssignment(
       taskId: 't1',
       proposedIds: const ['a'],
       existingIds: const [],
-      shadowMode: false,
     );
 
     final results = await Future.wait([f1, f2]);
@@ -112,7 +110,6 @@ void main() {
       taskId: 't1',
       proposedIds: const ['a'],
       existingIds: const [],
-      shadowMode: false,
     );
     // Allow asynchronous stream delivery
     await Future<void>.delayed(Duration.zero);
@@ -165,7 +162,6 @@ void main() {
       taskId: 't3',
       proposedIds: const ['with space', 'ünicode', 'emoji😀'],
       existingIds: const [],
-      shadowMode: false,
     );
 
     expect(result.assigned, containsAll(['with space', 'ünicode', 'emoji😀']));

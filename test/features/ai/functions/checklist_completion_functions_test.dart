@@ -22,4 +22,21 @@ void main() {
     expect(itemProps.containsKey('title'), isTrue);
     expect(itemProps.containsKey('isChecked'), isTrue);
   });
+
+  test('complete_checklist_items tool requires IDs array', () {
+    final tools = ChecklistCompletionFunctions.getTools();
+    final tool = tools.firstWhere(
+      (t) =>
+          t.type == ChatCompletionToolType.function &&
+          t.function.name ==
+              ChecklistCompletionFunctions.completeChecklistItems,
+    );
+    final params = tool.function.parameters! as Map<String, Object?>;
+    final props = params['properties']! as Map<String, Object?>;
+    final items = props['items']! as Map<String, Object?>;
+    expect(items['type'], equals('array'));
+    expect(items['minItems'], equals(1));
+    final itemSchema = items['items']! as Map<String, Object?>;
+    expect(itemSchema['type'], equals('string'));
+  });
 }

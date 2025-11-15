@@ -974,6 +974,50 @@ void main() {
           )).called(1);
     });
 
+    test('should handle complete_checklist_items tool call', () async {
+      when(
+        () => mockChecklistRepo.completeChecklistItemsForTask(
+          task: any<Task>(named: 'task'),
+          itemIds: any<List<String>>(named: 'itemIds'),
+        ),
+      ).thenAnswer((_) async => (updated: ['item-1'], skipped: ['item-2']));
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-complete',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'complete_checklist_items',
+            arguments: '{"items":["item-1","item-2"],"reason":"done"}',
+          ),
+        ),
+      ];
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+      verify(
+        () => mockChecklistRepo.completeChecklistItemsForTask(
+          task: any<Task>(named: 'task'),
+          itemIds: ['item-1', 'item-2'],
+        ),
+      ).called(1);
+      verify(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: 'tool-complete',
+          response: any(named: 'response', that: contains('Marked 1')),
+        ),
+      ).called(1);
+    });
+
     test('should provide continuation prompt when no items created', () async {
       // Simulate processing with no successful items
       await strategy.processToolCalls(

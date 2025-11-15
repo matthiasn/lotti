@@ -86,6 +86,8 @@ class FakeMetadata extends Fake implements Metadata {}
 
 class FakeTaskData extends Fake implements TaskData {}
 
+class FakeTask extends Fake implements Task {}
+
 class FakeImageData extends Fake implements ImageData {}
 
 class FakeAudioData extends Fake implements AudioData {}
@@ -124,6 +126,7 @@ void main() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeTaskData());
+    registerFallbackValue(FakeTask());
     registerFallbackValue(FakeImageData());
     registerFallbackValue(FakeAudioData());
     registerFallbackValue(InferenceStatus.idle);
@@ -325,6 +328,51 @@ void main() {
             journalEntityId: any(named: 'journalEntityId'),
             addedLabelIds: any(named: 'addedLabelIds'),
           ));
+    });
+
+    test('processToolCalls completes checklist items', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(id: 'task-1'),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: const [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          checklistIds: const ['checklist-1'],
+        ),
+      );
+
+      when(
+        () => mockChecklistRepo.completeChecklistItemsForTask(
+          task: any(named: 'task'),
+          itemIds: any(named: 'itemIds'),
+        ),
+      ).thenAnswer((_) async => (updated: ['item-1'], skipped: ['item-2']));
+
+      final toolCalls = [
+        _createMockMessageToolCall(
+          id: 'tool-complete',
+          functionName: 'complete_checklist_items',
+          arguments: '{"items":["item-1","item-2"]}',
+        ),
+      ];
+
+      await repository!.processToolCalls(
+        toolCalls: toolCalls,
+        task: taskEntity,
+      );
+
+      verify(
+        () => mockChecklistRepo.completeChecklistItemsForTask(
+          task: any(named: 'task'),
+          itemIds: ['item-1', 'item-2'],
+        ),
+      ).called(1);
     });
     group('tool injection logging and gating', () {
       test('stream checklistUpdates logs OpenAI tools without multi-item',
@@ -3810,10 +3858,10 @@ If the image IS relevant:
 
           final capturedPrompt = captured.first as String;
 
-          // The prompt should contain the task placeholder since these prompts
-          // are only accessible from within a task context
-          expect(capturedPrompt, contains('{{task}}'));
+          // The prompt should have the task context injected (placeholder replaced)
           expect(capturedPrompt, contains('Task Context:'));
+          expect(capturedPrompt, contains('Database Migration Task'));
+          expect(capturedPrompt, contains('IN PROGRESS'));
 
           // Verify that the image entity was updated without disclaimer
           final updateCaptured = verify(
@@ -4131,10 +4179,10 @@ be consulted to ensure accuracy.''',
 
           final capturedPrompt = captured.first as String;
 
-          // The prompt should contain the task placeholder since these prompts
-          // are only accessible from within a task context
-          expect(capturedPrompt, contains('{{task}}'));
+          // The prompt should have the task context injected (placeholder replaced)
           expect(capturedPrompt, contains('Task Context:'));
+          expect(capturedPrompt, contains('Interview with John Smith'));
+          expect(capturedPrompt, contains('IN PROGRESS'));
         } finally {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);
@@ -6689,6 +6737,21 @@ CreateChatCompletionStreamResponse _createStreamChunkWithToolCalls(
     created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
     model: 'test-model',
     object: 'chat.completion.chunk',
+  );
+}
+
+ChatCompletionMessageToolCall _createMockMessageToolCall({
+  required String id,
+  required String functionName,
+  required String arguments,
+}) {
+  return ChatCompletionMessageToolCall(
+    id: id,
+    type: ChatCompletionMessageToolCallType.function,
+    function: ChatCompletionMessageFunctionCall(
+      name: functionName,
+      arguments: arguments,
+    ),
   );
 }
 

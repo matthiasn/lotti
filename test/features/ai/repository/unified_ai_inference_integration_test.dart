@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -52,6 +53,11 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
+// TODO: Add integration tests that exercise label repository methods
+// (getAllLabels, getLabelUsageCounts, buildLabelTuples) and remove this
+// unused mock once those tests are implemented.
+class MockLabelsRepository extends Mock implements LabelsRepository {}
+
 class MockRef extends Mock implements Ref {}
 
 class MockDirectory extends Mock implements Directory {}
@@ -80,6 +86,7 @@ void main() {
   late MockAutoChecklistService mockAutoChecklistService;
   late MockLoggingService mockLoggingService;
   late MockJournalDb mockJournalDb;
+  late MockLabelsRepository mockLabelsRepo; // TODO: Remove when tests added
   late MockDirectory mockDirectory;
 
   setUpAll(() {
@@ -108,6 +115,7 @@ void main() {
     mockAutoChecklistService = MockAutoChecklistService();
     mockLoggingService = MockLoggingService();
     mockJournalDb = MockJournalDb();
+    mockLabelsRepo = MockLabelsRepository(); // TODO: Remove when tests added
     mockDirectory = MockDirectory();
 
     // Set up GetIt
@@ -140,6 +148,9 @@ void main() {
         .thenReturn(mockJournalRepo);
     when(() => mockRef.read(checklistRepositoryProvider))
         .thenReturn(mockChecklistRepo);
+    // TODO: Remove when integration tests for labels are added
+    when(() => mockRef.read(labelsRepositoryProvider))
+        .thenReturn(mockLabelsRepo);
 
     repository = UnifiedAiInferenceRepository(mockRef)
       ..autoChecklistServiceForTesting = mockAutoChecklistService;

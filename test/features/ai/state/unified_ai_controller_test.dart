@@ -138,6 +138,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         final onProgress =
@@ -191,6 +192,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).called(1);
 
@@ -250,6 +252,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         runCount++;
@@ -287,6 +290,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).called(1);
       expect(runCount, 1);
@@ -326,6 +330,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         final onStatusChange = invocation.namedArguments[#onStatusChange]
@@ -556,6 +561,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         runInferenceCallCount++;
@@ -579,6 +585,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).called(1);
     });
@@ -645,6 +652,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         final onStatusChange = invocation.namedArguments[#onStatusChange]
@@ -737,6 +745,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
           useConversationApproach: any(named: 'useConversationApproach'),
+          linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
         final onStatusChange = invocation.namedArguments[#onStatusChange]

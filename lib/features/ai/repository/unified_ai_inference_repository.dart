@@ -43,7 +43,6 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_log.dart';
 import 'package:lotti/utils/audio_utils.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -61,26 +60,14 @@ class UnifiedAiInferenceRepository {
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
+      checklistRepository: ref.read(checklistRepositoryProvider),
+      labelsRepository: ref.read(labelsRepositoryProvider),
     );
   }
 
   final Ref ref;
   late final PromptBuilderHelper promptBuilderHelper;
   AutoChecklistService? _autoChecklistService;
-
-  // Use shared constant from labels constants
-
-  Future<bool> _getFlagSafe(String name, {bool defaultValue = false}) async {
-    try {
-      final dynamic fut = getIt<JournalDb>().getConfigFlag(name);
-      if (fut is Future<bool>) {
-        return await fut;
-      }
-    } catch (_) {
-      // ignore and use default
-    }
-    return defaultValue;
-  }
 
   AutoChecklistService get autoChecklistService {
     return _autoChecklistService ??= AutoChecklistService(
@@ -182,7 +169,8 @@ class UnifiedAiInferenceRepository {
     // For prompts that require task context
     if (hasTask) {
       if (entity is Task) {
-        // Direct task entity - always valid
+        // Direct task entity - always valid as long as additional modality
+        // requirements are satisfied.
         return !hasImages && !hasAudio;
       } else if (entity is JournalImage && hasImages) {
         // Image with task requirement - check if linked to task
@@ -197,6 +185,17 @@ class UnifiedAiInferenceRepository {
             .getLinkedToEntities(linkedTo: entity.id);
         return linkedEntities.any((e) => e is Task);
       }
+
+      // Special case: Checklist Updates prompt may be triggered from an
+      // audio entry popup even though it only requires task context.
+      if (entity is JournalAudio &&
+          prompt.aiResponseType == AiResponseType.checklistUpdates) {
+        final linkedEntities = await ref
+            .read(journalRepositoryProvider)
+            .getLinkedToEntities(linkedTo: entity.id);
+        return linkedEntities.any((e) => e is Task);
+      }
+
       return false;
     }
 
@@ -215,6 +214,7 @@ class UnifiedAiInferenceRepository {
     required void Function(InferenceStatus) onStatusChange,
     bool useConversationApproach =
         false, // Flag to enable new conversation approach
+    String? linkedEntityId,
   }) async {
     await _runInferenceInternal(
       entityId: entityId,
@@ -223,6 +223,7 @@ class UnifiedAiInferenceRepository {
       onStatusChange: onStatusChange,
       isRerun: false,
       useConversationApproach: useConversationApproach,
+      linkedEntityId: linkedEntityId,
     );
   }
 
@@ -235,6 +236,7 @@ class UnifiedAiInferenceRepository {
     required bool isRerun,
     bool useConversationApproach = false,
     JournalEntity? entity, // Optional entity to avoid redundant fetches
+    String? linkedEntityId,
   }) async {
     final start = DateTime.now();
 
@@ -270,6 +272,7 @@ class UnifiedAiInferenceRepository {
       final prompt = await promptBuilderHelper.buildPromptWithData(
         promptConfig: promptConfig,
         entity: entity,
+        linkedEntityId: linkedEntityId,
       );
 
       if (prompt == null) {
@@ -672,7 +675,7 @@ class UnifiedAiInferenceRepository {
       // This is because checklist updates can be triggered from various contexts
       if (promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
           model.supportsFunctionCalling) {
-        final enableLabels = await _getFlagSafe(enableAiLabelAssignmentFlag);
+        const enableLabels = true;
         final checklistTools =
             getChecklistToolsForProvider(provider: provider, model: model);
         tools = [
@@ -1281,6 +1284,56 @@ class UnifiedAiInferenceRepository {
             error: e,
           );
         }
+      } else if (toolCall.function.name ==
+          ChecklistCompletionFunctions.completeChecklistItems) {
+        try {
+          final arguments =
+              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
+          final itemsField = arguments['items'];
+          if (itemsField is! List) {
+            developer.log(
+              'Invalid or missing items for complete_checklist_items',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
+
+          final normalizedIds = <String>[];
+          for (final value in itemsField) {
+            if (value is String && value.trim().isNotEmpty) {
+              normalizedIds.add(value.trim());
+            }
+          }
+
+          if (normalizedIds.isEmpty) {
+            developer.log(
+              'No valid checklist item IDs provided for completion',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
+
+          final result = await ref
+              .read(checklistRepositoryProvider)
+              .completeChecklistItemsForTask(
+                task: currentTask,
+                itemIds: normalizedIds,
+              );
+
+          developer.log(
+            'Completed ${result.updated.length} checklist items, skipped ${result.skipped.length}',
+            name: 'UnifiedAiInferenceRepository',
+          );
+
+          ref.invalidate(checklistItemControllerProvider);
+        } catch (e, stackTrace) {
+          developer.log(
+            'Error processing complete_checklist_items: $e',
+            name: 'UnifiedAiInferenceRepository',
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
       } else if (toolCall.function.name == TaskFunctions.setTaskLanguage) {
         // Handle set task language
         try {
@@ -1359,7 +1412,6 @@ class UnifiedAiInferenceRepository {
           final proposed =
               requested.where((id) => !suppressedSet.contains(id)).toList();
 
-          final shadow = await _getFlagSafe(aiLabelAssignmentShadowFlag);
           final processor = LabelAssignmentProcessor(
             repository: ref.read(labelsRepositoryProvider),
           );
@@ -1390,7 +1442,6 @@ class UnifiedAiInferenceRepository {
             taskId: currentTask.id,
             proposedIds: proposed,
             existingIds: currentTask.meta.labelIds ?? const <String>[],
-            shadowMode: shadow,
             categoryId: currentTask.meta.categoryId,
             droppedLow: parsed.droppedLow,
             legacyUsed: parsed.legacyUsed,
@@ -1577,7 +1628,7 @@ class UnifiedAiInferenceRepository {
       }
 
       // Define tools for checklist updates
-      final enableLabels = await _getFlagSafe(enableAiLabelAssignmentFlag);
+      const enableLabels = true;
       final checklistTools =
           getChecklistToolsForProvider(provider: provider, model: model);
       final tools = [

@@ -849,6 +849,46 @@ void main() {
       expect(capturedLinkedEntityId, isNull);
     });
 
+    testWidgets('uses entry id for linkedEntityId when launching from audio',
+        (tester) async {
+      var triggered = false;
+      String? capturedLinkedEntityId;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPopUpMenu(
+            journalEntity: testAudioEntity,
+            linkedFromId: 'parent-task',
+          ),
+          overrides: [
+            hasAvailablePromptsProvider(entity: testAudioEntity)
+                .overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(entity: testAudioEntity)
+                .overrideWith((ref) => Future.value([testPrompts.first])),
+            triggerNewInferenceProvider(
+              entityId: testAudioEntity.id,
+              promptId: testPrompts.first.id,
+              linkedEntityId: testAudioEntity.id,
+            ).overrideWith((ref) async {
+              triggered = true;
+              capturedLinkedEntityId = testAudioEntity.id;
+            }),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Task Summary'));
+      await tester.pumpAndSettle();
+
+      expect(triggered, isTrue);
+      expect(capturedLinkedEntityId, equals(testAudioEntity.id));
+    });
+
     testWidgets('modal show method with ScrollController parameter',
         (tester) async {
       // Arrange

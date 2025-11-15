@@ -106,6 +106,7 @@ The repository layer has been refactored for better separation of concerns:
 - **`checklist_completion_functions.dart`**: OpenAI-style function definitions for checklist operations
   - `suggest_checklist_completion`: Suggests items that appear completed
   - `add_multiple_checklist_items`: Adds one or more items to checklists via an array of objects `{ title, isChecked? }`
+  - `complete_checklist_items`: Marks up to 20 existing items complete by ID (used when the LLM has high confidence that the item is done)
 - **`task_functions.dart`**: Function definitions for task operations
   - `set_task_language`: Automatically detects and sets task language
 - **`lotti_conversation_processor.dart`**: Conversation-based processing for better batching
@@ -587,6 +588,12 @@ When running Checklist Updates, the user's request is provided as a list of entr
 - Isolation: Do not blend directives across entries; each entry is evaluated independently.
 
 This keeps long implementation plans from exploding into many items while allowing adjacent entries to produce normal actionable items.
+
+#### Current Entry Hint & Deleted Items Guardrail
+
+- Invocation sources that have a focused entry (recording modal, linked-entry AI popup) pass the entry ID through the pipeline as `linkedEntityId`. The prompt builder serializes that entry (id, type, createdAt, user-edited text/transcript) into the `{{current_entry}}` block so the LLM prioritizes fresh content.
+- Task-level AI popups leave `linkedEntityId` null; the prompt omits the `Current Entry` block and the model considers the full task log.
+- The builder also streams every soft-deleted checklist item linked to the task (title + deletedAt) into `{{deleted_checklist_items}}`. The prompt instructs the model to avoid recreating those titles unless the user explicitly asks to revive them.
 
 ### Language Detection
 

@@ -5,9 +5,9 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
@@ -19,10 +19,8 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/get_it.dart';
 // ignore: unused_import
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Processes AI function calls using the conversation approach for better batching and error
@@ -333,6 +331,15 @@ class LottiChecklistStrategy extends ConversationStrategy {
           toolCallId: call.id,
           response: batchChecklistHandler.createToolResponse(result),
         );
+      } else if (call.function.name ==
+          ChecklistCompletionFunctions.completeChecklistItems) {
+        final response =
+            await _processCompleteChecklistItemsCall(call, checklistHandler);
+
+        manager.addToolResponse(
+          toolCallId: call.id,
+          response: response,
+        );
       } else if (call.function.name == 'set_task_language') {
         // Handle language setting properly
         try {
@@ -417,7 +424,6 @@ class LottiChecklistStrategy extends ConversationStrategy {
       } else if (call.function.name == 'assign_task_labels') {
         // Assign labels to task (add-only) with rate limiting (handled upstream if needed)
         try {
-          final db = getIt<JournalDb>();
           final processor = LabelAssignmentProcessor(
             repository: ref.read(labelsRepositoryProvider),
           );
@@ -431,16 +437,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
                   const <String>{};
           final proposed =
               selected.where((id) => !suppressedSet.contains(id)).toList();
-          // Shadow mode: do not persist if enabled (safe default false)
-          var shadow = false;
-          try {
-            final dynamic fut = db.getConfigFlag(aiLabelAssignmentShadowFlag);
-            if (fut is Future<bool>) {
-              shadow = await fut;
-            }
-          } catch (_) {
-            shadow = false;
-          }
+
           // Short-circuit if everything was suppressed
           if (proposed.isEmpty && selected.isNotEmpty) {
             final skipped = selected
@@ -465,7 +462,6 @@ class LottiChecklistStrategy extends ConversationStrategy {
             proposedIds: proposed,
             existingIds:
                 checklistHandler.task.meta.labelIds ?? const <String>[],
-            shadowMode: shadow,
             categoryId: checklistHandler.task.meta.categoryId,
             // Phase 2 metrics forwarded for telemetry
             droppedLow: parsed.droppedLow,
@@ -641,5 +637,57 @@ If there are more items to add from the user's original request:
 - When an item is explicitly mentioned as already done, set {"isChecked": true} for that item
 
 Continue until all items from the user's request have been added.''';
+  }
+
+  Future<String> _processCompleteChecklistItemsCall(
+    ChatCompletionMessageToolCall call,
+    LottiChecklistItemHandler handler,
+  ) async {
+    try {
+      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+      final rawItems = args['items'];
+      if (rawItems is! List) {
+        return 'complete_checklist_items requires an array of checklist item IDs.';
+      }
+
+      final ids = rawItems
+          .whereType<String>()
+          .map((id) => id.trim())
+          .where((id) => id.isNotEmpty)
+          .toList();
+
+      if (ids.isEmpty) {
+        return 'No checklist item IDs provided for completion.';
+      }
+
+      final reason = args['reason'] as String?;
+      final result =
+          await handler.checklistRepository.completeChecklistItemsForTask(
+        task: handler.task,
+        itemIds: ids,
+      );
+
+      final buffer = StringBuffer();
+      if (result.updated.isNotEmpty) {
+        buffer.writeln(
+          'Marked ${result.updated.length} checklist item(s) as complete: ${result.updated.join(', ')}.',
+        );
+      }
+      if (result.skipped.isNotEmpty) {
+        buffer.writeln(
+          'Skipped ${result.skipped.length} item(s): ${result.skipped.join(', ')}.',
+        );
+      }
+      if (reason != null && reason.trim().isNotEmpty) {
+        buffer.writeln('Reason: ${reason.trim()}');
+      }
+
+      final response = buffer.toString().trim();
+      return response.isEmpty
+          ? 'No checklist items were marked complete. Ensure the IDs belong to this task and are not already checked.'
+          : response;
+    } catch (e) {
+      return 'Error processing complete_checklist_items: $e';
+    }
   }
 }

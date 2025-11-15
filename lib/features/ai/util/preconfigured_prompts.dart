@@ -170,6 +170,7 @@ IMPORTANT RULES:
 - Language detection is secondary - only do it after creating items
 - Be precise and only suggest completions with clear evidence
 - Don't add items that duplicate existing checklist items
+- Deleted items avoidance: Use the Deleted Checklist Items list (if present). Do NOT re-create items with titles from that list or obvious near-duplicates unless the user explicitly requests to re-add.
 - Make all necessary function calls in a single response
 - If you receive an unknown function name error, use only the functions listed above
 - Do NOT use suggest_checklist_completion for creating new items
@@ -208,14 +209,21 @@ CONTINUATION PROMPTS:
 If asked to continue and you haven't created items yet, review the original request and create the items now.
 If you've already created some items, check if there are more to add from the original request.''',
   userMessage: '''
-Create checklist items based on the user's request below.
+Create checklist updates based on the context below.
 
-**User Request:**
-{{prompt}}
+Current Entry (optional):
+```json
+{{current_entry}}
+```
 
 **Task Details:**
 ```json
 {{task}}
+```
+
+Deleted Checklist Items:
+```json
+{{deleted_checklist_items}}
 ```
 
 Assigned Labels (currently on the task):

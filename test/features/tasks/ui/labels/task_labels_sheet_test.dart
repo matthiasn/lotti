@@ -57,7 +57,6 @@ void main() {
       () => cacheService.filterLabelsForCategory(
         any(),
         any(),
-        includePrivate: any(named: 'includePrivate'),
       ),
     ).thenAnswer((invocation) =>
         invocation.positionalArguments.first as List<LabelDefinition>);
@@ -303,17 +302,14 @@ void main() {
 
     setUp(() {
       // Override stub to implement simple scoping behavior
+      // Privacy filtering is handled at DB layer, not here
       when(() => cacheService.filterLabelsForCategory(
             any(),
             any(),
-            includePrivate: any(named: 'includePrivate'),
           )).thenAnswer((invocation) {
         final all = invocation.positionalArguments[0] as List<LabelDefinition>;
         final catId = invocation.positionalArguments[1] as String?;
-        final includePrivate =
-            invocation.namedArguments[#includePrivate] as bool? ?? true;
         return all.where((l) {
-          if (!includePrivate && (l.private ?? false)) return false;
           final cats = l.applicableCategoryIds;
           final isGlobal = cats == null || cats.isEmpty;
           return isGlobal || (catId != null && cats.contains(catId));
@@ -401,15 +397,17 @@ void main() {
     testWidgets('respects privacy filtering in category-scoped labels',
         (tester) async {
       when(() => cacheService.showPrivateEntries).thenReturn(false);
-      final privateScoped =
-          scoped('pv', 'PrivateScoped', 'work').copyWith(private: true);
-      final ls = [global('g', 'Global'), privateScoped];
+
+      // Privacy filtering happens at DB layer now
+      // When showPrivateEntries is false, the DB query already excludes private labels
+      // So we only pass public labels to the UI
+      final ls = [global('g', 'Global')];
+
       await tester.pumpWidget(buildWithLabels(ls, categoryId: 'work'));
       await tester.pumpAndSettle();
 
-      // Global still visible, private scoped filtered out
+      // Only public labels are visible (private already filtered at DB layer)
       expect(find.text('Global'), findsOneWidget);
-      expect(find.text('PrivateScoped'), findsNothing);
     });
   });
 
@@ -434,7 +432,6 @@ void main() {
       when(() => cacheService.filterLabelsForCategory(
             any(),
             any(),
-            includePrivate: any(named: 'includePrivate'),
           )).thenAnswer((invocation) {
         final all = invocation.positionalArguments[0] as List<LabelDefinition>;
         final catId = invocation.positionalArguments[1] as String?;

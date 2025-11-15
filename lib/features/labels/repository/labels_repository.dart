@@ -49,6 +49,22 @@ class LabelsRepository {
     return _entitiesCacheService.getLabelById(id);
   }
 
+  /// Build label tuples [{id, name}] for the given label IDs
+  Future<List<Map<String, String>>> buildLabelTuples(List<String> ids) async {
+    if (ids.isEmpty) return <Map<String, String>>[];
+    final all = await getAllLabels();
+    final byId = {for (final def in all) def.id: def};
+    return ids.map((id) {
+      final def = byId[id];
+      return {'id': id, 'name': def?.name ?? id};
+    }).toList();
+  }
+
+  /// Get label usage counts for all labels
+  Future<Map<String, int>> getLabelUsageCounts() {
+    return _journalDb.getLabelUsageCounts();
+  }
+
   Future<LabelDefinition> createLabel({
     required String name,
     required String color,

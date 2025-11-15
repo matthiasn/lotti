@@ -10,6 +10,7 @@ class ChecklistCompletionFunctions {
       'suggest_checklist_completion';
   static const String addMultipleChecklistItems =
       'add_multiple_checklist_items';
+  static const String completeChecklistItems = 'complete_checklist_items';
 
   /// Get all available function definitions for checklist operations
   static List<ChatCompletionTool> getTools() {
@@ -75,6 +76,32 @@ class ChecklistCompletionFunctions {
                 },
                 'description':
                     'Array of checklist item objects. Example: {"items": [{"title": "Buy milk"}, {"title": "Write tests", "isChecked": true}] }',
+              },
+            },
+            'required': ['items'],
+          },
+        ),
+      ),
+      const ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(
+          name: completeChecklistItems,
+          description:
+              'Mark one or more checklist items as completed when the user explicitly states they are done. Use only with existing checklist item IDs.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'items': {
+                'type': 'array',
+                'minItems': 1,
+                'items': {'type': 'string'},
+                'description':
+                    'Array of checklist item IDs to complete (max 20).',
+              },
+              'reason': {
+                'type': 'string',
+                'description':
+                    'Optional short justification describing why these items can be marked complete.',
               },
             },
             'required': ['items'],

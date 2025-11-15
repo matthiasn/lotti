@@ -4,10 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [Unreleased]
+## [Unreleased]
 ### Added
+- AI – Checklist Updates improvements
+  - Current Entry hint: recording modal and entry-level AI popup now pass the focused entry ID so prompts prioritize the user-edited transcript/text before falling back to the full task log.
+  - Deleted items context: prompt builder injects every soft-deleted checklist title (with deletion timestamps) so the LLM can avoid recreating them.
+  - `complete_checklist_items` tool: direct completion path alongside `add_multiple_checklist_items`, wired through both streaming and conversation handlers with repository guards/tests.
+  - Popup parity: running Checklist Updates from a linked audio/image entry now threads that entry as `linkedEntityId`; task-level runs keep the parameter unset for whole-task analysis.
 - Checklists: Ergonomics improvements
-  - TitleTextField: Cmd/Ctrl+S saves; add‑item field retains focus after save for rapid entry
+  - TitleTextField: Cmd/Ctrl+S saves; add-item field retains focus after save for rapid entry
   - Filter: default “Open only” with header toggle and completed count (N/M done)
   - Accessibility: keyboard toggle (Cmd+Shift+H / Ctrl+H) + screen reader announcements
   - Persistence: per‑checklist filter mode is remembered

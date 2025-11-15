@@ -81,7 +81,6 @@ void main() {
       taskId: 't1',
       proposedIds: const ['p1', 'bug', 'del'],
       existingIds: const ['p0'],
-      shadowMode: false,
     );
 
     expect(result.assigned, containsAll(['bug', 'p1']));
@@ -104,29 +103,9 @@ void main() {
       taskId: 't1',
       proposedIds: const ['ok'],
       existingIds: const [],
-      shadowMode: false,
     );
 
     expect(result.rateLimited, isTrue);
-    verifyNever(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        ));
-    verifyNever(() => mockLimiter.recordAssignment(any()));
-  });
-
-  test('shadow mode computes but does not persist', () async {
-    when(() => mockDb.getLabelDefinitionById('ok'))
-        .thenAnswer((_) async => makeLabel('ok'));
-
-    final result = await processor.processAssignment(
-      taskId: 't1',
-      proposedIds: const ['ok'],
-      existingIds: const [],
-      shadowMode: true,
-    );
-
-    expect(result.assigned, contains('ok'));
     verifyNever(() => mockRepo.addLabels(
           journalEntityId: any(named: 'journalEntityId'),
           addedLabelIds: any(named: 'addedLabelIds'),
@@ -145,7 +124,6 @@ void main() {
       taskId: 't1',
       proposedIds: const ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
       existingIds: const [],
-      shadowMode: false,
     );
 
     expect(result.assigned.length, lessThanOrEqualTo(5));
@@ -160,7 +138,6 @@ void main() {
       taskId: 't1',
       proposedIds: const [],
       existingIds: const [],
-      shadowMode: false,
     );
 
     expect(result.assigned, isEmpty);

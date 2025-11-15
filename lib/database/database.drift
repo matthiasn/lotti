@@ -722,6 +722,7 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
+
 deleteLink:
 DELETE FROM linked_entries
   WHERE from_id = :from_id

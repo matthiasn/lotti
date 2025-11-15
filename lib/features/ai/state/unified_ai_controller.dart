@@ -254,37 +254,34 @@ class UnifiedAiController extends _$UnifiedAiController {
         linkedEntityId: linkedEntityId,
       );
 
-      await ref.read(unifiedAiInferenceRepositoryProvider).runInference(
-            entityId: entityId,
-            promptConfig: promptConfig,
-            onProgress: (progress) {
-              state = UnifiedAiState(message: progress);
-
-              // Update active inference progress for both entities
-              _updateActiveInferenceProgress(
-                progress,
-                promptConfig.aiResponseType,
-                linkedEntityId: linkedEntityId,
-              );
-            },
-            onStatusChange: (status) {
-              // Update status for both entities
-              _updateInferenceStatus(
-                status,
-                promptConfig.aiResponseType,
-                linkedEntityId: linkedEntityId,
-              );
-
-              // Clear active inference when done
-              if (status != InferenceStatus.running) {
-                _clearActiveInference(
-                  promptConfig.aiResponseType,
-                  linkedEntityId: linkedEntityId,
-                );
-              }
-            },
-            useConversationApproach: true, // Enable new conversation approach
+      final repo = ref.read(unifiedAiInferenceRepositoryProvider);
+      await repo.runInference(
+        entityId: entityId,
+        promptConfig: promptConfig,
+        onProgress: (progress) {
+          state = UnifiedAiState(message: progress);
+          _updateActiveInferenceProgress(
+            progress,
+            promptConfig.aiResponseType,
+            linkedEntityId: linkedEntityId,
           );
+        },
+        onStatusChange: (status) {
+          _updateInferenceStatus(
+            status,
+            promptConfig.aiResponseType,
+            linkedEntityId: linkedEntityId,
+          );
+          if (status != InferenceStatus.running) {
+            _clearActiveInference(
+              promptConfig.aiResponseType,
+              linkedEntityId: linkedEntityId,
+            );
+          }
+        },
+        useConversationApproach: true,
+        linkedEntityId: linkedEntityId,
+      );
     } catch (e, stackTrace) {
       // Categorize the error for better user feedback
       final inferenceError =
