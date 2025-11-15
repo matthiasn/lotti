@@ -457,6 +457,118 @@ void main() {
       expect(result.skipped, equals(const ['foreign']));
       verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
     });
+
+    test('returns empty when task has no checklists', () async {
+      final taskWithoutChecklists = testTask.copyWith(
+        data: testTask.data.copyWith(checklistIds: null),
+      );
+
+      final result = await repository.completeChecklistItemsForTask(
+        task: taskWithoutChecklists,
+        itemIds: const ['item-1'],
+      );
+
+      expect(result.updated, isEmpty);
+      expect(result.skipped, equals(const ['item-1']));
+      verifyNever(() => mockJournalDb.entriesForIds(any()));
+    });
+
+    test('returns empty when itemIds list is empty', () async {
+      final result = await repository.completeChecklistItemsForTask(
+        task: taskWithChecklist,
+        itemIds: const [],
+      );
+
+      expect(result.updated, isEmpty);
+      expect(result.skipped, isEmpty);
+      verifyNever(() => mockJournalDb.entriesForIds(any()));
+    });
+
+    test('skips items that are already checked', () async {
+      final checkedItem = checklistItem.copyWith(
+        meta: checklistItem.meta.copyWith(id: 'checked-item'),
+        data: checklistItem.data.copyWith(isChecked: true),
+      );
+
+      when(() => mockJournalDb.entriesForIds(any())).thenAnswer((invocation) {
+        final mockSelectable = _MockSelectable<JournalDbEntity>();
+        when(mockSelectable.get)
+            .thenAnswer((_) async => [toDbEntity(checkedItem)]);
+        return mockSelectable;
+      });
+
+      final result = await repository.completeChecklistItemsForTask(
+        task: taskWithChecklist,
+        itemIds: const ['checked-item'],
+      );
+
+      expect(result.updated, isEmpty);
+      expect(result.skipped, equals(const ['checked-item']));
+      verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+    });
+
+    test('skips items that are not ChecklistItem entities', () async {
+      when(() => mockJournalDb.entriesForIds(any())).thenAnswer((invocation) {
+        final mockSelectable = _MockSelectable<JournalDbEntity>();
+        when(mockSelectable.get)
+            .thenAnswer((_) async => [toDbEntity(testTextEntry)]);
+        return mockSelectable;
+      });
+
+      final result = await repository.completeChecklistItemsForTask(
+        task: taskWithChecklist,
+        itemIds: [testTextEntry.id],
+      );
+
+      expect(result.updated, isEmpty);
+      expect(result.skipped, equals([testTextEntry.id]));
+      verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
+    });
+
+    test('handles exceptions gracefully', () async {
+      when(() => mockJournalDb.entriesForIds(any()))
+          .thenThrow(Exception('Database error'));
+      when(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await repository.completeChecklistItemsForTask(
+        task: taskWithChecklist,
+        itemIds: const ['item-1'],
+      );
+
+      expect(result.updated, isEmpty);
+      expect(result.skipped, equals(const ['item-1']));
+      verify(
+        () => mockLoggingService.captureException(
+          any(),
+          domain: 'ChecklistRepository',
+          subDomain: 'completeChecklistItemsForTask',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    test('deduplicates item IDs using LinkedHashSet', () async {
+      // Provide duplicate IDs
+      final result = await repository.completeChecklistItemsForTask(
+        task: taskWithChecklist,
+        itemIds: const ['item-1', 'item-1', 'item-1'],
+      );
+
+      // Should only update once
+      expect(result.updated, equals(const ['item-1']));
+      expect(result.skipped, isEmpty);
+      verify(() => mockPersistenceLogic.updateDbEntity(
+            any(),
+            linkedId: taskWithChecklist.id,
+          )).called(1);
+    });
   });
 
   group('createChecklistItem', () {

@@ -605,4 +605,122 @@ void main() {
 
     expect(updated.labelIds, isNull);
   });
+
+  group('buildLabelTuples', () {
+    test('returns empty list for empty input', () async {
+      final result = await repository.buildLabelTuples([]);
+      expect(result, isEmpty);
+    });
+
+    test('builds tuples with label names for known labels', () async {
+      final labels = [
+        LabelDefinition(
+          id: 'label-1',
+          name: 'First Label',
+          color: '#FF0000',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+        ),
+        LabelDefinition(
+          id: 'label-2',
+          name: 'Second Label',
+          color: '#00FF00',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+        ),
+      ];
+
+      when(() => journalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => labels);
+
+      final result = await repository.buildLabelTuples(['label-1', 'label-2']);
+
+      expect(result, hasLength(2));
+      expect(result[0], equals({'id': 'label-1', 'name': 'First Label'}));
+      expect(result[1], equals({'id': 'label-2', 'name': 'Second Label'}));
+    });
+
+    test('uses ID as fallback name for unknown labels', () async {
+      final labels = [
+        LabelDefinition(
+          id: 'label-1',
+          name: 'Known Label',
+          color: '#FF0000',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+        ),
+      ];
+
+      when(() => journalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => labels);
+
+      final result =
+          await repository.buildLabelTuples(['label-1', 'unknown-label']);
+
+      expect(result, hasLength(2));
+      expect(result[0], equals({'id': 'label-1', 'name': 'Known Label'}));
+      expect(
+          result[1], equals({'id': 'unknown-label', 'name': 'unknown-label'}));
+    });
+
+    test('maintains order of input IDs', () async {
+      final labels = [
+        LabelDefinition(
+          id: 'a',
+          name: 'Alpha',
+          color: '#FF0000',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+        ),
+        LabelDefinition(
+          id: 'b',
+          name: 'Bravo',
+          color: '#00FF00',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+        ),
+      ];
+
+      when(() => journalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => labels);
+
+      final result = await repository.buildLabelTuples(['b', 'a']);
+
+      expect(result, hasLength(2));
+      expect(result[0]['id'], equals('b'));
+      expect(result[1]['id'], equals('a'));
+    });
+  });
+
+  group('getLabelUsageCounts', () {
+    test('delegates to database method', () async {
+      final expectedCounts = {
+        'label-1': 5,
+        'label-2': 3,
+        'label-3': 10,
+      };
+
+      when(() => journalDb.getLabelUsageCounts())
+          .thenAnswer((_) async => expectedCounts);
+
+      final result = await repository.getLabelUsageCounts();
+
+      expect(result, equals(expectedCounts));
+      verify(() => journalDb.getLabelUsageCounts()).called(1);
+    });
+
+    test('returns empty map when no labels are used', () async {
+      when(() => journalDb.getLabelUsageCounts())
+          .thenAnswer((_) async => <String, int>{});
+
+      final result = await repository.getLabelUsageCounts();
+
+      expect(result, isEmpty);
+    });
+  });
 }

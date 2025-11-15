@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1106,6 +1108,228 @@ void main() {
             linkedTo: 'image-123')).called(1);
         verify(() => mockAiInputRepository.buildTaskDetailsJson(id: 'task-456'))
             .called(1);
+      });
+    });
+
+    group('error handling for placeholder injection', () {
+      test('handles error when current_entry fetch fails', () async {
+        final task = Task(
+          data: TaskData(
+            title: 'Task',
+            checklistIds: const [],
+            status: TaskStatus.open(
+              id: 'status',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'task-1',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final mockJournalRepository = MockJournalRepository();
+        final builderWithJournal = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
+          labelsRepository: mockLabelsRepository,
+        );
+
+        // Simulate an error when fetching the entry
+        when(() => mockJournalRepository.getJournalEntityById('entry-1'))
+            .thenThrow(Exception('Database error'));
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Checklist',
+          systemMessage: 'System',
+          userMessage: 'Entry: {{current_entry}}',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
+
+        final result = await builderWithJournal.buildPromptWithData(
+          promptConfig: config,
+          entity: task,
+          linkedEntityId: 'entry-1',
+        );
+
+        // Should replace with empty string on error
+        expect(result, equals('Entry: '));
+      });
+
+      test('handles error when assigned_labels fetch fails', () async {
+        final task = Task(
+          data: TaskData(
+            title: 'Task',
+            checklistIds: const [],
+            status: TaskStatus.open(
+              id: 'status',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'task-1',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+            labelIds: ['label-1'],
+          ),
+        );
+
+        // Simulate error when building label tuples
+        when(() => mockLabelsRepository.buildLabelTuples(['label-1']))
+            .thenThrow(Exception('Label fetch error'));
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Checklist',
+          systemMessage: 'System',
+          userMessage: 'Labels: {{assigned_labels}}',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: task,
+        );
+
+        // Should replace with empty array on error
+        expect(result, equals('Labels: []'));
+      });
+
+      test('handles error when suppressed_labels fetch fails', () async {
+        final task = Task(
+          data: TaskData(
+            title: 'Task',
+            checklistIds: const [],
+            status: TaskStatus.open(
+              id: 'status',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            aiSuppressedLabelIds: {'label-1'},
+          ),
+          meta: Metadata(
+            id: 'task-1',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        // Simulate error when building label tuples
+        when(() => mockLabelsRepository.buildLabelTuples(['label-1']))
+            .thenThrow(Exception('Label fetch error'));
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Checklist',
+          systemMessage: 'System',
+          userMessage: 'Suppressed: {{suppressed_labels}}',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: task,
+        );
+
+        // Should replace with empty array on error
+        expect(result, equals('Suppressed: []'));
+      });
+
+      test('handles error when deleted_checklist_items fetch fails', () async {
+        getIt.registerSingleton<JournalDb>(
+          JournalDb(inMemoryDatabase: true),
+        );
+
+        final task = Task(
+          data: TaskData(
+            title: 'Task',
+            checklistIds: const ['checklist-1'],
+            status: TaskStatus.open(
+              id: 'status',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'task-1',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final mockChecklistRepo = MockChecklistRepository();
+        when(() => mockChecklistRepo.getChecklistItemsForTask(
+              task: task,
+              deletedOnly: true,
+            )).thenThrow(Exception('Checklist fetch error'));
+
+        final builderWithChecklist = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          journalRepository: MockJournalRepository(),
+          checklistRepository: mockChecklistRepo,
+          labelsRepository: mockLabelsRepository,
+        );
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Checklist',
+          systemMessage: 'System',
+          userMessage: 'Deleted: {{deleted_checklist_items}}',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.checklistUpdates,
+        );
+
+        final result = await builderWithChecklist.buildPromptWithData(
+          promptConfig: config,
+          entity: task,
+        );
+
+        // Should replace with empty array on error
+        expect(result, equals('Deleted: []'));
       });
     });
   });
