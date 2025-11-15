@@ -185,13 +185,6 @@ class PromptBuilderHelper {
       }
     }
 
-    if (promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
-      // Temporary logging to inspect prompt contents (remove after debugging)
-      print(
-        '[PromptBuilderHelper] checklistUpdates prompt for ${entity.id}:\n$prompt',
-      );
-    }
-
     return prompt;
   }
 

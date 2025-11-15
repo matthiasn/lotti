@@ -115,12 +115,14 @@ class AiConfigRepository {
           providerName: providerName,
         );
       } catch (error, stackTrace) {
-        getIt<LoggingService>().captureException(
-          error,
-          domain: 'AiConfigRepository',
-          subDomain: 'deleteInferenceProviderWithModels',
-          stackTrace: stackTrace,
-        );
+        if (getIt.isRegistered<LoggingService>()) {
+          getIt<LoggingService>().captureException(
+            error,
+            domain: 'AiConfigRepository',
+            subDomain: 'deleteInferenceProviderWithModels',
+            stackTrace: stackTrace,
+          );
+        }
         rethrow; // Re-throw to let the caller handle the error
       }
     });
