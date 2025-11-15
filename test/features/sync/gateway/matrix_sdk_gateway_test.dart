@@ -83,7 +83,7 @@ void main() {
     );
     final versions = MockGetVersionsResponse();
     when(() => client.checkHomeserver(Uri.parse(config.homeServer))).thenAnswer(
-      (_) async => (null, versions, const <LoginFlow>[]),
+      (_) async => (null, versions, const <LoginFlow>[], null),
     );
     when(
       () => client.init(
