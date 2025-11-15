@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -15,10 +14,8 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 import '../helpers/path_provider.dart';
 
@@ -41,13 +38,7 @@ class MockTimeService extends Mock implements TimeService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
-class MockAssetEntity extends Mock implements AssetEntity {}
-
 class MockBuildContext extends Mock implements BuildContext {}
-
-class MockPlayer extends Mock implements Player {}
-
-class MockPlayerStream extends Mock implements PlayerStream {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -83,7 +74,7 @@ void main() {
     await getIt.resetScope();
     await getIt.popScope();
     // Clean up temp directory
-    if (await tempDir.exists()) {
+    if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
   });
@@ -101,7 +92,8 @@ void main() {
   });
 
   group('importImageAssets - Photo Picker Integration', () {
-    testWidgets('returns early when permissions are not granted', (tester) async {
+    testWidgets('returns early when permissions are not granted',
+        (tester) async {
       // This test verifies the permission check behavior
       // In a real scenario, PhotoManager.requestPermissionExtend() would be called
       // Since we can't easily mock PhotoManager without breaking the package,
@@ -160,7 +152,8 @@ void main() {
   });
 
   group('MediaKit Duration Extraction', () {
-    test('selectAudioMetadataReader returns zero duration in test env', () async {
+    test('selectAudioMetadataReader returns zero duration in test env',
+        () async {
       // The reader function should work correctly
       final reader = selectAudioMetadataReader();
       final duration = await reader('/test/path.m4a');
@@ -216,10 +209,10 @@ void main() {
     test('MediaKit bypass flag controls extraction behavior', () async {
       // Test that the flag actually changes behavior
       imageImportBypassMediaKitInTests = false;
-      var reader1 = selectAudioMetadataReader();
+      final reader1 = selectAudioMetadataReader();
 
       imageImportBypassMediaKitInTests = true;
-      var reader2 = selectAudioMetadataReader();
+      final reader2 = selectAudioMetadataReader();
 
       // Both should be valid readers
       expect(reader1, isNotNull);
@@ -242,13 +235,13 @@ void main() {
       final paths = [
         '/path with spaces/file.m4a',
         '/path/with/üñíçødé.m4a',
-        '/path/with/special!@#\$.m4a',
+        r'/path/with/special!@#$.m4a',
       ];
 
       for (final path in paths) {
         expect(
-          () async => await reader(path),
-          returnsNormally,
+          reader(path),
+          completes,
         );
       }
     });
@@ -271,7 +264,8 @@ void main() {
       }
 
       // Register a custom reader
-      final customReader = (_) async => const Duration(seconds: 123);
+      Future<Duration> customReader(String _) async =>
+          const Duration(seconds: 123);
       getIt.registerSingleton<AudioMetadataReader>(customReader);
 
       final reader = selectAudioMetadataReader();
@@ -302,7 +296,8 @@ void main() {
       imageImportBypassMediaKitInTests = false;
     });
 
-    test('registered reader takes precedence over environment detection', () async {
+    test('registered reader takes precedence over environment detection',
+        () async {
       if (getIt.isRegistered<AudioMetadataReader>()) {
         getIt.unregister<AudioMetadataReader>();
       }
@@ -329,14 +324,15 @@ void main() {
       getIt.registerSingleton<AudioMetadataReader>(
         (_) async => const Duration(seconds: 1),
       );
-      var reader1 = selectAudioMetadataReader();
+      final reader1 = selectAudioMetadataReader();
 
       // Unregister and register new reader
-      getIt.unregister<AudioMetadataReader>();
-      getIt.registerSingleton<AudioMetadataReader>(
-        (_) async => const Duration(seconds: 2),
-      );
-      var reader2 = selectAudioMetadataReader();
+      getIt
+        ..unregister<AudioMetadataReader>()
+        ..registerSingleton<AudioMetadataReader>(
+          (_) async => const Duration(seconds: 2),
+        );
+      final reader2 = selectAudioMetadataReader();
 
       // They should be different instances
       expect(reader1, isNotNull);
@@ -411,7 +407,7 @@ void main() {
       // Test that the environment check in selectAudioMetadataReader
       // handles cases where Platform.environment might throw
       expect(
-        () => selectAudioMetadataReader(),
+        selectAudioMetadataReader,
         returnsNormally,
       );
     });
@@ -455,7 +451,7 @@ void main() {
 
     test('audio metadata reader type is properly defined', () {
       // Test that the typedef is usable
-      AudioMetadataReader reader = (_) async => Duration.zero;
+      Future<Duration> reader(String _) async => Duration.zero;
       expect(reader, isNotNull);
 
       final result = reader('/test.m4a');
@@ -474,7 +470,8 @@ void main() {
   });
 
   group('Error Path Coverage', () {
-    test('audio metadata reader handles null/invalid paths gracefully', () async {
+    test('audio metadata reader handles null/invalid paths gracefully',
+        () async {
       final reader = selectAudioMetadataReader();
 
       // Test various invalid paths
@@ -487,8 +484,8 @@ void main() {
 
       for (final path in invalidPaths) {
         expect(
-          () async => await reader(path),
-          returnsNormally,
+          reader(path),
+          completes,
         );
       }
     });
@@ -496,7 +493,7 @@ void main() {
     test('selectAudioMetadataReader does not crash on GetIt errors', () {
       // Even if GetIt has issues, should return a valid reader
       expect(
-        () => selectAudioMetadataReader(),
+        selectAudioMetadataReader,
         returnsNormally,
       );
     });
@@ -532,12 +529,12 @@ void main() {
 
     test('reader works after flag changes', () async {
       imageImportBypassMediaKitInTests = false;
-      var reader1 = selectAudioMetadataReader();
-      var result1 = await reader1('/test.m4a');
+      final reader1 = selectAudioMetadataReader();
+      final result1 = await reader1('/test.m4a');
 
       imageImportBypassMediaKitInTests = true;
-      var reader2 = selectAudioMetadataReader();
-      var result2 = await reader2('/test.m4a');
+      final reader2 = selectAudioMetadataReader();
+      final result2 = await reader2('/test.m4a');
 
       // Both should return valid durations
       expect(result1, isA<Duration>());
@@ -575,8 +572,8 @@ void main() {
       final longPath = '/very/long/path/${'segment/' * 100}file.m4a';
 
       expect(
-        () async => await reader(longPath),
-        returnsNormally,
+        reader(longPath),
+        completes,
       );
     });
 
@@ -600,7 +597,8 @@ void main() {
       expect(imageImportBypassMediaKitInTests, isFalse);
     });
 
-    test('selectAudioMetadataReader with and without GetIt registration', () async {
+    test('selectAudioMetadataReader with and without GetIt registration',
+        () async {
       // Test without registration
       if (getIt.isRegistered<AudioMetadataReader>()) {
         getIt.unregister<AudioMetadataReader>();
