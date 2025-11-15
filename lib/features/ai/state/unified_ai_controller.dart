@@ -255,57 +255,33 @@ class UnifiedAiController extends _$UnifiedAiController {
       );
 
       final repo = ref.read(unifiedAiInferenceRepositoryProvider);
-      if (linkedEntityId != null) {
-        await repo.runInference(
-          entityId: entityId,
-          promptConfig: promptConfig,
-          onProgress: (progress) {
-            state = UnifiedAiState(message: progress);
-            _updateActiveInferenceProgress(
-              progress,
+      await repo.runInference(
+        entityId: entityId,
+        promptConfig: promptConfig,
+        onProgress: (progress) {
+          state = UnifiedAiState(message: progress);
+          _updateActiveInferenceProgress(
+            progress,
+            promptConfig.aiResponseType,
+            linkedEntityId: linkedEntityId,
+          );
+        },
+        onStatusChange: (status) {
+          _updateInferenceStatus(
+            status,
+            promptConfig.aiResponseType,
+            linkedEntityId: linkedEntityId,
+          );
+          if (status != InferenceStatus.running) {
+            _clearActiveInference(
               promptConfig.aiResponseType,
               linkedEntityId: linkedEntityId,
             );
-          },
-          onStatusChange: (status) {
-            _updateInferenceStatus(
-              status,
-              promptConfig.aiResponseType,
-              linkedEntityId: linkedEntityId,
-            );
-            if (status != InferenceStatus.running) {
-              _clearActiveInference(
-                promptConfig.aiResponseType,
-                linkedEntityId: linkedEntityId,
-              );
-            }
-          },
-          useConversationApproach: true,
-          linkedEntityId: linkedEntityId,
-        );
-      } else {
-        await repo.runInference(
-          entityId: entityId,
-          promptConfig: promptConfig,
-          onProgress: (progress) {
-            state = UnifiedAiState(message: progress);
-            _updateActiveInferenceProgress(
-              progress,
-              promptConfig.aiResponseType,
-            );
-          },
-          onStatusChange: (status) {
-            _updateInferenceStatus(
-              status,
-              promptConfig.aiResponseType,
-            );
-            if (status != InferenceStatus.running) {
-              _clearActiveInference(promptConfig.aiResponseType);
-            }
-          },
-          useConversationApproach: true,
-        );
-      }
+          }
+        },
+        useConversationApproach: true,
+        linkedEntityId: linkedEntityId,
+      );
     } catch (e, stackTrace) {
       // Categorize the error for better user feedback
       final inferenceError =

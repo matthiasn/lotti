@@ -14,14 +14,18 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../tasks/ui/checklists/checklists_widget_test.dart';
+
 class _MockJournalDb extends Mock implements JournalDb {}
 
 void main() {
   late _MockJournalDb db;
+  late MockChecklistRepository mockChecklistRepository;
   late ProviderContainer container;
 
   setUp(() async {
     db = _MockJournalDb();
+    mockChecklistRepository = MockChecklistRepository();
     await getIt.reset();
     getIt.registerSingleton<JournalDb>(db);
     container = ProviderContainer();
@@ -81,6 +85,7 @@ void main() {
 
     final helper = PromptBuilderHelper(
       aiInputRepository: container.read(aiInputRepositoryProvider),
+      checklistRepository: mockChecklistRepository,
     );
 
     final prompt = await helper.buildPromptWithData(
@@ -147,6 +152,7 @@ void main() {
 
     final helper = PromptBuilderHelper(
       aiInputRepository: container.read(aiInputRepositoryProvider),
+      checklistRepository: mockChecklistRepository,
     );
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),

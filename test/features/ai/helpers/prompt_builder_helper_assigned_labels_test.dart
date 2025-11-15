@@ -9,12 +9,15 @@ import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockAiInputRepository extends Mock implements AiInputRepository {}
+
+class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
 void main() {
   late MockJournalDb mockDb;
@@ -25,7 +28,10 @@ void main() {
     mockDb = MockJournalDb();
     mockAiInputRepo = MockAiInputRepository();
     getIt.registerSingleton<JournalDb>(mockDb);
-    helper = PromptBuilderHelper(aiInputRepository: mockAiInputRepo);
+    helper = PromptBuilderHelper(
+      aiInputRepository: mockAiInputRepo,
+      checklistRepository: MockChecklistRepository(),
+    );
   });
 
   tearDown(() async {

@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -27,6 +28,7 @@ typedef LabelFilterFn = List<LabelDefinition> Function(
 class PromptBuilderHelper {
   PromptBuilderHelper({
     required this.aiInputRepository,
+    required this.checklistRepository,
     this.journalRepository,
     this.labelFilterForCategory,
   });
@@ -34,6 +36,7 @@ class PromptBuilderHelper {
   final AiInputRepository aiInputRepository;
   final JournalRepository? journalRepository;
   final LabelFilterFn? labelFilterForCategory;
+  final ChecklistRepository checklistRepository;
   LoggingService? get _loggingService =>
       getIt.isRegistered<LoggingService>() ? getIt<LoggingService>() : null;
 
@@ -276,39 +279,10 @@ class PromptBuilderHelper {
       return const [];
     }
 
-    final checklistIds = task.data.checklistIds ?? const <String>[];
-    if (checklistIds.isEmpty) {
-      return const [];
-    }
-
-    final journalDb = getIt<JournalDb>();
-    final query = journalDb.select(journalDb.journal)
-      ..where((tbl) => tbl.type.equals('ChecklistItem'))
-      ..where((tbl) => tbl.deleted.equals(deletedOnly));
-    final rows = await query.get();
-    final results = <ChecklistItem>[];
-
-    for (final row in rows) {
-      try {
-        final entity = fromDbEntity(row);
-        if (entity is ChecklistItem &&
-            entity.data.linkedChecklists.any(checklistIds.contains)) {
-          results.add(entity);
-        }
-      } catch (error, stackTrace) {
-        _loggingService?.captureException(
-          'Failed to load checklist item ${row.id}: $error',
-          domain: 'prompt_builder_helper',
-          subDomain: 'loadChecklistItems',
-          stackTrace: stackTrace,
-        );
-      }
-    }
-
-    results.sort(
-      (a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom),
+    return checklistRepository.getChecklistItemsForTask(
+      task: task,
+      deletedOnly: deletedOnly,
     );
-    return results;
   }
 
   /// Build Current Entry JSON with id, createdAt, entryType, and text.

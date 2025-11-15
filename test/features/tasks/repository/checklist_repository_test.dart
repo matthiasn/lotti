@@ -1,11 +1,13 @@
 // ignore_for_file: inference_failure_on_function_invocation
 
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -25,6 +27,8 @@ class MockTaskSummaryRefreshService extends Mock
     implements TaskSummaryRefreshService {}
 
 class MockRef extends Mock implements Ref {}
+
+class _MockSelectable<T> extends Mock implements Selectable<T> {}
 
 void main() {
   late ChecklistRepository repository;
@@ -389,10 +393,28 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById('item-1'))
-          .thenAnswer((_) async => checklistItem);
-      when(() => mockJournalDb.journalEntityById('other'))
-          .thenAnswer((_) async => null);
+      when(() => mockJournalDb.entriesForIds(any())).thenAnswer((invocation) {
+        final ids = invocation.positionalArguments.first as List<String>;
+        final rows = ids
+            .map((id) {
+              if (id == 'item-1') {
+                return toDbEntity(checklistItem);
+              }
+              return null;
+            })
+            .whereType<JournalDbEntity>()
+            .toList();
+
+        // Create a mock Selectable that returns the rows when .get() is called
+        final mockSelectable = _MockSelectable<JournalDbEntity>();
+        when(mockSelectable.get).thenAnswer((_) async => rows);
+        return mockSelectable;
+      });
+      when(() => mockJournalDb.journalEntityById(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first == 'item-1'
+            ? checklistItem
+            : null,
+      );
 
       when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
           (invocation) async => invocation.positionalArguments[0] as Metadata);

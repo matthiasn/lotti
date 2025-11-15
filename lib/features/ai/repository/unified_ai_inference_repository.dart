@@ -61,6 +61,7 @@ class UnifiedAiInferenceRepository {
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
+      checklistRepository: ref.read(checklistRepositoryProvider),
     );
   }
 

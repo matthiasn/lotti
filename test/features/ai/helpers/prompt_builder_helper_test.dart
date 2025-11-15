@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -12,18 +13,30 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 
 // Mocks
 class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockChecklistRepository extends Mock implements ChecklistRepository {}
+
+class MockRef extends Mock implements Ref {}
+
+class MockTaskSummaryRefreshService extends Mock
+    implements TaskSummaryRefreshService {}
 
 void main() {
   late PromptBuilderHelper promptBuilder;
@@ -37,6 +50,7 @@ void main() {
     mockAiInputRepository = MockAiInputRepository();
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
+      checklistRepository: MockChecklistRepository(),
     );
 
     // Default stub for task JSON calls
@@ -224,6 +238,7 @@ void main() {
         final builderWithJournal = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
         );
 
         when(() => mockJournalRepository.getJournalEntityById('audio-1'))
@@ -322,6 +337,7 @@ void main() {
         final builderWithJournal = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
         );
 
         when(() => mockJournalRepository.getJournalEntityById('audio-2'))
@@ -406,10 +422,43 @@ void main() {
     group('deleted checklist items injection', () {
       late JournalDb journalDb;
       late Task task;
+      late ChecklistRepository checklistRepository;
 
       setUp(() async {
         journalDb = JournalDb(inMemoryDatabase: true);
         getIt.registerSingleton<JournalDb>(journalDb);
+
+        // Set up additional dependencies for ChecklistRepository
+        final mockPersistenceLogic = MockPersistenceLogic();
+        final mockLoggingService = MockLoggingService();
+        final mockTaskSummaryRefreshService = MockTaskSummaryRefreshService();
+        final mockRef = MockRef();
+
+        getIt
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+          ..registerSingleton<LoggingService>(mockLoggingService);
+
+        // Configure MockRef to return the mock TaskSummaryRefreshService
+        when(() => mockRef.read(taskSummaryRefreshServiceProvider))
+            .thenReturn(mockTaskSummaryRefreshService);
+
+        // Set up default behavior for the triggerTaskSummaryRefreshForChecklist method
+        when(
+          () => mockTaskSummaryRefreshService
+              .triggerTaskSummaryRefreshForChecklist(
+            checklistId: any(named: 'checklistId'),
+            callingDomain: any(named: 'callingDomain'),
+          ),
+        ).thenAnswer((_) async => {});
+
+        // Create a real ChecklistRepository with the mocked dependencies
+        checklistRepository = ChecklistRepository(mockRef);
+
+        // Override the promptBuilder for this test group to use the real repository
+        promptBuilder = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          checklistRepository: checklistRepository,
+        );
 
         task = Task(
           data: TaskData(
@@ -1001,6 +1050,7 @@ void main() {
         final builderWithJournal = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
         );
 
         when(() => mockJournalRepository.getLinkedToEntities(

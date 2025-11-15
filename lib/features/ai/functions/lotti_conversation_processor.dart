@@ -664,12 +664,11 @@ Continue until all items from the user's request have been added.''';
         return 'complete_checklist_items requires an array of checklist item IDs.';
       }
 
-      final ids = <String>[];
-      for (final entry in rawItems) {
-        if (entry is String && entry.trim().isNotEmpty) {
-          ids.add(entry.trim());
-        }
-      }
+      final ids = rawItems
+          .whereType<String>()
+          .map((id) => id.trim())
+          .where((id) => id.isNotEmpty)
+          .toList();
 
       if (ids.isEmpty) {
         return 'No checklist item IDs provided for completion.';

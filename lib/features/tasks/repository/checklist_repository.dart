@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/get_it.dart';
@@ -358,8 +359,14 @@ class ChecklistRepository {
       final updated = <String>[];
       final skipped = <String>[];
 
+      final entityMap = <String, JournalEntity>{};
+      for (final dbEntity
+          in await _journalDb.entriesForIds(normalizedIds.toList()).get()) {
+        entityMap[dbEntity.id] = fromDbEntity(dbEntity);
+      }
+
       for (final id in normalizedIds) {
-        final entity = await _journalDb.journalEntityById(id);
+        final entity = entityMap[id];
         if (entity is! ChecklistItem) {
           skipped.add(id);
           continue;
@@ -402,5 +409,43 @@ class ChecklistRepository {
       );
       return (updated: const <String>[], skipped: itemIds);
     }
+  }
+
+  Future<List<ChecklistItem>> getChecklistItemsForTask({
+    required Task task,
+    required bool deletedOnly,
+  }) async {
+    final checklistIds = task.data.checklistIds ?? const <String>[];
+    if (checklistIds.isEmpty) {
+      return const [];
+    }
+
+    final query = _journalDb.select(_journalDb.journal)
+      ..where((tbl) => tbl.type.equals('ChecklistItem'))
+      ..where((tbl) => tbl.deleted.equals(deletedOnly));
+    final dbEntities = await query.get();
+
+    final items = <ChecklistItem>[];
+    for (final dbEntity in dbEntities) {
+      try {
+        final entity = fromDbEntity(dbEntity);
+        if (entity is! ChecklistItem) continue;
+        final matches = entity.data.linkedChecklists.any(checklistIds.contains);
+        final isDeleted = entity.meta.deletedAt != null;
+        if (matches && deletedOnly == isDeleted) {
+          items.add(entity);
+        }
+      } catch (error, stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: _callingDomain,
+          subDomain: 'getChecklistItemsForTask',
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
+    items.sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+    return items;
   }
 }
