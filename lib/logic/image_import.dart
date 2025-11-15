@@ -239,9 +239,19 @@ DateTime _parseExifDateTime(String exifDateTimeStr) {
       final standardFormat = '$datePart $timePart';
       return DateTime.parse(standardFormat);
     }
-  } catch (e) {
-    // If parsing fails, return current time
-    return DateTime.now();
+    // Log unexpected format
+    getIt<LoggingService>().captureException(
+      'Unexpected EXIF date format: $exifDateTimeStr',
+      domain: MediaImportConstants.loggingDomain,
+      subDomain: 'parseExifDateTime',
+    );
+  } catch (e, stackTrace) {
+    getIt<LoggingService>().captureException(
+      e,
+      domain: MediaImportConstants.loggingDomain,
+      subDomain: 'parseExifDateTime',
+      stackTrace: stackTrace,
+    );
   }
   return DateTime.now();
 }
