@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/util/provider_type_utils.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ai_config_repository.g.dart';
@@ -113,11 +114,13 @@ class AiConfigRepository {
           deletedModels: associatedModels,
           providerName: providerName,
         );
-      } catch (e) {
-        // Log the error for debugging purposes
-        // Note: In a real implementation, you might want to use a proper logging framework
-        print(
-            'Error in deleteInferenceProviderWithModels for provider $providerId: $e');
+      } catch (error, stackTrace) {
+        getIt<LoggingService>().captureException(
+          error,
+          domain: 'AiConfigRepository',
+          subDomain: 'deleteInferenceProviderWithModels',
+          stackTrace: stackTrace,
+        );
         rethrow; // Re-throw to let the caller handle the error
       }
     });

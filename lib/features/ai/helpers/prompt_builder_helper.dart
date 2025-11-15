@@ -289,29 +289,17 @@ class PromptBuilderHelper {
     }
 
     final journalDb = getIt<JournalDb>();
-    final itemIds = <String>{};
-    for (final checklistId in checklistIds) {
-      final links = await journalDb
-          .linksFromId(checklistId, deletedOnly ? [false, true] : [false])
-          .get();
-      for (final link in links.map(entryLinkFromLinkedDbEntry)) {
-        itemIds.add(link.toId);
-      }
-    }
-
-    if (itemIds.isEmpty) {
-      return const [];
-    }
-
-    final rows = await journalDb.entriesForIds(itemIds.toList()).get();
+    final query = journalDb.select(journalDb.journal)
+      ..where((tbl) => tbl.type.equals('ChecklistItem'))
+      ..where((tbl) => tbl.deleted.equals(deletedOnly));
+    final rows = await query.get();
     final results = <ChecklistItem>[];
 
     for (final row in rows) {
       try {
         final entity = fromDbEntity(row);
         if (entity is ChecklistItem &&
-            entity.data.linkedChecklists
-                .any((id) => checklistIds.contains(id))) {
+            entity.data.linkedChecklists.any(checklistIds.contains)) {
           results.add(entity);
         }
       } catch (error, stackTrace) {
