@@ -29,24 +29,27 @@ class ImagePasteController extends _$ImagePasteController {
     }
     final reader = await clipboard.read();
 
-    if (reader.canProvide(Formats.jpeg)) {
-      reader.getFile(Formats.jpeg, (file) async {
-        await importPastedImages(
-          data: await file.readAll(),
-          fileExtension: 'jpg',
-          linkedId: linkedFromId,
-          categoryId: categoryId,
-        );
-      });
-    } else if (reader.canProvide(Formats.png)) {
-      reader.getFile(Formats.png, (file) async {
-        await importPastedImages(
-          data: await file.readAll(),
-          fileExtension: 'png',
-          linkedId: linkedFromId,
-          categoryId: categoryId,
-        );
-      });
+    // Process all clipboard items (supports multiple photos)
+    for (final item in reader.items) {
+      if (item.canProvide(Formats.jpeg)) {
+        item.getFile(Formats.jpeg, (file) async {
+          await importPastedImages(
+            data: await file.readAll(),
+            fileExtension: 'jpg',
+            linkedId: linkedFromId,
+            categoryId: categoryId,
+          );
+        });
+      } else if (item.canProvide(Formats.png)) {
+        item.getFile(Formats.png, (file) async {
+          await importPastedImages(
+            data: await file.readAll(),
+            fileExtension: 'png',
+            linkedId: linkedFromId,
+            categoryId: categoryId,
+          );
+        });
+      }
     }
   }
 }
