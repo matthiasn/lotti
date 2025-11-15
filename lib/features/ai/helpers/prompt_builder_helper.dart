@@ -263,6 +263,11 @@ class PromptBuilderHelper {
     return jsonEncode(results);
   }
 
+  /// Fetches checklist items linked to the task, including soft-deleted ones.
+  ///
+  /// We look up each checklist ID’s `linked_entries` so that hidden links (set
+  /// when the item is removed from the UI) still surface here. The returned
+  /// list is sorted by `dateFrom` descending.
   Future<List<ChecklistItem>> _getChecklistItemsForTask({
     required JournalEntity entity,
     required bool deletedOnly,

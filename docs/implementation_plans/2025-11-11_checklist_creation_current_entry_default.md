@@ -4,12 +4,13 @@
 
 - Invocation semantics:
   - When the user runs Checklist Updates from the recording modal for a task (new audio with transcript), we pass that entry as Current Entry and prioritize extracting new items from it.
-  - When the user runs Checklist Updates from the task‑level AI popup (no specific entry selected), there is no Current Entry; analyze the full task context instead.
-  - We do NOT introduce a new prompt type; the same prompt accepts an optional Current Entry hint and degrades gracefully when it’s absent. Task context remains available for de‑duplication, completions, and language/labels.
+  - When the user runs Checklist Updates from the task-level AI popup (no specific entry selected), there is no Current Entry; analyze the full task context instead.
+  - We do NOT introduce a new prompt type; the same prompt accepts an optional Current Entry hint and degrades gracefully when it’s absent. Task context remains available for de-duplication, completions, and language/labels.
+- Unified AI popup now mirrors the recorder behavior: if the user opens the prompt from a linked audio/image/text entry, the popup threads that entry’s ID as `linkedEntityId`; task-level invocations leave it null so the builder falls back to the whole task.
 - Explicit back‑references: allow users to reference prior entries when they want items 
   extracted from earlier context. Example could be "in the previous two entries" or "in the entry from around lunchtime".
 - Tooling: keep `add_multiple_checklist_items` (array‑only); add `complete_checklist_items` for direct check‑offs; retain `suggest_checklist_completion` for model‑proposed completions.
-- Guard against re‑creation of deleted items by passing a deleted‑items list to prompts and adding an app‑side filter.
+- Guard against re-creation of deleted items by passing a deleted-items list to prompts. The builder now fetches every soft-deleted checklist entry linked to the task (even when the checklist’s local array no longer references it) so the prompt always includes a lossless history of titles and deletion timestamps.
 - Minimal surface changes: prompt template and prompt‑builder injection; optionally thread the linked entry through the unified AI pipeline; avoid DB schema changes.
 
 Terminology
@@ -159,10 +160,9 @@ Phase 3 — New Tool: `complete_checklist_items`
 - ✅ Non-conversation path: `UnifiedAiInferenceRepository.processToolCalls` parses the payload, calls the repository helper, and invalidates checklist controllers.
 - ✅ Tests updated (conversation strategy, repository, tool schema, inference repository).
 
-Phase 4 — Deleted Items Guardrails
+- Phase 4 — Deleted Items Guardrails
 
-- ✅ Builder helper fetches and exposes the deleted checklist items list for the task (titles + deletedAt; includes all task-linked items).
-- ✅ Database query pulls soft-deleted checklist items joined via `linked_entries`.
+- ✅ Builder helper fetches and exposes the deleted checklist items list for the task (titles + deletedAt; includes all task-linked items even once they are hidden from the checklist UI by walking `linked_entries` and fetching the journal rows directly).
 - ✅ Prompt updated with the deleted list and explicit instruction; model-side avoidance only (no app drop).
 - Additional telemetry/monitoring can be added later if needed.
 
