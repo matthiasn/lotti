@@ -3,38 +3,38 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/conversions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
-import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 
 /// Helper class for building AI prompts with support for template tracking
 typedef LabelFilterFn = List<LabelDefinition> Function(
   List<LabelDefinition> all,
-  String? categoryId, {
-  required bool includePrivate,
-});
+  String? categoryId,
+);
+
+typedef ConfigFlagFn = Future<bool> Function(String name, {bool defaultValue});
 
 class PromptBuilderHelper {
   PromptBuilderHelper({
     required this.aiInputRepository,
     required this.checklistRepository,
-    this.journalRepository,
+    required this.journalRepository,
+    required this.labelsRepository,
     this.labelFilterForCategory,
   });
 
   final AiInputRepository aiInputRepository;
-  final JournalRepository? journalRepository;
+  final JournalRepository journalRepository;
+  final LabelsRepository labelsRepository;
   final LabelFilterFn? labelFilterForCategory;
   final ChecklistRepository checklistRepository;
   LoggingService? get _loggingService =>
@@ -97,7 +97,7 @@ class PromptBuilderHelper {
         promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
       try {
         final repo = journalRepository;
-        if (linkedEntityId != null && repo != null) {
+        if (linkedEntityId != null) {
           final current = await repo.getJournalEntityById(linkedEntityId);
           if (current != null) {
             final json = await _buildCurrentEntryJson(current);
@@ -123,17 +123,12 @@ class PromptBuilderHelper {
     // Inject labels list if requested and enabled via feature flag
     if (prompt.contains('{{labels}}') &&
         promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
-      final enabled = await _getFlagSafe(enableAiLabelAssignmentFlag);
-      if (enabled) {
-        final labels = await _buildCategoryScopedLabelsJsonWithCounts(entity);
-        prompt = prompt.replaceAll('{{labels}}', labels.json);
-        if (labels.totalCount > labels.selectedCount) {
-          // Add a short note after the JSON block to avoid breaking JSON parsing
-          prompt =
-              '$prompt\n(Note: showing ${labels.selectedCount} of ${labels.totalCount} labels)';
-        }
-      } else {
-        prompt = prompt.replaceAll('{{labels}}', '[]');
+      final labels = await _buildCategoryScopedLabelsJsonWithCounts(entity);
+      prompt = prompt.replaceAll('{{labels}}', labels.json);
+      if (labels.totalCount > labels.selectedCount) {
+        // Add a short note after the JSON block to avoid breaking JSON parsing
+        prompt =
+            '$prompt\n(Note: showing ${labels.selectedCount} of ${labels.totalCount} labels)';
       }
     }
 
@@ -213,18 +208,8 @@ class PromptBuilderHelper {
   /// Find a task linked to the given entity
   Future<Task?> _findLinkedTask(JournalEntity entity) async {
     List<JournalEntity> linkedEntities;
-    if (journalRepository != null) {
-      linkedEntities =
-          await journalRepository!.getLinkedToEntities(linkedTo: entity.id);
-    } else {
-      try {
-        final rows =
-            await getIt<JournalDb>().linkedToJournalEntities(entity.id).get();
-        linkedEntities = rows.map(fromDbEntity).toList();
-      } catch (_) {
-        return null;
-      }
-    }
+    linkedEntities =
+        await journalRepository.getLinkedToEntities(linkedTo: entity.id);
 
     final task = linkedEntities.firstWhereOrNull(
       (linked) => linked is Task,
@@ -313,8 +298,6 @@ class PromptBuilderHelper {
   /// resolvable for the current context.
   Future<({String json, int selectedCount, int totalCount})>
       _buildCategoryScopedLabelsJsonWithCounts(JournalEntity entity) async {
-    final db = getIt<JournalDb>();
-
     // Determine categoryId from the current entity or linked task
     String? categoryId;
     if (entity is Task) {
@@ -324,20 +307,14 @@ class PromptBuilderHelper {
       categoryId = linkedTask?.meta.categoryId;
     }
 
-    // Respect privacy toggle for prompts
-    final includePrivate = await _getFlagSafe(
-      includePrivateLabelsInPromptsFlag,
-    );
-
-    // Fetch label definitions and usage stats
-    final all = await db.getAllLabelDefinitions();
-    final usage = await db.getLabelUsageCounts();
+    // Fetch label definitions and usage stats via repository
+    final all = await labelsRepository.getAllLabels();
+    final usage = await labelsRepository.getLabelUsageCounts();
 
     // Scope to category (union of global ∪ scoped(category)) using injected or cache filter
     final scoped = _getLabelFilterFn().call(
       all,
       categoryId,
-      includePrivate: includePrivate,
     );
 
     // Phase 3: Exclude task-suppressed labels from the Available list
@@ -395,15 +372,14 @@ class PromptBuilderHelper {
   /// nor EntitiesCacheService is available (primarily in tests).
   /// IMPORTANT: Keep semantics in sync with
   /// `EntitiesCacheService.filterLabelsForCategory`.
+  /// Note: Privacy filtering is handled at the database layer via config flags.
   List<LabelDefinition> _localFilterLabelsForCategory(
     List<LabelDefinition> all,
-    String? categoryId, {
-    required bool includePrivate,
-  }) {
+    String? categoryId,
+  ) {
     final dedup = <String, LabelDefinition>{};
     for (final l in all) {
       if (l.deletedAt != null) continue;
-      if (!includePrivate && (l.private ?? false)) continue;
       final cats = l.applicableCategoryIds;
       final isGlobal = cats == null || cats.isEmpty;
       final inCategory =
@@ -418,7 +394,6 @@ class PromptBuilderHelper {
 
   /// Build JSON array of assigned labels [{id,name}] for the task or linked task
   Future<String> _buildAssignedLabelsJson(JournalEntity entity) async {
-    final db = getIt<JournalDb>();
     Task? task;
     if (entity is Task) {
       task = entity;
@@ -428,14 +403,12 @@ class PromptBuilderHelper {
     if (task == null) return '[]';
     final ids = task.meta.labelIds ?? const <String>[];
     if (ids.isEmpty) return '[]';
-    // Resolve via shared utility
-    final tuples = await buildAssignedLabelTuples(db: db, ids: ids);
+    final tuples = await labelsRepository.buildLabelTuples(ids);
     return jsonEncode(tuples);
   }
 
   /// Build JSON array of suppressed labels [{id,name}] for the task or linked task
   Future<String> _buildSuppressedLabelsJson(JournalEntity entity) async {
-    final db = getIt<JournalDb>();
     Task? task;
     if (entity is Task) {
       task = entity;
@@ -445,7 +418,7 @@ class PromptBuilderHelper {
     if (task == null) return '[]';
     final ids = task.data.aiSuppressedLabelIds ?? const <String>{};
     if (ids.isEmpty) return '[]';
-    final tuples = await buildAssignedLabelTuples(db: db, ids: ids.toList());
+    final tuples = await labelsRepository.buildLabelTuples(ids.toList());
     return jsonEncode(tuples);
   }
 
@@ -457,21 +430,6 @@ class PromptBuilderHelper {
       task = await _findLinkedTask(entity);
     }
     return task?.data.aiSuppressedLabelIds;
-  }
-
-  // Removed obsolete helper _buildLabelsJson(); the category-scoped builder
-  // covers all current use cases.
-
-  Future<bool> _getFlagSafe(String name, {bool defaultValue = false}) async {
-    try {
-      final dynamic fut = getIt<JournalDb>().getConfigFlag(name);
-      if (fut is Future<bool>) {
-        return await fut;
-      }
-    } catch (_) {
-      // ignore and use default
-    }
-    return defaultValue;
   }
 
   String _resolveEntryText(JournalEntity entry) {

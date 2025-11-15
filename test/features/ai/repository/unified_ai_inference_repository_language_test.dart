@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dar
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -36,6 +37,8 @@ class MockChecklistRepository extends Mock implements ChecklistRepository {}
 class MockLoggingService extends Mock implements LoggingService {}
 
 class MockJournalDb extends Mock implements JournalDb {}
+
+class MockLabelsRepository extends Mock implements LabelsRepository {}
 
 class MockRef extends Mock implements Ref {}
 
@@ -60,6 +63,7 @@ void main() {
   late MockChecklistRepository mockChecklistRepo;
   late MockLoggingService mockLoggingService;
   late MockJournalDb mockJournalDb;
+  late MockLabelsRepository mockLabelsRepo;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
@@ -80,6 +84,7 @@ void main() {
     mockChecklistRepo = MockChecklistRepository();
     mockLoggingService = MockLoggingService();
     mockJournalDb = MockJournalDb();
+    mockLabelsRepo = MockLabelsRepository();
 
     when(() => mockRef.read(aiConfigRepositoryProvider))
         .thenReturn(mockAiConfigRepo);
@@ -91,6 +96,8 @@ void main() {
         .thenReturn(mockJournalRepo);
     when(() => mockRef.read(checklistRepositoryProvider))
         .thenReturn(mockChecklistRepo);
+    when(() => mockRef.read(labelsRepositoryProvider))
+        .thenReturn(mockLabelsRepo);
 
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)

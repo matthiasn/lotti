@@ -1,4 +1,3 @@
-// ignore_for_file: avoid_redundant_argument_values
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -53,7 +52,6 @@ void main() {
       taskId: 't1',
       proposedIds: const ['a', 'b'],
       existingIds: const ['e1', 'e2', 'e3'],
-      shadowMode: false,
     );
 
     expect(result.assigned, isEmpty);

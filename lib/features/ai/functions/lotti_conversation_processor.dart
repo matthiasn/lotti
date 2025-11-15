@@ -5,7 +5,6 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
@@ -20,10 +19,8 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/get_it.dart';
 // ignore: unused_import
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Processes AI function calls using the conversation approach for better batching and error
@@ -427,7 +424,6 @@ class LottiChecklistStrategy extends ConversationStrategy {
       } else if (call.function.name == 'assign_task_labels') {
         // Assign labels to task (add-only) with rate limiting (handled upstream if needed)
         try {
-          final db = getIt<JournalDb>();
           final processor = LabelAssignmentProcessor(
             repository: ref.read(labelsRepositoryProvider),
           );
@@ -441,16 +437,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
                   const <String>{};
           final proposed =
               selected.where((id) => !suppressedSet.contains(id)).toList();
-          // Shadow mode: do not persist if enabled (safe default false)
-          var shadow = false;
-          try {
-            final dynamic fut = db.getConfigFlag(aiLabelAssignmentShadowFlag);
-            if (fut is Future<bool>) {
-              shadow = await fut;
-            }
-          } catch (_) {
-            shadow = false;
-          }
+
           // Short-circuit if everything was suppressed
           if (proposed.isEmpty && selected.isNotEmpty) {
             final skipped = selected
@@ -475,7 +462,6 @@ class LottiChecklistStrategy extends ConversationStrategy {
             proposedIds: proposed,
             existingIds:
                 checklistHandler.task.meta.labelIds ?? const <String>[],
-            shadowMode: shadow,
             categoryId: checklistHandler.task.meta.categoryId,
             // Phase 2 metrics forwarded for telemetry
             droppedLow: parsed.droppedLow,

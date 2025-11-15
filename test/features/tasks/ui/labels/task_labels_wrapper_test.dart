@@ -96,11 +96,7 @@ void main() {
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
     when(
-      () => cacheService.filterLabelsForCategory(
-        any(),
-        any(),
-        includePrivate: any(named: 'includePrivate'),
-      ),
+      () => cacheService.filterLabelsForCategory(any(), any()),
     ).thenAnswer(
       (invocation) =>
           invocation.positionalArguments.first as List<LabelDefinition>,

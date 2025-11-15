@@ -21,7 +21,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -213,9 +212,6 @@ void main() {
             ));
     when(() => mockJournalDb.getLabelDefinitionById('X'))
         .thenAnswer((_) async => null);
-    // Explicitly control only the shadow flag here
-    when(() => mockJournalDb.getConfigFlag(aiLabelAssignmentShadowFlag))
-        .thenAnswer((_) async => false);
 
     // Conversation wiring
     const conversationId = 'conv';
@@ -327,9 +323,6 @@ void main() {
     when(() => mockJournalDb.getLabelDefinitionById(low1))
         .thenAnswer((_) => def(low1));
 
-    when(() => mockJournalDb.getConfigFlag(aiLabelAssignmentShadowFlag))
-        .thenAnswer((_) async => false);
-
     // Wire conversation
     const conversationId = 'conv-mixed';
     when(() => mockConversationRepo.createConversation(
@@ -425,95 +418,6 @@ void main() {
     expect((result['assigned'] as List).cast<String>(), equals([vh1, h1, h2]));
   });
 
-  test('shadow mode does not persist but returns response', () async {
-    final task = makeTask();
-
-    when(() => mockJournalDb.getLabelDefinitionById('A'))
-        .thenAnswer((_) async => LabelDefinition(
-              id: 'A',
-              name: 'A',
-              color: '#000',
-              description: null,
-              sortOrder: null,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              vectorClock: null,
-              private: false,
-            ));
-    when(() => mockJournalDb.getLabelDefinitionById('B'))
-        .thenAnswer((_) async => LabelDefinition(
-              id: 'B',
-              name: 'B',
-              color: '#000',
-              description: null,
-              sortOrder: null,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              vectorClock: null,
-              private: false,
-            ));
-    when(() => mockJournalDb.getConfigFlag('ai_label_assignment_shadow'))
-        .thenAnswer((_) async => true);
-
-    const conversationId = 'conv2';
-    when(() => mockConversationRepo.createConversation(
-          systemMessage: any(named: 'systemMessage'),
-          maxTurns: any(named: 'maxTurns'),
-        )).thenReturn(conversationId);
-    when(() => mockConversationRepo.getConversation(conversationId))
-        .thenReturn(mockConversationManager);
-    when(() => mockConversationManager.messages).thenReturn([]);
-    when(() => mockConversationManager.addToolResponse(
-          toolCallId: any(named: 'toolCallId'),
-          response: any(named: 'response'),
-        )).thenAnswer((_) {});
-
-    when(() => mockConversationRepo.sendMessage(
-          conversationId: conversationId,
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-          tools: any(named: 'tools'),
-          temperature: any(named: 'temperature'),
-          strategy: any(named: 'strategy'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
-      if (strategy != null) {
-        await strategy.processToolCalls(
-          toolCalls: [
-            makeCall(['A', 'B'])
-          ],
-          manager: mockConversationManager,
-        );
-      }
-    });
-    when(() => mockConversationRepo.deleteConversation(conversationId))
-        .thenAnswer((_) {});
-
-    await processor.processPromptWithConversation(
-      prompt: 'user',
-      entity: task,
-      task: task,
-      model: makeModel(),
-      provider: makeProvider(),
-      promptConfig: makePrompt(),
-      systemMessage: 'sys',
-      tools: const [],
-      inferenceRepo: FakeInferenceRepo(),
-    );
-
-    verifyNever(() => mockLabelsRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        ));
-    verify(() => mockConversationManager.addToolResponse(
-          toolCallId: any(named: 'toolCallId'),
-          response: any(named: 'response'),
-        )).called(greaterThanOrEqualTo(1));
-  });
-
   test('suppression no-op when all requested labels are suppressed', () async {
     // Task with suppression set for X and Y
     final task = makeTask().copyWith(
@@ -545,8 +449,6 @@ void main() {
         private: false,
       ),
     );
-    when(() => mockJournalDb.getConfigFlag(aiLabelAssignmentShadowFlag))
-        .thenAnswer((_) async => false);
 
     // Conversation wiring + capture tool response
     const conversationId = 'conv-suppressed';

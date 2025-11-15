@@ -9,9 +9,10 @@ import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -19,6 +20,10 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
+
+class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockLabelsRepository extends Mock implements LabelsRepository {}
 
 void main() {
   late MockJournalDb mockDb;
@@ -29,9 +34,25 @@ void main() {
     mockDb = MockJournalDb();
     mockAiInputRepo = MockAiInputRepository();
     getIt.registerSingleton<JournalDb>(mockDb);
+    final mockLabelsRepo = MockLabelsRepository();
+    when(mockLabelsRepo.getAllLabels)
+        .thenAnswer((_) => mockDb.getAllLabelDefinitions());
+    when(mockLabelsRepo.getLabelUsageCounts)
+        .thenAnswer((_) => mockDb.getLabelUsageCounts());
+    when(() => mockLabelsRepo.buildLabelTuples(any())).thenAnswer((inv) async {
+      final ids = inv.positionalArguments[0] as List<String>;
+      final all = await mockDb.getAllLabelDefinitions();
+      final byId = {for (final def in all) def.id: def};
+      return ids.map((id) {
+        final def = byId[id];
+        return {'id': id, 'name': def?.name ?? id};
+      }).toList();
+    });
     helper = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepo,
       checklistRepository: MockChecklistRepository(),
+      journalRepository: MockJournalRepository(),
+      labelsRepository: mockLabelsRepo,
     );
   });
 
@@ -104,10 +125,6 @@ void main() {
     );
     when(() => mockDb.getLabelUsageCounts())
         .thenAnswer((_) async => {'a': 10, 'g': 5, 'x': 99});
-    when(() => mockDb.getConfigFlag(enableAiLabelAssignmentFlag))
-        .thenAnswer((_) async => true);
-    when(() => mockDb.getConfigFlag(includePrivateLabelsInPromptsFlag))
-        .thenAnswer((_) async => false);
 
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),

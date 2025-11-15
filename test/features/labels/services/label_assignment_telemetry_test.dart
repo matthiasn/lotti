@@ -85,7 +85,6 @@ void main() {
       taskId: 't1',
       proposedIds: const ['a', 'b', 'c'],
       existingIds: const [],
-      shadowMode: true, // avoid persistence
       // Phase 2 parser metrics
       droppedLow: 1,
       legacyUsed: true,

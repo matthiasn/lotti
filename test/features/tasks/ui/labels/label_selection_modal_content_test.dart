@@ -64,7 +64,6 @@ void main() {
     when(() => cacheService.filterLabelsForCategory(
           any(),
           any(),
-          includePrivate: any(named: 'includePrivate'),
         )).thenAnswer(
       (invocation) =>
           invocation.positionalArguments.first as List<LabelDefinition>,

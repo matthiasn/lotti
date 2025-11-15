@@ -3858,10 +3858,10 @@ If the image IS relevant:
 
           final capturedPrompt = captured.first as String;
 
-          // The prompt should contain the task placeholder since these prompts
-          // are only accessible from within a task context
-          expect(capturedPrompt, contains('{{task}}'));
+          // The prompt should have the task context injected (placeholder replaced)
           expect(capturedPrompt, contains('Task Context:'));
+          expect(capturedPrompt, contains('Database Migration Task'));
+          expect(capturedPrompt, contains('IN PROGRESS'));
 
           // Verify that the image entity was updated without disclaimer
           final updateCaptured = verify(
@@ -4179,10 +4179,10 @@ be consulted to ensure accuracy.''',
 
           final capturedPrompt = captured.first as String;
 
-          // The prompt should contain the task placeholder since these prompts
-          // are only accessible from within a task context
-          expect(capturedPrompt, contains('{{task}}'));
+          // The prompt should have the task context injected (placeholder replaced)
           expect(capturedPrompt, contains('Task Context:'));
+          expect(capturedPrompt, contains('Interview with John Smith'));
+          expect(capturedPrompt, contains('IN PROGRESS'));
         } finally {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);

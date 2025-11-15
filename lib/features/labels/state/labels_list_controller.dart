@@ -91,6 +91,5 @@ final ProviderFamily<List<LabelDefinition>, String?>
           orElse: () => const <LabelDefinition>[],
         ),
     categoryId,
-    includePrivate: cache.showPrivateEntries,
   );
 });

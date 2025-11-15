@@ -174,16 +174,14 @@ class EntitiesCacheService {
   /// hard test-time dependency on GetIt/EntitiesCacheService when assembling
   /// prompt JSON. If you change scoping rules here, mirror the change in
   /// PromptBuilderHelper._filterLabelsForCategory.
+  /// Privacy filtering is handled at the database layer via config flags.
   List<LabelDefinition> filterLabelsForCategory(
     List<LabelDefinition> all,
-    String? categoryId, {
-    bool? includePrivate,
-  }) {
-    final allowPrivate = includePrivate ?? _showPrivateEntries;
+    String? categoryId,
+  ) {
     final dedup = <String, LabelDefinition>{};
     for (final l in all) {
       if (l.deletedAt != null) continue;
-      if (!allowPrivate && (l.private ?? false)) continue;
       final cats = l.applicableCategoryIds;
       final isGlobal = cats == null || cats.isEmpty;
       final inCategory =

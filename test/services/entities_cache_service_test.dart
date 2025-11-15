@@ -117,7 +117,7 @@ void main() {
     });
   });
 
-  test('filterLabelsForCategory respects includePrivate', () async {
+  test('filterLabelsForCategory filters by category scope', () async {
     when(journalDb.watchMeasurableDataTypes).thenAnswer(
       (_) => Stream<List<MeasurableDataType>>.fromIterable([
         const <MeasurableDataType>[],
@@ -148,6 +148,8 @@ void main() {
     );
     final cache = EntitiesCacheService();
     // Do not rely on watchers for this pure helper
+    // Note: Privacy filtering handled at DB layer, so all labels in input are
+    // already privacy-filtered. This test verifies category scoping only.
     final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
     final privateGlobal = testLabelDefinition1.copyWith(
       id: 'p',
@@ -162,19 +164,17 @@ void main() {
 
     final all = [global, privateGlobal, inWork];
 
-    final withoutPrivate = cache.filterLabelsForCategory(
+    // Returns union of global labels + work-scoped labels
+    final result = cache.filterLabelsForCategory(
       all,
       'work',
-      includePrivate: false,
-    );
-    final withPrivate = cache.filterLabelsForCategory(
-      all,
-      'work',
-      includePrivate: true,
     );
 
-    expect(withoutPrivate.map((e) => e.id).toSet(), {'g', 'w'});
-    expect(withPrivate.map((e) => e.id).toSet(), {'g', 'w', 'p'});
+    // All three labels should be included:
+    // - 'g' is global (matches any category)
+    // - 'p' is global (matches any category, privacy handled at DB layer)
+    // - 'w' is work-scoped (matches 'work' category)
+    expect(result.map((e) => e.id).toSet(), {'g', 'w', 'p'});
   });
 
   test('prunes orphan category keys on categories update', () {

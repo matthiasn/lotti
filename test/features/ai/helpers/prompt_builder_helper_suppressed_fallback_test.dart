@@ -6,6 +6,8 @@ import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,14 +18,23 @@ class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
+class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockLabelsRepository extends Mock implements LabelsRepository {}
+
 void main() {
   test('suppressed_labels placeholder falls back to [] on error', () async {
     final db = MockJournalDb();
     final aiRepo = MockAiInputRepository();
     getIt.registerSingleton<JournalDb>(db);
+    final mockLabelsRepo = MockLabelsRepository();
+    when(() => mockLabelsRepo.buildLabelTuples(any()))
+        .thenThrow(Exception('db'));
     final helper = PromptBuilderHelper(
       aiInputRepository: aiRepo,
       checklistRepository: MockChecklistRepository(),
+      journalRepository: MockJournalRepository(),
+      labelsRepository: mockLabelsRepo,
     );
 
     // Task with suppression set, but DB throws during name resolution

@@ -42,8 +42,6 @@ Directory setupTestDirectory() {
 final Set<String> expectedActiveFlagNames = {
   privateFlag,
   enableTooltipFlag,
-  enableAiLabelAssignmentFlag,
-  includePrivateLabelsInPromptsFlag,
 };
 
 final expectedFlags = <ConfigFlag>{
@@ -102,22 +100,6 @@ final expectedFlags = <ConfigFlag>{
     name: enableEventsFlag,
     description: 'Enable Events?',
     status: false,
-  ),
-  // AI label assignment related defaults
-  const ConfigFlag(
-    name: enableAiLabelAssignmentFlag,
-    description: 'Enable AI label assignment via function calls',
-    status: true,
-  ),
-  const ConfigFlag(
-    name: aiLabelAssignmentShadowFlag,
-    description: 'Shadow mode: log suggestions, do not persist',
-    status: false,
-  ),
-  const ConfigFlag(
-    name: includePrivateLabelsInPromptsFlag,
-    description: 'Include private labels in {{labels}} prompt injection',
-    status: true,
   ),
 };
 

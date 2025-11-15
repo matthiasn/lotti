@@ -25,6 +25,8 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../labels/label_assignment_processor_test.dart' as label_test
+    show MockLabelsRepository;
 
 // Mocks
 class MockAiInputRepository extends Mock implements AiInputRepository {}
@@ -41,16 +43,25 @@ class MockTaskSummaryRefreshService extends Mock
 void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
+  late label_test.MockLabelsRepository mockLabelsRepository;
 
   setUpAll(() {
     registerFallbackValue(fallbackJournalEntity);
-  });
-
-  setUp(() {
     mockAiInputRepository = MockAiInputRepository();
+    mockLabelsRepository = label_test.MockLabelsRepository();
+
+    // Stub labels repository to return empty lists by default
+    when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
+    when(() => mockLabelsRepository.getLabelUsageCounts())
+        .thenAnswer((_) async => {});
+    when(() => mockLabelsRepository.buildLabelTuples(any()))
+        .thenAnswer((_) async => []);
+
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
       checklistRepository: MockChecklistRepository(),
+      journalRepository: MockJournalRepository(),
+      labelsRepository: mockLabelsRepository,
     );
 
     // Default stub for task JSON calls
@@ -62,6 +73,22 @@ void main() {
   });
 
   tearDown(() async {
+    // Reset mocks to clear call history between tests
+    reset(mockAiInputRepository);
+    reset(mockLabelsRepository);
+
+    // Re-stub after reset
+    when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
+    when(() => mockLabelsRepository.getLabelUsageCounts())
+        .thenAnswer((_) async => {});
+    when(() => mockLabelsRepository.buildLabelTuples(any()))
+        .thenAnswer((_) async => []);
+    when(
+      () => mockAiInputRepository.buildTaskDetailsJson(
+        id: any<String>(named: 'id'),
+      ),
+    ).thenAnswer((_) async => null);
+
     if (getIt.isRegistered<JournalDb>()) {
       final db = getIt<JournalDb>();
       await db.close();
@@ -239,6 +266,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
         );
 
         when(() => mockJournalRepository.getJournalEntityById('audio-1'))
@@ -338,6 +366,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
         );
 
         when(() => mockJournalRepository.getJournalEntityById('audio-2'))
@@ -458,6 +487,8 @@ void main() {
         promptBuilder = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,
           checklistRepository: checklistRepository,
+          journalRepository: MockJournalRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
         );
 
         task = Task(
@@ -1051,6 +1082,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
         );
 
         when(() => mockJournalRepository.getLinkedToEntities(

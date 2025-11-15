@@ -15,7 +15,6 @@ import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dar
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -133,9 +132,6 @@ void main() {
     when(() => mockDb.getLabelDefinitionById('lX'))
         .thenAnswer((_) async => makeLabel('lX', deleted: true));
 
-    when(() => mockDb.getConfigFlag(aiLabelAssignmentShadowFlag))
-        .thenAnswer((_) async => false);
-
     final repo = container.read(unifiedAiInferenceRepositoryProvider);
     final calls = [
       makeCall(['l2', 'l3', 'lX'])
@@ -172,9 +168,6 @@ void main() {
         .thenAnswer((_) async => low);
     when(() => mockDb.getAllLabelDefinitions())
         .thenAnswer((_) async => [vh, h1, h2, low]);
-
-    when(() => mockDb.getConfigFlag(aiLabelAssignmentShadowFlag))
-        .thenAnswer((_) async => false);
 
     final repo = container.read(unifiedAiInferenceRepositoryProvider);
     final calls = [

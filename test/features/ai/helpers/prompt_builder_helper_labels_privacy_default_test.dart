@@ -10,13 +10,18 @@ import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../tasks/ui/checklists/checklists_widget_test.dart';
 
 class _MockJournalDb extends Mock implements JournalDb {}
+
+class _MockJournalRepository extends Mock implements JournalRepository {}
+
+class _MockLabelsRepository extends Mock implements LabelsRepository {}
 
 void main() {
   late _MockJournalDb db;
@@ -51,41 +56,35 @@ void main() {
       );
 
   test('privacy default excludes private labels when flag unset', () async {
-    final labels = <LabelDefinition>[
-      LabelDefinition(
-        id: 'public',
-        name: 'Public Label',
-        color: '#FF0000',
-        description: null,
-        sortOrder: null,
-        createdAt: DateTime(2025),
-        updatedAt: DateTime(2025),
-        vectorClock: null,
-        private: false,
-      ),
-      LabelDefinition(
-        id: 'private',
-        name: 'Private Label',
-        color: '#00FF00',
-        description: null,
-        sortOrder: null,
-        createdAt: DateTime(2025),
-        updatedAt: DateTime(2025),
-        vectorClock: null,
-        private: true,
-      ),
-    ];
+    final publicLabel = LabelDefinition(
+      id: 'public',
+      name: 'Public Label',
+      color: '#FF0000',
+      description: null,
+      sortOrder: null,
+      createdAt: DateTime(2025),
+      updatedAt: DateTime(2025),
+      vectorClock: null,
+      private: false,
+    );
 
-    when(() => db.getConfigFlag(enableAiLabelAssignmentFlag))
-        .thenAnswer((_) async => true);
-    // includePrivateLabelsInPromptsFlag intentionally not stubbed (unset → false)
-    when(() => db.getAllLabelDefinitions()).thenAnswer((_) async => labels);
+    // Privacy filtering handled at DB layer via config flag
+    // When flag is false, DB query returns only public labels
+    when(() => db.getAllLabelDefinitions())
+        .thenAnswer((_) async => [publicLabel]);
     when(() => db.getLabelUsageCounts())
         .thenAnswer((_) async => <String, int>{});
 
+    final mockLabelsRepo = _MockLabelsRepository();
+    when(mockLabelsRepo.getAllLabels)
+        .thenAnswer((_) => db.getAllLabelDefinitions());
+    when(mockLabelsRepo.getLabelUsageCounts)
+        .thenAnswer((_) => db.getLabelUsageCounts());
     final helper = PromptBuilderHelper(
       aiInputRepository: container.read(aiInputRepositoryProvider),
       checklistRepository: mockChecklistRepository,
+      journalRepository: _MockJournalRepository(),
+      labelsRepository: mockLabelsRepo,
     );
 
     final prompt = await helper.buildPromptWithData(
@@ -118,11 +117,8 @@ void main() {
   });
 
   test('privacy flag true includes private labels', () async {
-    when(() => db.getConfigFlag(enableAiLabelAssignmentFlag))
-        .thenAnswer((_) async => true);
-    when(() => db.getConfigFlag(includePrivateLabelsInPromptsFlag))
-        .thenAnswer((_) async => true);
-
+    // Privacy filtering handled at DB layer via config flag
+    // When flag is true, DB query returns both public and private labels
     when(() => db.getAllLabelDefinitions()).thenAnswer((_) async => [
           LabelDefinition(
             id: 'public',
@@ -150,9 +146,16 @@ void main() {
     when(() => db.getLabelUsageCounts())
         .thenAnswer((_) async => <String, int>{});
 
+    final mockLabelsRepo = _MockLabelsRepository();
+    when(mockLabelsRepo.getAllLabels)
+        .thenAnswer((_) => db.getAllLabelDefinitions());
+    when(mockLabelsRepo.getLabelUsageCounts)
+        .thenAnswer((_) => db.getLabelUsageCounts());
     final helper = PromptBuilderHelper(
       aiInputRepository: container.read(aiInputRepositoryProvider),
       checklistRepository: mockChecklistRepository,
+      journalRepository: _MockJournalRepository(),
+      labelsRepository: mockLabelsRepo,
     );
     final prompt = await helper.buildPromptWithData(
       promptConfig: makePrompt(),
