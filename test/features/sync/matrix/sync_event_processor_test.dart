@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -68,6 +70,7 @@ void main() {
     registerFallbackValue(measurableWater);
     registerFallbackValue(fallbackAiConfig);
     registerFallbackValue(Uri.parse('mxc://placeholder'));
+    registerFallbackValue(Exception('test'));
   });
   // Helper to normalize leading separators across platforms so that
   // path.join(docDir, rel) never treats rel as absolute.
@@ -2396,6 +2399,273 @@ void main() {
       // Verify updatedAt saved as string
       verify(() => settingsDb.saveSettingsItem(
           'THEME_PREFS_UPDATED_AT', '$timestamp')).called(1);
+    });
+  });
+
+  group('SyncEventProcessor - Embedded Entry Links', () {
+    test('processes embedded links after successful journal entity update',
+        () async {
+      final link1 = EntryLink.basic(
+        id: 'link-1',
+        fromId: 'entry-id',
+        toId: 'category-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+      );
+      final link2 = EntryLink.basic(
+        id: 'link-2',
+        fromId: 'entry-id',
+        toId: 'category-2',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entry.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+        entryLinks: [link1, link2],
+      );
+
+      when(() => journalEntityLoader.load(jsonPath: '/entry.json'))
+          .thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(link1)).thenAnswer((_) async => 1);
+      when(() => journalDb.upsertEntryLink(link2)).thenAnswer((_) async => 1);
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Verify both links were upserted
+      verify(() => journalDb.upsertEntryLink(link1)).called(1);
+      verify(() => journalDb.upsertEntryLink(link2)).called(1);
+
+      // Verify logging for each embedded link
+      verify(() => loggingService.captureEvent(
+            contains(
+                'apply entryLink.embedded from=${link1.fromId} to=${link1.toId}'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply.entryLink.embedded',
+          )).called(1);
+
+      verify(() => loggingService.captureEvent(
+            contains(
+                'apply entryLink.embedded from=${link2.fromId} to=${link2.toId}'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply.entryLink.embedded',
+          )).called(1);
+
+      // Verify summary log includes embedded links count
+      verify(() => loggingService.captureEvent(
+            contains('embeddedLinks=2/2'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply',
+          )).called(1);
+
+      // Verify notifications sent for all affected IDs from both links
+      verify(() => updateNotifications.notify(
+            {link1.fromId, link1.toId, link2.toId},
+            fromSync: true,
+          )).called(1);
+    });
+
+    test('does not process embedded links when update is skipped', () async {
+      final link = EntryLink.basic(
+        id: 'link-1',
+        fromId: 'entry-id',
+        toId: 'category-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entry.json',
+        vectorClock: const VectorClock({'old': 1}),
+        status: SyncEntryStatus.initial,
+        entryLinks: [link],
+      );
+
+      // Create an entry with newer vector clock so update is skipped
+      final newerEntry = JournalEntry(
+        meta: Metadata(
+          id: 'entry-id',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025, 1, 1),
+          dateTo: DateTime(2025, 1, 1),
+          vectorClock: const VectorClock({'new': 2}),
+        ),
+        entryText: const EntryText(plainText: 'newer'),
+      );
+
+      when(() => journalEntityLoader.load(
+            jsonPath: '/entry.json',
+            incomingVectorClock: const VectorClock({'old': 1}),
+          )).thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.journalEntityById('entry-id'))
+          .thenAnswer((_) async => newerEntry);
+      when(() => journalDb.updateJournalEntity(any<JournalEntity>()))
+          .thenAnswer((_) async => JournalUpdateResult.skipped(
+                reason: JournalUpdateSkipReason.olderOrEqual,
+              ));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Verify link was NOT upserted because update was skipped
+      verifyNever(() => journalDb.upsertEntryLink(any()));
+
+      // Verify summary shows 0 embedded links processed
+      verify(() => loggingService.captureEvent(
+            contains('embeddedLinks=0/1'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply',
+          )).called(1);
+    });
+
+    test('handles errors when processing individual embedded links', () async {
+      final link1 = EntryLink.basic(
+        id: 'link-1',
+        fromId: 'entry-id',
+        toId: 'category-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+      );
+      final link2 = EntryLink.basic(
+        id: 'link-2',
+        fromId: 'entry-id',
+        toId: 'category-2',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entry.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+        entryLinks: [link1, link2],
+      );
+
+      when(() => journalEntityLoader.load(jsonPath: '/entry.json'))
+          .thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      // First link fails, second succeeds
+      when(() => journalDb.upsertEntryLink(link1))
+          .thenThrow(Exception('Database error'));
+      when(() => journalDb.upsertEntryLink(link2)).thenAnswer((_) async => 1);
+
+      // Should not throw - errors are handled gracefully
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Verify both links were attempted
+      verify(() => journalDb.upsertEntryLink(link1)).called(1);
+      verify(() => journalDb.upsertEntryLink(link2)).called(1);
+
+      // Verify exception was logged for link1
+      verify(() => loggingService.captureException(
+            any<Exception>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply.entryLink.embedded',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).called(1);
+
+      // Verify link2 was logged successfully
+      verify(() => loggingService.captureEvent(
+            contains(
+                'apply entryLink.embedded from=${link2.fromId} to=${link2.toId}'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply.entryLink.embedded',
+          )).called(1);
+
+      // Verify only one link was processed successfully
+      verify(() => loggingService.captureEvent(
+            contains('embeddedLinks=1/2'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply',
+          )).called(1);
+    });
+
+    test('processes empty embedded links list', () async {
+      const message = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entry.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+        entryLinks: [],
+      );
+
+      when(() => journalEntityLoader.load(jsonPath: '/entry.json'))
+          .thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Verify no links were upserted
+      verifyNever(() => journalDb.upsertEntryLink(any()));
+
+      // Verify summary shows 0/0 embedded links
+      verify(() => loggingService.captureEvent(
+            contains('embeddedLinks=0/0'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply',
+          )).called(1);
+    });
+
+    test('skips link processing when linkRows is 0 (no-op upsert)', () async {
+      final link = EntryLink.basic(
+        id: 'link-1',
+        fromId: 'entry-id',
+        toId: 'category-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entry.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+        entryLinks: [link],
+      );
+
+      when(() => journalEntityLoader.load(jsonPath: '/entry.json'))
+          .thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 0);
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Verify link upsert was attempted
+      verify(() => journalDb.upsertEntryLink(link)).called(1);
+
+      // Verify no log for link application (rows was 0)
+      verifyNever(() => loggingService.captureEvent(
+            contains('apply entryLink.embedded'),
+            domain: any(named: 'domain'),
+            subDomain: 'apply.entryLink.embedded',
+          ));
+
+      // Verify summary shows 0 processed (since linkRows was 0)
+      verify(() => loggingService.captureEvent(
+            contains('embeddedLinks=0/1'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply',
+          )).called(1);
+
+      // Verify notifications were still sent for affected IDs
+      verify(() => updateNotifications.notify(
+            {link.fromId, link.toId},
+            fromSync: true,
+          )).called(1);
     });
   });
 }
