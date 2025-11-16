@@ -63,6 +63,7 @@ class _LabelSelectionModalContentState
     final available = ref.watch(
       availableLabelsForCategoryProvider(categoryId),
     );
+    final allLabels = ref.watch(labelsStreamProvider).valueOrNull ?? [];
 
     return ValueListenableBuilder<String>(
       valueListenable: widget.searchQuery,
@@ -73,7 +74,7 @@ class _LabelSelectionModalContentState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildList(context, available),
+            _buildList(context, available, allLabels),
           ],
         );
       },
@@ -85,7 +86,11 @@ class _LabelSelectionModalContentState
     return labels.any((label) => label.name.toLowerCase() == queryLower);
   }
 
-  Widget _buildList(BuildContext context, List<LabelDefinition> labels) {
+  Widget _buildList(
+    BuildContext context,
+    List<LabelDefinition> labels,
+    List<LabelDefinition> allLabels,
+  ) {
     // Union available labels with currently assigned ones to allow
     // unassigning out-of-scope labels.
     final cache = getIt<EntitiesCacheService>();
@@ -103,7 +108,8 @@ class _LabelSelectionModalContentState
     final filtered = result.items;
 
     final hasQuery = _searchRaw.trim().isNotEmpty;
-    final hasExactMatch = hasQuery && _hasExactMatch(filtered, _searchRaw);
+    // Check against all labels to prevent duplicate names across categories
+    final hasExactMatch = hasQuery && _hasExactMatch(allLabels, _searchRaw);
     final showCreateButton = hasQuery && !hasExactMatch;
 
     if (filtered.isEmpty) {

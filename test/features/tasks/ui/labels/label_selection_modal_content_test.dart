@@ -1005,6 +1005,8 @@ void main() {
             availableLabelsForCategoryProvider(null).overrideWith(
               (ref) => labelsWithCI,
             ),
+            labelsStreamProvider
+                .overrideWith((ref) => Stream.value(labelsWithCI)),
             labelsRepositoryProvider.overrideWithValue(repository),
           ],
           child: WidgetTestBench(
@@ -1051,6 +1053,8 @@ void main() {
             availableLabelsForCategoryProvider(null).overrideWith(
               (ref) => labelsWithCI,
             ),
+            labelsStreamProvider
+                .overrideWith((ref) => Stream.value(labelsWithCI)),
             labelsRepositoryProvider.overrideWithValue(repository),
           ],
           child: WidgetTestBench(

@@ -205,6 +205,7 @@ complexity and align with existing patterns.
 
 **Final implementation:**
 - `_hasExactMatch()` helper method for exact match detection
+- Exact match check performed against ALL labels (via `labelsStreamProvider`), not just category-filtered labels, to prevent duplicate label names across categories
 - `_CreateButton` widget matching `_EmptyState` styling exactly
 - Centered button (not full-width) using `Center` wrapper
 - Clean UI without redundant hint text
@@ -274,14 +275,14 @@ Cover the following scenarios in `label_selection_modal_content_test.dart`:
 
 ### Create Button Styling
 
-The `_CreateLabelButton` widget should:
+The `_CreateButton` widget (final implementation):
 
-- Use `FilledButton.tonalIcon` for consistency with existing create buttons
-- Include `Icons.add` icon
+- Uses `FilledButton.icon` to match `_EmptyState` button styling (green filled button)
+- Includes `Icons.add` icon
 - Text: "Create '{query}' label"
-- Full-width or centered based on existing modal patterns
-- Appropriate padding (e.g., `EdgeInsets.all(16)`)
-- Divider above the button to separate from list (if list is not empty)
+- Centered (not full-width) via `Center` wrapper
+- Padding: `EdgeInsets.all(16)`
+- No divider (cleaner visual separation)
 
 ### Layout Considerations
 
