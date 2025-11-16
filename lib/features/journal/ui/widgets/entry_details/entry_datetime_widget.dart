@@ -28,8 +28,16 @@ class EntryDatetimeWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final style = monoTabularStyle(
-        fontSize: fontSizeMedium, color: context.colorScheme.outline);
+    final base = context.textTheme.titleSmall;
+    final style = (base != null
+            ? base.withTabularFigures
+            : monoTabularStyle(
+                fontSize: fontSizeMedium,
+                color: context.colorScheme.outline,
+              ))
+        .copyWith(
+      color: context.colorScheme.outline,
+    );
 
     return GestureDetector(
       onTap: () =>

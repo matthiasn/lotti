@@ -11,10 +11,12 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 class TaskPriorityWrapper extends ConsumerWidget {
   const TaskPriorityWrapper({
     required this.taskId,
+    this.showLabel = true,
     super.key,
   });
 
   final String taskId;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,13 +41,15 @@ class TaskPriorityWrapper extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context.messages.tasksPriorityTitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-          ),
-          const SizedBox(height: 4),
+          if (showLabel) ...[
+            Text(
+              context.messages.tasksPriorityTitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+            const SizedBox(height: 4),
+          ],
           ModernStatusChip(
             label: task.data.priority.short,
             color: color,

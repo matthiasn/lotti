@@ -11,17 +11,23 @@ class TaskLanguageWidget extends StatelessWidget {
   const TaskLanguageWidget({
     required this.task,
     required this.onLanguageChanged,
+    this.hideLabelWhenValueSet = false,
+    this.showLabel = true,
     super.key,
   });
 
   final Task task;
   final LanguageCallback onLanguageChanged;
+  final bool hideLabelWhenValueSet;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
     final languageCode = task.data.languageCode;
     final language =
         languageCode != null ? SupportedLanguage.fromCode(languageCode) : null;
+    final labelVisible =
+        showLabel && (!hideLabelWhenValueSet || language == null);
 
     return InkWell(
       onTap: () => _showLanguageSelector(context),
@@ -30,49 +36,54 @@ class TaskLanguageWidget extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              context.messages.taskLanguageLabel,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.outline,
-              ),
-            ),
-            const SizedBox(height: 4),
-            if (language != null)
-              Container(
-                width: 32,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: context.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: context.colorScheme.primary.withValues(alpha: 0.3),
-                    width: 0.5,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: buildLanguageFlag(
-                    languageCode: language.code,
-                    height: 20,
-                    width: 30,
-                    key: ValueKey('flag-${language.code}'),
-                  ),
-                ),
-              )
-            else
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: context.colorScheme.outline.withAlpha(51),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  Icons.language,
-                  size: 16,
+            if (labelVisible) ...[
+              Text(
+                context.messages.taskLanguageLabel,
+                style: context.textTheme.bodySmall?.copyWith(
                   color: context.colorScheme.outline,
                 ),
               ),
+              const SizedBox(height: 4),
+            ],
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.statusIndicatorPaddingHorizontal,
+                vertical: AppTheme.statusIndicatorPaddingVertical,
+              ),
+              decoration: BoxDecoration(
+                color: context.colorScheme.primary.withValues(
+                  alpha: AppTheme.alphaPrimaryContainerDark,
+                ),
+                borderRadius: BorderRadius.circular(
+                  AppTheme.statusIndicatorBorderRadius,
+                ),
+                border: Border.all(
+                  color: context.colorScheme.primary.withValues(
+                    alpha: AppTheme.alphaStatusIndicatorBorder,
+                  ),
+                  width: AppTheme.statusIndicatorBorderWidth,
+                ),
+              ),
+              child: language != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.statusIndicatorBorderRadius / 2,
+                      ),
+                      child: buildLanguageFlag(
+                        languageCode: language.code,
+                        height: 20,
+                        width: 30,
+                        key: ValueKey('flag-${language.code}'),
+                      ),
+                    )
+                  : Icon(
+                      Icons.language,
+                      size: 16,
+                      color: context.colorScheme.primary.withValues(
+                        alpha: AppTheme.alphaPrimaryIcon,
+                      ),
+                    ),
+            ),
           ],
         ),
       ),

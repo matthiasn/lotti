@@ -4222,6 +4222,12 @@ abstract class AppLocalizations {
   /// **'Estimate:'**
   String get taskEstimateLabel;
 
+  /// No description provided for @taskNoEstimateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No estimate set'**
+  String get taskNoEstimateLabel;
+
   /// No description provided for @taskNameHint.
   ///
   /// In en, this message translates to:

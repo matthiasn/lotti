@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -61,7 +63,7 @@ void main() {
     expect(find.text('02:30'), findsOneWidget);
   });
 
-  testWidgets('displays 00:00 when no estimate', (tester) async {
+  testWidgets('displays placeholder when no estimate', (tester) async {
     final taskWithoutEstimate = Task(
       meta: testTask.meta,
       data: TaskData(
@@ -83,7 +85,7 @@ void main() {
       ),
     );
 
-    expect(find.text('00:00'), findsOneWidget);
+    expect(find.text('No estimate set'), findsOneWidget);
   });
 
   testWidgets('is tappable', (tester) async {
@@ -111,5 +113,89 @@ void main() {
     );
 
     expect(find.byType(TimeRecordingIcon), findsOneWidget);
+  });
+
+  testWidgets(
+      'showEstimatePicker does not call callback when duration unchanged',
+      (tester) async {
+    var callbackCalled = false;
+
+    await tester.pumpWidget(
+      WidgetTestBench(
+        child: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    showEstimatePicker(
+                      context: context,
+                      initialDuration: const Duration(hours: 2),
+                      onEstimateChanged: (newDuration) async {
+                        callbackCalled = true;
+                      },
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Without changing the picker value, tapping Done should not call callback.
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(callbackCalled, isFalse);
+  });
+
+  testWidgets('showEstimatePicker calls callback when duration changes',
+      (tester) async {
+    Duration? selected;
+
+    await tester.pumpWidget(
+      WidgetTestBench(
+        child: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    showEstimatePicker(
+                      context: context,
+                      initialDuration: const Duration(hours: 2),
+                      onEstimateChanged: (newDuration) async {
+                        selected = newDuration;
+                      },
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Simulate the user changing the duration in the picker.
+    final picker = tester.widget<CupertinoTimerPicker>(
+      find.byType(CupertinoTimerPicker),
+    );
+    picker.onTimerDurationChanged(const Duration(hours: 3));
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(selected, equals(const Duration(hours: 3)));
   });
 }

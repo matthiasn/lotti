@@ -81,6 +81,7 @@ class _TaskTitleHeaderState extends ConsumerState<TaskTitleHeader> {
                   setState(() {
                     _isEditing = !_isEditing;
                   });
+                  _titleFocusNode.requestFocus();
                 },
               ),
             ],

@@ -7,10 +7,12 @@ import 'package:lotti/features/tasks/ui/header/task_status_widget.dart';
 class TaskStatusWrapper extends ConsumerWidget {
   const TaskStatusWrapper({
     required this.taskId,
+    this.showLabel = true,
     super.key,
   });
 
   final String taskId;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,6 +28,7 @@ class TaskStatusWrapper extends ConsumerWidget {
     return TaskStatusWidget(
       task: task,
       onStatusChanged: notifier.updateTaskStatus,
+      showLabel: showLabel,
     );
   }
 }

@@ -10,10 +10,12 @@ import 'package:lotti/utils/platform.dart';
 class CompactTaskProgress extends ConsumerWidget {
   const CompactTaskProgress({
     required this.taskId,
+    this.showTimeText = false,
     super.key,
   });
 
   final String taskId;
+  final bool showTimeText;
 
   String _formatDurationHoursMinutes(Duration duration) {
     final hours = duration.inHours;
@@ -38,18 +40,29 @@ class CompactTaskProgress extends ConsumerWidget {
         ? min(progress.inSeconds / estimate.inSeconds, 1)
         : 0.0;
 
-    final textStyle = monoTabularStyle(
-      fontSize: AppTheme.statusIndicatorFontSize,
-      fontWeight: FontWeight.w600,
+    final base = context.textTheme.titleSmall;
+    final textStyle = (base != null
+            ? base.withTabularFigures
+            : monoTabularStyle(
+                fontSize: AppTheme.statusIndicatorFontSize,
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.onSurfaceVariant.withValues(
+                  alpha: AppTheme.alphaSurfaceVariant,
+                ),
+              ))
+        .copyWith(
       color: context.colorScheme.onSurfaceVariant.withValues(
         alpha: AppTheme.alphaSurfaceVariant,
       ),
+      fontWeight: FontWeight.w600,
     );
+
+    final shouldShowTimeText = isDesktop || showTimeText;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (isDesktop) ...[
+        if (shouldShowTimeText) ...[
           // Time display
           Text(
             '${_formatDurationHoursMinutes(progress)} / ${_formatDurationHoursMinutes(estimate)}',
