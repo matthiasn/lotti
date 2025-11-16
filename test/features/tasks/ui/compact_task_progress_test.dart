@@ -32,6 +32,12 @@ void main() {
     }
   });
 
+  tearDown(() {
+    // Reset platform flags after each test to prevent cross-test pollution
+    platform.isDesktop = false;
+    platform.isMobile = false;
+  });
+
   Future<Widget> buildWithProgress({
     required String taskId,
     required Duration progress,
