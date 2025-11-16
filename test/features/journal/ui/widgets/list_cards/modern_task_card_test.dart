@@ -7,7 +7,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
-import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/get_it.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/task_progress_test_controller.dart';
 import '../../../../../mocks/mocks.dart';
 
 void main() {
@@ -336,7 +336,7 @@ void main() {
       ProviderScope(
         overrides: [
           taskProgressControllerProvider(id: task.meta.id).overrideWith(
-            () => _TestProgressController(
+            () => TestTaskProgressController(
               progress: const Duration(minutes: 30),
               estimate: const Duration(hours: 1),
             ),
@@ -360,22 +360,4 @@ void main() {
     );
     expect(textFinder, findsNothing);
   });
-}
-
-class _TestProgressController extends TaskProgressController {
-  _TestProgressController({
-    required this.progress,
-    required this.estimate,
-  });
-
-  final Duration progress;
-  final Duration estimate;
-
-  @override
-  Future<TaskProgressState?> build({required String id}) async {
-    return TaskProgressState(
-      progress: progress,
-      estimate: estimate,
-    );
-  }
 }
