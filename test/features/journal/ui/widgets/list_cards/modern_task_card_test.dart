@@ -7,23 +7,33 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
+import 'package:lotti/features/tasks/state/task_progress_controller.dart';
+import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/cards/modern_card_content.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/task_progress_test_controller.dart';
 import '../../../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late bool originalIsDesktop;
+  late bool originalIsMobile;
+
   setUp(() async {
     await getIt.reset();
     getIt.allowReassignment = true;
+
+    originalIsDesktop = platform.isDesktop;
+    originalIsMobile = platform.isMobile;
 
     // Minimal registrations needed by ModernTaskCard children
     getIt.registerSingleton<TimeService>(TimeService());
@@ -36,7 +46,11 @@ void main() {
     getIt.registerSingleton<EntitiesCacheService>(mockCache);
   });
 
-  tearDown(getIt.reset);
+  tearDown(() async {
+    platform.isDesktop = originalIsDesktop;
+    platform.isMobile = originalIsMobile;
+    await getIt.reset();
+  });
 
   Task buildTask({String? categoryId}) {
     final now = DateTime(2025, 11, 3, 12);
@@ -304,5 +318,46 @@ void main() {
     // Assert
     verify(() => nav.beamToNamed('/tasks/task-1', data: any(named: 'data')))
         .called(1);
+  });
+
+  testWidgets(
+      'ModernTaskCard hides progress time text on mobile list cards',
+      (tester) async {
+    platform.isDesktop = false;
+    platform.isMobile = true;
+
+    final task = buildTask().copyWith(
+      data: buildTask().data.copyWith(
+            estimate: const Duration(hours: 1),
+          ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          taskProgressControllerProvider(id: task.meta.id).overrideWith(
+            () => TestTaskProgressController(
+              progress: const Duration(minutes: 30),
+              estimate: const Duration(hours: 1),
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: ModernTaskCard(task: task),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final progressFinder = find.byType(CompactTaskProgress);
+    expect(progressFinder, findsOneWidget);
+
+    final textFinder = find.descendant(
+      of: progressFinder,
+      matching: find.byType(Text),
+    );
+    expect(textFinder, findsNothing);
   });
 }
