@@ -26,16 +26,25 @@ class _FixedProgressController extends TaskProgressController {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late bool originalIsDesktop;
+  late bool originalIsMobile;
+
   setUpAll(() {
     if (!getIt.isRegistered<TimeService>()) {
       getIt.registerSingleton<TimeService>(TimeService());
     }
   });
 
+  setUp(() {
+    // Capture original platform flags
+    originalIsDesktop = platform.isDesktop;
+    originalIsMobile = platform.isMobile;
+  });
+
   tearDown(() {
-    // Reset platform flags after each test to prevent cross-test pollution
-    platform.isDesktop = false;
-    platform.isMobile = false;
+    // Restore platform flags after each test to prevent cross-test pollution
+    platform.isDesktop = originalIsDesktop;
+    platform.isMobile = originalIsMobile;
   });
 
   Future<Widget> buildWithProgress({

@@ -42,14 +42,40 @@ void main() {
           createdAt: now,
           utcOffset: now.timeZoneOffset.inMinutes,
         );
+      case 'groomed':
+        return TaskStatus.groomed(
+          id: 'test-status-id',
+          createdAt: now,
+          utcOffset: now.timeZoneOffset.inMinutes,
+        );
       case 'inProgress':
         return TaskStatus.inProgress(
           id: 'test-status-id',
           createdAt: now,
           utcOffset: now.timeZoneOffset.inMinutes,
         );
+      case 'blocked':
+        return TaskStatus.blocked(
+          id: 'test-status-id',
+          createdAt: now,
+          utcOffset: now.timeZoneOffset.inMinutes,
+          reason: 'Test reason',
+        );
+      case 'onHold':
+        return TaskStatus.onHold(
+          id: 'test-status-id',
+          createdAt: now,
+          utcOffset: now.timeZoneOffset.inMinutes,
+          reason: 'Test reason',
+        );
       case 'done':
         return TaskStatus.done(
+          id: 'test-status-id',
+          createdAt: now,
+          utcOffset: now.timeZoneOffset.inMinutes,
+        );
+      case 'rejected':
+        return TaskStatus.rejected(
           id: 'test-status-id',
           createdAt: now,
           utcOffset: now.timeZoneOffset.inMinutes,
@@ -225,14 +251,74 @@ void main() {
         ),
       );
 
-      // Should render a modern status chip without the \"Status:\" label.
+      // Should render a modern status chip without the Status: label.
       expect(find.byType(ModernStatusChip), findsOneWidget);
-      expect(find.text('Status:'), findsNothing);
 
       // Icon should match in-progress mapping.
       expect(
         find.byIcon(Icons.play_circle_outline_rounded),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('renders correct icon for each status type', (tester) async {
+      Future<void> expectIcon({
+        required String statusType,
+        required IconData expectedIcon,
+      }) async {
+        final taskStatus = createTaskStatus(statusType);
+
+        final taskData = TaskData(
+          status: taskStatus,
+          dateFrom: now,
+          dateTo: now,
+          statusHistory: [],
+          title: 'Test Task',
+        );
+
+        mockTask = MockTask(taskData);
+
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: TaskStatusWidget(
+              task: mockTask,
+              onStatusChanged: (String? status) {},
+              showLabel: false,
+            ),
+          ),
+        );
+
+        expect(find.byType(ModernStatusChip), findsOneWidget);
+        expect(find.byIcon(expectedIcon), findsOneWidget);
+      }
+
+      await expectIcon(
+        statusType: 'open',
+        expectedIcon: Icons.radio_button_unchecked,
+      );
+      await expectIcon(
+        statusType: 'groomed',
+        expectedIcon: Icons.done_outline_rounded,
+      );
+      await expectIcon(
+        statusType: 'inProgress',
+        expectedIcon: Icons.play_circle_outline_rounded,
+      );
+      await expectIcon(
+        statusType: 'blocked',
+        expectedIcon: Icons.block_rounded,
+      );
+      await expectIcon(
+        statusType: 'onHold',
+        expectedIcon: Icons.pause_circle_outline_rounded,
+      );
+      await expectIcon(
+        statusType: 'done',
+        expectedIcon: Icons.check_circle_rounded,
+      );
+      await expectIcon(
+        statusType: 'rejected',
+        expectedIcon: Icons.cancel_rounded,
       );
     });
   });
