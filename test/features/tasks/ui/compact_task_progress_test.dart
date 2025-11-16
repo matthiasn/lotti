@@ -32,7 +32,7 @@ void main() {
     }
   });
 
-Future<Widget> buildWithProgress({
+  Future<Widget> buildWithProgress({
     required String taskId,
     required Duration progress,
     required Duration estimate,
@@ -96,8 +96,7 @@ Future<Widget> buildWithProgress({
     expect(tester.widget<Text>(textFinder).data, '00:30 / 01:00');
   });
 
-  testWidgets('hides time text on mobile when isDesktop=false',
-      (tester) async {
+  testWidgets('hides time text on mobile when isDesktop=false', (tester) async {
     const taskId = 'task-3';
     platform.isDesktop = false;
     platform.isMobile = true;
@@ -115,6 +114,44 @@ Future<Widget> buildWithProgress({
       matching: find.byType(Text),
     );
     expect(textFinder, findsNothing);
+  });
+
+  testWidgets(
+      'shows time text on mobile when showTimeText is true (header context)',
+      (tester) async {
+    const taskId = 'task-3b';
+    platform.isDesktop = false;
+    platform.isMobile = true;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          taskProgressControllerProvider(id: taskId).overrideWith(
+            () => _FixedProgressController(
+              progress: const Duration(minutes: 45),
+              estimate: const Duration(hours: 1),
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: CompactTaskProgress(
+                taskId: taskId,
+                showTimeText: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final textFinder = find.descendant(
+      of: find.byType(CompactTaskProgress),
+      matching: find.byType(Text),
+    );
+    expect(textFinder, findsOneWidget);
   });
 
   testWidgets('progress percentage is 50% for half duration', (tester) async {

@@ -107,7 +107,10 @@ class _EditableTaskProgress extends ConsumerWidget {
 
     final Widget child;
     if (hasEstimate) {
-      child = CompactTaskProgress(taskId: taskId);
+      child = CompactTaskProgress(
+        taskId: taskId,
+        showTimeText: true,
+      );
     } else {
       child = Container(
         padding: const EdgeInsets.symmetric(
