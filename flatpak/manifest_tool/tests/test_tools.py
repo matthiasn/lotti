@@ -21,7 +21,10 @@ class GetFvmFlutterVersionTests(TestCase):
 
     def test_main_with_env_returns_success(self) -> None:
         # Read the actual FVM config from the repository
-        repo_root = Path(__file__).resolve().parents[3]
+        repo_root = next(
+            (p for p in Path(__file__).resolve().parents if (p / ".fvm").exists() or (p / ".git").exists()),
+            Path(__file__).resolve().parents[3],
+        )
         actual_config = repo_root / ".fvm" / "fvm_config.json"
         actual_version = get_fvm_flutter_version.read_version(actual_config)
 

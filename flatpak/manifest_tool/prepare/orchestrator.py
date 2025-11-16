@@ -29,6 +29,7 @@ from ..core.manifest import ManifestDocument
 from ..operations import ci as ci_ops
 from ..operations import manifest as manifest_ops
 from ..operations import sources as sources_ops
+from ..tools.get_fvm_flutter_version import read_version
 
 try:  # pragma: no cover - optional dependency
     from colorama import Fore, Style, init as colorama_init
@@ -45,22 +46,16 @@ _ALLOWED_URL_SCHEMES = {"https"}
 def _read_fvm_flutter_tag(repo_root: Path) -> Optional[str]:
     """Read Flutter version from FVM config file."""
     config_path = repo_root / ".fvm" / "fvm_config.json"
-    if not config_path.is_file():
-        return None
-    try:
-        data = json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    candidate = data.get("flutterSdkVersion") or data.get("flutterSdk")
-    if isinstance(candidate, str) and candidate.strip():
-        return candidate.strip()
-    return None
+    return read_version(config_path)
 
 
 def get_default_flutter_tag() -> str:
     """Read the default Flutter tag from FVM config or fall back to 'stable'."""
     # Try to read from repository root's FVM config
-    repo_root = Path(__file__).resolve().parents[3]  # Navigate up from prepare/orchestrator.py to repo root
+    repo_root = next(
+        (p for p in Path(__file__).resolve().parents if (p / ".fvm").exists() or (p / ".git").exists()),
+        Path(__file__).resolve().parents[3],
+    )
     fvm_tag = _read_fvm_flutter_tag(repo_root)
     return fvm_tag if fvm_tag else "stable"
 
@@ -390,9 +385,8 @@ def _extract_flutter_tag(manifest_template: Path, printer: _StatusPrinter) -> Op
             for source in sources:
                 if isinstance(source, dict) and "tag" in source:
                     return str(source["tag"]).strip()
-    default_tag = get_default_flutter_tag()
-    printer.warn(f"Could not detect Flutter tag from manifest; defaulting to {default_tag}")
-    return default_tag
+    printer.warn(f"Could not detect Flutter tag from manifest; defaulting to {DEFAULT_FLUTTER_TAG}")
+    return DEFAULT_FLUTTER_TAG
 
 
 def _copy_manifest_template(context: PrepareFlathubContext) -> None:
@@ -442,9 +436,8 @@ def _ensure_flutter_tag_from_modules(
         printer.info(f"Using Flutter tag from FVM configuration: {context.flutter_tag}")
         return
 
-    default_tag = get_default_flutter_tag()
-    printer.warn(f"Could not detect Flutter tag; defaulting to {default_tag}")
-    context.flutter_tag = default_tag
+    printer.warn(f"Could not detect Flutter tag; defaulting to {DEFAULT_FLUTTER_TAG}")
+    context.flutter_tag = DEFAULT_FLUTTER_TAG
 
 
 def _ensure_branch_for_lotti_sources(sources: list[object], branch: str) -> bool:
