@@ -50,9 +50,7 @@ class _ChecklistItemWithSuggestionWidgetState
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
   bool _showRow = true;
-  bool _isCollapsing = false;
   Timer? _holdTimer;
-  Timer? _fadeTimer;
 
   bool get _shouldHide => widget.hideCompleted && widget.isChecked;
   bool _lastHideCompleted = false;
@@ -104,7 +102,6 @@ class _ChecklistItemWithSuggestionWidgetState
       _cancelTimers();
       setState(() {
         _showRow = false;
-        _isCollapsing = false;
       });
       return;
     }
@@ -114,7 +111,6 @@ class _ChecklistItemWithSuggestionWidgetState
       _cancelTimers();
       setState(() {
         _showRow = true;
-        _isCollapsing = false;
       });
       return;
     }
@@ -124,7 +120,6 @@ class _ChecklistItemWithSuggestionWidgetState
       _cancelTimers();
       setState(() {
         _showRow = true;
-        _isCollapsing = false;
       });
     }
   }
@@ -138,9 +133,7 @@ class _ChecklistItemWithSuggestionWidgetState
 
   void _cancelTimers() {
     _holdTimer?.cancel();
-    _fadeTimer?.cancel();
     _holdTimer = null;
-    _fadeTimer = null;
   }
 
   void _startHideSequence() {
@@ -150,16 +143,7 @@ class _ChecklistItemWithSuggestionWidgetState
       if (!mounted || !_shouldHide) return;
 
       setState(() {
-        _isCollapsing = true;
-      });
-
-      _fadeTimer = Timer(checklistCompletionFadeDuration, () {
-        if (!mounted || !_shouldHide) return;
-
-        setState(() {
-          _isCollapsing = false;
-          _showRow = false;
-        });
+        _showRow = false;
       });
     });
   }
@@ -181,7 +165,7 @@ class _ChecklistItemWithSuggestionWidgetState
         ..reset();
     }
 
-    Widget content = Stack(
+    final content = Stack(
       children: [
         ChecklistItemWidget(
           title: widget.title,
@@ -231,19 +215,13 @@ class _ChecklistItemWithSuggestionWidgetState
     );
 
     if (widget.hideCompleted) {
-      if (!_showRow && !_isCollapsing) {
-        return const SizedBox.shrink();
-      }
-
-      content = AnimatedSize(
+      return AnimatedCrossFade(
         duration: checklistCompletionFadeDuration,
-        curve: Curves.easeInOut,
-        child: AnimatedOpacity(
-          duration: checklistCompletionFadeDuration,
-          curve: Curves.easeInOut,
-          opacity: _isCollapsing ? 0 : 1,
-          child: content,
-        ),
+        sizeCurve: Curves.easeInOut,
+        crossFadeState:
+            _showRow ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+        firstChild: content,
+        secondChild: const SizedBox.shrink(),
       );
     }
 
