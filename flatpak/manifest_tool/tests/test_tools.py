@@ -22,7 +22,7 @@ class GetFvmFlutterVersionTests(TestCase):
     def test_main_with_env_returns_success(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / "config.json"
-            config.write_text(json.dumps({"flutterSdkVersion": "3.38.0"}), encoding="utf-8")
+            config.write_text(json.dumps({"flutterSdkVersion": "3.38.1"}), encoding="utf-8")
             env = {"FVM_CONFIG_PATH": str(config)}
             self.assertEqual(get_fvm_flutter_version.main_with_env(env), 0)
 
