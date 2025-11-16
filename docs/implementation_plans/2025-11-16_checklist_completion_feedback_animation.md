@@ -41,17 +41,23 @@ Code touchpoints to keep in mind:
 - `lib/features/tasks/ui/checklists/checklist_widget.dart`
   - Owns `ChecklistFilter`, “Open only vs All” segmented control, per-checklist filter persistence,
     and the “All done” empty state.
-  - Builds the `ReorderableListView` of `ChecklistItemWrapper` with `hideIfChecked` wired from
-    filter/editing state.
+  - Builds the `ReorderableListView` of `ChecklistItemWrapper` and passes a simple `hideIfChecked`
+    flag based on filter/editing state.
+  - Uses a stable `ExpansionTile` key per checklist (`ValueKey('checklist-\${widget.id}')`) so
+    per-item visual state is preserved across completion changes.
 - `lib/features/tasks/ui/checklists/checklist_item_wrapper.dart`
-  - Wraps each item in `Dismissible` + drag/drop (`DragItemWidget` / `DraggableWidget`) and
-    currently short-circuits to `SizedBox.shrink()` when `hideIfChecked && item.data.isChecked`.
+  - Wraps each item in `Dismissible` + drag/drop (`DragItemWidget` / `DraggableWidget`) and no
+    longer decides visibility; it always builds the row and forwards `hideIfChecked` to the child.
 - `lib/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart`
-  - Hosts the AI completion suggestion pulse (left-side bar with `AnimationController`) stacked over
-    `ChecklistItemWidget`.
+  - Hosts both the AI completion suggestion pulse (left-side bar with `AnimationController`) and the
+    checklist row (`ChecklistItemWidget`).
+  - Now owns the completion fanfare + fade + hide state via `hideCompleted` and `isChecked`. It
+    keeps rows visible briefly in Open-only mode before fading/collapsing them, and hides/shows
+    immediately when filters toggle.
 - `lib/features/tasks/ui/checklists/checklist_item_widget.dart`
   - Owns row visuals (rounded `AnimatedContainer`, hover background, strikethrough when checked) and
     edit cross-fade.
+  - Adds a transient completion highlight state (border/glow) when items are checked.
 
 ## Problem
 
@@ -124,54 +130,53 @@ fanfare in the “All” view; in “All”, items do not collapse or disappear.
 
 1) Delay hiding vs. animated visibility
 
-- Today:
-  - `ChecklistWidget` passes `hideIfChecked: !_isEditing && _filter == ChecklistFilter.openOnly`.
-  - `ChecklistItemWrapper` immediately returns `SizedBox.shrink()` when
-    `hideIfChecked && item.data.isChecked`.
-- Proposed direction:
-  - Introduce an animated “completion visibility” layer that:
-    - Keeps the row in the tree after `isChecked` flips to true.
-    - Drives a fade + size collapse animation.
-    - Only removes the row from layout once the animation completes.
-  - Implementation options (to be finalized after open questions):
-    - A) Convert `ChecklistItemWrapper` into a `ConsumerStatefulWidget` and wrap its `Dismissible`
-      child in an `AnimatedOpacity` + `AnimatedSize` or `SizeTransition`. When
-      `hideIfChecked && item.data.isChecked`, trigger the animation and, on completion, effectively
-      hide/remove.
-    - B) Keep `ChecklistItemWrapper` mostly passive and wrap items in `ChecklistWidget`’s
-      `ReorderableListView` children with `AnimatedSwitcher` / `SliverAnimatedList`-style
-      transitions keyed by `itemId`.
-  - We should bias toward the smallest, least invasive change that plays nicely with `Dismissible`
-    and reordering.
+- Current/implemented behavior:
+  - `ChecklistWidget` passes `hideIfChecked: !_isEditing && _filter == ChecklistFilter.openOnly` to
+    each row but never filters `_itemIds` based on completion; all items are always built.
+  - `ChecklistItemWrapper` always renders the row and forwards `hideIfChecked` as `hideCompleted`
+    into `ChecklistItemWithSuggestionWidget`.
+  - `ChecklistItemWithSuggestionWidget` owns an item-local visibility state machine:
+    - When `hideCompleted == true` and `isChecked` changes from false → true (Open-only + newly
+      completed), it:
+      - Keeps the row fully visible for `checklistCompletionAnimationDuration` (fanfare).
+      - Then runs a short fade + size collapse (`checklistCompletionFadeDuration`) before hiding.
+    - When `hideCompleted` flips from false → true while `isChecked == true` (filter toggled to
+      Open-only with already-completed items), it hides rows immediately without fanfare.
+    - When `hideCompleted` flips from true → false (filter toggled back to All), or when items are
+      unchecked, it cancels any timers and restores full visibility.
+  - Rows are wrapped in `AnimatedSize` + `AnimatedOpacity` only when `hideCompleted == true`; in All
+    mode rows never fade/remove, they only get the completion highlight.
 
 2) Success highlight styling
 
-- Likely hosted inside `ChecklistItemWidget`’s `AnimatedContainer` decoration:
-  - Add a transient “completion highlight” state that temporarily:
-    - Increases border color intensity and/or thickness using `colorScheme.primary` or
-      `colorScheme.tertiary`.
-    - Optionally adds a soft outer shadow or inner glow (low elevation).
-  - Transition this highlight away over the same duration as the fade-out.
-- Important: do not conflict with the existing AI suggestion pulse:
-  - `ChecklistItemWithSuggestionWidget` overlays a pulsing bar via `Stack`.
-  - Completion highlight should stay compatible and not obscure that bar.
+- Hosted inside `ChecklistItemWidget`’s `AnimatedContainer` decoration:
+  - Adds a transient “completion highlight” state that temporarily:
+    - Increases border color intensity and/or thickness using `colorScheme.primary`.
+    - Applies a soft outer shadow (low elevation) to create a subtle glow.
+  - Transitions this highlight away after `checklistCompletionAnimationDuration`.
+- The highlight coexists with the AI suggestion pulse:
+  - `ChecklistItemWithSuggestionWidget` overlays the pulsing suggestion bar via `Stack`.
+  - Completion highlight is applied to the row container and does not obscure the suggestion bar.
 
 3) Filter and list semantics
 
 - Completion semantics:
-  - Completion counts and filter state remain source-of-truth as today.
-  - The animation layer is purely visual; it does not delay the logical “checked” state.
+  - Completion counts and filter state remain source-of-truth as today, via
+    `ChecklistCompletionController` / `ChecklistCompletionRateController`.
+  - The animation layer is purely visual; it does not delay the logical “checked” state, only the
+    removal from the Open-only view.
 - Filter interactions:
-  - When `_filter == ChecklistFilter.openOnly` and `_isEditing == false`, items should still
-    eventually disappear from the open-only view.
+  - When `_filter == ChecklistFilter.openOnly` and `_isEditing == false`, items still eventually
+    disappear from the Open-only view, but only after the fanfare + fade sequence.
   - While the fade-out is running, the item is logically completed but visually in a “transition
     out” state.
-  - Once the animation completes, the row is effectively removed/hidden to match filter
-    expectations.
+  - Switching filters:
+    - All → Open-only: completed items hide immediately (no fanfare) to keep filter behaviour
+      crisp.
+    - Open-only → All: all items show immediately again.
 - Editing mode:
-  - When `_isEditing == true`, we currently show all items (filter off) to keep reordering stable.
-  - Completion feedback should not re-introduce hidden items while editing; animations can still
-    run, but rows remain visible.
+  - When `_isEditing == true`, we show all items (filter off) to keep reordering stable; rows do not
+    auto-hide while editing.
 
 4) Performance and robustness
 
@@ -228,23 +233,32 @@ fanfare in the “All” view; in “All”, items do not collapse or disappear.
   - Toggling between “Open only” and “All” while items are completing.
   - Desktop (mouse/keyboard) and mobile (tap/swipe) interactions.
 
-## Files to Modify / Add (Tentative)
+## Files Modified / Added (As Implemented)
 
-- Update:
-  - `lib/features/tasks/ui/checklists/checklist_item_wrapper.dart`
-    - Introduce animated visibility for completed items in “Open only” mode, instead of immediate
-      `SizedBox.shrink()`.
-    - Potentially convert to `ConsumerStatefulWidget` to manage a short-lived fade-out/size
-      animation.
-  - `lib/features/tasks/ui/checklists/checklist_item_widget.dart`
-    - Add a transient completion highlight state integrated into the existing `AnimatedContainer`
-      decoration.
+- Updated:
   - `lib/features/tasks/ui/checklists/checklist_widget.dart`
-    - If needed, coordinate item completion callbacks with filter state and manage any per-checklist
-      animation configuration (e.g., durations).
+    - Uses a stable `ExpansionTile` key (`ValueKey('checklist-\${widget.id}')`) so per-item visual
+      state survives completion changes.
+    - Continues to pass `hideIfChecked` based on filter/editing, but no longer filters the
+      underlying `_itemIds` list.
+  - `lib/features/tasks/ui/checklists/checklist_item_wrapper.dart`
+    - Always renders each checklist item and forwards `hideIfChecked` as `hideCompleted` into the
+      row widget.
+    - Continues to own drag-and-drop and swipe-to-delete wiring.
+  - `lib/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart`
+    - Now also owns completion fanfare + fade/hide logic based on `hideCompleted` and `isChecked`,
+      with internal timers and `AnimatedSize`/`AnimatedOpacity`.
+  - `lib/features/tasks/ui/checklists/checklist_item_widget.dart`
+    - Adds a transient completion highlight (border/glow) on top of the existing background and
+      strikethrough behaviour.
+  - `lib/features/tasks/ui/checklists/consts.dart`
+    - Introduces `checklistCompletionAnimationDuration` (fanfare hold) and
+      `checklistCompletionFadeDuration` (fade/collapse) as tunable constants.
 - Tests:
-  - Add `test/features/tasks/ui/checklists/checklist_item_wrapper_completion_animation_test.dart`.
-  - Extend existing checklist widget/item tests as described above.
+  - Updated several tests under `test/features/tasks/ui/checklists/` to cover:
+    - Completion highlight behaviour in `ChecklistItemWidget`.
+    - Open-only fade/hide behaviour in `ChecklistItemWrapper`/row combination.
+    - Filter toggling interactions (Open-only vs All) and their impact on row visibility.
 
 ## Decisions
 
@@ -257,10 +271,10 @@ fanfare in the “All” view; in “All”, items do not collapse or disappear.
 
 2) Timing and feel
 
-- Use a total duration of 1000 ms for the completion glow/fade sequence, exposed via a `const`
-  duration so it’s easy to tweak.
-- Front‑load the highlight: the success state should appear quickly, then transition into fade/size
-  collapse rather than staying constant throughout.
+- Use `checklistCompletionAnimationDuration = 1000 ms` as the fanfare hold (row fully visible with
+  highlight), followed by `checklistCompletionFadeDuration = 300 ms` for the fade/collapse.
+- Front‑load the highlight: the success state appears quickly, then after the hold we perform a
+  relatively quick fade/size collapse rather than a long, drawn-out motion.
 
 3) Visual intensity
 
@@ -295,6 +309,23 @@ fanfare in the “All” view; in “All”, items do not collapse or disappear.
 
 - Do not add an explicit “Undo” affordance (e.g., snackbar with Undo) for completions.
 - Users can still switch to “All” view and uncheck items there if they need to reverse a completion.
+
+## Implementation Summary (As Built)
+
+- Rows no longer disappear instantly when checked in Open-only mode:
+  - Newly completed items stay visible for ~1 second with a green-tinted border/glow.
+  - After the hold, they fade and collapse over ~300 ms before being removed from the Open-only
+    view.
+- The list itself never filters out items by completion:
+  - Filtering is expressed solely as a boolean (`hideIfChecked` → `hideCompleted`) passed down to
+    each row.
+  - Stable `ExpansionTile` keys ensure per-row visual state is preserved across completion changes.
+- “All” vs “Open only” behaves as follows:
+  - All: rows never fade/hide; they only show the completion highlight and remain visible.
+  - Open-only: newly completed rows play the fanfare + fade/hide; already-completed rows are hidden
+    immediately when switching into Open-only.
+- Drag-and-drop, swipe-to-delete, AI suggestions, and export/share remain functionally unchanged;
+  completion animations are layered on top of the existing behaviour.
 
 ## Acceptance Criteria (Draft)
 

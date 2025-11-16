@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Persistence: per‑checklist filter mode is remembered
   - Empty state: “All items completed!” message when open‑only has no items
 
+- Checklists: Completion feedback animation
+  - Checking off an item now plays a subtle green-tinted border/glow “fanfare”.
+  - In “Open only” view, completed items fade out and collapse over a short duration instead of disappearing instantly.
+  - In “All” view, items keep the highlight but remain visible so users can still see what was just completed.
+
 - Journal/Tasks: Active timer highlight — linked entries that match the running timer now render with a persistent red glow for quick visual identification.
 - Journal/Tasks: Temporary scroll highlight — after auto-scrolling to a linked entry, the target briefly glows to confirm focus.
 - AI label assignment: Category-scoped label suggestions (Phase 1 guardrails)
@@ -35,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - i18n: English keys for labels, picker title and descriptions
   - Tests: database ordering/filtering, UI wrappers, filter UX
 ### Fixed
+- Checklists (Open-only filter): Newly completed items no longer disappear instantly or flicker when toggling between “All” and “Open only”; rows now remain visible briefly with a completion animation before smoothly fading out.
 - Tasks page: Active label filters are now visible below the search header (no longer clipped in the app bar).
 - AI label assignment: Prevented out-of-category labels from being assigned by AI
 - Task label selector: Now shows currently assigned out-of-scope labels to allow unassigning

@@ -42,10 +42,6 @@ class ChecklistItemWrapper extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        if (hideIfChecked && item.data.isChecked) {
-          return const SizedBox.shrink();
-        }
-
         // Capture notifiers before widget disposal
         final itemNotifier = ref.read(provider.notifier);
         final checklistNotifier = ref.read(checklistControllerProvider(
@@ -53,7 +49,7 @@ class ChecklistItemWrapper extends ConsumerWidget {
           taskId: taskId,
         ).notifier);
 
-        return DragItemWidget(
+        final child = DragItemWidget(
           dragItemProvider: (request) async {
             final dragItem = DragItem(
               localData: {
@@ -123,6 +119,7 @@ class ChecklistItemWrapper extends ConsumerWidget {
                 taskId: taskId,
                 title: item.data.title,
                 isChecked: item.data.isChecked,
+                hideCompleted: hideIfChecked,
                 onChanged: (checked) =>
                     ref.read(provider.notifier).updateChecked(checked: checked),
                 onTitleChange: ref.read(provider.notifier).updateTitle,
@@ -130,6 +127,8 @@ class ChecklistItemWrapper extends ConsumerWidget {
             ),
           ),
         );
+
+        return child;
       },
       error: ErrorWidget.new,
       loading: (_) => const SizedBox.shrink(),

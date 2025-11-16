@@ -191,8 +191,13 @@ The journal implements a sophisticated auto-save system:
 Tasks can have associated checklists:
 - **Drag-and-drop**: Reorder checklist items
 - **Completion tracking**: Check off completed items
+  - “All” view shows both open and completed items; checking an item applies a subtle completion
+    highlight but keeps it visible.
+  - “Open only” view hides completed items, but newly completed items remain visible briefly with a
+    success highlight before fading and collapsing out of the list.
 - **Nested checklists**: Checklist items can have sub-checklists
-- **AI integration**: Automatic checklist creation from AI suggestions
+- **AI integration**: Automatic checklist creation from AI suggestions and completion suggestions for
+  existing items
 
 ### Category System
 

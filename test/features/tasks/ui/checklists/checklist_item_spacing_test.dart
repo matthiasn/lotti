@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 
 import '../../../../test_helper.dart';
 
@@ -132,6 +133,10 @@ void main() {
         checkboxListTile.contentPadding,
         const EdgeInsets.symmetric(horizontal: 5),
       );
+
+      // Let completion highlight timer finish to avoid pending timers.
+      await tester.pump(checklistCompletionAnimationDuration);
+      await tester.pump();
     });
 
     testWidgets('spacing is consistent in edit mode', (tester) async {

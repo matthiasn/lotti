@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -17,6 +20,7 @@ class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
     required this.title,
     required this.isChecked,
     required this.onChanged,
+    this.hideCompleted = false,
     this.onTitleChange,
     this.showEditIcon = true,
     this.readOnly = false,
@@ -29,6 +33,7 @@ class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
   final String title;
   final bool readOnly;
   final bool isChecked;
+  final bool hideCompleted;
   final bool showEditIcon;
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
@@ -44,6 +49,14 @@ class _ChecklistItemWithSuggestionWidgetState
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
+  bool _showRow = true;
+  bool _isCollapsing = false;
+  Timer? _holdTimer;
+  Timer? _fadeTimer;
+
+  bool get _shouldHide => widget.hideCompleted && widget.isChecked;
+  bool _lastHideCompleted = false;
+  bool _lastIsChecked = false;
 
   @override
   void initState() {
@@ -60,12 +73,95 @@ class _ChecklistItemWithSuggestionWidgetState
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
+
+    _lastHideCompleted = widget.hideCompleted;
+    _lastIsChecked = widget.isChecked;
+    _showRow = !_shouldHide;
+  }
+
+  @override
+  void didUpdateWidget(ChecklistItemWithSuggestionWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final wasHideCompleted = _lastHideCompleted;
+    final wasChecked = _lastIsChecked;
+    final isHideCompleted = widget.hideCompleted;
+    final isChecked = widget.isChecked;
+
+    _lastHideCompleted = isHideCompleted;
+    _lastIsChecked = isChecked;
+
+    // Case 1: item just got completed while hideCompleted is true
+    // (Open-only mode, user just checked the box).
+    if (!wasChecked && isChecked && isHideCompleted) {
+      _cancelTimers();
+      _startHideSequence();
+      return;
+    }
+
+    // Case 2: filter toggled to hide completed items while this item was already
+    // completed. We hide it immediately without playing the completion fanfare.
+    if (!wasHideCompleted && isHideCompleted && isChecked) {
+      _cancelTimers();
+      setState(() {
+        _showRow = false;
+        _isCollapsing = false;
+      });
+      return;
+    }
+
+    // Case 3: filter toggled back to show all items.
+    if (wasHideCompleted && !isHideCompleted) {
+      _cancelTimers();
+      setState(() {
+        _showRow = true;
+        _isCollapsing = false;
+      });
+      return;
+    }
+
+    // Case 4: item was unchecked again.
+    if (wasChecked && !isChecked) {
+      _cancelTimers();
+      setState(() {
+        _showRow = true;
+        _isCollapsing = false;
+      });
+    }
   }
 
   @override
   void dispose() {
+    _cancelTimers();
     _animationController.dispose();
     super.dispose();
+  }
+
+  void _cancelTimers() {
+    _holdTimer?.cancel();
+    _fadeTimer?.cancel();
+    _holdTimer = null;
+    _fadeTimer = null;
+  }
+
+  void _startHideSequence() {
+    if (!_shouldHide) return;
+
+    _holdTimer = Timer(checklistCompletionAnimationDuration, () {
+      if (!mounted || !_shouldHide) return;
+
+      setState(() {
+        _isCollapsing = true;
+      });
+
+      _fadeTimer = Timer(checklistCompletionFadeDuration, () {
+        if (!mounted || !_shouldHide) return;
+
+        setState(() {
+          _isCollapsing = false;
+          _showRow = false;
+        });
+      });
+    });
   }
 
   @override
@@ -85,7 +181,7 @@ class _ChecklistItemWithSuggestionWidgetState
         ..reset();
     }
 
-    return Stack(
+    Widget content = Stack(
       children: [
         ChecklistItemWidget(
           title: widget.title,
@@ -133,6 +229,25 @@ class _ChecklistItemWithSuggestionWidgetState
           ),
       ],
     );
+
+    if (widget.hideCompleted) {
+      if (!_showRow && !_isCollapsing) {
+        return const SizedBox.shrink();
+      }
+
+      content = AnimatedSize(
+        duration: checklistCompletionFadeDuration,
+        curve: Curves.easeInOut,
+        child: AnimatedOpacity(
+          duration: checklistCompletionFadeDuration,
+          curve: Curves.easeInOut,
+          opacity: _isCollapsing ? 0 : 1,
+          child: content,
+        ),
+      );
+    }
+
+    return content;
   }
 
   Color _getConfidenceColor(ChecklistCompletionConfidence confidence) {
