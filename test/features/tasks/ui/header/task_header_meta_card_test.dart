@@ -116,6 +116,31 @@ void main() {
     expect(find.byType(TaskLanguageWrapper), findsOneWidget);
   });
 
+  testWidgets('TaskHeaderMetaCard shows estimate placeholder when no estimate',
+      (tester) async {
+    final taskWithoutEstimate = testTask.copyWith(
+      data: testTask.data.copyWith(estimate: null),
+    );
+
+    final overrides = <Override>[
+      entryControllerProvider(id: taskWithoutEstimate.meta.id).overrideWith(
+        () => _TestEntryController(taskWithoutEstimate),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: overrides,
+        child: TaskHeaderMetaCard(taskId: taskWithoutEstimate.meta.id),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Placeholder pill text and timer icon should be visible.
+    expect(find.text('No estimate set'), findsOneWidget);
+    expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+  });
+
   testWidgets('TaskHeaderMetaCard keeps metadata visible on narrow layouts',
       (tester) async {
     final task = testTask;

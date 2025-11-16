@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_widget.dart';
+import 'package:lotti/widgets/cards/modern_status_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_helper.dart';
@@ -198,6 +199,41 @@ void main() {
       expect(find.byType(InkWell), findsOneWidget);
 
       // We can't easily test the modal interaction and callback in this setup
+    });
+
+    testWidgets('renders chip-only layout when showLabel is false',
+        (tester) async {
+      final taskStatus = createTaskStatus('inProgress');
+
+      final taskData = TaskData(
+        status: taskStatus,
+        dateFrom: now,
+        dateTo: now,
+        statusHistory: [],
+        title: 'Test Task',
+      );
+
+      mockTask = MockTask(taskData);
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: TaskStatusWidget(
+            task: mockTask,
+            onStatusChanged: (String? status) {},
+            showLabel: false,
+          ),
+        ),
+      );
+
+      // Should render a modern status chip without the \"Status:\" label.
+      expect(find.byType(ModernStatusChip), findsOneWidget);
+      expect(find.text('Status:'), findsNothing);
+
+      // Icon should match in-progress mapping.
+      expect(
+        find.byIcon(Icons.play_circle_outline_rounded),
+        findsOneWidget,
+      );
     });
   });
 }
