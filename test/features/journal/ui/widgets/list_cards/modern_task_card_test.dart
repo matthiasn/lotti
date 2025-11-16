@@ -320,8 +320,7 @@ void main() {
         .called(1);
   });
 
-  testWidgets(
-      'ModernTaskCard hides progress time text on mobile list cards',
+  testWidgets('ModernTaskCard hides progress time text on mobile list cards',
       (tester) async {
     platform.isDesktop = false;
     platform.isMobile = true;

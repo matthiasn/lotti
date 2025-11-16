@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -25,7 +26,7 @@ class MockChecklistItemController extends ChecklistItemController {
     this.shouldDelete = false,
   });
 
-  final ChecklistItem? item;
+  ChecklistItem? item;
   final bool shouldDelete;
   bool deleteWasCalled = false;
 
@@ -46,8 +47,17 @@ class MockChecklistItemController extends ChecklistItemController {
   }
 
   @override
-  Future<void> updateChecked({required bool checked}) async {
-    // Mock implementation
+  void updateChecked({required bool checked}) {
+    final current = item;
+    if (current == null) return;
+
+    final data = current.data;
+    final updated = current.copyWith(
+      data: data.copyWith(isChecked: checked),
+    );
+
+    item = updated;
+    state = AsyncValue.data(updated);
   }
 
   @override
@@ -57,7 +67,11 @@ class MockChecklistItemController extends ChecklistItemController {
 }
 
 class MockChecklistController extends ChecklistController {
-  MockChecklistController();
+  MockChecklistController() {
+    lastInstance = this;
+  }
+
+  static MockChecklistController? lastInstance;
 
   bool unlinkItemWasCalled = false;
   String? unlinkedItemId;
@@ -155,7 +169,6 @@ void main() {
     testWidgets('renders ChecklistItemWithSuggestionWidget when item exists',
         (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -167,7 +180,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -189,7 +202,6 @@ void main() {
 
     testWidgets('renders empty when item is null', (tester) async {
       final mockItemController = MockChecklistItemController(item: null);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -201,7 +213,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -238,7 +250,6 @@ void main() {
       );
 
       final mockItemController = MockChecklistItemController(item: deletedItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -250,7 +261,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -272,7 +283,6 @@ void main() {
     testWidgets('has dismissible widget with correct configuration',
         (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -284,7 +294,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -321,7 +331,6 @@ void main() {
         item: testItem,
         shouldDelete: true,
       );
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -333,7 +342,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -359,8 +368,14 @@ void main() {
 
       // Verify both delete and unlink were called
       expect(mockItemController.deleteWasCalled, isTrue);
-      expect(mockChecklistController.unlinkItemWasCalled, isTrue);
-      expect(mockChecklistController.unlinkedItemId, testItemId);
+      expect(
+        MockChecklistController.lastInstance?.unlinkItemWasCalled,
+        isTrue,
+      );
+      expect(
+        MockChecklistController.lastInstance?.unlinkedItemId,
+        testItemId,
+      );
     });
 
     testWidgets('properly captures notifiers before disposal', (tester) async {
@@ -371,7 +386,6 @@ void main() {
         item: testItem,
         shouldDelete: true,
       );
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -383,7 +397,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -407,7 +421,6 @@ void main() {
 
     testWidgets('dragBuilder applies correct visual styling', (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -419,7 +432,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -459,7 +472,6 @@ void main() {
 
     testWidgets('renders with drag and drop capabilities', (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -471,7 +483,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -503,7 +515,6 @@ void main() {
     testWidgets('dragItemProvider creates DragItem with correct data',
         (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -515,7 +526,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -542,7 +553,6 @@ void main() {
 
     testWidgets('allowedOperations returns move operation', (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -554,7 +564,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -581,7 +591,6 @@ void main() {
     testWidgets('confirmDismiss shows delete confirmation dialog',
         (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -593,7 +602,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -630,7 +639,6 @@ void main() {
     testWidgets('confirmDismiss returns true when user confirms',
         (tester) async {
       final mockItemController = MockChecklistItemController(item: testItem);
-      final mockChecklistController = MockChecklistController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -642,7 +650,7 @@ void main() {
             checklistControllerProvider(
               id: testChecklistId,
               taskId: testTaskId,
-            ).overrideWith(() => mockChecklistController),
+            ).overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -674,6 +682,158 @@ void main() {
 
       // Verify dialog returned true
       expect(await confirmFuture, isTrue);
+    });
+
+    testWidgets(
+        'fades out and hides newly checked item when hideIfChecked is true',
+        (tester) async {
+      const testItemId = 'item-checked';
+      const testTaskId = 'task-1';
+      const testChecklistId = 'checklist-1';
+
+      final now = DateTime.now();
+      final initialItem = ChecklistItem(
+        meta: Metadata(
+          id: testItemId,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: const ChecklistItemData(
+          title: 'Newly done',
+          isChecked: false,
+          linkedChecklists: [],
+        ),
+      );
+
+      final mockItemController = MockChecklistItemController(item: initialItem);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider(
+              id: testItemId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockItemController),
+            checklistControllerProvider(
+              id: testChecklistId,
+              taskId: testTaskId,
+            ).overrideWith(MockChecklistController.new),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+              hideIfChecked: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(ChecklistItemWithSuggestionWidget),
+        findsOneWidget,
+      );
+
+      // Mark the item as checked; this should eventually trigger the fade-out
+      // animation once the completion fanfare has finished.
+      mockItemController.updateChecked(checked: true);
+      await tester.pump();
+      // Let the completion fanfare and fade-out run.
+      await tester.pump(checklistCompletionAnimationDuration +
+          checklistCompletionFadeDuration);
+      await tester.pumpAndSettle();
+
+      // After the animation completes, the item should be effectively hidden
+      // from the open-only view (collapsed via AnimatedSize/AnimatedOpacity).
+      final sizedBoxes = tester.widgetList<SizedBox>(
+        find.byType(SizedBox),
+      );
+      // At least one zero-sized box is expected in place of the row.
+      expect(
+        sizedBoxes.any(
+          (box) =>
+              (box.width == null || box.width == 0) &&
+              (box.height == null || box.height == 0),
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets(
+        'cancels fade-out when item is unchecked again before completion',
+        (tester) async {
+      const testItemId = 'item-toggle';
+      const testTaskId = 'task-1';
+      const testChecklistId = 'checklist-1';
+
+      final now = DateTime.now();
+      final initialItem = ChecklistItem(
+        meta: Metadata(
+          id: testItemId,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: const ChecklistItemData(
+          title: 'Toggle item',
+          isChecked: false,
+          linkedChecklists: [],
+        ),
+      );
+
+      final mockItemController = MockChecklistItemController(item: initialItem);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider(
+              id: testItemId,
+              taskId: testTaskId,
+            ).overrideWith(() => mockItemController),
+            checklistControllerProvider(
+              id: testChecklistId,
+              taskId: testTaskId,
+            ).overrideWith(MockChecklistController.new),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+              hideIfChecked: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(ChecklistItemWithSuggestionWidget),
+        findsOneWidget,
+      );
+
+      // Check the item (starts fade-out).
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+
+      // Immediately uncheck before the fade-out completes.
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+
+      // Advance time beyond the completion duration.
+      await tester.pump(checklistCompletionAnimationDuration);
+      await tester.pump();
+
+      // Item should remain visible because it was unchecked.
+      expect(
+        find.byType(ChecklistItemWithSuggestionWidget),
+        findsOneWidget,
+      );
     });
   });
 }

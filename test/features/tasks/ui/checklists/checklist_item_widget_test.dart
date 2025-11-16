@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
 import '../../../../test_helper.dart';
@@ -27,6 +28,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
+      // Let completion highlight timer finish to avoid pending timers.
+      await tester.pump(checklistCompletionAnimationDuration);
+      await tester.pump();
+
       // Verify strikethrough style is applied to the title text
       final textWidget = find
           .byType(Text)
@@ -37,6 +42,62 @@ void main() {
         textWidget.style?.decoration,
         equals(TextDecoration.lineThrough),
       );
+    });
+
+    testWidgets('shows transient completion highlight when checked',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Test Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      final animatedContainerFinder = find.byType(AnimatedContainer);
+      expect(animatedContainerFinder, findsOneWidget);
+
+      final context = tester.element(animatedContainerFinder);
+      final colorScheme = Theme.of(context).colorScheme;
+      final highlightBorderColor = colorScheme.primary.withValues(alpha: 0.7);
+
+      // Capture initial border color.
+      var animatedContainer = tester.widget<AnimatedContainer>(
+        animatedContainerFinder,
+      );
+      var decoration = animatedContainer.decoration as BoxDecoration?;
+      final initialBorder = decoration!.border as Border?;
+      final initialBorderColor = initialBorder?.top.color;
+
+      // Toggle checkbox to checked to trigger highlight.
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pump();
+
+      animatedContainer = tester.widget<AnimatedContainer>(
+        animatedContainerFinder,
+      );
+      decoration = animatedContainer.decoration as BoxDecoration?;
+      final borderAfterCheck = decoration!.border as Border?;
+
+      expect(borderAfterCheck, isNotNull);
+      expect(borderAfterCheck!.top.color, equals(highlightBorderColor));
+      expect(initialBorderColor, isNot(equals(highlightBorderColor)));
+
+      // After the completion animation duration, highlight should clear.
+      await tester.pump(checklistCompletionAnimationDuration);
+      await tester.pump();
+
+      animatedContainer = tester.widget<AnimatedContainer>(
+        animatedContainerFinder,
+      );
+      decoration = animatedContainer.decoration as BoxDecoration?;
+      final borderAfterDuration = decoration!.border as Border?;
+
+      expect(borderAfterDuration, isNotNull);
+      expect(
+          borderAfterDuration!.top.color, isNot(equals(highlightBorderColor)));
     });
     testWidgets('renders title and checkbox correctly', (tester) async {
       // Define test variables
@@ -78,6 +139,10 @@ void main() {
 
       // Verify callback was called with expected value
       expect(checkboxValue, isTrue);
+
+      // Let completion highlight timer finish to avoid pending timers.
+      await tester.pump(checklistCompletionAnimationDuration);
+      await tester.pump();
     });
 
     testWidgets('renders checked state correctly', (tester) async {
@@ -133,6 +198,10 @@ void main() {
         tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
         isTrue,
       );
+
+      // Let completion highlight timer finish to avoid pending timers.
+      await tester.pump(checklistCompletionAnimationDuration);
+      await tester.pump();
     });
 
     testWidgets('shows edit icon when showEditIcon is true', (tester) async {
@@ -305,6 +374,10 @@ void main() {
 
       // Verify animation completed
       expect(find.byType(AnimatedContainer), findsOneWidget);
+
+      // Let completion highlight timer finish to avoid pending timers.
+      await tester.pump(checklistCompletionAnimationDuration);
+      await tester.pump();
     });
 
     testWidgets('applies border radius to container', (tester) async {
@@ -404,6 +477,10 @@ void main() {
       decoration = animatedContainer.decoration as BoxDecoration?;
       expect(decoration, isNotNull);
       expect(decoration!.color, isNotNull);
+
+      // Let completion highlight timer finish to avoid pending timers.
+      await tester.pump(checklistCompletionAnimationDuration);
+      await tester.pump();
     });
 
     testWidgets('toggles edit mode when edit button is tapped', (tester) async {

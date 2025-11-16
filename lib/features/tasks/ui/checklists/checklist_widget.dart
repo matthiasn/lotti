@@ -155,7 +155,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
           shape: const Border(),
           expandedCrossAxisAlignment: CrossAxisAlignment.start,
           maintainState: true,
-          key: ValueKey('${widget.id} ${widget.completionRate}'),
+          key: ValueKey('checklist-${widget.id}'),
           initiallyExpanded: widget.completionRate < 1,
           onExpansionChanged: (expanded) =>
               setState(() => _isExpanded = expanded),
@@ -490,7 +490,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                     checklistId: widget.id,
                     hideIfChecked:
                         !_isEditing && _filter == ChecklistFilter.openOnly,
-                    key: Key('$itemId${widget.id}$index'),
+                    key: ValueKey('checklist-item-${widget.id}-$itemId'),
                   );
                 },
               ),

@@ -34,6 +34,7 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
   late bool _isChecked;
   bool _isEditing = false;
   bool _isHovered = false;
+  bool _showCompletionHighlight = false;
 
   @override
   void initState() {
@@ -48,7 +49,25 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
       setState(() {
         _isChecked = widget.isChecked;
       });
+
+      if (!oldWidget.isChecked && widget.isChecked) {
+        _triggerCompletionHighlight();
+      }
     }
+  }
+
+  void _triggerCompletionHighlight() {
+    if (_showCompletionHighlight) return;
+    setState(() {
+      _showCompletionHighlight = true;
+    });
+
+    Future<void>.delayed(checklistCompletionAnimationDuration).then((_) {
+      if (!mounted) return;
+      setState(() {
+        _showCompletionHighlight = false;
+      });
+    });
   }
 
   @override
@@ -64,6 +83,21 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
         : _isChecked
             ? checkedBg
             : baseBg;
+
+    final baseBorderColor = colorScheme.outline.withValues(alpha: 0.12);
+    final highlightBorderColor = colorScheme.primary.withValues(alpha: 0.7);
+    final borderColor =
+        _showCompletionHighlight ? highlightBorderColor : baseBorderColor;
+
+    final boxShadow = _showCompletionHighlight
+        ? [
+            BoxShadow(
+              color: colorScheme.primary.withValues(alpha: 0.25),
+              blurRadius: 12,
+              spreadRadius: 1,
+            ),
+          ]
+        : null;
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -89,8 +123,9 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                   : animatedBg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colorScheme.outline.withValues(alpha: 0.12),
+                color: borderColor,
               ),
+              boxShadow: boxShadow,
             ),
             child: Material(
               color: Colors.transparent,
@@ -173,9 +208,14 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                     ? null
                     : (bool? value) {
                         final isChecked = value ?? false;
+                        final wasChecked = _isChecked;
                         setState(() {
                           _isChecked = isChecked;
                         });
+
+                        if (!wasChecked && isChecked) {
+                          _triggerCompletionHighlight();
+                        }
 
                         widget.onChanged(isChecked);
                       },
