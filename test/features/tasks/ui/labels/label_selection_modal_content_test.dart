@@ -463,41 +463,6 @@ void main() {
       expect(find.text('Create "nonexistent" label'), findsOneWidget);
     });
 
-    testWidgets('empty state shows hint about prefilled name', (tester) async {
-      final applyController = ValueNotifier<Future<bool> Function()?>(null);
-      final searchQuery = ValueNotifier<String>('');
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            availableLabelsForCategoryProvider(null).overrideWith(
-              (ref) => testLabels,
-            ),
-            labelsRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: WidgetTestBench(
-            child: Material(
-              child: LabelSelectionModalContent(
-                taskId: 'task-123',
-                initialLabelIds: const [],
-                applyController: applyController,
-                searchQuery: searchQuery,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      searchQuery.value = 'mynewlabel';
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('A new label will be prefilled with "mynewlabel"'),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('empty state without search query shows generic message',
         (tester) async {
       final applyController = ValueNotifier<Future<bool> Function()?>(null);
@@ -968,6 +933,370 @@ void main() {
       expect(find.text('Backend'), findsOneWidget);
       expect(find.text('Frontend'), findsNothing);
       expect(find.text('Bug'), findsNothing);
+    });
+  });
+
+  group('Create button with substring matches', () {
+    testWidgets('shows create button when substring match but no exact match',
+        (tester) async {
+      final applyController = ValueNotifier<Future<bool> Function()?>(null);
+      final searchQuery = ValueNotifier<String>('');
+
+      final labelsWithDependencies = [
+        ...testLabels,
+        testLabelDefinition1.copyWith(
+          id: 'label-5',
+          name: 'dependencies',
+          description: 'Dependency updates',
+          color: '#FFA500',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            availableLabelsForCategoryProvider(null).overrideWith(
+              (ref) => labelsWithDependencies,
+            ),
+            labelsRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: WidgetTestBench(
+            child: Material(
+              child: LabelSelectionModalContent(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                applyController: applyController,
+                searchQuery: searchQuery,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Search for "CI" which is a substring of "dependencies"
+      searchQuery.value = 'CI';
+      await tester.pumpAndSettle();
+
+      // "dependencies" should be shown (substring match)
+      expect(find.text('dependencies'), findsOneWidget);
+      // Create button should also be visible
+      expect(find.text('Create "CI" label'), findsOneWidget);
+    });
+
+    testWidgets('hides create button when exact match exists (same case)',
+        (tester) async {
+      final applyController = ValueNotifier<Future<bool> Function()?>(null);
+      final searchQuery = ValueNotifier<String>('');
+
+      final labelsWithCI = [
+        ...testLabels,
+        testLabelDefinition1.copyWith(
+          id: 'label-ci',
+          name: 'CI',
+          description: 'Continuous Integration',
+          color: '#00FFFF',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            availableLabelsForCategoryProvider(null).overrideWith(
+              (ref) => labelsWithCI,
+            ),
+            labelsRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: WidgetTestBench(
+            child: Material(
+              child: LabelSelectionModalContent(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                applyController: applyController,
+                searchQuery: searchQuery,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      searchQuery.value = 'CI';
+      await tester.pumpAndSettle();
+
+      // "CI" label should be shown
+      expect(find.text('CI'), findsOneWidget);
+      // Create button should NOT be visible
+      expect(find.text('Create "CI" label'), findsNothing);
+    });
+
+    testWidgets('hides create button when exact match exists (different case)',
+        (tester) async {
+      final applyController = ValueNotifier<Future<bool> Function()?>(null);
+      final searchQuery = ValueNotifier<String>('');
+
+      final labelsWithCI = [
+        ...testLabels,
+        testLabelDefinition1.copyWith(
+          id: 'label-ci',
+          name: 'CI',
+          description: 'Continuous Integration',
+          color: '#00FFFF',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            availableLabelsForCategoryProvider(null).overrideWith(
+              (ref) => labelsWithCI,
+            ),
+            labelsRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: WidgetTestBench(
+            child: Material(
+              child: LabelSelectionModalContent(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                applyController: applyController,
+                searchQuery: searchQuery,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Search for "ci" (lowercase) when "CI" (uppercase) exists
+      searchQuery.value = 'ci';
+      await tester.pumpAndSettle();
+
+      // "CI" label should be shown
+      expect(find.text('CI'), findsOneWidget);
+      // Create button should NOT be visible (case-insensitive exact match)
+      expect(find.text('Create "ci" label'), findsNothing);
+    });
+
+    testWidgets('shows create button with multiple substring matches',
+        (tester) async {
+      final applyController = ValueNotifier<Future<bool> Function()?>(null);
+      final searchQuery = ValueNotifier<String>('');
+
+      final labelsWithMultipleMatches = [
+        ...testLabels,
+        testLabelDefinition1.copyWith(
+          id: 'label-5',
+          name: 'dependencies',
+          description: 'Dependency updates',
+          color: '#FFA500',
+        ),
+        testLabelDefinition2.copyWith(
+          id: 'label-6',
+          name: 'continuous integration',
+          description: 'CI/CD pipeline',
+          color: '#00FFFF',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            availableLabelsForCategoryProvider(null).overrideWith(
+              (ref) => labelsWithMultipleMatches,
+            ),
+            labelsRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: WidgetTestBench(
+            child: Material(
+              child: LabelSelectionModalContent(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                applyController: applyController,
+                searchQuery: searchQuery,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      searchQuery.value = 'CI';
+      await tester.pumpAndSettle();
+
+      // Both substring matches should be shown
+      expect(find.text('dependencies'), findsOneWidget);
+      expect(find.text('continuous integration'), findsOneWidget);
+      // Create button should be visible
+      expect(find.text('Create "CI" label'), findsOneWidget);
+    });
+
+    testWidgets('hides create button when query is empty', (tester) async {
+      final applyController = ValueNotifier<Future<bool> Function()?>(null);
+      final searchQuery = ValueNotifier<String>('');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            availableLabelsForCategoryProvider(null).overrideWith(
+              (ref) => testLabels,
+            ),
+            labelsRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: WidgetTestBench(
+            child: Material(
+              child: LabelSelectionModalContent(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                applyController: applyController,
+                searchQuery: searchQuery,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      searchQuery.value = '';
+      await tester.pumpAndSettle();
+
+      // All labels should be shown
+      expect(find.text('Urgent'), findsOneWidget);
+      expect(find.text('Backend'), findsOneWidget);
+      // Create button should NOT be visible
+      expect(find.textContaining('Create'), findsNothing);
+    });
+
+    testWidgets('hides create button when query is whitespace only',
+        (tester) async {
+      final applyController = ValueNotifier<Future<bool> Function()?>(null);
+      final searchQuery = ValueNotifier<String>('');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            availableLabelsForCategoryProvider(null).overrideWith(
+              (ref) => testLabels,
+            ),
+            labelsRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: WidgetTestBench(
+            child: Material(
+              child: LabelSelectionModalContent(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                applyController: applyController,
+                searchQuery: searchQuery,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      searchQuery.value = '   ';
+      await tester.pumpAndSettle();
+
+      // All labels should be shown (trimmed query is empty)
+      expect(find.text('Urgent'), findsOneWidget);
+      expect(find.text('Backend'), findsOneWidget);
+      // Create button should NOT be visible
+      expect(find.textContaining('Create'), findsNothing);
+    });
+
+    testWidgets('tapping create button opens label editor with prefilled name',
+        (tester) async {
+      final applyController = ValueNotifier<Future<bool> Function()?>(null);
+      final searchQuery = ValueNotifier<String>('');
+
+      final labelsWithDependencies = [
+        ...testLabels,
+        testLabelDefinition1.copyWith(
+          id: 'label-5',
+          name: 'dependencies',
+          description: 'Dependency updates',
+          color: '#FFA500',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            availableLabelsForCategoryProvider(null).overrideWith(
+              (ref) => labelsWithDependencies,
+            ),
+            labelsRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: WidgetTestBench(
+            child: Material(
+              child: LabelSelectionModalContent(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                applyController: applyController,
+                searchQuery: searchQuery,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      searchQuery.value = 'CI';
+      await tester.pumpAndSettle();
+
+      // Tap the create button
+      await tester.tap(find.text('Create "CI" label'));
+      await tester.pumpAndSettle();
+
+      // Label editor should open with "CI" as initial name
+      expect(find.byType(LabelEditorSheet), findsOneWidget);
+      final editorSheet =
+          tester.widget<LabelEditorSheet>(find.byType(LabelEditorSheet));
+      expect(editorSheet.initialName, equals('CI'));
+    });
+
+    testWidgets('create button works with category scoping', (tester) async {
+      final applyController = ValueNotifier<Future<bool> Function()?>(null);
+      final searchQuery = ValueNotifier<String>('');
+
+      final categoryLabels = [
+        testLabelDefinition1.copyWith(
+          id: 'label-deps',
+          name: 'dependencies',
+          description: 'Dependency updates',
+          color: '#FFA500',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            availableLabelsForCategoryProvider('work-category').overrideWith(
+              (ref) => categoryLabels,
+            ),
+            labelsRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: WidgetTestBench(
+            child: Material(
+              child: LabelSelectionModalContent(
+                taskId: 'task-123',
+                initialLabelIds: const [],
+                categoryId: 'work-category',
+                applyController: applyController,
+                searchQuery: searchQuery,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      searchQuery.value = 'CI';
+      await tester.pumpAndSettle();
+
+      // Category-scoped label shown
+      expect(find.text('dependencies'), findsOneWidget);
+      // Create button visible
+      expect(find.text('Create "CI" label'), findsOneWidget);
     });
   });
 }

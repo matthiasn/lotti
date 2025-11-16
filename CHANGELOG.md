@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - List is strictly A–Z (case-insensitive); selection does not change ordering
   - Out-of-category assigned labels are included with an "Out of category" note when applicable
   - Solves issue where out-of-scope labels were hidden and couldn't be removed
+- Label creation UX: "Create label" option now available with substring matches
+  - Previously hidden when typing "CI" while "dependencies" existed (substring match)
+  - Now shows "Create 'CI' label" button below filtered results when no exact match exists
+  - Only hides create option when exact match (case-insensitive) is found
+  - Improves discoverability for short label names that appear as substrings
 
 - Sync maintenance now supports Labels in the manual definition sync flow:
   - Sync page → Sync Entities modal includes a "Labels" checkbox alongside Tags, Measurables,
