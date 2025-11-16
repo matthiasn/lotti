@@ -19,7 +19,9 @@ class ImagePasteController extends _$ImagePasteController {
       return false;
     }
     final reader = await clipboard.read();
-    return reader.canProvide(Formats.png) || reader.canProvide(Formats.jpeg);
+    return reader.items.any(
+      (item) => item.canProvide(Formats.png) || item.canProvide(Formats.jpeg),
+    );
   }
 
   Future<void> paste() async {
@@ -29,24 +31,41 @@ class ImagePasteController extends _$ImagePasteController {
     }
     final reader = await clipboard.read();
 
-    if (reader.canProvide(Formats.jpeg)) {
-      reader.getFile(Formats.jpeg, (file) async {
-        await importPastedImages(
-          data: await file.readAll(),
-          fileExtension: 'jpg',
-          linkedId: linkedFromId,
-          categoryId: categoryId,
-        );
-      });
-    } else if (reader.canProvide(Formats.png)) {
-      reader.getFile(Formats.png, (file) async {
-        await importPastedImages(
-          data: await file.readAll(),
-          fileExtension: 'png',
-          linkedId: linkedFromId,
-          categoryId: categoryId,
-        );
-      });
+    // Process all clipboard items (supports multiple photos)
+    final futures = <Future<void>>[];
+    for (final item in reader.items) {
+      if (item.canProvide(Formats.jpeg)) {
+        final completer = Completer<void>();
+        item.getFile(Formats.jpeg, (file) async {
+          try {
+            await importPastedImages(
+              data: await file.readAll(),
+              fileExtension: 'jpg',
+              linkedId: linkedFromId,
+              categoryId: categoryId,
+            );
+          } finally {
+            completer.complete();
+          }
+        });
+        futures.add(completer.future);
+      } else if (item.canProvide(Formats.png)) {
+        final completer = Completer<void>();
+        item.getFile(Formats.png, (file) async {
+          try {
+            await importPastedImages(
+              data: await file.readAll(),
+              fileExtension: 'png',
+              linkedId: linkedFromId,
+              categoryId: categoryId,
+            );
+          } finally {
+            completer.complete();
+          }
+        });
+        futures.add(completer.future);
+      }
     }
+    await Future.wait(futures);
   }
 }

@@ -250,7 +250,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the Add category button (label is localized). We only assert it exists and is tappable.
-      final addButton = find.widgetWithIcon(OutlinedButton, Icons.add);
+      final addButton = find.byIcon(Icons.add);
       expect(addButton, findsOneWidget);
       await tester.ensureVisible(addButton);
       await tester.tap(addButton);
