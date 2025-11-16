@@ -239,28 +239,30 @@ class OutboxService {
       final docDir = _documentsDirectory;
 
       // Fetch entry links for journal entities and attach them
-      var messageToEnqueue = syncMessage;
-      if (syncMessage is SyncJournalEntity) {
-        try {
-          final links = await _journalDb.linksForEntryIds({syncMessage.id});
-          if (links.isNotEmpty) {
-            messageToEnqueue = syncMessage.copyWith(entryLinks: links);
-            _loggingService.captureEvent(
-              'enqueueMessage.attachedLinks id=${syncMessage.id} count=${links.length}',
+      final messageToEnqueue = await () async {
+        if (syncMessage is SyncJournalEntity) {
+          try {
+            final links = await _journalDb.linksForEntryIds({syncMessage.id});
+            if (links.isNotEmpty) {
+              _loggingService.captureEvent(
+                'enqueueMessage.attachedLinks id=${syncMessage.id} count=${links.length}',
+                domain: 'OUTBOX',
+                subDomain: 'enqueueMessage.attachLinks',
+              );
+              return syncMessage.copyWith(entryLinks: links);
+            }
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
               domain: 'OUTBOX',
-              subDomain: 'enqueueMessage.attachLinks',
+              subDomain: 'enqueueMessage.fetchLinks',
+              stackTrace: st,
             );
+            // Continue with original message without links on error
           }
-        } catch (e, st) {
-          _loggingService.captureException(
-            e,
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage.fetchLinks',
-            stackTrace: st,
-          );
-          // Continue with original message without links on error
         }
-      }
+        return syncMessage;
+      }();
 
       final jsonString = json.encode(messageToEnqueue);
 
