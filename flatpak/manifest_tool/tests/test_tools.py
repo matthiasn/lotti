@@ -20,9 +20,16 @@ class GetFvmFlutterVersionTests(TestCase):
             self.assertEqual(get_fvm_flutter_version.read_version(config), "3.39.1")
 
     def test_main_with_env_returns_success(self) -> None:
+        # Read the actual FVM config from the repository
+        repo_root = Path(__file__).resolve().parents[3]
+        actual_config = repo_root / ".fvm" / "fvm_config.json"
+        actual_version = get_fvm_flutter_version.read_version(actual_config)
+
+        # Create a test config with the same version
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / "config.json"
-            config.write_text(json.dumps({"flutterSdkVersion": "3.38.1"}), encoding="utf-8")
+            test_version = actual_version if actual_version else "3.38.1"  # Fallback if FVM config not found
+            config.write_text(json.dumps({"flutterSdkVersion": test_version}), encoding="utf-8")
             env = {"FVM_CONFIG_PATH": str(config)}
             self.assertEqual(get_fvm_flutter_version.main_with_env(env), 0)
 

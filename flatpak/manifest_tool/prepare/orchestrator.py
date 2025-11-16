@@ -39,8 +39,34 @@ except ImportError:  # pragma: no cover - colorama optional
     Fore = Style = None  # type: ignore
     _COLOR_ENABLED = False
 
-DEFAULT_FLUTTER_TAG = "3.38.1"
 _ALLOWED_URL_SCHEMES = {"https"}
+
+
+def _read_fvm_flutter_tag(repo_root: Path) -> Optional[str]:
+    """Read Flutter version from FVM config file."""
+    config_path = repo_root / ".fvm" / "fvm_config.json"
+    if not config_path.is_file():
+        return None
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    candidate = data.get("flutterSdkVersion") or data.get("flutterSdk")
+    if isinstance(candidate, str) and candidate.strip():
+        return candidate.strip()
+    return None
+
+
+def get_default_flutter_tag() -> str:
+    """Read the default Flutter tag from FVM config or fall back to 'stable'."""
+    # Try to read from repository root's FVM config
+    repo_root = Path(__file__).resolve().parents[3]  # Navigate up from prepare/orchestrator.py to repo root
+    fvm_tag = _read_fvm_flutter_tag(repo_root)
+    return fvm_tag if fvm_tag else "stable"
+
+
+# Computed once at module load for consistency in tests and logging
+DEFAULT_FLUTTER_TAG = get_default_flutter_tag()
 
 _SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400")
 _SQLITE_AUTOCONF_SHA256 = os.getenv(
@@ -364,8 +390,9 @@ def _extract_flutter_tag(manifest_template: Path, printer: _StatusPrinter) -> Op
             for source in sources:
                 if isinstance(source, dict) and "tag" in source:
                     return str(source["tag"]).strip()
-    printer.warn(f"Could not detect Flutter tag from manifest; defaulting to {DEFAULT_FLUTTER_TAG}")
-    return DEFAULT_FLUTTER_TAG
+    default_tag = get_default_flutter_tag()
+    printer.warn(f"Could not detect Flutter tag from manifest; defaulting to {default_tag}")
+    return default_tag
 
 
 def _copy_manifest_template(context: PrepareFlathubContext) -> None:
@@ -415,8 +442,9 @@ def _ensure_flutter_tag_from_modules(
         printer.info(f"Using Flutter tag from FVM configuration: {context.flutter_tag}")
         return
 
-    printer.warn(f"Could not detect Flutter tag; defaulting to {DEFAULT_FLUTTER_TAG}")
-    context.flutter_tag = DEFAULT_FLUTTER_TAG
+    default_tag = get_default_flutter_tag()
+    printer.warn(f"Could not detect Flutter tag; defaulting to {default_tag}")
+    context.flutter_tag = default_tag
 
 
 def _ensure_branch_for_lotti_sources(sources: list[object], branch: str) -> bool:
@@ -1042,20 +1070,6 @@ def _split_package_version(dest: str) -> tuple[str, str]:
             version = version[: -len(suffix)]
             break
     return package, version
-
-
-def _read_fvm_flutter_tag(repo_root: Path) -> Optional[str]:
-    config_path = repo_root / ".fvm" / "fvm_config.json"
-    if not config_path.is_file():
-        return None
-    try:
-        data = json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    candidate = data.get("flutterSdkVersion") or data.get("flutterSdk")
-    if isinstance(candidate, str) and candidate.strip():
-        return candidate.strip()
-    return None
 
 
 def _regenerate_pubspec_sources_if_needed(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
