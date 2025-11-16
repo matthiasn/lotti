@@ -32,11 +32,12 @@ class EntryDatetimeWidget extends ConsumerWidget {
     final style = (base != null
             ? base.withTabularFigures
             : monoTabularStyle(
-                fontSize: fontSizeMedium,
+                fontSize: AppTheme.statusIndicatorFontSize,
                 color: context.colorScheme.outline,
               ))
         .copyWith(
       color: context.colorScheme.outline,
+      fontSize: AppTheme.statusIndicatorFontSize,
     );
 
     return GestureDetector(

@@ -55,6 +55,7 @@ class CompactTaskProgress extends ConsumerWidget {
         alpha: AppTheme.alphaSurfaceVariant,
       ),
       fontWeight: FontWeight.w600,
+      fontSize: AppTheme.statusIndicatorFontSize,
     );
 
     final shouldShowTimeText = isDesktop || showTimeText;

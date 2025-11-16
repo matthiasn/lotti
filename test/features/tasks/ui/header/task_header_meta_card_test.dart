@@ -7,6 +7,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/tasks/model/task_progress_state.dart';
+import 'package:lotti/features/tasks/state/task_progress_controller.dart';
+import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_header_meta_card.dart';
 import 'package:lotti/features/tasks/ui/header/task_language_wrapper.dart';
@@ -146,6 +150,12 @@ void main() {
     final task = testTask;
 
     final overrides = <Override>[
+      taskProgressControllerProvider(id: task.meta.id).overrideWith(
+        () => _TestProgressController(
+          progress: const Duration(hours: 1),
+          estimate: const Duration(hours: 4),
+        ),
+      ),
       entryControllerProvider(id: task.meta.id).overrideWith(
         () => _TestEntryController(task),
       ),
@@ -167,4 +177,67 @@ void main() {
     expect(find.byType(TaskCategoryWrapper), findsOneWidget);
     expect(find.byType(TaskLanguageWrapper), findsOneWidget);
   });
+
+  testWidgets(
+      'TaskHeaderMetaCard aligns date and progress text font sizes',
+      (tester) async {
+    final task = testTask;
+
+    final overrides = <Override>[
+      taskProgressControllerProvider(id: task.meta.id).overrideWith(
+        () => _TestProgressController(
+          progress: const Duration(hours: 1),
+          estimate: const Duration(hours: 4),
+        ),
+      ),
+      entryControllerProvider(id: task.meta.id).overrideWith(
+        () => _TestEntryController(task),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: overrides,
+        child: TaskHeaderMetaCard(taskId: task.meta.id),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Date text from EntryDatetimeWidget.
+    final dateFinder =
+        find.text(dfShorter.format(task.meta.dateFrom));
+    expect(dateFinder, findsOneWidget);
+    final dateText = tester.widget<Text>(dateFinder);
+
+    // Progress text from CompactTaskProgress within the header.
+    final progressTextFinder = find.descendant(
+      of: find.byType(CompactTaskProgress),
+      matching: find.byType(Text),
+    );
+    expect(progressTextFinder, findsOneWidget);
+    final progressText = tester.widget<Text>(progressTextFinder);
+
+    expect(
+      dateText.style?.fontSize,
+      equals(progressText.style?.fontSize),
+    );
+  });
+}
+
+class _TestProgressController extends TaskProgressController {
+  _TestProgressController({
+    required this.progress,
+    required this.estimate,
+  });
+
+  final Duration progress;
+  final Duration estimate;
+
+  @override
+  Future<TaskProgressState?> build({required String id}) async {
+    return TaskProgressState(
+      progress: progress,
+      estimate: estimate,
+    );
+  }
 }
