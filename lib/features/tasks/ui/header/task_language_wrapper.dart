@@ -28,6 +28,8 @@ class TaskLanguageWrapper extends ConsumerWidget {
 
     return TaskLanguageWidget(
       task: task,
+      hideLabelWhenValueSet: true,
+      showLabel: false,
       onLanguageChanged: (SupportedLanguage? language) async {
         final newLanguageCode = language?.code;
         if (newLanguageCode == task.data.languageCode) {

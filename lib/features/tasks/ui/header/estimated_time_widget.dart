@@ -10,6 +10,37 @@ import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+Future<void> showEstimatePicker({
+  required BuildContext context,
+  required Duration initialDuration,
+  required Future<void> Function(Duration newDuration) onEstimateChanged,
+}) async {
+  var selectedDuration = initialDuration;
+
+  await ModalUtils.showSinglePageModal<void>(
+    context: context,
+    builder: (modalContext) {
+      return _EstimatedTimePicker(
+        initialDuration: initialDuration,
+        onDurationChanged: (duration) {
+          selectedDuration = duration;
+        },
+      );
+    },
+    title: context.messages.taskEstimateLabel,
+    stickyActionBar: _EstimatedTimeStickyActionBar(
+      onCancel: () => Navigator.of(context).pop(),
+      onDone: () async {
+        Navigator.of(context).pop();
+        if (selectedDuration != initialDuration) {
+          await onEstimateChanged(selectedDuration);
+        }
+      },
+    ),
+    padding: const EdgeInsets.only(bottom: 40),
+  );
+}
+
 class EstimatedTimeWidget extends ConsumerWidget {
   const EstimatedTimeWidget({
     required this.task,
@@ -22,33 +53,19 @@ class EstimatedTimeWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final estimate = task.data.estimate ?? Duration.zero;
-    final formattedEstimate = formatDuration(estimate).substring(0, 5);
+    final rawEstimate = task.data.estimate;
+    final hasEstimate = rawEstimate != null;
+    final estimate = rawEstimate ?? Duration.zero;
+    final formattedEstimate =
+        hasEstimate ? formatDuration(estimate).substring(0, 5) : null;
 
     Future<void> onTap() async {
-      var selectedDuration = estimate;
-
-      await ModalUtils.showSinglePageModal<void>(
+      await showEstimatePicker(
         context: context,
-        builder: (modalContext) {
-          return _EstimatedTimePicker(
-            initialDuration: estimate,
-            onDurationChanged: (duration) {
-              selectedDuration = duration;
-            },
-          );
+        initialDuration: estimate,
+        onEstimateChanged: (newDuration) async {
+          await save(estimate: newDuration);
         },
-        title: context.messages.taskEstimateLabel,
-        stickyActionBar: _EstimatedTimeStickyActionBar(
-          onCancel: () => Navigator.of(context).pop(),
-          onDone: () async {
-            Navigator.of(context).pop();
-            if (selectedDuration != estimate) {
-              await save(estimate: selectedDuration);
-            }
-          },
-        ),
-        padding: const EdgeInsets.only(bottom: 40),
       );
     }
 
@@ -67,10 +84,33 @@ class EstimatedTimeWidget extends ConsumerWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                formattedEstimate,
-                style: context.textTheme.titleMedium,
-              ),
+              if (hasEstimate && formattedEstimate != null)
+                Text(
+                  formattedEstimate,
+                  style: context.textTheme.titleMedium,
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color:
+                        context.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.4,
+                    ),
+                  ),
+                  child: Text(
+                    context.messages.taskNoEstimateLabel,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant.withValues(
+                        alpha: AppTheme.alphaSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
               TimeRecordingIcon(
                 taskId: task.id,
                 padding: const EdgeInsets.only(left: 10),

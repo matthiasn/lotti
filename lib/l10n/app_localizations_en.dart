@@ -2244,6 +2244,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskEstimateLabel => 'Estimate:';
 
   @override
+  String get taskNoEstimateLabel => 'No estimate set';
+
+  @override
   String get taskNameHint => 'Enter a name for the task';
 
   @override

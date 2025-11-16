@@ -61,7 +61,7 @@ void main() {
     expect(find.text('02:30'), findsOneWidget);
   });
 
-  testWidgets('displays 00:00 when no estimate', (tester) async {
+  testWidgets('displays placeholder when no estimate', (tester) async {
     final taskWithoutEstimate = Task(
       meta: testTask.meta,
       data: TaskData(
@@ -83,7 +83,7 @@ void main() {
       ),
     );
 
-    expect(find.text('00:00'), findsOneWidget);
+    expect(find.text('No estimate set'), findsOneWidget);
   });
 
   testWidgets('is tappable', (tester) async {

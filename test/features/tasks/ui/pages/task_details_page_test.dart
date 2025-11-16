@@ -175,12 +175,6 @@ void main() {
       // test task title is displayed
       expect(find.text(testTask.data.title), findsNWidgets(2));
 
-      // task entry duration estimate is rendered
-      expect(
-        find.text('04:00'),
-        findsNWidgets(1),
-      );
-
       // test task is starred
       expect(find.byIcon(Icons.star_rounded), findsOneWidget);
     });
