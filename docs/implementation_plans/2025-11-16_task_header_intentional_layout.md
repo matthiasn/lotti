@@ -406,9 +406,14 @@ Target hierarchy for the upper part of the task details page:
 ## Decisions From Plan Review
 
 - Status placement
-  - Status appears only in the pinned title band as a chip (no duplicate readout in the metadata
-    card). The chip uses the same `ModernStatusChip` visual language as task cards and opens the
-    existing status modal on tap.
+  - Initial plan: move the status chip and compact progress indicator directly into the pinned
+    `TaskTitleHeader` next to the title. We implemented and tried this, but it did not work well in
+    practice, especially on narrow mobile widths: the status + progress cluster competed with the
+    multi-line title for horizontal space and made the header feel cramped and unbalanced.
+  - Final decision: keep the title band focused on the task title + edit affordance, and place the
+    status chip and compact progress indicator together in the first row of the metadata/header
+    card (date + progress). Status still uses the same `ModernStatusChip` style as the task cards
+    and opens the existing status modal on tap.
 
 - App bar title
   - `TaskSliverAppBar` is effectively “chrome only”: back button + AI popup + overflow actions. The
@@ -416,10 +421,11 @@ Target hierarchy for the upper part of the task details page:
     pinned title header.
 
 - Progress visibility
-  - The compact progress indicator in the pinned title header is the single progress surface on the
-    page. We reuse `CompactTaskProgress` there (bar + optional time text) and do not show a second
-    bar near the estimate. A circular indicator is explicitly out of scope for this pass but can be
-    explored later within the same header slot if needed.
+  - The compact progress indicator in the header is the single progress surface on the page. We
+    reuse `CompactTaskProgress` in the top metadata row (date + progress), and do not show a second
+    bar elsewhere. On the task details page we always show the time text alongside the bar, even on
+    mobile; on list cards the same widget is configured to show only the bar, preserving the more
+    compact list design.
 
 - Metadata card styling
   - `TaskHeaderMetaCard` visually aligns with `ModernBaseCard` but uses slightly more subtle
@@ -465,6 +471,42 @@ Target hierarchy for the upper part of the task details page:
   - Update `CHANGELOG.md` and any relevant feature README(s) touched.
   - Aim for meaningful, high-coverage widget tests for each touched widget file; generally one test
     file per implementation file.
+
+## Code Review Summary (2025-11-16)
+
+- Scope
+  - This iteration delivers a substantial redesign of the task header with a strong focus on visual
+    polish, layout stability, and reuse of existing design primitives (`ModernStatusChip`,
+    `CompactTaskProgress`, language flags, etc.).
+  - The implementation is guided by this plan but diverges in a few key spots where hands-on UX
+    exploration showed that the original layout did not work well in practice (most notably status
+    + progress inside the title row on mobile).
+
+- Highlights
+  - Extracted shared logic such as `showEstimatePicker` so both the legacy estimate widget and the
+    new tappable progress header can reuse the same modal behavior.
+  - Refactored metadata widgets (`TaskCategoryWidget`, `TaskStatusWidget`, and related wrappers) to
+    use a consistent `ModernStatusChip` style, keeping the task details header visually aligned
+    with the task list cards.
+  - Introduced `TaskHeaderMetaCard` to group metadata under the title, replacing the old
+    `TaskInfoRow` layout and eliminating the jittery, wrap-based row.
+  - Removed the full-width progress bar from the app bar and replaced it with a compact, tappable
+    progress indicator in the header, with an explicit “no estimate set” pill state.
+
+- Deviations from original plan
+  - Status and progress were originally planned to live inside `TaskTitleHeader` next to the title.
+    After implementing and testing this, we moved them back into the header/meta row because:
+    - Long titles on mobile collided with the chip cluster and created a cramped, unbalanced look.
+    - The layout became harder to scan, and the title lost its visual dominance.
+  - The plan has been updated to document this experiment and the final decision to keep the title
+    band focused on the task name and edit affordance while giving status + progress a dedicated
+    row with more horizontal space.
+
+- Follow-ups
+  - Ensure localization coverage stays in sync for any new strings such as the “No estimate set”
+    pill label.
+  - Continue iterating on spacing and typography if future design passes further refine section
+    headers or chip sizing.
 
 ## References
 
