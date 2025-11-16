@@ -17,6 +17,7 @@ sealed class SyncMessage with _$SyncMessage {
     required String jsonPath,
     required VectorClock? vectorClock,
     required SyncEntryStatus status,
+    List<EntryLink>? entryLinks,
   }) = SyncJournalEntity;
 
   const factory SyncMessage.entityDefinition({

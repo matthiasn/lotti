@@ -14,6 +14,9 @@ SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      entryLinks: (json['entryLinks'] as List<dynamic>?)
+          ?.map((e) => EntryLink.fromJson(e as Map<String, dynamic>))
+          .toList(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -23,6 +26,7 @@ Map<String, dynamic> _$SyncJournalEntityToJson(SyncJournalEntity instance) =>
       'jsonPath': instance.jsonPath,
       'vectorClock': instance.vectorClock,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'entryLinks': instance.entryLinks,
       'runtimeType': instance.$type,
     };
 
