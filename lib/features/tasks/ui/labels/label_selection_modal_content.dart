@@ -63,6 +63,7 @@ class _LabelSelectionModalContentState
     final available = ref.watch(
       availableLabelsForCategoryProvider(categoryId),
     );
+    final allLabels = ref.watch(labelsStreamProvider).valueOrNull ?? [];
 
     return ValueListenableBuilder<String>(
       valueListenable: widget.searchQuery,
@@ -73,14 +74,23 @@ class _LabelSelectionModalContentState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildList(context, available),
+            _buildList(context, available, allLabels),
           ],
         );
       },
     );
   }
 
-  Widget _buildList(BuildContext context, List<LabelDefinition> labels) {
+  bool _hasExactMatch(List<LabelDefinition> labels, String query) {
+    final queryLower = query.trim().toLowerCase();
+    return labels.any((label) => label.name.toLowerCase() == queryLower);
+  }
+
+  Widget _buildList(
+    BuildContext context,
+    List<LabelDefinition> labels,
+    List<LabelDefinition> allLabels,
+  ) {
     // Union available labels with currently assigned ones to allow
     // unassigning out-of-scope labels.
     final cache = getIt<EntitiesCacheService>();
@@ -97,8 +107,12 @@ class _LabelSelectionModalContentState
     final availableIds = result.availableIds;
     final filtered = result.items;
 
+    final hasQuery = _searchRaw.trim().isNotEmpty;
+    // Check against all labels to prevent duplicate names across categories
+    final hasExactMatch = hasQuery && _hasExactMatch(allLabels, _searchRaw);
+    final showCreateButton = hasQuery && !hasExactMatch;
+
     if (filtered.isEmpty) {
-      final hasQuery = _searchRaw.trim().isNotEmpty;
       return _EmptyState(
         isSearching: hasQuery,
         searchQuery: hasQuery ? _searchRaw.trim() : null,
@@ -106,47 +120,62 @@ class _LabelSelectionModalContentState
       );
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: filtered.length,
-      separatorBuilder: (context, __) => Divider(
-        height: 1,
-        thickness: 1,
-        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
-      ),
-      itemBuilder: (context, index) {
-        final label = filtered[index];
-        final isSelected = _selectedLabelIds.contains(label.id);
-        final outOfCategory = isSelected && !availableIds.contains(label.id);
-        final color = colorFromCssHex(label.color, substitute: Colors.grey);
-
-        final subtitleText = buildLabelSubtitleText(
-          label,
-          outOfCategory: outOfCategory,
-        );
-
-        return CheckboxListTile(
-          value: isSelected,
-          title: Text(label.name),
-          subtitle: subtitleText != null ? Text(subtitleText) : null,
-          secondary: CircleAvatar(
-            backgroundColor: color,
-            radius: 12,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: filtered.length,
+          separatorBuilder: (context, __) => Divider(
+            height: 1,
+            thickness: 1,
+            color:
+                Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-          onChanged: (checked) {
-            setState(() {
-              if (checked ?? false) {
-                _selectedLabelIds.add(label.id);
-              } else {
-                _selectedLabelIds.remove(label.id);
-              }
-            });
+          itemBuilder: (context, index) {
+            final label = filtered[index];
+            final isSelected = _selectedLabelIds.contains(label.id);
+            final outOfCategory =
+                isSelected && !availableIds.contains(label.id);
+            final color = colorFromCssHex(label.color, substitute: Colors.grey);
+
+            final subtitleText = buildLabelSubtitleText(
+              label,
+              outOfCategory: outOfCategory,
+            );
+
+            return CheckboxListTile(
+              value: isSelected,
+              title: Text(label.name),
+              subtitle: subtitleText != null ? Text(subtitleText) : null,
+              secondary: CircleAvatar(
+                backgroundColor: color,
+                radius: 12,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+              onChanged: (checked) {
+                setState(() {
+                  if (checked ?? false) {
+                    _selectedLabelIds.add(label.id);
+                  } else {
+                    _selectedLabelIds.remove(label.id);
+                  }
+                });
+              },
+            );
           },
-        );
-      },
+        ),
+        if (showCreateButton)
+          Center(
+            child: _CreateButton(
+              searchQuery: _searchRaw.trim(),
+              onCreateLabel: () =>
+                  _openLabelCreator(defaultName: _searchRaw.trim()),
+            ),
+          ),
+      ],
     );
   }
 
@@ -217,19 +246,30 @@ class _EmptyState extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: Text(buttonLabel),
             ),
-            if (searchQuery != null && searchQuery!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                'A new label will be prefilled with $querySnippet',
-                textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Theme.of(context).hintColor),
-              ),
-            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CreateButton extends StatelessWidget {
+  const _CreateButton({
+    required this.searchQuery,
+    required this.onCreateLabel,
+  });
+
+  final String searchQuery;
+  final VoidCallback onCreateLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: FilledButton.icon(
+        onPressed: onCreateLabel,
+        icon: const Icon(Icons.add),
+        label: Text('Create "$searchQuery" label'),
       ),
     );
   }
