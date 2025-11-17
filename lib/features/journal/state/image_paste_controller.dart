@@ -35,37 +35,32 @@ class ImagePasteController extends _$ImagePasteController {
     final futures = <Future<void>>[];
     for (final item in reader.items) {
       if (item.canProvide(Formats.jpeg)) {
-        final completer = Completer<void>();
-        item.getFile(Formats.jpeg, (file) async {
-          try {
-            await importPastedImages(
-              data: await file.readAll(),
-              fileExtension: 'jpg',
-              linkedId: linkedFromId,
-              categoryId: categoryId,
-            );
-          } finally {
-            completer.complete();
-          }
-        });
-        futures.add(completer.future);
+        futures.add(_processPastedItem(item, Formats.jpeg, 'jpg'));
       } else if (item.canProvide(Formats.png)) {
-        final completer = Completer<void>();
-        item.getFile(Formats.png, (file) async {
-          try {
-            await importPastedImages(
-              data: await file.readAll(),
-              fileExtension: 'png',
-              linkedId: linkedFromId,
-              categoryId: categoryId,
-            );
-          } finally {
-            completer.complete();
-          }
-        });
-        futures.add(completer.future);
+        futures.add(_processPastedItem(item, Formats.png, 'png'));
       }
     }
     await Future.wait(futures);
+  }
+
+  Future<void> _processPastedItem(
+    ClipboardDataReader item,
+    FileFormat format,
+    String fileExtension,
+  ) {
+    final completer = Completer<void>();
+    item.getFile(format, (file) async {
+      try {
+        await importPastedImages(
+          data: await file.readAll(),
+          fileExtension: fileExtension,
+          linkedId: linkedFromId,
+          categoryId: categoryId,
+        );
+      } finally {
+        completer.complete();
+      }
+    });
+    return completer.future;
   }
 }
