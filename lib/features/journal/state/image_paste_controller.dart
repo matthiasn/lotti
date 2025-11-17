@@ -57,8 +57,9 @@ class ImagePasteController extends _$ImagePasteController {
           linkedId: linkedFromId,
           categoryId: categoryId,
         );
-      } finally {
         completer.complete();
+      } catch (e, st) {
+        completer.completeError(e, st);
       }
     });
     return completer.future;

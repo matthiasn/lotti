@@ -143,10 +143,10 @@ void main() {
       when(() => context.mounted).thenReturn(true);
 
       // The function will return early if permissions aren't granted
-      // We're testing that it doesn't throw
-      expect(
-        () => importImageAssets(context),
-        returnsNormally,
+      // We're testing that it completes successfully
+      await expectLater(
+        importImageAssets(context),
+        completes,
       );
     });
 
@@ -155,9 +155,9 @@ void main() {
       when(() => context.mounted).thenReturn(false);
 
       // Should return early without processing
-      expect(
-        () => importImageAssets(context),
-        returnsNormally,
+      await expectLater(
+        importImageAssets(context),
+        completes,
       );
     });
 
@@ -169,9 +169,9 @@ void main() {
       final context = MockBuildContext();
       when(() => context.mounted).thenReturn(true);
 
-      expect(
-        () => importImageAssets(context),
-        returnsNormally,
+      await expectLater(
+        importImageAssets(context),
+        completes,
       );
     });
 
@@ -180,13 +180,13 @@ void main() {
       when(() => context.mounted).thenReturn(true);
 
       // Test that parameters are accepted without errors
-      expect(
-        () => importImageAssets(
+      await expectLater(
+        importImageAssets(
           context,
           linkedId: 'test-link',
           categoryId: 'test-category',
         ),
-        returnsNormally,
+        completes,
       );
     });
   });
