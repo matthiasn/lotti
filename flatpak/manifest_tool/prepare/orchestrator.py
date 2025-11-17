@@ -29,6 +29,7 @@ from ..core.manifest import ManifestDocument
 from ..operations import ci as ci_ops
 from ..operations import manifest as manifest_ops
 from ..operations import sources as sources_ops
+from ..tools.get_fvm_flutter_version import read_version
 
 try:  # pragma: no cover - optional dependency
     from colorama import Fore, Style, init as colorama_init
@@ -39,8 +40,28 @@ except ImportError:  # pragma: no cover - colorama optional
     Fore = Style = None  # type: ignore
     _COLOR_ENABLED = False
 
-DEFAULT_FLUTTER_TAG = "3.38.0"
 _ALLOWED_URL_SCHEMES = {"https"}
+
+
+def _read_fvm_flutter_tag(repo_root: Path) -> Optional[str]:
+    """Read Flutter version from FVM config file."""
+    config_path = repo_root / ".fvm" / "fvm_config.json"
+    return read_version(config_path)
+
+
+def get_default_flutter_tag() -> str:
+    """Read the default Flutter tag from FVM config or fall back to 'stable'."""
+    # Try to read from repository root's FVM config
+    repo_root = next(
+        (p for p in Path(__file__).resolve().parents if (p / ".fvm").exists() or (p / ".git").exists()),
+        Path(__file__).resolve().parents[3],
+    )
+    fvm_tag = _read_fvm_flutter_tag(repo_root)
+    return fvm_tag if fvm_tag else "stable"
+
+
+# Computed once at module load for consistency in tests and logging
+DEFAULT_FLUTTER_TAG = get_default_flutter_tag()
 
 _SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400")
 _SQLITE_AUTOCONF_SHA256 = os.getenv(
@@ -1042,20 +1063,6 @@ def _split_package_version(dest: str) -> tuple[str, str]:
             version = version[: -len(suffix)]
             break
     return package, version
-
-
-def _read_fvm_flutter_tag(repo_root: Path) -> Optional[str]:
-    config_path = repo_root / ".fvm" / "fvm_config.json"
-    if not config_path.is_file():
-        return None
-    try:
-        data = json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    candidate = data.get("flutterSdkVersion") or data.get("flutterSdk")
-    if isinstance(candidate, str) and candidate.strip():
-        return candidate.strip()
-    return None
 
 
 def _regenerate_pubspec_sources_if_needed(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
