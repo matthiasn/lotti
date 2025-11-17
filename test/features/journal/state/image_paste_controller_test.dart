@@ -382,45 +382,25 @@ void main() {
       final mockFile3 = MockDataReaderFile();
 
       // Override the items list with 3 items
-      when(() => mockReader.items)
-          .thenReturn([mockItem1, mockItem2, mockItem3]);
+      final mockItems = [mockItem1, mockItem2, mockItem3];
+      final mockFiles = [mockFile1, mockFile2, mockFile3];
+      when(() => mockReader.items).thenReturn(mockItems);
 
-      // Set up each item as JPEG
-      for (final item in [mockItem1, mockItem2, mockItem3]) {
+      // Set up each item and file
+      for (var i = 0; i < mockItems.length; i++) {
+        final item = mockItems[i];
+        final file = mockFiles[i];
         when(() => item.canProvide(Formats.jpeg)).thenReturn(true);
         when(() => item.canProvide(Formats.png)).thenReturn(false);
+        when(() => item.getFile(Formats.jpeg, any())).thenAnswer((invocation) {
+          final callback =
+              invocation.positionalArguments[1] as void Function(DataReaderFile);
+          callback(file);
+          return null;
+        });
+        when(file.readAll)
+            .thenAnswer((_) async => Uint8List.fromList([i * 3 + 1, i * 3 + 2, i * 3 + 3]));
       }
-
-      when(() => mockItem1.getFile(Formats.jpeg, any()))
-          .thenAnswer((invocation) {
-        final callback =
-            invocation.positionalArguments[1] as void Function(DataReaderFile);
-        callback(mockFile1);
-        return null;
-      });
-
-      when(() => mockItem2.getFile(Formats.jpeg, any()))
-          .thenAnswer((invocation) {
-        final callback =
-            invocation.positionalArguments[1] as void Function(DataReaderFile);
-        callback(mockFile2);
-        return null;
-      });
-
-      when(() => mockItem3.getFile(Formats.jpeg, any()))
-          .thenAnswer((invocation) {
-        final callback =
-            invocation.positionalArguments[1] as void Function(DataReaderFile);
-        callback(mockFile3);
-        return null;
-      });
-
-      when(mockFile1.readAll)
-          .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
-      when(mockFile2.readAll)
-          .thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
-      when(mockFile3.readAll)
-          .thenAnswer((_) async => Uint8List.fromList([7, 8, 9]));
 
       final controller = container.read(
         imagePasteControllerProvider(
