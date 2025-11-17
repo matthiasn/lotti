@@ -256,6 +256,146 @@ DateTime _parseExifDateTime(String exifDateTimeStr) {
   return DateTime.now();
 }
 
+/// Parses a rational number from EXIF format
+///
+/// EXIF rational numbers can be in fraction format (e.g., "123/456")
+/// or decimal format (e.g., "45.67").
+/// Returns the numeric value as a double, or null if parsing fails.
+double? _parseRational(String value) {
+  try {
+    if (value.contains('/')) {
+      // Parse fraction format
+      final parts = value.split('/');
+      if (parts.length != 2) {
+        return null;
+      }
+      final numerator = double.parse(parts[0]);
+      final denominator = double.parse(parts[1]);
+      if (denominator == 0) {
+        return null;
+      }
+      return numerator / denominator;
+    } else {
+      // Parse decimal format
+      return double.parse(value);
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+/// Parses GPS coordinate from EXIF data to decimal degrees
+///
+/// Converts EXIF GPS format (degrees, minutes, seconds) to decimal degrees.
+/// The coordinate data is typically in the format "[deg/1, min/1, sec/100]".
+/// The reference indicates direction: 'N', 'S' for latitude, 'E', 'W' for longitude.
+/// Returns decimal degrees as a double, or null if parsing fails.
+double? _parseGpsCoordinate(dynamic coordData, String ref) {
+  try {
+    if (coordData == null) {
+      return null;
+    }
+
+    // Convert to string and clean up brackets
+    final coordStr =
+        coordData.toString().replaceAll('[', '').replaceAll(']', '');
+    final parts = coordStr.split(',');
+
+    if (parts.length != 3) {
+      return null;
+    }
+
+    // Parse degrees, minutes, seconds using rational parser
+    final degrees = _parseRational(parts[0].trim());
+    final minutes = _parseRational(parts[1].trim());
+    final seconds = _parseRational(parts[2].trim());
+
+    if (degrees == null || minutes == null || seconds == null) {
+      return null;
+    }
+
+    // Convert to decimal degrees
+    var decimal = degrees + (minutes / 60.0) + (seconds / 3600.0);
+
+    // Apply directional sign (South and West are negative)
+    if (ref == 'S' || ref == 'W') {
+      decimal = -decimal;
+    }
+
+    return decimal;
+  } catch (e, stackTrace) {
+    getIt<LoggingService>().captureException(
+      e,
+      domain: MediaImportConstants.loggingDomain,
+      subDomain: 'parseGpsCoordinate',
+      stackTrace: stackTrace,
+    );
+    return null;
+  }
+}
+
+/// Extracts GPS coordinates from image EXIF data
+///
+/// Attempts to read GPS latitude and longitude from EXIF metadata.
+/// Returns a Geolocation object if valid GPS data is found, otherwise returns null.
+/// Missing GPS data is common and not considered an error.
+Future<Geolocation?> _extractGpsCoordinates(
+  Uint8List data,
+  DateTime createdAt,
+) async {
+  try {
+    final exifData = await readExifFromBytes(data);
+
+    // Check for required GPS keys
+    const latitudeKey = 'GPS GPSLatitude';
+    const longitudeKey = 'GPS GPSLongitude';
+    const latitudeRefKey = 'GPS GPSLatitudeRef';
+    const longitudeRefKey = 'GPS GPSLongitudeRef';
+
+    if (!exifData.containsKey(latitudeKey) ||
+        !exifData.containsKey(longitudeKey) ||
+        !exifData.containsKey(latitudeRefKey) ||
+        !exifData.containsKey(longitudeRefKey)) {
+      // Missing GPS data is normal, not an error
+      return null;
+    }
+
+    // Extract GPS data
+    final latitudeData = exifData[latitudeKey];
+    final longitudeData = exifData[longitudeKey];
+    final latitudeRef = exifData[latitudeRefKey].toString();
+    final longitudeRef = exifData[longitudeRefKey].toString();
+
+    // Parse coordinates
+    final latitude = _parseGpsCoordinate(latitudeData, latitudeRef);
+    final longitude = _parseGpsCoordinate(longitudeData, longitudeRef);
+
+    if (latitude == null || longitude == null) {
+      return null;
+    }
+
+    // Create Geolocation object with geohash
+    return Geolocation(
+      createdAt: createdAt,
+      latitude: latitude,
+      longitude: longitude,
+      geohashString: getGeoHash(
+        latitude: latitude,
+        longitude: longitude,
+      ),
+    );
+  } catch (exception, stackTrace) {
+    // Log but don't fail - missing/invalid GPS is common
+    getIt<LoggingService>().captureException(
+      exception,
+      domain: MediaImportConstants.loggingDomain,
+      subDomain: 'extractGpsCoordinates',
+      stackTrace: stackTrace,
+    );
+    return null;
+  }
+}
+
 /// Imports pasted image data from clipboard and creates journal entry
 ///
 /// Validates file size before importing.
@@ -277,6 +417,7 @@ Future<void> importPastedImages({
 
   // Extract original timestamp from EXIF data, fallback to current time
   final capturedAt = await _extractImageTimestamp(data);
+  final geolocation = await _extractGpsCoordinates(data, capturedAt);
   final id = uuid.v1();
 
   final day =
@@ -294,6 +435,7 @@ Future<void> importPastedImages({
     imageFile: targetFileName,
     imageDirectory: relativePath,
     capturedAt: capturedAt,
+    geolocation: geolocation,
   );
 
   await JournalRepository.createImageEntry(
