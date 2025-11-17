@@ -236,8 +236,35 @@ class OutboxService {
       await Future<void>.delayed(const Duration(milliseconds: 200));
       final hostHash = await _vectorClockService.getHostHash();
       final host = await _vectorClockService.getHost();
-      final jsonString = json.encode(syncMessage);
       final docDir = _documentsDirectory;
+
+      // Fetch entry links for journal entities and attach them
+      final messageToEnqueue = await () async {
+        if (syncMessage is SyncJournalEntity) {
+          try {
+            final links = await _journalDb.linksForEntryIds({syncMessage.id});
+            if (links.isNotEmpty) {
+              _loggingService.captureEvent(
+                'enqueueMessage.attachedLinks id=${syncMessage.id} count=${links.length}',
+                domain: 'OUTBOX',
+                subDomain: 'enqueueMessage.attachLinks',
+              );
+              return syncMessage.copyWith(entryLinks: links);
+            }
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'OUTBOX',
+              subDomain: 'enqueueMessage.fetchLinks',
+              stackTrace: st,
+            );
+            // Continue with original message without links on error
+          }
+        }
+        return syncMessage;
+      }();
+
+      final jsonString = json.encode(messageToEnqueue);
 
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
@@ -246,15 +273,17 @@ class OutboxService {
         updatedAt: Value(DateTime.now()),
       );
 
-      if (syncMessage is SyncJournalEntity) {
+      if (messageToEnqueue is SyncJournalEntity) {
+        final journalEntityMsg = messageToEnqueue;
         try {
-          final latest = await _journalDb.journalEntityById(syncMessage.id);
+          final latest =
+              await _journalDb.journalEntityById(journalEntityMsg.id);
           if (latest != null) {
             final canonicalPath = entityPath(latest, _documentsDirectory);
             await _saveJson(canonicalPath, jsonEncode(latest));
           } else {
             _loggingService.captureEvent(
-              'enqueueMessage.missingEntity id=${syncMessage.id}',
+              'enqueueMessage.missingEntity id=${journalEntityMsg.id}',
               domain: 'MATRIX_SERVICE',
               subDomain: 'enqueueMessage',
             );
@@ -268,7 +297,7 @@ class OutboxService {
           );
         }
 
-        final fullPath = '${docDir.path}${syncMessage.jsonPath}';
+        final fullPath = '${docDir.path}${journalEntityMsg.jsonPath}';
         final journalEntity = await readEntityFromJson(fullPath);
 
         File? attachment;
@@ -276,12 +305,12 @@ class OutboxService {
 
         journalEntity.maybeMap(
           journalAudio: (JournalAudio journalAudio) {
-            if (syncMessage.status == SyncEntryStatus.initial) {
+            if (journalEntityMsg.status == SyncEntryStatus.initial) {
               attachment = File(AudioUtils.getAudioPath(journalAudio, docDir));
             }
           },
           journalImage: (JournalImage journalImage) {
-            if (syncMessage.status == SyncEntryStatus.initial) {
+            if (journalEntityMsg.status == SyncEntryStatus.initial) {
               attachment = File(
                 getFullImagePath(
                   journalImage,
@@ -294,6 +323,7 @@ class OutboxService {
         );
 
         final fileLength = attachment?.lengthSync() ?? 0;
+        final embeddedLinksCount = journalEntityMsg.entryLinks?.length ?? 0;
         await _syncDatabase.addOutboxItem(
           commonFields.copyWith(
             filePath: Value(
@@ -303,7 +333,7 @@ class OutboxService {
           ),
         );
         _loggingService.captureEvent(
-          'enqueue type=SyncJournalEntity subject=${'$hostHash:$localCounter'} id=${syncMessage.id} attachBytes=$fileLength',
+          'enqueue type=SyncJournalEntity subject=${'$hostHash:$localCounter'} id=${journalEntityMsg.id} attachBytes=$fileLength embeddedLinks=$embeddedLinksCount',
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         );

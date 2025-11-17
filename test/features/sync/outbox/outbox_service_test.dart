@@ -97,6 +97,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
+    registerFallbackValue(Exception('fallback'));
     // Mocktail fallback for any<OutboxCompanion>() matchers
     registerFallbackValue(OutboxCompanion.insert(message: 'm', subject: 's'));
     registerFallbackValue(StackTrace.empty);
@@ -1960,6 +1961,207 @@ void main() {
               contains('light=Indigo'),
               contains('dark=Shark'),
               contains('mode=dark'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+  });
+
+  group('Embedded Entry Links', () {
+    test('embeds entry links when enqueueing journal entity', () async {
+      const entryId = 'entry-123';
+      final link1 = EntryLink.basic(
+        id: 'link-1',
+        fromId: entryId,
+        toId: 'category-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+      );
+      final link2 = EntryLink.basic(
+        id: 'link-2',
+        fromId: entryId,
+        toId: 'category-2',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+      );
+
+      // Mock journalDb to return links for this entry
+      when(() => journalDb.linksForEntryIds(const {entryId}))
+          .thenAnswer((_) async => [link1, link2]);
+
+      final journalEntity = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: entryId,
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025, 1, 1),
+          dateTo: DateTime(2025, 1, 1),
+          vectorClock: const VectorClock({'host1': 1}),
+        ),
+        entryText: const EntryText(plainText: 'Test entry'),
+      );
+
+      when(() => journalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntity);
+
+      // Create the JSON file so it can be read
+      const jsonPath = '/test/path.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      const message = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'host1': 1}),
+        status: SyncEntryStatus.initial,
+      );
+
+      await service.enqueueMessage(message);
+
+      // Verify links were fetched
+      verify(() => journalDb.linksForEntryIds(const {entryId})).called(1);
+
+      // Verify logging shows embedded links count
+      verify(() => loggingService.captureEvent(
+            contains('enqueueMessage.attachedLinks id=$entryId count=2'),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage.attachLinks',
+          )).called(1);
+
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncJournalEntity'),
+              contains('embeddedLinks=2'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+
+      // Verify the message was encoded with embedded links
+      final captured = verify(
+              () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()))
+          .captured;
+      final companion = captured.first as OutboxCompanion;
+      final encodedMessage =
+          json.decode(companion.message.value) as Map<String, dynamic>;
+      expect(encodedMessage['entryLinks'], hasLength(2));
+      final entryLinks = encodedMessage['entryLinks'] as List<dynamic>;
+      expect((entryLinks[0] as Map<String, dynamic>)['id'], link1.id);
+      expect((entryLinks[1] as Map<String, dynamic>)['id'], link2.id);
+    });
+
+    test('continues without links when linksForEntryIds fails', () async {
+      const entryId = 'entry-456';
+
+      // Mock journalDb.linksForEntryIds to throw an error
+      when(() => journalDb.linksForEntryIds(const {entryId}))
+          .thenThrow(Exception('Database error'));
+
+      final journalEntity = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: entryId,
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025, 1, 1),
+          dateTo: DateTime(2025, 1, 1),
+          vectorClock: const VectorClock({'host1': 1}),
+        ),
+        entryText: const EntryText(plainText: 'Test entry'),
+      );
+
+      when(() => journalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntity);
+
+      // Create the JSON file so it can be read
+      const jsonPath = '/test/path2.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      const message = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'host1': 1}),
+        status: SyncEntryStatus.initial,
+      );
+
+      // Should not throw
+      await service.enqueueMessage(message);
+
+      // Verify exception was logged
+      verify(() => loggingService.captureException(
+            any<Exception>(),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage.fetchLinks',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).called(1);
+
+      // Verify message was still enqueued (without links)
+      final captured = verify(
+              () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()))
+          .captured;
+      final companion = captured.first as OutboxCompanion;
+      final encodedMessage =
+          json.decode(companion.message.value) as Map<String, dynamic>;
+      expect(encodedMessage['entryLinks'], isNull);
+    });
+
+    test('does not log attachedLinks when no links found', () async {
+      const entryId = 'entry-789';
+
+      // Mock journalDb to return empty list
+      when(() => journalDb.linksForEntryIds(const {entryId}))
+          .thenAnswer((_) async => []);
+
+      final journalEntity = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: entryId,
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025, 1, 1),
+          dateTo: DateTime(2025, 1, 1),
+          vectorClock: const VectorClock({'host1': 1}),
+        ),
+        entryText: const EntryText(plainText: 'Test entry'),
+      );
+
+      when(() => journalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntity);
+
+      // Create the JSON file so it can be read
+      const jsonPath = '/test/path3.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      const message = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'host1': 1}),
+        status: SyncEntryStatus.initial,
+      );
+
+      await service.enqueueMessage(message);
+
+      // Verify links were fetched
+      verify(() => journalDb.linksForEntryIds(const {entryId})).called(1);
+
+      // Verify attachedLinks log was NOT called (no links to attach)
+      verifyNever(() => loggingService.captureEvent(
+            contains('enqueueMessage.attachedLinks'),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ));
+
+      // Verify embeddedLinks=0 in the log
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncJournalEntity'),
+              contains('embeddedLinks=0'),
             ]),
             domain: 'OUTBOX',
             subDomain: 'enqueueMessage',

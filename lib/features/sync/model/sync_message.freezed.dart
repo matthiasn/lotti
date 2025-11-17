@@ -206,7 +206,7 @@ extension SyncMessagePatterns on SyncMessage {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String id, String jsonPath, VectorClock? vectorClock,
-            SyncEntryStatus status)?
+            SyncEntryStatus status, List<EntryLink>? entryLinks)?
         journalEntity,
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
@@ -222,8 +222,8 @@ extension SyncMessagePatterns on SyncMessage {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity() when journalEntity != null:
-        return journalEntity(
-            _that.id, _that.jsonPath, _that.vectorClock, _that.status);
+        return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
+            _that.status, _that.entryLinks);
       case SyncEntityDefinition() when entityDefinition != null:
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity() when tagEntity != null:
@@ -257,8 +257,12 @@ extension SyncMessagePatterns on SyncMessage {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String id, String jsonPath,
-            VectorClock? vectorClock, SyncEntryStatus status)
+    required TResult Function(
+            String id,
+            String jsonPath,
+            VectorClock? vectorClock,
+            SyncEntryStatus status,
+            List<EntryLink>? entryLinks)
         journalEntity,
     required TResult Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)
@@ -277,8 +281,8 @@ extension SyncMessagePatterns on SyncMessage {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity():
-        return journalEntity(
-            _that.id, _that.jsonPath, _that.vectorClock, _that.status);
+        return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
+            _that.status, _that.entryLinks);
       case SyncEntityDefinition():
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity():
@@ -310,7 +314,7 @@ extension SyncMessagePatterns on SyncMessage {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
-            SyncEntryStatus status)?
+            SyncEntryStatus status, List<EntryLink>? entryLinks)?
         journalEntity,
     TResult? Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)?
@@ -326,8 +330,8 @@ extension SyncMessagePatterns on SyncMessage {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity() when journalEntity != null:
-        return journalEntity(
-            _that.id, _that.jsonPath, _that.vectorClock, _that.status);
+        return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
+            _that.status, _that.entryLinks);
       case SyncEntityDefinition() when entityDefinition != null:
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity() when tagEntity != null:
@@ -355,8 +359,10 @@ class SyncJournalEntity implements SyncMessage {
       required this.jsonPath,
       required this.vectorClock,
       required this.status,
+      final List<EntryLink>? entryLinks,
       final String? $type})
-      : $type = $type ?? 'journalEntity';
+      : _entryLinks = entryLinks,
+        $type = $type ?? 'journalEntity';
   factory SyncJournalEntity.fromJson(Map<String, dynamic> json) =>
       _$SyncJournalEntityFromJson(json);
 
@@ -364,6 +370,14 @@ class SyncJournalEntity implements SyncMessage {
   final String jsonPath;
   final VectorClock? vectorClock;
   final SyncEntryStatus status;
+  final List<EntryLink>? _entryLinks;
+  List<EntryLink>? get entryLinks {
+    final value = _entryLinks;
+    if (value == null) return null;
+    if (_entryLinks is EqualUnmodifiableListView) return _entryLinks;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -392,17 +406,19 @@ class SyncJournalEntity implements SyncMessage {
                 other.jsonPath == jsonPath) &&
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.status, status) || other.status == status) &&
+            const DeepCollectionEquality()
+                .equals(other._entryLinks, _entryLinks));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, jsonPath, vectorClock, status);
+  int get hashCode => Object.hash(runtimeType, id, jsonPath, vectorClock,
+      status, const DeepCollectionEquality().hash(_entryLinks));
 
   @override
   String toString() {
-    return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status)';
+    return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, entryLinks: $entryLinks)';
   }
 }
 
@@ -417,7 +433,8 @@ abstract mixin class $SyncJournalEntityCopyWith<$Res>
       {String id,
       String jsonPath,
       VectorClock? vectorClock,
-      SyncEntryStatus status});
+      SyncEntryStatus status,
+      List<EntryLink>? entryLinks});
 }
 
 /// @nodoc
@@ -436,6 +453,7 @@ class _$SyncJournalEntityCopyWithImpl<$Res>
     Object? jsonPath = null,
     Object? vectorClock = freezed,
     Object? status = null,
+    Object? entryLinks = freezed,
   }) {
     return _then(SyncJournalEntity(
       id: null == id
@@ -454,6 +472,10 @@ class _$SyncJournalEntityCopyWithImpl<$Res>
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as SyncEntryStatus,
+      entryLinks: freezed == entryLinks
+          ? _self._entryLinks
+          : entryLinks // ignore: cast_nullable_to_non_nullable
+              as List<EntryLink>?,
     ));
   }
 }

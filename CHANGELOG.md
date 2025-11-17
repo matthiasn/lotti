@@ -39,8 +39,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     with backfill to P2/2 for legacy tasks and updated composite index
   - i18n: English keys for labels, picker title and descriptions
   - Tests: database ordering/filtering, UI wrappers, filter UX
-### Fixed
 - Checklists (Open-only filter): Newly completed items no longer disappear instantly or flicker when toggling between “All” and “Open only”; rows now remain visible briefly with a completion animation before smoothly fading out.
+
+### Fixed
+- **Sync: Entry link atomicity** — Calendar entries no longer appear grey due to missing category information
+  - Entry links now embedded within journal entity sync messages, ensuring atomic processing
+  - Links only processed after successful entry persistence, preventing orphaned references
+  - Backward compatible: standalone entry link messages still supported for link updates
+  - Reduces sync message count from N+1 to 1 per entry with links
+  - Comprehensive logging: `enqueueMessage.attachedLinks` and `apply.entryLink.embedded` events
+  - Implementation: `lib/features/sync/model/sync_message.dart`, `lib/features/sync/outbox/outbox_service.dart`, `lib/features/sync/matrix/sync_event_processor.dart`
+  - Tests: 3 new tests in `test/features/sync/outbox/outbox_service_test.dart`
+  - See: `docs/implementation_plans/2025-11-16_entry_link_sync_atomicity.md`
 - Tasks page: Active label filters are now visible below the search header (no longer clipped in the app bar).
 - AI label assignment: Prevented out-of-category labels from being assigned by AI
 - Task label selector: Now shows currently assigned out-of-scope labels to allow unassigning

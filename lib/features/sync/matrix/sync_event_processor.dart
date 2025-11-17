@@ -556,7 +556,10 @@ class SyncEventProcessor {
     required SyncJournalEntityLoader loader,
   }) async {
     switch (syncMessage) {
-      case SyncJournalEntity(jsonPath: final jsonPath):
+      case SyncJournalEntity(
+          jsonPath: final jsonPath,
+          entryLinks: final entryLinks,
+        ):
         try {
           final journalEntity = await loader.load(
             jsonPath: jsonPath,
@@ -586,6 +589,39 @@ class SyncEventProcessor {
           final updateResult =
               await journalDb.updateJournalEntity(journalEntity);
           final rows = updateResult.rowsWritten ?? 0;
+
+          // Process embedded entry links AFTER successful journal entity persistence
+          var processedLinksCount = 0;
+          if (updateResult.applied &&
+              entryLinks != null &&
+              entryLinks.isNotEmpty) {
+            final affectedIds = <String>{};
+            for (final link in entryLinks) {
+              try {
+                final linkRows = await journalDb.upsertEntryLink(link);
+                if (linkRows > 0) {
+                  processedLinksCount++;
+                  _loggingService.captureEvent(
+                    'apply entryLink.embedded from=${link.fromId} to=${link.toId} rows=$linkRows',
+                    domain: 'MATRIX_SERVICE',
+                    subDomain: 'apply.entryLink.embedded',
+                  );
+                }
+                affectedIds.addAll({link.fromId, link.toId});
+              } catch (e, st) {
+                _loggingService.captureException(
+                  e,
+                  domain: 'MATRIX_SERVICE',
+                  subDomain: 'apply.entryLink.embedded',
+                  stackTrace: st,
+                );
+              }
+            }
+            if (affectedIds.isNotEmpty) {
+              _updateNotifications.notify(affectedIds, fromSync: true);
+            }
+          }
+
           final diag = SyncApplyDiagnostics(
             eventId: event.eventId,
             payloadType: 'journalEntity',
@@ -596,7 +632,7 @@ class SyncEventProcessor {
             skipReason: updateResult.skipReason,
           );
           _loggingService.captureEvent(
-            'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} rowsWritten=$rows applied=${updateResult.applied} skip=${updateResult.skipReason?.label ?? 'none'} status=${diag.conflictStatus}',
+            'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} rowsWritten=$rows applied=${updateResult.applied} skip=${updateResult.skipReason?.label ?? 'none'} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
             domain: 'MATRIX_SERVICE',
             subDomain: 'apply',
           );
