@@ -553,6 +553,8 @@ void main() {
 
   group('EXIF Parsing Error Handling', () {
     test('logs exception when EXIF parsing fails', () async {
+      final loggingService = getIt<LoggingService>();
+
       // Trigger EXIF parsing with minimal/invalid data
       final invalidExif = Uint8List.fromList([
         0xFF, 0xD8, // SOI
@@ -567,9 +569,15 @@ void main() {
         fileExtension: 'jpg',
       );
 
-      // The code should handle the error gracefully
-      // Verify it completes without crashing
-      expect(true, isTrue);
+      // Verify logging was called for EXIF parsing error
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'media_import',
+          subDomain: 'extractImageTimestamp',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
 
     test('logs exception for unexpected EXIF date format', () async {
