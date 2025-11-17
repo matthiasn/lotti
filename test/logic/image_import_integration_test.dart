@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -92,6 +93,45 @@ void main() {
   });
 
   group('importImageAssets - Photo Picker Integration', () {
+    setUp(() {
+      // Mock PhotoManager plugin method channel
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('com.fluttercandies/photo_manager'),
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'requestPermissionExtend') {
+            // Return denied permission (0 = PermissionState.denied)
+            return 0;
+          }
+          return null;
+        },
+      );
+
+      // Mock wechat_assets_picker plugin method channel
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('com.fluttercandies.wechat_assets_picker'),
+        (MethodCall methodCall) async {
+          // Return null for pickAssets (user cancelled)
+          return null;
+        },
+      );
+    });
+
+    tearDown(() {
+      // Clean up method channel handlers
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('com.fluttercandies/photo_manager'),
+        null,
+      );
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        const MethodChannel('com.fluttercandies.wechat_assets_picker'),
+        null,
+      );
+    });
+
     testWidgets('returns early when permissions are not granted',
         (tester) async {
       // This test verifies the permission check behavior
