@@ -18,12 +18,14 @@ Map<String, int> calculateScores({
       final stepResult = results[questionId] as RPStepResult?;
       final choice = stepResult?.results['answer'];
 
-      final value = switch (choice) {
-        (final RPImageChoice c) => c.value as int,
-        (final List<RPChoice> c) => c.firstOrNull?.value ?? 0,
-        Object() => 0,
-        null => 0,
-      };
+      final int value;
+      if (choice is RPImageChoice) {
+        value = choice.value as int;
+      } else if (choice is List<RPChoice>) {
+        value = choice.firstOrNull?.value ?? 0;
+      } else {
+        value = 0;
+      }
 
       score = score + value;
     }

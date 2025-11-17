@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_lambdas
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -27,6 +29,8 @@ import '../../../helpers/path_provider.dart';
 class MockSystemClipboard extends Mock implements SystemClipboard {}
 
 class MockClipboardReader extends Mock implements ClipboardReader {}
+
+class MockClipboardDataReader extends Mock implements ClipboardDataReader {}
 
 class MockDataReaderFile extends Mock implements DataReaderFile {}
 
@@ -58,6 +62,7 @@ void main() {
   late ProviderContainer container;
   late MockSystemClipboard mockClipboard;
   late MockClipboardReader mockReader;
+  late MockClipboardDataReader mockItem;
   late MockDataReaderFile mockFile;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockLoggingService mockLoggingService;
@@ -174,6 +179,7 @@ void main() {
   setUp(() {
     mockClipboard = MockSystemClipboard();
     mockReader = MockClipboardReader();
+    mockItem = MockClipboardDataReader();
     mockFile = MockDataReaderFile();
 
     container = ProviderContainer(
@@ -183,6 +189,8 @@ void main() {
     );
 
     when(() => mockClipboard.read()).thenAnswer((_) async => mockReader);
+    // Mock the items list to contain a single item for most tests
+    when(() => mockReader.items).thenReturn([mockItem]);
 
     // Stub persistence logic used by JournalRepository.createImageEntry
     when(
@@ -244,8 +252,8 @@ void main() {
     });
 
     test('build returns true when PNG is available', () async {
-      when(() => mockReader.canProvide(Formats.png)).thenReturn(true);
-      when(() => mockReader.canProvide(Formats.jpeg)).thenReturn(false);
+      when(() => mockItem.canProvide(Formats.png)).thenReturn(true);
+      when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
 
       final result = await container.read(
         imagePasteControllerProvider(
@@ -258,8 +266,8 @@ void main() {
     });
 
     test('build returns true when JPEG is available', () async {
-      when(() => mockReader.canProvide(Formats.png)).thenReturn(false);
-      when(() => mockReader.canProvide(Formats.jpeg)).thenReturn(true);
+      when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
+      when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
 
       final result = await container.read(
         imagePasteControllerProvider(
@@ -272,11 +280,10 @@ void main() {
     });
 
     test('paste handles PNG data correctly', () async {
-      when(() => mockReader.canProvide(Formats.png)).thenReturn(true);
-      when(() => mockReader.canProvide(Formats.jpeg)).thenReturn(false);
+      when(() => mockItem.canProvide(Formats.png)).thenReturn(true);
+      when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(false);
 
-      when(() => mockReader.getFile(Formats.png, any()))
-          .thenAnswer((invocation) {
+      when(() => mockItem.getFile(Formats.png, any())).thenAnswer((invocation) {
         final callback =
             invocation.positionalArguments[1] as void Function(DataReaderFile);
         callback(mockFile);
@@ -299,15 +306,15 @@ void main() {
       // with tearDown/other suites that may reset GetIt.
       await pumpEventQueue();
 
-      verify(() => mockReader.getFile(Formats.png, any())).called(1);
+      verify(() => mockItem.getFile(Formats.png, any())).called(1);
       verify(() => mockFile.readAll()).called(1);
     });
 
     test('paste handles JPEG data correctly', () async {
-      when(() => mockReader.canProvide(Formats.png)).thenReturn(false);
-      when(() => mockReader.canProvide(Formats.jpeg)).thenReturn(true);
+      when(() => mockItem.canProvide(Formats.png)).thenReturn(false);
+      when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
 
-      when(() => mockReader.getFile(Formats.jpeg, any()))
+      when(() => mockItem.getFile(Formats.jpeg, any()))
           .thenAnswer((invocation) {
         final callback =
             invocation.positionalArguments[1] as void Function(DataReaderFile);
@@ -330,16 +337,16 @@ void main() {
       // Ensure any pending async completes before expectations/teardown
       await pumpEventQueue();
 
-      verify(() => mockReader.getFile(Formats.jpeg, any())).called(1);
+      verify(() => mockItem.getFile(Formats.jpeg, any())).called(1);
       verify(() => mockFile.readAll()).called(1);
     });
 
     test('paste handles only JPEG when both PNG and JPEG are available',
         () async {
-      when(() => mockReader.canProvide(Formats.png)).thenReturn(true);
-      when(() => mockReader.canProvide(Formats.jpeg)).thenReturn(true);
+      when(() => mockItem.canProvide(Formats.png)).thenReturn(true);
+      when(() => mockItem.canProvide(Formats.jpeg)).thenReturn(true);
 
-      when(() => mockReader.getFile(Formats.jpeg, any()))
+      when(() => mockItem.getFile(Formats.jpeg, any()))
           .thenAnswer((invocation) {
         final callback =
             invocation.positionalArguments[1] as void Function(DataReaderFile);
@@ -362,9 +369,156 @@ void main() {
       // Ensure any pending async completes before expectations/teardown
       await pumpEventQueue();
 
-      verify(() => mockReader.getFile(Formats.jpeg, any())).called(1);
+      verify(() => mockItem.getFile(Formats.jpeg, any())).called(1);
       verify(() => mockFile.readAll()).called(1);
-      verifyNever(() => mockReader.getFile(Formats.png, any()));
+      verifyNever(() => mockItem.getFile(Formats.png, any()));
+    });
+
+    test('paste handles multiple clipboard items (3 JPEG images)', () async {
+      // Create 3 mock items
+      final mockItem1 = MockClipboardDataReader();
+      final mockItem2 = MockClipboardDataReader();
+      final mockItem3 = MockClipboardDataReader();
+      final mockFile1 = MockDataReaderFile();
+      final mockFile2 = MockDataReaderFile();
+      final mockFile3 = MockDataReaderFile();
+
+      // Override the items list with 3 items
+      final mockItems = [mockItem1, mockItem2, mockItem3];
+      final mockFiles = [mockFile1, mockFile2, mockFile3];
+      when(() => mockReader.items).thenReturn(mockItems);
+
+      // Set up each item and file
+      for (var i = 0; i < mockItems.length; i++) {
+        final item = mockItems[i];
+        final file = mockFiles[i];
+        when(() => item.canProvide(Formats.jpeg)).thenReturn(true);
+        when(() => item.canProvide(Formats.png)).thenReturn(false);
+        when(() => item.getFile(Formats.jpeg, any())).thenAnswer((invocation) {
+          final callback = invocation.positionalArguments[1] as void Function(
+              DataReaderFile);
+          callback(file);
+          return null;
+        });
+        when(() => file.readAll()).thenAnswer(
+            (_) async => Uint8List.fromList([i * 3 + 1, i * 3 + 2, i * 3 + 3]));
+      }
+
+      final controller = container.read(
+        imagePasteControllerProvider(
+          linkedFromId: 'testLink',
+          categoryId: 'testCategory',
+        ).notifier,
+      );
+
+      await controller.paste();
+      await pumpEventQueue();
+
+      // Verify all 3 items were processed
+      verify(() => mockItem1.getFile(Formats.jpeg, any())).called(1);
+      verify(() => mockItem2.getFile(Formats.jpeg, any())).called(1);
+      verify(() => mockItem3.getFile(Formats.jpeg, any())).called(1);
+      verify(() => mockFile1.readAll()).called(1);
+      verify(() => mockFile2.readAll()).called(1);
+      verify(() => mockFile3.readAll()).called(1);
+    });
+
+    test('paste handles mixed formats (2 items: PNG + JPEG)', () async {
+      final mockItem1 = MockClipboardDataReader();
+      final mockItem2 = MockClipboardDataReader();
+      final mockFile1 = MockDataReaderFile();
+      final mockFile2 = MockDataReaderFile();
+
+      when(() => mockReader.items).thenReturn([mockItem1, mockItem2]);
+
+      // First item is PNG only
+      when(() => mockItem1.canProvide(Formats.png)).thenReturn(true);
+      when(() => mockItem1.canProvide(Formats.jpeg)).thenReturn(false);
+
+      // Second item is JPEG only
+      when(() => mockItem2.canProvide(Formats.jpeg)).thenReturn(true);
+      when(() => mockItem2.canProvide(Formats.png)).thenReturn(false);
+
+      when(() => mockItem1.getFile(Formats.png, any()))
+          .thenAnswer((invocation) {
+        final callback =
+            invocation.positionalArguments[1] as void Function(DataReaderFile);
+        callback(mockFile1);
+        return null;
+      });
+
+      when(() => mockItem2.getFile(Formats.jpeg, any()))
+          .thenAnswer((invocation) {
+        final callback =
+            invocation.positionalArguments[1] as void Function(DataReaderFile);
+        callback(mockFile2);
+        return null;
+      });
+
+      when(() => mockFile1.readAll())
+          .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+      when(() => mockFile2.readAll())
+          .thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
+
+      final controller = container.read(
+        imagePasteControllerProvider(
+          linkedFromId: 'testLink',
+          categoryId: 'testCategory',
+        ).notifier,
+      );
+
+      await controller.paste();
+      await pumpEventQueue();
+
+      verify(() => mockItem1.getFile(Formats.png, any())).called(1);
+      verify(() => mockItem2.getFile(Formats.jpeg, any())).called(1);
+      verify(() => mockFile1.readAll()).called(1);
+      verify(() => mockFile2.readAll()).called(1);
+    });
+
+    test('paste handles empty items list gracefully', () async {
+      when(() => mockReader.items).thenReturn([]);
+
+      final controller = container.read(
+        imagePasteControllerProvider(
+          linkedFromId: 'testLink',
+          categoryId: 'testCategory',
+        ).notifier,
+      );
+
+      // Should complete without errors
+      await controller.paste();
+      await pumpEventQueue();
+
+      // No getFile calls should occur
+      verifyNever(() => mockItem.getFile(any(), any()));
+    });
+
+    test('paste skips items with no supported formats', () async {
+      final mockItem1 = MockClipboardDataReader();
+      final mockItem2 = MockClipboardDataReader();
+
+      when(() => mockReader.items).thenReturn([mockItem1, mockItem2]);
+
+      // Both items have no supported formats
+      when(() => mockItem1.canProvide(Formats.png)).thenReturn(false);
+      when(() => mockItem1.canProvide(Formats.jpeg)).thenReturn(false);
+      when(() => mockItem2.canProvide(Formats.png)).thenReturn(false);
+      when(() => mockItem2.canProvide(Formats.jpeg)).thenReturn(false);
+
+      final controller = container.read(
+        imagePasteControllerProvider(
+          linkedFromId: 'testLink',
+          categoryId: 'testCategory',
+        ).notifier,
+      );
+
+      await controller.paste();
+      await pumpEventQueue();
+
+      // No getFile calls should occur
+      verifyNever(() => mockItem1.getFile(any(), any()));
+      verifyNever(() => mockItem2.getFile(any(), any()));
     });
   });
 }
