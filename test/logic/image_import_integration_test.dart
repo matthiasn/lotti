@@ -337,6 +337,7 @@ void main() {
       // They should be different instances
       expect(reader1, isNotNull);
       expect(reader2, isNotNull);
+      expect(reader1, isNot(same(reader2)));
 
       getIt.unregister<AudioMetadataReader>();
     });
