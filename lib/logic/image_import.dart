@@ -202,16 +202,16 @@ Future<DateTime> _extractImageTimestamp(Uint8List data) async {
   try {
     final exifData = await readExifFromBytes(data);
 
-    // Try DateTimeOriginal first (preferred for photos)
-    if (exifData.containsKey('EXIF DateTimeOriginal')) {
-      final dateTimeStr = exifData['EXIF DateTimeOriginal'].toString();
-      return _parseExifDateTime(dateTimeStr);
-    }
-
-    // Fallback to DateTime (file modification time)
-    if (exifData.containsKey('Image DateTime')) {
-      final dateTimeStr = exifData['Image DateTime'].toString();
-      return _parseExifDateTime(dateTimeStr);
+    // Try preferred keys in order.
+    const preferredKeys = [
+      'EXIF DateTimeOriginal', // Preferred for photos
+      'Image DateTime', // Fallback to file modification time
+    ];
+    for (final key in preferredKeys) {
+      if (exifData.containsKey(key)) {
+        final dateTimeStr = exifData[key].toString();
+        return _parseExifDateTime(dateTimeStr);
+      }
     }
   } catch (exception, stackTrace) {
     // Log but don't fail - return current time as fallback
