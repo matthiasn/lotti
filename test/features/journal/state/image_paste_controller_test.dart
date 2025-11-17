@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_lambdas
+
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -393,13 +395,13 @@ void main() {
         when(() => item.canProvide(Formats.jpeg)).thenReturn(true);
         when(() => item.canProvide(Formats.png)).thenReturn(false);
         when(() => item.getFile(Formats.jpeg, any())).thenAnswer((invocation) {
-          final callback =
-              invocation.positionalArguments[1] as void Function(DataReaderFile);
+          final callback = invocation.positionalArguments[1] as void Function(
+              DataReaderFile);
           callback(file);
           return null;
         });
-        when(() => file.readAll())
-            .thenAnswer((_) async => Uint8List.fromList([i * 3 + 1, i * 3 + 2, i * 3 + 3]));
+        when(() => file.readAll()).thenAnswer(
+            (_) async => Uint8List.fromList([i * 3 + 1, i * 3 + 2, i * 3 + 3]));
       }
 
       final controller = container.read(
