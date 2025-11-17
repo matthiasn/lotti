@@ -398,7 +398,7 @@ void main() {
           callback(file);
           return null;
         });
-        when(file.readAll)
+        when(() => file.readAll())
             .thenAnswer((_) async => Uint8List.fromList([i * 3 + 1, i * 3 + 2, i * 3 + 3]));
       }
 
@@ -416,9 +416,9 @@ void main() {
       verify(() => mockItem1.getFile(Formats.jpeg, any())).called(1);
       verify(() => mockItem2.getFile(Formats.jpeg, any())).called(1);
       verify(() => mockItem3.getFile(Formats.jpeg, any())).called(1);
-      verify(mockFile1.readAll).called(1);
-      verify(mockFile2.readAll).called(1);
-      verify(mockFile3.readAll).called(1);
+      verify(() => mockFile1.readAll()).called(1);
+      verify(() => mockFile2.readAll()).called(1);
+      verify(() => mockFile3.readAll()).called(1);
     });
 
     test('paste handles mixed formats (2 items: PNG + JPEG)', () async {
@@ -453,9 +453,9 @@ void main() {
         return null;
       });
 
-      when(mockFile1.readAll)
+      when(() => mockFile1.readAll())
           .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
-      when(mockFile2.readAll)
+      when(() => mockFile2.readAll())
           .thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
 
       final controller = container.read(
@@ -470,8 +470,8 @@ void main() {
 
       verify(() => mockItem1.getFile(Formats.png, any())).called(1);
       verify(() => mockItem2.getFile(Formats.jpeg, any())).called(1);
-      verify(mockFile1.readAll).called(1);
-      verify(mockFile2.readAll).called(1);
+      verify(() => mockFile1.readAll()).called(1);
+      verify(() => mockFile2.readAll()).called(1);
     });
 
     test('paste handles empty items list gracefully', () async {
