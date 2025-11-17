@@ -148,8 +148,8 @@ void main() {
     );
   }
 
-  setUp(() {
-    getIt.reset();
+  setUp(() async {
+    await getIt.reset();
     journalDb = MockJournalDb();
     updateNotifications = MockUpdateNotifications();
     loggingService = MockLoggingService();

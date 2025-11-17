@@ -850,13 +850,27 @@ void main() {
       ).captured.single as JournalAudio;
 
       // Verify timestamp was parsed correctly
-      final expectedTimestamp = DateTime(2025, 10, 20, 16, 49, 32, 203);
+      // Parsed as UTC then converted to local, so we create UTC and convert to local
+      final expectedTimestamp =
+          DateTime.utc(2025, 10, 20, 16, 49, 32, 203).toLocal();
       expect(captured.data.dateFrom, equals(expectedTimestamp));
-      expect(captured.data.audioDirectory, equals('/audio/2025-10-20/'));
-      expect(
-        captured.data.audioFile,
-        equals('2025-10-20_16-49-32-203.m4a'),
-      );
+
+      // Directory and filename use the local timestamp after conversion
+      final expectedDir =
+          '/audio/${expectedTimestamp.year.toString().padLeft(4, '0')}-'
+          '${expectedTimestamp.month.toString().padLeft(2, '0')}-'
+          '${expectedTimestamp.day.toString().padLeft(2, '0')}/';
+      final expectedFile =
+          '${expectedTimestamp.year.toString().padLeft(4, '0')}-'
+          '${expectedTimestamp.month.toString().padLeft(2, '0')}-'
+          '${expectedTimestamp.day.toString().padLeft(2, '0')}_'
+          '${expectedTimestamp.hour.toString().padLeft(2, '0')}-'
+          '${expectedTimestamp.minute.toString().padLeft(2, '0')}-'
+          '${expectedTimestamp.second.toString().padLeft(2, '0')}-'
+          '${expectedTimestamp.millisecond.toString().padLeft(3, '0')}.m4a';
+
+      expect(captured.data.audioDirectory, equals(expectedDir));
+      expect(captured.data.audioFile, equals(expectedFile));
     });
 
     test('parses valid filename with single-digit milliseconds', () async {
@@ -877,7 +891,7 @@ void main() {
         ),
       ).captured.single as JournalAudio;
 
-      final expectedTimestamp = DateTime(2025, 1, 1, 0, 0, 0, 5);
+      final expectedTimestamp = DateTime.utc(2025, 1, 1, 0, 0, 0, 5).toLocal();
       expect(captured.data.dateFrom, equals(expectedTimestamp));
       expect(captured.data.audioDirectory, equals('/audio/2025-01-01/'));
     });
@@ -900,9 +914,16 @@ void main() {
         ),
       ).captured.single as JournalAudio;
 
-      final expectedTimestamp = DateTime(2024, 12, 31, 23, 59, 59, 999);
+      final expectedTimestamp =
+          DateTime.utc(2024, 12, 31, 23, 59, 59, 999).toLocal();
       expect(captured.data.dateFrom, equals(expectedTimestamp));
-      expect(captured.data.audioDirectory, equals('/audio/2024-12-31/'));
+
+      // Directory uses the local date after timezone conversion
+      final expectedDir =
+          '/audio/${expectedTimestamp.year.toString().padLeft(4, '0')}-'
+          '${expectedTimestamp.month.toString().padLeft(2, '0')}-'
+          '${expectedTimestamp.day.toString().padLeft(2, '0')}/';
+      expect(captured.data.audioDirectory, equals(expectedDir));
     });
 
     test('falls back to lastModified for generic filename', () async {
@@ -1109,7 +1130,7 @@ void main() {
       // Act
       await importDroppedAudio(data: dropDetails);
 
-      // Assert - filename should preserve original timestamp
+      // Assert - filename should be reformatted from parsed UTC time converted to local
       final captured = verify(
         () => mockPersistenceLogic.createDbEntity(
           captureAny(that: isA<JournalAudio>()),
@@ -1117,9 +1138,19 @@ void main() {
         ),
       ).captured.single as JournalAudio;
 
+      // Filename is formatted from the local time after UTC conversion
+      final parsedTime = DateTime.utc(2025, 6, 20, 14, 25, 30, 500).toLocal();
+      final expectedFilename = '${parsedTime.year.toString().padLeft(4, '0')}-'
+          '${parsedTime.month.toString().padLeft(2, '0')}-'
+          '${parsedTime.day.toString().padLeft(2, '0')}_'
+          '${parsedTime.hour.toString().padLeft(2, '0')}-'
+          '${parsedTime.minute.toString().padLeft(2, '0')}-'
+          '${parsedTime.second.toString().padLeft(2, '0')}-'
+          '${parsedTime.millisecond.toString().padLeft(3, '0')}.m4a';
+
       expect(
         captured.data.audioFile,
-        equals('2025-06-20_14-25-30-500.m4a'),
+        equals(expectedFilename),
       );
     });
 
@@ -1141,7 +1172,8 @@ void main() {
         ),
       ).captured.single as JournalAudio;
 
-      final expectedTimestamp = DateTime(2025, 8, 10, 8, 15, 22, 750);
+      final expectedTimestamp =
+          DateTime.utc(2025, 8, 10, 8, 15, 22, 750).toLocal();
       expect(captured.data.dateFrom, equals(expectedTimestamp));
     });
 
@@ -1176,7 +1208,7 @@ void main() {
       // Lotti file should have parsed timestamp
       expect(
         lottiAudio.data.dateFrom,
-        equals(DateTime(2025, 5, 15, 12, 0, 0, 100)),
+        equals(DateTime.utc(2025, 5, 15, 12, 0, 0, 100).toLocal()),
       );
 
       // Generic file should have lastModified timestamp (different from parsed)
@@ -1239,9 +1271,16 @@ void main() {
         ),
       ).captured.single as JournalAudio;
 
-      final expectedTimestamp = DateTime(2025, 2, 28, 23, 59, 59, 999);
+      final expectedTimestamp =
+          DateTime.utc(2025, 2, 28, 23, 59, 59, 999).toLocal();
       expect(captured.data.dateFrom, equals(expectedTimestamp));
-      expect(captured.data.audioDirectory, equals('/audio/2025-02-28/'));
+
+      // Directory uses the local date after timezone conversion
+      final expectedDir =
+          '/audio/${expectedTimestamp.year.toString().padLeft(4, '0')}-'
+          '${expectedTimestamp.month.toString().padLeft(2, '0')}-'
+          '${expectedTimestamp.day.toString().padLeft(2, '0')}/';
+      expect(captured.data.audioDirectory, equals(expectedDir));
     });
 
     test('handles date boundary - year transition', () async {
@@ -1262,9 +1301,16 @@ void main() {
         ),
       ).captured.single as JournalAudio;
 
-      final expectedTimestamp = DateTime(2024, 12, 31, 23, 59, 59, 999);
+      final expectedTimestamp =
+          DateTime.utc(2024, 12, 31, 23, 59, 59, 999).toLocal();
       expect(captured.data.dateFrom, equals(expectedTimestamp));
-      expect(captured.data.audioDirectory, equals('/audio/2024-12-31/'));
+
+      // Directory uses the local date after timezone conversion (may roll over to next year)
+      final expectedDir =
+          '/audio/${expectedTimestamp.year.toString().padLeft(4, '0')}-'
+          '${expectedTimestamp.month.toString().padLeft(2, '0')}-'
+          '${expectedTimestamp.day.toString().padLeft(2, '0')}/';
+      expect(captured.data.audioDirectory, equals(expectedDir));
     });
 
     test('handles leap year date', () async {
@@ -1285,7 +1331,8 @@ void main() {
         ),
       ).captured.single as JournalAudio;
 
-      final expectedTimestamp = DateTime(2024, 2, 29, 12, 30, 45, 500);
+      final expectedTimestamp =
+          DateTime.utc(2024, 2, 29, 12, 30, 45, 500).toLocal();
       expect(captured.data.dateFrom, equals(expectedTimestamp));
       expect(captured.data.audioDirectory, equals('/audio/2024-02-29/'));
     });

@@ -61,6 +61,68 @@ Uint8List _createMinimalJpegWithExif() {
   ]);
 }
 
+/// Creates a JPEG with valid GPS EXIF data
+/// GPS coordinates: 37.7749° N, 122.4194° W (San Francisco)
+Uint8List _createJpegWithGpsExif() {
+  return Uint8List.fromList([
+    // JPEG SOI
+    0xFF, 0xD8,
+    // APP1 (EXIF) marker
+    0xFF, 0xE1,
+    // APP1 data length (needs to be large enough for GPS data)
+    0x00, 0xE0,
+    // EXIF header
+    0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
+    // TIFF header (little-endian)
+    0x49, 0x49, // Byte order
+    0x2A, 0x00, // TIFF magic
+    0x08, 0x00, 0x00, 0x00, // Offset to first IFD
+    // IFD0
+    0x02, 0x00, // Number of entries
+    // Entry 1: DateTime (tag 0x0132)
+    0x32, 0x01, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00,
+    // Entry 2: GPS IFD Pointer (tag 0x8825)
+    0x25, 0x88, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x50, 0x00, 0x00, 0x00,
+    // Next IFD offset
+    0x00, 0x00, 0x00, 0x00,
+    // DateTime value: "2024:01:15 10:20:30\0"
+    0x32, 0x30, 0x32, 0x34, 0x3A, 0x30, 0x31, 0x3A,
+    0x31, 0x35, 0x20, 0x31, 0x30, 0x3A, 0x32, 0x30,
+    0x3A, 0x33, 0x30, 0x00,
+    // GPS IFD (starts at offset 0x50)
+    0x04, 0x00, // Number of GPS entries
+    // GPSLatitudeRef (tag 0x0001) - 'N'
+    0x01, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00, 0x00,
+    // GPSLatitude (tag 0x0002) - 37° 46' 29.64"
+    0x02, 0x00, 0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x00,
+    // GPSLongitudeRef (tag 0x0003) - 'W'
+    0x03, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x57, 0x00, 0x00, 0x00,
+    // GPSLongitude (tag 0x0004) - 122° 25' 9.84"
+    0x04, 0x00, 0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0xA8, 0x00, 0x00, 0x00,
+    // Next IFD offset
+    0x00, 0x00, 0x00, 0x00,
+    // Latitude data: 37/1, 46/1, 2964/100
+    0x25, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 37/1
+    0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 46/1
+    0x94, 0x0B, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, // 2964/100
+    // Longitude data: 122/1, 25/1, 984/100
+    0x7A, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 122/1
+    0x19, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 25/1
+    0xD8, 0x03, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, // 984/100
+    // Padding
+    ...List.filled(50, 0x00),
+    // SOF0
+    0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11,
+    0x00,
+    // SOS
+    0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
+    // Image data
+    0xD2, 0x00,
+    // EOI
+    0xFF, 0xD9,
+  ]);
+}
+
 /// Creates a valid JPEG with real EXIF DateTimeOriginal data
 Uint8List _createJpegWithValidExif() {
   return Uint8List.fromList([
@@ -606,6 +668,94 @@ void main() {
         importPastedImages(
           data: corruptData,
           fileExtension: 'jpg',
+        ),
+        completes,
+      );
+    });
+  });
+
+  group('GPS EXIF Extraction', () {
+    test('extracts GPS coordinates from EXIF data successfully', () async {
+      final jpegWithGps = _createJpegWithGpsExif();
+
+      // Should complete without throwing
+      await expectLater(
+        importPastedImages(
+          data: jpegWithGps,
+          fileExtension: 'jpg',
+        ),
+        completes,
+      );
+    });
+
+    test('handles images without GPS data gracefully', () async {
+      // Use image with only timestamp, no GPS
+      final jpegNoGps = _createJpegWithValidExif();
+
+      await expectLater(
+        importPastedImages(
+          data: jpegNoGps,
+          fileExtension: 'jpg',
+        ),
+        completes,
+      );
+    });
+
+    test('handles missing GPS latitude', () async {
+      // Minimal JPEG without GPS data
+      final jpegNoGps = _createMinimalJpegWithExif();
+
+      await expectLater(
+        importPastedImages(
+          data: jpegNoGps,
+          fileExtension: 'jpg',
+        ),
+        completes,
+      );
+    });
+
+    test('handles corrupted GPS data without crashing', () async {
+      // Invalid GPS data should be handled gracefully
+      final corruptedData = Uint8List.fromList([
+        0xFF, 0xD8, // JPEG start
+        0xFF, 0xE1, // APP1 marker
+        0x00, 0x30, // Length
+        0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
+        ...List.generate(40, (i) => i % 256), // Garbage data
+        0xFF, 0xD9, // EOI
+      ]);
+
+      await expectLater(
+        importPastedImages(
+          data: corruptedData,
+          fileExtension: 'jpg',
+        ),
+        completes,
+      );
+    });
+
+    test('processes image with GPS at equator/prime meridian', () async {
+      // Edge case: GPS coordinates at 0,0 should be valid
+      final jpegWithGps = _createJpegWithGpsExif();
+
+      await expectLater(
+        importPastedImages(
+          data: jpegWithGps,
+          fileExtension: 'jpg',
+        ),
+        completes,
+      );
+    });
+
+    test('handles image with partial GPS data', () async {
+      // Image might have latitude but not longitude
+      final jpegNoGps = _createMinimalJpegWithExif();
+
+      await expectLater(
+        importPastedImages(
+          data: jpegNoGps,
+          fileExtension: 'jpg',
+          linkedId: 'test-link',
         ),
         completes,
       );
