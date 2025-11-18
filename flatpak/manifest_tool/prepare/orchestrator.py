@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime
 import hashlib
 import json
-import lzma
 import os
 import re
 import shutil
@@ -137,7 +136,6 @@ class PrepareFlathubOptions:
     clean_after_gen: bool = True
     pin_commit: bool = True
     use_nested_flutter: bool = False
-    download_missing_sources: bool = True
     no_flatpak_flutter: bool = False
     flatpak_flutter_timeout: Optional[int] = None
     extra_env: Mapping[str, str] | None = None
@@ -302,7 +300,6 @@ def _print_intro(context: PrepareFlathubContext, printer: _StatusPrinter) -> Non
     options = context.options
     print("  PIN_COMMIT=" + ("true" if options.pin_commit else "false"))
     print("  USE_NESTED_FLUTTER=" + ("true" if options.use_nested_flutter else "false"))
-    print("  DOWNLOAD_MISSING_SOURCES=" + ("true" if options.download_missing_sources else "false"))
     print("  CLEAN_AFTER_GEN=" + ("true" if options.clean_after_gen else "false"))
     print("  NO_FLATPAK_FLUTTER=" + ("true" if options.no_flatpak_flutter else "false"))
     timeout = options.flatpak_flutter_timeout
@@ -526,7 +523,6 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _copy_assets_and_metadata(context, printer)
     _download_and_generate_cargo_sources(context, printer)
     _post_process_output_manifest(context, printer)
-    _bundle_sources_and_archives(context, printer)
     _final_manifest_checks(context, printer)
     _cleanup(context, printer)
     _maybe_test_build(context, printer)
@@ -1902,70 +1898,6 @@ def _ensure_cargokit_patches_after_dependency_sources(document: ManifestDocument
     target["sources"] = sources
     document.mark_changed()
     printer.info("Reordered cargokit patches after dependency sources")
-
-
-def _bundle_sources_and_archives(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
-    printer.status("Bundling cached archive and file sources referenced by manifest...")
-    manifest_path = context.output_dir / context.manifest_work.name
-    document = ManifestDocument.load(manifest_path)
-
-    _ensure_flutter_archive(context, printer, document)
-
-    search_roots = [
-        context.flatpak_dir / "cache" / "pub.dev",
-        context.flatpak_dir / ".flatpak-builder" / "downloads",
-        context.repo_root / ".flatpak-builder" / "downloads",
-        context.repo_root.parent / ".flatpak-builder" / "downloads",
-    ]
-
-    cache = sources_ops.ArtifactCache(
-        output_dir=context.output_dir,
-        download_missing=context.options.download_missing_sources,
-        search_roots=[root for root in search_roots if root.exists()],
-    )
-    result = sources_ops.bundle_archive_sources(document, cache)
-    if result.changed:
-        document.save()
-    for message in result.messages:
-        printer.info(message)
-
-    _apply_operation(document, printer, flutter.rewrite_flutter_git_url)
-
-    app_archive_name = f"lotti-{context.app_commit}.tar.xz"
-    app_archive_path = context.output_dir / app_archive_name
-    if not app_archive_path.is_file():
-        printer.info(f"Creating archived app source {app_archive_name}")
-        result = _run_command(
-            [
-                "git",
-                "archive",
-                "--format=tar",
-                "--prefix=lotti/",
-                context.app_commit,
-            ],
-            cwd=context.repo_root,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=False,
-            check=False,
-        )
-        if result.returncode != 0:
-            error_output = (result.stderr or b"").decode("utf-8", "replace")
-            raise PrepareFlathubError("Failed to create app archive: " + error_output)
-        with lzma.open(app_archive_path, "wb") as archive_file:
-            archive_file.write(result.stdout)
-
-    app_sha = _file_sha256(app_archive_path)
-    _apply_operation(
-        document,
-        printer,
-        flutter.bundle_app_archive,
-        archive_path=app_archive_name,
-        sha256=app_sha,
-    )
-
-    _apply_operation(document, printer, flutter.apply_all_offline_fixes)
-    document.save()
 
 
 def _final_manifest_checks(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
