@@ -33,10 +33,10 @@ jobs:
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
           # Install required runtime and SDK extensions
-          sudo flatpak install -y flathub org.freedesktop.Platform//24.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk//24.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm20//24.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
+          sudo flatpak install -y flathub org.freedesktop.Platform//25.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk//25.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.llvm20//25.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//25.08
 
       - name: Verify Flatpak
         run: |

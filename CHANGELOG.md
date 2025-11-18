@@ -78,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Prompt label injection (capped to 100, usage + alphabetical) with optional private filtering.
   - `assign_task_labels` tool (add-only) with max 5 labels per call.
   - Shared rate limiter (5-minute window) and shadow mode.
+ - Flatpak packaging: install desktop and AppStream metadata from the upstream repo and use a `type: script` wrapper instead of inline `cat` heredocs in the manifest.
   - User feedback: SnackBar in Task Details listing assigned labels with Undo to remove them.
   - Event stream for UI notifications and comprehensive unit/feature tests.
 - Settings header widget tests now cover multiple text scale factors (1.0, 1.2, 1.5, 2.0) and common screen widths to guard layout across devices.
