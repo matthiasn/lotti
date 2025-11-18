@@ -74,7 +74,7 @@ How To Reproduce Locally
 
 What The Submission Manifest Should Contain
 - Only url+sha256 entries for 3rd‑party sources (GitHub, pub.dev, sqlite.org, etc.).
-- Local assets (desktop, metainfo, icons, screenshot, pubspec-sources.json, cargo-sources.json, flutter-sdk-*.json, small patches) remain `type: file`.
+- Local assets (icons, screenshot, pubspec-sources.json, cargo-sources.json, flutter-sdk-*.json, small patches) remain `type: file`. The `.desktop` and AppStream (`.metainfo.xml`) files are now installed from the upstream lotti repository during the `lotti` module build.
 - No `dir` sources (we strip them in post-processing).
   - File: flathub-build/output/com.matthiasn.lotti.yml
 

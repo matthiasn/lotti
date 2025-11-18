@@ -43,7 +43,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>Lotti application interface</caption>
-      <image type="source" width="536" height="999">https://raw.githubusercontent.com/matthiasn/lotti/refs/heads/main/flatpak/screenshot.png</image>
+      <image type="source" width="536" height="999">https://raw.githubusercontent.com/matthiasn/lotti/8a5b9ef0f9d8e7132638f497107bc33215819c0d/flatpak/screenshot.png</image>
     </screenshot>
   </screenshots>
-</component> 
+</component>
