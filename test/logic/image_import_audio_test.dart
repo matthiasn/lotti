@@ -24,17 +24,19 @@ void main() {
       expect(parseAudioFileTimestamp(''), isNull);
     });
 
-    test('returns null for filename with extension', () {
-      // Note: Function removes extension before parsing
+    test('parses filename with extension by stripping it', () {
+      // Function removes extension before parsing
       final result = parseAudioFileTimestamp('2024-01-15_10-30-45-123.m4a');
-      // The function does filename.split('.').first, so it WILL work
       expect(result, isNotNull);
+      expect(result!.year, 2024);
+      expect(result.month, 1);
+      expect(result.day, 15);
     });
 
     test('handles filename without milliseconds gracefully', () {
+      // Format requires milliseconds (yyyy-MM-dd_HH-mm-ss-S), so this should fail
       final result = parseAudioFileTimestamp('2024-01-15_10-30-45');
-      // This might fail format parsing and return null
-      expect(result, isA<DateTime?>());
+      expect(result, isNull);
     });
 
     test('handles partial date format', () {
@@ -43,14 +45,24 @@ void main() {
     });
 
     test('handles garbage input', () {
-      expect(parseAudioFileTimestamp('abc-def-ghi'), isNull);
+      final result = parseAudioFileTimestamp('abc-def-ghi');
+      expect(result, isNull);
     });
 
     test('handles edge case timestamps', () {
       final result = parseAudioFileTimestamp('2024-12-31_23-59-59-999');
       expect(result, isNotNull);
-      // May roll over to 2025 due to timezone conversion
+      // UTC to local conversion may roll over to 2025 depending on timezone
       expect(result!.year, greaterThanOrEqualTo(2024));
+      if (result.year == 2024) {
+        expect(result.month, 12);
+        expect(result.day, 31);
+      } else {
+        // Rolled over to 2025-01-01
+        expect(result.year, 2025);
+        expect(result.month, 1);
+        expect(result.day, 1);
+      }
     });
 
     test('handles leap year date', () {
@@ -58,7 +70,7 @@ void main() {
       expect(result, isNotNull);
       expect(result!.year, 2024);
       expect(result.month, 2);
-      expect(result.day, greaterThanOrEqualTo(29));
+      expect(result.day, 29);
     });
   });
 
