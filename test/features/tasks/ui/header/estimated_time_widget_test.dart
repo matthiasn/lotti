@@ -85,7 +85,7 @@ void main() {
       ),
     );
 
-    expect(find.text('No estimate set'), findsOneWidget);
+    expect(find.text('No estimate'), findsOneWidget);
   });
 
   testWidgets('is tappable', (tester) async {

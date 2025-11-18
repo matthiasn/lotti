@@ -2255,7 +2255,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskEstimateLabel => 'Timp Estimat:';
 
   @override
-  String get taskNoEstimateLabel => 'No estimate set';
+  String get taskNoEstimateLabel => 'Fără estimare';
 
   @override
   String get taskNameHint => 'Introduceți un nume pentru sarcină';

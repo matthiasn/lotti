@@ -802,7 +802,7 @@
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "unassigned",
   "taskEstimateLabel": "Estimate:",
-  "taskNoEstimateLabel": "No estimate set",
+  "taskNoEstimateLabel": "No estimate",
   "taskNameHint": "Enter a name for the task",
   "taskStatusAll": "All",
   "taskStatusBlocked": "Blocked",

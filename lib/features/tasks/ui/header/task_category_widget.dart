@@ -14,19 +14,15 @@ class TaskCategoryWidget extends StatelessWidget {
   const TaskCategoryWidget({
     required this.onSave,
     required this.category,
-    this.hideLabelWhenValueSet = false,
     super.key,
   });
 
   final CategoryDefinition? category;
   final CategoryIdCallback onSave;
-  final bool hideLabelWhenValueSet;
 
   @override
   Widget build(BuildContext context) {
     final category = this.category;
-    final hasCategory = category != null;
-    final showLabel = !hideLabelWhenValueSet || !hasCategory;
 
     final theme = Theme.of(context);
     final Color chipColor;
@@ -66,25 +62,11 @@ class TaskCategoryWidget extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(right: 5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showLabel) ...[
-              Text(
-                context.messages.taskCategoryLabel,
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.outline,
-                ),
-              ),
-              const SizedBox(height: 4),
-            ],
-            ModernStatusChip(
-              label: chipLabel,
-              color: chipColor,
-              icon: chipIcon,
-              borderWidth: AppTheme.statusIndicatorBorderWidth * 1.5,
-            ),
-          ],
+        child: ModernStatusChip(
+          label: chipLabel,
+          color: chipColor,
+          icon: chipIcon,
+          borderWidth: AppTheme.statusIndicatorBorderWidth * 1.5,
         ),
       ),
     );

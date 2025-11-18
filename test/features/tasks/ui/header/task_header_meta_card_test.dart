@@ -140,8 +140,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Placeholder pill text and timer icon should be visible.
-    expect(find.text('No estimate set'), findsOneWidget);
+    // Placeholder text and timer icon should be visible.
+    expect(find.text('No estimate'), findsOneWidget);
     expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
   });
 

@@ -60,6 +60,9 @@ void main() {
 
     // Assert - should contain a status-style chip
     expect(find.byType(ModernStatusChip), findsOneWidget);
+
+    // Assert - should NOT display 'Category:' label
+    expect(find.text('Category:'), findsNothing);
   });
 
   testWidgets('renders correctly without a category', (tester) async {
@@ -78,6 +81,9 @@ void main() {
 
     // Assert - should still contain a chip
     expect(find.byType(ModernStatusChip), findsOneWidget);
+
+    // Assert - should NOT display 'Category:' label even without category
+    expect(find.text('Category:'), findsNothing);
   });
 
   testWidgets('opens category selection modal when tapped', (tester) async {

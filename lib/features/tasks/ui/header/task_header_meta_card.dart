@@ -52,7 +52,7 @@ class _TaskMetadataRow extends StatelessWidget {
       children: [
         Expanded(
           child: Wrap(
-            spacing: AppTheme.cardSpacing / 2,
+            spacing: AppTheme.cardSpacing,
             runSpacing: AppTheme.cardSpacing / 2,
             children: [
               TaskPriorityWrapper(
@@ -112,45 +112,23 @@ class _EditableTaskProgress extends ConsumerWidget {
         showTimeText: true,
       );
     } else {
-      child = Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.statusIndicatorPaddingHorizontal,
-          vertical: AppTheme.statusIndicatorPaddingVertical,
-        ),
-        decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHighest.withValues(
-            alpha: AppTheme.alphaSurfaceContainerHighest,
+      child = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timer_outlined,
+            size: AppTheme.statusIndicatorIconSizeCompact,
+            color: context.colorScheme.outline,
           ),
-          borderRadius: BorderRadius.circular(
-            AppTheme.statusIndicatorBorderRadius,
-          ),
-          border: Border.all(
-            color: context.colorScheme.outline.withValues(
-              alpha: AppTheme.alphaStatusIndicatorBorder,
-            ),
-            width: AppTheme.statusIndicatorBorderWidth,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.timer_outlined,
-              size: AppTheme.statusIndicatorIconSizeCompact,
+          const SizedBox(width: 6),
+          Text(
+            context.messages.taskNoEstimateLabel,
+            style: context.textTheme.titleSmall?.copyWith(
               color: context.colorScheme.outline,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(width: 6),
-            Text(
-              context.messages.taskNoEstimateLabel,
-              style: context.textTheme.titleSmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant.withValues(
-                  alpha: AppTheme.alphaSurfaceVariant,
-                ),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
