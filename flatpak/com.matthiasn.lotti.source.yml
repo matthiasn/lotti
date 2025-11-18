@@ -5,11 +5,6 @@ sdk: org.freedesktop.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.llvm20
   - org.freedesktop.Sdk.Extension.rust-stable
-add-extensions:
-  org.freedesktop.Platform.ffmpeg-full:
-    directory: lib/ffmpeg
-    version: '25.08'
-    add-ld-path: .
 command: lotti
 finish-args:
   - --share=network
