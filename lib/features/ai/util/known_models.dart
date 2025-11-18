@@ -103,6 +103,16 @@ const List<KnownModel> gemma3nModels = [
 /// Gemini models - Google's multimodal AI models
 const List<KnownModel> geminiModels = [
   KnownModel(
+    providerModelId: 'models/gemini-3-pro-preview',
+    name: 'Gemini 3 Pro Preview',
+    inputModalities: [Modality.text, Modality.image, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Latest Gemini 3 with breakthrough reasoning and state-of-the-art multimodal capabilities',
+  ),
+  KnownModel(
     providerModelId: 'models/gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
