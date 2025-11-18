@@ -213,7 +213,7 @@ void main() {
         const Offset(0, 50),
       );
 
-      await tester.tap(measurableFinder.first);
+      await tester.tap(measurableFinder.first, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       // The aggregation type is not displayed as text in the current widget structure
