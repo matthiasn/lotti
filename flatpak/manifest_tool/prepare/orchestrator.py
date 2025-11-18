@@ -1086,13 +1086,6 @@ def _apply_core_manifest_fixes(document: ManifestDocument, printer: _StatusPrint
     # Ensure Rust toolchain from SDK extension is available on PATH
     _apply_operation(document, printer, flutter.ensure_rust_sdk_env)
     _apply_operation(document, printer, flutter.apply_all_offline_fixes)
-    _apply_operation(
-        document,
-        printer,
-        manifest_ops.ensure_screenshot_asset,
-        screenshot_source="screenshot.png",
-        install_path="/app/share/app-info/screenshots/com.matthiasn.lotti/main.png",
-    )
 
 
 def _collect_rustup_json_names(context: PrepareFlathubContext) -> list[str]:
@@ -1310,10 +1303,6 @@ def _apply_manifest_compliance(context: PrepareFlathubContext, printer: _StatusP
 
 def _copy_assets_and_metadata(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
     printer.status("Copying additional files...")
-    _write_metainfo_files(context)
-    _copy_desktop_file(context, printer)
-    _copy_icons(context)
-    _copy_screenshots(context)
     _copy_fontconfig(context, printer)
     _copy_flutter_patches(context, printer)
     _copy_prebuilt_patches(context)
