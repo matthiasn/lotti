@@ -21,7 +21,6 @@ from flatpak.manifest_tool.prepare.orchestrator import (
     _stage_package_config,
     _ensure_flutter_archive,
     _copy_assets_and_metadata,
-    _copy_screenshots,
     _remove_flutter_sdk_module,
     _pin_working_manifest,
     _stage_pubdev_archive,
@@ -76,15 +75,12 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         flatpak_flutter_log=work_dir / "flatpak-flutter.log",
         setup_helper_basename="setup-flutter.sh",
         setup_helper_source=flatpak_dir / "helpers" / "setup-flutter.sh",
-        screenshot_source=flatpak_dir / "screenshot.png",
         flatpak_flutter_status=None,
         pr_head_commit=None,
         pr_head_url=None,
     )
     context.setup_helper_source.parent.mkdir(parents=True, exist_ok=True)
     context.setup_helper_source.write_text("#!/bin/bash\n", encoding="utf-8")
-    context.screenshot_source.parent.mkdir(parents=True, exist_ok=True)
-    context.screenshot_source.write_bytes(b"fake")
     return context
 
 
@@ -373,17 +369,6 @@ class PrepareOrchestratorTests(unittest.TestCase):
 
             self.assertTrue((context.output_dir / "cargokit" / "run_build_tool.sh.patch").is_file())
             self.assertTrue((context.output_dir / "sqlite3_flutter_libs" / "helper.patch").is_file())
-
-    def test_copy_screenshots_missing_raises(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            context = _make_context(base)
-            context.screenshot_source.unlink()
-
-            with self.assertRaises(PrepareFlathubError) as exc:
-                _copy_screenshots(context)
-
-            self.assertIn(str(context.screenshot_source), str(exc.exception))
 
     def test_download_cargo_lock_files_success(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

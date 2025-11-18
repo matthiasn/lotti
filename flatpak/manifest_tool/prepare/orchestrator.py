@@ -172,7 +172,6 @@ class PrepareFlathubContext:
     flatpak_flutter_log: Path
     setup_helper_basename: str
     setup_helper_source: Path
-    screenshot_source: Path
     flatpak_flutter_status: int | None = None
     flutter_git_url: str = "https://github.com/flutter/flutter.git"
     flathub_dir: Optional[Path] = None
@@ -227,7 +226,6 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
     flatpak_flutter_repo = flatpak_dir / "flatpak-flutter"
     flatpak_flutter_log = work_dir / "flatpak-flutter.log"
     setup_helper_source = flatpak_dir / "helpers" / "setup-flutter.sh"
-    screenshot_source = flatpak_dir / "screenshot.png"
 
     env: MutableMapping[str, str] = dict(options.extra_env or {})
     pr_env = dict(
@@ -270,7 +268,6 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
         flatpak_flutter_log=flatpak_flutter_log,
         setup_helper_basename=setup_helper_source.name,
         setup_helper_source=setup_helper_source,
-        screenshot_source=screenshot_source,
         flathub_dir=options.flathub_dir,
         pr_head_commit=pr_env.get("PR_HEAD_SHA"),
         pr_head_url=pr_env.get("PR_HEAD_URL"),
@@ -1307,49 +1304,6 @@ def _copy_assets_and_metadata(context: PrepareFlathubContext, printer: _StatusPr
     _copy_flutter_patches(context, printer)
     _copy_prebuilt_patches(context)
     _copy_helper_directories(context)
-
-
-def _write_metainfo_files(context: PrepareFlathubContext) -> None:
-    flatpak_dir = context.flatpak_dir
-    output_dir = context.output_dir
-    work_dir = context.work_dir
-    metainfo_src = flatpak_dir / "com.matthiasn.lotti.metainfo.xml"
-    if not metainfo_src.is_file():
-        return
-    text = metainfo_src.read_text(encoding="utf-8")
-    text = text.replace("{{LOTTI_VERSION}}", context.lotti_version)
-    text = text.replace("{{LOTTI_RELEASE_DATE}}", context.release_date)
-    output_dir.joinpath("com.matthiasn.lotti.metainfo.xml").write_text(text, encoding="utf-8")
-    work_dir.joinpath("com.matthiasn.lotti.metainfo.xml").write_text(text, encoding="utf-8")
-
-
-def _copy_desktop_file(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
-    desktop_src = context.flatpak_dir / "com.matthiasn.lotti.desktop"
-    if desktop_src.is_file():
-        _copyfile(desktop_src, context.output_dir / desktop_src.name)
-        _copyfile(desktop_src, context.work_dir / desktop_src.name)
-    else:
-        printer.warn("No desktop file found")
-
-
-def _copy_icons(context: PrepareFlathubContext) -> None:
-    for icon in context.flatpak_dir.glob("app_icon_*.png"):
-        if icon.is_file():
-            _copyfile(icon, context.output_dir / icon.name)
-            _copyfile(icon, context.work_dir / icon.name)
-
-
-def _copy_screenshots(context: PrepareFlathubContext) -> None:
-    screenshot = context.screenshot_source
-    if not screenshot.is_file():
-        raise PrepareFlathubError(
-            "Screenshot asset is missing: "
-            f"expected {screenshot} relative to {context.flatpak_dir}. "
-            "Provide flatpak/screenshot.png before running the Flathub prep."
-        )
-
-    _copyfile(screenshot, context.output_dir / screenshot.name)
-    _copyfile(screenshot, context.work_dir / screenshot.name)
 
 
 def _copy_fontconfig(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
