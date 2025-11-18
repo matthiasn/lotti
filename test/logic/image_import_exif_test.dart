@@ -17,7 +17,9 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../helpers/fallbacks.dart';
 import '../helpers/path_provider.dart';
+import '../test_data/test_data.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
@@ -246,6 +248,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
+    registerFallbackValue(fallbackJournalEntity);
+
     getIt.pushNewScope();
     setFakeDocumentsPath();
 
@@ -678,7 +682,10 @@ void main() {
     test('extracts GPS coordinates from EXIF data successfully', () async {
       final jpegWithGps = _createJpegWithGpsExif();
 
-      // Should complete without throwing
+      // This test verifies that the GPS extraction code path is exercised
+      // without crashing. Hand-crafted EXIF data may not be fully parseable
+      // by the native_exif library, but the code should handle it gracefully.
+      // The GPS parsing logic itself is tested in detail in image_import_gps_test.dart
       await expectLater(
         importPastedImages(
           data: jpegWithGps,
