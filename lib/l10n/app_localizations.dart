@@ -4225,7 +4225,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskNoEstimateLabel.
   ///
   /// In en, this message translates to:
-  /// **'No estimate set'**
+  /// **'No estimate'**
   String get taskNoEstimateLabel;
 
   /// No description provided for @taskNameHint.

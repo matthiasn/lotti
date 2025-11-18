@@ -32,7 +32,6 @@ class TaskCategoryWrapper extends ConsumerWidget {
     return TaskCategoryWidget(
       category: category,
       onSave: notifier.updateCategoryId,
-      hideLabelWhenValueSet: true,
     );
   }
 }

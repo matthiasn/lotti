@@ -2265,7 +2265,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskEstimateLabel => 'Temps estimé :';
 
   @override
-  String get taskNoEstimateLabel => 'No estimate set';
+  String get taskNoEstimateLabel => 'No estimate';
 
   @override
   String get taskNameHint => 'Saisissez un nom pour la tâche';
