@@ -1,4 +1,16 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "features": {}
+	"name": "Lotti",
+	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"features": {
+		"ghcr.io/devcontainers/features/dart:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"Dart-Code.dart-code",
+				"Dart-Code.flutter"
+			]
+		}
+	},
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y make fonts-noto-color-emoji && (./linux/install_emoji_fonts.sh || true) && dart pub global activate fvm && fvm install && make deps"
 }
