@@ -1972,7 +1972,7 @@ def _print_summary(context: PrepareFlathubContext, printer: _StatusPrinter) -> N
         printer.info("To prepare for Flathub submission:")
         print("  1. Fork https://github.com/flathub/flathub")
         print(f"  2. Clone your fork to {flathub_root}")
-        print(f"  3. Copy {context.output_dir} to {flathub_root}/com.matthiasn.lotti")
+        print(f"  3. Copy {context.output_dir} to {flathub_root}")
         print("  4. Create a pull request")
 
 
