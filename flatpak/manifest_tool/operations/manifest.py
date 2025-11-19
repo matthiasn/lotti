@@ -29,25 +29,40 @@ def _ensure_flutter_sdk_helper(module: dict, helper_name: str) -> bool:
         helper_name: Name/path of the helper script to add
 
     Returns:
-        True if the helper was added, False if already present
+        True if the helper was added or replaced, False if already correct
     """
     sources = module.setdefault("sources", [])
-    # Check if setup-flutter.sh is already in the sources
-    has_helper = any(
-        isinstance(source, dict) and source.get("dest-filename") == "setup-flutter.sh" for source in sources
-    )
 
-    if not has_helper:
-        sources.append(
-            {
-                "type": "file",
-                "path": helper_name,
-                "dest": "flutter/bin",
-                "dest-filename": "setup-flutter.sh",
-            }
-        )
-        return True
-    return False
+    # Check for existing setup-flutter.sh sources
+    file_helper_idx = None
+    script_helper_idx = None
+
+    for i, source in enumerate(sources):
+        if not isinstance(source, dict) or source.get("dest-filename") != "setup-flutter.sh":
+            continue
+        if source.get("type") == "file":
+            file_helper_idx = i
+        elif source.get("type") == "script":
+            script_helper_idx = i
+
+    # If we have the proper file source, nothing to do
+    if file_helper_idx is not None:
+        return False
+
+    # Remove broken inline script source if present
+    if script_helper_idx is not None:
+        del sources[script_helper_idx]
+
+    # Add the proper file source
+    sources.append(
+        {
+            "type": "file",
+            "path": helper_name,
+            "dest": "flutter/bin",
+            "dest-filename": "setup-flutter.sh",
+        }
+    )
+    return True
 
 
 def _ensure_lotti_flutter_path(module: dict) -> bool:
@@ -147,7 +162,7 @@ def ensure_flutter_setup_helper(
             continue
 
         name = module.get("name")
-        if name == "flutter-sdk":
+        if name in ("flutter-sdk", "flutter"):
             if _ensure_flutter_sdk_helper(module, helper_name):
                 changed = True
         elif name == "lotti":

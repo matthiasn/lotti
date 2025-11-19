@@ -102,7 +102,7 @@ modules:
       - fc-cache -fv /app/share/fonts
     sources:
       - type: file
-        url: https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf
+        url: https://github.com/googlefonts/noto-emoji/raw/v2.051/fonts/NotoColorEmoji.ttf
         sha256: 72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b
       - type: file
         path: 75-noto-color-emoji.conf
@@ -145,10 +145,7 @@ modules:
       - chmod -R u+w /run/build/lotti/flutter_sdk
       # Install Rust using rustup
       - echo "Installing Rust..."
-      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
-      - export PATH="$HOME/.cargo/bin:$PATH"
-      - rustc --version
-      - cargo --version
+      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal && . "$CARGO_HOME/env" && rustc --version && cargo --version && rustup --version
       # Configure Flutter
       - echo "Building Lotti from source..."
       - /run/build/lotti/flutter_sdk/bin/flutter config --no-analytics --no-cli-animations
@@ -177,8 +174,24 @@ modules:
       # Install desktop file and AppStream metadata from upstream repo
       - install -D linux/com.matthiasn.lotti.desktop /app/share/applications/com.matthiasn.lotti.desktop
       - install -D flatpak/com.matthiasn.lotti.metainfo.xml /app/share/metainfo/com.matthiasn.lotti.metainfo.xml
+      # Replace version placeholders in metainfo
+      - |
+        VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//;s/+.*//')
+        DATE=$(date +%Y-%m-%d)
+        sed -i "s/{{LOTTI_VERSION}}/$VERSION/g" /app/share/metainfo/com.matthiasn.lotti.metainfo.xml
+        sed -i "s/{{LOTTI_RELEASE_DATE}}/$DATE/g" /app/share/metainfo/com.matthiasn.lotti.metainfo.xml
       # Install wrapper script as the main command
       - install -D lotti-wrapper.sh /app/bin/lotti
+      # Install icons from upstream repo
+      - install -D flatpak/app_icon_512.png /app/share/icons/hicolor/512x512/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_256.png /app/share/icons/hicolor/256x256/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_128.png /app/share/icons/hicolor/128x128/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_64.png /app/share/icons/hicolor/64x64/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_48.png /app/share/icons/hicolor/48x48/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_32.png /app/share/icons/hicolor/32x32/apps/com.matthiasn.lotti.png
+      - install -D flatpak/app_icon_16.png /app/share/icons/hicolor/16x16/apps/com.matthiasn.lotti.png
+      # Install screenshot for AppStream
+      - install -D flatpak/screenshot.png /app/share/app-info/screenshots/com.matthiasn.lotti/main.png
     sources:
       - type: git
         url: https://github.com/matthiasn/lotti
@@ -194,32 +207,3 @@ modules:
           - fi
           - cd /app
           - exec ./lotti "$@"
-  - name: flutter-common
-    buildsystem: simple
-    build-commands:
-      # Install icons with proper sizes (max 512x512)
-      - install -D app_icon_512.png /app/share/icons/hicolor/512x512/apps/com.matthiasn.lotti.png
-      - install -D app_icon_256.png /app/share/icons/hicolor/256x256/apps/com.matthiasn.lotti.png
-      - install -D app_icon_128.png /app/share/icons/hicolor/128x128/apps/com.matthiasn.lotti.png
-      - install -D app_icon_64.png /app/share/icons/hicolor/64x64/apps/com.matthiasn.lotti.png
-      - install -D app_icon_48.png /app/share/icons/hicolor/48x48/apps/com.matthiasn.lotti.png
-      - install -D app_icon_32.png /app/share/icons/hicolor/32x32/apps/com.matthiasn.lotti.png
-      - install -D app_icon_16.png /app/share/icons/hicolor/16x16/apps/com.matthiasn.lotti.png
-      - install -D screenshot.png /app/share/app-info/screenshots/com.matthiasn.lotti/main.png
-    sources:
-      - type: file
-        path: app_icon_512.png
-      - type: file
-        path: app_icon_256.png
-      - type: file
-        path: app_icon_128.png
-      - type: file
-        path: app_icon_64.png
-      - type: file
-        path: app_icon_48.png
-      - type: file
-        path: app_icon_32.png
-      - type: file
-        path: app_icon_16.png
-      - type: file
-        path: screenshot.png
