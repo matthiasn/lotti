@@ -897,6 +897,54 @@ def _copy_generated_artifacts(context: PrepareFlathubContext, printer: _StatusPr
                 except FileNotFoundError:
                     continue
 
+    # Fix flutter-sdk JSON files to use proper setup-flutter.sh
+    _fix_flutter_sdk_json_helper(context, printer)
+
+
+def _fix_flutter_sdk_json_helper(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+    """Replace inline setup-flutter.sh script with proper file source in flutter-sdk JSONs."""
+    for json_path in context.output_dir.glob("flutter-sdk-*.json"):
+        if not json_path.is_file():
+            continue
+
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+        sources = data.get("sources", [])
+        if not isinstance(sources, list):
+            continue
+
+        # Find and remove broken inline script
+        script_idx = None
+        has_file_helper = False
+        for i, source in enumerate(sources):
+            if not isinstance(source, dict):
+                continue
+            if source.get("dest-filename") != "setup-flutter.sh":
+                continue
+            if source.get("type") == "script":
+                script_idx = i
+            elif source.get("type") == "file":
+                has_file_helper = True
+
+        if has_file_helper:
+            continue  # Already has proper file source
+
+        if script_idx is not None:
+            del sources[script_idx]
+            printer.info(f"Removed broken inline setup-flutter.sh from {json_path.name}")
+
+        # Add proper file source
+        sources.append(
+            {
+                "type": "file",
+                "path": context.setup_helper_basename,
+                "dest": "flutter/bin",
+                "dest-filename": "setup-flutter.sh",
+            }
+        )
+        data["sources"] = sources
+        json_path.write_text(json.dumps(data, indent=4), encoding="utf-8")
+        printer.info(f"Added proper setup-flutter.sh file source to {json_path.name}")
+
 
 def _stage_pubdev_archive(
     context: PrepareFlathubContext,
