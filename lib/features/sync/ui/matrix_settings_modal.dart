@@ -75,8 +75,8 @@ class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard>
   @override
   Widget build(BuildContext context) {
     return AnimatedModernSettingsCardWithIcon(
-      title: context.messages.settingsMatrixTitle,
-      subtitle: 'Configure end-to-end encrypted sync',
+      title: context.messages.navTabTitleSettings,
+      subtitle: context.messages.settingsMatrixSubtitle,
       icon: Icons.sync,
       onTap: () {
         updatePageIndexForTesting();

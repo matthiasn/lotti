@@ -170,53 +170,57 @@ class SettingsPageHeader extends StatelessWidget {
                 bottom: BorderSide(color: borderColor),
               ),
             ),
-            child: Column(
+            child: Stack(
               children: [
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: horizontalPadding,
-                      end: horizontalPadding,
-                      top: topPadding,
-                      bottom: bottomPadding,
-                    ),
-                    child: Align(
-                      alignment: AlignmentDirectional.bottomStart,
-                      child: Row(
-                        children: [
-                          if (showBackButton)
-                            const Padding(
-                              padding: EdgeInsetsDirectional.only(end: 4),
-                              child: BackWidget(),
-                            ),
-                          Expanded(
-                            child: _HeaderText(
-                              title: title,
-                              subtitle: subtitle,
-                              titleStyle: settingsHeaderTitleTextStyle.copyWith(
-                                fontSize: titleSize,
-                                color: colorScheme.primary,
+                Column(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          start: horizontalPadding,
+                          end: horizontalPadding,
+                          top: topPadding,
+                          bottom: bottomPadding,
+                        ),
+                        child: Align(
+                          alignment: AlignmentDirectional.bottomStart,
+                          child: Row(
+                            children: [
+                              if (showBackButton)
+                                const Padding(
+                                  padding: EdgeInsetsDirectional.only(end: 4),
+                                  child: BackWidget(),
+                                ),
+                              Flexible(
+                                child: _HeaderText(
+                                  title: title,
+                                  subtitle: subtitle,
+                                  titleStyle:
+                                      settingsHeaderTitleTextStyle.copyWith(
+                                    fontSize: titleSize,
+                                    color: colorScheme.primary,
+                                  ),
+                                  subtitleStyle:
+                                      settingsHeaderSubtitleTextStyle.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  collapseProgress: progress,
+                                ),
                               ),
-                              subtitleStyle:
-                                  settingsHeaderSubtitleTextStyle.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                              collapseProgress: progress,
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                    if (bottom != null) ...[
+                      const SizedBox(height: 2),
+                      SizedBox(
+                        height: bottom!.preferredSize.height,
+                        child: bottom,
+                      ),
+                    ],
+                  ],
                 ),
-                if (bottom != null) ...[
-                  const SizedBox(height: 2),
-                  SizedBox(
-                    height: bottom!.preferredSize.height,
-                    child: bottom,
-                  ),
-                ] else
-                  SizedBox(height: footerSpacing),
               ],
             ),
           );

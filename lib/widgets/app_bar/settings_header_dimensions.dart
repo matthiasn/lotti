@@ -43,13 +43,13 @@ class SettingsHeaderDimensions {
   /// Returns the responsive title font size. When `wide` is true, uses wider
   /// desktop/tablet sizing at mid‑range widths.
   static double titleFontSize({required double width, required bool wide}) {
-    if (width >= 1600) return 46;
-    if (width >= 1200) return 42;
-    if (width >= 992) return 38;
-    if (wide) return 34;
-    if (width >= 600) return 32;
-    if (width >= 420) return 30;
-    return 28;
+    if (width >= 1600) return 40;
+    if (width >= 1200) return 36;
+    if (width >= 992) return 34;
+    if (wide) return 32;
+    if (width >= 600) return 30;
+    if (width >= 420) return 28;
+    return 26;
   }
 
   /// Normalized collapse progress [0..1] for a flexible space with the given

@@ -3810,13 +3810,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMatrixTitle.
   ///
   /// In en, this message translates to:
-  /// **'Matrix Sync Settings'**
+  /// **'Sync Settings'**
   String get settingsMatrixTitle;
 
   /// No description provided for @settingsMatrixMaintenanceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Matrix Sync Maintenance'**
+  /// **'Maintenance'**
   String get settingsMatrixMaintenanceTitle;
 
   /// No description provided for @settingsMatrixMaintenanceSubtitle.

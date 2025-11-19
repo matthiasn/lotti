@@ -2044,7 +2044,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMatrixTitle => 'Ajustes de sincronización de Matrix';
 
   @override
-  String get settingsMatrixMaintenanceTitle => 'Matrix Sync Maintenance';
+  String get settingsMatrixMaintenanceTitle => 'Maintenance';
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
@@ -2263,7 +2263,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskEstimateLabel => 'Estimación:';
 
   @override
-  String get taskNoEstimateLabel => 'Sin estimación';
+  String get taskNoEstimateLabel => 'No estimate';
 
   @override
   String get taskNameHint => 'Introduzca un nombre para la tarea';

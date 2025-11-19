@@ -2026,10 +2026,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixRefresh => 'Refresh';
 
   @override
-  String get settingsMatrixTitle => 'Matrix Sync Settings';
+  String get settingsMatrixTitle => 'Sync Settings';
 
   @override
-  String get settingsMatrixMaintenanceTitle => 'Matrix Sync Maintenance';
+  String get settingsMatrixMaintenanceTitle => 'Maintenance';
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>

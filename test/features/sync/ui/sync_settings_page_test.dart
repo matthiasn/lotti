@@ -50,7 +50,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AnimatedModernSettingsCardWithIcon),
-          matching: find.text('Matrix Sync Settings'),
+          matching: find.text(pageContext.messages.navTabTitleSettings),
         ),
         findsOneWidget,
       );
@@ -79,8 +79,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Matrix Sync Settings'), findsNothing);
-      expect(find.text('Matrix Sync Maintenance'), findsNothing);
+      final pageContext = tester.element(find.byType(SyncSettingsPage));
+      expect(find.text(pageContext.messages.navTabTitleSettings), findsNothing);
+      expect(find.text(pageContext.messages.settingsMatrixMaintenanceTitle),
+          findsNothing);
       expect(find.text('Matrix Stats'), findsNothing);
     });
   });
