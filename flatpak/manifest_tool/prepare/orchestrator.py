@@ -1,4 +1,4 @@
-"""Orchestrates creation of the Flathub offline payload."""
+"""Orchestrates creation of the Flathub submission manifest."""
 
 from __future__ import annotations
 
@@ -760,7 +760,7 @@ def _prime_flutter_sdk(context: PrepareFlathubContext, printer: _StatusPrinter) 
 
 
 def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
-    printer.status("Running flatpak-flutter to generate offline sources...")
+    printer.status("Running flatpak-flutter to generate dependency manifests...")
     if context.options.no_flatpak_flutter:
         printer.info("Skipping flatpak-flutter run (NO_FLATPAK_FLUTTER=true); using fallback generation paths")
         context.flatpak_flutter_status = 124
@@ -804,7 +804,7 @@ def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter
 
     context.flatpak_flutter_log.write_text(log_output, encoding="utf-8")
     if context.flatpak_flutter_status == 0:
-        printer.status("Generated offline manifest and dependencies")
+        printer.status("Generated manifest and dependency definitions")
     else:
         printer.warn(
             f"flatpak-flutter exited with {context.flatpak_flutter_status}; proceeding with fallback generation"
