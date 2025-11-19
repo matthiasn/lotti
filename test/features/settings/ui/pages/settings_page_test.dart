@@ -101,7 +101,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Matrix Sync Settings'), findsOneWidget);
+      expect(find.text('Sync Settings'), findsOneWidget);
     });
 
     testWidgets('hides Habits when enableHabitsPageFlag is OFF',

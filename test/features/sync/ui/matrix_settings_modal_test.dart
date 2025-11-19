@@ -35,8 +35,9 @@ void main() {
 
       final context = tester.element(find.byType(MatrixSettingsCard));
 
-      expect(find.text(context.messages.settingsMatrixTitle), findsOneWidget);
-      expect(find.text('Configure end-to-end encrypted sync'), findsOneWidget);
+      expect(find.text(context.messages.navTabTitleSettings), findsOneWidget);
+      expect(
+          find.text(context.messages.settingsMatrixSubtitle), findsOneWidget);
       // The icon appears multiple times due to animation states
       expect(find.byIcon(Icons.sync), findsWidgets);
     });

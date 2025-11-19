@@ -2038,7 +2038,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixTitle => 'Setări sincronizare Matrix';
 
   @override
-  String get settingsMatrixMaintenanceTitle => 'Matrix Sync Maintenance';
+  String get settingsMatrixMaintenanceTitle => 'Maintenance';
 
   @override
   String get settingsMatrixMaintenanceSubtitle =>
@@ -2255,7 +2255,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskEstimateLabel => 'Timp Estimat:';
 
   @override
-  String get taskNoEstimateLabel => 'Fără estimare';
+  String get taskNoEstimateLabel => 'No estimate';
 
   @override
   String get taskNameHint => 'Introduceți un nume pentru sarcină';
