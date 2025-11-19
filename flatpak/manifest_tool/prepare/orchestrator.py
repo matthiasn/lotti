@@ -1409,8 +1409,13 @@ def _copy_helper_directories(context: PrepareFlathubContext) -> None:
     for helper_dir in ("sqlite3_flutter_libs", "cargokit"):
         helper_source = context.work_dir / helper_dir
         if not helper_source.is_dir():
-            fallback_source = foreign_deps_root / helper_dir
-            helper_source = fallback_source if fallback_source.is_dir() else None
+            # Check local flatpak dir for overrides first
+            local_override = context.flatpak_dir / helper_dir
+            if local_override.is_dir():
+                helper_source = local_override
+            else:
+                fallback_source = foreign_deps_root / helper_dir
+                helper_source = fallback_source if fallback_source.is_dir() else None
         if helper_source and helper_source.is_dir():
             _copytree(helper_source, context.output_dir / helper_dir)
 
