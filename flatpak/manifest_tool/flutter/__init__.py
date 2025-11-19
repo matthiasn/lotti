@@ -41,6 +41,7 @@ from .patches import (
 # Offline fixes
 from .offline_fixes import (
     apply_all_offline_fixes,
+    ensure_rustup_in_path,
 )
 
 # Helper operations
@@ -76,6 +77,7 @@ __all__ = [
     "add_cargokit_offline_patches",
     # Offline fixes
     "apply_all_offline_fixes",
+    "ensure_rustup_in_path",
     # Helpers
     "ensure_setup_helper_source",
     "ensure_setup_helper_command",

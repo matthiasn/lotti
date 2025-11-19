@@ -68,6 +68,9 @@ _SQLITE_AUTOCONF_SHA256 = os.getenv(
     "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
 )
 
+# Rust toolchain version for offline builds (must match flatpak-flutter releases)
+RUST_VERSION = "1.83.0"
+
 CARGO_LOCK_SOURCES: tuple[tuple[str, str], ...] = (
     (
         "flutter_vodozemac",
@@ -1668,10 +1671,40 @@ def _download_cargo_lock_files(
     return downloaded
 
 
+def _copy_rustup_module(context: PrepareFlathubContext, printer: _StatusPrinter) -> bool:
+    """Copy rustup module JSON from flatpak-flutter releases to output directory.
+
+    This provides the rustup binary for offline Flathub builds when cargo sources
+    are needed but flatpak-flutter didn't generate the rustup module directly.
+
+    Returns:
+        True if rustup module was copied successfully, False otherwise.
+    """
+    source = context.flatpak_flutter_repo / "releases" / "rust" / RUST_VERSION / "rustup.json"
+    destination = context.output_dir / f"rustup-{RUST_VERSION}.json"
+
+    if destination.exists():
+        printer.info(f"Rustup module already exists at {destination.name}")
+        return True
+
+    if not source.exists():
+        printer.warn(f"Rustup module not found at {source}")
+        return False
+
+    try:
+        shutil.copy2(source, destination)
+        printer.status(f"Copied rustup module to {destination.name}")
+        return True
+    except OSError as exc:
+        printer.warn(f"Failed to copy rustup module: {exc}")
+        return False
+
+
 def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
     printer.info("Downloading Cargo.lock files from GitHub to generate correct cargo-sources.json...")
     downloaded_locks = _download_cargo_lock_files(context, printer)
 
+    cargo_generated = False
     if downloaded_locks:
         cargo_json = context.output_dir / "cargo-sources.json"
         if _run_cargo_generator(context, downloaded_locks, cargo_json):
@@ -1679,15 +1712,22 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
             with cargo_json.open(encoding="utf-8") as fh:
                 line_count = sum(1 for _ in fh)
             printer.info(f"Line count: {line_count}")
-            return
-        printer.warn("Failed to generate cargo-sources.json from downloaded files")
+            cargo_generated = True
+        else:
+            printer.warn("Failed to generate cargo-sources.json from downloaded files")
 
-    cargo_json = context.output_dir / "cargo-sources.json"
-    if cargo_json.is_file():
-        return
-    if _fallback_cargo_sources_from_presets(context, printer):
-        return
-    _fallback_cargo_sources_from_builder(context, printer)
+    if not cargo_generated:
+        cargo_json = context.output_dir / "cargo-sources.json"
+        if cargo_json.is_file():
+            cargo_generated = True
+        elif _fallback_cargo_sources_from_presets(context, printer):
+            cargo_generated = True
+        else:
+            cargo_generated = _fallback_cargo_sources_from_builder(context, printer)
+
+    # Copy rustup module when cargo sources are generated (provides rustup for offline builds)
+    if cargo_generated:
+        _copy_rustup_module(context, printer)
 
 
 def _post_process_output_manifest(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
@@ -1701,6 +1741,9 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
 
     rustup_modules = _collect_rustup_json_names(context)
     _include_rustup_modules(document, printer, rustup_modules)
+    # Ensure rustup PATH is configured now that rustup module is included
+    if rustup_modules:
+        _apply_operation(document, printer, flutter.ensure_rustup_in_path)
     _pin_manifest_if_requested(document, context, printer)
     _maybe_apply_nested_flutter(document, context, printer)
 
