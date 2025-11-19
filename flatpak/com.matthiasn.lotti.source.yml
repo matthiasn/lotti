@@ -164,9 +164,6 @@ modules:
       # Remove 1024x1024 icons to comply with Flatpak's maximum icon size limit
       - find /app -name "*1024*" -type f -delete
       - chmod +x /app/lotti
-      # Create directories
-      - mkdir -p /app/bin
-      - mkdir -p /app/lib/ffmpeg
       # Install desktop file and AppStream metadata from upstream repo
       - install -D linux/com.matthiasn.lotti.desktop /app/share/applications/com.matthiasn.lotti.desktop
       - install -D flatpak/com.matthiasn.lotti.metainfo.xml /app/share/metainfo/com.matthiasn.lotti.metainfo.xml
@@ -182,8 +179,6 @@ modules:
       - install -D flatpak/app_icon_48.png /app/share/icons/hicolor/48x48/apps/com.matthiasn.lotti.png
       - install -D flatpak/app_icon_32.png /app/share/icons/hicolor/32x32/apps/com.matthiasn.lotti.png
       - install -D flatpak/app_icon_16.png /app/share/icons/hicolor/16x16/apps/com.matthiasn.lotti.png
-      # Install screenshot for AppStream
-      - install -D flatpak/screenshot.png /app/share/app-info/screenshots/com.matthiasn.lotti/main.png
     sources:
       - type: git
         url: https://github.com/matthiasn/lotti
