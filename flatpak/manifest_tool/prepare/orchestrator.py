@@ -1720,6 +1720,12 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
             cargo_generated = True
         else:
             printer.warn("Failed to generate cargo-sources.json from downloaded files")
+            # Remove any partial/stale file so fallback logic must produce a real file
+            try:
+                if cargo_json.exists():
+                    cargo_json.unlink()
+            except OSError as exc:
+                _LOGGER.debug("Failed to remove stale cargo-sources.json: %s", exc)
 
     if not cargo_generated:
         cargo_json = context.output_dir / "cargo-sources.json"
