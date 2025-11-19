@@ -61,7 +61,7 @@ modules:
     buildsystem: meson
     build-options:
       env:
-        PKG_CONFIG_PATH: /app/lib/pkgconfig
+        PKG_CONFIG_PATH: /app/lib/pkgconfig:/app/lib64/pkgconfig
     config-opts:
       - -Dlibmpv=true
       - -Dlua=disabled
