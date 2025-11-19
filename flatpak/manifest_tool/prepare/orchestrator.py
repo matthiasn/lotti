@@ -1793,6 +1793,27 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
 
     document.save()
 
+    # Replace version and date placeholders with actual values in the manifest
+    # This bakes the values into the sed commands so Flathub sees concrete values
+    _replace_manifest_placeholders(context, printer, manifest_path)
+
+
+def _replace_manifest_placeholders(
+    context: PrepareFlathubContext, printer: _StatusPrinter, manifest_path: Path
+) -> None:
+    """Replace version and date placeholders in the manifest with actual values."""
+    content = manifest_path.read_text(encoding="utf-8")
+    original = content
+
+    content = content.replace("{{MANIFEST_VERSION}}", context.lotti_version)
+    content = content.replace("{{MANIFEST_DATE}}", context.release_date)
+
+    if content != original:
+        manifest_path.write_text(content, encoding="utf-8")
+        printer.info(
+            f"Replaced manifest placeholders with version {context.lotti_version} and date {context.release_date}"
+        )
+
 
 def _ensure_pub_package_in_pubspec_sources(
     context: PrepareFlathubContext, printer: _StatusPrinter, *, name: str, version: str
