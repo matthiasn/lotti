@@ -139,39 +139,24 @@ modules:
         RUSTUP_HOME: /run/build/lotti/.cargo
         PKG_CONFIG_PATH: /app/lib/pkgconfig:/usr/lib/pkgconfig
     build-commands:
-      # Copy Flutter SDK to writable location
-      - echo "Setting up Flutter SDK..."
       - cp -r /app/flutter /run/build/lotti/flutter_sdk
       - chmod -R u+w /run/build/lotti/flutter_sdk
-      # Install Rust using rustup
-      - echo "Installing Rust..."
-      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal && . "$CARGO_HOME/env" && rustc --version && cargo --version && rustup --version
-      # Configure Flutter
-      - echo "Building Lotti from source..."
-      - /run/build/lotti/flutter_sdk/bin/flutter config --no-analytics --no-cli-animations
-      # Get dependencies and build
       - /run/build/lotti/flutter_sdk/bin/flutter pub get
       - export CMAKE_PREFIX_PATH=/app:$CMAKE_PREFIX_PATH
       - /run/build/lotti/flutter_sdk/bin/flutter build linux --release --verbose
-      # Install the built app
-      - echo "Installing Flutter bundle..."
       - |
         arch="x64"
         if [ "${FLATPAK_ARCH}" = "aarch64" ]; then
           arch="arm64"
         fi
         cp -r build/linux/${arch}/release/bundle/* /app/
-      # Remove 1024x1024 icons to comply with Flatpak's maximum icon size limit
       - find /app -name "*1024*" -type f -delete
       - chmod +x /app/lotti
-      # Install desktop file and AppStream metadata from upstream repo
       - install -D linux/com.matthiasn.lotti.desktop /app/share/applications/com.matthiasn.lotti.desktop
       - install -D flatpak/com.matthiasn.lotti.metainfo.xml /app/share/metainfo/com.matthiasn.lotti.metainfo.xml
       - sed -i "s/{{LOTTI_VERSION}}/{{MANIFEST_VERSION}}/g" /app/share/metainfo/com.matthiasn.lotti.metainfo.xml
       - sed -i "s/{{LOTTI_RELEASE_DATE}}/{{MANIFEST_DATE}}/g" /app/share/metainfo/com.matthiasn.lotti.metainfo.xml
-      # Install wrapper script as the main command
       - install -D lotti-wrapper.sh /app/bin/lotti
-      # Install icons from upstream repo
       - install -D flatpak/app_icon_512.png /app/share/icons/hicolor/512x512/apps/com.matthiasn.lotti.png
       - install -D flatpak/app_icon_256.png /app/share/icons/hicolor/256x256/apps/com.matthiasn.lotti.png
       - install -D flatpak/app_icon_128.png /app/share/icons/hicolor/128x128/apps/com.matthiasn.lotti.png
