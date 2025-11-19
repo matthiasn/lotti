@@ -1956,7 +1956,7 @@ def _print_summary(context: PrepareFlathubContext, printer: _StatusPrinter) -> N
     )
     if flathub_root.is_dir():
         printer.info("To copy to flathub repo:")
-        print(f"  cp -r {context.output_dir}/* {flathub_root}/com.matthiasn.lotti/")
+        print(f"  cp -r {context.output_dir}/* {flathub_root}/")
         print()
         printer.info("Then:")
         for step in (
