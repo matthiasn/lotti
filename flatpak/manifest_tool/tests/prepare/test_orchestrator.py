@@ -65,8 +65,6 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         manifest_work=manifest_path,
         manifest_output=output_dir / "com.matthiasn.lotti.yml",
         env={},
-        lotti_version="0.0.0",
-        release_date="1970-01-01",
         current_branch="main",
         app_commit="deadbeef",
         flutter_tag=DEFAULT_FLUTTER_TAG,

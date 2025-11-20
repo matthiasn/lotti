@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import hashlib
 import json
 import os
@@ -165,8 +164,6 @@ class PrepareFlathubContext:
     manifest_work: Path
     manifest_output: Path
     env: MutableMapping[str, str]
-    lotti_version: str
-    release_date: str
     current_branch: str
     app_commit: str
     flutter_tag: Optional[str]
@@ -239,8 +236,6 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
     )
     env.update(pr_env)
 
-    lotti_version = env.get("LOTTI_VERSION") or _derive_lotti_version(repo_root, printer)
-    release_date = env.get("LOTTI_RELEASE_DATE") or datetime.date.today().isoformat()
     current_branch = _determine_branch(repo_root, env, printer)
     app_commit = _run_git(["rev-parse", "HEAD"], cwd=repo_root)
 
@@ -261,8 +256,6 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
         manifest_work=manifest_work,
         manifest_output=manifest_output,
         env=env,
-        lotti_version=lotti_version,
-        release_date=release_date,
         current_branch=current_branch,
         app_commit=app_commit,
         flutter_tag=flutter_tag,
@@ -276,8 +269,6 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
         pr_head_url=pr_env.get("PR_HEAD_URL"),
     )
 
-    printer.info(f"Using version: {lotti_version}")
-    printer.info(f"Release date: {release_date}")
     printer.info(f"Branch: {current_branch}")
     printer.info(f"Commit: {app_commit}")
     if cached_flutter_dir:
@@ -292,8 +283,6 @@ def _print_intro(context: PrepareFlathubContext, printer: _StatusPrinter) -> Non
     print("==========================================")
     print("   Flathub Submission Preparation")
     print("==========================================")
-    print(f"Version: {context.lotti_version}")
-    print(f"Release Date: {context.release_date}")
     print(f"Branch: {context.current_branch}")
     print()
     printer.info("Effective options:")
@@ -320,20 +309,6 @@ def _run_git(args: Iterable[str], *, cwd: Path) -> str:
     if result.returncode != 0:
         raise PrepareFlathubError(f"git {' '.join(args)} failed with code {result.returncode}: {result.stderr.strip()}")
     return result.stdout.strip()
-
-
-def _derive_lotti_version(repo_root: Path, printer: _StatusPrinter) -> str:
-    pubspec_path = repo_root / "pubspec.yaml"
-    if pubspec_path.is_file():
-        for line in pubspec_path.read_text(encoding="utf-8").splitlines():
-            if line.startswith("version:"):
-                version = line.split("version:", 1)[1].strip()
-                if "+" in version:
-                    version = version.split("+", 1)[0]
-                return version
-    raise PrepareFlathubError(
-        "Unable to determine Lotti version. Define it in pubspec.yaml before running the orchestrator."
-    )
 
 
 def _determine_branch(repo_root: Path, env: Mapping[str, str], printer: _StatusPrinter) -> str:
@@ -1792,27 +1767,6 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
     _ensure_pub_package_in_pubspec_sources(context, printer, name="yaml", version="3.1.2")
 
     document.save()
-
-    # Replace version and date placeholders with actual values in the manifest
-    # This bakes the values into the sed commands so Flathub sees concrete values
-    _replace_manifest_placeholders(context, printer, manifest_path)
-
-
-def _replace_manifest_placeholders(
-    context: PrepareFlathubContext, printer: _StatusPrinter, manifest_path: Path
-) -> None:
-    """Replace version and date placeholders in the manifest with actual values."""
-    content = manifest_path.read_text(encoding="utf-8")
-    original = content
-
-    content = content.replace("{{MANIFEST_VERSION}}", context.lotti_version)
-    content = content.replace("{{MANIFEST_DATE}}", context.release_date)
-
-    if content != original:
-        manifest_path.write_text(content, encoding="utf-8")
-        printer.info(
-            f"Replaced manifest placeholders with version {context.lotti_version} and date {context.release_date}"
-        )
 
 
 def _ensure_pub_package_in_pubspec_sources(

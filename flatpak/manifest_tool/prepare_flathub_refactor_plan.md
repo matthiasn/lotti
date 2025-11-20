@@ -40,7 +40,7 @@ Refactor `flatpak/prepare_flathub_submission.sh` into a thin wrapper that delega
 
 ### Environment & Inputs
 - Detects repo and script paths, defines work/output directories under `flatpak/flathub-build`.
-- Reads version data from `pubspec.yaml` or Git metadata (`LOTTI_VERSION`, `LOTTI_RELEASE_DATE`).
+- Assumes AppStream metadata ships with the release version/date already committed upstream (no placeholder substitution).
 - Determines current git branch and validates remote presence (uses `GITHUB_HEAD_REF`, `GITHUB_REF_NAME`).
 - Behaviour toggles via env vars: `CLEAN_AFTER_GEN`, `PIN_COMMIT`, `USE_NESTED_FLUTTER`, `DOWNLOAD_MISSING_SOURCES`, `NO_FLATPAK_FLUTTER`, `FLATPAK_FLUTTER_TIMEOUT`, `TEST_BUILD`, plus optional caches (`PUB_CACHE`, `LOTTI_ROOT`, etc.).
 
