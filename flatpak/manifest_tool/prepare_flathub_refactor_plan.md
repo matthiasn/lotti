@@ -59,7 +59,7 @@ Refactor `flatpak/prepare_flathub_submission.sh` into a thin wrapper that delega
 
 ### Artifact Collection & Post-processing
 - Pins manifest to commit, validates absence of `branch`/`COMMIT_PLACEHOLDER`.
-- Copies generated JSON files (flutter, pubspec, cargo, rustup) from workdir/build caches into `output/`.
+- Copies generated JSON files (flutter, pubspec, cargo) from workdir/build caches into `output/`.
 - Generates missing artifacts via Python helpers or ad-hoc shell (e.g. reproduce cargo JSON, package_config).
 - Normalises sqlite patch content.
 

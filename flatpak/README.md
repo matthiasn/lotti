@@ -168,7 +168,7 @@ Flathub has strict requirements for security and reproducibility:
    - Creates flutter-sdk module manifest
    - Generates pubspec-sources.json for Dart packages
    - Generates cargo-sources.json for Rust crates
-   - Creates rustup configuration
+   - Uses the Rust SDK extension (no rustup module required)
 
    **Phase 4: Offline Patches**:
    - Adds SQLite3 and mimalloc sources for CMake plugins

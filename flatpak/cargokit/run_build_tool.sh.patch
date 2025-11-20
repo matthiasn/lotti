@@ -5,9 +5,8 @@ index 0e2c973..200b520 100755
 @@ -1,5 +1,9 @@
  #!/bin/bash
 
-+# Flatpak: ensure rustup is in PATH
-+export PATH="/var/lib/rustup/bin:$PATH"
-+export RUSTUP_HOME="/var/lib/rustup"
++# Flatpak: ensure Rust SDK extension is in PATH
++export PATH="/usr/lib/sdk/rust-stable/bin:$PATH"
 +
  set -e
 

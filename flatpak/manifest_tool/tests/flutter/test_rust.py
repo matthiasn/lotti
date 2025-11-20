@@ -15,15 +15,11 @@ def test_ensure_rust_sdk_env(make_document):
 
     # Check append-path
     assert "/usr/lib/sdk/rust-stable/bin" in build_opts["append-path"]
-    assert "/run/build/lotti/.cargo/bin" in build_opts["append-path"]
 
     # Check env PATH
     env_path = build_opts["env"]["PATH"]
     assert "/usr/lib/sdk/rust-stable/bin" in env_path
-    assert "/run/build/lotti/.cargo/bin" in env_path
-
-    # Check RUSTUP_HOME
-    assert build_opts["env"].get("RUSTUP_HOME") == "/usr/lib/sdk/rust-stable"
+    assert "/run/build/lotti/.cargo/bin" not in env_path
 
     # Should be idempotent
     result2 = flutter_rust.ensure_rust_sdk_env(document)
@@ -71,4 +67,4 @@ def test_rust_append_path_message_not_f_string(make_document):
     # The fix ensures that messages don't use unnecessary f-strings
     # This would be caught by linter (Ruff F541) if incorrect
     assert result.changed
-    assert "Added Rust paths to append-path" in str(result.messages)
+    assert "Added Rust SDK path to append-path" in str(result.messages)

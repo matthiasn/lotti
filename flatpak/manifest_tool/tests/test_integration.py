@@ -51,28 +51,12 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
         """,
     )
 
-    # 1) Include rustup module before lotti (as string module include)
-    assert (
-        cli.main(
-            [
-                "ensure-module-include",
-                "--manifest",
-                str(manifest_path),
-                "--name",
-                "rustup-1.83.0.json",
-                "--before",
-                "lotti",
-            ]
-        )
-        == 0
-    )
-
-    # 2) Ensure rust env (PATH and RUSTUP_HOME), and drop rustup installer lines
+    # Ensure rust env uses SDK toolchain and drop rustup installer lines
     # Note: --share=network is NOT allowed in build-args on Flathub
     assert cli.main(["ensure-rust-sdk-env", "--manifest", str(manifest_path)]) == 0
     assert cli.main(["remove-rustup-install", "--manifest", str(manifest_path)]) == 0
 
-    # 3) Attach offline source references and helper to lotti
+    # Attach offline source references and helper to lotti
     assert (
         cli.main(
             [
@@ -109,12 +93,7 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
 
     data = load(manifest_path)
 
-    # Assert rustup module is included before lotti
-    idx_mod = next(i for i, m in enumerate(data["modules"]) if m == "rustup-1.83.0.json")
-    idx_lotti = next(i for i, m in enumerate(data["modules"]) if isinstance(m, dict) and m.get("name") == "lotti")
-    assert idx_mod < idx_lotti
-
-    lotti = data["modules"][idx_lotti]
+    lotti = next(m for m in data["modules"] if isinstance(m, dict) and m.get("name") == "lotti")
 
     # Offline sources present and sanitized
     assert "pubspec-sources.json" in lotti["sources"]
@@ -122,11 +101,9 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     assert any(
         isinstance(s, dict) and s.get("path") == f"flutter-sdk-{DEFAULT_FLUTTER_TAG}.json" for s in lotti["sources"]
     )
-    # No rustup JSON under sources
-    assert not any(
-        (s == "rustup-1.83.0.json") or (isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json")
-        for s in lotti["sources"]
-    )
+    # No rustup JSON/module includes present
+    assert all(m != "rustup-1.83.0.json" for m in data["modules"])
+    assert not any(isinstance(s, dict) and s.get("path") == "rustup-1.83.0.json" for s in lotti["sources"])
 
     # Helper is added to flutter-sdk sources, not lotti
     flutter_sdk = next(m for m in data["modules"] if m["name"] == "flutter-sdk")
@@ -138,11 +115,8 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     assert "--share=network" not in lotti["build-options"].get("build-args", [])
     env = lotti["build-options"]["env"]
     assert env["PATH"].startswith("/usr/lib/sdk/rust-stable/bin")
-    assert "/run/build/lotti/.cargo/bin" in env["PATH"]
-    assert (
-        "/usr/lib/sdk/rust-stable/bin" in lotti["build-options"]["append-path"]
-        and "/run/build/lotti/.cargo/bin" in lotti["build-options"]["append-path"]
-    )
+    assert "/run/build/lotti/.cargo/bin" not in env["PATH"]
+    assert "/usr/lib/sdk/rust-stable/bin" in lotti["build-options"]["append-path"]
 
     # rustup installer commands removed
     assert all("rustup.rs" not in c and "cargo/bin" not in c for c in lotti["build-commands"])

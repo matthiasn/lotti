@@ -67,9 +67,6 @@ _SQLITE_AUTOCONF_SHA256 = os.getenv(
     "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
 )
 
-# Rust toolchain version for offline builds (must match flatpak-flutter releases)
-RUST_VERSION = "1.83.0"
-
 CARGO_LOCK_SOURCES: tuple[tuple[str, str], ...] = (
     (
         "flutter_vodozemac",
@@ -844,10 +841,6 @@ def _copy_generated_artifacts(context: PrepareFlathubContext, printer: _StatusPr
     _copy_pattern("flutter-sdk-*.json", "No flutter-sdk JSON found")
     _copy_pattern("pubspec-sources.json", "No pubspec-sources.json found")
     _copy_pattern("cargo-sources.json", "No cargo-sources.json found")
-    _copy_pattern(
-        "rustup-*.json",
-        "No rustup JSON found (will rely on SDK extension if not present)",
-    )
     _copy_pattern("package_config.json", "No package_config.json found")
 
     helper_target = work_dir / context.setup_helper_basename
@@ -1111,25 +1104,6 @@ def _apply_core_manifest_fixes(document: ManifestDocument, printer: _StatusPrint
     _apply_operation(document, printer, flutter.apply_all_offline_fixes)
 
 
-def _collect_rustup_json_names(context: PrepareFlathubContext) -> list[str]:
-    return [p.name for p in context.output_dir.glob("rustup-*.json")]
-
-
-def _include_rustup_modules(
-    document: ManifestDocument,
-    printer: _StatusPrinter,
-    rustup_modules: Iterable[str],
-) -> None:
-    for rustup_json in rustup_modules:
-        _apply_operation(
-            document,
-            printer,
-            manifest_ops.ensure_module_include,
-            module_name=rustup_json,
-            before_name="lotti",
-        )
-
-
 def _pin_manifest_if_requested(
     document: ManifestDocument,
     context: PrepareFlathubContext,
@@ -1168,7 +1142,6 @@ def _first_matching_file(directory: Path, pattern: str) -> Optional[str]:
 def _add_offline_sources_to_manifest(
     document: ManifestDocument,
     printer: _StatusPrinter,
-    rustup_modules: list[str],
     flutter_json_name: Optional[str],
     context: PrepareFlathubContext,
 ) -> None:
@@ -1181,7 +1154,6 @@ def _add_offline_sources_to_manifest(
         sources_ops.add_offline_sources,
         pubspec=pubspec_json,
         cargo=cargo_json,
-        rustup=rustup_modules,
         flutter_file=flutter_json_name if context.options.use_nested_flutter else None,
     )
 
@@ -1651,35 +1623,6 @@ def _download_cargo_lock_files(
     return downloaded
 
 
-def _copy_rustup_module(context: PrepareFlathubContext, printer: _StatusPrinter) -> bool:
-    """Copy rustup module JSON from flatpak-flutter releases to output directory.
-
-    This provides the rustup binary for offline Flathub builds when cargo sources
-    are needed but flatpak-flutter didn't generate the rustup module directly.
-
-    Returns:
-        True if rustup module was copied successfully, False otherwise.
-    """
-    source = context.flatpak_flutter_repo / "releases" / "rust" / RUST_VERSION / "rustup.json"
-    destination = context.output_dir / f"rustup-{RUST_VERSION}.json"
-
-    if destination.exists():
-        printer.info(f"Rustup module already exists at {destination.name}")
-        return True
-
-    if not source.exists():
-        printer.warn(f"Rustup module not found at {source}")
-        return False
-
-    try:
-        shutil.copy2(source, destination)
-        printer.status(f"Copied rustup module to {destination.name}")
-        return True
-    except OSError as exc:
-        printer.warn(f"Failed to copy rustup module: {exc}")
-        return False
-
-
 def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
     printer.info("Downloading Cargo.lock files from GitHub to generate correct cargo-sources.json...")
     downloaded_locks = _download_cargo_lock_files(context, printer)
@@ -1711,10 +1654,6 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
         else:
             cargo_generated = _fallback_cargo_sources_from_builder(context, printer)
 
-    # Copy rustup module when cargo sources are generated (provides rustup for offline builds)
-    if cargo_generated:
-        _copy_rustup_module(context, printer)
-
 
 def _post_process_output_manifest(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
     printer.status("Post-processing output manifest...")
@@ -1725,11 +1664,6 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
     document = ManifestDocument.load(manifest_path)
     _apply_core_manifest_fixes(document, printer)
 
-    rustup_modules = _collect_rustup_json_names(context)
-    _include_rustup_modules(document, printer, rustup_modules)
-    # Ensure rustup PATH is configured now that rustup module is included
-    if rustup_modules:
-        _apply_operation(document, printer, flutter.ensure_rustup_in_path)
     _pin_manifest_if_requested(document, context, printer)
     _maybe_apply_nested_flutter(document, context, printer)
 
@@ -1743,7 +1677,7 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
         printer.info("Keeping top-level flutter-sdk module (offline JSON missing or not referenced).")
 
     _apply_operation(document, printer, flutter.normalize_flutter_sdk_module)
-    _add_offline_sources_to_manifest(document, printer, rustup_modules, flutter_json_name, context)
+    _add_offline_sources_to_manifest(document, printer, flutter_json_name, context)
 
     # Ensure plugin toolchain sources that normally fetch at configure time are provided offline.
     # 1) sqlite3_flutter_libs downloads SQLite – add as file sources for each arch.

@@ -152,11 +152,8 @@ def test_ensure_rust_sdk_env(make_document):
     lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     build_opts = lotti["build-options"]
     assert "/usr/lib/sdk/rust-stable/bin" in build_opts["append-path"]
-    assert "/run/build/lotti/.cargo/bin" in build_opts["append-path"]
     env_path = build_opts["env"]["PATH"]
-    assert "/run/build/lotti/.cargo/bin" in env_path
     assert "/usr/lib/sdk/rust-stable/bin" in env_path
-    assert build_opts["env"].get("RUSTUP_HOME") == "/usr/lib/sdk/rust-stable"
 
 
 def test_normalize_sdk_copy_replaces_command(make_document):
