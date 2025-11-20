@@ -1591,12 +1591,12 @@ def _download_cargo_lock_files(
     fetcher: Optional[Callable[[str, Path], None]] = None,
 ) -> list[Path]:
     fetch = fetcher or _download_https_resource
-    output_dir = context.output_dir
-    output_dir.mkdir(parents=True, exist_ok=True)
+    temp_dir = context.work_dir / "cargo-locks"
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
     downloaded: list[Path] = []
     for name, url in CARGO_LOCK_SOURCES:
-        destination = output_dir / f"{name}-Cargo.lock"
+        destination = temp_dir / f"{name}-Cargo.lock"
         printer.info(f"Downloading {name} Cargo.lock...")
         try:
             fetch(url, destination)
