@@ -103,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tests: service unit tests and widget tests updated; i18n keys added with missing translations noted
 
 ### Changed
+- Flatpak: AppStream metadata version/date now come directly from the checked-in `com.matthiasn.lotti.metainfo.xml`; the manifest tool no longer rewrites them during Flathub prep.
 - Journal/Tasks: Refactored scroll-to-entry and highlight logic into `HighlightScrollMixin` with configurable durations and a small retry backoff; `LinkedEntriesWithTimer` scopes rebuilds to the linked entries section only. Focus intent is cleared early (next frame) for responsiveness and also on success/terminal failure for robustness.
 - Tasks UI: Checklist item vertical spacing reduced (outer padding 2px; content padding vertical 2px) for a more compact list.
 - UI/Tasks: Redesigned the active label filters header below the search bar
