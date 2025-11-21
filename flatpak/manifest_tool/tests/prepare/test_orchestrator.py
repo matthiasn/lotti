@@ -392,6 +392,23 @@ class PrepareOrchestratorTests(unittest.TestCase):
             self.assertTrue((output_root / "patches" / "build_tool_offline.patch").is_file())
             self.assertTrue((output_root / "run_build_tool.sh.patch").is_file())
 
+    def test_copy_helper_directories_without_helper_sources_uses_local_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            context = _make_context(base)
+
+            # No helper sources in work_dir or foreign_deps; rely solely on local overrides
+            override_root = context.flatpak_dir / "cargokit"
+            (override_root / "patches").mkdir(parents=True, exist_ok=True)
+            (override_root / "patches" / "build_tool_offline.patch").write_text("patch", encoding="utf-8")
+            (override_root / "run_build_tool.sh.patch").write_text("patch", encoding="utf-8")
+
+            _copy_helper_directories(context)
+
+            output_root = context.output_dir / "cargokit"
+            self.assertTrue((output_root / "patches" / "build_tool_offline.patch").is_file())
+            self.assertTrue((output_root / "run_build_tool.sh.patch").is_file())
+
     def test_download_cargo_lock_files_success(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)

@@ -1366,6 +1366,8 @@ def _copy_helper_directories(context: PrepareFlathubContext) -> None:
         if helper_source and helper_source.is_dir():
             _copytree(helper_source, context.output_dir / helper_dir)
         if helper_dir == "cargokit":
+            # Always overlay local patches from the repo so the generated payload
+            # contains the files referenced by the manifest.
             override_dir = context.flatpak_dir / "cargokit"
             if override_dir.is_dir():
                 for relative_path in (
