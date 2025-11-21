@@ -49,7 +49,6 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         clean_after_gen=True,
         pin_commit=True,
         use_nested_flutter=False,
-        no_flatpak_flutter=True,
         extra_env={},
     )
 
