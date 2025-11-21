@@ -1804,11 +1804,9 @@ def _is_cargokit_patch_entry(entry: object) -> bool:
         return False
     dest = str(entry.get("dest", ""))
     path = str(entry.get("path", ""))
-    return (
-        dest.startswith(".pub-cache/hosted/pub.dev/")
-        and "/cargokit" in dest
-        and path.endswith("run_build_tool.sh.patch")
-    )
+    if not (dest.startswith(".pub-cache/hosted/pub.dev/") and "/cargokit" in dest):
+        return False
+    return path.endswith("run_build_tool.sh.patch") or path.endswith("build_tool_offline.patch")
 
 
 def _is_sqlite_patch_entry(entry: object) -> bool:

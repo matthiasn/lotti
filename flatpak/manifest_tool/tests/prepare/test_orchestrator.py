@@ -22,6 +22,7 @@ from flatpak.manifest_tool.prepare.orchestrator import (
     _ensure_flutter_archive,
     _copy_assets_and_metadata,
     _copy_helper_directories,
+    _ensure_cargokit_patches_after_dependency_sources,
     _remove_flutter_sdk_module,
     _pin_working_manifest,
     _stage_pubdev_archive,
@@ -408,6 +409,45 @@ class PrepareOrchestratorTests(unittest.TestCase):
             output_root = context.output_dir / "cargokit"
             self.assertTrue((output_root / "patches" / "build_tool_offline.patch").is_file())
             self.assertTrue((output_root / "run_build_tool.sh.patch").is_file())
+
+    def test_reorders_cargokit_patches_after_deps(self) -> None:
+        manifest = ManifestDocument(
+            path=Path("manifest.yml"),
+            data={
+                "modules": [
+                    {
+                        "name": "lotti",
+                        "sources": [
+                            {
+                                "type": "patch",
+                                "path": "cargokit/run_build_tool.sh.patch",
+                                "dest": ".pub-cache/hosted/pub.dev/super_native_extensions-0.9.1/cargokit",
+                            },
+                            {
+                                "type": "patch",
+                                "path": "cargokit/patches/build_tool_offline.patch",
+                                "dest": ".pub-cache/hosted/pub.dev/super_native_extensions-0.9.1/cargokit",
+                            },
+                            "cargo-sources.json",
+                            "pubspec-sources.json",
+                        ],
+                    }
+                ]
+            },
+        )
+        printer = _StatusPrinter()
+        _ensure_cargokit_patches_after_dependency_sources(manifest, printer)
+
+        sources = manifest.data["modules"][0]["sources"]
+        dep_indices = [i for i, s in enumerate(sources) if "sources.json" in str(s)]
+        patch_indices = [
+            i
+            for i, s in enumerate(sources)
+            if isinstance(s, dict) and s.get("type") == "patch" and "cargokit" in s.get("path", "")
+        ]
+        self.assertTrue(dep_indices)
+        self.assertTrue(patch_indices)
+        self.assertTrue(all(idx > max(dep_indices) for idx in patch_indices))
 
     def test_download_cargo_lock_files_success(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
