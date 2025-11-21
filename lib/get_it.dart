@@ -31,6 +31,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -131,6 +132,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<UserActivityGate>(
       UserActivityGate(
         activityService: getIt<UserActivityService>(),
+        idleThreshold: SyncTuning.outboxIdleThreshold,
       ),
     )
     ..registerSingleton<UpdateNotifications>(UpdateNotifications())

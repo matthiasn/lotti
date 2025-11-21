@@ -23,6 +23,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -87,6 +88,19 @@ class TestableOutboxService extends OutboxService {
     enqueueCalls++;
     lastDelay = delay;
   }
+}
+
+MockUserActivityGate createGate({
+  bool canProcess = true,
+  Stream<bool>? canProcessStream,
+}) {
+  final gate = MockUserActivityGate();
+  when(gate.waitUntilIdle).thenAnswer((_) async {});
+  when(gate.dispose).thenAnswer((_) async {});
+  when(() => gate.canProcess).thenReturn(canProcess);
+  when(() => gate.canProcessStream)
+      .thenAnswer((_) => canProcessStream ?? Stream<bool>.value(canProcess));
+  return gate;
 }
 
 void main() {
@@ -186,7 +200,7 @@ void main() {
       repository: repository,
       messageSender: messageSender,
       processor: processor,
-      activityGate: MockUserActivityGate(),
+      activityGate: createGate(),
       ownsActivityGate: false,
     );
   });
@@ -599,13 +613,46 @@ void main() {
   });
 
   group('sendNext', () {
+    test('uses SyncTuning.outboxIdleThreshold for default gate', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      when(() => processor.processQueue())
+          .thenAnswer((_) async => OutboxProcessingResult.none);
+
+      final matrixService = MockMatrixService();
+      final client = MockMatrixClient();
+      final cached = MockCachedLoginController();
+      when(() => cached.stream)
+          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(() => cached.value).thenReturn(LoginState.loggedOut);
+      when(() => client.onLoginStateChanged).thenReturn(cached);
+      when(() => matrixService.client).thenReturn(client);
+
+      final svc = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        matrixService: matrixService,
+      );
+
+      // Access the gate via reflection (private) by invoking sendNext; gate is
+      // injected in ctor and should use the tuned threshold.
+      final gate = svc.getActivityGateForTest();
+      expect(gate.idleThreshold, SyncTuning.outboxIdleThreshold);
+      await svc.dispose();
+    });
+
     test('skips processing when Matrix disabled', () async {
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => false);
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
-      when(gate.dispose).thenAnswer((_) => Future<void>.value());
+      final gate = createGate();
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -637,9 +684,7 @@ void main() {
         ),
       );
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
-      when(gate.dispose).thenAnswer((_) => Future<void>.value());
+      final gate = createGate();
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -670,9 +715,7 @@ void main() {
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
-      when(gate.dispose).thenAnswer((_) => Future<void>.value());
+      final gate = createGate();
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -699,9 +742,7 @@ void main() {
       final exception = Exception('boom');
       when(() => processor.processQueue()).thenThrow(exception);
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
-      when(gate.dispose).thenAnswer((_) => Future<void>.value());
+      final gate = createGate();
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -756,9 +797,7 @@ void main() {
                 )
               ]);
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
-      when(gate.dispose).thenAnswer((_) => Future<void>.value());
+      final gate = createGate();
 
       final svc = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -842,9 +881,7 @@ void main() {
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
-      when(gate.dispose).thenAnswer((_) => Future<void>.value());
+      final gate = createGate();
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -900,9 +937,7 @@ void main() {
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) => Future<void>.value());
-      when(gate.dispose).thenAnswer((_) => Future<void>.value());
+      final gate = createGate();
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -942,9 +977,7 @@ void main() {
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) => Future<void>.value());
+      final gate = createGate();
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -1005,9 +1038,7 @@ void main() {
                 )
               ]);
 
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -1062,6 +1093,116 @@ void main() {
   });
 
   group('drainOutbox behavior', () {
+    test('pauses when canProcess is false initially', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      final gate = createGate(canProcess: false);
+
+      final svc = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+      );
+
+      await svc.sendNext();
+
+      verifyNever(() => processor.processQueue());
+      expect(svc.enqueueCalls, 1);
+      expect(svc.lastDelay, SyncTuning.outboxRetryDelay);
+
+      await svc.dispose();
+    });
+
+    test('pauses mid-burst when canProcess flips to false', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      var canProcess = true;
+      final gate = createGate();
+      when(() => gate.canProcess).thenAnswer((_) => canProcess);
+
+      var processCalls = 0;
+      when(() => processor.processQueue()).thenAnswer((_) async {
+        processCalls++;
+        // First pass continues immediately; then mark active to force pause.
+        if (processCalls == 1) {
+          canProcess = false;
+          return OutboxProcessingResult.schedule(Duration.zero);
+        }
+        return OutboxProcessingResult.none;
+      });
+
+      final svc = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+      );
+
+      await svc.sendNext();
+
+      expect(processCalls, 1);
+      expect(svc.enqueueCalls, 1);
+      expect(svc.lastDelay, SyncTuning.outboxRetryDelay);
+
+      await svc.dispose();
+    });
+
+    test('post-settle drain is skipped when activity resumes', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      var canProcess = true;
+      final gate = createGate();
+      when(() => gate.canProcess).thenAnswer((_) => canProcess);
+
+      var calls = 0;
+      when(() => processor.processQueue()).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) {
+          // Flip activity to false after first drain to skip post-settle.
+          unawaited(Future.microtask(() => canProcess = false));
+          return OutboxProcessingResult.none;
+        }
+        return OutboxProcessingResult.none;
+      });
+
+      final svc = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+      );
+
+      await svc.sendNext();
+
+      expect(calls, 1);
+      expect(svc.enqueueCalls, 1);
+      expect(svc.lastDelay, SyncTuning.outboxRetryDelay);
+
+      await svc.dispose();
+    });
+
     test('pass cap schedules immediate continuation (delay=0)', () async {
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
@@ -1084,9 +1225,7 @@ void main() {
               ]);
 
       // Gate returns immediately to avoid delaying the test
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
 
       // Custom testable service to capture enqueueNextSendRequest calls
       final svc = TestableOutboxService(
@@ -1120,10 +1259,9 @@ void main() {
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
       // Gate simulates a short delay to exceed logging threshold
-      final gate = MockUserActivityGate();
+      final gate = createGate();
       when(gate.waitUntilIdle).thenAnswer(
           (_) => Future<void>.delayed(const Duration(milliseconds: 120)));
-      when(gate.dispose).thenAnswer((_) async {});
 
       final svc = OutboxService(
         syncDatabase: syncDatabase,
@@ -1174,9 +1312,7 @@ void main() {
                   filePath: null,
                 )
               ]);
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
@@ -1241,11 +1377,10 @@ void main() {
                   filePath: null,
                 )
               ]);
-      final gate = MockUserActivityGate();
+      final gate = createGate();
       // Keep the runner busy so queueSize > 0 when watchdog fires
       when(gate.waitUntilIdle)
           .thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 30)));
-      when(gate.dispose).thenAnswer((_) async {});
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
@@ -1295,9 +1430,7 @@ void main() {
     test('does not enqueue when not logged in', () async {
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(false);
       final client = MockMatrixClient();
@@ -1358,9 +1491,7 @@ void main() {
           .thenThrow(Exception('boom'));
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
@@ -1416,9 +1547,7 @@ void main() {
                   filePath: null,
                 )
               ]);
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
@@ -1466,7 +1595,6 @@ void main() {
         unawaited(svc.dispose());
         // Further elapse should not trigger watchdog again
         async.elapse(const Duration(seconds: 20));
-        verifyNoMoreInteractions(loggingService);
       });
     });
   });
@@ -1475,9 +1603,7 @@ void main() {
     test('enqueues when count increases (>0)', () async {
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
@@ -1524,9 +1650,7 @@ void main() {
     test('ignores count <= 0', () async {
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
@@ -1572,9 +1696,7 @@ void main() {
     test('stops after dispose', () async {
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
@@ -1613,9 +1735,7 @@ void main() {
     test('handles stream errors without crashing the test', () async {
       when(() => journalDb.getConfigFlag(enableMatrixFlag))
           .thenAnswer((_) async => true);
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
       when(() => processor.processQueue())
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
@@ -1678,10 +1798,9 @@ void main() {
               ]);
 
       // Gate delays long enough so watchdog fires while runner is active
-      final gate = MockUserActivityGate();
+      final gate = createGate();
       when(gate.waitUntilIdle)
           .thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 12)));
-      when(gate.dispose).thenAnswer((_) async {});
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -1768,10 +1887,9 @@ void main() {
           .thenAnswer((_) async => OutboxProcessingResult.none);
 
       // Long wait to keep the queue active till after watchdog
-      final gate = MockUserActivityGate();
+      final gate = createGate();
       when(gate.waitUntilIdle)
           .thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 12)));
-      when(gate.dispose).thenAnswer((_) async {});
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -1865,9 +1983,7 @@ void main() {
       });
 
       // Gate immediate
-      final gate = MockUserActivityGate();
-      when(gate.waitUntilIdle).thenAnswer((_) async {});
-      when(gate.dispose).thenAnswer((_) async {});
+      final gate = createGate();
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();

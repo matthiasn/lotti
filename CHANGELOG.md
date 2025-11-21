@@ -110,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Header shows a subtle filter icon and “Active label filters (n)”
   - Clear action uses compact `TextButton.icon` (smaller text) and chips use compact density
   - Renders only when filters are active; no empty container state
+- Sync (Outbox): enforce a strict idle window (3s) with no forced 2s deadline; pause drains mid-burst when activity resumes and reschedule via the standard retry delay.
 - Sync (Matrix): Client stream is now signal-driven and always triggers a catch-up via
   `forceRescan(includeCatchUp=true)` with an in-flight guard to prevent overlaps. Timeline callbacks
   continue to schedule debounced live scans and fall back to `forceRescan()` on scheduling errors.

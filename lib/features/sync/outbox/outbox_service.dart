@@ -23,6 +23,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 class OutboxService {
   OutboxService({
@@ -51,6 +52,7 @@ class OutboxService {
         _activityGate = activityGate ??
             UserActivityGate(
               activityService: userActivityService,
+              idleThreshold: SyncTuning.outboxIdleThreshold,
             ),
         _ownsActivityGate = ownsActivityGate ?? activityGate == null,
         _matrixService = matrixService,
@@ -427,6 +429,15 @@ class OutboxService {
 
   Future<bool> _drainOutbox() async {
     for (var pass = 0; pass < _maxDrainPasses; pass++) {
+      if (!_activityGate.canProcess) {
+        _loggingService.captureEvent(
+          'drain.paused activityGate.canProcess=false',
+          domain: 'OUTBOX',
+          subDomain: 'activityGate',
+        );
+        await enqueueNextSendRequest(delay: SyncTuning.outboxRetryDelay);
+        return false;
+      }
       final result = await _processor.processQueue();
       if (!result.shouldSchedule) {
         // Queue appears drained for now.
@@ -517,6 +528,15 @@ class OutboxService {
 
       // Allow recent enqueues to settle then attempt one more drain.
       await Future<void>.delayed(_postDrainSettle);
+      if (!_activityGate.canProcess) {
+        _loggingService.captureEvent(
+          'sendNext.postSettle.paused activityGate.canProcess=false',
+          domain: 'OUTBOX',
+          subDomain: 'activityGate',
+        );
+        await enqueueNextSendRequest(delay: SyncTuning.outboxRetryDelay);
+        return;
+      }
       await _drainOutbox();
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -554,6 +574,10 @@ class OutboxService {
     }
     await _loginGateEventsController.close();
   }
+
+  // Exposed for tests to validate tuning/wiring.
+  @visibleForTesting
+  UserActivityGate getActivityGateForTest() => _activityGate;
 }
 
 class MatrixOutboxMessageSender implements OutboxMessageSender {
