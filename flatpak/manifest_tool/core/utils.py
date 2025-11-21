@@ -9,6 +9,18 @@ from typing import Any, Mapping
 import yaml
 
 
+class _LiteralSafeDumper(yaml.SafeDumper):
+    """Custom dumper that emits literal blocks for multiline strings."""
+
+
+def _repr_str(dumper: yaml.Dumper, data: str) -> yaml.nodes.ScalarNode:
+    style = "|" if "\n" in data else None
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style=style)
+
+
+_LiteralSafeDumper.add_representer(str, _repr_str)
+
+
 _LOGGER_BASENAME = "flatpak_helpers"
 _logger_configured = False
 
@@ -46,6 +58,6 @@ def dump_manifest(path: str | Path, data: Mapping[str, Any]) -> None:
 
     manifest_path = Path(path)
     manifest_path.write_text(
-        yaml.safe_dump(data, sort_keys=False),
+        yaml.dump(data, sort_keys=False, Dumper=_LiteralSafeDumper),
         encoding="utf-8",
     )
