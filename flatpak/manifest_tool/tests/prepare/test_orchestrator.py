@@ -21,6 +21,7 @@ from flatpak.manifest_tool.prepare.orchestrator import (
     _stage_package_config,
     _ensure_flutter_archive,
     _copy_assets_and_metadata,
+    _copy_helper_directories,
     _remove_flutter_sdk_module,
     _pin_working_manifest,
     _stage_pubdev_archive,
@@ -367,6 +368,29 @@ class PrepareOrchestratorTests(unittest.TestCase):
 
             self.assertTrue((context.output_dir / "cargokit" / "run_build_tool.sh.patch").is_file())
             self.assertTrue((context.output_dir / "sqlite3_flutter_libs" / "helper.patch").is_file())
+
+    def test_copy_helper_directories_overlays_local_cargokit_patches(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            context = _make_context(base)
+
+            # Simulate flatpak-flutter provided helper without patches
+            cargokit_root = context.work_dir / "cargokit"
+            cargokit_root.mkdir(parents=True, exist_ok=True)
+            (cargokit_root / "Cargo.lock").write_text("", encoding="utf-8")
+
+            # Local overrides include patched files
+            override_root = context.flatpak_dir / "cargokit"
+            (override_root / "patches").mkdir(parents=True, exist_ok=True)
+            (override_root / "patches" / "build_tool_offline.patch").write_text("patch", encoding="utf-8")
+            (override_root / "run_build_tool.sh.patch").write_text("patch", encoding="utf-8")
+
+            _copy_helper_directories(context)
+
+            output_root = context.output_dir / "cargokit"
+            self.assertTrue((output_root / "Cargo.lock").is_file())
+            self.assertTrue((output_root / "patches" / "build_tool_offline.patch").is_file())
+            self.assertTrue((output_root / "run_build_tool.sh.patch").is_file())
 
     def test_download_cargo_lock_files_success(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

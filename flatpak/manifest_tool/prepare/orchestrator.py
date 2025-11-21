@@ -1365,6 +1365,18 @@ def _copy_helper_directories(context: PrepareFlathubContext) -> None:
                 helper_source = fallback_source if fallback_source.is_dir() else None
         if helper_source and helper_source.is_dir():
             _copytree(helper_source, context.output_dir / helper_dir)
+        if helper_dir == "cargokit":
+            override_dir = context.flatpak_dir / "cargokit"
+            if override_dir.is_dir():
+                for relative_path in (
+                    "run_build_tool.sh.patch",
+                    "patches/build_tool_offline.patch",
+                ):
+                    override_file = override_dir / relative_path
+                    if override_file.is_file():
+                        target_path = context.output_dir / "cargokit" / relative_path
+                        target_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(override_file, target_path)
 
 
 def _remove_flutter_sdk_module(document: ManifestDocument) -> bool:
