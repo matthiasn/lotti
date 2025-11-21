@@ -72,8 +72,8 @@ Future<void> importImageAssets(
     for (final asset in assets.toList(growable: false)) {
       Geolocation? geolocation;
       final latLng = await asset.latlngAsync();
-      final latitude = latLng.latitude ?? asset.latitude;
-      final longitude = latLng.longitude ?? asset.longitude;
+      final latitude = latLng?.latitude ?? asset.latitude;
+      final longitude = latLng?.longitude ?? asset.longitude;
 
       if (latitude != null &&
           longitude != null &&
