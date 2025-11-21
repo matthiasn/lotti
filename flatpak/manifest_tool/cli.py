@@ -537,7 +537,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser_sdk_copy = subparsers.add_parser(
         "normalize-sdk-copy",
-        help="Normalize the Flutter SDK copy command with fallbacks.",
+        help="Normalize the Flutter SDK copy command.",
     )
     parser_sdk_copy.add_argument("--manifest", required=True, help="Manifest file path.")
     parser_sdk_copy.set_defaults(func=_run_normalize_sdk_copy)

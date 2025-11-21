@@ -1078,7 +1078,7 @@ def _regenerate_pubspec_sources_if_needed(context: PrepareFlathubContext, printe
         _stage_packages_from_pubspec_json(context, printer, existing)
         return
 
-    # Otherwise, generate from available lockfiles (best-effort fallback)
+    # Otherwise, generate from available lockfiles
     lock_inputs = _collect_pubspec_lock_inputs(context)
     printer.info("Generating pubspec-sources.json from lockfiles")
     final_path = _run_pubspec_sources_generator(context, lock_inputs)
@@ -1546,59 +1546,6 @@ def _verify_flutter_sdk_version(flutter_bin: Path, target_dir: Path) -> None:
     )
 
 
-def _fallback_cargo_sources_from_presets(context: PrepareFlathubContext, printer: _StatusPrinter) -> bool:
-    output_path = context.output_dir / "cargo-sources.json"
-    preset_dir = context.flatpak_dir / "cargo-lock-files"
-    if not preset_dir.is_dir():
-        return False
-    inputs = [path for path in preset_dir.glob("*.lock") if path.is_file()]
-    if not inputs:
-        return False
-    if _run_cargo_generator(context, inputs, context.work_dir / "cargo-sources-cargokit.json"):
-        _copyfile(
-            context.work_dir / "cargo-sources-cargokit.json",
-            output_path,
-        )
-        printer.status("Generated cargo-sources.json from pre-saved Cargo.lock files")
-        return True
-    printer.warn("Failed to generate cargo-sources.json from pre-saved Cargo.lock files")
-    return False
-
-
-def _fallback_cargo_sources_from_builder(context: PrepareFlathubContext, printer: _StatusPrinter) -> bool:
-    build_dir = context.work_dir / ".flatpak-builder" / "build"
-    if not build_dir.is_dir():
-        return False
-    patterns = [
-        "**/.pub-cache/hosted/pub.dev/*/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/android/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/ios/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/linux/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/macos/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/windows/rust/Cargo.lock",
-    ]
-    locks: set[Path] = set()
-    for pattern in patterns:
-        for path in build_dir.glob(pattern):
-            if path.is_file():
-                try:
-                    locks.add(path.resolve())
-                except FileNotFoundError:
-                    continue
-    if not locks:
-        printer.warn("No Cargo.lock files found under .flatpak-builder; skipping cargo-sources generation")
-        return False
-    unique_locks = sorted(locks)
-    printer.info(f"Found {len(unique_locks)} cargokit Cargo.lock file(s)")
-    temp_output = context.work_dir / "cargo-sources-cargokit.json"
-    if _run_cargo_generator(context, unique_locks, temp_output):
-        _copyfile(temp_output, context.output_dir / "cargo-sources.json")
-        printer.status("Generated cargo-sources.json from cargokit Cargo.lock files")
-        return True
-    printer.warn("Failed to generate cargo-sources.json from cargokit Cargo.lock files")
-    return False
-
-
 def _download_cargo_lock_files(
     context: PrepareFlathubContext,
     printer: _StatusPrinter,
@@ -1681,7 +1628,6 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
             cargo_generated = True
         else:
             printer.warn("Failed to generate cargo-sources.json from downloaded files")
-            # Remove any partial/stale file so fallback logic must produce a real file
             try:
                 if cargo_json.exists():
                     cargo_json.unlink()

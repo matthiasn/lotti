@@ -55,7 +55,7 @@ Refactor `flatpak/prepare_flathub_submission.sh` into a thin wrapper that delega
 ### flatpak-flutter Execution
 - Ensures `flatpak-flutter` repo is cloned locally.
 - Runs `flatpak-flutter.py` with optional timeout, teeing logs.
-- Handles fallback path when flatpak-flutter fails or is skipped.
+- Fails fast if flatpak-flutter is missing or fails.
 
 ### Artifact Collection & Post-processing
 - Pins manifest to commit, validates absence of `branch`/`COMMIT_PLACEHOLDER`.
