@@ -1039,6 +1039,9 @@ def _warm_cargokit_build_tool_locks(context: PrepareFlathubContext, printer: _St
     base_env.update(context.env)
     base_env.setdefault("PUB_ENVIRONMENT", "cargokit-build-tool")
 
+    cache_dir = context.flatpak_dir / "cache" / "cargokit"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
     for pubspec in sorted(pubspecs):
         working_dir = pubspec.parent
         result = _run_command(
@@ -1054,6 +1057,14 @@ def _warm_cargokit_build_tool_locks(context: PrepareFlathubContext, printer: _St
             printer.warn(f"build_tool pub get failed in {working_dir}: {result.stdout or 'no output'}")
         else:
             printer.info(f"Warmed build_tool cache in {working_dir}")
+            lock_path = working_dir / "pubspec.lock"
+            if lock_path.is_file():
+                dest = cache_dir / f"{working_dir.parent.name}.pubspec.lock"
+                try:
+                    shutil.copy2(lock_path, dest)
+                    printer.info(f"Cached build_tool lock at {dest}")
+                except OSError as exc:
+                    printer.warn(f"Failed to cache build_tool lock {lock_path}: {exc}")
 
 
 def _collect_pubspec_lock_inputs(context: PrepareFlathubContext) -> list[Path]:
