@@ -240,8 +240,7 @@ def normalize_sdk_copy(document: ManifestDocument) -> OperationResult:
                     dest = parts[3]
                     # Shell-escape destination to prevent injection in constructed command
                     escaped_dest = shlex.quote(dest)
-                    conditional = f"if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter {escaped_dest}; fi"
-                    new_commands.append(conditional)
+                    new_commands.append(f"cp -r /var/lib/flutter {escaped_dest}")
                     changed = True
                     continue
 

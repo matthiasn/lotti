@@ -170,7 +170,7 @@ def test_normalize_sdk_copy_replaces_command(make_document):
 
     assert result.changed
     commands = lotti["build-commands"]
-    assert commands[0] == "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
+    assert commands[0] == "cp -r /var/lib/flutter ."
 
 
 def test_convert_flutter_git_to_archive(make_document):
