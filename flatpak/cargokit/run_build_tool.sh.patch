@@ -7,6 +7,18 @@ index 0e2c973..200b520 100755
 
 +# Flatpak: ensure Rust SDK extension is in PATH
 +export PATH="/usr/lib/sdk/rust-stable/bin:$PATH"
++export CARGO="/usr/lib/sdk/rust-stable/bin/cargo"
++export RUSTC="/usr/lib/sdk/rust-stable/bin/rustc"
++export CARGO_HOME="${CARGO_HOME:-/run/build/lotti/.cargo}"
++export CARGO_NET_OFFLINE=true
++export RUSTUP_HOME="/usr/lib/sdk/rust-stable"
++export CARGOKIT_ALLOW_DOWNLOADS=false
++export CARGOKIT_OFFLINE=true
++# If rustup is unavailable in the SDK, stub it; we rely on the preinstalled Rust toolchain.
++if ! command -v rustup >/dev/null 2>&1; then
++  echo "Using system Rust toolchain (rustup not present in SDK)" >&2
++  rustup() { true; }
++fi
 +
  set -e
 
