@@ -59,37 +59,40 @@ void main() {
       });
     });
 
-    test('returns after hard deadline when continuously active', () {
+    test('resets idle window on repeated activity', () {
       fakeAsync((async) {
         // Mark as recently active before creating the gate so it starts non‑idle.
         final service = UserActivityService()..updateActivity();
         // Create gate with a reasonable idle threshold; we will keep activity
-        // happening to force the hard deadline path (~2s).
+        // happening to verify it never completes while active.
         final gate = UserActivityGate(
           activityService: service,
-          idleThreshold: const Duration(milliseconds: 300),
         );
 
-        // Start the hard deadline timer at t=0
+        // Start waiting while non-idle.
         var completed = false;
         gate.waitUntilIdle().then((_) => completed = true);
 
-        // Continuously report activity deterministically under fake time.
-        // Step through 1950ms in 150ms increments, updating activity each step.
-        const step = Duration(milliseconds: 150);
-        for (var i = 0; i < 13; i++) {
-          service.updateActivity();
-          async
-            ..elapse(step)
-            ..flushMicrotasks();
-        }
-
-        // After 1950ms, we are just before the hard deadline
+        // First idle window not yet reached.
+        async
+          ..elapse(const Duration(milliseconds: 400))
+          ..flushMicrotasks();
         expect(completed, isFalse);
 
-        // Advance past hard deadline (~2s), small epsilon beyond boundary
+        // New activity resets the idle window.
+        service.updateActivity();
+        async.flushMicrotasks();
+        expect(gate.canProcess, isFalse);
+
+        // Still not idle after another partial window.
         async
-          ..elapse(const Duration(milliseconds: 100))
+          ..elapse(const Duration(milliseconds: 600))
+          ..flushMicrotasks();
+        expect(completed, isFalse);
+
+        // Now allow a full idle window to pass.
+        async
+          ..elapse(const Duration(milliseconds: 401))
           ..flushMicrotasks();
         expect(completed, isTrue);
 
