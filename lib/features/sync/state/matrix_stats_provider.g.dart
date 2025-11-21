@@ -41,5 +41,25 @@ final matrixStatsControllerProvider = AutoDisposeAsyncNotifierProvider<
 );
 
 typedef _$MatrixStatsController = AutoDisposeAsyncNotifier<MatrixStats>;
+String _$syncMetricsHistoryHash() =>
+    r'8aab893bfab87919afaaa7d3363d3e9f4b3b211c';
+
+/// Rolling in-memory history for a few KPI metrics to power sparklines.
+/// Kept UI-side to avoid coupling to the pipeline internals.
+///
+/// Copied from [SyncMetricsHistory].
+@ProviderFor(SyncMetricsHistory)
+final syncMetricsHistoryProvider =
+    NotifierProvider<SyncMetricsHistory, Map<String, List<int>>>.internal(
+  SyncMetricsHistory.new,
+  name: r'syncMetricsHistoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$syncMetricsHistoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$SyncMetricsHistory = Notifier<Map<String, List<int>>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

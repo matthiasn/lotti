@@ -153,7 +153,7 @@ class AssistantSettingsSheet extends ConsumerWidget {
                     ? null
                     : (v) => ref
                         .read(geminiIncludeThoughtsProvider.notifier)
-                        .state = v,
+                        .includeThoughts = v,
               ),
               const SizedBox(height: 8),
             ],

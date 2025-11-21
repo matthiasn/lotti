@@ -45,33 +45,32 @@ final matrixDiagnosticsTextProvider = FutureProvider<String>((ref) async {
 
 /// Rolling in-memory history for a few KPI metrics to power sparklines.
 /// Kept UI-side to avoid coupling to the pipeline internals.
-class SyncMetricsHistory extends StateNotifier<Map<String, List<int>>> {
-  SyncMetricsHistory(this.ref) : super(<String, List<int>>{}) {
+@Riverpod(keepAlive: true)
+class SyncMetricsHistory extends _$SyncMetricsHistory {
+  @override
+  Map<String, List<int>> build() {
     // Listen for typed metrics updates and append KPI values.
-    ref.listen<AsyncValue<SyncMetrics?>>(matrixSyncMetricsFutureProvider,
-        (prev, next) {
-      next.whenData((v) {
-        if (v == null) return;
-        final map = v.toMap();
-        const keys = ['processed', 'failures', 'retriesScheduled'];
-        final updated = Map<String, List<int>>.from(state);
-        for (final k in keys) {
-          final val = map[k] ?? 0;
-          final list = List<int>.from(updated[k] ?? const <int>[])..add(val);
-          if (list.length > 24) list.removeAt(0);
-          updated[k] = list;
-        }
-        state = updated;
-      });
-    });
-  }
+    ref.listen<AsyncValue<SyncMetrics?>>(
+      matrixSyncMetricsFutureProvider,
+      (prev, next) {
+        next.whenData((v) {
+          if (v == null) return;
+          final map = v.toMap();
+          const keys = ['processed', 'failures', 'retriesScheduled'];
+          final updated = Map<String, List<int>>.from(state);
+          for (final k in keys) {
+            final val = map[k] ?? 0;
+            final list = List<int>.from(updated[k] ?? const <int>[])..add(val);
+            if (list.length > 24) list.removeAt(0);
+            updated[k] = list;
+          }
+          state = updated;
+        });
+      },
+    );
 
-  final Ref ref;
+    return <String, List<int>>{};
+  }
 
   void clear() => state = <String, List<int>>{};
 }
-
-final syncMetricsHistoryProvider =
-    StateNotifierProvider<SyncMetricsHistory, Map<String, List<int>>>(
-  SyncMetricsHistory.new,
-);
