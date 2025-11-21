@@ -3,9 +3,11 @@ index 1111111..2222222 100644
 --- a/build_tool/lib/src/environment.dart
 +++ b/build_tool/lib/src/environment.dart
 @@
+-/// Allow downloads unless explicitly disabled.
 -bool get allowDownloads => Platform.environment['CARGOKIT_ALLOW_DOWNLOADS'] != 'false';
-+/// Support offline builds: default to disallowing downloads unless explicitly enabled.
++/// Default to offline unless explicitly enabled.
 +bool get allowDownloads => Platform.environment['CARGOKIT_ALLOW_DOWNLOADS'] == 'true';
+
 diff --git a/build_tool/lib/src/rustup.dart b/build_tool/lib/src/rustup.dart
 index 3333333..4444444 100644
 --- a/build_tool/lib/src/rustup.dart
@@ -22,12 +24,13 @@ index 3333333..4444444 100644
 -  await _installRustup();
 -}
 +Future<void> ensureRustup({required bool allowDownloads}) async {
-+  // Flatpak: rely on SDK toolchain; if rustup is missing do nothing in offline mode.
 +  final rustup = await _findRustup();
 +  if (rustup != null) return;
++  // Flatpak: rely on preinstalled SDK toolchain when downloads are disallowed.
 +  if (!allowDownloads) return;
 +  await _installRustup();
 +}
+
 diff --git a/build_tool/lib/src/artifacts_provider.dart b/build_tool/lib/src/artifacts_provider.dart
 index 5555555..6666666 100644
 --- a/build_tool/lib/src/artifacts_provider.dart
@@ -41,7 +44,7 @@ index 5555555..6666666 100644
 -    }
 -  }
 +  Future<void> _getPrecompiledArtifacts() async {
-+    // Flatpak: skip precompiled downloads in offline mode.
++    // Flatpak: skip precompiled downloads when offline.
 +    if (!allowDownloads) {
 +      _logger.info('Skipping precompiled artifacts (offline)');
 +      return;
