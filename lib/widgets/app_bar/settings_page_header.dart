@@ -76,7 +76,7 @@ class SettingsPageHeader extends StatelessWidget {
 
     final collapsedBodyHeight = titleBlockHeight * 0.9 +
         (showSubtitle ? subtitleBlockHeight * 0.35 : 0) +
-        topSpacing * 0.5;
+        topSpacing;
 
     final expandedHeight = topInset + expandedBodyHeight;
     final collapsedHeight = topInset +

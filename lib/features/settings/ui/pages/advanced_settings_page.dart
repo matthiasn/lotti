@@ -12,6 +12,7 @@ class AdvancedSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverBoxAdapterPage(
       title: context.messages.settingsAdvancedTitle,
+      showBackButton: true,
       child: Column(
         children: [
           AnimatedModernSettingsCardWithIcon(

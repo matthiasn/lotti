@@ -135,6 +135,7 @@ class _FlagsPageState extends State<FlagsPage> {
 
         return SliverBoxAdapterPage(
           title: context.messages.settingsFlagsTitle,
+          showBackButton: true,
           child: Column(
             children: [
               ...orderedFlags.map(

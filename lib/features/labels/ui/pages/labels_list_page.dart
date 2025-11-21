@@ -169,6 +169,14 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
                       .textTheme
                       .titleMedium
                       ?.copyWith(color: Theme.of(context).disabledColor)),
+              const SizedBox(height: 8),
+              Text(
+                context.messages.settingsLabelsEmptyStateHint,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).disabledColor,
+                    ),
+              ),
             ],
           ),
         ),

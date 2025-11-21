@@ -5,7 +5,7 @@
 /// with its intended role in the header layout.
 class SettingsHeaderDimensions {
   // Spacing above the title block inside the flexible space area.
-  static const double topSpacing = 0;
+  static const double topSpacing = 16;
 
   // Gap between title and subtitle.
   static const double subtitleGap = 6;
@@ -23,10 +23,10 @@ class SettingsHeaderDimensions {
   static const double footerNoSubtitle = 6;
 
   // Minimum collapsed body height when a subtitle exists (excludes top inset).
-  static const double collapsedMinWithSubtitle = 24;
+  static const double collapsedMinWithSubtitle = 48;
 
   // Minimum collapsed body height when no subtitle exists (excludes top inset).
-  static const double collapsedMinNoSubtitle = 24;
+  static const double collapsedMinNoSubtitle = 48;
 
   /// Returns the responsive horizontal padding for the header content given
   /// the available `width`.
