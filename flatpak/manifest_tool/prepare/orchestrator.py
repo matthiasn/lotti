@@ -1312,20 +1312,9 @@ def _apply_manifest_compliance(context: PrepareFlathubContext, printer: _StatusP
 
 def _copy_assets_and_metadata(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
     printer.status("Copying additional files...")
-    _copy_fontconfig(context, printer)
     _copy_flutter_patches(context, printer)
     _copy_prebuilt_patches(context)
     _copy_helper_directories(context)
-
-
-def _copy_fontconfig(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
-    fontconfig = context.flatpak_dir / "75-noto-color-emoji.conf"
-    if fontconfig.is_file():
-        _copyfile(fontconfig, context.output_dir / fontconfig.name)
-        _copyfile(fontconfig, context.work_dir / fontconfig.name)
-        printer.info("Copied emoji fontconfig file")
-    else:
-        printer.warn("Emoji fontconfig file not found at flatpak/75-noto-color-emoji.conf")
 
 
 def _copy_flutter_patches(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
