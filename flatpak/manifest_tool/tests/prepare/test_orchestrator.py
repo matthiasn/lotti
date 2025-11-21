@@ -23,6 +23,7 @@ from flatpak.manifest_tool.prepare.orchestrator import (
     _copy_assets_and_metadata,
     _copy_helper_directories,
     _ensure_cargokit_patches_after_dependency_sources,
+    _warm_cargokit_build_tool_locks,
     _remove_flutter_sdk_module,
     _pin_working_manifest,
     _stage_pubdev_archive,
@@ -409,6 +410,26 @@ class PrepareOrchestratorTests(unittest.TestCase):
             output_root = context.output_dir / "cargokit"
             self.assertTrue((output_root / "patches" / "build_tool_offline.patch").is_file())
             self.assertTrue((output_root / "run_build_tool.sh.patch").is_file())
+
+    def test_warm_cargokit_build_tool_locks_uses_custom_dart(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            context = _make_context(base)
+            build_tool_dir = (
+                context.work_dir / ".flatpak-builder" / "build" / "lotti" / "cargokit" / "build_tool"
+            )
+            build_tool_dir.mkdir(parents=True, exist_ok=True)
+            (build_tool_dir / "pubspec.yaml").write_text("name: dummy\n", encoding="utf-8")
+
+            dart_bin = base / "fake_dart.sh"
+            dart_bin.write_text("#!/bin/bash\necho ok > \"$PWD/ran_from_fake_dart\"\n", encoding="utf-8")
+            dart_bin.chmod(0o755)
+            context.env["DART_BIN"] = str(dart_bin)
+
+            printer = _StatusPrinter()
+            _warm_cargokit_build_tool_locks(context, printer)
+
+            self.assertTrue((build_tool_dir / "ran_from_fake_dart").is_file())
 
     def test_reorders_cargokit_patches_after_deps(self) -> None:
         manifest = ManifestDocument(

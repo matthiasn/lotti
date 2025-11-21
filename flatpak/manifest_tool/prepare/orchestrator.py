@@ -488,6 +488,7 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _normalize_sqlite_patch(context, printer)
     _pin_working_manifest(context, printer)
     _copy_generated_artifacts(context, printer)
+    _warm_cargokit_build_tool_locks(context, printer)
     _regenerate_pubspec_sources_if_needed(context, printer)
     _stage_package_config(context, printer)
     _ensure_flutter_json(context, printer)
@@ -988,6 +989,71 @@ def _find_preset_cargokit_locks(context: PrepareFlathubContext) -> list[Path]:
     if not cache_dir.is_dir():
         return []
     return sorted(cache_dir.glob("*.pubspec.lock"))
+
+
+def _resolve_dart_binary(context: PrepareFlathubContext) -> Optional[str]:
+    """Return a dart executable to use for build_tool warmup."""
+
+    override = context.env.get("DART_BIN")
+    if override and Path(override).is_file():
+        return override
+
+    candidates = [
+        context.work_dir / ".flatpak-builder" / "build" / "lotti" / "flutter" / "bin" / "dart",
+        (context.cached_flutter_dir / "bin" / "dart") if context.cached_flutter_dir else None,
+    ]
+    for candidate in candidates:
+        if candidate and candidate.is_file():
+            return str(candidate)
+
+    system = shutil.which("dart")
+    return system
+
+
+def _warm_cargokit_build_tool_locks(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+    """Run pub get for cargokit build_tool packages during the online phase."""
+
+    dart_bin = _resolve_dart_binary(context)
+    if not dart_bin:
+        printer.warn("Skipping build_tool warmup: dart binary not found")
+        return
+
+    search_roots = [
+        context.work_dir / ".flatpak-builder" / "build",
+        context.output_dir / ".flatpak-builder" / "build",
+    ]
+    pubspecs: set[Path] = set()
+    for base in search_roots:
+        if not base.is_dir():
+            continue
+        try:
+            pubspecs.update(base.glob("**/cargokit/build_tool/pubspec.yaml"))
+        except OSError:
+            continue
+
+    if not pubspecs:
+        return
+
+    printer.status("Priming cargokit build_tool pub cache...")
+    base_env = os.environ.copy()
+    base_env.update(context.env)
+    base_env.setdefault("PUB_ENVIRONMENT", "cargokit-build-tool")
+
+    for pubspec in sorted(pubspecs):
+        working_dir = pubspec.parent
+        result = _run_command(
+            [dart_bin, "pub", "get"],
+            cwd=working_dir,
+            env=base_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            printer.warn(f"build_tool pub get failed in {working_dir}: {result.stdout or 'no output'}")
+        else:
+            printer.info(f"Warmed build_tool cache in {working_dir}")
 
 
 def _collect_pubspec_lock_inputs(context: PrepareFlathubContext) -> list[Path]:
