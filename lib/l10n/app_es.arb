@@ -301,6 +301,7 @@
   "taskCategoryLabel": "Categoría:",
   "taskCategoryUnassignedLabel": "sin asignar",
   "taskEstimateLabel": "Estimación:",
+  "taskNoEstimateLabel": "Sin estimación",
   "taskNameHint": "Introduzca un nombre para la tarea",
   "tasksFilterTitle": "Filtro de tareas",
   "taskStatusAll": "Todos",

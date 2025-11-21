@@ -5,6 +5,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -300,6 +301,84 @@ void main() {
       } finally {
         debugPrint = previousDebugPrint;
       }
+    });
+
+    group('SettingsPageHeader Integration', () {
+      testWidgets('displays SettingsPageHeader with correct title',
+          (tester) async {
+        // Mock initial logs
+        when(() => mockLoggingDb.watchLogEntries()).thenAnswer(
+          (_) => Stream<List<LogEntry>>.fromIterable([[]]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: const LoggingPage(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should have SettingsPageHeader
+        expect(find.byType(SettingsPageHeader), findsOneWidget);
+      });
+
+      testWidgets('shows back button in SettingsPageHeader', (tester) async {
+        // Mock initial logs
+        when(() => mockLoggingDb.watchLogEntries()).thenAnswer(
+          (_) => Stream<List<LogEntry>>.fromIterable([[]]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: const LoggingPage(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should have back button (chevron_left icon)
+        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      });
+
+      testWidgets('uses CustomScrollView with slivers', (tester) async {
+        // Mock initial logs
+        when(() => mockLoggingDb.watchLogEntries()).thenAnswer(
+          (_) => Stream<List<LogEntry>>.fromIterable([[]]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 1000,
+                maxWidth: 1000,
+              ),
+              child: const LoggingPage(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should use CustomScrollView for sliver structure
+        expect(find.byType(CustomScrollView), findsOneWidget);
+
+        // Should have SettingsPageHeader as a sliver
+        expect(find.byType(SettingsPageHeader), findsOneWidget);
+      });
     });
   });
 }

@@ -301,6 +301,7 @@
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "neeatribuit",
   "taskEstimateLabel": "Timp Estimat:",
+  "taskNoEstimateLabel": "Fără estimare",
   "taskNameHint": "Introduceți un nume pentru sarcină",
   "tasksFilterTitle": "Filtru sarcini",
   "taskStatusAll": "Toate",

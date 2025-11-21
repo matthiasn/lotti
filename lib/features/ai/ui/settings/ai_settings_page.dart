@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
 /// Main AI Settings page providing a unified interface for managing AI configurations
 ///
@@ -177,45 +178,10 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         controller: _scrollController,
         physics: const ClampingScrollPhysics(),
         slivers: [
-          // Simple app bar with collapsing title
-          SliverAppBar(
-            expandedHeight: 100,
-            pinned: true,
-            backgroundColor: context.colorScheme.surface,
-            surfaceTintColor: Colors.transparent,
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back,
-                color: context.colorScheme.onSurface,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                context.messages.aiSettingsPageTitle,
-                style: TextStyle(
-                  color: context.colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: Theme.of(context).brightness == Brightness.light
-                        ? [
-                            context.colorScheme.surface,
-                            context.colorScheme.surface,
-                          ]
-                        : [
-                            context.colorScheme.surface,
-                            context.colorScheme.scrim,
-                          ],
-                  ),
-                ),
-              ),
-            ),
+          // Premium settings header with collapsing title
+          SettingsPageHeader(
+            title: context.messages.aiSettingsPageTitle,
+            showBackButton: true,
           ),
 
           // Fixed header with search, tabs and filters

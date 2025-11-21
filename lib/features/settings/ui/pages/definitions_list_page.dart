@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/search/search_widget.dart';
 
 class DefinitionsListPage<T> extends StatefulWidget {
@@ -68,9 +68,8 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
           floatingActionButton: widget.floatingActionButton,
           body: CustomScrollView(
             slivers: <Widget>[
-              SliverTitleBar(
-                widget.title,
-                pinned: true,
+              SettingsPageHeader(
+                title: widget.title,
                 showBackButton: true,
               ),
               SliverToBoxAdapter(

@@ -302,6 +302,7 @@
   "taskCategoryLabel": "Catégorie :",
   "taskCategoryUnassignedLabel": "non attribué",
   "taskEstimateLabel": "Temps estimé :",
+  "taskNoEstimateLabel": "Sans estimation",
   "taskNameHint": "Saisissez un nom pour la tâche",
   "tasksFilterTitle": "Filtre des tâches",
   "taskStatusAll": "Tout",

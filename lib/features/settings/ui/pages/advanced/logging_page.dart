@@ -9,6 +9,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -359,27 +360,9 @@ class _LoggingPageState extends State<LoggingPage> {
                   : context.colorScheme.scrim,
               body: CustomScrollView(
                 slivers: <Widget>[
-                  SliverAppBar(
-                    expandedHeight: 100,
-                    pinned: true,
-                    backgroundColor: context.colorScheme.surface,
-                    surfaceTintColor: Colors.transparent,
-                    leading: IconButton(
-                      icon: Icon(
-                        Icons.arrow_back,
-                        color: context.colorScheme.onSurface,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    flexibleSpace: FlexibleSpaceBar(
-                      title: Text(
-                        context.messages.settingsLogsTitle,
-                        style: TextStyle(
-                          color: context.colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  SettingsPageHeader(
+                    title: context.messages.settingsLogsTitle,
+                    showBackButton: true,
                   ),
                   SliverPinnedToBoxAdapter(
                     child: Container(
