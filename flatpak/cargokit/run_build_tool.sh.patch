@@ -52,6 +52,7 @@ export CARGOKIT_ALLOW_DOWNLOADS=false
 export CARGOKIT_OFFLINE=true
 # Entire toolchain must be available locally; disallow build_tool downloads.
 export BUILD_TOOL_ALLOW_DOWNLOADS=false
+export CARGOKIT_USE_PRECOMPILED=false
 
 # Provide a rustup shim so build_tool checks succeed even when rustup isn't present.
 SHIM_DIR="${CARGOKIT_TOOL_TEMP_DIR:-${TMPDIR:-/tmp}}/cargokit-shims"

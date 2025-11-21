@@ -26,7 +26,7 @@ _KNOWN_CARGOKIT_PACKAGES = [
 
 _FALLBACK_CARGOKIT_PACKAGES = [
     "super_native_extensions-0.9.1",
-    "flutter_vodozemac-0.2.2",
+    "flutter_vodozemac-0.4.1",
     "irondash_engine_context-0.5.5",
 ]
 
@@ -134,6 +134,21 @@ def _has_cargokit_patch(sources: Iterable[Any], package: str) -> bool:
     return False
 
 
+def _has_cargokit_patch_for_base(sources: Iterable[Any], package_base: str) -> bool:
+    """Return True if sources include a cargokit patch for any version of package_base."""
+
+    prefix = f".pub-cache/hosted/pub.dev/{package_base}-"
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        if source.get("type") != "patch":
+            continue
+        dest = str(source.get("dest", ""))
+        if dest.startswith(prefix) and dest.endswith("/cargokit"):
+            return True
+    return False
+
+
 def _cargokit_patch_entry(package: str) -> dict:
     """Build the patch definition for the given package."""
 
@@ -228,7 +243,8 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
     changed = False
 
     for package in cargokit_packages:
-        if _has_cargokit_patch(sources, package):
+        base = package.split("-")[0]
+        if _has_cargokit_patch(sources, package) or _has_cargokit_patch_for_base(sources, base):
             continue
 
         insert_pos = _patch_insert_position(sources)
