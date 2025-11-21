@@ -248,9 +248,34 @@ def add_cargokit_offline_patches(document: ManifestDocument) -> OperationResult:
             continue
 
         insert_pos = _patch_insert_position(sources)
-        sources.insert(insert_pos, _cargokit_patch_entry(package))
-        messages.append(f"Added cargokit patch for {package}")
-        changed = True
+        added = False
+        # Only add run_build_tool patch when missing
+        if not _has_cargokit_patch_for_base(sources, base):
+            sources.insert(insert_pos, _cargokit_patch_entry(package))
+            insert_pos += 1
+            added = True
+        # Only add offline build_tool patch if no existing dest for the package base
+        if not any(
+            isinstance(src, dict)
+            and src.get("type") == "patch"
+            and str(src.get("dest", "")).startswith(f".pub-cache/hosted/pub.dev/{base}-")
+            and src.get("path") == "cargokit/patches/build_tool_offline.patch"
+            for src in sources
+        ):
+            sources.insert(
+                insert_pos,
+                {
+                    "type": "patch",
+                    "path": "cargokit/patches/build_tool_offline.patch",
+                    "dest": f".pub-cache/hosted/pub.dev/{package}/cargokit",
+                },
+            )
+            insert_pos += 1
+            added = True
+
+        if added:
+            messages.append(f"Added cargokit patch for {package}")
+            changed = True
 
     if changed:
         lotti_module["sources"] = sources

@@ -1,0 +1,54 @@
+diff --git a/build_tool/lib/src/environment.dart b/build_tool/lib/src/environment.dart
+index 1111111..2222222 100644
+--- a/build_tool/lib/src/environment.dart
++++ b/build_tool/lib/src/environment.dart
+@@
+-bool get allowDownloads => Platform.environment['CARGOKIT_ALLOW_DOWNLOADS'] != 'false';
++/// Support offline builds: default to disallowing downloads unless explicitly enabled.
++bool get allowDownloads => Platform.environment['CARGOKIT_ALLOW_DOWNLOADS'] == 'true';
+diff --git a/build_tool/lib/src/rustup.dart b/build_tool/lib/src/rustup.dart
+index 3333333..4444444 100644
+--- a/build_tool/lib/src/rustup.dart
++++ b/build_tool/lib/src/rustup.dart
+@@
+-Future<void> ensureRustup({required bool allowDownloads}) async {
+-  final rustup = await _findRustup();
+-  if (rustup != null) {
+-    return;
+-  }
+-  if (!allowDownloads) {
+-    throw const RustupMissingException();
+-  }
+-  await _installRustup();
+-}
++Future<void> ensureRustup({required bool allowDownloads}) async {
++  // Flatpak: rely on SDK toolchain; if rustup is missing do nothing in offline mode.
++  final rustup = await _findRustup();
++  if (rustup != null) return;
++  if (!allowDownloads) return;
++  await _installRustup();
++}
+diff --git a/build_tool/lib/src/artifacts_provider.dart b/build_tool/lib/src/artifacts_provider.dart
+index 5555555..6666666 100644
+--- a/build_tool/lib/src/artifacts_provider.dart
++++ b/build_tool/lib/src/artifacts_provider.dart
+@@
+-  Future<void> _getPrecompiledArtifacts() async {
+-    final artifacts = await _get(Application.buildTarget.targetTriple);
+-    final entries = artifacts.entries.toList();
+-    for (final entry in entries) {
+-      await _downloadEntry(entry.key, entry.value);
+-    }
+-  }
++  Future<void> _getPrecompiledArtifacts() async {
++    // Flatpak: skip precompiled downloads in offline mode.
++    if (!allowDownloads) {
++      _logger.info('Skipping precompiled artifacts (offline)');
++      return;
++    }
++    final artifacts = await _get(Application.buildTarget.targetTriple);
++    final entries = artifacts.entries.toList();
++    for (final entry in entries) {
++      await _downloadEntry(entry.key, entry.value);
++    }
++  }

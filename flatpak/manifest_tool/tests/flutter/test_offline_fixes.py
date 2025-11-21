@@ -581,7 +581,11 @@ def test_comprehensive_offline_fixes():
     cargokit_patches = [
         s for s in sources if isinstance(s, dict) and s.get("type") == "patch" and "cargokit" in s.get("dest", "")
     ]
-    assert len(cargokit_patches) == 3
+    # One existing patch for super_native_extensions, plus run_build_tool + offline patches for the remaining bases
+    assert len(cargokit_patches) == 5
+    patch_paths = {s["path"] for s in cargokit_patches}
+    assert "cargokit/run_build_tool.sh.patch" in patch_paths
+    assert "cargokit/patches/build_tool_offline.patch" in patch_paths
 
     # Note: We don't add cargo config anymore - cargo-sources.json provides it
 
