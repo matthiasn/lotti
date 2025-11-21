@@ -289,7 +289,6 @@ def _print_intro(context: PrepareFlathubContext, printer: _StatusPrinter) -> Non
     print("  PIN_COMMIT=" + ("true" if options.pin_commit else "false"))
     print("  USE_NESTED_FLUTTER=" + ("true" if options.use_nested_flutter else "false"))
     print("  CLEAN_AFTER_GEN=" + ("true" if options.clean_after_gen else "false"))
-    print("  NO_FLATPAK_FLUTTER=" + ("true" if options.no_flatpak_flutter else "false"))
     timeout = options.flatpak_flutter_timeout
     print("  FLATPAK_FLUTTER_TIMEOUT=" + ("<unset>" if timeout is None else str(timeout)))
     print("  TEST_BUILD=" + ("true" if options.test_build else "false"))
@@ -1606,12 +1605,12 @@ def _download_cargo_lock_files(
     fetcher: Optional[Callable[[str, Path], None]] = None,
 ) -> list[Path]:
     fetch = fetcher or _download_https_resource
-    output_dir = context.output_dir
-    output_dir.mkdir(parents=True, exist_ok=True)
+    locks_dir = context.work_dir / "cargo-locks"
+    locks_dir.mkdir(parents=True, exist_ok=True)
 
     downloaded: list[Path] = []
     for name, url in CARGO_LOCK_SOURCES:
-        destination = output_dir / f"{name}-Cargo.lock"
+        destination = locks_dir / f"{name}-Cargo.lock"
         printer.info(f"Downloading {name} Cargo.lock...")
         try:
             fetch(url, destination)
@@ -1695,6 +1694,11 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
     # Copy rustup module when cargo sources are generated (provides rustup for offline builds)
     if cargo_generated:
         _copy_rustup_module(context, printer)
+
+    # Clean up downloaded lock files (kept in work_dir, not submission artifacts)
+    locks_dir = context.work_dir / "cargo-locks"
+    if locks_dir.is_dir():
+        shutil.rmtree(locks_dir, ignore_errors=True)
 
 
 def _post_process_output_manifest(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
