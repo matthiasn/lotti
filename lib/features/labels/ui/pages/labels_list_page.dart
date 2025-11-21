@@ -35,93 +35,26 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
     final labelsAsync = ref.watch(labelsStreamProvider);
 
     return Scaffold(
-      body: labelsAsync.when(
-        data: (labels) {
-          final usageCounts = ref.watch(labelUsageStatsProvider).maybeWhen(
-                data: (value) => value,
-                orElse: () => const <String, int>{},
-              );
-          final filtered = labels.where((label) {
-            if (_searchLower.isEmpty) return true;
-            return label.name.toLowerCase().contains(_searchLower) ||
-                (label.description?.toLowerCase().contains(_searchLower) ??
-                    false);
-          }).toList()
-            ..sort(
-              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-            );
-
-          return CustomScrollView(
-            slivers: [
-              SettingsPageHeader(
-                title: context.messages.settingsLabelsTitle,
-                showBackButton: true,
+      body: CustomScrollView(
+        slivers: [
+          SettingsPageHeader(
+            title: context.messages.settingsLabelsTitle,
+            showBackButton: true,
+          ),
+          ...labelsAsync.when(
+            data: (labels) => _buildContentSlivers(context, labels),
+            loading: () => [
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: LottiSearchBar(
-                    controller: _searchController,
-                    hintText: context.messages.settingsLabelsSearchHint,
-                    textCapitalization: TextCapitalization.words,
-                    onChanged: (value) => setState(() {
-                      _searchRaw = value;
-                      _searchLower = value.trim().toLowerCase();
-                    }),
-                    onClear: () => setState(() {
-                      _searchRaw = '';
-                      _searchLower = '';
-                    }),
-                  ),
-                ),
-              ),
-              if (filtered.isEmpty)
-                _buildEmptySliver(context, labels.isEmpty)
-              else
-                SliverPadding(
-                  padding:
-                      const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final label = filtered[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: _LabelListCard(
-                            label: label,
-                            usageCount: usageCounts[label.id] ?? 0,
-                          ),
-                        );
-                      },
-                      childCount: filtered.length,
-                    ),
-                  ),
-                ),
             ],
-          );
-        },
-        loading: () => CustomScrollView(
-          slivers: [
-            SettingsPageHeader(
-              title: context.messages.settingsLabelsTitle,
-              showBackButton: true,
-            ),
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          ],
-        ),
-        error: (error, stackTrace) => CustomScrollView(
-          slivers: [
-            SettingsPageHeader(
-              title: context.messages.settingsLabelsTitle,
-              showBackButton: true,
-            ),
-            SliverFillRemaining(
-              child: _buildErrorState(context, error),
-            ),
-          ],
-        ),
+            error: (error, stackTrace) => [
+              SliverFillRemaining(
+                child: _buildErrorState(context, error),
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => beamToNamed('/settings/labels/create'),
@@ -129,6 +62,66 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  List<Widget> _buildContentSlivers(
+    BuildContext context,
+    List<LabelDefinition> labels,
+  ) {
+    final usageCounts = ref.watch(labelUsageStatsProvider).maybeWhen(
+          data: (value) => value,
+          orElse: () => const <String, int>{},
+        );
+    final filtered = labels.where((label) {
+      if (_searchLower.isEmpty) return true;
+      return label.name.toLowerCase().contains(_searchLower) ||
+          (label.description?.toLowerCase().contains(_searchLower) ?? false);
+    }).toList()
+      ..sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: LottiSearchBar(
+            controller: _searchController,
+            hintText: context.messages.settingsLabelsSearchHint,
+            textCapitalization: TextCapitalization.words,
+            onChanged: (value) => setState(() {
+              _searchRaw = value;
+              _searchLower = value.trim().toLowerCase();
+            }),
+            onClear: () => setState(() {
+              _searchRaw = '';
+              _searchLower = '';
+            }),
+          ),
+        ),
+      ),
+      if (filtered.isEmpty)
+        _buildEmptySliver(context, labels.isEmpty)
+      else
+        SliverPadding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final label = filtered[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: _LabelListCard(
+                    label: label,
+                    usageCount: usageCounts[label.id] ?? 0,
+                  ),
+                );
+              },
+              childCount: filtered.length,
+            ),
+          ),
+        ),
+    ];
   }
 
   Widget _buildEmptySliver(BuildContext context, bool noLabelsAtAll) {

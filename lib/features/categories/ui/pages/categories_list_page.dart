@@ -36,110 +36,26 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
     final categoriesAsync = ref.watch(categoriesStreamProvider);
 
     return Scaffold(
-      body: categoriesAsync.when(
-        data: (categories) {
-          final sortedCategories = categories.where((category) {
-            if (_searchQuery.isEmpty) return true;
-            return category.name.toLowerCase().contains(_searchQuery);
-          }).toList()
-            ..sort(
-                (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
-          return CustomScrollView(
-            slivers: [
-              SettingsPageHeader(
-                title: context.messages.settingsCategoriesTitle,
-                showBackButton: true,
+      body: CustomScrollView(
+        slivers: [
+          SettingsPageHeader(
+            title: context.messages.settingsCategoriesTitle,
+            showBackButton: true,
+          ),
+          ...categoriesAsync.when(
+            data: (categories) => _buildContentSlivers(context, categories),
+            loading: () => [
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: LottiSearchBar(
-                    controller: _searchController,
-                    hintText: 'Search categories...',
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value.trim().toLowerCase();
-                      });
-                    },
-                    onClear: () {
-                      setState(() {
-                        _searchQuery = '';
-                      });
-                    },
-                  ),
-                ),
-              ),
-              if (categories.isEmpty)
-                SliverFillRemaining(child: _buildEmptyState(context))
-              else if (sortedCategories.isEmpty)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_off,
-                              size: 64, color: Theme.of(context).disabledColor),
-                          const SizedBox(height: 16),
-                          Text('No categories found',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                      color: Theme.of(context).disabledColor)),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding:
-                      const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final category = sortedCategories[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: _CategoryListTile(
-                            category: category,
-                            onTap: () =>
-                                _navigateToCategoryDetails(context, category),
-                          ),
-                        );
-                      },
-                      childCount: sortedCategories.length,
-                    ),
-                  ),
-                ),
             ],
-          );
-        },
-        loading: () => CustomScrollView(
-          slivers: [
-            SettingsPageHeader(
-              title: context.messages.settingsCategoriesTitle,
-              showBackButton: true,
-            ),
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          ],
-        ),
-        error: (error, stack) => CustomScrollView(
-          slivers: [
-            SettingsPageHeader(
-              title: context.messages.settingsCategoriesTitle,
-              showBackButton: true,
-            ),
-            SliverFillRemaining(
-              child: _buildErrorState(context, error),
-            ),
-          ],
-        ),
+            error: (error, stack) => [
+              SliverFillRemaining(
+                child: _buildErrorState(context, error),
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => beamToNamed('/settings/categories/create'),
@@ -147,6 +63,88 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  List<Widget> _buildContentSlivers(
+    BuildContext context,
+    List<CategoryDefinition> categories,
+  ) {
+    final sortedCategories = categories.where((category) {
+      if (_searchQuery.isEmpty) return true;
+      return category.name.toLowerCase().contains(_searchQuery);
+    }).toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: LottiSearchBar(
+            controller: _searchController,
+            hintText: 'Search categories...',
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.trim().toLowerCase();
+              });
+            },
+            onClear: () {
+              setState(() {
+                _searchQuery = '';
+              });
+            },
+          ),
+        ),
+      ),
+      if (categories.isEmpty)
+        SliverFillRemaining(child: _buildEmptyState(context))
+      else if (sortedCategories.isEmpty)
+        SliverFillRemaining(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search_off,
+                      size: 64, color: Theme.of(context).disabledColor),
+                  const SizedBox(height: 16),
+                  Text('No categories found',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(color: Theme.of(context).disabledColor)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Try adjusting your search',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).disabledColor,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )
+      else
+        SliverPadding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final category = sortedCategories[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: _CategoryListTile(
+                    category: category,
+                    onTap: () => _navigateToCategoryDetails(context, category),
+                  ),
+                );
+              },
+              childCount: sortedCategories.length,
+            ),
+          ),
+        ),
+    ];
   }
 
   Widget _buildEmptyState(BuildContext context) {
