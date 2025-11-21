@@ -17,10 +17,8 @@ def test_ensure_rust_sdk_env(make_document):
     assert "/usr/lib/sdk/rust-stable/bin" in build_opts["append-path"]
     assert "/run/build/lotti/.cargo/bin" in build_opts["append-path"]
 
-    # Check env PATH
-    env_path = build_opts["env"]["PATH"]
-    assert "/usr/lib/sdk/rust-stable/bin" in env_path
-    assert "/run/build/lotti/.cargo/bin" in env_path
+    # PATH should not be set in env
+    assert "PATH" not in build_opts["env"]
 
     # Check RUSTUP_HOME
     assert build_opts["env"].get("RUSTUP_HOME") == "/usr/lib/sdk/rust-stable"

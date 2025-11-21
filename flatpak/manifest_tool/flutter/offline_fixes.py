@@ -215,6 +215,29 @@ def _fix_append_path(build_options: dict) -> Tuple[bool, list[str]]:
     return True, ["Fixed append-path"]
 
 
+def _merge_env_path_into_append(build_options: dict) -> Tuple[bool, list[str]]:
+    """Move PATH entries into append-path to avoid duplicating path handling."""
+
+    messages: list[str] = []
+    changed = False
+
+    env = build_options.get("env", {})
+    if not isinstance(env, dict):
+        return False, []
+
+    env_path = env.pop("PATH", None)
+    append_value = build_options.get("append-path", "")
+
+    if env_path:
+        # Combine env PATH + existing append-path, preserving order and deduping
+        combined = _dedupe_path_entries(f"{env_path}:{append_value}" if append_value else env_path)
+        build_options["append-path"] = combined
+        messages.append("Moved PATH entries into append-path")
+        changed = True
+
+    return changed, messages
+
+
 def _ensure_build_commands(module: dict) -> list:
     """Ensure the module exposes a mutable build command list."""
 
@@ -467,6 +490,16 @@ def apply_all_offline_fixes(document: ManifestDocument) -> OperationResult:
     result = ensure_cargo_config_in_place(document)
     if result.changed:
         results.append(result)
+
+    # Move PATH into append-path for deterministic path handling
+    modules = document.ensure_modules()
+    lotti = _get_lotti_module(modules)
+    if lotti and isinstance(lotti, dict):
+        build_options = lotti.setdefault("build-options", {})
+        merged, merge_messages = _merge_env_path_into_append(build_options)
+        if merged:
+            results.append(OperationResult.changed_result("; ".join(merge_messages)))
+            document.mark_changed()
 
     if results:
         all_messages = []

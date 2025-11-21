@@ -153,9 +153,7 @@ def test_ensure_rust_sdk_env(make_document):
     build_opts = lotti["build-options"]
     assert "/usr/lib/sdk/rust-stable/bin" in build_opts["append-path"]
     assert "/run/build/lotti/.cargo/bin" in build_opts["append-path"]
-    env_path = build_opts["env"]["PATH"]
-    assert "/run/build/lotti/.cargo/bin" in env_path
-    assert "/usr/lib/sdk/rust-stable/bin" in env_path
+    assert "PATH" not in build_opts.get("env", {})
     assert build_opts["env"].get("RUSTUP_HOME") == "/usr/lib/sdk/rust-stable"
 
 
@@ -170,7 +168,7 @@ def test_normalize_sdk_copy_replaces_command(make_document):
 
     assert result.changed
     commands = lotti["build-commands"]
-    assert commands[0] == "if [ -d /var/lib/flutter ]; then cp -r /var/lib/flutter .; fi"
+    assert commands[0] == "cp -r /var/lib/flutter ."
 
 
 def test_convert_flutter_git_to_archive(make_document):

@@ -13,7 +13,7 @@ def test_ensure_flutter_setup_helper(make_document):
     assert any(source.get("dest-filename") == "setup-flutter.sh" for source in flutter_sources)
 
     lotti = next(module for module in modules if module["name"] == "lotti")
-    assert lotti["build-options"]["env"]["PATH"].startswith("/app/flutter/bin")
+    assert lotti["build-options"]["append-path"].startswith("/app/flutter/bin")
 
 
 def test_pin_commit_updates_sources(make_document):

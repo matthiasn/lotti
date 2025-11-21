@@ -357,8 +357,13 @@ def test_no_changes_needed():
     }
 
     result = offline_fixes.apply_all_offline_fixes(doc)
-    assert not result.changed
-    assert result.messages == []
+    assert result.changed
+    lotti = next(m for m in doc.data["modules"] if m.get("name") == "lotti")
+    env = lotti["build-options"]["env"]
+    assert "PATH" not in env
+    append_path = lotti["build-options"]["append-path"]
+    assert append_path.startswith("/var/lib/flutter/bin")
+    assert result.messages == ["Moved PATH entries into append-path"]
 
 
 def test_ensure_cargo_config_in_place():
@@ -563,18 +568,14 @@ def test_comprehensive_offline_fixes():
     assert not any("setup-flutter.sh" in cmd for cmd in commands)
     assert "echo Starting build..." in commands  # Other commands remain
 
-    # Check paths are fixed and deduplicated
+    # PATH should be removed from env; RUSTUP_HOME fixed
     env = lotti["build-options"]["env"]
-    assert "/app/flutter/bin" not in env["PATH"]
-    assert env["PATH"].count("/var/lib/flutter/bin") == 1
-    # Rustup should be added to PATH
-    assert env["PATH"].startswith("/var/lib/rustup/bin:")
-    assert env["PATH"] == "/var/lib/rustup/bin:/var/lib/flutter/bin:/usr/bin:/bin"
-    # RUSTUP_HOME should be fixed to /var/lib/rustup
+    assert "PATH" not in env
     assert env["RUSTUP_HOME"] == "/var/lib/rustup"
 
-    # Check append-path is fixed and has rustup
-    assert lotti["build-options"]["append-path"] == "/var/lib/rustup/bin:/var/lib/flutter/bin:/usr/bin"
+    # Check append-path includes all required entries (deduped)
+    append_path = lotti["build-options"]["append-path"]
+    assert append_path == "/var/lib/rustup/bin:/var/lib/flutter/bin:/usr/bin:/bin"
 
     # Check all cargokit patches are present
     sources = lotti["sources"]

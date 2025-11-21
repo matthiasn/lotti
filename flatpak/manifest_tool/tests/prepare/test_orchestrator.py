@@ -49,7 +49,6 @@ def _make_context(base: Path) -> PrepareFlathubContext:
         clean_after_gen=True,
         pin_commit=True,
         use_nested_flutter=False,
-        no_flatpak_flutter=True,
         extra_env={},
     )
 
@@ -378,9 +377,9 @@ class PrepareOrchestratorTests(unittest.TestCase):
 
             files = _download_cargo_lock_files(context, _StatusPrinter(), fake_fetch)
             expected = {
-                context.output_dir / "flutter_vodozemac-Cargo.lock",
-                context.output_dir / "super_native_extensions-Cargo.lock",
-                context.output_dir / "irondash_engine_context-Cargo.lock",
+                context.work_dir / "cargo-locks" / "flutter_vodozemac-Cargo.lock",
+                context.work_dir / "cargo-locks" / "super_native_extensions-Cargo.lock",
+                context.work_dir / "cargo-locks" / "irondash_engine_context-Cargo.lock",
             }
             self.assertEqual(set(files), expected)
 

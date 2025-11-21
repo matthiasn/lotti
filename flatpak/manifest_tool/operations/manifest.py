@@ -66,24 +66,18 @@ def _ensure_flutter_sdk_helper(module: dict, helper_name: str) -> bool:
 
 
 def _ensure_lotti_flutter_path(module: dict) -> bool:
-    """Ensure lotti module PATH includes /app/flutter/bin.
+    """Ensure lotti module append-path includes /app/flutter/bin."""
 
-    Args:
-        module: The lotti module dictionary to check and modify
-
-    Returns:
-        True if PATH was modified, False if already correct
-    """
     build_options = module.setdefault("build-options", {})
-    env = build_options.setdefault("env", {})
-    current_path = env.get("PATH", "")
-    # Split PATH and filter out empty entries
-    entries = [entry for entry in current_path.split(":") if entry]
+    append_path = build_options.get("append-path", "")
+    parts = [entry for entry in append_path.split(":") if entry]
 
-    if "/app/flutter/bin" not in entries:
-        env["PATH"] = f"/app/flutter/bin:{current_path}" if current_path else "/app/flutter/bin"
-        return True
-    return False
+    if "/app/flutter/bin" in parts:
+        return False
+
+    parts.insert(0, "/app/flutter/bin")
+    build_options["append-path"] = ":".join(parts)
+    return True
 
 
 def ensure_screenshot_asset(

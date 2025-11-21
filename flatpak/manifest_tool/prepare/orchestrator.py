@@ -138,7 +138,6 @@ class PrepareFlathubOptions:
     clean_after_gen: bool = True
     pin_commit: bool = True
     use_nested_flutter: bool = False
-    no_flatpak_flutter: bool = False
     flatpak_flutter_timeout: Optional[int] = None
     extra_env: Mapping[str, str] | None = None
     test_build: bool = False
@@ -290,7 +289,6 @@ def _print_intro(context: PrepareFlathubContext, printer: _StatusPrinter) -> Non
     print("  PIN_COMMIT=" + ("true" if options.pin_commit else "false"))
     print("  USE_NESTED_FLUTTER=" + ("true" if options.use_nested_flutter else "false"))
     print("  CLEAN_AFTER_GEN=" + ("true" if options.clean_after_gen else "false"))
-    print("  NO_FLATPAK_FLUTTER=" + ("true" if options.no_flatpak_flutter else "false"))
     timeout = options.flatpak_flutter_timeout
     print("  FLATPAK_FLUTTER_TIMEOUT=" + ("<unset>" if timeout is None else str(timeout)))
     print("  TEST_BUILD=" + ("true" if options.test_build else "false"))
@@ -483,11 +481,6 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _prestage_local_tool_for_pub_get(context, printer)
     _prime_flutter_sdk(context, printer)
     _run_flatpak_flutter(context, printer)
-    # Fail fast if flatpak-flutter failed, unless explicit fallback was requested
-    allow_fallback_env = os.getenv("ALLOW_FALLBACK", "false").strip().lower()
-    allow_fallback = allow_fallback_env in {"1", "true", "yes", "on"}
-    if context.flatpak_flutter_status not in (0, None) and not allow_fallback:
-        raise PrepareFlathubError("flatpak-flutter failed; set ALLOW_FALLBACK=true to proceed with fallback generation")
     _normalize_sqlite_patch(context, printer)
     _pin_working_manifest(context, printer)
     _copy_generated_artifacts(context, printer)
@@ -739,11 +732,6 @@ def _prime_flutter_sdk(context: PrepareFlathubContext, printer: _StatusPrinter) 
 
 def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
     printer.status("Running flatpak-flutter to generate dependency manifests...")
-    if context.options.no_flatpak_flutter:
-        printer.info("Skipping flatpak-flutter run (NO_FLATPAK_FLUTTER=true); using fallback generation paths")
-        context.flatpak_flutter_status = 124
-        return
-
     script_path = context.flatpak_flutter_repo / "flatpak-flutter.py"
     if not script_path.is_file():
         raise PrepareFlathubError(f"flatpak-flutter.py not found at {script_path}")
@@ -776,18 +764,16 @@ def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter
         context.flatpak_flutter_status = result.returncode
         log_output = result.stdout or ""
     except subprocess.TimeoutExpired as exc:
-        context.flatpak_flutter_status = 124
         log_output = (exc.output or "") + (exc.stderr or "")
-        printer.warn(f"flatpak-flutter timed out after {timeout}s; proceeding with fallback generation")
+        context.flatpak_flutter_log.write_text(log_output, encoding="utf-8")
+        raise PrepareFlathubError(f"flatpak-flutter timed out after {timeout}s; see {context.flatpak_flutter_log}")
 
     context.flatpak_flutter_log.write_text(log_output, encoding="utf-8")
-    if context.flatpak_flutter_status == 0:
-        printer.status("Generated manifest and dependency definitions")
-    else:
-        printer.warn(
-            f"flatpak-flutter exited with {context.flatpak_flutter_status}; proceeding with fallback generation"
+    if context.flatpak_flutter_status != 0:
+        raise PrepareFlathubError(
+            f"flatpak-flutter exited with {context.flatpak_flutter_status}; see {context.flatpak_flutter_log}"
         )
-        printer.info(f"Check {context.flatpak_flutter_log} for details")
+    printer.status("Generated manifest and dependency definitions")
 
 
 def _normalize_sqlite_patch(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
@@ -1092,7 +1078,7 @@ def _regenerate_pubspec_sources_if_needed(context: PrepareFlathubContext, printe
         _stage_packages_from_pubspec_json(context, printer, existing)
         return
 
-    # Otherwise, generate from available lockfiles (best-effort fallback)
+    # Otherwise, generate from available lockfiles
     lock_inputs = _collect_pubspec_lock_inputs(context)
     printer.info("Generating pubspec-sources.json from lockfiles")
     final_path = _run_pubspec_sources_generator(context, lock_inputs)
@@ -1560,71 +1546,18 @@ def _verify_flutter_sdk_version(flutter_bin: Path, target_dir: Path) -> None:
     )
 
 
-def _fallback_cargo_sources_from_presets(context: PrepareFlathubContext, printer: _StatusPrinter) -> bool:
-    output_path = context.output_dir / "cargo-sources.json"
-    preset_dir = context.flatpak_dir / "cargo-lock-files"
-    if not preset_dir.is_dir():
-        return False
-    inputs = [path for path in preset_dir.glob("*.lock") if path.is_file()]
-    if not inputs:
-        return False
-    if _run_cargo_generator(context, inputs, context.work_dir / "cargo-sources-cargokit.json"):
-        _copyfile(
-            context.work_dir / "cargo-sources-cargokit.json",
-            output_path,
-        )
-        printer.status("Generated cargo-sources.json from pre-saved Cargo.lock files")
-        return True
-    printer.warn("Failed to generate cargo-sources.json from pre-saved Cargo.lock files")
-    return False
-
-
-def _fallback_cargo_sources_from_builder(context: PrepareFlathubContext, printer: _StatusPrinter) -> bool:
-    build_dir = context.work_dir / ".flatpak-builder" / "build"
-    if not build_dir.is_dir():
-        return False
-    patterns = [
-        "**/.pub-cache/hosted/pub.dev/*/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/android/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/ios/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/linux/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/macos/rust/Cargo.lock",
-        "**/.pub-cache/hosted/pub.dev/*/windows/rust/Cargo.lock",
-    ]
-    locks: set[Path] = set()
-    for pattern in patterns:
-        for path in build_dir.glob(pattern):
-            if path.is_file():
-                try:
-                    locks.add(path.resolve())
-                except FileNotFoundError:
-                    continue
-    if not locks:
-        printer.warn("No Cargo.lock files found under .flatpak-builder; skipping cargo-sources generation")
-        return False
-    unique_locks = sorted(locks)
-    printer.info(f"Found {len(unique_locks)} cargokit Cargo.lock file(s)")
-    temp_output = context.work_dir / "cargo-sources-cargokit.json"
-    if _run_cargo_generator(context, unique_locks, temp_output):
-        _copyfile(temp_output, context.output_dir / "cargo-sources.json")
-        printer.status("Generated cargo-sources.json from cargokit Cargo.lock files")
-        return True
-    printer.warn("Failed to generate cargo-sources.json from cargokit Cargo.lock files")
-    return False
-
-
 def _download_cargo_lock_files(
     context: PrepareFlathubContext,
     printer: _StatusPrinter,
     fetcher: Optional[Callable[[str, Path], None]] = None,
 ) -> list[Path]:
     fetch = fetcher or _download_https_resource
-    output_dir = context.output_dir
-    output_dir.mkdir(parents=True, exist_ok=True)
+    locks_dir = context.work_dir / "cargo-locks"
+    locks_dir.mkdir(parents=True, exist_ok=True)
 
     downloaded: list[Path] = []
     for name, url in CARGO_LOCK_SOURCES:
-        destination = output_dir / f"{name}-Cargo.lock"
+        destination = locks_dir / f"{name}-Cargo.lock"
         printer.info(f"Downloading {name} Cargo.lock...")
         try:
             fetch(url, destination)
@@ -1695,7 +1628,6 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
             cargo_generated = True
         else:
             printer.warn("Failed to generate cargo-sources.json from downloaded files")
-            # Remove any partial/stale file so fallback logic must produce a real file
             try:
                 if cargo_json.exists():
                     cargo_json.unlink()
@@ -1703,17 +1635,16 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
                 _LOGGER.debug("Failed to remove stale cargo-sources.json: %s", exc)
 
     if not cargo_generated:
-        cargo_json = context.output_dir / "cargo-sources.json"
-        if cargo_json.is_file():
-            cargo_generated = True
-        elif _fallback_cargo_sources_from_presets(context, printer):
-            cargo_generated = True
-        else:
-            cargo_generated = _fallback_cargo_sources_from_builder(context, printer)
+        raise PrepareFlathubError("Failed to generate cargo-sources.json; aborting for reproducibility")
 
     # Copy rustup module when cargo sources are generated (provides rustup for offline builds)
     if cargo_generated:
         _copy_rustup_module(context, printer)
+
+    # Clean up downloaded lock files (kept in work_dir, not submission artifacts)
+    locks_dir = context.work_dir / "cargo-locks"
+    if locks_dir.is_dir():
+        shutil.rmtree(locks_dir, ignore_errors=True)
 
 
 def _post_process_output_manifest(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
