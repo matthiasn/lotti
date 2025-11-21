@@ -36,17 +36,7 @@ class UserActivityGate {
     if (_canProcess) {
       return;
     }
-    final completer = Completer<void>();
-    late StreamSubscription<bool> sub;
-    sub = canProcessStream.listen((value) {
-      if (value) {
-        unawaited(sub.cancel());
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      }
-    });
-    await completer.future;
+    await canProcessStream.firstWhere((value) => value);
   }
 
   void _handleActivity(DateTime _) {

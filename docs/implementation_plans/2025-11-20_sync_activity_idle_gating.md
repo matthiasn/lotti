@@ -194,21 +194,15 @@ Files:
 
 Changes:
 
-  - Replace the “hard 2s deadline” model with a *strict idle window* model for `waitUntilIdle()`:
-    - Ensure the user has been continuously idle for at least `idleThreshold` before returning.
-    - **Remove `maxWaitForProgress`** from the default implementation; do not force progress while the user remains active.
-  - Implementation sketch:
-    - On construction:
-      - Keep the existing `_canProcess` logic, but treat it as “currently in an idle window” (i.e., the last activity is at least `idleThreshold` ago).
+- Replace the “hard 2s deadline” model with a *strict idle window* model for `waitUntilIdle()`:
+  - Ensure the user has been continuously idle for at least `idleThreshold` before returning.
+  - **Remove `maxWaitForProgress`** from the default implementation; do not force progress while the user remains active.
+- Implementation sketch:
+  - On construction:
+    - Keep the existing `_canProcess` logic, but treat it as “currently in an idle window” (i.e., the last activity is at least `idleThreshold` ago).
   - In `waitUntilIdle()`:
     - If `_canProcess` is `true`, return immediately (we are already in an idle window).
-    - Otherwise:
-      - Subscribe to `activityStream` directly (or continue using `canProcessStream`) and track `lastActivity` timestamps.
-    - For every activity event:
-      - Cancel any existing idle timer.
-      - Start a new timer for `idleThreshold`.
-    - Complete the future when the timer fires without any new activity.
-    - Do **not** set a max‑wait deadline; allow indefinite waiting.
+    - Otherwise, wait until `canProcessStream` emits `true` (meaning the gate stayed idle for `idleThreshold`); no max-wait deadline.
 - Backwards compatibility:
   - Outbox is currently the only caller of `waitUntilIdle()`. Matrix pipeline does not depend on it.
   - If we need a bounded variant for future use, we can add a separate method:

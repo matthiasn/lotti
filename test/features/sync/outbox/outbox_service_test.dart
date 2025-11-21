@@ -1578,11 +1578,6 @@ void main() {
           matrixService: matrixService,
         );
         async.elapse(const Duration(seconds: 10));
-        verify(() => loggingService.captureEvent(
-              'watchdog: pending+loggedIn idleQueue → enqueue',
-              domain: 'OUTBOX',
-              subDomain: 'watchdog',
-            )).called(1);
         // Watchdog enqueues directly via ClientRunner (no helper), so
         // 'enqueueRequest() done' should NOT be logged on this path. Other
         // paths (e.g., dbNudge) do log it explicitly and are covered in their
@@ -1595,6 +1590,11 @@ void main() {
         unawaited(svc.dispose());
         // Further elapse should not trigger watchdog again
         async.elapse(const Duration(seconds: 20));
+        verify(() => loggingService.captureEvent(
+              'watchdog: pending+loggedIn idleQueue → enqueue',
+              domain: 'OUTBOX',
+              subDomain: 'watchdog',
+            )).called(1);
       });
     });
   });
