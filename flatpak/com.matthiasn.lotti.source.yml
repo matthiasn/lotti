@@ -59,9 +59,6 @@ modules:
       - /lib/pkgconfig
   - name: libmpv
     buildsystem: meson
-    build-options:
-      env:
-        PKG_CONFIG_PATH: /app/lib/pkgconfig:/app/lib64/pkgconfig
     config-opts:
       - -Dlibmpv=true
       - -Dlua=disabled
@@ -137,7 +134,6 @@ modules:
         PATH: /app/flutter/bin:/run/build/lotti/flutter_sdk/bin:/run/build/lotti/.cargo/bin:/usr/lib/sdk/llvm20/bin:/usr/bin:/bin
         CARGO_HOME: /run/build/lotti/.cargo
         RUSTUP_HOME: /run/build/lotti/.cargo
-        PKG_CONFIG_PATH: /app/lib/pkgconfig:/usr/lib/pkgconfig
         FLUTTER_SUPPRESS_ANALYTICS: "true"
     build-commands:
       - cp -r /app/flutter /run/build/lotti/flutter_sdk
