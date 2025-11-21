@@ -197,7 +197,7 @@ def test_cli_ensure_setup_helper(tmp_path):
         for s in flutter.get("sources", [])
     )
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
-    assert "/app/flutter/bin" in lotti["build-options"]["env"]["PATH"]
+    assert lotti["build-options"]["append-path"].startswith("/app/flutter/bin")
 
 
 def test_cli_ensure_lotti_setup_helper_idempotent(tmp_path):
@@ -311,9 +311,10 @@ def test_cli_ensure_rust_sdk_env(tmp_path):
     assert exit_code == 0
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
-    env_path = lotti["build-options"]["env"]["PATH"]
-    assert "/run/build/lotti/.cargo/bin" in env_path
-    assert "/usr/lib/sdk/rust-stable/bin" in env_path
+    append_path = lotti["build-options"]["append-path"]
+    assert "/run/build/lotti/.cargo/bin" in append_path
+    assert "/usr/lib/sdk/rust-stable/bin" in append_path
+    assert "PATH" not in lotti["build-options"].get("env", {})
 
 
 def test_cli_ensure_rust_sdk_env_idempotent(tmp_path):
@@ -323,13 +324,13 @@ def test_cli_ensure_rust_sdk_env_idempotent(tmp_path):
         assert cli.main(["ensure-rust-sdk-env", "--manifest", str(manifest_path)]) == 0
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     lotti = next(m for m in data["modules"] if m.get("name") == "lotti")
-    env_path = lotti["build-options"]["env"]["PATH"]
-    parts = [p for p in env_path.split(":") if p]
+    append_path = lotti["build-options"]["append-path"]
+    parts = [p for p in append_path.split(":") if p]
     assert "/run/build/lotti/.cargo/bin" in parts
     assert "/usr/lib/sdk/rust-stable/bin" in parts
-    # No duplicates
     assert parts.count("/run/build/lotti/.cargo/bin") == 1
     assert parts.count("/usr/lib/sdk/rust-stable/bin") == 1
+    assert "PATH" not in lotti["build-options"].get("env", {})
 
 
 def test_cli_remove_network_from_build_args(tmp_path):

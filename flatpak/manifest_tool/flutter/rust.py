@@ -88,15 +88,13 @@ def ensure_rust_sdk_env(document: ManifestDocument) -> OperationResult:
             messages.append("Added Rust paths to append-path")
             changed = True
 
-        # Update env
+        # Update env (only RUSTUP_HOME; PATH handled via append-path)
         env = build_options.setdefault("env", {})
-
-        # Update PATH
-        if _update_env_path(env, rust_bin, rustup_bin):
-            messages.append("Updated PATH with Rust SDK paths")
+        if "PATH" in env:
+            del env["PATH"]
+            messages.append("Removed PATH from env (use append-path instead)")
             changed = True
 
-        # Set RUSTUP_HOME
         if _update_rustup_home(env):
             messages.append("Set RUSTUP_HOME to /usr/lib/sdk/rust-stable")
             changed = True

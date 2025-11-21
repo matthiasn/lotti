@@ -137,12 +137,10 @@ def test_end_to_end_postprocess_pipeline(tmp_path: Path) -> None:
     # Build args and env updated (--share=network removed as it's not allowed on Flathub)
     assert "--share=network" not in lotti["build-options"].get("build-args", [])
     env = lotti["build-options"]["env"]
-    assert env["PATH"].startswith("/usr/lib/sdk/rust-stable/bin")
-    assert "/run/build/lotti/.cargo/bin" in env["PATH"]
-    assert (
-        "/usr/lib/sdk/rust-stable/bin" in lotti["build-options"]["append-path"]
-        and "/run/build/lotti/.cargo/bin" in lotti["build-options"]["append-path"]
-    )
+    assert "PATH" not in env
+    append_path = lotti["build-options"]["append-path"]
+    assert "/usr/lib/sdk/rust-stable/bin" in append_path
+    assert "/run/build/lotti/.cargo/bin" in append_path
 
     # rustup installer commands removed
     assert all("rustup.rs" not in c and "cargo/bin" not in c for c in lotti["build-commands"])
