@@ -1,4 +1,4 @@
-name: Build Flatpak Offline Artifacts
+name: Build Flatpak Test Build
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  offline-flatpak:
+  flatpak:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,6 +28,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder
+          flatpak-builder --version
 
           # Add Flathub repository
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
