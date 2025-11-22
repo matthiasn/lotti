@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
@@ -68,10 +67,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          eligibleChatModelsForCategoryProvider('cat').overrideWith(
+          eligibleChatModelsForCategoryProvider(categoryId: 'cat').overrideWith(
             (ref) async => models,
           ),
-          geminiIncludeThoughtsProvider.overrideWith((ref) => false),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -106,10 +104,9 @@ void main() {
           chatSessionControllerProvider('cat').overrideWith(
             _StaticChatController.new,
           ),
-          eligibleChatModelsForCategoryProvider('cat').overrideWith(
+          eligibleChatModelsForCategoryProvider(categoryId: 'cat').overrideWith(
             (ref) async => models,
           ),
-          geminiIncludeThoughtsProvider.overrideWith((ref) => false),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -147,10 +144,9 @@ void main() {
           chatSessionControllerProvider('cat').overrideWith(
             _StreamingChatController.new,
           ),
-          eligibleChatModelsForCategoryProvider('cat').overrideWith(
+          eligibleChatModelsForCategoryProvider(categoryId: 'cat').overrideWith(
             (ref) async => models,
           ),
-          geminiIncludeThoughtsProvider.overrideWith((ref) => false),
         ],
         child: const MaterialApp(
           home: Scaffold(

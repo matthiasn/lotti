@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';

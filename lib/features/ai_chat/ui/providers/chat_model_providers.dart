@@ -1,6 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'chat_model_providers.g.dart';
@@ -15,9 +15,9 @@ part 'chat_model_providers.g.dart';
 /// `hasReasoningModelForCategory` below for UX decisions.
 @riverpod
 Future<List<AiConfigModel>> eligibleChatModelsForCategory(
-  Ref ref,
-  String categoryId,
-) async {
+  Ref ref, {
+  required String categoryId,
+}) async {
   final aiRepo = ref.read(aiConfigRepositoryProvider);
 
   final models = await aiRepo.getConfigsByType(AiConfigType.model);
@@ -50,9 +50,10 @@ Future<List<AiConfigModel>> eligibleChatModelsForCategory(
 /// Whether at least one reasoning-capable eligible model exists for a category
 @riverpod
 Future<bool> hasReasoningModelForCategory(
-  Ref ref,
-  String categoryId,
-) async {
-  final models = await eligibleChatModelsForCategory(ref, categoryId);
+  Ref ref, {
+  required String categoryId,
+}) async {
+  final models =
+      await eligibleChatModelsForCategory(ref, categoryId: categoryId);
   return models.any((m) => m.isReasoningModel);
 }

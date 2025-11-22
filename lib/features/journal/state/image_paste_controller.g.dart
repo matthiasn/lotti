@@ -7,7 +7,7 @@ part of 'image_paste_controller.dart';
 // **************************************************************************
 
 String _$imagePasteControllerHash() =>
-    r'b6880249f5da9f64d6665198bbdc54b1926f19d5';
+    r'3a9ca5aaeec85aeb806f1238094e8ed93760604c';
 
 /// Copied from Dart SDK
 class _SystemHash {

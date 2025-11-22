@@ -13,8 +13,9 @@ class AssistantSettingsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final eligibleAsync =
-        ref.watch(eligibleChatModelsForCategoryProvider(categoryId));
+    final eligibleAsync = ref.watch(
+      eligibleChatModelsForCategoryProvider(categoryId: categoryId),
+    );
     final sessionController =
         ref.read(chatSessionControllerProvider(categoryId).notifier);
     final sessionState = ref.watch(chatSessionControllerProvider(categoryId));
@@ -153,7 +154,7 @@ class AssistantSettingsSheet extends ConsumerWidget {
                     ? null
                     : (v) => ref
                         .read(geminiIncludeThoughtsProvider.notifier)
-                        .state = v,
+                        .includeThoughts = v,
               ),
               const SizedBox(height: 8),
             ],

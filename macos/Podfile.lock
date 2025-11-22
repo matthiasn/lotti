@@ -42,7 +42,7 @@ PODS:
   - OpenSSL-Universal (3.3.2000)
   - package_info_plus (0.0.1):
     - FlutterMacOS
-  - photo_manager (3.7.1):
+  - photo_manager (3.8.0):
     - Flutter
     - FlutterMacOS
   - quill_native_bridge_macos (0.0.1):
@@ -115,7 +115,7 @@ DEPENDENCIES:
   - objective_c (from `Flutter/ephemeral/.symlinks/plugins/objective_c/macos`)
   - OpenSSL-Universal
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
-  - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/macos`)
+  - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/darwin`)
   - quill_native_bridge_macos (from `Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos`)
   - record_macos (from `Flutter/ephemeral/.symlinks/plugins/record_macos/macos`)
   - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
@@ -174,7 +174,7 @@ EXTERNAL SOURCES:
   package_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos
   photo_manager:
-    :path: Flutter/ephemeral/.symlinks/plugins/photo_manager/macos
+    :path: Flutter/ephemeral/.symlinks/plugins/photo_manager/darwin
   quill_native_bridge_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos
   record_macos:
@@ -220,7 +220,7 @@ SPEC CHECKSUMS:
   objective_c: ec13431e45ba099cb734eb2829a5c1cd37986cba
   OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
-  photo_manager: 1d80ae07a89a67dfbcae95953a1e5a24af7c3e62
+  photo_manager: 343d78032bf7ebe944d2ab9702204dc2eda07338
   quill_native_bridge_macos: 2b005cb56902bb740e0cd9620aa399dfac6b4882
   record_macos: 43194b6c06ca6f8fa132e2acea72b202b92a0f5b
   screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f

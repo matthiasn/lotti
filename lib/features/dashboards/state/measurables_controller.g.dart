@@ -180,7 +180,7 @@ class _MeasurableDataTypeControllerProviderElement
 }
 
 String _$aggregationTypeControllerHash() =>
-    r'462b5e4da76a0147c2e3a33ca1d319fabb325e28';
+    r'89bb3517da84a1355c4ca2e00d1c0557f7df3f52';
 
 abstract class _$AggregationTypeController
     extends BuildlessAutoDisposeAsyncNotifier<AggregationType> {
@@ -189,7 +189,7 @@ abstract class _$AggregationTypeController
 
   FutureOr<AggregationType> build({
     required String measurableDataTypeId,
-    required AggregationType? dashboardDefinedAggregationType,
+    AggregationType? dashboardDefinedAggregationType,
   });
 }
 
@@ -206,7 +206,7 @@ class AggregationTypeControllerFamily
   /// See also [AggregationTypeController].
   AggregationTypeControllerProvider call({
     required String measurableDataTypeId,
-    required AggregationType? dashboardDefinedAggregationType,
+    AggregationType? dashboardDefinedAggregationType,
   }) {
     return AggregationTypeControllerProvider(
       measurableDataTypeId: measurableDataTypeId,
@@ -246,7 +246,7 @@ class AggregationTypeControllerProvider
   /// See also [AggregationTypeController].
   AggregationTypeControllerProvider({
     required String measurableDataTypeId,
-    required AggregationType? dashboardDefinedAggregationType,
+    AggregationType? dashboardDefinedAggregationType,
   }) : this._internal(
           () => AggregationTypeController()
             ..measurableDataTypeId = measurableDataTypeId

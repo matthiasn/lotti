@@ -40,7 +40,7 @@ class AggregationTypeController extends _$AggregationTypeController {
   @override
   Future<AggregationType> build({
     required String measurableDataTypeId,
-    required AggregationType? dashboardDefinedAggregationType,
+    AggregationType? dashboardDefinedAggregationType,
   }) async {
     ref.cacheFor(dashboardCacheDuration);
     final measurableDataType = ref

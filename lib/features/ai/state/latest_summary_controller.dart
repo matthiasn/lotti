@@ -11,15 +11,11 @@ part 'latest_summary_controller.g.dart';
 
 @riverpod
 class LatestSummaryController extends _$LatestSummaryController {
-  LatestSummaryController() {
-    listen();
-  }
-
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   final watchedIds = <String>{aiResponseNotification};
 
-  void listen() {
+  void _listen() {
     _updateSubscription =
         _updateNotifications.updateStream.listen((affectedIds) {
       if (affectedIds.intersection(watchedIds).isNotEmpty) {
@@ -41,6 +37,7 @@ class LatestSummaryController extends _$LatestSummaryController {
     watchedIds
       ..add(id)
       ..add(aiResponseNotification);
+    _listen();
     final latestAiEntry = await _fetch();
     return latestAiEntry;
   }

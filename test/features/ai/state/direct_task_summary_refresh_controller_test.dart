@@ -50,11 +50,6 @@ class MockLatestSummaryController extends LatestSummaryController {
   }) async {
     return _response;
   }
-
-  @override
-  void listen() {
-    // Mock implementation - don't listen to actual updates
-  }
 }
 
 void main() {
