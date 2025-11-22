@@ -15,9 +15,9 @@ part 'chat_model_providers.g.dart';
 /// `hasReasoningModelForCategory` below for UX decisions.
 @riverpod
 Future<List<AiConfigModel>> eligibleChatModelsForCategory(
-  Ref ref,
-  String categoryId,
-) async {
+  Ref ref, {
+  required String categoryId,
+}) async {
   final aiRepo = ref.read(aiConfigRepositoryProvider);
 
   final models = await aiRepo.getConfigsByType(AiConfigType.model);
@@ -50,9 +50,10 @@ Future<List<AiConfigModel>> eligibleChatModelsForCategory(
 /// Whether at least one reasoning-capable eligible model exists for a category
 @riverpod
 Future<bool> hasReasoningModelForCategory(
-  Ref ref,
-  String categoryId,
-) async {
-  final models = await eligibleChatModelsForCategory(ref, categoryId);
+  Ref ref, {
+  required String categoryId,
+}) async {
+  final models =
+      await eligibleChatModelsForCategory(ref, categoryId: categoryId);
   return models.any((m) => m.isReasoningModel);
 }

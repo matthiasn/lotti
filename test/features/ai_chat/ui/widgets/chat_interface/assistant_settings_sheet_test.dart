@@ -67,7 +67,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          eligibleChatModelsForCategoryProvider('cat').overrideWith(
+          eligibleChatModelsForCategoryProvider(categoryId: 'cat').overrideWith(
             (ref) async => models,
           ),
         ],
@@ -104,7 +104,7 @@ void main() {
           chatSessionControllerProvider('cat').overrideWith(
             _StaticChatController.new,
           ),
-          eligibleChatModelsForCategoryProvider('cat').overrideWith(
+          eligibleChatModelsForCategoryProvider(categoryId: 'cat').overrideWith(
             (ref) async => models,
           ),
         ],
@@ -144,7 +144,7 @@ void main() {
           chatSessionControllerProvider('cat').overrideWith(
             _StreamingChatController.new,
           ),
-          eligibleChatModelsForCategoryProvider('cat').overrideWith(
+          eligibleChatModelsForCategoryProvider(categoryId: 'cat').overrideWith(
             (ref) async => models,
           ),
         ],

@@ -7,7 +7,7 @@ part of 'chat_model_providers.dart';
 // **************************************************************************
 
 String _$eligibleChatModelsForCategoryHash() =>
-    r'b5e651f43fe8c84aba39cdf9eba439009ddb7e3b';
+    r'c8f855ade666a6f9b2011733852befec5823f6dd';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -78,11 +78,11 @@ class EligibleChatModelsForCategoryFamily
   /// `hasReasoningModelForCategory` below for UX decisions.
   ///
   /// Copied from [eligibleChatModelsForCategory].
-  EligibleChatModelsForCategoryProvider call(
-    String categoryId,
-  ) {
+  EligibleChatModelsForCategoryProvider call({
+    required String categoryId,
+  }) {
     return EligibleChatModelsForCategoryProvider(
-      categoryId,
+      categoryId: categoryId,
     );
   }
 
@@ -91,7 +91,7 @@ class EligibleChatModelsForCategoryFamily
     covariant EligibleChatModelsForCategoryProvider provider,
   ) {
     return call(
-      provider.categoryId,
+      categoryId: provider.categoryId,
     );
   }
 
@@ -132,12 +132,12 @@ class EligibleChatModelsForCategoryProvider
   /// `hasReasoningModelForCategory` below for UX decisions.
   ///
   /// Copied from [eligibleChatModelsForCategory].
-  EligibleChatModelsForCategoryProvider(
-    String categoryId,
-  ) : this._internal(
+  EligibleChatModelsForCategoryProvider({
+    required String categoryId,
+  }) : this._internal(
           (ref) => eligibleChatModelsForCategory(
             ref as EligibleChatModelsForCategoryRef,
-            categoryId,
+            categoryId: categoryId,
           ),
           from: eligibleChatModelsForCategoryProvider,
           name: r'eligibleChatModelsForCategoryProvider',
@@ -222,7 +222,7 @@ class _EligibleChatModelsForCategoryProviderElement
 }
 
 String _$hasReasoningModelForCategoryHash() =>
-    r'c5c561f358e856de8e211e5a23436035b614d479';
+    r'09c29e7a836b73e01442a5bc1deea5efb13fcb75';
 
 /// Whether at least one reasoning-capable eligible model exists for a category
 ///
@@ -243,11 +243,11 @@ class HasReasoningModelForCategoryFamily extends Family<AsyncValue<bool>> {
   /// Whether at least one reasoning-capable eligible model exists for a category
   ///
   /// Copied from [hasReasoningModelForCategory].
-  HasReasoningModelForCategoryProvider call(
-    String categoryId,
-  ) {
+  HasReasoningModelForCategoryProvider call({
+    required String categoryId,
+  }) {
     return HasReasoningModelForCategoryProvider(
-      categoryId,
+      categoryId: categoryId,
     );
   }
 
@@ -256,7 +256,7 @@ class HasReasoningModelForCategoryFamily extends Family<AsyncValue<bool>> {
     covariant HasReasoningModelForCategoryProvider provider,
   ) {
     return call(
-      provider.categoryId,
+      categoryId: provider.categoryId,
     );
   }
 
@@ -283,12 +283,12 @@ class HasReasoningModelForCategoryProvider
   /// Whether at least one reasoning-capable eligible model exists for a category
   ///
   /// Copied from [hasReasoningModelForCategory].
-  HasReasoningModelForCategoryProvider(
-    String categoryId,
-  ) : this._internal(
+  HasReasoningModelForCategoryProvider({
+    required String categoryId,
+  }) : this._internal(
           (ref) => hasReasoningModelForCategory(
             ref as HasReasoningModelForCategoryRef,
-            categoryId,
+            categoryId: categoryId,
           ),
           from: hasReasoningModelForCategoryProvider,
           name: r'hasReasoningModelForCategoryProvider',

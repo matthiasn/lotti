@@ -49,8 +49,9 @@ void main() {
       when(() => mockRepo.getConfigsByType(AiConfigType.inferenceProvider))
           .thenAnswer((_) async => [provider]);
 
-      final result = await container
-          .read(hasReasoningModelForCategoryProvider('cat').future);
+      final result = await container.read(
+        hasReasoningModelForCategoryProvider(categoryId: 'cat').future,
+      );
       expect(result, isTrue);
     });
 
@@ -80,8 +81,9 @@ void main() {
       when(() => mockRepo.getConfigsByType(AiConfigType.inferenceProvider))
           .thenAnswer((_) async => [provider]);
 
-      final result = await container
-          .read(hasReasoningModelForCategoryProvider('cat').future);
+      final result = await container.read(
+        hasReasoningModelForCategoryProvider(categoryId: 'cat').future,
+      );
       expect(result, isFalse);
     });
   });
