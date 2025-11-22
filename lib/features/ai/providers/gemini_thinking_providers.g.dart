@@ -7,7 +7,7 @@ part of 'gemini_thinking_providers.dart';
 // **************************************************************************
 
 String _$geminiIncludeThoughtsHash() =>
-    r'b516814f5bdb01a2c00b65096a29e2ef07af32ae';
+    r'd32d47edf0fc43b5d9488cdcde4d0d73dfd0f5ec';
 
 /// Controls whether Gemini reasoning/thinking content is surfaced inline.
 ///

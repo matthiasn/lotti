@@ -88,3 +88,14 @@
 - Analyzer clean; formatter applied; all tests pass on both pre-upgrade (Stage 2) and post-upgrade (
   Stage 4) releases.
 - Releases cut before and after upgrade with documented QA checklists.
+
+## Pre-upgrade Riverpod 3 Fix Checklist (codegen blockers)
+- [x] `lib/features/ai/state/latest_summary_controller.dart` — family args in `build({required id, required aiResponseType})`, internal listener; uses `Ref` via riverpod.
+- [x] `lib/features/ai/state/unified_ai_controller.dart` — family args in `build({required entityId, required promptId})`; imports aligned to `riverpod`.
+- [ ] `lib/features/ai_chat/ui/providers/chat_model_providers.dart` — confirm functional providers use the correct `Ref` import for generator; regenerate.
+- [ ] `lib/features/calendar/state/time_by_category_controller.dart` — family args in `build` and no constructor params; correct `Ref` import.
+- [ ] `lib/features/dashboards/state/measurables_controller.dart` — all @riverpod classes keep family args in `build` signatures; no constructor params; correct `Ref`.
+- [ ] `lib/features/tasks/state/checklist_controller.dart` — family args in `build`, remove constructor params.
+- [ ] `lib/features/tasks/state/checklist_item_controller.dart` — same as above.
+- [ ] Re-run `fvm dart run build_runner build --delete-conflicting-outputs` after the above; ensure missing `*.g.dart` are regenerated.
+- [x] SDK constraint stays `>=3.10.0 <4.0.0` (root + `tool/lotti_custom_lint`) to satisfy riverpod_generator 3.x and analyzer.

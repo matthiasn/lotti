@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_ai_controller.g.dart';
