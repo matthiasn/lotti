@@ -42,7 +42,8 @@ jobs:
             debugedit \
             appstream \
             appstream-compose \
-            elfutils
+            elfutils \
+            ostree
 
           # Build and install flatpak-builder 1.4.7 from source
           wget https://github.com/flatpak/flatpak-builder/releases/download/1.4.7/flatpak-builder-1.4.7.tar.xz
