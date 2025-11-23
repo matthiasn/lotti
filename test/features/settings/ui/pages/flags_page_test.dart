@@ -57,6 +57,11 @@ void main() {
             description: 'Enable Events?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableAiStreamingFlag,
+            description: 'Enable AI streaming responses?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -193,6 +198,44 @@ void main() {
       final eventsSwitch = tester.widget<Switch>(
           find.descendant(of: eventsFlagCard, matching: find.byType(Switch)));
       expect(eventsSwitch.value, isFalse);
+    });
+
+    testWidgets(
+        'displays enableAiStreamingFlag with correct icon, title, and description',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(FlagsPage));
+
+      final aiStreamingCard = find.widgetWithText(
+        AnimatedModernSettingsCardWithIcon,
+        context.messages.configFlagEnableAiStreaming,
+      );
+      expect(aiStreamingCard, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: aiStreamingCard,
+          matching: find
+              .text(context.messages.configFlagEnableAiStreamingDescription),
+        ),
+        findsOneWidget,
+      );
+
+      expect(find.byIcon(Icons.bolt_rounded), findsAtLeastNWidgets(1));
+
+      final streamingSwitch = tester.widget<Switch>(
+        find.descendant(
+          of: aiStreamingCard,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(streamingSwitch.value, isFalse);
     });
   });
 }

@@ -157,6 +157,8 @@ void main() {
     mockPromptCapabilityFilter = MockPromptCapabilityFilter();
     mockLabelsRepository = MockLabelsRepository();
 
+    reset(mockJournalDb);
+
     // Set up GetIt
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();

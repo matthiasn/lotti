@@ -124,6 +124,8 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockLabelsRepo = MockLabelsRepository();
 
+    reset(mockJournalDb);
+
     // Setup getIt
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)

@@ -120,6 +120,8 @@ void main() {
     mockLabelsRepo = MockLabelsRepository(); // TODO: Remove when tests added
     mockDirectory = MockDirectory();
 
+    reset(mockJournalDb);
+
     // Set up GetIt
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();

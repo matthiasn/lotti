@@ -287,7 +287,7 @@ class UnifiedAiInferenceRepository {
 
       // Run the inference
       final buffer = StringBuffer();
-      final streamAiTasks = await ref
+      final isAiStreamingEnabled = await ref
           .read(journalDbProvider)
           .getConfigFlag(enableAiStreamingFlag);
 
@@ -363,7 +363,7 @@ class UnifiedAiInferenceRepository {
         final text = _extractTextFromChunk(chunk);
         buffer.write(text);
         final latest = buffer.toString();
-        if (streamAiTasks) {
+        if (isAiStreamingEnabled) {
           onProgress(latest);
         } else {
           pendingProgress = latest;
@@ -505,7 +505,7 @@ class UnifiedAiInferenceRepository {
         }
       }
 
-      if (!streamAiTasks && pendingProgress != null) {
+      if (!isAiStreamingEnabled && pendingProgress != null) {
         onProgress(pendingProgress);
       }
 

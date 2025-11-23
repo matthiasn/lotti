@@ -88,6 +88,8 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockLabelsRepo = MockLabelsRepository();
 
+    reset(mockJournalDb);
+
     when(() => mockRef.read(aiConfigRepositoryProvider))
         .thenReturn(mockAiConfigRepo);
     when(() => mockRef.read(aiInputRepositoryProvider))
