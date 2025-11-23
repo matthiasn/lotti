@@ -72,10 +72,16 @@ class LoggingPageTestHelper {
   /// Pumps the LoggingPage widget with proper MaterialApp setup
   static Future<void> pumpLoggingPage(WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: LoggingPage(),
+      const MediaQuery(
+        data: MediaQueryData(
+          size: Size(800, 1200),
+          padding: EdgeInsets.only(top: 47),
+        ),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: LoggingPage(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -475,10 +481,16 @@ void main() {
       );
 
       await tester.pumpWidget(
-        const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: LoggingPage(),
+        const MediaQuery(
+          data: MediaQueryData(
+            size: Size(800, 1200),
+            padding: EdgeInsets.only(top: 47),
+          ),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: LoggingPage(),
+          ),
         ),
       );
       await tester.pump(); // Trigger initial build without settling

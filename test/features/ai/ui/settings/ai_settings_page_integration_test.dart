@@ -46,7 +46,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('AI Settings'), findsOneWidget);
-        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        // SettingsPageHeader uses chevron_left instead of arrow_back
+        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
       });
 
       testWidgets('displays search bar and tab bar',

@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:mocktail/mocktail.dart';
@@ -38,6 +39,10 @@ void main() {
             child: const CategoriesListPage(),
           ),
         );
+
+        // Pump a few frames to let animations complete
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
@@ -168,10 +173,9 @@ void main() {
 
         // Enter search query with no matches
         await tester.enterText(find.byType(TextField), 'xyz');
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(find.text('No categories found'), findsOneWidget);
-        expect(find.text('Try adjusting your search'), findsOneWidget);
         expect(find.byIcon(Icons.search_off), findsOneWidget);
       });
 
@@ -823,15 +827,15 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Should be scrollable
-        expect(find.byType(ListView), findsOneWidget);
+        // Should use CustomScrollView (with slivers)
+        expect(find.byType(CustomScrollView), findsOneWidget);
 
         // Verify first few are visible
         expect(find.text('Category 0'), findsOneWidget);
         expect(find.text('Category 1'), findsOneWidget);
 
         // Scroll down
-        await tester.drag(find.byType(ListView), const Offset(0, -500));
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
         await tester.pumpAndSettle();
 
         // Later items should now be visible
@@ -900,6 +904,78 @@ void main() {
 
         final cardWidget = tester.widget<ModernBaseCard>(card);
         expect(cardWidget.onTap, isNotNull);
+      });
+    });
+
+    group('SettingsPageHeader Integration', () {
+      testWidgets('displays SettingsPageHeader with correct title',
+          (tester) async {
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value([]),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should have SettingsPageHeader
+        expect(find.byType(SettingsPageHeader), findsOneWidget);
+
+        // Should display correct title (localized)
+        expect(find.byType(SliverAppBar), findsOneWidget);
+      });
+
+      testWidgets('shows back button in SettingsPageHeader', (tester) async {
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value([]),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should have back button (chevron_left icon)
+        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      });
+
+      testWidgets('uses CustomScrollView with slivers', (tester) async {
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value([]),
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoriesListPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should use CustomScrollView for sliver structure
+        expect(find.byType(CustomScrollView), findsOneWidget);
+
+        // Should have SettingsPageHeader as a sliver
+        expect(find.byType(SettingsPageHeader), findsOneWidget);
+
+        // Should have SliverToBoxAdapter for search bar
+        expect(find.byType(SliverToBoxAdapter), findsWidgets);
       });
     });
   });

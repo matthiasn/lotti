@@ -76,7 +76,7 @@ class SettingsPageHeader extends StatelessWidget {
 
     final collapsedBodyHeight = titleBlockHeight * 0.9 +
         (showSubtitle ? subtitleBlockHeight * 0.35 : 0) +
-        topSpacing * 0.5;
+        topSpacing;
 
     final expandedHeight = topInset + expandedBodyHeight;
     final collapsedHeight = topInset +
@@ -125,12 +125,6 @@ class SettingsPageHeader extends StatelessWidget {
                 easedProgress,
               ) ??
               baseTitleSize;
-          final topPadding = lerpDouble(
-                topSpacing,
-                topSpacing * 0.6,
-                easedProgress,
-              ) ??
-              topSpacing;
           final bottomPadding = lerpDouble(
                 bottomSpacing,
                 math.max(0.0, bottomSpacing - 4),
@@ -171,56 +165,54 @@ class SettingsPageHeader extends StatelessWidget {
               ),
             ),
             child: Stack(
+              fit: StackFit.expand,
               children: [
-                Column(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsetsDirectional.only(
-                          start: horizontalPadding,
-                          end: horizontalPadding,
-                          top: topPadding,
-                          bottom: bottomPadding,
-                        ),
-                        child: Align(
-                          alignment: AlignmentDirectional.bottomStart,
-                          child: Row(
-                            children: [
-                              if (showBackButton)
-                                const Padding(
-                                  padding: EdgeInsetsDirectional.only(end: 4),
-                                  child: BackWidget(),
-                                ),
-                              Flexible(
-                                child: _HeaderText(
-                                  title: title,
-                                  subtitle: subtitle,
-                                  titleStyle:
-                                      settingsHeaderTitleTextStyle.copyWith(
-                                    fontSize: titleSize,
-                                    color: colorScheme.primary,
-                                  ),
-                                  subtitleStyle:
-                                      settingsHeaderSubtitleTextStyle.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  collapseProgress: progress,
-                                ),
-                              ),
-                            ],
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: bottom != null
+                      ? bottom!.preferredSize.height + 2
+                      : footerSpacing,
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.only(
+                      start: horizontalPadding,
+                      end: horizontalPadding,
+                      bottom: bottomPadding,
+                    ),
+                    child: Row(
+                      children: [
+                        if (showBackButton)
+                          const Padding(
+                            padding: EdgeInsetsDirectional.only(end: 4),
+                            child: BackWidget(),
+                          ),
+                        Flexible(
+                          child: _HeaderText(
+                            title: title,
+                            subtitle: subtitle,
+                            titleStyle: settingsHeaderTitleTextStyle.copyWith(
+                              fontSize: titleSize,
+                              color: colorScheme.primary,
+                            ),
+                            subtitleStyle:
+                                settingsHeaderSubtitleTextStyle.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            collapseProgress: progress,
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                    if (bottom != null) ...[
-                      const SizedBox(height: 2),
-                      SizedBox(
-                        height: bottom!.preferredSize.height,
-                        child: bottom,
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
+                if (bottom != null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: bottom!.preferredSize.height,
+                    child: bottom!,
+                  ),
               ],
             ),
           );

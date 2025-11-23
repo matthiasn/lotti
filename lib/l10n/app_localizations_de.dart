@@ -2258,7 +2258,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskEstimateLabel => 'Schätzung:';
 
   @override
-  String get taskNoEstimateLabel => 'No estimate';
+  String get taskNoEstimateLabel => 'Keine Schätzung';
 
   @override
   String get taskNameHint => 'Geben Sie einen Namen für die Aufgabe ein';

@@ -8,6 +8,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/search/index.dart';
 
@@ -34,13 +35,26 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
     final labelsAsync = ref.watch(labelsStreamProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.messages.settingsLabelsTitle),
-      ),
-      body: labelsAsync.when(
-        data: (labels) => _buildContent(context, labels),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => _buildErrorState(context, error),
+      body: CustomScrollView(
+        slivers: [
+          SettingsPageHeader(
+            title: context.messages.settingsLabelsTitle,
+            showBackButton: true,
+          ),
+          ...labelsAsync.when(
+            data: (labels) => _buildContentSlivers(context, labels),
+            loading: () => [
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ],
+            error: (error, stackTrace) => [
+              SliverFillRemaining(
+                child: _buildErrorState(context, error),
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => beamToNamed('/settings/labels/create'),
@@ -50,36 +64,7 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
     );
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    List<LabelDefinition> labels,
-  ) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: LottiSearchBar(
-            controller: _searchController,
-            hintText: context.messages.settingsLabelsSearchHint,
-            textCapitalization: TextCapitalization.words,
-            onChanged: (value) => setState(() {
-              _searchRaw = value;
-              _searchLower = value.trim().toLowerCase();
-            }),
-            onClear: () => setState(() {
-              _searchRaw = '';
-              _searchLower = '';
-            }),
-          ),
-        ),
-        Expanded(
-          child: _buildLabelsList(context, labels),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLabelsList(
+  List<Widget> _buildContentSlivers(
     BuildContext context,
     List<LabelDefinition> labels,
   ) {
@@ -96,26 +81,64 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
 
-    if (filtered.isEmpty) {
-      // If user searched for something, offer to create exactly that.
-      final query = _searchRaw.trim();
-      if (query.isNotEmpty) {
-        return Center(
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: LottiSearchBar(
+            controller: _searchController,
+            hintText: context.messages.settingsLabelsSearchHint,
+            textCapitalization: TextCapitalization.words,
+            onChanged: (value) => setState(() {
+              _searchRaw = value;
+              _searchLower = value.trim().toLowerCase();
+            }),
+            onClear: () => setState(() {
+              _searchRaw = '';
+              _searchLower = '';
+            }),
+          ),
+        ),
+      ),
+      if (filtered.isEmpty)
+        _buildEmptySliver(context, labels.isEmpty)
+      else
+        SliverPadding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final label = filtered[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: _LabelListCard(
+                    label: label,
+                    usageCount: usageCounts[label.id] ?? 0,
+                  ),
+                );
+              },
+              childCount: filtered.length,
+            ),
+          ),
+        ),
+    ];
+  }
+
+  Widget _buildEmptySliver(BuildContext context, bool noLabelsAtAll) {
+    final query = _searchRaw.trim();
+    if (!noLabelsAtAll && query.isNotEmpty) {
+      return SliverFillRemaining(
+        child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.search_off_rounded,
-                  size: 64,
-                  color: Theme.of(context).disabledColor,
-                ),
+                Icon(Icons.search_off_rounded,
+                    size: 64, color: Theme.of(context).disabledColor),
                 const SizedBox(height: 12),
-                Text(
-                  'No labels match "$query"',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                Text('No labels match "$query"',
+                    style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 FilledButton.icon(
                   onPressed: () {
@@ -128,26 +151,24 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
               ],
             ),
           ),
-        );
-      }
-      return Center(
+        ),
+      );
+    }
+    return SliverFillRemaining(
+      child: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.label_outline,
-                size: 64,
-                color: Theme.of(context).disabledColor,
-              ),
+              Icon(Icons.label_outline,
+                  size: 64, color: Theme.of(context).disabledColor),
               const SizedBox(height: 16),
-              Text(
-                context.messages.settingsLabelsEmptyState,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).disabledColor,
-                    ),
-              ),
+              Text(context.messages.settingsLabelsEmptyState,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(color: Theme.of(context).disabledColor)),
               const SizedBox(height: 8),
               Text(
                 context.messages.settingsLabelsEmptyStateHint,
@@ -159,22 +180,7 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
             ],
           ),
         ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        final label = filtered[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: _LabelListCard(
-            label: label,
-            usageCount: usageCounts[label.id] ?? 0,
-          ),
-        );
-      },
+      ),
     );
   }
 

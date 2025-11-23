@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -161,7 +162,8 @@ void main() {
 
   testWidgets('Create CTA navigates with encoded name', (tester) async {
     final mockNav = getIt<NavService>() as MockNavService;
-    await tester.pumpWidget(_buildPage(labels: const []));
+    // Need some labels to trigger the search empty state (not the "no labels at all" state)
+    await tester.pumpWidget(_buildPage(labels: [testLabelDefinition1]));
     await tester.pumpAndSettle();
 
     const query = 'My Label';
@@ -348,6 +350,42 @@ void main() {
         of: find.widgetWithText(Chip, 'Deep'), matching: find.text('Deep')));
     expect(lightText.style?.color, Colors.black);
     expect(darkText.style?.color, Colors.white);
+  });
+
+  group('SettingsPageHeader Integration', () {
+    testWidgets('displays SettingsPageHeader with correct title',
+        (tester) async {
+      await tester.pumpWidget(_buildPage(labels: []));
+      await tester.pumpAndSettle();
+
+      // Should have SettingsPageHeader
+      expect(find.byType(SettingsPageHeader), findsOneWidget);
+
+      // Should display SliverAppBar inside
+      expect(find.byType(SliverAppBar), findsOneWidget);
+    });
+
+    testWidgets('shows back button in SettingsPageHeader', (tester) async {
+      await tester.pumpWidget(_buildPage(labels: []));
+      await tester.pumpAndSettle();
+
+      // Should have back button (chevron_left icon)
+      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+    });
+
+    testWidgets('uses CustomScrollView with slivers', (tester) async {
+      await tester.pumpWidget(_buildPage(labels: []));
+      await tester.pumpAndSettle();
+
+      // Should use CustomScrollView for sliver structure
+      expect(find.byType(CustomScrollView), findsOneWidget);
+
+      // Should have SettingsPageHeader as a sliver
+      expect(find.byType(SettingsPageHeader), findsOneWidget);
+
+      // Should have SliverToBoxAdapter for search bar
+      expect(find.byType(SliverToBoxAdapter), findsWidgets);
+    });
   });
 }
 

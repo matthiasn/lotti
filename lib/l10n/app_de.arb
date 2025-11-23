@@ -325,6 +325,7 @@
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "Nicht zugewiesen",
   "taskEstimateLabel": "Schätzung:",
+  "taskNoEstimateLabel": "Keine Schätzung",
   "taskNameHint": "Geben Sie einen Namen für die Aufgabe ein",
   "tasksFilterTitle": "Aufgabenfilter",
   "taskStatusAll": "Alle",

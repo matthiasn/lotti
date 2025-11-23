@@ -155,17 +155,23 @@ class AiTestSetup {
     required Widget child,
     List<Override> providerOverrides = const [],
   }) {
-    return ProviderScope(
-      overrides: providerOverrides,
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: child),
+    return MediaQuery(
+      data: const MediaQueryData(
+        size: Size(390, 844),
+        padding: EdgeInsets.only(top: 47),
+      ),
+      child: ProviderScope(
+        overrides: providerOverrides,
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: child),
+        ),
       ),
     );
   }
