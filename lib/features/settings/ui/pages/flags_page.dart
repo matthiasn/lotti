@@ -19,6 +19,7 @@ class _FlagsPageState extends State<FlagsPage> {
     enableNotificationsFlag,
     recordLocationFlag,
     enableTooltipFlag,
+    enableAiStreamingFlag,
     enableLoggingFlag,
     enableMatrixFlag,
     resendAttachments,
@@ -39,6 +40,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return Icons.map_rounded;
       case enableTooltipFlag:
         return Icons.info_outline_rounded;
+      case enableAiStreamingFlag:
+        return Icons.bolt_rounded;
       case enableLoggingFlag:
         return Icons.bug_report_rounded;
       case enableMatrixFlag:
@@ -69,6 +72,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return context.messages.configFlagRecordLocationDescription;
       case enableTooltipFlag:
         return context.messages.configFlagEnableTooltipDescription;
+      case enableAiStreamingFlag:
+        return context.messages.configFlagEnableAiStreamingDescription;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLoggingDescription;
       case enableMatrixFlag:
@@ -99,6 +104,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return context.messages.configFlagRecordLocation;
       case enableTooltipFlag:
         return context.messages.configFlagEnableTooltip;
+      case enableAiStreamingFlag:
+        return context.messages.configFlagEnableAiStreaming;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLogging;
       case enableMatrixFlag:

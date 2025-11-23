@@ -716,6 +716,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Activez cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.';
 
   @override
+  String get configFlagEnableAiStreaming =>
+      'Activer le streaming IA pour les actions liées aux tâches';
+
+  @override
+  String get configFlagEnableAiStreamingDescription =>
+      'Diffuser les réponses IA pour les actions liées aux tâches. Désactivez pour mettre les réponses en mémoire tampon et conserver une interface plus fluide.';
+
+  @override
   String get configFlagEnableLogging => 'Activer la journalisation';
 
   @override

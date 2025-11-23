@@ -273,6 +273,8 @@
   "configFlagRecordLocationDescription": "Automatically record your location with new entries. This helps with location-based organization and search.",
   "configFlagResendAttachments": "Resend attachments",
   "configFlagResendAttachmentsDescription": "Enable this to automatically resend failed attachment uploads when the connection is restored.",
+  "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
+  "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableLogging": "Enable logging",
   "configFlagEnableMatrix": "Enable Matrix sync",
   "configFlagEnableHabitsPage": "Enable Habits page",

@@ -709,6 +709,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
+  String get configFlagEnableAiStreaming =>
+      'Enable AI streaming for task actions';
+
+  @override
+  String get configFlagEnableAiStreamingDescription =>
+      'Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.';
+
+  @override
   String get configFlagEnableLogging => 'Enable logging';
 
   @override
@@ -2792,6 +2800,14 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get configFlagResendAttachmentsDescription =>
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
+
+  @override
+  String get configFlagEnableAiStreaming =>
+      'Enable AI streaming for task actions';
+
+  @override
+  String get configFlagEnableAiStreamingDescription =>
+      'Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.';
 
   @override
   String get configFlagEnableLogging => 'Enable logging';

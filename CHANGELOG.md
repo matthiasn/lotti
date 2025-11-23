@@ -103,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tests: service unit tests and widget tests updated; i18n keys added with missing translations noted
 
 ### Changed
+- AI: Task-related prompts default to non-streaming, with a new `enable_ai_streaming` flag controlling streaming for those actions (chat remains streaming).
 - Flatpak: AppStream metadata version/date now come directly from the checked-in `com.matthiasn.lotti.metainfo.xml`; the manifest tool no longer rewrites them during Flathub prep.
 - Flatpak: Fail fast when flatpak-flutter or cargo source generation fails (no fallback paths), keep tool PATHs via append-path (including `/usr/bin:/bin`), and keep downloaded Cargo.lock files only in the working directory (not in submission artifacts) for reproducible builds.
 - Journal/Tasks: Refactored scroll-to-entry and highlight logic into `HighlightScrollMixin` with configurable durations and a small retry backoff; `LinkedEntriesWithTimer` scopes rebuilds to the linked entries section only. Focus intent is cleared early (next frame) for responsiveness and also on success/terminal failure for robustness.

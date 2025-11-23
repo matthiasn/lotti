@@ -67,6 +67,11 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
+    name: enableAiStreamingFlag,
+    description: 'Enable AI streaming responses?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: resendAttachments,
     description: 'Resend Attachments',
     status: false,

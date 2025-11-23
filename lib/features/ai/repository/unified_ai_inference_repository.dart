@@ -41,8 +41,10 @@ import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/dev_log.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -285,6 +287,9 @@ class UnifiedAiInferenceRepository {
 
       // Run the inference
       final buffer = StringBuffer();
+      final streamAiTasks = await ref
+          .read(journalDbProvider)
+          .getConfigFlag(enableAiStreamingFlag);
 
       // Get system message - use preconfigured if tracking is enabled
       var systemMessage = promptBuilderHelper.getEffectiveMessage(
@@ -352,11 +357,17 @@ class UnifiedAiInferenceRepository {
       // Process the stream and accumulate tool calls
       final toolCallAccumulator = <String, Map<String, dynamic>>{};
       var toolCallCounter = 0;
+      String? pendingProgress;
 
       await for (final chunk in stream) {
         final text = _extractTextFromChunk(chunk);
         buffer.write(text);
-        onProgress(buffer.toString());
+        final latest = buffer.toString();
+        if (streamAiTasks) {
+          onProgress(latest);
+        } else {
+          pendingProgress = latest;
+        }
 
         // Accumulate tool calls from chunks
         if (chunk.choices?.isNotEmpty ?? false) {
@@ -492,6 +503,10 @@ class UnifiedAiInferenceRepository {
             }
           }
         }
+      }
+
+      if (!streamAiTasks && pendingProgress != null) {
+        onProgress(pendingProgress);
       }
 
       // Process accumulated tool calls

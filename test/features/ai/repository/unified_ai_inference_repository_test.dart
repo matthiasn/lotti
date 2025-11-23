@@ -1,4 +1,4 @@
-// ignore_for_file: unawaited_futures
+// ignore_for_file: unawaited_futures, avoid_redundant_argument_values
 
 import 'dart:async';
 import 'dart:io';
@@ -31,7 +31,9 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -182,6 +184,7 @@ void main() {
         .thenReturn(mockAiInputRepo);
     when(() => mockRef.read(cloudInferenceRepositoryProvider))
         .thenReturn(mockCloudInferenceRepo);
+    when(() => mockRef.read(journalDbProvider)).thenReturn(mockJournalDb);
     when(() => mockRef.read(journalRepositoryProvider))
         .thenReturn(mockJournalRepo);
     when(() => mockRef.read(checklistRepositoryProvider))
@@ -192,6 +195,8 @@ void main() {
         .thenReturn(mockPromptCapabilityFilter);
     when(() => mockRef.read(labelsRepositoryProvider))
         .thenReturn(mockLabelsRepository);
+    when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
+        .thenAnswer((_) async => false);
 
     // Set up default behavior for prompt capability filter to pass through all prompts
     when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
@@ -1741,6 +1746,9 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
+        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
+            .thenAnswer((_) async => true);
+
         await repository!.runInference(
           entityId: 'test-id',
           promptConfig: promptConfig,
@@ -1771,6 +1779,134 @@ void main() {
             provider: provider,
           ),
         ).called(1);
+      });
+
+      test(
+          'runInference emits single progress update when streaming flag is disabled',
+          () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime(2024, 1, 1),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: const [],
+            dateFrom: DateTime(2024, 1, 1),
+            dateTo: DateTime(2024, 1, 1),
+          ),
+        );
+
+        final model = AiConfigModel(
+          id: 'model-1',
+          name: 'Test Model',
+          providerModelId: 'gpt-4',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime(2024),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: false,
+        );
+
+        final provider = AiConfigInferenceProvider(
+          id: 'provider-1',
+          name: 'Test Provider',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'test-api-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Test Prompt',
+          defaultModelId: 'model-1',
+          requiredInputData: const [InputDataType.tasksList],
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        final progressUpdates = <String>[];
+        final statusChanges = <InferenceStatus>[];
+
+        final mockStream =
+            Stream<CreateChatCompletionStreamResponse>.fromIterable([
+          CreateChatCompletionStreamResponse(
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+          CreateChatCompletionStreamResponse(
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: ' world'),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+          CreateChatCompletionStreamResponse(
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(content: '!'),
+                finishReason: ChatCompletionFinishReason.stop,
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]);
+
+        when(() => mockAiInputRepo.getEntity('test-id'))
+            .thenAnswer((_) async => taskEntity);
+        when(() => mockAiConfigRepo.getConfigById('model-1'))
+            .thenAnswer((_) async => model);
+        when(() => mockAiConfigRepo.getConfigById('provider-1'))
+            .thenAnswer((_) async => provider);
+        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
+            .thenAnswer((_) async => '{"task": "Test Task"}');
+
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+          ),
+        ).thenAnswer((_) => mockStream);
+
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
+            .thenAnswer((_) async => false);
+
+        await repository!.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: progressUpdates.add,
+          onStatusChange: statusChanges.add,
+        );
+
+        expect(progressUpdates, ['Hello world!']);
+        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
       });
 
       test('successfully runs inference with images', () async {
@@ -1878,6 +2014,9 @@ void main() {
         ).thenAnswer((_) async => null);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
             .thenAnswer((_) async => true);
 
         try {
@@ -2126,6 +2265,8 @@ void main() {
             categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => null);
+        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
+            .thenAnswer((_) async => true);
 
         await repository!.runInference(
           entityId: 'test-id',
@@ -2374,6 +2515,8 @@ void main() {
             categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => null);
+        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
+            .thenAnswer((_) async => true);
 
         await repository!.runInference(
           entityId: 'test-id',

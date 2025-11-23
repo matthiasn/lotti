@@ -22,7 +22,9 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -151,6 +153,9 @@ void main() {
     // TODO: Remove when integration tests for labels are added
     when(() => mockRef.read(labelsRepositoryProvider))
         .thenReturn(mockLabelsRepo);
+    when(() => mockRef.read(journalDbProvider)).thenReturn(mockJournalDb);
+    when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
+        .thenAnswer((_) async => false);
 
     repository = UnifiedAiInferenceRepository(mockRef)
       ..autoChecklistServiceForTesting = mockAutoChecklistService;

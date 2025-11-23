@@ -69,6 +69,8 @@
   "configFlagRecordLocationDescription": "Înregistrează automat locația dvs. cu intrări noi. Acest lucru ajută la organizarea și căutarea pe baza locației.",
   "configFlagResendAttachments": "Retrimite atașamentele",
   "configFlagResendAttachmentsDescription": "Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.",
+  "configFlagEnableAiStreaming": "Activează streamingul AI pentru acțiunile legate de sarcini",
+  "configFlagEnableAiStreamingDescription": "Transmite răspunsurile AI pentru acțiunile legate de sarcini. Dezactivați pentru a stoca răspunsurile în buffer și a menține interfața mai fluidă.",
   "configFlagEnableLogging": "Activează înregistrarea",
   "configFlagEnableMatrix": "Activează sincronizarea Matrix",
   "configFlagEnableHabitsPage": "Activează pagina Obiceiuri",
