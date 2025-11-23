@@ -2,3 +2,6 @@
 flutter-bundle/
 submission-repo/
 flatpak-flutter/
+
+flatpak-builder-*.tar.xz
+flatpak-builder-*/

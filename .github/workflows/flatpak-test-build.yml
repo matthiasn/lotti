@@ -27,7 +27,31 @@ jobs:
       - name: Install Flatpak and dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
+          sudo apt-get install -y \
+            flatpak \
+            meson \
+            ninja-build \
+            libjson-glib-dev \
+            libcurl4-openssl-dev \
+            libostree-dev \
+            libyaml-dev \
+            libglib2.0-dev \
+            libelf-dev \
+            libxml2-dev \
+            libarchive-tools \
+            debugedit \
+            appstream \
+            appstream-compose \
+            elfutils
+
+          # Build and install flatpak-builder 1.4.7 from source
+          wget https://github.com/flatpak/flatpak-builder/releases/download/1.4.7/flatpak-builder-1.4.7.tar.xz
+          tar -xf flatpak-builder-1.4.7.tar.xz
+          cd flatpak-builder-1.4.7/
+          meson setup _build
+          meson compile -C _build
+          sudo meson install -C _build
+          cd ..
           flatpak-builder --version
 
           # Add Flathub repository
