@@ -59,9 +59,6 @@ modules:
       - /lib/pkgconfig
   - name: libmpv
     buildsystem: meson
-    build-options:
-      env:
-        PKG_CONFIG_PATH: /app/lib/pkgconfig:/app/lib64/pkgconfig
     config-opts:
       - -Dlibmpv=true
       - -Dlua=disabled
@@ -110,6 +107,7 @@ modules:
         # NOTE: This tag is a fallback and will be overridden by the version in .fvm/fvm_config.json
         tag: 3.38.1
         dest: flutter
+        disable-lfs: true
   - name: lotti
     buildsystem: simple
     build-options:
@@ -152,6 +150,7 @@ modules:
       - type: git
         url: https://github.com/matthiasn/lotti
         commit: COMMIT_PLACEHOLDER
+        disable-lfs: true
       - type: script
         dest-filename: lotti-wrapper.sh
         commands:
