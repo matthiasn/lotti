@@ -1353,6 +1353,18 @@ abstract class AppLocalizations {
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
 
+  /// No description provided for @configFlagEnableAiStreaming.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable AI streaming for task actions'**
+  String get configFlagEnableAiStreaming;
+
+  /// No description provided for @configFlagEnableAiStreamingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.'**
+  String get configFlagEnableAiStreamingDescription;
+
   /// No description provided for @configFlagEnableLogging.
   ///
   /// In en, this message translates to:

@@ -69,6 +69,8 @@
   "configFlagRecordLocationDescription": "Zeichnet automatisch Ihren Standort mit neuen Einträgen auf. Dies hilft bei der ortsbezogenen Organisation und Suche.",
   "configFlagResendAttachments": "Anhänge erneut senden",
   "configFlagResendAttachmentsDescription": "Aktivieren Sie diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.",
+  "configFlagEnableAiStreaming": "AI-Streaming für Aufgabenaktionen aktivieren",
+  "configFlagEnableAiStreamingDescription": "Streamen Sie AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.",
   "configFlagEnableLogging": "Protokollierung aktivieren",
   "configFlagEnableMatrix": "Matrix-Synchronisation aktivieren",
   "configFlagEnableHabitsPage": "Seite Gewohnheiten aktivieren",

@@ -716,6 +716,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
+  String get configFlagEnableAiStreaming =>
+      'Habilitar streaming de IA para acciones de tareas';
+
+  @override
+  String get configFlagEnableAiStreamingDescription =>
+      'Transmitir respuestas de IA para acciones relacionadas con tareas. Desactívelo para almacenar respuestas en búfer y mantener la interfaz más fluida.';
+
+  @override
   String get configFlagEnableLogging => 'Habilitar registro';
 
   @override

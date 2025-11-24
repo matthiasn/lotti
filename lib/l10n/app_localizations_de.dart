@@ -714,6 +714,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktivieren Sie diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
 
   @override
+  String get configFlagEnableAiStreaming =>
+      'AI-Streaming für Aufgabenaktionen aktivieren';
+
+  @override
+  String get configFlagEnableAiStreamingDescription =>
+      'Streamen Sie AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.';
+
+  @override
   String get configFlagEnableLogging => 'Protokollierung aktivieren';
 
   @override

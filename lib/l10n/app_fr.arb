@@ -69,6 +69,8 @@
   "configFlagRecordLocationDescription": "Enregistrer automatiquement votre position avec les nouvelles entrées. Cela facilite l'organisation et la recherche basées sur la localisation.",
   "configFlagResendAttachments": "Renvoyer les pièces jointes",
   "configFlagResendAttachmentsDescription": "Activez cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.",
+  "configFlagEnableAiStreaming": "Activer le streaming IA pour les actions liées aux tâches",
+  "configFlagEnableAiStreamingDescription": "Diffuser les réponses IA pour les actions liées aux tâches. Désactivez pour mettre les réponses en mémoire tampon et conserver une interface plus fluide.",
   "configFlagEnableLogging": "Activer la journalisation",
   "configFlagEnableMatrix": "Activer la synchronisation Matrix",
   "configFlagEnableHabitsPage": "Activer la page Habitudes",

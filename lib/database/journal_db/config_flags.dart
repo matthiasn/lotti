@@ -28,6 +28,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableAiStreamingFlag,
+      description: 'Enable AI streaming responses?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: recordLocationFlag,
       description: 'Record geolocation?',
       status: false,

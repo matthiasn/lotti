@@ -713,6 +713,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
+  String get configFlagEnableAiStreaming =>
+      'Activează streamingul AI pentru acțiunile legate de sarcini';
+
+  @override
+  String get configFlagEnableAiStreamingDescription =>
+      'Transmite răspunsurile AI pentru acțiunile legate de sarcini. Dezactivați pentru a stoca răspunsurile în buffer și a menține interfața mai fluidă.';
+
+  @override
   String get configFlagEnableLogging => 'Activează înregistrarea';
 
   @override
