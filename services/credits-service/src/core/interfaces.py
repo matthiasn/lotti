@@ -19,8 +19,8 @@ class ITigerBeetleClient(ABC):
         pass
 
     @abstractmethod
-    async def create_account(self, account_id: int, user_id: str, initial_balance_cents: int = 0) -> None:
-        """Create a new account in TigerBeetle"""
+    async def create_account(self, account_id: int, user_id: str) -> None:
+        """Create a new account in TigerBeetle with zero balance"""
         pass
 
     @abstractmethod
@@ -42,6 +42,11 @@ class ITigerBeetleClient(ABC):
     @abstractmethod
     def user_id_to_account_id(self, user_id: str) -> int:
         """Convert user_id to TigerBeetle account_id"""
+        pass
+
+    @abstractmethod
+    def generate_transfer_id(self) -> int:
+        """Generate a unique transfer ID"""
         pass
 
 

@@ -41,14 +41,10 @@ class BillingService(IBillingService):
             await self.client.get_account_balance(SYSTEM_ACCOUNT_ID)
             self._system_account_initialized = True
         except AccountNotFoundException:
-            # Create system account with zero balance initially
+            # Create system account with zero balance
             # TigerBeetle requires accounts to be created with zero balance
             logger.info("Creating system account")
-            await self.client.create_account(
-                SYSTEM_ACCOUNT_ID,
-                "system",
-                initial_balance_cents=0,  # Must start at zero
-            )
+            await self.client.create_account(SYSTEM_ACCOUNT_ID, "system")
             self._system_account_initialized = True
 
     async def top_up(self, user_id: str, amount: Decimal) -> Decimal:
