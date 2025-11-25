@@ -507,7 +507,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            availablePromptsProvider(entity: journalEntity)
+            availablePromptsProvider(entityId: journalEntity.id)
                 .overrideWith((ref) async => [defaultPrompt]),
             categoryChangesProvider(categoryId)
                 .overrideWith((ref) => Stream.value(null)),
@@ -586,7 +586,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            availablePromptsProvider(entity: journalEntity)
+            availablePromptsProvider(entityId: journalEntity.id)
                 .overrideWith((ref) async => [regularPrompt]),
             categoryChangesProvider(categoryId)
                 .overrideWith((ref) => Stream.value(null)),
@@ -645,7 +645,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            availablePromptsProvider(entity: journalEntity)
+            availablePromptsProvider(entityId: journalEntity.id)
                 .overrideWith((ref) async => [prompt]),
           ],
           child: MaterialApp(

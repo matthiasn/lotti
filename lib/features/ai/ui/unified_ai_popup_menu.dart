@@ -27,29 +27,28 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasPromptsAsync = ref.watch(
-      hasAvailablePromptsProvider(entity: journalEntity),
+      hasAvailablePromptsProvider(entityId: journalEntity.id),
     );
 
-    return hasPromptsAsync.when(
-      data: (hasPrompts) {
-        if (!hasPrompts) return const SizedBox.shrink();
+    // Use hasValue to preserve the icon during refresh states.
+    // Since the provider is now keyed by entityId (stable), updates to
+    // the same entry will reuse the provider and maintain previous value.
+    if (hasPromptsAsync.hasValue && hasPromptsAsync.value!) {
+      return IconButton(
+        icon: Icon(
+          Icons.assistant_rounded,
+          color: context.colorScheme.outline,
+        ),
+        onPressed: () => UnifiedAiModal.show<void>(
+          context: context,
+          journalEntity: journalEntity,
+          linkedFromId: linkedFromId,
+          ref: ref,
+        ),
+      );
+    }
 
-        return IconButton(
-          icon: Icon(
-            Icons.assistant_rounded,
-            color: context.colorScheme.outline,
-          ),
-          onPressed: () => UnifiedAiModal.show<void>(
-            context: context,
-            journalEntity: journalEntity,
-            linkedFromId: linkedFromId,
-            ref: ref,
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
+    return const SizedBox.shrink();
   }
 }
 
@@ -126,7 +125,7 @@ class UnifiedAiPromptsList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final prompts = ref
             .watch(
-              availablePromptsProvider(entity: journalEntity),
+              availablePromptsProvider(entityId: journalEntity.id),
             )
             .valueOrNull ??
         [];

@@ -6,7 +6,7 @@ part of 'unified_ai_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$availablePromptsHash() => r'3ffb0436dc35e26a799f5fce382e0f4b5a90ad83';
+String _$availablePromptsHash() => r'6667b88bb57b6e54f3565ddb5627ba319479a339';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,29 +29,33 @@ class _SystemHash {
   }
 }
 
-/// Provider to get available prompts for a given entity
+/// Provider to get available prompts for a given entity.
+/// Uses entityId as key for stable provider identity across entity updates.
 ///
 /// Copied from [availablePrompts].
 @ProviderFor(availablePrompts)
 const availablePromptsProvider = AvailablePromptsFamily();
 
-/// Provider to get available prompts for a given entity
+/// Provider to get available prompts for a given entity.
+/// Uses entityId as key for stable provider identity across entity updates.
 ///
 /// Copied from [availablePrompts].
 class AvailablePromptsFamily extends Family<AsyncValue<List<AiConfigPrompt>>> {
-  /// Provider to get available prompts for a given entity
+  /// Provider to get available prompts for a given entity.
+  /// Uses entityId as key for stable provider identity across entity updates.
   ///
   /// Copied from [availablePrompts].
   const AvailablePromptsFamily();
 
-  /// Provider to get available prompts for a given entity
+  /// Provider to get available prompts for a given entity.
+  /// Uses entityId as key for stable provider identity across entity updates.
   ///
   /// Copied from [availablePrompts].
   AvailablePromptsProvider call({
-    required JournalEntity entity,
+    required String entityId,
   }) {
     return AvailablePromptsProvider(
-      entity: entity,
+      entityId: entityId,
     );
   }
 
@@ -60,7 +64,7 @@ class AvailablePromptsFamily extends Family<AsyncValue<List<AiConfigPrompt>>> {
     covariant AvailablePromptsProvider provider,
   ) {
     return call(
-      entity: provider.entity,
+      entityId: provider.entityId,
     );
   }
 
@@ -79,20 +83,22 @@ class AvailablePromptsFamily extends Family<AsyncValue<List<AiConfigPrompt>>> {
   String? get name => r'availablePromptsProvider';
 }
 
-/// Provider to get available prompts for a given entity
+/// Provider to get available prompts for a given entity.
+/// Uses entityId as key for stable provider identity across entity updates.
 ///
 /// Copied from [availablePrompts].
 class AvailablePromptsProvider
     extends AutoDisposeFutureProvider<List<AiConfigPrompt>> {
-  /// Provider to get available prompts for a given entity
+  /// Provider to get available prompts for a given entity.
+  /// Uses entityId as key for stable provider identity across entity updates.
   ///
   /// Copied from [availablePrompts].
   AvailablePromptsProvider({
-    required JournalEntity entity,
+    required String entityId,
   }) : this._internal(
           (ref) => availablePrompts(
             ref as AvailablePromptsRef,
-            entity: entity,
+            entityId: entityId,
           ),
           from: availablePromptsProvider,
           name: r'availablePromptsProvider',
@@ -103,7 +109,7 @@ class AvailablePromptsProvider
           dependencies: AvailablePromptsFamily._dependencies,
           allTransitiveDependencies:
               AvailablePromptsFamily._allTransitiveDependencies,
-          entity: entity,
+          entityId: entityId,
         );
 
   AvailablePromptsProvider._internal(
@@ -113,10 +119,10 @@ class AvailablePromptsProvider
     required super.allTransitiveDependencies,
     required super.debugGetCreateSourceHash,
     required super.from,
-    required this.entity,
+    required this.entityId,
   }) : super.internal();
 
-  final JournalEntity entity;
+  final String entityId;
 
   @override
   Override overrideWith(
@@ -132,7 +138,7 @@ class AvailablePromptsProvider
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
-        entity: entity,
+        entityId: entityId,
       ),
     );
   }
@@ -144,13 +150,13 @@ class AvailablePromptsProvider
 
   @override
   bool operator ==(Object other) {
-    return other is AvailablePromptsProvider && other.entity == entity;
+    return other is AvailablePromptsProvider && other.entityId == entityId;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, entity.hashCode);
+    hash = _SystemHash.combine(hash, entityId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -160,8 +166,8 @@ class AvailablePromptsProvider
 // ignore: unused_element
 mixin AvailablePromptsRef
     on AutoDisposeFutureProviderRef<List<AiConfigPrompt>> {
-  /// The parameter `entity` of this provider.
-  JournalEntity get entity;
+  /// The parameter `entityId` of this provider.
+  String get entityId;
 }
 
 class _AvailablePromptsProviderElement
@@ -170,35 +176,39 @@ class _AvailablePromptsProviderElement
   _AvailablePromptsProviderElement(super.provider);
 
   @override
-  JournalEntity get entity => (origin as AvailablePromptsProvider).entity;
+  String get entityId => (origin as AvailablePromptsProvider).entityId;
 }
 
 String _$hasAvailablePromptsHash() =>
-    r'71510b79d630f895c53ed091099eb1f974d4bcf6';
+    r'3ff03f60e22a0d72dcff2d29e012b9a92a97af4f';
 
-/// Provider to check if there are any prompts available for an entity
+/// Provider to check if there are any prompts available for an entity.
+/// Uses entityId as key for stable provider identity across entity updates.
 ///
 /// Copied from [hasAvailablePrompts].
 @ProviderFor(hasAvailablePrompts)
 const hasAvailablePromptsProvider = HasAvailablePromptsFamily();
 
-/// Provider to check if there are any prompts available for an entity
+/// Provider to check if there are any prompts available for an entity.
+/// Uses entityId as key for stable provider identity across entity updates.
 ///
 /// Copied from [hasAvailablePrompts].
 class HasAvailablePromptsFamily extends Family<AsyncValue<bool>> {
-  /// Provider to check if there are any prompts available for an entity
+  /// Provider to check if there are any prompts available for an entity.
+  /// Uses entityId as key for stable provider identity across entity updates.
   ///
   /// Copied from [hasAvailablePrompts].
   const HasAvailablePromptsFamily();
 
-  /// Provider to check if there are any prompts available for an entity
+  /// Provider to check if there are any prompts available for an entity.
+  /// Uses entityId as key for stable provider identity across entity updates.
   ///
   /// Copied from [hasAvailablePrompts].
   HasAvailablePromptsProvider call({
-    required JournalEntity entity,
+    required String entityId,
   }) {
     return HasAvailablePromptsProvider(
-      entity: entity,
+      entityId: entityId,
     );
   }
 
@@ -207,7 +217,7 @@ class HasAvailablePromptsFamily extends Family<AsyncValue<bool>> {
     covariant HasAvailablePromptsProvider provider,
   ) {
     return call(
-      entity: provider.entity,
+      entityId: provider.entityId,
     );
   }
 
@@ -226,19 +236,21 @@ class HasAvailablePromptsFamily extends Family<AsyncValue<bool>> {
   String? get name => r'hasAvailablePromptsProvider';
 }
 
-/// Provider to check if there are any prompts available for an entity
+/// Provider to check if there are any prompts available for an entity.
+/// Uses entityId as key for stable provider identity across entity updates.
 ///
 /// Copied from [hasAvailablePrompts].
 class HasAvailablePromptsProvider extends AutoDisposeFutureProvider<bool> {
-  /// Provider to check if there are any prompts available for an entity
+  /// Provider to check if there are any prompts available for an entity.
+  /// Uses entityId as key for stable provider identity across entity updates.
   ///
   /// Copied from [hasAvailablePrompts].
   HasAvailablePromptsProvider({
-    required JournalEntity entity,
+    required String entityId,
   }) : this._internal(
           (ref) => hasAvailablePrompts(
             ref as HasAvailablePromptsRef,
-            entity: entity,
+            entityId: entityId,
           ),
           from: hasAvailablePromptsProvider,
           name: r'hasAvailablePromptsProvider',
@@ -249,7 +261,7 @@ class HasAvailablePromptsProvider extends AutoDisposeFutureProvider<bool> {
           dependencies: HasAvailablePromptsFamily._dependencies,
           allTransitiveDependencies:
               HasAvailablePromptsFamily._allTransitiveDependencies,
-          entity: entity,
+          entityId: entityId,
         );
 
   HasAvailablePromptsProvider._internal(
@@ -259,10 +271,10 @@ class HasAvailablePromptsProvider extends AutoDisposeFutureProvider<bool> {
     required super.allTransitiveDependencies,
     required super.debugGetCreateSourceHash,
     required super.from,
-    required this.entity,
+    required this.entityId,
   }) : super.internal();
 
-  final JournalEntity entity;
+  final String entityId;
 
   @override
   Override overrideWith(
@@ -277,7 +289,7 @@ class HasAvailablePromptsProvider extends AutoDisposeFutureProvider<bool> {
         dependencies: null,
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
-        entity: entity,
+        entityId: entityId,
       ),
     );
   }
@@ -289,13 +301,13 @@ class HasAvailablePromptsProvider extends AutoDisposeFutureProvider<bool> {
 
   @override
   bool operator ==(Object other) {
-    return other is HasAvailablePromptsProvider && other.entity == entity;
+    return other is HasAvailablePromptsProvider && other.entityId == entityId;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, entity.hashCode);
+    hash = _SystemHash.combine(hash, entityId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -304,8 +316,8 @@ class HasAvailablePromptsProvider extends AutoDisposeFutureProvider<bool> {
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin HasAvailablePromptsRef on AutoDisposeFutureProviderRef<bool> {
-  /// The parameter `entity` of this provider.
-  JournalEntity get entity;
+  /// The parameter `entityId` of this provider.
+  String get entityId;
 }
 
 class _HasAvailablePromptsProviderElement
@@ -313,7 +325,7 @@ class _HasAvailablePromptsProviderElement
   _HasAvailablePromptsProviderElement(super.provider);
 
   @override
-  JournalEntity get entity => (origin as HasAvailablePromptsProvider).entity;
+  String get entityId => (origin as HasAvailablePromptsProvider).entityId;
 }
 
 String _$categoryChangesHash() => r'4369114da64f35988884fe3bf5cce6b09393d2ae';

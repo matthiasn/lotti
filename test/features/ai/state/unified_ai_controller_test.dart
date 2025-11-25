@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
@@ -14,13 +15,17 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_entry_controller.dart';
+import '../../../mocks/mocks.dart';
+
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
@@ -35,12 +40,28 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockAiConfigRepository mockAiConfigRepository;
   late MockCategoryRepository mockCategoryRepository;
+  late MockEditorStateService mockEditorStateService;
+  late MockJournalDb mockJournalDb;
+  late MockPersistenceLogic mockPersistenceLogic;
+  late MockUpdateNotifications mockUpdateNotifications;
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigPrompt());
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(<String, dynamic>{});
     registerFallbackValue(StackTrace.current);
+    // Register a fallback for JournalEntity (sealed class, use real type)
+    registerFallbackValue(
+      JournalEntry(
+        meta: Metadata(
+          id: 'fallback-entry',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      ),
+    );
   });
 
   setUp(() {
@@ -48,6 +69,14 @@ void main() {
     mockLoggingService = MockLoggingService();
     mockAiConfigRepository = MockAiConfigRepository();
     mockCategoryRepository = MockCategoryRepository();
+    mockEditorStateService = MockEditorStateService();
+    mockJournalDb = MockJournalDb();
+    mockPersistenceLogic = MockPersistenceLogic();
+    mockUpdateNotifications = MockUpdateNotifications();
+
+    // Set up mock behavior for UpdateNotifications
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => const Stream<Set<String>>.empty());
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -59,6 +88,26 @@ void main() {
       getIt.unregister<AiConfigRepository>();
     }
     getIt.registerSingleton<AiConfigRepository>(mockAiConfigRepository);
+
+    if (getIt.isRegistered<EditorStateService>()) {
+      getIt.unregister<EditorStateService>();
+    }
+    getIt.registerSingleton<EditorStateService>(mockEditorStateService);
+
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    getIt.registerSingleton<JournalDb>(mockJournalDb);
+
+    if (getIt.isRegistered<PersistenceLogic>()) {
+      getIt.unregister<PersistenceLogic>();
+    }
+    getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
+    }
+    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
     // Set up default mock behavior for AI config repository
     when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
@@ -426,18 +475,34 @@ void main() {
 
       when(
         () => mockRepository.getActivePromptsForContext(
-          entity: taskEntity,
+          entity: any(named: 'entity'),
         ),
       ).thenAnswer((_) async => expectedPrompts);
 
-      final prompts = await container.read(
-        availablePromptsProvider(entity: taskEntity).future,
+      // Create container with entry controller override
+      final testContainer = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider
+              .overrideWithValue(mockRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          createEntryControllerOverride(taskEntity),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      // Wait for entry controller to be ready
+      await testContainer
+          .read(entryControllerProvider(id: taskEntity.id).future);
+
+      final prompts = await testContainer.read(
+        availablePromptsProvider(entityId: taskEntity.id).future,
       );
 
       expect(prompts, expectedPrompts);
       verify(
         () => mockRepository.getActivePromptsForContext(
-          entity: taskEntity,
+          entity: any(named: 'entity'),
         ),
       ).called(1);
     });
@@ -485,12 +550,28 @@ void main() {
 
       when(
         () => mockRepository.getActivePromptsForContext(
-          entity: taskEntity,
+          entity: any(named: 'entity'),
         ),
       ).thenAnswer((_) async => [availablePrompt]);
 
-      final hasPrompts = await container.read(
-        hasAvailablePromptsProvider(entity: taskEntity).future,
+      // Create container with entry controller override
+      final testContainer = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider
+              .overrideWithValue(mockRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          createEntryControllerOverride(taskEntity),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      // Wait for entry controller to be ready
+      await testContainer
+          .read(entryControllerProvider(id: taskEntity.id).future);
+
+      final hasPrompts = await testContainer.read(
+        hasAvailablePromptsProvider(entityId: taskEntity.id).future,
       );
 
       expect(hasPrompts, true);
@@ -513,12 +594,28 @@ void main() {
 
       when(
         () => mockRepository.getActivePromptsForContext(
-          entity: journalEntry,
+          entity: any(named: 'entity'),
         ),
       ).thenAnswer((_) async => []);
 
-      final hasPrompts = await container.read(
-        hasAvailablePromptsProvider(entity: journalEntry).future,
+      // Create container with entry controller override
+      final testContainer = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider
+              .overrideWithValue(mockRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          createEntryControllerOverride(journalEntry),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      // Wait for entry controller to be ready
+      await testContainer
+          .read(entryControllerProvider(id: journalEntry.id).future);
+
+      final hasPrompts = await testContainer.read(
+        hasAvailablePromptsProvider(entityId: journalEntry.id).future,
       );
 
       expect(hasPrompts, false);
@@ -871,12 +968,29 @@ void main() {
       when(() => mockCategoryRepository.watchCategory(categoryId))
           .thenAnswer((_) => Stream.value(testCategory));
 
-      when(() => mockRepository.getActivePromptsForContext(entity: taskEntity))
+      when(() => mockRepository.getActivePromptsForContext(
+              entity: any(named: 'entity')))
           .thenAnswer((_) async => expectedPrompts);
+
+      // Create container with entry controller override
+      final testContainer = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider
+              .overrideWithValue(mockRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          createEntryControllerOverride(taskEntity),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      // Wait for entry controller to be ready
+      await testContainer
+          .read(entryControllerProvider(id: taskEntity.id).future);
 
       // Track if categoryChangesProvider was accessed
       var categoryChangesProviderAccessed = false;
-      container.listen(
+      testContainer.listen(
         categoryChangesProvider(categoryId),
         (previous, next) {
           categoryChangesProviderAccessed = true;
@@ -885,8 +999,8 @@ void main() {
       );
 
       // Read the provider
-      final prompts = await container.read(
-        availablePromptsProvider(entity: taskEntity).future,
+      final prompts = await testContainer.read(
+        availablePromptsProvider(entityId: taskEntity.id).future,
       );
 
       expect(prompts, expectedPrompts);
@@ -938,12 +1052,29 @@ void main() {
       when(() => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt))
           .thenAnswer((_) => Stream.value(expectedPrompts));
 
-      when(() => mockRepository.getActivePromptsForContext(entity: taskEntity))
+      when(() => mockRepository.getActivePromptsForContext(
+              entity: any(named: 'entity')))
           .thenAnswer((_) async => expectedPrompts);
 
+      // Create container with entry controller override
+      final testContainer = ProviderContainer(
+        overrides: [
+          unifiedAiInferenceRepositoryProvider
+              .overrideWithValue(mockRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          createEntryControllerOverride(taskEntity),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      // Wait for entry controller to be ready
+      await testContainer
+          .read(entryControllerProvider(id: taskEntity.id).future);
+
       // Read the provider
-      final prompts = await container.read(
-        availablePromptsProvider(entity: taskEntity).future,
+      final prompts = await testContainer.read(
+        availablePromptsProvider(entityId: taskEntity.id).future,
       );
 
       expect(prompts, expectedPrompts);
