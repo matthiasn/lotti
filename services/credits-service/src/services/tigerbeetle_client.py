@@ -78,13 +78,14 @@ class TigerBeetleClient(ITigerBeetleClient):
         account_id = int.from_bytes(hash_bytes[:16], byteorder="big")
         return account_id
 
-    async def create_account(self, account_id: int, user_id: str) -> None:
+    async def create_account(self, account_id: int, user_id: str, is_system_account: bool = False) -> None:
         """
         Create a new account in TigerBeetle
 
         Args:
             account_id: Unique account ID (128-bit integer)
             user_id: User identifier (for logging purposes)
+            is_system_account: Whether this is the system account (allows overdrafts)
 
         Raises:
             AccountAlreadyExistsException: If account already exists
@@ -93,12 +94,21 @@ class TigerBeetleClient(ITigerBeetleClient):
         Note:
             TigerBeetle requires accounts to be created with zero balance.
             Use create_transfer() to set an initial balance after creation.
+            User accounts enforce DEBITS_MUST_NOT_EXCEED_CREDITS to prevent overdrafts.
         """
         client = self._ensure_connected()
 
         try:
             # TigerBeetle requires accounts to be created with zero balance
             # Initial balance must be set via transfers after creation
+
+            # User accounts: Prevent overdrafts by enforcing debits <= credits
+            # System account: Allow unlimited debits for "minting" credits
+            if is_system_account:
+                flags = AccountFlags.NONE  # System can overdraft (mint credits)
+            else:
+                flags = AccountFlags.DEBITS_MUST_NOT_EXCEED_CREDITS  # Users cannot overdraft
+
             account = Account(
                 id=account_id,
                 debits_pending=0,
@@ -110,7 +120,7 @@ class TigerBeetleClient(ITigerBeetleClient):
                 user_data_32=0,
                 ledger=LEDGER_ID,  # USD ledger
                 code=ACCOUNT_CODE_USER,  # User account type
-                flags=AccountFlags.NONE,
+                flags=flags,
                 timestamp=0,  # Let TigerBeetle set the timestamp
             )
 

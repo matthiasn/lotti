@@ -19,7 +19,7 @@ class ITigerBeetleClient(ABC):
         pass
 
     @abstractmethod
-    async def create_account(self, account_id: int, user_id: str) -> None:
+    async def create_account(self, account_id: int, user_id: str, is_system_account: bool = False) -> None:
         """Create a new account in TigerBeetle with zero balance"""
         pass
 
