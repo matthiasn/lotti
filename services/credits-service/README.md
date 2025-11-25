@@ -217,6 +217,7 @@ make test-integration
 | `TIGERBEETLE_PORT` | `3000` | TigerBeetle port |
 | `PORT` | `8001` | Service port |
 | `LOG_LEVEL` | `INFO` | Logging level |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated list of allowed CORS origins |
 
 ## Docker Commands
 
