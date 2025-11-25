@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,13 +13,13 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
-import 'package:lotti/features/journal/model/entry_state.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/modal/modern_modal_prompt_item.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/fake_entry_controller.dart';
 
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
@@ -30,25 +29,6 @@ class MockUnifiedAiInferenceRepository extends Mock
 class MockLoggingService extends Mock implements LoggingService {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
-
-/// Fake EntryController that returns a fixed entity state
-class _FakeEntryController extends EntryController {
-  _FakeEntryController(this._entity);
-
-  final JournalEntity _entity;
-
-  @override
-  Future<EntryState?> build({required String id}) async {
-    return EntryState.saved(
-      entryId: id,
-      entry: _entity,
-      showMap: false,
-      isFocused: false,
-      shouldShowEditorToolBar: false,
-      formKey: GlobalKey<FormBuilderState>(),
-    );
-  }
-}
 
 void main() {
   late JournalEntity testTaskEntity;
@@ -226,18 +206,22 @@ void main() {
         ),
       // Override entry controllers for all test entities
       entryControllerProvider(id: 'task-1').overrideWith(
-        () => _FakeEntryController(testTaskEntity),
+        () => FakeEntryController(testTaskEntity),
       ),
       entryControllerProvider(id: 'entry-1').overrideWith(
-        () => _FakeEntryController(testJournalEntry),
+        () => FakeEntryController(testJournalEntry),
       ),
       entryControllerProvider(id: 'image-1').overrideWith(
-        () => _FakeEntryController(testImageEntity),
+        () => FakeEntryController(testImageEntity),
       ),
       entryControllerProvider(id: 'audio-1').overrideWith(
-        () => _FakeEntryController(testAudioEntity),
+        () => FakeEntryController(testAudioEntity),
       ),
     ];
+  });
+
+  tearDown(() async {
+    await getIt.reset();
   });
 
   // Helper function to build test widget

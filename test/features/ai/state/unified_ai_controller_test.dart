@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -16,8 +14,6 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/journal/model/entry_state.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -25,6 +21,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
 
 class MockUnifiedAiInferenceRepository extends Mock
@@ -35,32 +32,6 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
-
-/// Fake EntryController that returns a fixed entity state
-class _FakeEntryController extends EntryController {
-  _FakeEntryController(this._entity);
-
-  final JournalEntity _entity;
-
-  @override
-  Future<EntryState?> build({required String id}) async {
-    return EntryState.saved(
-      entryId: id,
-      entry: _entity,
-      showMap: false,
-      isFocused: false,
-      shouldShowEditorToolBar: false,
-      formKey: GlobalKey<FormBuilderState>(),
-    );
-  }
-}
-
-/// Helper to create entry controller override that returns a fixed entity.
-Override createEntryControllerOverride(JournalEntity entity) {
-  return entryControllerProvider(id: entity.id).overrideWith(
-    () => _FakeEntryController(entity),
-  );
-}
 
 void main() {
   late ProviderContainer container;
