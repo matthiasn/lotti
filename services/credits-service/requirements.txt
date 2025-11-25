@@ -2,7 +2,7 @@
 # Python 3.13 compatible versions
 
 # Web framework
-fastapi==0.115.12
+fastapi==0.121.3
 uvicorn[standard]==0.34.0
 
 # TigerBeetle client
