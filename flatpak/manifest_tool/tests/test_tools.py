@@ -31,7 +31,7 @@ class GetFvmFlutterVersionTests(TestCase):
         # Create a test config with the same version
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / "config.json"
-            test_version = actual_version if actual_version else "3.38.1"  # Fallback if FVM config not found
+            test_version = actual_version if actual_version else "3.38.3"  # Fallback if FVM config not found
             config.write_text(json.dumps({"flutterSdkVersion": test_version}), encoding="utf-8")
             env = {"FVM_CONFIG_PATH": str(config)}
             self.assertEqual(get_fvm_flutter_version.main_with_env(env), 0)

@@ -105,7 +105,7 @@ modules:
       - type: git
         url: https://github.com/flutter/flutter.git
         # NOTE: This tag is a fallback and will be overridden by the version in .fvm/fvm_config.json
-        tag: 3.38.1
+        tag: 3.38.3
         dest: flutter
         disable-lfs: true
   - name: lotti
