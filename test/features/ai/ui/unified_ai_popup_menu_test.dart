@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,8 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -27,6 +30,25 @@ class MockUnifiedAiInferenceRepository extends Mock
 class MockLoggingService extends Mock implements LoggingService {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
+
+/// Fake EntryController that returns a fixed entity state
+class _FakeEntryController extends EntryController {
+  _FakeEntryController(this._entity);
+
+  final JournalEntity _entity;
+
+  @override
+  Future<EntryState?> build({required String id}) async {
+    return EntryState.saved(
+      entryId: id,
+      entry: _entity,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+      formKey: GlobalKey<FormBuilderState>(),
+    );
+  }
+}
 
 void main() {
   late JournalEntity testTaskEntity;
@@ -202,6 +224,19 @@ void main() {
         aiConfigByIdProvider(prompt.id).overrideWith(
           (ref) async => prompt,
         ),
+      // Override entry controllers for all test entities
+      entryControllerProvider(id: 'task-1').overrideWith(
+        () => _FakeEntryController(testTaskEntity),
+      ),
+      entryControllerProvider(id: 'entry-1').overrideWith(
+        () => _FakeEntryController(testJournalEntry),
+      ),
+      entryControllerProvider(id: 'image-1').overrideWith(
+        () => _FakeEntryController(testImageEntity),
+      ),
+      entryControllerProvider(id: 'audio-1').overrideWith(
+        () => _FakeEntryController(testAudioEntity),
+      ),
     ];
   });
 
@@ -242,9 +277,9 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testTaskEntity)
+            hasAvailablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(testPrompts)),
           ],
         ),
@@ -266,7 +301,7 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testTaskEntity)
+            hasAvailablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(false)),
           ],
         ),
@@ -291,7 +326,7 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testTaskEntity)
+            hasAvailablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => completer.future),
           ],
         ),
@@ -318,7 +353,7 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testTaskEntity)
+            hasAvailablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.error('Test error')),
           ],
         ),
@@ -341,9 +376,9 @@ void main() {
             linkedFromId: 'linked-from-1',
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testTaskEntity)
+            hasAvailablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(testPrompts)),
           ],
         ),
@@ -373,7 +408,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(prompts)),
           ],
         ),
@@ -399,7 +434,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(testPrompts)),
           ],
         ),
@@ -441,7 +476,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity).overrideWith(
+            availablePromptsProvider(entityId: testTaskEntity.id).overrideWith(
               (ref) => Future.value([promptWithoutDescription]),
             ),
           ],
@@ -473,7 +508,7 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity).overrideWith(
+            availablePromptsProvider(entityId: testTaskEntity.id).overrideWith(
               (ref) => Future.value(testPrompts.take(2).toList()),
             ),
           ],
@@ -501,7 +536,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value([])),
           ],
         ),
@@ -539,7 +574,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value([longDescriptionPrompt])),
           ],
         ),
@@ -586,7 +621,7 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity).overrideWith(
+            availablePromptsProvider(entityId: testTaskEntity.id).overrideWith(
               (ref) => Future.value(testPrompts.take(2).toList()),
             ),
           ],
@@ -626,7 +661,7 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity).overrideWith(
+            availablePromptsProvider(entityId: testTaskEntity.id).overrideWith(
               (ref) => Future.delayed(
                 const Duration(milliseconds: 5),
                 () => testPrompts.take(2).toList(),
@@ -682,7 +717,7 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value([testPrompts.first])),
             unifiedAiInferenceRepositoryProvider
                 .overrideWithValue(mockInferenceRepository),
@@ -737,9 +772,9 @@ void main() {
             },
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testTaskEntity)
+            hasAvailablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value([testPrompts.first])),
             triggerNewInferenceProvider(
               entityId: testTaskEntity.id,
@@ -781,9 +816,9 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testTaskEntity)
+            hasAvailablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value([testPrompts.first])),
           ],
         ),
@@ -821,9 +856,9 @@ void main() {
             },
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testTaskEntity)
+            hasAvailablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value([testPrompts.first])),
             triggerNewInferenceProvider(
               entityId: testTaskEntity.id,
@@ -861,9 +896,9 @@ void main() {
             linkedFromId: 'parent-task',
           ),
           overrides: [
-            hasAvailablePromptsProvider(entity: testAudioEntity)
+            hasAvailablePromptsProvider(entityId: testAudioEntity.id)
                 .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(entity: testAudioEntity)
+            availablePromptsProvider(entityId: testAudioEntity.id)
                 .overrideWith((ref) => Future.value([testPrompts.first])),
             triggerNewInferenceProvider(
               entityId: testAudioEntity.id,
@@ -914,7 +949,7 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value([testPrompts.first])),
           ],
         ),
@@ -947,7 +982,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testTaskEntity)
+            availablePromptsProvider(entityId: testTaskEntity.id)
                 .overrideWith((ref) => Future.value([taskPrompt])),
           ],
         ),
@@ -975,7 +1010,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testImageEntity)
+            availablePromptsProvider(entityId: testImageEntity.id)
                 .overrideWith((ref) => Future.value([imagePrompt])),
           ],
         ),
@@ -1003,7 +1038,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testAudioEntity)
+            availablePromptsProvider(entityId: testAudioEntity.id)
                 .overrideWith((ref) => Future.value([audioPrompt])),
           ],
         ),
@@ -1030,7 +1065,7 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(entity: testJournalEntry)
+            availablePromptsProvider(entityId: testJournalEntry.id)
                 .overrideWith((ref) => Future.value([generalPrompt])),
           ],
         ),

@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod/riverpod.dart';
@@ -323,12 +323,23 @@ class UnifiedAiController extends _$UnifiedAiController {
   }
 }
 
-/// Provider to get available prompts for a given entity
+/// Provider to get available prompts for a given entity.
+/// Uses entityId as key for stable provider identity across entity updates.
 @riverpod
 Future<List<AiConfigPrompt>> availablePrompts(
   Ref ref, {
-  required JournalEntity entity,
+  required String entityId,
 }) async {
+  // Watch the entry controller to get the entity and react to updates
+  final entryState =
+      ref.watch(entryControllerProvider(id: entityId)).valueOrNull;
+  final entity = entryState?.entry;
+
+  // Return empty list if entity not available yet
+  if (entity == null) {
+    return [];
+  }
+
   // Watch for changes in AI prompt configurations
   // This will trigger a rebuild when any prompt configuration changes
   await ref.watch(
@@ -346,14 +357,15 @@ Future<List<AiConfigPrompt>> availablePrompts(
   return repository.getActivePromptsForContext(entity: entity);
 }
 
-/// Provider to check if there are any prompts available for an entity
+/// Provider to check if there are any prompts available for an entity.
+/// Uses entityId as key for stable provider identity across entity updates.
 @riverpod
 Future<bool> hasAvailablePrompts(
   Ref ref, {
-  required JournalEntity entity,
+  required String entityId,
 }) async {
   final prompts = await ref.watch(
-    availablePromptsProvider(entity: entity).future,
+    availablePromptsProvider(entityId: entityId).future,
   );
   return prompts.isNotEmpty;
 }
