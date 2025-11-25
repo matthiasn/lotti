@@ -122,15 +122,8 @@ class BillingService(IBillingService):
         account_id = self.client.user_id_to_account_id(user_id)
         amount_cents = int(amount * CURRENCY_PRECISION)
 
-        # Check current balance
-        current_balance_cents = await self.client.get_account_balance(account_id)
-        if current_balance_cents < amount_cents:
-            current_balance = Decimal(current_balance_cents) / CURRENCY_PRECISION
-            raise InsufficientBalanceException(
-                f"Insufficient balance. Current: ${current_balance}, Required: ${amount}"
-            )
-
         # Transfer from user to system (debit user account)
+        # TigerBeetle will atomically check and enforce balance constraints
         transfer_id = self.client.generate_transfer_id()
 
         try:
@@ -148,6 +141,6 @@ class BillingService(IBillingService):
             logger.info(f"Billing successful. New balance for {user_id}: ${new_balance}")
             return new_balance
 
-        except AccountNotFoundException:
-            logger.warning(f"Account not found for user {user_id}")
+        except (AccountNotFoundException, InsufficientBalanceException):
+            logger.warning(f"Billing failed for user {user_id}")
             raise

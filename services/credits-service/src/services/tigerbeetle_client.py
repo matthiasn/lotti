@@ -15,6 +15,7 @@ from ..core.exceptions import (
     DatabaseConnectionException,
     AccountAlreadyExistsException,
     AccountNotFoundException,
+    InsufficientBalanceException,
 )
 from ..core.interfaces import ITigerBeetleClient
 
@@ -182,7 +183,9 @@ class TigerBeetleClient(ITigerBeetleClient):
             amount_cents: Amount in cents
 
         Raises:
-            TigerBeetleException: On transfer errors
+            AccountNotFoundException: If either account doesn't exist
+            InsufficientBalanceException: If debit account has insufficient balance
+            TigerBeetleException: On other transfer errors
         """
         client = self._ensure_connected()
 
@@ -211,6 +214,10 @@ class TigerBeetleClient(ITigerBeetleClient):
                 if error.result in (15, 22):
                     logger.warning(f"Account not found for transfer: {error}")
                     raise AccountNotFoundException("Account not found for transfer")
+                # Check for insufficient balance (10 = EXCEEDS_CREDITS)
+                elif error.result == 10:
+                    logger.warning(f"Insufficient balance for transfer: {error}")
+                    raise InsufficientBalanceException("Insufficient balance for transfer")
                 else:
                     logger.error(f"TigerBeetle error creating transfer: {error}")
                     raise TigerBeetleException(f"Failed to create transfer: {error}")
@@ -219,7 +226,7 @@ class TigerBeetleClient(ITigerBeetleClient):
                 f"Created transfer {transfer_id}: {amount_cents} cents from {debit_account_id} to {credit_account_id}"
             )
 
-        except (TigerBeetleException, AccountNotFoundException):
+        except (TigerBeetleException, AccountNotFoundException, InsufficientBalanceException):
             raise
         except Exception as e:
             logger.error(f"Unexpected error creating transfer: {e}")
