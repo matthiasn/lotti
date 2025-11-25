@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import uuid
 from typing import Optional
 
 from tigerbeetle import ClientAsync, Account, Transfer, AccountFlags, TransferFlags
@@ -234,6 +235,4 @@ class TigerBeetleClient(ITigerBeetleClient):
 
     def generate_transfer_id(self) -> int:
         """Generate a unique 128-bit transfer ID using UUID4"""
-        import uuid
-
         return uuid.uuid4().int
