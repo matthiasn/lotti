@@ -321,6 +321,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.2"
+  code_assets:
+    dependency: transitive
+    description:
+      name: code_assets
+      sha256: ae0db647e668cbb295a3527f0938e4039e004c80099dce2f964102373f5ce0b5
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.10"
   code_builder:
     dependency: transitive
     description:
@@ -1273,6 +1281,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "13.1.4"
+  hooks:
+    dependency: transitive
+    description:
+      name: hooks
+      sha256: "5410b9f4f6c9f01e8ff0eb81c9801ea13a3c3d39f8f0b1613cda08e27eab3c18"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.20.5"
   hotkey_manager:
     dependency: "direct main"
     description:
@@ -1861,6 +1877,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.1"
+  native_toolchain_c:
+    dependency: transitive
+    description:
+      name: native_toolchain_c
+      sha256: f8872ea6c7a50ce08db9ae280ca2b8efdd973157ce462826c82f3c3051d154ce
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.17.2"
   nested:
     dependency: transitive
     description:
@@ -1889,10 +1913,10 @@ packages:
     dependency: transitive
     description:
       name: objective_c
-      sha256: "1f81ed9e41909d44162d7ec8663b2c647c202317cc0b56d3d56f6a13146a0b64"
+      sha256: "3d88b0d084eda819fa5302ec892f0d42e80945495c3fc204b57eb7ebb1440106"
       url: "https://pub.dev"
     source: hosted
-    version: "9.1.0"
+    version: "9.2.0"
   octo_image:
     dependency: transitive
     description:
@@ -3247,10 +3271,10 @@ packages:
     dependency: "direct main"
     description:
       name: widgetbook
-      sha256: d90510974c76e3d23588007dedfcf7f700dad778deadc013deb5b820a74342da
+      sha256: "0ffadb039b1811870b2f643e1730d419d38435b0e1931cc83f32ecd7e50200e4"
       url: "https://pub.dev"
     source: hosted
-    version: "3.20.1"
+    version: "3.20.2"
   widgetbook_annotation:
     dependency: transitive
     description:
