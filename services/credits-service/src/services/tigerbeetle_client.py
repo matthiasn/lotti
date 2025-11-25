@@ -35,7 +35,6 @@ class TigerBeetleClient(ITigerBeetleClient):
         self.cluster_id = cluster_id
         self.addresses = addresses
         self._client: Optional[ClientAsync] = None
-        self._transfer_counter = 0
 
     async def connect(self) -> None:
         """Connect to TigerBeetle"""
@@ -227,9 +226,7 @@ class TigerBeetleClient(ITigerBeetleClient):
             raise TigerBeetleException(f"Unexpected error creating transfer: {e}") from e
 
     def generate_transfer_id(self) -> int:
-        """Generate a unique transfer ID"""
-        self._transfer_counter += 1
-        # In production, use UUID or timestamp-based ID
-        import time
+        """Generate a unique 128-bit transfer ID using UUID4"""
+        import uuid
 
-        return int(time.time() * 1000000) + self._transfer_counter
+        return uuid.uuid4().int
