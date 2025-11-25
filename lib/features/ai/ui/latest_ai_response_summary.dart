@@ -30,40 +30,8 @@ class LatestAiResponseSummary extends ConsumerStatefulWidget {
 }
 
 class _LatestAiResponseSummaryState
-    extends ConsumerState<LatestAiResponseSummary>
-    with SingleTickerProviderStateMixin {
+    extends ConsumerState<LatestAiResponseSummary> {
   AiResponseEntry? _previousResponse;
-  Timer? _countdownTimer;
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startCountdownTimer() {
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) {
-        if (mounted) {
-          setState(() {});
-        }
-      },
-    );
-  }
-
-  void _stopCountdownTimer() {
-    _countdownTimer?.cancel();
-    _countdownTimer = null;
-  }
-
-  String _formatCountdown(Duration remaining) {
-    if (remaining.isNegative) return '0:00';
-    final minutes = remaining.inMinutes;
-    final seconds = remaining.inSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,13 +55,6 @@ class _LatestAiResponseSummaryState
 
     final isRunning = inferenceStatus == InferenceStatus.running;
     final isScheduled = scheduledTime != null;
-
-    // Manage countdown timer based on scheduled state
-    if (isScheduled && _countdownTimer == null) {
-      _startCountdownTimer();
-    } else if (!isScheduled && _countdownTimer != null) {
-      _stopCountdownTimer();
-    }
 
     Future<void> triggerRefresh(String? promptId) async {
       if (promptId == null) return;
@@ -161,27 +122,15 @@ class _LatestAiResponseSummaryState
 
         final promptId = displayResponse.data.promptId;
 
-        // Calculate remaining time for countdown
-        final remaining = isScheduled
-            ? scheduledTime.difference(DateTime.now())
-            : Duration.zero;
-
         return Column(
           children: [
             // Header with title and spinner/refresh button
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    _getHeaderText(
-                      context,
-                      isRunning: isRunning,
-                      isScheduled: isScheduled,
-                      remaining: remaining,
-                    ),
-                    style: context.textTheme.titleSmall?.copyWith(
-                      color: context.colorScheme.outline,
-                    ),
+                  child: _HeaderText(
+                    isRunning: isRunning,
+                    scheduledTime: scheduledTime,
                   ),
                 ),
                 if (isRunning)
@@ -261,20 +210,108 @@ class _LatestAiResponseSummaryState
       },
     );
   }
+}
 
-  String _getHeaderText(
-    BuildContext context, {
-    required bool isRunning,
-    required bool isScheduled,
-    required Duration remaining,
-  }) {
-    if (isRunning) {
-      return context.messages.aiTaskSummaryRunning;
+/// Separate widget for the header text that uses StreamBuilder
+/// to update the countdown display without rebuilding the parent widget.
+class _HeaderText extends StatefulWidget {
+  const _HeaderText({
+    required this.isRunning,
+    required this.scheduledTime,
+  });
+
+  final bool isRunning;
+  final DateTime? scheduledTime;
+
+  @override
+  State<_HeaderText> createState() => _HeaderTextState();
+}
+
+class _HeaderTextState extends State<_HeaderText> {
+  StreamController<void>? _tickController;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupTimerIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(_HeaderText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only update timer when scheduled state changes
+    if (oldWidget.scheduledTime != widget.scheduledTime) {
+      _setupTimerIfNeeded();
     }
-    if (isScheduled) {
-      return context.messages
-          .aiTaskSummaryScheduled(_formatCountdown(remaining));
+  }
+
+  void _setupTimerIfNeeded() {
+    _timer?.cancel();
+    _tickController?.close();
+
+    if (widget.scheduledTime != null) {
+      _tickController = StreamController<void>.broadcast();
+      _timer = Timer.periodic(
+        const Duration(seconds: 1),
+        (_) {
+          if (mounted) {
+            _tickController?.add(null);
+          }
+        },
+      );
     }
-    return context.messages.aiTaskSummaryTitle;
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _tickController?.close();
+    super.dispose();
+  }
+
+  String _formatCountdown(Duration remaining) {
+    if (remaining.isNegative) return '0:00';
+    final minutes = remaining.inMinutes;
+    final seconds = remaining.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If running, show running text (no stream needed)
+    if (widget.isRunning) {
+      return Text(
+        context.messages.aiTaskSummaryRunning,
+        style: context.textTheme.titleSmall?.copyWith(
+          color: context.colorScheme.outline,
+        ),
+      );
+    }
+
+    // If scheduled, use StreamBuilder to update countdown only
+    if (widget.scheduledTime != null && _tickController != null) {
+      return StreamBuilder<void>(
+        stream: _tickController!.stream,
+        builder: (context, _) {
+          final remaining = widget.scheduledTime!.difference(DateTime.now());
+          return Text(
+            context.messages
+                .aiTaskSummaryScheduled(_formatCountdown(remaining)),
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.outline,
+            ),
+          );
+        },
+      );
+    }
+
+    // Default: show title text
+    return Text(
+      context.messages.aiTaskSummaryTitle,
+      style: context.textTheme.titleSmall?.copyWith(
+        color: context.colorScheme.outline,
+      ),
+    );
   }
 }

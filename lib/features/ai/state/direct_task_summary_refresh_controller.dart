@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -77,12 +78,16 @@ class DirectTaskSummaryRefreshController
     state = ScheduledRefreshState(_getScheduledTimes());
   }
 
-  /// Get the scheduled refresh time for a task, or null if not scheduled
+  /// Get the scheduled refresh time for a task, or null if not scheduled.
+  /// This is primarily for testing - UI should use the provider pattern.
+  @visibleForTesting
   DateTime? getScheduledTime(String taskId) {
     return _scheduledRefreshes[taskId]?.scheduledTime;
   }
 
-  /// Check if a task has a scheduled refresh
+  /// Check if a task has a scheduled refresh.
+  /// This is primarily for testing - UI should use the provider pattern.
+  @visibleForTesting
   bool hasScheduledRefresh(String taskId) {
     return _scheduledRefreshes.containsKey(taskId);
   }
