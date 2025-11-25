@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
@@ -625,7 +626,7 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('spinner button is clickable during inference', (tester) async {
+    testWidgets('spinner button is disabled during inference', (tester) async {
       when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
           .thenAnswer((_) async => [testResponse1]);
 
@@ -668,28 +669,9 @@ void main() {
       );
       expect(spinnerButton, findsOneWidget);
 
-      // Verify it's clickable (has onPressed callback)
+      // Verify it's NOT clickable during inference
       final iconButton = tester.widget<IconButton>(spinnerButton);
-      expect(iconButton.onPressed, isNotNull);
-
-      // Track if inference was triggered
-      var inferenceTriggered = false;
-      container.listen(
-        triggerNewInferenceProvider(
-          entityId: testId,
-          promptId: 'prompt-1',
-        ),
-        (_, __) {
-          inferenceTriggered = true;
-        },
-      );
-
-      // Tap the spinner button
-      await tester.tap(spinnerButton);
-      await tester.pump();
-
-      // Verify inference was triggered
-      expect(inferenceTriggered, isTrue);
+      expect(iconButton.onPressed, isNull);
 
       container.dispose();
     });
@@ -735,6 +717,399 @@ void main() {
 
       // Refresh button should not be shown when promptId is null
       expect(find.byIcon(Icons.refresh), findsNothing);
+    });
+  });
+
+  group('LatestAiResponseSummary Scheduled Refresh UI Tests', () {
+    const testId = 'test-entity-1';
+    const testResponseType = AiResponseType.taskSummary;
+    late AiResponseEntry testResponse;
+    late MockJournalRepository mockJournalRepository;
+
+    setUp(() {
+      mockJournalRepository = MockJournalRepository();
+
+      final now = DateTime(2025, 1, 15, 10);
+      testResponse = AiResponseEntry(
+        meta: Metadata(
+          id: 'response-1',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System message',
+          prompt: 'User prompt',
+          thoughts: '',
+          response: 'This is the summary',
+          type: AiResponseType.taskSummary,
+          promptId: 'prompt-1',
+        ),
+      );
+
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => [testResponse]);
+    });
+
+    Widget buildTestWidget(
+      Widget child, {
+      List<Override> overrides = const [],
+    }) {
+      return ProviderScope(
+        overrides: overrides,
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: child,
+          ),
+        ),
+      );
+    }
+
+    testWidgets(
+        'shows cancel and trigger-now buttons when refresh is scheduled',
+        (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Initially should show refresh button
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byIcon(Icons.play_arrow), findsNothing);
+
+      // Schedule a refresh
+      await container
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(testId);
+
+      await tester.pump();
+
+      // Should now show cancel and trigger-now buttons
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsNothing);
+
+      container.dispose();
+    });
+
+    testWidgets('shows countdown text when refresh is scheduled',
+        (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Initially should show title text
+      expect(find.textContaining('AI Task Summary'), findsOneWidget);
+
+      // Schedule a refresh
+      await container
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(testId);
+
+      await tester.pump();
+
+      // Should show countdown text (e.g., "Summary in 4:59")
+      expect(find.textContaining('Summary in'), findsOneWidget);
+
+      container.dispose();
+    });
+
+    testWidgets('cancel button removes scheduled refresh', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Schedule a refresh
+      await container
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(testId);
+
+      await tester.pump();
+
+      // Verify scheduled state
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(
+        container
+            .read(directTaskSummaryRefreshControllerProvider)
+            .hasScheduledRefresh(testId),
+        isTrue,
+      );
+
+      // Tap cancel button
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pump();
+
+      // Should return to normal state
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byIcon(Icons.play_arrow), findsNothing);
+      expect(
+        container
+            .read(directTaskSummaryRefreshControllerProvider)
+            .hasScheduledRefresh(testId),
+        isFalse,
+      );
+
+      container.dispose();
+    });
+
+    testWidgets('trigger-now button triggers immediate refresh',
+        (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Schedule a refresh
+      await container
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(testId);
+
+      await tester.pump();
+
+      // Verify scheduled state
+      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+      expect(
+        container
+            .read(directTaskSummaryRefreshControllerProvider)
+            .hasScheduledRefresh(testId),
+        isTrue,
+      );
+
+      // Track if inference was triggered
+      var inferenceTriggered = false;
+      container.listen(
+        triggerNewInferenceProvider(
+          entityId: testId,
+          promptId: 'prompt-1',
+        ),
+        (_, __) {
+          inferenceTriggered = true;
+        },
+      );
+
+      // Tap trigger-now button
+      await tester.tap(find.byIcon(Icons.play_arrow));
+      await tester.pump();
+
+      // Scheduled refresh should be cancelled (triggered immediately)
+      expect(
+        container
+            .read(directTaskSummaryRefreshControllerProvider)
+            .hasScheduledRefresh(testId),
+        isFalse,
+      );
+
+      // Inference should have been triggered
+      expect(inferenceTriggered, isTrue);
+
+      container.dispose();
+    });
+
+    testWidgets('hides scheduled buttons when inference is running',
+        (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Schedule a refresh
+      await container
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(testId);
+
+      await tester.pump();
+
+      // Verify scheduled buttons are shown
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+
+      // Set inference to running
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: testResponseType,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      await tester.pump();
+
+      // Should show spinner, not scheduled buttons
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsNothing);
+      expect(find.byIcon(Icons.play_arrow), findsNothing);
+
+      container.dispose();
+    });
+
+    testWidgets('cancel button has correct tooltip', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Schedule a refresh
+      await container
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(testId);
+
+      await tester.pump();
+
+      // Find the cancel button and verify tooltip
+      final cancelButton = find.byIcon(Icons.close);
+      expect(cancelButton, findsOneWidget);
+
+      final iconButton = tester.widget<IconButton>(
+        find.ancestor(of: cancelButton, matching: find.byType(IconButton)),
+      );
+      expect(iconButton.tooltip, 'Cancel scheduled summary');
+
+      container.dispose();
+    });
+
+    testWidgets('trigger-now button has correct tooltip', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: buildTestWidget(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Schedule a refresh
+      await container
+          .read(directTaskSummaryRefreshControllerProvider.notifier)
+          .requestTaskSummaryRefresh(testId);
+
+      await tester.pump();
+
+      // Find the trigger-now button and verify tooltip
+      final playButton = find.byIcon(Icons.play_arrow);
+      expect(playButton, findsOneWidget);
+
+      final iconButton = tester.widget<IconButton>(
+        find.ancestor(of: playButton, matching: find.byType(IconButton)),
+      );
+      expect(iconButton.tooltip, 'Generate summary now');
+
+      container.dispose();
     });
   });
 }

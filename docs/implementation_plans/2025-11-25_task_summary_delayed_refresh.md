@@ -62,24 +62,23 @@ Task summaries are currently triggered too frequently:
 | **Scheduled** | "Summary in 4:32" (countdown)    | Cancel (✕), Trigger now (▶)     |
 | **Running**   | "Thinking about task summary..." | Spinner (no actions)            |
 
-### Default Delay Duration
+### Decisions
 
-- **5 minutes** as the initial value
-- Rationale: Long enough that rapid checklist interactions don't trigger multiple summaries, but
-  short enough that the summary is generated before the user context-switches away
-- Consider making this configurable in settings in the future if needed
+- **Delay duration**: 5 minutes
+- **Reset behavior**: No reset - countdown keeps ticking once started. The countdown is a promise that
+  something will happen. Additional checklist changes do not extend/reset the timer.
+- **Visual design**: Use existing icon style for cancel/trigger buttons
+- **Settings exposure**: Add configurability later if needed
 
 ### Edge Cases
 
-1. **Multiple checklist changes while scheduled**: Reset the countdown timer (each change pushes out
-   the scheduled time) => no actually, countdown keeps ticking, the countdown is a promise that 
-   something will happen
-2. **App backgrounded/closed**: Scheduled refresh is lost - acceptable since returning to the app is
-   effectively "returning to the task" => okay but then we need to show somehow that the latest 
-   summary is outdated 
+1. **Multiple checklist changes while scheduled**: Countdown keeps ticking (no reset). The first
+   change sets the 5-minute countdown; subsequent changes are batched into that same refresh.
+2. **App backgrounded/closed**: Scheduled refresh is lost. Show an "outdated" indicator on the
+   summary so users know they should manually refresh when returning to the task.
 3. **Inference already running when checklist changes**: Queue the scheduled refresh to trigger
-   after current inference completes (existing behavior)
-4. **User navigates away from task**: Keep timer running - summary will be ready when they return
+   after current inference completes (existing behavior).
+4. **User navigates away from task**: Keep timer running - summary will be ready when they return.
 
 ## Implementation Workstreams
 
@@ -92,6 +91,7 @@ Task summaries are currently triggered too frequently:
   - Scheduled time (`DateTime`)
   - Timer reference
 - Change default delay from `500ms` to `5 minutes`
+- Do NOT reset timer on subsequent checklist changes (batch into existing countdown)
 - Expose scheduled refresh state via a separate provider for UI consumption
 - Add methods:
   - `cancelScheduledRefresh(taskId)` - cancel pending refresh
@@ -105,7 +105,7 @@ Task summaries are currently triggered too frequently:
 
 ### 2. Countdown State Provider
 
-**New file**: `lib/features/ai/state/scheduled_refresh_controller.dart` => sounds good
+**New file**: `lib/features/ai/state/scheduled_refresh_controller.dart`
 
 ```dart
 @riverpod
@@ -142,6 +142,12 @@ inference status data. This keeps all states in one place.
 - Trigger now: `IconButton` with `Icons.play_arrow` - calls `triggerImmediately`
 - Both buttons should be styled to match existing UI (outline color, size)
 
+**Outdated Indicator**:
+
+- When in idle state, check if summary is outdated (checklist changed since last summary)
+- Show subtle visual indicator (e.g., warning icon, "outdated" badge, or different text color)
+- This addresses the edge case where app was closed before scheduled refresh completed
+
 ### 4. Localization
 
 **New keys** in `lib/l10n/app_*.arb`:
@@ -149,13 +155,14 @@ inference status data. This keeps all states in one place.
 - `aiTaskSummaryScheduled`: "Summary in {time}" (with placeholder for countdown)
 - `aiTaskSummaryCancelScheduled`: "Cancel scheduled summary"
 - `aiTaskSummaryTriggerNow`: "Generate summary now"
+- `aiTaskSummaryOutdated`: "Summary may be outdated"
 
 ### 5. Testing
 
 **Unit tests** (`test/features/ai/state/`):
 
-- Scheduled refresh is created with correct delay
-- Multiple checklist changes reset the timer
+- Scheduled refresh is created with correct 5-minute delay
+- Multiple checklist changes do NOT reset the timer (batched into existing countdown)
 - `cancelScheduledRefresh` cancels timer and clears state
 - `triggerImmediately` cancels timer and triggers inference
 - Timer fires after delay and triggers inference
@@ -167,6 +174,7 @@ inference status data. This keeps all states in one place.
 - Cancel button cancels scheduled refresh
 - Trigger button triggers immediate refresh
 - UI transitions correctly between idle/scheduled/running
+- Outdated indicator shows when appropriate
 
 **Use fake time** per `test/README.md` guidelines for deterministic timer testing.
 
@@ -175,24 +183,16 @@ inference status data. This keeps all states in one place.
 | Risk                                                         | Mitigation                                                                          |
 |--------------------------------------------------------------|-------------------------------------------------------------------------------------|
 | Countdown UI causes frequent rebuilds                        | Use `ValueListenableBuilder` or `StreamBuilder` scoped to just the countdown widget |
-| User forgets they cancelled and wonders why summary is stale | Show subtle "refresh" indicator or last-updated timestamp                           |
+| User forgets they cancelled and wonders why summary is stale | Show "outdated" indicator when summary doesn't reflect current checklist state      |
 | 5-minute delay too long for some workflows                   | Consider exposing as a setting in the future                                        |
-
-## Open Questions
-
-1. **Exact delay duration**: 5 minutes proposed - is this the right balance? => yes
-2. **Reset behavior**: Should each checklist change reset the timer, or should changes accumulate
-   without resetting? (Proposed: reset to give consistent behavior) => without resetting
-3. **Visual design**: Icon choices for cancel/trigger buttons - use existing icon style or introduce
-   new visual language? => existing unless you have a much better idea
-4. **Settings exposure**: Should the delay be configurable in settings from the start, or add later
-   if needed? => add later if needed
+| App closed before refresh completes                          | Show "outdated" indicator so user knows to manually refresh                         |
 
 ## Rollout
 
 1. Implement state changes and new provider
 2. Update UI to display countdown and actions
-3. Add localization strings
-4. Write tests with fake time
-5. Run analyzer/formatter/tests before PR
-6. Monitor API usage reduction after deployment
+3. Add outdated indicator logic
+4. Add localization strings
+5. Write tests with fake time
+6. Run analyzer/formatter/tests before PR
+7. Monitor API usage reduction after deployment

@@ -511,6 +511,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiTaskSummaryTitle => 'Rezumatul sarcinii AI';
 
   @override
+  String aiTaskSummaryScheduled(String time) {
+    return 'Summary in $time';
+  }
+
+  @override
+  String get aiTaskSummaryCancelScheduled => 'Cancel scheduled summary';
+
+  @override
+  String get aiTaskSummaryTriggerNow => 'Generate summary now';
+
+  @override
   String get apiKeyAddPageTitle => 'Add Provider';
 
   @override
