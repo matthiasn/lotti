@@ -77,18 +77,21 @@ class TigerBeetleClient(ITigerBeetleClient):
         account_id = int.from_bytes(hash_bytes[:16], byteorder="big")
         return account_id
 
-    async def create_account(self, account_id: int, user_id: str, initial_balance_cents: int = 0) -> None:
+    async def create_account(self, account_id: int, user_id: str) -> None:
         """
         Create a new account in TigerBeetle
 
         Args:
             account_id: Unique account ID (128-bit integer)
-            user_id: User identifier (stored in user_data)
-            initial_balance_cents: Initial balance in cents
+            user_id: User identifier (for logging purposes)
 
         Raises:
             AccountAlreadyExistsException: If account already exists
             TigerBeetleException: On other TigerBeetle errors
+
+        Note:
+            TigerBeetle requires accounts to be created with zero balance.
+            Use create_transfer() to set an initial balance after creation.
         """
         client = self._ensure_connected()
 
@@ -122,7 +125,7 @@ class TigerBeetleClient(ITigerBeetleClient):
                     logger.error(f"TigerBeetle error creating account: {error}")
                     raise TigerBeetleException(f"Failed to create account: {error}")
 
-            logger.info(f"Created account {account_id} for user {user_id} with balance {initial_balance_cents} cents")
+            logger.info(f"Created account {account_id} for user {user_id}")
 
         except (AccountAlreadyExistsException, TigerBeetleException):
             raise
