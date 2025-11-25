@@ -4,6 +4,8 @@ Thanks for your interest in contributing! Lotti is built by and for people who v
 
 ## Ways to Contribute
 - Report bugs and request features via Issues: https://github.com/matthiasn/lotti/issues
+  - Use the bug report template for issues
+  - Use the feature request template for new ideas
 - Improve test coverage (see Codecov badge in README)
 - Add or improve translations
 - Submit pull requests for fixes and features
@@ -33,6 +35,7 @@ Thanks for your interest in contributing! Lotti is built by and for people who v
 - Tests live under `test/` as `*_test.dart`
 
 ## Pull Requests
+- A template will guide you through the required information when opening a PR
 - Include a clear description of the change and, for UI changes, screenshots/GIFs
 - Ensure `make analyze` and `make test` pass
 - Update documentation and localization as needed (`make l10n`)
