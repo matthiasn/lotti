@@ -210,14 +210,14 @@ class TigerBeetleClient(ITigerBeetleClient):
 
             if errors:
                 error = errors[0]
-                # Check for account not found errors (22 = CREDIT_ACCOUNT_NOT_FOUND, 15 = DEBIT_ACCOUNT_NOT_FOUND)
-                if error.result in (15, 22):
+                # Check for account not found errors
+                if error.result in (15, 22):  # DEBIT_ACCOUNT_NOT_FOUND, CREDIT_ACCOUNT_NOT_FOUND
                     logger.warning(f"Account not found for transfer: {error}")
                     raise AccountNotFoundException("Account not found for transfer")
-                # Check for insufficient balance (10 = EXCEEDS_CREDITS)
-                elif error.result == 10:
+                # Check for insufficient balance
+                elif error.result == 35:  # DEBITS_WOULD_EXCEED_CREDITS
                     logger.warning(f"Insufficient balance for transfer: {error}")
-                    raise InsufficientBalanceException("Insufficient balance for transfer")
+                    raise InsufficientBalanceException(f"Insufficient balance for account {debit_account_id}")
                 else:
                     logger.error(f"TigerBeetle error creating transfer: {error}")
                     raise TigerBeetleException(f"Failed to create transfer: {error}")
