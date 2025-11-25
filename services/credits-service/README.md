@@ -14,7 +14,7 @@ This service provides account management for user credits in Lotti application. 
 
 Built following the modular architecture pattern used in the Lotti project:
 
-```
+```text
 src/
 ├── core/                    # Domain models and interfaces
 │   ├── models.py           # Request/response models
