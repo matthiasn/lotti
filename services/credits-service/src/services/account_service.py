@@ -25,7 +25,7 @@ class AccountService(IAccountService):
 
     async def create_account(self, user_id: str, initial_balance: Optional[Decimal] = None) -> tuple[int, Decimal]:
         """
-        Create a new account
+        Create a new account and set its initial balance
 
         Args:
             user_id: User identifier
@@ -45,12 +45,25 @@ class AccountService(IAccountService):
         # Convert user_id to account_id
         account_id = self.client.user_id_to_account_id(user_id)
 
-        # Convert USD to cents
-        initial_balance_cents = int(initial_balance * CURRENCY_PRECISION)
-
         try:
-            await self.client.create_account(account_id, user_id, initial_balance_cents)
+            # Create the account with zero balance (TigerBeetle requirement)
+            await self.client.create_account(account_id, user_id)
             logger.info(f"Successfully created account {account_id} for user {user_id}")
+
+            # If an initial balance is specified, transfer from system account
+            if initial_balance > 0:
+                from ..services.billing_service import SYSTEM_ACCOUNT_ID
+
+                initial_balance_cents = int(initial_balance * CURRENCY_PRECISION)
+                transfer_id = self.client.generate_transfer_id()
+                await self.client.create_transfer(
+                    transfer_id=transfer_id,
+                    debit_account_id=SYSTEM_ACCOUNT_ID,
+                    credit_account_id=account_id,
+                    amount_cents=initial_balance_cents,
+                )
+                logger.info(f"Transferred initial balance of ${initial_balance} to account {account_id}")
+
             return account_id, initial_balance
 
         except AccountAlreadyExistsException:
