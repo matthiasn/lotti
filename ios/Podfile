@@ -73,6 +73,8 @@ post_install do |installer|
         # dart: PermissionGroup.mediaLibrary
         'PERMISSION_MEDIA_LIBRARY=1',
       ]
+      # Generate dSYMs for all pods to fix "Upload Symbols Failed" warnings
+      config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
     end
   end
 end

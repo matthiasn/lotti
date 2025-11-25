@@ -37,10 +37,11 @@ PODS:
   - mobile_scanner (7.0.0):
     - Flutter
     - FlutterMacOS
-  - objective_c (0.0.1):
-    - FlutterMacOS
   - OpenSSL-Universal (3.3.2000)
   - package_info_plus (0.0.1):
+    - FlutterMacOS
+  - path_provider_foundation (0.0.1):
+    - Flutter
     - FlutterMacOS
   - photo_manager (3.8.0):
     - Flutter
@@ -112,9 +113,9 @@ DEPENDENCIES:
   - location (from `Flutter/ephemeral/.symlinks/plugins/location/macos`)
   - media_kit_libs_macos_audio (from `Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos`)
   - mobile_scanner (from `Flutter/ephemeral/.symlinks/plugins/mobile_scanner/darwin`)
-  - objective_c (from `Flutter/ephemeral/.symlinks/plugins/objective_c/macos`)
   - OpenSSL-Universal
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/darwin`)
   - quill_native_bridge_macos (from `Flutter/ephemeral/.symlinks/plugins/quill_native_bridge_macos/macos`)
   - record_macos (from `Flutter/ephemeral/.symlinks/plugins/record_macos/macos`)
@@ -169,10 +170,10 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/media_kit_libs_macos_audio/macos
   mobile_scanner:
     :path: Flutter/ephemeral/.symlinks/plugins/mobile_scanner/darwin
-  objective_c:
-    :path: Flutter/ephemeral/.symlinks/plugins/objective_c/macos
   package_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos
+  path_provider_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
   photo_manager:
     :path: Flutter/ephemeral/.symlinks/plugins/photo_manager/darwin
   quill_native_bridge_macos:
@@ -217,9 +218,9 @@ SPEC CHECKSUMS:
   location: c002b64375c0739e7afa30cbd0b675554830d208
   media_kit_libs_macos_audio: 06f3cf88d6d89c7c3c87eae57689d1c6adb335b2
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
-  objective_c: ec13431e45ba099cb734eb2829a5c1cd37986cba
   OpenSSL-Universal: b60a3702c9fea8b3145549d421fdb018e53ab7b4
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
+  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   photo_manager: 343d78032bf7ebe944d2ab9702204dc2eda07338
   quill_native_bridge_macos: 2b005cb56902bb740e0cd9620aa399dfac6b4882
   record_macos: 43194b6c06ca6f8fa132e2acea72b202b92a0f5b
@@ -234,6 +235,6 @@ SPEC CHECKSUMS:
   video_player_avfoundation: dd410b52df6d2466a42d28550e33e4146928280a
   window_manager: b729e31d38fb04905235df9ea896128991cad99e
 
-PODFILE CHECKSUM: d27d2dff46449102b264d388eab8371b0b96d784
+PODFILE CHECKSUM: b18c8a535018b66ce9f17fd9de4dca4de89db5d8
 
 COCOAPODS: 1.16.2
