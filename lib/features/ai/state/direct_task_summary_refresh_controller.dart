@@ -16,32 +16,55 @@ part 'direct_task_summary_refresh_controller.g.dart';
 
 /// Duration before a scheduled task summary refresh fires.
 /// This gives the user time to make multiple changes before triggering an API call.
+/// The 5-minute delay reduces unnecessary API calls while actively working on a task,
+/// since summaries are most valuable when returning to a task to catch up.
 const scheduledRefreshDelay = Duration(minutes: 5);
 
-/// Data class to track a scheduled refresh
+/// Data class to track a scheduled refresh for a specific task.
+/// Each task can have at most one scheduled refresh at a time.
 class ScheduledRefreshData {
   ScheduledRefreshData({
     required this.scheduledTime,
     required this.timer,
   });
 
+  /// When the refresh will fire (DateTime.now() + scheduledRefreshDelay)
   final DateTime scheduledTime;
+
+  /// Timer that will trigger the refresh when it expires
   final Timer timer;
 }
 
-/// State class that holds the map of scheduled refreshes
-/// This allows watchers to be notified when the map changes
+/// State class that holds the map of scheduled refreshes.
+/// This allows watchers (UI, providers) to be notified when schedules change.
+/// The UI uses this to display countdown timers and action buttons.
 class ScheduledRefreshState {
   ScheduledRefreshState(this.scheduledTimes);
 
+  /// Map of task IDs to their scheduled refresh times
   final Map<String, DateTime> scheduledTimes;
 
+  /// Get the scheduled refresh time for a task, or null if not scheduled
   DateTime? getScheduledTime(String taskId) => scheduledTimes[taskId];
+
+  /// Check if a task has a pending scheduled refresh
   bool hasScheduledRefresh(String taskId) => scheduledTimes.containsKey(taskId);
 }
 
-/// Manages direct task summary refresh requests from checklist actions
-/// This bypasses the notification system to avoid circular dependencies and infinite loops
+/// Manages scheduled task summary refresh requests from checklist actions.
+///
+/// This controller implements a "delayed refresh with countdown" pattern:
+/// - First checklist change schedules a refresh with 5-minute delay
+/// - UI shows countdown: "Summary in 4:32" with cancel/trigger-now buttons
+/// - Additional changes batch into existing countdown (no timer reset)
+/// - User can cancel the scheduled refresh or trigger immediately
+///
+/// This reduces API costs while actively working on a task, since summaries
+/// are most valuable when returning to a task to catch up.
+///
+/// The controller bypasses the notification system to avoid circular
+/// dependencies and infinite loops that could occur if checklist changes
+/// triggered notifications that triggered refreshes that updated checklists.
 @Riverpod(keepAlive: true)
 class DirectTaskSummaryRefreshController
     extends _$DirectTaskSummaryRefreshController {

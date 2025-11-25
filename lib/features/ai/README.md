@@ -277,10 +277,12 @@ To integrate a new handler:
 - **`active_inference_controller.dart`**: Tracks active inferences with linked entity support
   - **Dual-Entry System**: Creates symmetric entries for both primary and linked entities
   - **ActiveInferenceByEntity**: Finds active inferences for any entity (primary or linked)
-- **`direct_task_summary_refresh_controller.dart`**: Manages direct task summary refresh requests
-  - Implements debouncing with per-task timers
+- **`direct_task_summary_refresh_controller.dart`**: Manages scheduled task summary refresh requests
+  - Implements 5-minute scheduled delay with countdown UI
+  - Returns `ScheduledRefreshState` exposing scheduled times per task
+  - Provides `cancelScheduledRefresh()` and `triggerImmediately()` methods
   - Monitors inference status to avoid conflicts
-  - Provides direct refresh path bypassing notification system
+  - `scheduledTaskSummaryRefreshProvider`: Family provider exposing scheduled time for UI
 
 #### Helpers & Extensions
 - **`helpers/entity_state_helper.dart`**: Utilities for managing entity state during AI operations
@@ -429,31 +431,51 @@ When generating task summaries, the system automatically extracts suggested titl
 - The extracted title updates the task entity in the database
 - When displaying summaries, the H1 title is filtered out to avoid redundancy
 
-### 5. Direct Task Summary Refresh
+### 5. Direct Task Summary Refresh with Countdown UX
 
-The system includes a direct refresh mechanism that updates task summaries when checklist items are modified. For a user-focused description of this feature, see the [Tasks Feature README - Automatic Task Summary Updates](../tasks/README.md#automatic-task-summary-updates).
+The system includes a scheduled refresh mechanism that updates task summaries when checklist items are modified. Instead of triggering immediately, refreshes are scheduled with a 5-minute delay, giving users control over when summaries are generated. For a user-focused description of this feature, see the [Tasks Feature README - Automatic Task Summary Updates](../tasks/README.md#automatic-task-summary-updates).
 
 #### Overview
 
-When users interact with checklists (adding items, checking/unchecking items, updating items), the system automatically triggers a refresh of the associated task's AI summary. This ensures task summaries stay up-to-date with the latest checklist state.
+When users interact with checklists (adding items, checking/unchecking items, updating items), the system schedules a refresh of the associated task's AI summary with a 5-minute countdown. This reduces unnecessary API calls while actively working on a task, since summaries are most valuable when **returning** to a task to catch up.
+
+#### UI States
+
+| State         | Header Text                      | Actions                         |
+|---------------|----------------------------------|---------------------------------|
+| **Idle**      | "AI Task Summary"                | Refresh button (manual trigger) |
+| **Scheduled** | "Summary in 4:32" (countdown)    | Cancel (✕), Trigger now (▶)     |
+| **Running**   | "Thinking about task summary..." | Spinner (no actions)            |
 
 #### Implementation Components
 
-1. **`DirectTaskSummaryRefreshController`**: Core controller managing refresh requests
-   - Implements per-task debouncing (500ms) to batch rapid changes
+1. **`DirectTaskSummaryRefreshController`**: Core controller managing scheduled refresh requests
+   - Implements 5-minute scheduled delay (changed from 500ms debounce)
+   - Returns `ScheduledRefreshState` exposing scheduled times per task
    - Uses listener-based approach to handle ongoing inferences
    - Maintains separate timers for each task to prevent interference
+   - **No timer reset**: Subsequent changes are batched into the existing countdown
 
-2. **`TaskSummaryRefreshService`**: Centralized service for refresh operations
+2. **`scheduledTaskSummaryRefreshProvider`**: Exposes scheduled time for UI
+   - Family provider keyed by task ID
+   - Returns `DateTime?` of scheduled refresh time (null = not scheduled)
+   - UI watches this to display countdown and action buttons
+
+3. **`_HeaderText` widget**: Efficient countdown display
+   - Uses `StreamBuilder` to update only the countdown text every second
+   - Avoids rebuilding the entire parent widget on each tick
+   - Timer managed in `initState`/`didUpdateWidget`/`dispose`
+
+4. **`TaskSummaryRefreshService`**: Centralized service for refresh operations
    - Eliminates code duplication across repositories
    - Handles checklist-to-task relationship lookups
    - Provides error isolation to prevent cascade failures
 
-3. **Integration Points**: Automatic triggers in checklist operations
-   - `createChecklistItem()`: Triggers refresh when new items are added
-   - `updateChecklistItem()`: Triggers refresh when items are modified
-   - `addItemToChecklist()`: Triggers refresh for batch additions
-   - Task language selection: Manual language changes in the task header trigger a refresh so summaries regenerate in the newly selected language
+5. **Integration Points**: Automatic triggers in checklist operations
+   - `createChecklistItem()`: Schedules refresh when new items are added
+   - `updateChecklistItem()`: Schedules refresh when items are modified
+   - `addItemToChecklist()`: Schedules refresh for batch additions
+   - Task language selection: Manual language changes trigger immediate refresh
 
 #### How It Works
 
@@ -461,17 +483,23 @@ When users interact with checklists (adding items, checking/unchecking items, up
 2. **Repository Call**: The checklist repository calls `TaskSummaryRefreshService`
 3. **Task Lookup**: Service finds all tasks linked to the modified checklist
 4. **Refresh Request**: For each linked task, requests a summary refresh
-5. **Debouncing**: Multiple rapid changes are batched with 500ms debounce
-6. **Inference Check**: If inference is already running, sets up a listener to retry when complete
-7. **Summary Update**: New task summary is generated reflecting checklist changes
+5. **Scheduling**: If no refresh is scheduled, starts 5-minute countdown; otherwise batches into existing countdown
+6. **UI Update**: Countdown displayed in header with cancel/trigger-now buttons
+7. **User Control**: User can cancel the scheduled refresh or trigger immediately
+8. **Timer Expiry**: After 5 minutes (or immediate trigger), inference runs
+9. **Summary Update**: New task summary is generated reflecting checklist changes
 
 #### Key Features
 
+- **5-Minute Delay**: Reduces API calls while actively working on a task
+- **Countdown Display**: Shows remaining time until summary generation
+- **User Control**: Cancel scheduled refresh or trigger immediately
+- **No Timer Reset**: Additional changes batch into existing countdown (the countdown is a promise)
 - **Direct Communication**: Bypasses notification system to avoid circular dependencies
-- **Smart Debouncing**: Per-task timers prevent unnecessary API calls
 - **Concurrent Safety**: Handles multiple tasks and checklists independently
 - **Error Resilience**: Failures in one refresh don't affect others
 - **Status Awareness**: Monitors inference status to avoid conflicts
+- **Efficient Updates**: StreamBuilder scopes countdown rebuilds to header text only
 
 #### Example Flow
 
@@ -484,11 +512,17 @@ TaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist()
     ↓
 DirectTaskSummaryRefreshController.requestTaskSummaryRefresh()
     ↓
-[500ms debounce timer]
+[5-minute countdown starts - UI shows "Summary in 5:00"]
+    ↓
+User continues checking items (timer keeps ticking, no reset)
+    ↓
+User can: Cancel (✕) or Trigger Now (▶)
+    ↓
+[Timer expires or user triggers]
     ↓
 Triggers new AI inference for task summary
     ↓
-Task summary updates to reflect completed item
+Task summary updates to reflect all completed items
 ```
 
 ## Automatic Checklist Creation with Smart Re-run

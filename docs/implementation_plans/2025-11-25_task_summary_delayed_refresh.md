@@ -1,5 +1,7 @@
 # Delayed Task Summary Refresh with Countdown UX
 
+**Status**: ✅ Implemented (PR #2471)
+
 ## Problem Statement
 
 Task summaries are currently triggered too frequently:
@@ -17,7 +19,7 @@ Task summaries are currently triggered too frequently:
 - Give user control: cancel scheduled refresh or trigger immediately
 - Maintain a good UX with clear visual feedback
 
-## Proposed Behavior
+## Implementation Summary
 
 ### State Machine
 
@@ -62,7 +64,7 @@ Task summaries are currently triggered too frequently:
 | **Scheduled** | "Summary in 4:32" (countdown)    | Cancel (✕), Trigger now (▶)     |
 | **Running**   | "Thinking about task summary..." | Spinner (no actions)            |
 
-### Decisions
+### Design Decisions
 
 - **Delay duration**: 5 minutes
 - **Reset behavior**: No reset - countdown keeps ticking once started. The countdown is a promise that
@@ -70,129 +72,79 @@ Task summaries are currently triggered too frequently:
 - **Visual design**: Use existing icon style for cancel/trigger buttons
 - **Settings exposure**: Add configurability later if needed
 
-### Edge Cases
+## Files Changed
 
-1. **Multiple checklist changes while scheduled**: Countdown keeps ticking (no reset). The first
-   change sets the 5-minute countdown; subsequent changes are batched into that same refresh.
-2. **App backgrounded/closed**: Scheduled refresh is lost. Show an "outdated" indicator on the
-   summary so users know they should manually refresh when returning to the task.
-3. **Inference already running when checklist changes**: Queue the scheduled refresh to trigger
-   after current inference completes (existing behavior).
-4. **User navigates away from task**: Keep timer running - summary will be ready when they return.
+### Core Controller
 
-## Implementation Workstreams
+**`lib/features/ai/state/direct_task_summary_refresh_controller.dart`**
 
-### 1. State Model & Controller Changes
-
-**File**: `lib/features/ai/state/direct_task_summary_refresh_controller.dart`
-
-- Replace `Map<String, Timer> _debounceTimers` with a new data structure that tracks:
-  - Task ID
-  - Scheduled time (`DateTime`)
-  - Timer reference
-- Change default delay from `500ms` to `5 minutes`
-- Do NOT reset timer on subsequent checklist changes (batch into existing countdown)
-- Expose scheduled refresh state via a separate provider for UI consumption
-- Add methods:
+- Changed delay from 500ms debounce to **5-minute scheduled refresh**
+- Returns `ScheduledRefreshState` instead of `void` to expose scheduled times
+- Added `ScheduledRefreshData` class to track scheduled time and timer per task
+- Added `ScheduledRefreshState` class exposing `Map<String, DateTime>` of scheduled times
+- New methods:
   - `cancelScheduledRefresh(taskId)` - cancel pending refresh
   - `triggerImmediately(taskId)` - bypass countdown and trigger now
+  - `getScheduledTime(taskId)` - get scheduled time (marked `@visibleForTesting`)
+  - `hasScheduledRefresh(taskId)` - check if scheduled (marked `@visibleForTesting`)
+- New provider: `scheduledTaskSummaryRefreshProvider` - family provider returning `DateTime?`
 
-**New Provider**: `scheduledTaskSummaryRefreshProvider`
+### UI Component
 
-- Family provider keyed by task ID
-- Returns `DateTime?` of scheduled refresh time (null = not scheduled)
-- Updated when refresh is scheduled/cancelled/triggered
+**`lib/features/ai/ui/latest_ai_response_summary.dart`**
 
-### 2. Countdown State Provider
+- Added `_HeaderText` widget with `StreamBuilder` for efficient countdown updates
+  - Uses `StreamController<void>.broadcast()` to emit ticks every second
+  - Only rebuilds the header text, not the entire parent widget
+  - Timer managed in `initState`/`didUpdateWidget`/`dispose` (no side effects in build)
+- Cancel button (✕ icon) - calls `cancelScheduledRefresh`
+- Trigger now button (▶ icon) - calls `triggerImmediately`
+- Both buttons hidden when inference is running
 
-**New file**: `lib/features/ai/state/scheduled_refresh_controller.dart`
+### Localization
 
-```dart
-@riverpod
-class ScheduledRefreshController extends _$ScheduledRefreshController {
-  @override
-  DateTime? build({required String taskId}) {
-    // Returns the scheduled time for this task, or null if not scheduled
-    // Listen to DirectTaskSummaryRefreshController for updates
-  }
-}
-```
+**`lib/l10n/app_en.arb`** (and other locale files)
 
-Alternative: Extend `InferenceStatus` enum to include `scheduled` state and add scheduled time to
-inference status data. This keeps all states in one place.
-
-### 3. UI Changes
-
-**File**: `lib/features/ai/ui/latest_ai_response_summary.dart`
-
-- Watch the new scheduled refresh provider
-- Implement countdown display using `StreamBuilder` or periodic rebuild
-- Add action buttons for cancel/trigger-now
-- Use `TweenAnimationBuilder` or `Timer.periodic` for smooth countdown updates
-
-**Countdown Widget** (new or inline):
-
-- Displays remaining time in "M:SS" format
-- Updates every second while scheduled
-- Transitions smoothly to "running" state
-
-**Action Buttons**:
-
-- Cancel: `IconButton` with `Icons.close` - calls `cancelScheduledRefresh`
-- Trigger now: `IconButton` with `Icons.play_arrow` - calls `triggerImmediately`
-- Both buttons should be styled to match existing UI (outline color, size)
-
-**Outdated Indicator**:
-
-- When in idle state, check if summary is outdated (checklist changed since last summary)
-- Show subtle visual indicator (e.g., warning icon, "outdated" badge, or different text color)
-- This addresses the edge case where app was closed before scheduled refresh completed
-
-### 4. Localization
-
-**New keys** in `lib/l10n/app_*.arb`:
-
-- `aiTaskSummaryScheduled`: "Summary in {time}" (with placeholder for countdown)
+- `aiTaskSummaryScheduled`: "Summary in {time}"
 - `aiTaskSummaryCancelScheduled`: "Cancel scheduled summary"
 - `aiTaskSummaryTriggerNow`: "Generate summary now"
-- `aiTaskSummaryOutdated`: "Summary may be outdated"
 
-### 5. Testing
+### Tests
 
-**Unit tests** (`test/features/ai/state/`):
+**`test/features/ai/state/direct_task_summary_refresh_controller_test.dart`** (15 tests)
 
-- Scheduled refresh is created with correct 5-minute delay
-- Multiple checklist changes do NOT reset the timer (batched into existing countdown)
+- 5-minute delay works correctly
+- Multiple changes do NOT reset timer (batched into existing countdown)
 - `cancelScheduledRefresh` cancels timer and clears state
 - `triggerImmediately` cancels timer and triggers inference
 - Timer fires after delay and triggers inference
-- Running inference queues subsequent scheduled refresh
+- Uses `fake_async` for deterministic timer testing
 
-**Widget tests** (`test/features/ai/ui/`):
+**`test/features/ai/ui/latest_ai_response_summary_test.dart`** (7 new tests)
 
-- Countdown displays correctly and updates
-- Cancel button cancels scheduled refresh
-- Trigger button triggers immediate refresh
-- UI transitions correctly between idle/scheduled/running
-- Outdated indicator shows when appropriate
+- Cancel and trigger-now buttons shown when scheduled
+- Countdown text displays correctly
+- Cancel button removes scheduled refresh
+- Trigger-now button triggers immediate refresh
+- Buttons hidden when inference is running
+- Tooltips display correct text
 
-**Use fake time** per `test/README.md` guidelines for deterministic timer testing.
+## Code Review Feedback Addressed
 
-## Risks & Mitigations
+From Gemini Code Assist review:
 
-| Risk                                                         | Mitigation                                                                          |
-|--------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| Countdown UI causes frequent rebuilds                        | Use `ValueListenableBuilder` or `StreamBuilder` scoped to just the countdown widget |
-| User forgets they cancelled and wonders why summary is stale | Show "outdated" indicator when summary doesn't reflect current checklist state      |
-| 5-minute delay too long for some workflows                   | Consider exposing as a setting in the future                                        |
-| App closed before refresh completes                          | Show "outdated" indicator so user knows to manually refresh                         |
+1. **High Priority**: Moved countdown from `setState` every second to `StreamBuilder`
+   - Scopes rebuilds to only the `_HeaderText` widget
 
-## Rollout
+2. **High Priority**: Removed side effects from `build` method
+   - Timer management now in `initState`/`didUpdateWidget`/`dispose`
 
-1. Implement state changes and new provider
-2. Update UI to display countdown and actions
-3. Add outdated indicator logic
-4. Add localization strings
-5. Write tests with fake time
-6. Run analyzer/formatter/tests before PR
-7. Monitor API usage reduction after deployment
+3. **Medium Priority**: Added `@visibleForTesting` annotations
+   - `getScheduledTime` and `hasScheduledRefresh` annotated
+   - Documentation clarifies UI should use provider pattern
+
+## Future Enhancements
+
+- [ ] Outdated indicator when summary doesn't reflect current checklist state
+- [ ] Configurable delay duration in settings
+- [ ] Persist scheduled refresh across app restarts

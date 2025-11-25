@@ -214,13 +214,23 @@ class _LatestAiResponseSummaryState
 
 /// Separate widget for the header text that uses StreamBuilder
 /// to update the countdown display without rebuilding the parent widget.
+///
+/// Design decisions (based on code review feedback):
+/// - Uses StreamBuilder instead of setState to scope rebuilds to just this widget
+/// - Timer managed in initState/didUpdateWidget/dispose, not in build method
+/// - Stream emits every second only when a refresh is scheduled
+/// - No side effects in build method - just pure widget construction
 class _HeaderText extends StatefulWidget {
   const _HeaderText({
     required this.isRunning,
     required this.scheduledTime,
   });
 
+  /// Whether inference is currently running (shows "Thinking..." text)
   final bool isRunning;
+
+  /// The scheduled refresh time, or null if no refresh is scheduled.
+  /// When non-null, shows countdown like "Summary in 4:32"
   final DateTime? scheduledTime;
 
   @override
@@ -228,7 +238,10 @@ class _HeaderText extends StatefulWidget {
 }
 
 class _HeaderTextState extends State<_HeaderText> {
+  /// Stream controller that emits a tick every second for countdown updates
   StreamController<void>? _tickController;
+
+  /// Timer that fires every second to update the countdown display
   Timer? _timer;
 
   @override
@@ -240,16 +253,21 @@ class _HeaderTextState extends State<_HeaderText> {
   @override
   void didUpdateWidget(_HeaderText oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only update timer when scheduled state changes
+    // Only update timer when scheduled state changes (not on every rebuild)
     if (oldWidget.scheduledTime != widget.scheduledTime) {
       _setupTimerIfNeeded();
     }
   }
 
+  /// Sets up or tears down the countdown timer based on scheduled state.
+  /// Called from initState and didUpdateWidget to keep timer lifecycle
+  /// properly managed outside of the build method.
   void _setupTimerIfNeeded() {
+    // Clean up any existing timer/stream
     _timer?.cancel();
     _tickController?.close();
 
+    // Only create timer when we have a scheduled refresh to display
     if (widget.scheduledTime != null) {
       _tickController = StreamController<void>.broadcast();
       _timer = Timer.periodic(
