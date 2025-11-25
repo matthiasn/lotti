@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Optional
 
 from ..core.constants import CURRENCY_PRECISION
-from ..core.exceptions import AccountAlreadyExistsException
+from ..core.exceptions import AccountAlreadyExistsException, AccountNotFoundException
 from ..core.interfaces import IAccountService, ITigerBeetleClient
 
 logger = logging.getLogger(__name__)
@@ -79,10 +79,13 @@ class AccountService(IAccountService):
 
         Returns:
             True if account exists, False otherwise
+
+        Raises:
+            TigerBeetleException: On database connection or other errors
         """
         try:
             account_id = self.client.user_id_to_account_id(user_id)
             await self.client.get_account_balance(account_id)
             return True
-        except Exception:
+        except AccountNotFoundException:
             return False
