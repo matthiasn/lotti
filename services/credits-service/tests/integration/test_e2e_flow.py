@@ -92,11 +92,17 @@ class TestEndToEndFlow:
         """Test that billing fails when balance is insufficient"""
         user_id = f"test_user_{uuid.uuid4().hex[:16]}"
 
-        # Create account with $10
-        response = await client.post("/api/v1/accounts", json={"user_id": user_id, "initial_balance": 10.0})
+        # Create account with $0
+        response = await client.post("/api/v1/accounts", json={"user_id": user_id, "initial_balance": 0.0})
         assert response.status_code == 201
 
-        # Try to bill $20 (should fail)
+        # Top-up $10
+        response = await client.post("/api/v1/topup", json={"user_id": user_id, "amount": 10.0})
+        assert response.status_code == 200
+        data = response.json()
+        assert Decimal(str(data["new_balance"])) == Decimal("10.00")
+
+        # Try to bill $20 (should fail - insufficient balance)
         response = await client.post("/api/v1/bill", json={"user_id": user_id, "amount": 20.0})
         assert response.status_code == 402  # Payment Required
         print("✓ Insufficient balance correctly rejected")
