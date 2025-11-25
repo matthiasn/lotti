@@ -9,7 +9,7 @@ services:
       - ./init-tigerbeetle.sh:/init-tigerbeetle.sh:ro
     entrypoint: ["/bin/sh", "/init-tigerbeetle.sh"]
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 3000 || exit 1"]
+      test: ["CMD", "/tigerbeetle", "version"]
       interval: 5s
       timeout: 3s
       retries: 10
