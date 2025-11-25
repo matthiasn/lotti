@@ -1,19 +1,35 @@
-FROM python:3.13-slim
+# ---- Build Stage ----
+FROM python:3.13-slim as builder
 
 WORKDIR /app
 
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Install Python dependencies as wheels
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+
+
+# ---- Final Stage ----
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Create a non-root user to run the application
+RUN useradd --create-home appuser
+
+# Copy installed dependencies from the builder stage
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir /wheels/*
 
 # Copy application code
-COPY src/ ./src/
+COPY --chown=appuser:appuser src/ ./src/
+
+USER appuser
 
 # Expose port
 EXPOSE 8001
