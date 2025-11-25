@@ -3,9 +3,28 @@
 import os
 import pytest
 
-# Set test environment variables
-os.environ["TIGERBEETLE_HOST"] = "localhost"
-os.environ["TIGERBEETLE_PORT"] = "3000"
+
+@pytest.fixture(scope="session", autouse=True)
+def test_env_vars():
+    """Set test environment variables and clean up after tests"""
+    # Save original values
+    original_values = {
+        "TIGERBEETLE_HOST": os.environ.get("TIGERBEETLE_HOST"),
+        "TIGERBEETLE_PORT": os.environ.get("TIGERBEETLE_PORT"),
+    }
+
+    # Set test values
+    os.environ["TIGERBEETLE_HOST"] = "localhost"
+    os.environ["TIGERBEETLE_PORT"] = "3000"
+
+    yield
+
+    # Restore or remove environment variables
+    for key, value in original_values.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
 
 
 @pytest.fixture(scope="session")
