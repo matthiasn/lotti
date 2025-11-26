@@ -5,18 +5,27 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 void main() {
   group('Image Analysis Language Support', () {
     test('image analysis in task context includes language instructions', () {
-      // Should include language instructions in system message
+      // Should include prominent language instructions at the start of system message
       expect(
         imageAnalysisInTaskContextPrompt.systemMessage,
-        contains('Generate the analysis in the language specified'),
+        contains('IMPORTANT - RESPONSE LANGUAGE REQUIREMENT'),
       );
       expect(
         imageAnalysisInTaskContextPrompt.systemMessage,
-        contains("task's languageCode field"),
+        contains('You MUST generate your ENTIRE response in the language'),
       );
       expect(
         imageAnalysisInTaskContextPrompt.systemMessage,
-        contains('If no languageCode is set, default to English'),
+        contains('languageCode'),
+      );
+      // Should include specific language examples
+      expect(
+        imageAnalysisInTaskContextPrompt.systemMessage,
+        contains('If languageCode is "de", respond entirely in German'),
+      );
+      expect(
+        imageAnalysisInTaskContextPrompt.systemMessage,
+        contains('Only default to English if languageCode is null'),
       );
       // Should include guidelines about not mentioning missing items
       expect(
@@ -27,18 +36,14 @@ void main() {
 
     test('image analysis in task context includes language in user message',
         () {
-      // Should include language instructions in user message
+      // Should include language reminder in user message
       expect(
         imageAnalysisInTaskContextPrompt.userMessage,
-        contains('Generate the analysis in the language specified'),
+        contains('REMINDER: Generate your ENTIRE response in the language'),
       );
       expect(
         imageAnalysisInTaskContextPrompt.userMessage,
-        contains("task's languageCode field"),
-      );
-      expect(
-        imageAnalysisInTaskContextPrompt.userMessage,
-        contains('If no languageCode is set, default to English'),
+        contains('languageCode'),
       );
       // Should include guidelines about not mentioning missing items
       expect(
@@ -47,15 +52,22 @@ void main() {
       );
     });
 
-    test('regular image analysis does not include language instructions', () {
-      // Regular image analysis (without task context) should not have language instructions
+    test('regular image analysis includes language support via placeholder',
+        () {
+      // Regular image analysis now supports language via {{languageCode}} placeholder
+      // This allows it to respect the task's language when called from a task context
       expect(
         imageAnalysisPrompt.systemMessage,
-        isNot(contains('languageCode')),
+        contains('RESPONSE LANGUAGE'),
       );
       expect(
         imageAnalysisPrompt.userMessage,
-        isNot(contains('languageCode')),
+        contains('{{languageCode}}'),
+      );
+      // Should instruct to use English as fallback when no language code provided
+      expect(
+        imageAnalysisPrompt.systemMessage,
+        contains('respond in English'),
       );
     });
 

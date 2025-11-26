@@ -183,6 +183,23 @@ class PromptBuilderHelper {
       }
     }
 
+    // Inject language code if requested (from task or linked task)
+    if (prompt.contains('{{languageCode}}')) {
+      String languageCodeToInject;
+      try {
+        languageCodeToInject = await _getLanguageCodeForEntity(entity) ?? '';
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'languageCode',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        languageCodeToInject = '';
+      }
+      prompt = prompt.replaceAll('{{languageCode}}', languageCodeToInject);
+    }
+
     return prompt;
   }
 
@@ -430,6 +447,14 @@ class PromptBuilderHelper {
       task = await _findLinkedTask(entity);
     }
     return task?.data.aiSuppressedLabelIds;
+  }
+
+  /// Get language code for a given entity.
+  /// For tasks, returns the task's language code directly.
+  /// For images and audio, looks for a linked task and returns its language code.
+  Future<String?> _getLanguageCodeForEntity(JournalEntity entity) async {
+    final task = entity is Task ? entity : await _findLinkedTask(entity);
+    return task?.data.languageCode;
   }
 
   String _resolveEntryText(JournalEntity entry) {
