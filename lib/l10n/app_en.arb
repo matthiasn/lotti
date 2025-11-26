@@ -208,6 +208,16 @@
   "aiSettingsTabProviders": "Providers",
   "aiTaskSummaryRunning": "Thinking about summarizing task...",
   "aiTaskSummaryTitle": "AI Task Summary",
+  "aiTaskSummaryScheduled": "Summary in {time}",
+  "@aiTaskSummaryScheduled": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aiTaskSummaryCancelScheduled": "Cancel scheduled summary",
+  "aiTaskSummaryTriggerNow": "Generate summary now",
   "apiKeyAddPageTitle": "Add Provider",
   "apiKeyEditLoadError": "Failed to load API key configuration",
   "apiKeyEditPageTitle": "Edit Provider",

@@ -1005,6 +1005,24 @@ abstract class AppLocalizations {
   /// **'AI Task Summary'**
   String get aiTaskSummaryTitle;
 
+  /// No description provided for @aiTaskSummaryScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary in {time}'**
+  String aiTaskSummaryScheduled(String time);
+
+  /// No description provided for @aiTaskSummaryCancelScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel scheduled summary'**
+  String get aiTaskSummaryCancelScheduled;
+
+  /// No description provided for @aiTaskSummaryTriggerNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate summary now'**
+  String get aiTaskSummaryTriggerNow;
+
   /// No description provided for @apiKeyAddPageTitle.
   ///
   /// In en, this message translates to:

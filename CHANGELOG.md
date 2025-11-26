@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- AI Task Summary: Scheduled refresh with countdown UX
+  - Changed from 500ms debounce to 5-minute scheduled delay
+  - UI shows countdown "Summary in 4:32" when refresh is scheduled
+  - Cancel button (✕) to stop scheduled refresh
+  - Trigger Now button (▶) to bypass countdown and generate immediately
+  - Additional checklist changes batch into existing countdown (no timer reset)
+  - Reduces API costs while actively working on a task
+  - Implementation: `DirectTaskSummaryRefreshController` returns `ScheduledRefreshState`
+  - Efficient countdown updates via `StreamBuilder` in `_HeaderText` widget
+  - Tests: 15 unit tests + 7 widget tests for scheduled refresh behavior
 - AI – Checklist Updates improvements
   - Current Entry hint: recording modal and entry-level AI popup now pass the focused entry ID so prompts prioritize the user-edited transcript/text before falling back to the full task log.
   - Deleted items context: prompt builder injects every soft-deleted checklist title (with deletion timestamps) so the LLM can avoid recreating them.

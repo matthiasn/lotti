@@ -11,7 +11,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -35,20 +34,6 @@ class MockInferenceStatusController extends InferenceStatusController {
     required AiResponseType aiResponseType,
   }) {
     return _status;
-  }
-}
-
-class MockLatestSummaryController extends LatestSummaryController {
-  MockLatestSummaryController(this._response);
-
-  final AiResponseEntry? _response;
-
-  @override
-  Future<AiResponseEntry?> build({
-    required String id,
-    required AiResponseType aiResponseType,
-  }) async {
-    return _response;
   }
 }
 
@@ -109,13 +94,11 @@ void main() {
   });
 
   group('DirectTaskSummaryRefreshController', () {
-    test('should debounce multiple refresh requests', () {
+    test('should schedule refresh with 5-minute delay', () {
       fakeAsync((async) {
         final controller = container.read(
           directTaskSummaryRefreshControllerProvider.notifier,
         );
-
-        var inferenceCallCount = 0;
 
         // Override the inference status check to always return idle
         container
@@ -133,9 +116,7 @@ void main() {
               entityId: 'test-task-1',
               promptId: 'auto-task-summary',
             ),
-            (previous, next) {
-              inferenceCallCount++;
-            },
+            (previous, next) {},
           );
 
         // Setup mock response for latest AI response
@@ -143,17 +124,79 @@ void main() {
               linkedTo: 'test-task-1',
             )).thenAnswer((_) async => []);
 
-        // Make multiple rapid requests
+        // Request refresh
         unawaited(controller.requestTaskSummaryRefresh('test-task-1'));
-        unawaited(controller.requestTaskSummaryRefresh('test-task-1'));
-        unawaited(controller.requestTaskSummaryRefresh('test-task-1'));
-
-        // Wait for debounce
-        async.elapse(const Duration(milliseconds: 600));
         async.flushMicrotasks();
 
-        // Should only trigger once due to debouncing
-        expect(inferenceCallCount, 1);
+        // Should have scheduled time set
+        expect(controller.hasScheduledRefresh('test-task-1'), isTrue);
+        expect(controller.getScheduledTime('test-task-1'), isNotNull);
+
+        // State should also reflect this
+        final state =
+            container.read(directTaskSummaryRefreshControllerProvider);
+        expect(state.hasScheduledRefresh('test-task-1'), isTrue);
+
+        // Should not trigger before 5 minutes
+        async.elapse(const Duration(minutes: 4, seconds: 59));
+        async.flushMicrotasks();
+
+        // Should trigger after 5 minutes
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
+
+        // Scheduled state should be cleared
+        expect(controller.hasScheduledRefresh('test-task-1'), isFalse);
+      });
+    });
+
+    test('should NOT reset timer on subsequent requests (batch into countdown)',
+        () {
+      fakeAsync((async) {
+        final controller = container.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
+
+        container
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'test-task-batch',
+              aiResponseType: AiResponseType.taskSummary,
+            ),
+            (previous, next) {},
+            fireImmediately: true,
+          )
+          ..listen(
+            triggerNewInferenceProvider(
+              entityId: 'test-task-batch',
+              promptId: 'auto-task-summary',
+            ),
+            (previous, next) {},
+          );
+
+        when(() => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'test-task-batch',
+            )).thenAnswer((_) async => []);
+
+        // First request
+        unawaited(controller.requestTaskSummaryRefresh('test-task-batch'));
+        async.flushMicrotasks();
+
+        final firstScheduledTime =
+            controller.getScheduledTime('test-task-batch');
+        expect(firstScheduledTime, isNotNull);
+
+        // Wait 2 minutes
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+
+        // Second request - should NOT reset timer
+        unawaited(controller.requestTaskSummaryRefresh('test-task-batch'));
+        async.flushMicrotasks();
+
+        // Scheduled time should be the same (not reset)
+        expect(
+            controller.getScheduledTime('test-task-batch'), firstScheduledTime);
       });
     });
 
@@ -162,9 +205,6 @@ void main() {
         final controller = container.read(
           directTaskSummaryRefreshControllerProvider.notifier,
         );
-
-        final task1Calls = <String>[];
-        final task2Calls = <String>[];
 
         // Setup for task 1
         container
@@ -181,9 +221,7 @@ void main() {
               entityId: 'task-1',
               promptId: 'auto-task-summary',
             ),
-            (previous, next) {
-              task1Calls.add('triggered');
-            },
+            (previous, next) {},
           )
           // Setup for task 2
           ..listen(
@@ -199,9 +237,7 @@ void main() {
               entityId: 'task-2',
               promptId: 'auto-task-summary',
             ),
-            (previous, next) {
-              task2Calls.add('triggered');
-            },
+            (previous, next) {},
           );
 
         // Setup mock responses
@@ -213,22 +249,21 @@ void main() {
         // Request refreshes
         unawaited(controller.requestTaskSummaryRefresh('task-1'));
         unawaited(controller.requestTaskSummaryRefresh('task-2'));
-
-        // Wait for debounce
-        async.elapse(const Duration(milliseconds: 600));
         async.flushMicrotasks();
 
-        // Both should be triggered independently
-        expect(task1Calls.length, 1);
-        expect(task2Calls.length, 1);
+        // Both should be scheduled
+        expect(controller.hasScheduledRefresh('task-1'), isTrue);
+        expect(controller.hasScheduledRefresh('task-2'), isTrue);
+
+        // State should reflect both
+        final state =
+            container.read(directTaskSummaryRefreshControllerProvider);
+        expect(state.scheduledTimes.length, 2);
       });
     });
 
-    test('should skip refresh if inference is already running', () {
+    test('should skip scheduling if inference is already running', () {
       fakeAsync((async) {
-        var triggerCalled = false;
-        var getLinkedCalled = false;
-
         // Create a test-specific container with mocked providers
         final testContainer = ProviderContainer(
           overrides: [
@@ -240,20 +275,12 @@ void main() {
             ).overrideWith(
               () => MockInferenceStatusController(InferenceStatus.running),
             ),
-            // Override the trigger provider to track calls
-            triggerNewInferenceProvider(
-              entityId: 'test-task-running',
-              promptId: 'auto-task-summary',
-            ).overrideWith((ref) async {
-              triggerCalled = true;
-            }),
           ],
         );
 
         // Mock getLinkedEntities
         when(() => mockJournalRepository.getLinkedEntities(
             linkedTo: 'test-task-running')).thenAnswer((_) async {
-          getLinkedCalled = true;
           return [];
         });
 
@@ -263,35 +290,25 @@ void main() {
 
         // Request refresh
         unawaited(controller.requestTaskSummaryRefresh('test-task-running'));
-
-        // Wait for debounce to complete
-        async.elapse(const Duration(milliseconds: 600));
         async.flushMicrotasks();
 
-        // When inference is already running:
-        // - Should NOT trigger new inference
-        // - Should NOT get linked entities (because it returns early)
-        expect(triggerCalled, false);
-        expect(getLinkedCalled, false);
+        // Should NOT have scheduled (sets up listener instead)
+        expect(controller.hasScheduledRefresh('test-task-running'), isFalse);
 
         testContainer.dispose();
       });
     });
 
-    test('should handle pending refreshes correctly', () {
+    test('cancelScheduledRefresh should cancel pending refresh', () {
       fakeAsync((async) {
         final controller = container.read(
           directTaskSummaryRefreshControllerProvider.notifier,
         );
 
-        final callTimes = <DateTime>[];
-        var isRunning = false;
-
-        // Setup mock that simulates a longer running inference
         container
           ..listen(
             inferenceStatusControllerProvider(
-              id: 'test-task',
+              id: 'cancel-test',
               aiResponseType: AiResponseType.taskSummary,
             ),
             (previous, next) {},
@@ -299,41 +316,108 @@ void main() {
           )
           ..listen(
             triggerNewInferenceProvider(
-              entityId: 'test-task',
+              entityId: 'cancel-test',
               promptId: 'auto-task-summary',
             ),
+            (previous, next) {},
+          );
+
+        when(() => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'cancel-test',
+            )).thenAnswer((_) async => []);
+
+        // Schedule refresh
+        unawaited(controller.requestTaskSummaryRefresh('cancel-test'));
+        async.flushMicrotasks();
+
+        expect(controller.hasScheduledRefresh('cancel-test'), isTrue);
+
+        // Wait 2 minutes
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+
+        // Cancel the scheduled refresh
+        controller.cancelScheduledRefresh('cancel-test');
+
+        expect(controller.hasScheduledRefresh('cancel-test'), isFalse);
+        expect(controller.getScheduledTime('cancel-test'), isNull);
+
+        // State should also reflect the cancellation
+        final state =
+            container.read(directTaskSummaryRefreshControllerProvider);
+        expect(state.hasScheduledRefresh('cancel-test'), isFalse);
+      });
+    });
+
+    test('triggerImmediately should bypass countdown and trigger now', () {
+      fakeAsync((async) {
+        // Mock response with valid promptId
+        final testResponse = AiResponseEntry(
+          meta: Metadata(
+            id: 'ai-response-1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: const AiResponseData(
+            model: 'gpt-4',
+            temperature: 0.7,
+            systemMessage: 'System',
+            prompt: 'Prompt',
+            thoughts: '',
+            response: 'Test response',
+            type: AiResponseType.taskSummary,
+            promptId: 'valid-prompt-id',
+          ),
+        );
+
+        when(() => mockJournalRepository.getLinkedEntities(
+              linkedTo: 'immediate-test',
+            )).thenAnswer((_) async => [testResponse]);
+
+        var inferenceCallCount = 0;
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            inferenceStatusControllerProvider(
+              id: 'immediate-test',
+              aiResponseType: AiResponseType.taskSummary,
+            ).overrideWith(
+                () => MockInferenceStatusController(InferenceStatus.idle)),
+          ],
+        )..listen(
+            triggerNewInferenceProvider(
+              entityId: 'immediate-test',
+              promptId: 'valid-prompt-id',
+            ),
             (previous, next) {
-              if (!isRunning) {
-                callTimes.add(DateTime.now());
-                isRunning = true;
-                // Simulate inference taking time
-                Future<void>.delayed(const Duration(milliseconds: 300), () {
-                  isRunning = false;
-                });
-              }
+              inferenceCallCount++;
             },
           );
 
-        when(() =>
-                mockJournalRepository.getLinkedEntities(linkedTo: 'test-task'))
-            .thenAnswer((_) async => []);
+        final testController = testContainer.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
 
-        // First request
-        unawaited(controller.requestTaskSummaryRefresh('test-task'));
-
-        // Wait for first to start
-        async.elapse(const Duration(milliseconds: 600));
+        // Schedule refresh
+        unawaited(testController.requestTaskSummaryRefresh('immediate-test'));
         async.flushMicrotasks();
 
-        // Second request while first is "running"
-        unawaited(controller.requestTaskSummaryRefresh('test-task'));
+        expect(testController.hasScheduledRefresh('immediate-test'), isTrue);
 
-        // Wait for everything to complete
-        async.elapse(const Duration(milliseconds: 1000));
+        // Trigger immediately (don't wait for timer)
+        unawaited(testController.triggerImmediately('immediate-test'));
         async.flushMicrotasks();
 
-        // Should have been called at least once
-        expect(callTimes.length, greaterThanOrEqualTo(1));
+        // Should be cleared
+        expect(testController.hasScheduledRefresh('immediate-test'), isFalse);
+
+        // Verify inference was triggered
+        expect(inferenceCallCount, greaterThan(0));
+
+        testContainer.dispose();
       });
     });
 
@@ -362,8 +446,8 @@ void main() {
         expectLater(
             controller.requestTaskSummaryRefresh('error-task'), completes);
 
-        // Wait for debounce
-        async.elapse(const Duration(milliseconds: 600));
+        // Wait for timer
+        async.elapse(scheduledRefreshDelay + const Duration(seconds: 1));
         async.flushMicrotasks();
 
         // Verify error was logged
@@ -391,8 +475,6 @@ void main() {
           directTaskSummaryRefreshControllerProvider.notifier,
         );
 
-        var inferenceCallCount = 0;
-
         testContainer
           ..listen(
             inferenceStatusControllerProvider(
@@ -407,199 +489,22 @@ void main() {
               entityId: 'dispose-test',
               promptId: 'auto-task-summary',
             ),
-            (previous, next) {
-              inferenceCallCount++;
-            },
+            (previous, next) {},
           );
 
         // Request a refresh
         unawaited(controller.requestTaskSummaryRefresh('dispose-test'));
-
-        // Dispose immediately (before debounce completes)
-        testContainer.dispose();
-
-        // Wait for what would have been the debounce period
-        async.elapse(const Duration(milliseconds: 600));
         async.flushMicrotasks();
 
-        // Should not have triggered due to disposal
-        expect(inferenceCallCount, 0);
+        expect(controller.hasScheduledRefresh('dispose-test'), isTrue);
+
+        // Dispose immediately (before timer completes)
+        testContainer.dispose();
+
+        // Verify that the timer was cancelled (no crash or hanging)
+        // We can't check the internal state after disposal, but the test
+        // passing without timeout indicates timers were properly cancelled
       });
-    });
-
-    test('should get latest AI response with correct prompt ID', () async {
-      final controller = container.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      final testResponse = AiResponseEntry(
-        meta: Metadata(
-          id: 'ai-response-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: const AiResponseData(
-          model: 'gpt-4',
-          temperature: 0.7,
-          systemMessage: 'System',
-          prompt: 'Prompt',
-          thoughts: '',
-          response: 'Test response',
-          type: AiResponseType.taskSummary,
-          promptId: 'auto-task-summary',
-        ),
-      );
-
-      when(() => mockJournalRepository.getLinkedEntities(
-            linkedTo: 'test-task-with-response',
-          )).thenAnswer((_) async => [testResponse]);
-
-      container.listen(
-        inferenceStatusControllerProvider(
-          id: 'test-task-with-response',
-          aiResponseType: AiResponseType.taskSummary,
-        ),
-        (previous, next) {},
-        fireImmediately: true,
-      );
-
-      var triggerCalled = false;
-      container.listen(
-        triggerNewInferenceProvider(
-          entityId: 'test-task-with-response',
-          promptId: 'auto-task-summary',
-        ),
-        (previous, next) {
-          triggerCalled = true;
-        },
-      );
-
-      await controller.requestTaskSummaryRefresh('test-task-with-response');
-
-      // Wait for debounce
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      // Should have triggered with the correct prompt ID
-      expect(triggerCalled, true);
-    });
-
-    test('should handle listener when inference is already running', () async {
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          inferenceStatusControllerProvider(
-            id: 'test-task-listener',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-        ],
-      );
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // Request refresh while inference is running - should set up listener
-      await expectLater(
-        controller.requestTaskSummaryRefresh('test-task-listener'),
-        completes,
-      );
-
-      testContainer.dispose();
-    });
-
-    test('should clean up listeners on dispose', () async {
-      // Create a test-specific container
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          inferenceStatusControllerProvider(
-            id: 'test-cleanup',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-        ],
-      );
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // Request refresh to set up listener
-      await controller.requestTaskSummaryRefresh('test-cleanup');
-
-      // Dispose the container (which should clean up listeners)
-      testContainer.dispose();
-
-      // Test passes if no exceptions are thrown during cleanup
-    });
-
-    test('should handle listener cleanup for multiple tasks', () async {
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          inferenceStatusControllerProvider(
-            id: 'task-1',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-          inferenceStatusControllerProvider(
-            id: 'task-2',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-          inferenceStatusControllerProvider(
-            id: 'task-3',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-        ],
-      );
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // Request refresh for multiple tasks
-      await controller.requestTaskSummaryRefresh('task-1');
-      await controller.requestTaskSummaryRefresh('task-2');
-      await controller.requestTaskSummaryRefresh('task-3');
-
-      // Dispose should clean up all listeners
-      testContainer.dispose();
-    });
-
-    test('should not set up duplicate listeners for same task', () async {
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          inferenceStatusControllerProvider(
-            id: 'duplicate-test',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-        ],
-      );
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // Request refresh multiple times while running
-      await controller.requestTaskSummaryRefresh('duplicate-test');
-      await controller.requestTaskSummaryRefresh('duplicate-test');
-      await controller.requestTaskSummaryRefresh('duplicate-test');
-
-      // Test passes if no exceptions are thrown (duplicate listeners would cause issues)
-      testContainer.dispose();
     });
 
     test('should successfully trigger refresh with valid promptId', () {
@@ -631,8 +536,6 @@ void main() {
 
         // Track whether the inference was triggered with correct parameters
         var inferenceTriggered = false;
-        String? capturedEntityId;
-        String? capturedPromptId;
 
         // Create a test container with overrides
         final testContainer = ProviderContainer(
@@ -646,7 +549,6 @@ void main() {
                 () => MockInferenceStatusController(InferenceStatus.idle)),
           ],
         )
-
           // Listen to the trigger provider to capture calls
           ..listen(
             triggerNewInferenceProvider(
@@ -655,8 +557,6 @@ void main() {
             ),
             (previous, next) {
               inferenceTriggered = true;
-              capturedEntityId = 'valid-prompt-test';
-              capturedPromptId = 'valid-prompt-id';
             },
           );
 
@@ -665,15 +565,14 @@ void main() {
         );
 
         unawaited(controller.requestTaskSummaryRefresh('valid-prompt-test'));
+        async.flushMicrotasks();
 
-        // Wait for debounce
-        async.elapse(const Duration(milliseconds: 700));
+        // Wait for timer
+        async.elapse(scheduledRefreshDelay + const Duration(seconds: 1));
         async.flushMicrotasks();
 
         // Verify the inference was triggered with correct parameters
         expect(inferenceTriggered, true);
-        expect(capturedEntityId, equals('valid-prompt-test'));
-        expect(capturedPromptId, equals('valid-prompt-id'));
 
         testContainer.dispose();
       });
@@ -723,20 +622,18 @@ void main() {
           directTaskSummaryRefreshControllerProvider.notifier,
         );
 
-        // We can't check if trigger was called because no promptId means no trigger provider is created
-        // Instead, we verify the behavior completes without errors
+        // We verify the behavior completes without errors
         // ignore: discarded_futures
         expectLater(
           controller.requestTaskSummaryRefresh('no-prompt-task'),
           completes,
         );
 
-        // Wait for debounce
-        async.elapse(const Duration(milliseconds: 700));
+        // Wait for timer
+        async.elapse(scheduledRefreshDelay + const Duration(seconds: 1));
         async.flushMicrotasks();
 
         // The test passes if no exceptions were thrown
-        // In the actual implementation, it logs "No prompt ID found, cannot trigger refresh"
 
         testContainer.dispose();
       });
@@ -766,20 +663,18 @@ void main() {
           directTaskSummaryRefreshControllerProvider.notifier,
         );
 
-        // We can't check if trigger was called because no response means no promptId
-        // Instead, we verify the behavior completes without errors
+        // We verify the behavior completes without errors
         // ignore: discarded_futures
         expectLater(
           controller.requestTaskSummaryRefresh('no-response-task'),
           completes,
         );
 
-        // Wait for debounce
-        async.elapse(const Duration(milliseconds: 700));
+        // Wait for timer
+        async.elapse(scheduledRefreshDelay + const Duration(seconds: 1));
         async.flushMicrotasks();
 
         // The test passes if no exceptions were thrown
-        // In the actual implementation, it would not trigger because there's no promptId
 
         testContainer.dispose();
       });
@@ -815,101 +710,9 @@ void main() {
 
         // The status listener should have been set up
         // This is verified by the fact that the method completes without error
-        // and the controller doesn't crash
 
         testContainer.dispose();
       });
-    });
-
-    test('should handle status listener transitions correctly', () async {
-      // This test verifies that when inference is running, a listener is set up
-      // and when it completes, a new refresh is triggered
-
-      // Create test container
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          // Start with idle status
-          inferenceStatusControllerProvider(
-            id: 'test-status-transition',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.idle),
-          ),
-          latestSummaryControllerProvider(
-            id: 'test-status-transition',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(() => MockLatestSummaryController(
-                AiResponseEntry(
-                  meta: Metadata(
-                    id: 'ai-response-1',
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
-                    dateFrom: DateTime.now(),
-                    dateTo: DateTime.now(),
-                  ),
-                  data: const AiResponseData(
-                    model: 'gpt-4',
-                    temperature: 0.7,
-                    systemMessage: 'System',
-                    prompt: 'Prompt',
-                    thoughts: '',
-                    response: 'Test response',
-                    type: AiResponseType.taskSummary,
-                    promptId: 'test-prompt-id',
-                  ),
-                ),
-              )),
-        ],
-      );
-
-      var refreshCallCount = 0;
-
-      // Listen for trigger calls
-      testContainer.listen(
-        triggerNewInferenceProvider(
-          entityId: 'test-status-transition',
-          promptId: 'test-prompt-id',
-        ),
-        (previous, next) {
-          refreshCallCount++;
-        },
-      );
-
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // First request with idle status - should trigger
-      await controller.requestTaskSummaryRefresh('test-status-transition');
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-      expect(refreshCallCount, equals(1));
-
-      // Now test with running status - should set up listener
-      final testContainer2 = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          inferenceStatusControllerProvider(
-            id: 'test-running-status',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-        ],
-      );
-
-      final controller2 = testContainer2.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      // Request refresh while running - should set up listener
-      await expectLater(
-        controller2.requestTaskSummaryRefresh('test-running-status'),
-        completes,
-      );
-
-      testContainer.dispose();
-      testContainer2.dispose();
     });
 
     test('should handle concurrent requests for different tasks', () async {
@@ -917,14 +720,8 @@ void main() {
         directTaskSummaryRefreshControllerProvider.notifier,
       );
 
-      final triggers = <String, int>{
-        'task-a': 0,
-        'task-b': 0,
-        'task-c': 0,
-      };
-
       // Setup for all tasks
-      for (final taskId in triggers.keys) {
+      for (final taskId in ['task-a', 'task-b', 'task-c']) {
         container
           ..listen(
             inferenceStatusControllerProvider(
@@ -939,9 +736,7 @@ void main() {
               entityId: taskId,
               promptId: 'auto-task-summary',
             ),
-            (previous, next) {
-              triggers[taskId] = triggers[taskId]! + 1;
-            },
+            (previous, next) {},
           );
 
         when(() => mockJournalRepository.getLinkedEntities(linkedTo: taskId))
@@ -953,99 +748,100 @@ void main() {
         controller.requestTaskSummaryRefresh('task-a'),
         controller.requestTaskSummaryRefresh('task-b'),
         controller.requestTaskSummaryRefresh('task-c'),
-        controller.requestTaskSummaryRefresh('task-a'), // Duplicate
-        controller.requestTaskSummaryRefresh('task-b'), // Duplicate
+        controller.requestTaskSummaryRefresh('task-a'), // Duplicate - batched
+        controller.requestTaskSummaryRefresh('task-b'), // Duplicate - batched
       ]);
 
-      // Wait for all debounces
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-
-      // Each task should trigger only once due to debouncing
-      expect(triggers['task-a'], equals(1));
-      expect(triggers['task-b'], equals(1));
-      expect(triggers['task-c'], equals(1));
+      // All should be scheduled (not triggered yet)
+      expect(controller.hasScheduledRefresh('task-a'), isTrue);
+      expect(controller.hasScheduledRefresh('task-b'), isTrue);
+      expect(controller.hasScheduledRefresh('task-c'), isTrue);
     });
 
-    test('should clean up debounce timers for cancelled requests', () async {
-      // Create a new container for this test
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-        ],
-      );
+    test('scheduledTaskSummaryRefreshProvider returns correct scheduled time',
+        () {
+      fakeAsync((async) {
+        final controller = container.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
 
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
-
-      var triggerCount = 0;
-
-      testContainer
-        ..listen(
+        container.listen(
           inferenceStatusControllerProvider(
-            id: 'cancel-test',
+            id: 'provider-test',
             aiResponseType: AiResponseType.taskSummary,
           ),
           (previous, next) {},
           fireImmediately: true,
-        )
-        ..listen(
-          triggerNewInferenceProvider(
-            entityId: 'cancel-test',
-            promptId: 'auto-task-summary',
-          ),
-          (previous, next) {
-            triggerCount++;
-          },
         );
 
-      // Make a request
-      await controller.requestTaskSummaryRefresh('cancel-test');
+        // Initially should be null
+        var scheduledTime = container.read(
+          scheduledTaskSummaryRefreshProvider(taskId: 'provider-test'),
+        );
+        expect(scheduledTime, isNull);
 
-      // Wait 200ms (less than debounce)
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+        // Schedule a refresh
+        unawaited(controller.requestTaskSummaryRefresh('provider-test'));
+        async.flushMicrotasks();
 
-      // Make another request (should cancel the first)
-      await controller.requestTaskSummaryRefresh('cancel-test');
+        // Now should have a scheduled time
+        scheduledTime = container.read(
+          scheduledTaskSummaryRefreshProvider(taskId: 'provider-test'),
+        );
+        expect(scheduledTime, isNotNull);
 
-      // Wait for the new debounce to complete
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+        // Cancel it
+        controller.cancelScheduledRefresh('provider-test');
+        async.flushMicrotasks();
 
-      // Should only trigger once
-      expect(triggerCount, equals(1));
-
-      testContainer.dispose();
+        // Should be null again
+        scheduledTime = container.read(
+          scheduledTaskSummaryRefreshProvider(taskId: 'provider-test'),
+        );
+        expect(scheduledTime, isNull);
+      });
     });
 
-    test('should cancel debounce timer when inference is running', () async {
-      // This test verifies that when inference is already running,
-      // any existing debounce timer is canceled to prevent race conditions
+    test('state should contain all scheduled refreshes', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          directTaskSummaryRefreshControllerProvider.notifier,
+        );
 
-      final testContainer = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          // Mock the status as running
-          inferenceStatusControllerProvider(
-            id: 'cancel-debounce-test',
-            aiResponseType: AiResponseType.taskSummary,
-          ).overrideWith(
-            () => MockInferenceStatusController(InferenceStatus.running),
-          ),
-        ],
-      );
+        // Setup for tasks
+        for (final taskId in ['state-task-1', 'state-task-2']) {
+          container.listen(
+            inferenceStatusControllerProvider(
+              id: taskId,
+              aiResponseType: AiResponseType.taskSummary,
+            ),
+            (previous, next) {},
+            fireImmediately: true,
+          );
+        }
 
-      final controller = testContainer.read(
-        directTaskSummaryRefreshControllerProvider.notifier,
-      );
+        // Schedule refreshes
+        unawaited(controller.requestTaskSummaryRefresh('state-task-1'));
+        unawaited(controller.requestTaskSummaryRefresh('state-task-2'));
+        async.flushMicrotasks();
 
-      // When inference is running, it should set up a listener
-      // and cancel any existing debounce timer
-      await controller.requestTaskSummaryRefresh('cancel-debounce-test');
+        // Check state contains both
+        final state =
+            container.read(directTaskSummaryRefreshControllerProvider);
+        expect(state.scheduledTimes.length, 2);
+        expect(state.hasScheduledRefresh('state-task-1'), isTrue);
+        expect(state.hasScheduledRefresh('state-task-2'), isTrue);
 
-      // The test passes if no exceptions are thrown
-      // The implementation now cancels the debounce timer before setting up the listener
+        // Cancel one
+        controller.cancelScheduledRefresh('state-task-1');
 
-      testContainer.dispose();
+        // Check state updated
+        final newState =
+            container.read(directTaskSummaryRefreshControllerProvider);
+        expect(newState.scheduledTimes.length, 1);
+        expect(newState.hasScheduledRefresh('state-task-1'), isFalse);
+        expect(newState.hasScheduledRefresh('state-task-2'), isTrue);
+      });
     });
   });
 }

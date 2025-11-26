@@ -44,19 +44,32 @@ class _TestEntryController extends EntryController {
   }
 }
 
-class _DirectTaskSummaryRefreshControllerAdapter extends Notifier<void>
+class _DirectTaskSummaryRefreshControllerAdapter
+    extends Notifier<ScheduledRefreshState>
     implements DirectTaskSummaryRefreshController {
   _DirectTaskSummaryRefreshControllerAdapter(this._delegate);
 
   final _MockDirectTaskSummaryRefreshController _delegate;
 
   @override
-  void build() {}
+  ScheduledRefreshState build() => ScheduledRefreshState({});
 
   @override
   Future<void> requestTaskSummaryRefresh(String taskId) {
     return _delegate.requestTaskSummaryRefresh(taskId);
   }
+
+  @override
+  void cancelScheduledRefresh(String taskId) {}
+
+  @override
+  DateTime? getScheduledTime(String taskId) => null;
+
+  @override
+  bool hasScheduledRefresh(String taskId) => false;
+
+  @override
+  Future<void> triggerImmediately(String taskId) async {}
 }
 
 void main() {

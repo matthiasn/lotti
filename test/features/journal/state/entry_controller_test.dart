@@ -64,21 +64,34 @@ class MockDirectTaskSummaryRefreshController extends Mock
 class MockOutboxService extends Mock implements OutboxService {}
 
 // Adapter to wrap the mock in a Notifier
-class DirectTaskSummaryRefreshControllerAdapter extends Notifier<void>
+class DirectTaskSummaryRefreshControllerAdapter
+    extends Notifier<ScheduledRefreshState>
     implements DirectTaskSummaryRefreshController {
   DirectTaskSummaryRefreshControllerAdapter(this._mock);
 
   final MockDirectTaskSummaryRefreshController _mock;
 
   @override
-  void build() {
-    // Empty implementation for the notifier
+  ScheduledRefreshState build() {
+    return ScheduledRefreshState({});
   }
 
   @override
   Future<void> requestTaskSummaryRefresh(String taskId) {
     return _mock.requestTaskSummaryRefresh(taskId);
   }
+
+  @override
+  void cancelScheduledRefresh(String taskId) {}
+
+  @override
+  DateTime? getScheduledTime(String taskId) => null;
+
+  @override
+  bool hasScheduledRefresh(String taskId) => false;
+
+  @override
+  Future<void> triggerImmediately(String taskId) async {}
 }
 
 // Definitions for sample JournalImage for testing addTextToImage
