@@ -447,7 +447,7 @@ void main() {
             controller.requestTaskSummaryRefresh('error-task'), completes);
 
         // Wait for timer
-        async.elapse(const Duration(minutes: 5, seconds: 1));
+        async.elapse(scheduledRefreshDelay + const Duration(seconds: 1));
         async.flushMicrotasks();
 
         // Verify error was logged
@@ -568,7 +568,7 @@ void main() {
         async.flushMicrotasks();
 
         // Wait for timer
-        async.elapse(const Duration(minutes: 5, seconds: 1));
+        async.elapse(scheduledRefreshDelay + const Duration(seconds: 1));
         async.flushMicrotasks();
 
         // Verify the inference was triggered with correct parameters
@@ -630,7 +630,7 @@ void main() {
         );
 
         // Wait for timer
-        async.elapse(const Duration(minutes: 5, seconds: 1));
+        async.elapse(scheduledRefreshDelay + const Duration(seconds: 1));
         async.flushMicrotasks();
 
         // The test passes if no exceptions were thrown
@@ -671,7 +671,7 @@ void main() {
         );
 
         // Wait for timer
-        async.elapse(const Duration(minutes: 5, seconds: 1));
+        async.elapse(scheduledRefreshDelay + const Duration(seconds: 1));
         async.flushMicrotasks();
 
         // The test passes if no exceptions were thrown
