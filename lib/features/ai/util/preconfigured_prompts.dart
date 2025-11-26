@@ -280,7 +280,16 @@ const imageAnalysisInTaskContextPrompt = PreconfiguredPrompt(
   id: 'image_analysis_task_context',
   name: 'Image Analysis in Task Context',
   systemMessage: '''
-You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects. 
+IMPORTANT - RESPONSE LANGUAGE REQUIREMENT:
+You MUST generate your ENTIRE response in the language specified by the task's "languageCode" field in the task context JSON.
+- If languageCode is "de", respond entirely in German
+- If languageCode is "fr", respond entirely in French
+- If languageCode is "es", respond entirely in Spanish
+- And so on for any other language code
+- Only default to English if languageCode is null, empty, or "en"
+This applies to ALL text in your response, not just the main content.
+
+You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects.
 Your goal is to extract only the information from images that is relevant to the user's current task.
 
 When analyzing images in the context of a task, pay attention to:
@@ -292,11 +301,10 @@ Important guidelines:
 - Never mention what is NOT present or missing
 - Be concise and direct in your observations
 
-Include these observations in your analysis so the user can update their task accordingly.
-
-Generate the analysis in the language specified by the task's languageCode field.
-If no languageCode is set, default to English.''',
+Include these observations in your analysis so the user can update their task accordingly.''',
   userMessage: '''
+REMINDER: Generate your ENTIRE response in the language specified by the task's "languageCode" field below. Check the languageCode value and respond in that language.
+
 Analyze the provided image(s) in the context of this task:
 
 **Task Context:**
@@ -304,15 +312,12 @@ Analyze the provided image(s) in the context of this task:
 {{task}}
 ```
 
-Generate the analysis in the language specified by the task's languageCode field.
-If no languageCode is set, default to English.
-
 Extract ONLY information from the image that is relevant to this task. Be concise and focus on task-related content.
 
 If the image is NOT relevant to the task:
 - Provide a brief 1-2 sentence summary explaining why it's off-topic
 - Use a slightly humorous or salty tone if appropriate
-- Example: "This appears to be a photo of ducks by a lake, which seems unrelated to your database migration task. Moving on..."
+- Example (adapt to the task's language): "This appears to be a photo of ducks by a lake, which seems unrelated to your database migration task. Moving on..."
 
 If the image IS relevant:
 - Extract key information that helps with the task
