@@ -52,15 +52,22 @@ void main() {
       );
     });
 
-    test('regular image analysis does not include language instructions', () {
-      // Regular image analysis (without task context) should not have language instructions
+    test('regular image analysis includes language support via placeholder',
+        () {
+      // Regular image analysis now supports language via {{languageCode}} placeholder
+      // This allows it to respect the task's language when called from a task context
       expect(
         imageAnalysisPrompt.systemMessage,
-        isNot(contains('languageCode')),
+        contains('RESPONSE LANGUAGE'),
       );
       expect(
         imageAnalysisPrompt.userMessage,
-        isNot(contains('languageCode')),
+        contains('{{languageCode}}'),
+      );
+      // Should instruct to use English as fallback when no language code provided
+      expect(
+        imageAnalysisPrompt.systemMessage,
+        contains('respond in English'),
       );
     });
 

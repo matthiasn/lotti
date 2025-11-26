@@ -1111,6 +1111,222 @@ void main() {
       });
     });
 
+    group('languageCode placeholder injection', () {
+      test('injects language code from task entity', () async {
+        final task = Task(
+          data: TaskData(
+            title: 'German Task',
+            checklistIds: const [],
+            status: TaskStatus.open(
+              id: 'status',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            languageCode: 'de',
+          ),
+          meta: Metadata(
+            id: 'task-1',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Image Analysis',
+          systemMessage: 'System',
+          userMessage: '{{languageCode}}\n\nAnalyze the image.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: task,
+        );
+
+        expect(result, equals('de\n\nAnalyze the image.'));
+      });
+
+      test('injects language code from linked task for image entity', () async {
+        final image = JournalImage(
+          data: ImageData(
+            imageId: 'image-123',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test',
+            capturedAt: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'image-123',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final linkedTask = Task(
+          data: TaskData(
+            title: 'French Task',
+            checklistIds: const [],
+            status: TaskStatus.open(
+              id: 'status',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            languageCode: 'fr',
+          ),
+          meta: Metadata(
+            id: 'task-456',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final mockJournalRepository = MockJournalRepository();
+        final builderWithJournal = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
+        );
+
+        when(() => mockJournalRepository.getLinkedToEntities(
+            linkedTo: 'image-123')).thenAnswer((_) async => [linkedTask]);
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Image Analysis',
+          systemMessage: 'System',
+          userMessage: '{{languageCode}}\n\nAnalyze the image.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        final result = await builderWithJournal.buildPromptWithData(
+          promptConfig: config,
+          entity: image,
+        );
+
+        expect(result, equals('fr\n\nAnalyze the image.'));
+      });
+
+      test('replaces with empty string when no language code available',
+          () async {
+        final task = Task(
+          data: TaskData(
+            title: 'Task without language',
+            checklistIds: const [],
+            status: TaskStatus.open(
+              id: 'status',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            // No languageCode set
+          ),
+          meta: Metadata(
+            id: 'task-1',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Image Analysis',
+          systemMessage: 'System',
+          userMessage: '{{languageCode}}\n\nAnalyze the image.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: task,
+        );
+
+        expect(result, equals('\n\nAnalyze the image.'));
+      });
+
+      test('replaces with empty string for image without linked task',
+          () async {
+        final image = JournalImage(
+          data: ImageData(
+            imageId: 'image-123',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test',
+            capturedAt: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'image-123',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final mockJournalRepository = MockJournalRepository();
+        final builderWithJournal = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
+        );
+
+        // No linked task
+        when(() => mockJournalRepository.getLinkedToEntities(
+            linkedTo: 'image-123')).thenAnswer((_) async => []);
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Image Analysis',
+          systemMessage: 'System',
+          userMessage: '{{languageCode}}\n\nAnalyze the image.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        final result = await builderWithJournal.buildPromptWithData(
+          promptConfig: config,
+          entity: image,
+        );
+
+        expect(result, equals('\n\nAnalyze the image.'));
+      });
+    });
+
     group('error handling for placeholder injection', () {
       test('handles error when current_entry fetch fails', () async {
         final task = Task(

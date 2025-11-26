@@ -264,10 +264,18 @@ REMEMBER:
 const imageAnalysisPrompt = PreconfiguredPrompt(
   id: 'image_analysis',
   name: 'Image Analysis',
-  systemMessage:
-      'You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects.',
+  systemMessage: '''
+You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects.
+
+RESPONSE LANGUAGE: If a language code is provided below, generate your ENTIRE response in that language.
+- "de" = German, "fr" = French, "es" = Spanish, "it" = Italian, etc.
+- If no language code is provided or it is empty, respond in English.''',
   userMessage: '''
+{{languageCode}}
+
 Analyze the provided image(s) in detail, focusing on both the content and style of the image.
+
+If a language code appears above (e.g., "de", "fr", "es"), respond entirely in that language. Otherwise, respond in English.
 ''',
   requiredInputData: [InputDataType.images],
   aiResponseType: AiResponseType.imageAnalysis,
