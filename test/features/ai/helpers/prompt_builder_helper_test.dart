@@ -1328,6 +1328,57 @@ void main() {
     });
 
     group('error handling for placeholder injection', () {
+      test('handles error when languageCode fetch fails', () async {
+        final image = JournalImage(
+          data: ImageData(
+            imageId: 'image-123',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test',
+            capturedAt: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'image-123',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final mockJournalRepository = MockJournalRepository();
+        final builderWithJournal = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
+        );
+
+        // Simulate an error when finding linked task
+        when(() => mockJournalRepository.getLinkedToEntities(
+            linkedTo: 'image-123')).thenThrow(Exception('Database error'));
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Image Analysis',
+          systemMessage: 'System',
+          userMessage: '{{languageCode}}\n\nAnalyze the image.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: const [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        final result = await builderWithJournal.buildPromptWithData(
+          promptConfig: config,
+          entity: image,
+        );
+
+        // Should replace with empty string on error
+        expect(result, equals('\n\nAnalyze the image.'));
+      });
+
       test('handles error when current_entry fetch fails', () async {
         final task = Task(
           data: TaskData(
