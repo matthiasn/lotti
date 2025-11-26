@@ -185,9 +185,9 @@ class PromptBuilderHelper {
 
     // Inject language code if requested (from task or linked task)
     if (prompt.contains('{{languageCode}}')) {
+      String languageCodeToInject;
       try {
-        final languageCode = await _getLanguageCodeForEntity(entity);
-        prompt = prompt.replaceAll('{{languageCode}}', languageCode ?? '');
+        languageCodeToInject = await _getLanguageCodeForEntity(entity) ?? '';
       } catch (error, stackTrace) {
         _logPlaceholderFailure(
           entity: entity,
@@ -195,8 +195,9 @@ class PromptBuilderHelper {
           error: error,
           stackTrace: stackTrace,
         );
-        prompt = prompt.replaceAll('{{languageCode}}', '');
+        languageCodeToInject = '';
       }
+      prompt = prompt.replaceAll('{{languageCode}}', languageCodeToInject);
     }
 
     return prompt;
@@ -452,12 +453,7 @@ class PromptBuilderHelper {
   /// For tasks, returns the task's language code directly.
   /// For images and audio, looks for a linked task and returns its language code.
   Future<String?> _getLanguageCodeForEntity(JournalEntity entity) async {
-    Task? task;
-    if (entity is Task) {
-      task = entity;
-    } else {
-      task = await _findLinkedTask(entity);
-    }
+    final task = entity is Task ? entity : await _findLinkedTask(entity);
     return task?.data.languageCode;
   }
 
