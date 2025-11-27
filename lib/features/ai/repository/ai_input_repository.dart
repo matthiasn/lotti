@@ -73,7 +73,8 @@ class AiInputRepository {
         String? transcriptLanguage;
         String? entryType;
         final editedText = linked.entryText?.plainText;
-        final hasEditedText = editedText != null && editedText.isNotEmpty;
+        // An explicit edit (even to empty string) takes precedence over transcript
+        final hasEditedText = editedText != null;
 
         if (linked is JournalAudio) {
           entryType = 'audio';

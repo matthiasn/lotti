@@ -257,6 +257,69 @@ void main() {
       expect(logEntry.text, equals('Corrected transcript by user'));
     });
 
+    test('empty edited text takes precedence over original transcript',
+        () async {
+      final task = Task(
+        meta: createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      // Audio entry with explicitly cleared text (empty string)
+      // Should NOT fall back to original transcript
+      final audioEntry = JournalAudio(
+        meta: createMetadata(id: 'audio-1'),
+        data: AudioData(
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          audioFile: 'test.mp3',
+          audioDirectory: '/audio',
+          duration: const Duration(minutes: 5),
+          transcripts: [
+            AudioTranscript(
+              created: DateTime.now(),
+              library: 'whisper',
+              model: 'base',
+              detectedLanguage: 'en',
+              transcript: 'Original transcript should not appear',
+            ),
+          ],
+        ),
+        entryText: const EntryText(
+          plainText: '', // User explicitly cleared the text
+        ),
+      );
+
+      when(() => mockDb.journalEntityById('test-id'))
+          .thenAnswer((_) async => task);
+      when(() => mockTaskProgressRepo.getTaskProgressData(id: 'test-id'))
+          .thenAnswer((_) async => null);
+      setupTaskProgressMock();
+      when(() => mockDb.getLinkedEntities('test-id'))
+          .thenAnswer((_) async => [audioEntry]);
+
+      final result = await repository.generate('test-id');
+
+      expect(result, isNotNull);
+      expect(result!.logEntries, hasLength(1));
+
+      final logEntry = result.logEntries.first;
+      expect(logEntry.entryType, equals('audio'));
+      // Empty edited text still takes precedence - no fallback to transcript
+      expect(logEntry.audioTranscript, isNull);
+      expect(logEntry.transcriptLanguage, isNull);
+      expect(logEntry.text, isEmpty);
+    });
+
     test('handles multiple audio transcripts', () async {
       final task = Task(
         meta: createMetadata(),
