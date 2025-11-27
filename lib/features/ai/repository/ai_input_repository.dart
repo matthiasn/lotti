@@ -72,15 +72,22 @@ class AiInputRepository {
         String? audioTranscript;
         String? transcriptLanguage;
         String? entryType;
+        final editedText = linked.entryText?.plainText;
+        // An explicit edit (even to empty string) takes precedence over transcript
+        final hasEditedText = editedText != null;
 
         if (linked is JournalAudio) {
           entryType = 'audio';
-          // Get the most recent transcript if available
-          final transcripts = linked.data.transcripts;
-          if (transcripts != null && transcripts.isNotEmpty) {
-            final latestTranscript = transcripts.last;
-            audioTranscript = latestTranscript.transcript;
-            transcriptLanguage = latestTranscript.detectedLanguage;
+          // Only include original transcript if user hasn't edited the text.
+          // When entryText exists, it represents the user's corrections and
+          // should take precedence over the raw transcript.
+          if (!hasEditedText) {
+            final transcripts = linked.data.transcripts;
+            if (transcripts != null && transcripts.isNotEmpty) {
+              final latestTranscript = transcripts.last;
+              audioTranscript = latestTranscript.transcript;
+              transcriptLanguage = latestTranscript.detectedLanguage;
+            }
           }
         } else if (linked is JournalImage) {
           entryType = 'image';
@@ -92,7 +99,7 @@ class AiInputRepository {
           AiInputLogEntryObject(
             creationTimestamp: linked.meta.dateFrom,
             loggedDuration: formatHhMm(entryDuration(linked)),
-            text: linked.entryText?.plainText ?? '',
+            text: editedText ?? '',
             audioTranscript: audioTranscript,
             transcriptLanguage: transcriptLanguage,
             entryType: entryType,

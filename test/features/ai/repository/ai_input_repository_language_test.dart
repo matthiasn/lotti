@@ -136,7 +136,8 @@ void main() {
       expect(result!.languageCode, isNull);
     });
 
-    test('includes transcript language in log entries', () async {
+    test('includes transcript language in log entries when no edited text',
+        () async {
       final task = Task(
         meta: createMetadata(),
         data: TaskData(
@@ -152,6 +153,7 @@ void main() {
         ),
       );
 
+      // Audio entry WITHOUT edited text - should use original transcript
       final audioEntry = JournalAudio(
         meta: createMetadata(id: 'audio-1'),
         data: AudioData(
@@ -170,9 +172,7 @@ void main() {
             ),
           ],
         ),
-        entryText: const EntryText(
-          plainText: 'Audio transcription',
-        ),
+        // No entryText - so audioTranscript should be included
       );
 
       when(() => mockDb.journalEntityById('test-id'))
@@ -192,6 +192,132 @@ void main() {
       expect(logEntry.entryType, equals('audio'));
       expect(logEntry.audioTranscript, equals('Este es un texto en español'));
       expect(logEntry.transcriptLanguage, equals('es'));
+      expect(logEntry.text, isEmpty);
+    });
+
+    test('uses edited text instead of original transcript when available',
+        () async {
+      final task = Task(
+        meta: createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      // Audio entry WITH edited text - should use edited text, not transcript
+      final audioEntry = JournalAudio(
+        meta: createMetadata(id: 'audio-1'),
+        data: AudioData(
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          audioFile: 'test.mp3',
+          audioDirectory: '/audio',
+          duration: const Duration(minutes: 5),
+          transcripts: [
+            AudioTranscript(
+              created: DateTime.now(),
+              library: 'whisper',
+              model: 'base',
+              detectedLanguage: 'es',
+              transcript: 'Original transcript with errors',
+            ),
+          ],
+        ),
+        entryText: const EntryText(
+          plainText: 'Corrected transcript by user',
+        ),
+      );
+
+      when(() => mockDb.journalEntityById('test-id'))
+          .thenAnswer((_) async => task);
+      when(() => mockTaskProgressRepo.getTaskProgressData(id: 'test-id'))
+          .thenAnswer((_) async => null);
+      setupTaskProgressMock();
+      when(() => mockDb.getLinkedEntities('test-id'))
+          .thenAnswer((_) async => [audioEntry]);
+
+      final result = await repository.generate('test-id');
+
+      expect(result, isNotNull);
+      expect(result!.logEntries, hasLength(1));
+
+      final logEntry = result.logEntries.first;
+      expect(logEntry.entryType, equals('audio'));
+      // Edited text takes precedence - audioTranscript should be null
+      expect(logEntry.audioTranscript, isNull);
+      expect(logEntry.transcriptLanguage, isNull);
+      expect(logEntry.text, equals('Corrected transcript by user'));
+    });
+
+    test('empty edited text takes precedence over original transcript',
+        () async {
+      final task = Task(
+        meta: createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime.now(),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+        ),
+      );
+
+      // Audio entry with explicitly cleared text (empty string)
+      // Should NOT fall back to original transcript
+      final audioEntry = JournalAudio(
+        meta: createMetadata(id: 'audio-1'),
+        data: AudioData(
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          audioFile: 'test.mp3',
+          audioDirectory: '/audio',
+          duration: const Duration(minutes: 5),
+          transcripts: [
+            AudioTranscript(
+              created: DateTime.now(),
+              library: 'whisper',
+              model: 'base',
+              detectedLanguage: 'en',
+              transcript: 'Original transcript should not appear',
+            ),
+          ],
+        ),
+        entryText: const EntryText(
+          plainText: '', // User explicitly cleared the text
+        ),
+      );
+
+      when(() => mockDb.journalEntityById('test-id'))
+          .thenAnswer((_) async => task);
+      when(() => mockTaskProgressRepo.getTaskProgressData(id: 'test-id'))
+          .thenAnswer((_) async => null);
+      setupTaskProgressMock();
+      when(() => mockDb.getLinkedEntities('test-id'))
+          .thenAnswer((_) async => [audioEntry]);
+
+      final result = await repository.generate('test-id');
+
+      expect(result, isNotNull);
+      expect(result!.logEntries, hasLength(1));
+
+      final logEntry = result.logEntries.first;
+      expect(logEntry.entryType, equals('audio'));
+      // Empty edited text still takes precedence - no fallback to transcript
+      expect(logEntry.audioTranscript, isNull);
+      expect(logEntry.transcriptLanguage, isNull);
+      expect(logEntry.text, isEmpty);
     });
 
     test('handles multiple audio transcripts', () async {
