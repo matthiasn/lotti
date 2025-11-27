@@ -20,6 +20,7 @@ class ChatCompletionRequest(BaseModel):
     messages: List[ChatMessage] = Field(..., description="List of messages in the conversation")
     temperature: Optional[float] = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
     max_tokens: Optional[int] = Field(default=None, description="Maximum tokens to generate")
+    stream: Optional[bool] = Field(default=False, description="Whether to stream the response")
     user_id: Optional[str] = Field(default=None, description="User identifier for billing")
 
 

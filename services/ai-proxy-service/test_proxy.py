@@ -65,6 +65,7 @@ async def test_model_mapping():
 
             if response.status_code == 200:
                 data = response.json()
+
                 print("   Requested model: gpt-4")
                 print(f"   Returned model: {data['model']}")
                 print(f"   Response: {data['choices'][0]['message']['content']}")
