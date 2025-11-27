@@ -1,11 +1,13 @@
 """API routes for AI proxy service"""
 
+import json
 import logging
 import uuid
 from decimal import Decimal
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 from ..container import container
 from ..core.exceptions import (
@@ -33,7 +35,6 @@ async def health_check():
 
 @router.post(
     "/v1/chat/completions",
-    response_model=ChatCompletionResponse,
     responses={
         400: {"model": ErrorResponse, "description": "Invalid request"},
         500: {"model": ErrorResponse, "description": "Internal server error"},
@@ -44,13 +45,13 @@ async def chat_completions(request: ChatCompletionRequest):
     OpenAI-compatible chat completions endpoint
 
     This endpoint accepts OpenAI-format requests and proxies them to Gemini,
-    returning responses in OpenAI format.
+    returning responses in OpenAI format (streaming or non-streaming).
 
     Args:
         request: Chat completion request
 
     Returns:
-        Chat completion response with usage data
+        Chat completion response with usage data (streaming or JSON)
 
     Raises:
         400: Invalid request
@@ -62,7 +63,7 @@ async def chat_completions(request: ChatCompletionRequest):
 
         logger.info(
             f"[{request_id}] Chat completion request: model={request.model}, "
-            f"messages={len(request.messages)}, user_id={request.user_id}"
+            f"messages={len(request.messages)}, stream={request.stream}, user_id={request.user_id}"
         )
 
         # Validate request
@@ -104,7 +105,14 @@ async def chat_completions(request: ChatCompletionRequest):
 
         logger.info(f"[{request_id}] Chat completion successful")
 
-        return response
+        # Return streaming or non-streaming response based on request
+        if request.stream:
+            return StreamingResponse(
+                _stream_response(response),
+                media_type="text/event-stream",
+            )
+        else:
+            return response
 
     except InvalidRequestException as e:
         logger.warning(f"Invalid request: {e}")
@@ -118,3 +126,72 @@ async def chat_completions(request: ChatCompletionRequest):
     except Exception as e:
         logger.exception(f"Unexpected error processing chat completion: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from e
+
+
+async def _stream_response(response: ChatCompletionResponse):
+    """
+    Convert a ChatCompletionResponse to OpenAI streaming format with deltas
+
+    OpenAI's streaming format sends incremental delta chunks, not the full message.
+    This simulates streaming by breaking the response into chunks.
+    """
+    content = response.choices[0].message.content
+
+    # First chunk: role
+    first_chunk = {
+        "id": response.id,
+        "object": "chat.completion.chunk",
+        "created": response.created,
+        "model": response.model,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"role": "assistant"},
+                "finish_reason": None,
+            }
+        ],
+    }
+    yield f"data: {json.dumps(first_chunk)}\n\n"
+
+    # Content chunks: send the content in small chunks to simulate streaming
+    chunk_size = 10  # characters per chunk
+    for i in range(0, len(content), chunk_size):
+        chunk_content = content[i : i + chunk_size]
+        content_chunk = {
+            "id": response.id,
+            "object": "chat.completion.chunk",
+            "created": response.created,
+            "model": response.model,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"content": chunk_content},
+                    "finish_reason": None,
+                }
+            ],
+        }
+        yield f"data: {json.dumps(content_chunk)}\n\n"
+
+    # Final chunk: finish_reason and usage
+    final_chunk = {
+        "id": response.id,
+        "object": "chat.completion.chunk",
+        "created": response.created,
+        "model": response.model,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {
+            "prompt_tokens": response.usage.prompt_tokens,
+            "completion_tokens": response.usage.completion_tokens,
+            "total_tokens": response.usage.total_tokens,
+        },
+    }
+    yield f"data: {json.dumps(final_chunk)}\n\n"
+
+    # Send the done signal
+    yield "data: [DONE]\n\n"
