@@ -68,6 +68,15 @@ void main() {
           );
         }
 
+        for (final model in genericOpenAiModels) {
+          expect(
+            model.maxCompletionTokens,
+            isNull,
+            reason:
+                'Generic OpenAI model ${model.name} should not have maxCompletionTokens defined',
+          );
+        }
+
         for (final model in whisperModels) {
           expect(
             model.maxCompletionTokens,
@@ -175,6 +184,7 @@ void main() {
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
+            InferenceProviderType.genericOpenAi,
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
             InferenceProviderType.whisper,

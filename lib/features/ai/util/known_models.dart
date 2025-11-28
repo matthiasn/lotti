@@ -372,7 +372,8 @@ const List<KnownModel> genericOpenAiModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     supportsFunctionCalling: true,
-    description: 'OpenAI GPT-4 or compatible model (maps to Gemini 2.5 Pro in AI Proxy)',
+    description:
+        'OpenAI GPT-4 or compatible model (maps to Gemini 2.5 Pro in AI Proxy)',
   ),
   KnownModel(
     providerModelId: 'gpt-3.5-turbo',
@@ -381,7 +382,8 @@ const List<KnownModel> genericOpenAiModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     supportsFunctionCalling: true,
-    description: 'OpenAI GPT-3.5 or compatible model (maps to Gemini 2.5 Flash in AI Proxy)',
+    description:
+        'OpenAI GPT-3.5 or compatible model (maps to Gemini 2.5 Flash in AI Proxy)',
   ),
 ];
 
