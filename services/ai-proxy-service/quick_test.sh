@@ -18,7 +18,7 @@ if ! grep -q "GEMINI_API_KEY=AIza" .env 2>/dev/null; then
     echo "  nano .env"
     echo ""
     echo "Or set it now:"
-    read -p "Enter your Gemini API key (or press Enter to skip): " gemini_key
+    read -r -p "Enter your Gemini API key (or press Enter to skip): " gemini_key
 
     if [ -n "$gemini_key" ]; then
         # Update .env file
