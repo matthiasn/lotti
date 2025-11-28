@@ -31,6 +31,28 @@ class IGeminiClient(ABC):
         """
         pass
 
+    @abstractmethod
+    async def generate_completion_stream(
+        self,
+        messages: List[ChatMessage],
+        model: str,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+    ):
+        """
+        Generate a streaming chat completion using Gemini
+
+        Args:
+            messages: List of chat messages
+            model: Gemini model to use
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+
+        Yields:
+            Streaming response chunks in OpenAI format
+        """
+        pass
+
 
 class IBillingService(ABC):
     """Interface for billing operations"""
