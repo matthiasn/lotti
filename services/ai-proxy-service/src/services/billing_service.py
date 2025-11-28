@@ -1,11 +1,15 @@
 """Billing service for tracking AI usage costs"""
 
 import logging
+import os
+
+import httpx
 
 from ..core.constants import (
     GEMINI_PRO_INPUT_PRICE_PER_1K,
     GEMINI_PRO_OUTPUT_PRICE_PER_1K,
 )
+from ..core.exceptions import AIProviderException
 from ..core.interfaces import IBillingService
 from ..core.models import BillingMetadata
 
@@ -13,7 +17,18 @@ logger = logging.getLogger(__name__)
 
 
 class BillingService(IBillingService):
-    """Service for billing operations (Phase 1: logging only)"""
+    """Service for billing operations with credits service integration"""
+
+    def __init__(self):
+        """Initialize billing service with credits service configuration"""
+        self.credits_service_url = os.getenv("CREDITS_SERVICE_URL", "")
+        self.credits_service_api_key = os.getenv("CREDITS_SERVICE_API_KEY", "")
+        self.phase2_enabled = bool(self.credits_service_url and self.credits_service_api_key)
+
+        if self.phase2_enabled:
+            logger.info(f"✓ Phase 2 billing enabled - Credits service: {self.credits_service_url}")
+        else:
+            logger.info("ℹ️  Phase 2 billing disabled - Using Phase 1 (logging only)")
 
     def calculate_cost(
         self,
@@ -47,13 +62,15 @@ class BillingService(IBillingService):
 
     async def log_billing(self, metadata: BillingMetadata) -> None:
         """
-        Log billing information to console (Phase 1)
-
-        In Phase 2, this will call the credits service to actually bill the user.
+        Log billing information and optionally bill user via credits service
 
         Args:
-            metadata: Billing metadata to log
+            metadata: Billing metadata to log and process
+
+        Raises:
+            AIProviderException: If billing via credits service fails
         """
+        # Always log billing info
         logger.info(
             f"💰 BILLING | "
             f"User: {metadata.user_id} | "
@@ -64,16 +81,51 @@ class BillingService(IBillingService):
             f"Request ID: {metadata.request_id}"
         )
 
-        # TODO (Phase 2): Call credits service to bill the user
-        # Example:
-        # async with httpx.AsyncClient() as client:
-        #     response = await client.post(
-        #         f"{CREDITS_SERVICE_URL}/api/v1/bill",
-        #         json={
-        #             "user_id": metadata.user_id,
-        #             "amount": float(metadata.estimated_cost_usd),
-        #             "description": f"{metadata.model} - {metadata.total_tokens} tokens",
-        #         },
-        #     )
-        #     if response.status_code != 200:
-        #         raise BillingException(f"Failed to bill user: {response.text}")
+        # Phase 2: Call credits service to bill the user
+        if self.phase2_enabled:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(
+                        f"{self.credits_service_url}/api/v1/bill",
+                        json={
+                            "user_id": metadata.user_id,
+                            "amount": float(metadata.estimated_cost_usd),
+                            "description": (
+                                f"{metadata.model} - {metadata.total_tokens} tokens " f"(req: {metadata.request_id})"
+                            ),
+                        },
+                        headers={"Authorization": f"Bearer {self.credits_service_api_key}"},
+                    )
+
+                    if response.status_code == 402:
+                        # Insufficient balance - this is a client error
+                        logger.warning(
+                            f"Billing failed for {metadata.user_id}: Insufficient balance "
+                            f"(cost: ${metadata.estimated_cost_usd:.6f})"
+                        )
+                        raise AIProviderException(
+                            "Insufficient balance. Please top up your account to continue using AI services."
+                        )
+                    elif response.status_code != 200:
+                        # Other billing errors
+                        logger.error(
+                            f"Billing failed for {metadata.user_id}: "
+                            f"Status {response.status_code}, Response: {response.text}"
+                        )
+                        raise AIProviderException("Billing service error - please contact support")
+
+                    # Billing successful
+                    logger.info(f"✓ Billed ${metadata.estimated_cost_usd:.6f} to {metadata.user_id}")
+
+            except httpx.TimeoutException:
+                logger.error(f"Timeout calling credits service for {metadata.user_id}")
+                raise AIProviderException("Billing service timeout - please try again later")
+            except httpx.RequestError as e:
+                logger.error(f"Request error calling credits service for {metadata.user_id}: {e}")
+                raise AIProviderException("Billing service unavailable - please try again later")
+            except AIProviderException:
+                # Re-raise our custom exceptions
+                raise
+            except Exception:
+                logger.exception(f"Unexpected error billing {metadata.user_id}")
+                raise AIProviderException("Billing error - please contact support")

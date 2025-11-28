@@ -8,6 +8,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import router
+from .middleware.rate_limit import limiter, rate_limit_handler
+from .middleware.request_id import RequestIDMiddleware
+from slowapi.errors import RateLimitExceeded
 
 # Load environment variables from .env file
 load_dotenv()
@@ -28,6 +31,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Add rate limiter state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+
 # Add CORS middleware
 # Configure allowed origins from environment variable
 # Example: CORS_ALLOWED_ORIGINS="https://app.lotti.com,https://dev.lotti.com"
@@ -38,9 +45,16 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+# Add API key authentication middleware (exempts /health, /metrics, /docs)
+# DEVELOPMENT ONLY: Comment out for local testing without auth
+# app.add_middleware(APIKeyAuthMiddleware, exempt_paths=["/health", "/metrics", "/docs", "/openapi.json", "/redoc"])
+
+# Add request ID middleware for tracing
+app.add_middleware(RequestIDMiddleware)
 
 # Include routes
 app.include_router(router)

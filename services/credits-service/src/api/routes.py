@@ -67,9 +67,12 @@ async def create_account(request: AccountCreateRequest):
     except AccountAlreadyExistsException as e:
         logger.warning(f"Account creation failed: {e}")
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.exception(f"Error creating account: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from e
+    except Exception:
+        logger.exception("Error creating account")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error - please try again later",
+        )
 
 
 @router.post(
@@ -103,9 +106,12 @@ async def get_balance(request: BalanceRequest):
     except AccountNotFoundException as e:
         logger.warning(f"Balance query failed: {e}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.exception(f"Error getting balance: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from e
+    except Exception:
+        logger.exception("Error getting balance")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error - please try again later",
+        )
 
 
 @router.post(
@@ -144,9 +150,12 @@ async def top_up(request: TopUpRequest):
     except AccountNotFoundException as e:
         logger.warning(f"Top-up failed: {e}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.exception(f"Error processing top-up: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from e
+    except Exception:
+        logger.exception("Error processing top-up")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error - please try again later",
+        )
 
 
 @router.post(
@@ -190,6 +199,9 @@ async def bill(request: BillRequest):
     except AccountNotFoundException as e:
         logger.warning(f"Billing failed: {e}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.exception(f"Error processing bill: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") from e
+    except Exception:
+        logger.exception("Error processing bill")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error - please try again later",
+        )
