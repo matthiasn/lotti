@@ -67,6 +67,11 @@ class TestBillingService:
     @pytest.mark.asyncio
     async def test_log_billing(self, billing_service, caplog):
         """Test billing logging"""
+        import logging
+
+        # Set caplog to capture INFO level logs
+        caplog.set_level(logging.INFO)
+
         metadata = BillingMetadata(
             user_id="test@example.com",
             model="gemini-pro",
