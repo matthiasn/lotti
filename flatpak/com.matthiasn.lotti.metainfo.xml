@@ -28,9 +28,9 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.740" date="2025-11-27">
+    <release version="0.9.742" date="2025-11-29">
       <description>
-        <p>Latest release with improved screenshot functionality and Linux compatibility.</p>
+        <p>Improved task search field width and layout for better use of available space.</p>
       </description>
     </release>
   </releases>
