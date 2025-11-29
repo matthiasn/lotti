@@ -1006,8 +1006,9 @@ void main() {
         ),
       );
 
-      // Result should not have errors - skipped items are expected behavior
-      expect(result.hadErrors, false);
+      // Result should have errors when ALL items are skipped (user intent not fulfilled)
+      // The handler processes gracefully (no exceptions), but reports the failure
+      expect(result.hadErrors, true);
     });
   });
 }

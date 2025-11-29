@@ -1057,7 +1057,8 @@ void main() {
       final prompt = strategy.getContinuationPrompt(mockConversationManager);
 
       expect(prompt, isNotNull);
-      expect(prompt, contains("haven't created any checklist items"));
+      expect(
+          prompt, contains("haven't created or updated any checklist items"));
       expect(prompt, contains('add_multiple_checklist_items'));
     });
 
@@ -1068,7 +1069,7 @@ void main() {
       final prompt = strategy.getContinuationPrompt(mockConversationManager);
 
       expect(prompt, isNotNull);
-      expect(prompt, contains('created 2 checklist item(s)'));
+      expect(prompt, contains('created 2 item(s)'));
       expect(prompt, contains('Item 1, Item 2'));
     });
 

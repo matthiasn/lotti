@@ -238,7 +238,11 @@ class LottiChecklistStrategy extends ConversationStrategy {
   bool _hadErrors = false;
   final List<FunctionCallResult> _failedResults = [];
 
+  /// Track successfully updated items (separate from created items)
+  int _successfulUpdates = 0;
+
   bool get hadErrors => _hadErrors;
+  int get successfulUpdates => _successfulUpdates;
 
   String getResponseSummary() {
     // Merge items from both handlers
@@ -247,14 +251,26 @@ class LottiChecklistStrategy extends ConversationStrategy {
       ...batchChecklistHandler.successfulItems,
     }.toList();
 
-    if (allItems.isEmpty) {
-      return 'No checklist items were created.';
+    final parts = <String>[];
+
+    if (allItems.isNotEmpty) {
+      final itemCount = allItems.length;
+      final itemWord = itemCount == 1 ? 'item' : 'items';
+      parts.add(
+        'Created $itemCount checklist $itemWord:\n${allItems.map((item) => '• $item').join('\n')}',
+      );
     }
 
-    final itemCount = allItems.length;
-    final itemWord = itemCount == 1 ? 'item' : 'items';
+    if (_successfulUpdates > 0) {
+      final updateWord = _successfulUpdates == 1 ? 'item' : 'items';
+      parts.add('Updated $_successfulUpdates checklist $updateWord.');
+    }
 
-    return 'Created $itemCount checklist $itemWord:\n${allItems.map((item) => '• $item').join('\n')}';
+    if (parts.isEmpty) {
+      return 'No checklist items were created or updated.';
+    }
+
+    return parts.join('\n\n');
   }
 
   @override
@@ -563,16 +579,18 @@ class LottiChecklistStrategy extends ConversationStrategy {
         provider.inferenceProviderType != InferenceProviderType.ollama;
 
     // Continue logic depends on provider type
+    // Count both created items AND successful updates as work done
     final totalSuccessfulItems = checklistHandler.successfulItems.length;
+    final totalWorkDone = totalSuccessfulItems + _successfulUpdates;
     final shouldContinue = !isCloudProvider && // Only continue for Ollama
         _rounds < 10 &&
-        (_rounds == 1 || totalSuccessfulItems > 0);
+        (_rounds == 1 || totalWorkDone > 0);
 
     developer.log(
       'Deciding whether to continue: provider=${provider.inferenceProviderType}, '
       'isCloudProvider=$isCloudProvider, checklistItems=${checklistHandler.successfulItems.length}, '
       'batchItems=${batchChecklistHandler.successfulItems.length}, '
-      'totalItems=$totalSuccessfulItems, rounds=$_rounds, shouldContinue=$shouldContinue',
+      'updatedItems=$_successfulUpdates, totalWorkDone=$totalWorkDone, rounds=$_rounds, shouldContinue=$shouldContinue',
       name: 'LottiConversationProcessor',
     );
 
@@ -590,8 +608,10 @@ class LottiChecklistStrategy extends ConversationStrategy {
       return false;
     }
 
+    // Count both created items AND successful updates as work done
     final totalSuccessfulItems = checklistHandler.successfulItems.length;
-    return _rounds < 10 && (_rounds == 1 || totalSuccessfulItems > 0);
+    final totalWorkDone = totalSuccessfulItems + _successfulUpdates;
+    return _rounds < 10 && (_rounds == 1 || totalWorkDone > 0);
   }
 
   @override
@@ -614,10 +634,10 @@ class LottiChecklistStrategy extends ConversationStrategy {
       ...batchChecklistHandler.successfulItems,
     }.toList();
 
-    // If no items created yet, provide explicit instructions
-    if (allSuccessfulItems.isEmpty) {
+    // If no items created or updated yet, provide explicit instructions
+    if (allSuccessfulItems.isEmpty && _successfulUpdates == 0) {
       return '''
-You haven't created any checklist items yet. Please review the user's original request.
+You haven't created or updated any checklist items yet. Please review the user's original request.
 
 IMPORTANT: When you have multiple items to add (2 or more), you MUST use add_multiple_checklist_items in a SINGLE call.
 
@@ -630,8 +650,19 @@ add_multiple_checklist_items with {"items": [{"title": "cheese"}, {"title": "pep
 Please create the checklist items now using the required function and format.''';
     }
 
+    // Build a summary of work done
+    final workSummary = <String>[];
+    if (allSuccessfulItems.isNotEmpty) {
+      workSummary.add(
+        'created ${allSuccessfulItems.length} item(s): ${allSuccessfulItems.join(', ')}',
+      );
+    }
+    if (_successfulUpdates > 0) {
+      workSummary.add('updated $_successfulUpdates item(s)');
+    }
+
     return '''
-Great! You've created ${allSuccessfulItems.length} checklist item(s) so far: ${allSuccessfulItems.join(', ')}.
+Great! You've ${workSummary.join(' and ')}.
 
 If there are more items to add from the user's original request:
 - Use add_multiple_checklist_items with {"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3"}]}
@@ -654,19 +685,53 @@ Continue until all items from the user's request have been added.''';
       final result = updateHandler.processFunctionCall(call);
 
       if (!result.success) {
+        // Track the error for retry logic
+        _hadErrors = true;
+        _failedResults.add(result);
+        developer.log(
+          'Update checklist items validation failed: ${result.error}',
+          name: 'LottiConversationProcessor',
+        );
         return 'Error: ${result.error}';
       }
 
       final count = await updateHandler.executeUpdates(result);
       final response = updateHandler.createToolResponse(result);
 
-      developer.log(
-        'Updated $count checklist items',
-        name: 'LottiConversationProcessor',
-      );
+      // Track successful updates
+      _successfulUpdates += count;
+
+      // Check for partial failures (some items skipped)
+      final skippedCount = updateHandler.skippedItems.length;
+      final requestedCount =
+          (result.data['items'] as List<dynamic>?)?.length ?? 0;
+      if (count == 0 && requestedCount > 0) {
+        // All items failed to update - this is an error
+        _hadErrors = true;
+        developer.log(
+          'All $requestedCount update(s) failed/skipped',
+          name: 'LottiConversationProcessor',
+        );
+      } else if (skippedCount > 0) {
+        // Partial success - log but don't mark as error (skipped items are expected)
+        developer.log(
+          'Updated $count items, skipped $skippedCount',
+          name: 'LottiConversationProcessor',
+        );
+      } else {
+        developer.log(
+          'Updated $count checklist items',
+          name: 'LottiConversationProcessor',
+        );
+      }
 
       return response;
     } catch (e) {
+      _hadErrors = true;
+      developer.log(
+        'Exception in update_checklist_items: $e',
+        name: 'LottiConversationProcessor',
+      );
       return 'Error processing update_checklist_items: $e';
     }
   }

@@ -160,8 +160,8 @@ void main() {
       // Get continuation prompt
       final prompt = strategy.getContinuationPrompt(mockConversationManager);
 
-      // Should include total count of all items
-      expect(prompt, contains('5 checklist item(s)'));
+      // Should include total count of all items (new format: "created N item(s)")
+      expect(prompt, contains('created 5 item(s)'));
       expect(prompt, contains('Single Item 1'));
       expect(prompt, contains('Batch Item 3'));
     });
