@@ -6,6 +6,16 @@
 
 Lotti is an open-source personal assistant that helps you capture, organize, and understand your work and life through AI-enhanced task management, audio recordings, and intelligent summaries—all while keeping your data entirely under your control.
 
+## Linux Users, Rejoice!
+
+Lotti is now available on [Flathub](https://flathub.org/en/apps/com.matthiasn.lotti) — bringing AI-powered personal productivity to the Linux desktop!
+
+[![Get it on Flathub](https://flathub.org/api/badge?locale=en)](https://flathub.org/en/apps/com.matthiasn.lotti)
+
+## Coming Soon: Deep Dive Series
+
+Starting **December 1, 2025**, join us for a **10-part blog series with video walkthroughs** exploring everything Lotti can do. From task management to AI-powered insights — learn how to take control of your productivity while keeping your data private.
+
 ![AI Assistant](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.662+3261/tasks_category_summary.png)
 
 Read more on [**Substack**](https://matthiasnehlsen.substack.com) | [**Project Background**](docs/BACKGROUND.md)
