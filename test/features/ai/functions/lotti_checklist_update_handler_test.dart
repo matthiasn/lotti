@@ -902,10 +902,11 @@ void main() {
         final response = handler.createToolResponse(result);
         final decoded = jsonDecode(response) as Map<String, dynamic>;
 
-        expect(decoded['updatedItems'], isA<List>());
-        expect(decoded['skippedItems'], isA<List>());
+        expect(decoded['updatedItems'], isA<List<dynamic>>());
+        expect(decoded['skippedItems'], isA<List<dynamic>>());
 
-        final updated = (decoded['updatedItems'] as List).first;
+        final updated = (decoded['updatedItems'] as List<dynamic>).first
+            as Map<String, dynamic>;
         expect(updated['id'], 'item-1');
         expect(updated['isChecked'], true);
         expect(updated['title'], 'Updated');

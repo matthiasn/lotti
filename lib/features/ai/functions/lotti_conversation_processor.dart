@@ -242,7 +242,6 @@ class LottiChecklistStrategy extends ConversationStrategy {
   int _successfulUpdates = 0;
 
   bool get hadErrors => _hadErrors;
-  int get successfulUpdates => _successfulUpdates;
 
   String getResponseSummary() {
     // Merge items from both handlers
@@ -620,10 +619,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
 
     // Check if we have failed items to retry
     if (_failedResults.isNotEmpty && _rounds <= 2) {
-      final retryPrompt = checklistHandler.getRetryPrompt(
-        failedItems: _failedResults,
-        successfulDescriptions: checklistHandler.successfulItems,
-      );
+      final retryPrompt = _getRetryPromptForFailedResults();
       _failedResults.clear(); // Clear for next round
       return retryPrompt;
     }
@@ -661,6 +657,16 @@ Please create the checklist items now using the required function and format.'''
       workSummary.add('updated $_successfulUpdates item(s)');
     }
 
+    // Context-aware continuation: different guidance based on what was done
+    if (allSuccessfulItems.isEmpty && _successfulUpdates > 0) {
+      // Only updates were done - don't encourage adding new items unnecessarily
+      return '''
+Great! You've updated $_successfulUpdates item(s).
+
+If the user's request mentioned additional items to update or new items to create, continue processing.
+Otherwise, you're done - no further action needed.''';
+    }
+
     return '''
 Great! You've ${workSummary.join(' and ')}.
 
@@ -669,6 +675,60 @@ If there are more items to add from the user's original request:
 - When an item is explicitly mentioned as already done, set {"isChecked": true} for that item
 
 Continue until all items from the user's request have been added.''';
+  }
+
+  /// Generate a retry prompt appropriate for the type of failed function call.
+  String _getRetryPromptForFailedResults() {
+    // Check if any failures are from update_checklist_items
+    final hasUpdateFailures = _failedResults.any(
+      (r) =>
+          r.functionName == ChecklistCompletionFunctions.updateChecklistItems,
+    );
+    final hasCreateFailures = _failedResults.any(
+      (r) =>
+          r.functionName == checklistHandler.functionName ||
+          r.functionName == batchChecklistHandler.functionName,
+    );
+
+    final errorSummary =
+        _failedResults.map((item) => '- ${item.error}').join('\n');
+
+    if (hasUpdateFailures && !hasCreateFailures) {
+      // Only update failures - provide update-specific guidance
+      return '''
+I noticed errors in your update_checklist_items call:
+$errorSummary
+
+Required format for updating existing items:
+{"items": [{"id": "item-uuid", "isChecked": true}, {"id": "other-uuid", "title": "Fixed title"}]}
+
+Each item must have:
+- "id" (required): The exact UUID of the checklist item from the task context
+- At least one of "isChecked" (boolean) or "title" (string)
+
+Please retry with the correct format. Use the exact item IDs from the checklist items shown in the task context.''';
+    }
+
+    if (hasCreateFailures && !hasUpdateFailures) {
+      // Only create failures - use existing handler's prompt
+      return checklistHandler.getRetryPrompt(
+        failedItems: _failedResults,
+        successfulDescriptions: checklistHandler.successfulItems,
+      );
+    }
+
+    // Mixed failures - provide combined guidance
+    return '''
+I noticed errors in your function calls:
+$errorSummary
+
+For creating new items, use:
+{"items": [{"title": "item1"}, {"title": "item2"}]}
+
+For updating existing items, use:
+{"items": [{"id": "item-uuid", "isChecked": true}]}
+
+Please retry with the correct format.''';
   }
 
   Future<String> _processUpdateChecklistItemsCall(
@@ -701,24 +761,21 @@ Continue until all items from the user's request have been added.''';
       // Track successful updates
       _successfulUpdates += count;
 
-      // Check for partial failures (some items skipped)
+      // Log results - skipped items are NOT errors per prompt contract:
+      // "If an item ID is invalid or doesn't belong to this task, it will be skipped (not an error for you)"
       final skippedCount = updateHandler.skippedItems.length;
-      final requestedCount =
-          (result.data['items'] as List<dynamic>?)?.length ?? 0;
-      if (count == 0 && requestedCount > 0) {
-        // All items failed to update - this is an error
-        _hadErrors = true;
+      if (skippedCount > 0 && count > 0) {
         developer.log(
-          'All $requestedCount update(s) failed/skipped',
+          'Updated $count items, skipped $skippedCount (graceful)',
           name: 'LottiConversationProcessor',
         );
       } else if (skippedCount > 0) {
-        // Partial success - log but don't mark as error (skipped items are expected)
+        // All items skipped - not an error, just no work to do
         developer.log(
-          'Updated $count items, skipped $skippedCount',
+          'All items skipped ($skippedCount) - IDs may be stale or out of scope',
           name: 'LottiConversationProcessor',
         );
-      } else {
+      } else if (count > 0) {
         developer.log(
           'Updated $count checklist items',
           name: 'LottiConversationProcessor',

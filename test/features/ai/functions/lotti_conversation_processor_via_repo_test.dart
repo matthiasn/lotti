@@ -1006,8 +1006,49 @@ void main() {
         ),
       );
 
-      // Result should have errors when ALL items are skipped (user intent not fulfilled)
-      // The handler processes gracefully (no exceptions), but reports the failure
+      // Skipped items are NOT errors per prompt contract:
+      // "If an item ID is invalid or doesn't belong to this task, it will be skipped (not an error for you)"
+      // The AI did its job correctly - the item just didn't exist or was out of scope
+      expect(result.hadErrors, false);
+    });
+
+    test('update_checklist_items validation error sets hadErrors', () async {
+      const checklistId = 'checklist-1';
+      final task = TestDataFactory.createTask(
+        checklistIds: [checklistId],
+      );
+      final promptConfig = TestDataFactory.createPromptConfig();
+      final model = TestDataFactory.createModel();
+
+      // AI sends malformed update call (missing id field)
+      const invalidToolCall = ChatCompletionMessageToolCall(
+        id: 'tool-invalid',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'update_checklist_items',
+          arguments:
+              '{"items": [{"isChecked": true}]}', // Missing required "id"
+        ),
+      );
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [invalidToolCall],
+      );
+
+      final result = await processor.processPromptWithConversation(
+        prompt: 'Mark something as done',
+        entity: task,
+        task: task,
+        model: model,
+        provider: provider(),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: const [],
+        inferenceRepo: mockInferenceRepo,
+      );
+
+      // Validation errors ARE errors - malformed payload should be retried
       expect(result.hadErrors, true);
     });
   });
