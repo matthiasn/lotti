@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Selectable;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:drift/drift.dart' show Selectable;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
@@ -360,7 +360,7 @@ void main() {
       // Mock the database query for items - return empty so items are skipped
       // (detailed update behavior is tested in LottiChecklistUpdateHandler tests)
       final mockSelectable = MockSelectable<JournalDbEntity>();
-      when(() => mockSelectable.get()).thenAnswer((_) async => []);
+      when(mockSelectable.get).thenAnswer((_) async => []);
       when(() => mockJournalDb.entriesForIds(any())).thenReturn(mockSelectable);
 
       final toolCalls = [

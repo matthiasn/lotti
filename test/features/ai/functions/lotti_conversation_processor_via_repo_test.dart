@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -36,11 +38,16 @@ class MockInferenceRepo extends Mock implements InferenceRepositoryInterface {}
 class MockConversationRepository extends Mock
     implements ConversationRepository {}
 
+class MockSelectable<T> extends Mock implements Selectable<T> {}
+
 class MockConversationManager extends Mock implements ConversationManager {}
 
 const _uuid = Uuid();
 
 class TestDataFactory {
+  // Fixed date for deterministic tests per test/README.md policy
+  static final _fixedDate = DateTime(2024, 1, 15);
+
   static Task createTask({
     String? id,
     String? title,
@@ -51,10 +58,10 @@ class TestDataFactory {
     return Task(
       meta: Metadata(
         id: taskId,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: _fixedDate,
+        updatedAt: _fixedDate,
+        dateFrom: _fixedDate,
+        dateTo: _fixedDate,
         categoryId: 'test-category',
       ),
       data: TaskData(
@@ -63,12 +70,12 @@ class TestDataFactory {
         checklistIds: checklistIds ?? [],
         status: TaskStatus.open(
           id: 'status-1',
-          createdAt: DateTime.now(),
+          createdAt: _fixedDate,
           utcOffset: 0,
         ),
         statusHistory: const [],
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        dateFrom: _fixedDate,
+        dateTo: _fixedDate,
       ),
     );
   }
@@ -82,7 +89,7 @@ class TestDataFactory {
       name: name ?? 'gpt-oss:20b',
       providerModelId: name ?? 'gpt-oss:20b',
       inferenceProviderId: 'ollama',
-      createdAt: DateTime.now(),
+      createdAt: _fixedDate,
       inputModalities: const [Modality.text],
       outputModalities: const [Modality.text],
       isReasoningModel: false,
@@ -99,10 +106,34 @@ class TestDataFactory {
       userMessage: 'Test user message',
       defaultModelId: 'test-model',
       modelIds: const ['test-model'],
-      createdAt: DateTime.now(),
+      createdAt: _fixedDate,
       useReasoning: false,
       requiredInputData: const [],
       aiResponseType: AiResponseType.checklistUpdates,
+    );
+  }
+
+  static ChecklistItem createChecklistItem({
+    String? id,
+    String? title,
+    bool isChecked = false,
+    List<String>? linkedChecklists,
+  }) {
+    final itemId = id ?? _uuid.v4();
+    return ChecklistItem(
+      meta: Metadata(
+        id: itemId,
+        createdAt: _fixedDate,
+        updatedAt: _fixedDate,
+        dateFrom: _fixedDate,
+        dateTo: _fixedDate,
+        categoryId: 'test-category',
+      ),
+      data: ChecklistItemData(
+        title: title ?? 'Test Item',
+        isChecked: isChecked,
+        linkedChecklists: linkedChecklists ?? ['checklist-1'],
+      ),
     );
   }
 }
@@ -144,6 +175,14 @@ void main() {
     // Fallbacks for mocktail any<T>() usage
     registerFallbackValue(TestDataFactory.createTask());
     registerFallbackValue(MockInferenceRepo());
+    // Fallback for update_checklist_items handler
+    registerFallbackValue(
+      const ChecklistItemData(
+        title: 'fallback',
+        isChecked: false,
+        linkedChecklists: [],
+      ),
+    );
   });
 
   // Helper: stub sendMessage to directly invoke the provided strategy
@@ -765,5 +804,245 @@ void main() {
       expect(result.totalCreated, 1);
       expect(result.items, contains('comprar leche'));
     });
+
+    test('update_checklist_items marks items as checked', () async {
+      const checklistId = 'checklist-1';
+      const itemId = 'item-uuid-1';
+      final task = TestDataFactory.createTask(
+        checklistIds: [checklistId],
+      );
+      final existingItem = TestDataFactory.createChecklistItem(
+        id: itemId,
+        title: 'Buy groceries',
+        linkedChecklists: [checklistId],
+      );
+      final promptConfig = TestDataFactory.createPromptConfig();
+      final model = TestDataFactory.createModel();
+
+      // Stub sendMessage to invoke strategy with update tool call
+      const updateToolCall = ChatCompletionMessageToolCall(
+        id: 'tool-update',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'update_checklist_items',
+          arguments: '{"items": [{"id": "$itemId", "isChecked": true}]}',
+        ),
+      );
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: [updateToolCall],
+      );
+
+      // Mock DB to return existing checklist item
+      final mockSelectable = MockSelectable<JournalDbEntity>();
+      when(() => mockJournalDb.entriesForIds([itemId]))
+          .thenReturn(mockSelectable);
+      when(mockSelectable.get).thenAnswer(
+        (_) async => [_createDbEntity(existingItem)],
+      );
+
+      // Mock task lookup for refresh after update
+      when(() => mockJournalDb.journalEntityById(task.meta.id))
+          .thenAnswer((_) async => task);
+
+      // Mock updateChecklistItem to succeed
+      when(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: itemId,
+          data: any(named: 'data'),
+          taskId: task.meta.id,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await processor.processPromptWithConversation(
+        prompt: 'Mark groceries as done',
+        entity: task,
+        task: task,
+        model: model,
+        provider: provider(),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: const [],
+        inferenceRepo: mockInferenceRepo,
+      );
+
+      // Verify update was called
+      verify(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: itemId,
+          data: any(named: 'data'),
+          taskId: task.meta.id,
+        ),
+      ).called(1);
+
+      // Result should indicate success through updated item count
+      expect(result.hadErrors, false);
+    });
+
+    test('update_checklist_items corrects title spelling', () async {
+      const checklistId = 'checklist-1';
+      const itemId = 'item-uuid-2';
+      final task = TestDataFactory.createTask(
+        checklistIds: [checklistId],
+      );
+      final existingItem = TestDataFactory.createChecklistItem(
+        id: itemId,
+        title: 'mac OS settings', // Typo: should be macOS
+        linkedChecklists: [checklistId],
+      );
+      final promptConfig = TestDataFactory.createPromptConfig();
+      final model = TestDataFactory.createModel();
+
+      // AI corrects title spelling
+      const updateToolCall = ChatCompletionMessageToolCall(
+        id: 'tool-update-title',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'update_checklist_items',
+          arguments:
+              '{"items": [{"id": "$itemId", "isChecked": true, "title": "macOS settings"}]}',
+        ),
+      );
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: [updateToolCall],
+      );
+
+      final mockSelectable = MockSelectable<JournalDbEntity>();
+      when(() => mockJournalDb.entriesForIds([itemId]))
+          .thenReturn(mockSelectable);
+      when(mockSelectable.get).thenAnswer(
+        (_) async => [_createDbEntity(existingItem)],
+      );
+      when(() => mockJournalDb.journalEntityById(task.meta.id))
+          .thenAnswer((_) async => task);
+      when(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: itemId,
+          data: any(named: 'data'),
+          taskId: task.meta.id,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await processor.processPromptWithConversation(
+        prompt: 'I did the macOS thing',
+        entity: task,
+        task: task,
+        model: model,
+        provider: provider(),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: const [],
+        inferenceRepo: mockInferenceRepo,
+      );
+
+      // Verify update was called with corrected title
+      final captured = verify(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: itemId,
+          data: captureAny(named: 'data'),
+          taskId: task.meta.id,
+        ),
+      ).captured;
+
+      expect(captured.isNotEmpty, true);
+      final updatedData = captured.first as ChecklistItemData;
+      expect(updatedData.title, 'macOS settings');
+      expect(updatedData.isChecked, true);
+      expect(result.hadErrors, false);
+    });
+
+    test('update_checklist_items skips non-existent items gracefully',
+        () async {
+      const checklistId = 'checklist-1';
+      final task = TestDataFactory.createTask(
+        checklistIds: [checklistId],
+      );
+      final promptConfig = TestDataFactory.createPromptConfig();
+      final model = TestDataFactory.createModel();
+
+      // AI tries to update a non-existent item
+      const updateToolCall = ChatCompletionMessageToolCall(
+        id: 'tool-update-missing',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'update_checklist_items',
+          arguments:
+              '{"items": [{"id": "non-existent-id", "isChecked": true}]}',
+        ),
+      );
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [updateToolCall],
+      );
+
+      // Mock DB to return empty (item not found)
+      final mockSelectable = MockSelectable<JournalDbEntity>();
+      when(() => mockJournalDb.entriesForIds(['non-existent-id']))
+          .thenReturn(mockSelectable);
+      when(mockSelectable.get).thenAnswer((_) async => []);
+
+      final result = await processor.processPromptWithConversation(
+        prompt: 'Mark the unknown item as done',
+        entity: task,
+        task: task,
+        model: model,
+        provider: provider(),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: const [],
+        inferenceRepo: mockInferenceRepo,
+      );
+
+      // No update should be called
+      verifyNever(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: any(named: 'checklistItemId'),
+          data: any(named: 'data'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
+
+      // Result should not have errors - skipped items are expected behavior
+      expect(result.hadErrors, false);
+    });
   });
+}
+
+/// Helper to create a JournalDbEntity from a ChecklistItem for mocking.
+JournalDbEntity _createDbEntity(ChecklistItem item) {
+  return JournalDbEntity(
+    id: item.id,
+    createdAt: item.meta.createdAt,
+    updatedAt: item.meta.updatedAt,
+    dateFrom: item.meta.dateFrom,
+    dateTo: item.meta.dateTo,
+    type: 'ChecklistItem',
+    serialized: jsonEncode({
+      'runtimeType': 'checklistItem',
+      'meta': {
+        'id': item.meta.id,
+        'createdAt': item.meta.createdAt.toIso8601String(),
+        'updatedAt': item.meta.updatedAt.toIso8601String(),
+        'dateFrom': item.meta.dateFrom.toIso8601String(),
+        'dateTo': item.meta.dateTo.toIso8601String(),
+        'categoryId': item.meta.categoryId,
+      },
+      'data': {
+        'title': item.data.title,
+        'isChecked': item.data.isChecked,
+        'linkedChecklists': item.data.linkedChecklists,
+      },
+    }),
+    schemaVersion: 1,
+    deleted: false,
+    private: false,
+    starred: false,
+    task: false,
+    flag: 0,
+    category: item.meta.categoryId ?? '',
+  );
 }

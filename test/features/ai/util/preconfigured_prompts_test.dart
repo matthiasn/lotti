@@ -36,7 +36,21 @@ void main() {
     expect(sys, contains('title'));
     // Check for reactive behavior guidance
     expect(sys, contains('REACTIVE'));
-    // Check for title correction examples
+    // Check for title correction examples (multiple common cases)
     expect(sys, contains('macOS'));
+    expect(sys, contains('iPhone'));
+    expect(sys, contains('GitHub'));
+    expect(sys, contains('TestFlight'));
+    // Check for error guidance
+    expect(sys, contains('invalid'));
+    expect(sys, contains('skipped'));
+  });
+
+  test('Checklist updates prompt includes negative examples', () {
+    final sys = checklistUpdatesPrompt.systemMessage;
+    // Check for DON'T examples to prevent misuse
+    expect(sys, contains("Examples (DON'T)"));
+    expect(sys, contains('proactively fix'));
+    expect(sys, contains('INVALID'));
   });
 }

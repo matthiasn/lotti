@@ -104,10 +104,10 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(
-      ChecklistItemData(
+      const ChecklistItemData(
         title: 'fallback',
         isChecked: false,
-        linkedChecklists: const [],
+        linkedChecklists: [],
       ),
     );
   });
@@ -446,13 +446,12 @@ void main() {
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Buy groceries',
-          isChecked: false,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['item-1']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer(
+        when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
         when(() => mockJournalDb.journalEntityById(testTask.id))
@@ -498,13 +497,12 @@ void main() {
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'mac OS settings',
-          isChecked: false,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['item-1']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer(
+        when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
         when(() => mockJournalDb.journalEntityById(testTask.id))
@@ -540,7 +538,7 @@ void main() {
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['missing-item']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer((_) async => []);
+        when(mockSelectable.get).thenAnswer((_) async => []);
 
         final result = FunctionCallResult(
           success: true,
@@ -579,7 +577,7 @@ void main() {
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['item-1']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer(
+        when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
 
@@ -612,7 +610,7 @@ void main() {
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['item-1']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer(
+        when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
 
@@ -638,13 +636,12 @@ void main() {
         final validItem = TestDataFactory.createChecklistItem(
           id: 'valid-item',
           title: 'Valid',
-          isChecked: false,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['valid-item', 'missing-item']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer(
+        when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(validItem)],
         );
         when(() => mockJournalDb.journalEntityById(testTask.id))
@@ -678,7 +675,7 @@ void main() {
       });
 
       test('should return 0 for unsuccessful result', () async {
-        final result = FunctionCallResult(
+        const result = FunctionCallResult(
           success: false,
           functionName: 'update_checklist_items',
           arguments: '',
@@ -734,7 +731,6 @@ void main() {
 
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
-          isChecked: false,
         );
 
         final refreshedTask = TestDataFactory.createTask(
@@ -745,7 +741,7 @@ void main() {
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['item-1']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer(
+        when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
         when(() => mockJournalDb.journalEntityById(testTask.id))
@@ -871,13 +867,12 @@ void main() {
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Original',
-          isChecked: false,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['item-1']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer(
+        when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
         when(() => mockJournalDb.journalEntityById(testTask.id))
@@ -961,13 +956,12 @@ void main() {
       test('should clear updated and skipped items', () async {
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
-          isChecked: false,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockJournalDb.entriesForIds(['item-1']))
             .thenReturn(mockSelectable);
-        when(() => mockSelectable.get()).thenAnswer(
+        when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
         when(() => mockJournalDb.journalEntityById(testTask.id))

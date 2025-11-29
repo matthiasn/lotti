@@ -22,6 +22,12 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
     this.onTaskUpdated,
   });
 
+  /// The task whose checklist items are being updated.
+  ///
+  /// This field is intentionally mutable (not `final`) because it is refreshed
+  /// after successful updates to reflect the latest database state. This ensures
+  /// subsequent operations see any changes made by the update (e.g., modified
+  /// checklistIds). The [onTaskUpdated] callback is invoked when refreshed.
   Task task;
   final ChecklistRepository checklistRepository;
   final void Function(Task)? onTaskUpdated;
