@@ -36,7 +36,7 @@ class JournalSliverAppBar extends StatelessWidget {
                     child: SearchWidget(
                       margin: const EdgeInsets.symmetric(
                         vertical: 12,
-                        horizontal: 40,
+                        horizontal: 8,
                       ),
                       onChanged: cubit.setSearchString,
                     ),
@@ -127,7 +127,7 @@ class JournalFilterIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 30),
+      padding: const EdgeInsets.only(right: 10),
       child: IconButton(
         onPressed: () {
           ModalUtils.showSinglePageModal<void>(
