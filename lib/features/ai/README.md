@@ -106,7 +106,12 @@ The repository layer has been refactored for better separation of concerns:
 - **`checklist_completion_functions.dart`**: OpenAI-style function definitions for checklist operations
   - `suggest_checklist_completion`: Suggests items that appear completed
   - `add_multiple_checklist_items`: Adds one or more items to checklists via an array of objects `{ title, isChecked? }`
-  - `complete_checklist_items`: Marks up to 20 existing items complete by ID (used when the LLM has high confidence that the item is done)
+  - `update_checklist_items`: Updates existing checklist items by ID - supports marking items as checked/unchecked and fixing titles (e.g., spelling corrections)
+- **`lotti_checklist_update_handler.dart`**: Handler for updating existing checklist items
+  - Validates item IDs and update fields (isChecked, title)
+  - Normalizes whitespace in titles
+  - Handles batch updates (up to 20 items per call)
+  - Reactive title corrections (only when user mentions the item)
 - **`task_functions.dart`**: Function definitions for task operations
   - `set_task_language`: Automatically detects and sets task language
 - **`lotti_conversation_processor.dart`**: Conversation-based processing for better batching

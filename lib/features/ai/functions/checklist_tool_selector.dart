@@ -19,6 +19,6 @@ List<ChatCompletionTool> getChecklistToolsForProvider({
   return <ChatCompletionTool>[
     toolByName(ChecklistCompletionFunctions.suggestChecklistCompletion)!,
     toolByName(ChecklistCompletionFunctions.addMultipleChecklistItems)!,
-    toolByName(ChecklistCompletionFunctions.completeChecklistItems)!,
+    toolByName(ChecklistCompletionFunctions.updateChecklistItems)!,
   ];
 }

@@ -27,4 +27,16 @@ void main() {
     expect(user, contains('Ignore for checklist'));
     expect(user, contains('The rest is an implementation plan'));
   });
+
+  test('Checklist updates prompt includes update_checklist_items guidance', () {
+    final sys = checklistUpdatesPrompt.systemMessage;
+    expect(sys, contains('update_checklist_items'));
+    expect(sys, contains('Update existing checklist items by ID'));
+    expect(sys, contains('isChecked'));
+    expect(sys, contains('title'));
+    // Check for reactive behavior guidance
+    expect(sys, contains('REACTIVE'));
+    // Check for title correction examples
+    expect(sys, contains('macOS'));
+  });
 }

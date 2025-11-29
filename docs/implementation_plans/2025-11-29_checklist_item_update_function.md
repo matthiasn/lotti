@@ -494,25 +494,25 @@ User might be editing an item in the UI while AI is updating it.
 
 ### Functional
 
-- [ ] New `update_checklist_items` function exposed to AI with correct schema
-- [ ] Handler validates all inputs and provides helpful error messages
-- [ ] Status updates (`isChecked`) work for both checking and unchecking
-- [ ] Title updates work and respect character limits (400 chars after normalization)
-- [ ] Whitespace normalization applied to titles (trim + collapse internal spaces)
-- [ ] Combined updates (status + title) work in single call
-- [ ] Items not belonging to task are rejected with clear reason
-- [ ] Return value shows which items were updated vs. skipped
-- [ ] Prompts guide AI on when to use update vs. create
-- [ ] Task summary refresh triggers after updates
-- [ ] Old `complete_checklist_items` function fully removed
+- [x] New `update_checklist_items` function exposed to AI with correct schema
+- [x] Handler validates all inputs and provides helpful error messages
+- [x] Status updates (`isChecked`) work for both checking and unchecking
+- [x] Title updates work and respect character limits (400 chars after normalization)
+- [x] Whitespace normalization applied to titles (trim + collapse internal spaces)
+- [x] Combined updates (status + title) work in single call
+- [x] Items not belonging to task are rejected with clear reason
+- [x] Return value shows which items were updated vs. skipped
+- [x] Prompts guide AI on when to use update vs. create
+- [x] Task summary refresh triggers after updates
+- [x] Old `complete_checklist_items` function fully removed
 
 ### Quality Gates (enforced via MCP tools)
 
-- [ ] `mcp__dart-mcp-local__analyze_files` — zero warnings
-- [ ] `mcp__dart-mcp-local__dart_format` — all code formatted
-- [ ] `mcp__dart-mcp-local__run_tests` — all tests pass
-- [ ] Test coverage close to 100% for new handler code
-- [ ] Validation run after each implementation step, not batched
+- [x] `mcp__dart-mcp-local__analyze_files` — zero warnings
+- [x] `mcp__dart-mcp-local__dart_format` — all code formatted
+- [x] `mcp__dart-mcp-local__run_tests` — all tests pass
+- [x] Test coverage close to 100% for new handler code (46 unit tests for handler)
+- [x] Validation run after each implementation step, not batched
 
 ## Decisions
 
@@ -549,3 +549,27 @@ User might be editing an item in the UI while AI is updating it.
 ## Status
 
 - [x] Ready for implementation
+- [x] Implementation completed (2025-11-29)
+
+### Summary of Implementation
+
+All phases completed successfully:
+
+1. **Phase 1 (Core)**: Created `LottiChecklistUpdateHandler` with 46 comprehensive unit tests
+2. **Phase 2 (Integration)**: Updated conversation processor, tool selector, and repository
+3. **Phase 3 (Prompts)**: Updated `preconfigured_prompts.dart` with update guidance
+4. **Phase 4 (Validation)**: All tests pass (70 tests for related files), analyzer clean, code formatted
+
+### Files Modified
+
+- `lib/features/ai/functions/checklist_completion_functions.dart` - New `update_checklist_items` schema
+- `lib/features/ai/functions/lotti_checklist_update_handler.dart` - **New file** - Handler implementation
+- `lib/features/ai/functions/lotti_conversation_processor.dart` - Uses new handler
+- `lib/features/ai/functions/checklist_tool_selector.dart` - Updated tool references
+- `lib/features/ai/repository/unified_ai_inference_repository.dart` - Updated tool injection
+- `lib/features/ai/util/preconfigured_prompts.dart` - Added update guidance
+- `lib/features/ai/README.md` - Documentation updated
+- `test/features/ai/functions/lotti_checklist_update_handler_test.dart` - **New file** - 46 tests
+- `test/features/ai/functions/checklist_completion_functions_test.dart` - Updated test
+- `test/features/ai/functions/lotti_conversation_processor_test.dart` - Updated tests
+- `test/features/ai/util/preconfigured_prompts_test.dart` - Added update guidance test

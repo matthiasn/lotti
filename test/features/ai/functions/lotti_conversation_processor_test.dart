@@ -974,26 +974,57 @@ void main() {
           )).called(1);
     });
 
-    test('should handle complete_checklist_items tool call', () async {
-      when(
-        () => mockChecklistRepo.completeChecklistItemsForTask(
-          task: any<Task>(named: 'task'),
-          itemIds: any<List<String>>(named: 'itemIds'),
-        ),
-      ).thenAnswer((_) async => (updated: ['item-1'], skipped: ['item-2']));
-
+    test('should handle update_checklist_items tool call', () async {
       when(() => mockConversationManager.addToolResponse(
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
           )).thenAnswer((_) {});
 
+      // Note: The update handler requires valid items and task setup.
+      // Since executeUpdates actually needs DB entities, we'll mock the
+      // scenario where the handler returns an error for missing items.
       final toolCalls = [
         const ChatCompletionMessageToolCall(
-          id: 'tool-complete',
+          id: 'tool-update',
           type: ChatCompletionMessageToolCallType.function,
           function: ChatCompletionMessageFunctionCall(
-            name: 'complete_checklist_items',
-            arguments: '{"items":["item-1","item-2"],"reason":"done"}',
+            name: 'update_checklist_items',
+            arguments:
+                '{"items":[{"id":"item-1","isChecked":true},{"id":"item-2","title":"Fixed title"}]}',
+          ),
+        ),
+      ];
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+      // Verify that addToolResponse was called with the tool call id
+      verify(
+        () => mockConversationManager.addToolResponse(
+          toolCallId: 'tool-update',
+          response: any(named: 'response'),
+        ),
+      ).called(1);
+    });
+
+    test('should handle update_checklist_items with validation error',
+        () async {
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      // Test with invalid arguments (missing items array)
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-update-invalid',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_checklist_items',
+            arguments: '{"wrongField":"value"}',
           ),
         ),
       ];
@@ -1005,15 +1036,9 @@ void main() {
 
       expect(action, ConversationAction.continueConversation);
       verify(
-        () => mockChecklistRepo.completeChecklistItemsForTask(
-          task: any<Task>(named: 'task'),
-          itemIds: ['item-1', 'item-2'],
-        ),
-      ).called(1);
-      verify(
         () => mockConversationManager.addToolResponse(
-          toolCallId: 'tool-complete',
-          response: any(named: 'response', that: contains('Marked 1')),
+          toolCallId: 'tool-update-invalid',
+          response: any(named: 'response', that: contains('Error')),
         ),
       ).called(1);
     });

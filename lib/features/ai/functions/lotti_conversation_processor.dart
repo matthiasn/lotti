@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
+import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -332,9 +333,9 @@ class LottiChecklistStrategy extends ConversationStrategy {
           response: batchChecklistHandler.createToolResponse(result),
         );
       } else if (call.function.name ==
-          ChecklistCompletionFunctions.completeChecklistItems) {
+          ChecklistCompletionFunctions.updateChecklistItems) {
         final response =
-            await _processCompleteChecklistItemsCall(call, checklistHandler);
+            await _processUpdateChecklistItemsCall(call, checklistHandler);
 
         manager.addToolResponse(
           toolCallId: call.id,
@@ -639,55 +640,34 @@ If there are more items to add from the user's original request:
 Continue until all items from the user's request have been added.''';
   }
 
-  Future<String> _processCompleteChecklistItemsCall(
+  Future<String> _processUpdateChecklistItemsCall(
     ChatCompletionMessageToolCall call,
     LottiChecklistItemHandler handler,
   ) async {
     try {
-      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
-      final rawItems = args['items'];
-      if (rawItems is! List) {
-        return 'complete_checklist_items requires an array of checklist item IDs.';
-      }
-
-      final ids = rawItems
-          .whereType<String>()
-          .map((id) => id.trim())
-          .where((id) => id.isNotEmpty)
-          .toList();
-
-      if (ids.isEmpty) {
-        return 'No checklist item IDs provided for completion.';
-      }
-
-      final reason = args['reason'] as String?;
-      final result =
-          await handler.checklistRepository.completeChecklistItemsForTask(
+      final updateHandler = LottiChecklistUpdateHandler(
         task: handler.task,
-        itemIds: ids,
+        checklistRepository: handler.checklistRepository,
+        onTaskUpdated: handler.onTaskUpdated,
       );
 
-      final buffer = StringBuffer();
-      if (result.updated.isNotEmpty) {
-        buffer.writeln(
-          'Marked ${result.updated.length} checklist item(s) as complete: ${result.updated.join(', ')}.',
-        );
-      }
-      if (result.skipped.isNotEmpty) {
-        buffer.writeln(
-          'Skipped ${result.skipped.length} item(s): ${result.skipped.join(', ')}.',
-        );
-      }
-      if (reason != null && reason.trim().isNotEmpty) {
-        buffer.writeln('Reason: ${reason.trim()}');
+      final result = updateHandler.processFunctionCall(call);
+
+      if (!result.success) {
+        return 'Error: ${result.error}';
       }
 
-      final response = buffer.toString().trim();
-      return response.isEmpty
-          ? 'No checklist items were marked complete. Ensure the IDs belong to this task and are not already checked.'
-          : response;
+      final count = await updateHandler.executeUpdates(result);
+      final response = updateHandler.createToolResponse(result);
+
+      developer.log(
+        'Updated $count checklist items',
+        name: 'LottiConversationProcessor',
+      );
+
+      return response;
     } catch (e) {
-      return 'Error processing complete_checklist_items: $e';
+      return 'Error processing update_checklist_items: $e';
     }
   }
 }

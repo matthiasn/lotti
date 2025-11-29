@@ -36,7 +36,7 @@ void main() {
       final names = tools.map((t) => t.function.name).toList();
       expect(names, contains('suggest_checklist_completion'));
       expect(names, contains('add_multiple_checklist_items'));
-      expect(names, contains('complete_checklist_items'));
+      expect(names, contains('update_checklist_items'));
       expect(names.length, 3);
     });
 
@@ -60,7 +60,7 @@ void main() {
         final names = tools.map((t) => t.function.name).toList();
         expect(names, contains('suggest_checklist_completion'));
         expect(names, contains('add_multiple_checklist_items'));
-        expect(names, contains('complete_checklist_items'));
+        expect(names, contains('update_checklist_items'));
         expect(names.length, 3);
       }
     });

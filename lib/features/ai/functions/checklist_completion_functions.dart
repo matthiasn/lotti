@@ -10,7 +10,7 @@ class ChecklistCompletionFunctions {
       'suggest_checklist_completion';
   static const String addMultipleChecklistItems =
       'add_multiple_checklist_items';
-  static const String completeChecklistItems = 'complete_checklist_items';
+  static const String updateChecklistItems = 'update_checklist_items';
 
   /// Get all available function definitions for checklist operations
   static List<ChatCompletionTool> getTools() {
@@ -85,23 +85,47 @@ class ChecklistCompletionFunctions {
       const ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(
-          name: completeChecklistItems,
+          name: updateChecklistItems,
           description:
-              'Mark one or more checklist items as completed when the user explicitly states they are done. Use only with existing checklist item IDs.',
+              'Update one or more existing checklist items. Use to mark items as '
+              'done/undone or to correct titles (e.g., fix transcription errors '
+              'like "mac OS" → "macOS"). Each update requires the item ID and at '
+              'least one field to change.',
           parameters: {
             'type': 'object',
             'properties': {
               'items': {
                 'type': 'array',
                 'minItems': 1,
-                'items': {'type': 'string'},
+                'maxItems': 20,
+                'items': {
+                  'type': 'object',
+                  'properties': {
+                    'id': {
+                      'type': 'string',
+                      'description': 'The ID of the checklist item to update',
+                    },
+                    'isChecked': {
+                      'type': 'boolean',
+                      'description':
+                          'New checked status. Set true when user indicates '
+                              'completion, false to uncheck if user explicitly says '
+                              'to uncheck.',
+                    },
+                    'title': {
+                      'type': 'string',
+                      'minLength': 1,
+                      'maxLength': 400,
+                      'description':
+                          'Updated title text. Use to fix transcription errors '
+                              'or clarify wording.',
+                    },
+                  },
+                  'required': ['id'],
+                },
                 'description':
-                    'Array of checklist item IDs to complete (max 20).',
-              },
-              'reason': {
-                'type': 'string',
-                'description':
-                    'Optional short justification describing why these items can be marked complete.',
+                    'Array of updates. Each must have id and at least one of '
+                        'isChecked or title.',
               },
             },
             'required': ['items'],
