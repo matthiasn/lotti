@@ -220,7 +220,38 @@ class ConversationResult {
   final List<ChatCompletionMessage> messages;
 }
 
-/// Strategy for handling checklist creation in Lotti
+/// Strategy for handling checklist operations (create and update) in Lotti.
+///
+/// This strategy processes three types of AI function calls:
+/// - `add_checklist_item`: Creates a single checklist item
+/// - `add_multiple_checklist_items`: Creates multiple items in a batch
+/// - `update_checklist_items`: Updates existing items (status and/or title)
+///
+/// ## Error Handling Philosophy
+///
+/// The strategy distinguishes between two types of issues:
+///
+/// 1. **Validation Errors** (retry-able): Missing required fields, wrong types,
+///    empty arrays. These set [hadErrors] to true and populate [_failedResults]
+///    for function-specific retry prompts.
+///
+/// 2. **Skipped Items** (graceful): Item not found, doesn't belong to task,
+///    no changes detected. These are logged but NOT treated as errors per the
+///    prompt contract: "If an item ID is invalid or doesn't belong to this
+///    task, it will be skipped (not an error for you)."
+///
+/// ## Continuation Logic
+///
+/// The [getContinuationPrompt] method provides context-aware feedback:
+/// - **Update-only success**: "You've updated N item(s)" without encouraging
+///   unnecessary item creation
+/// - **Create-only or mixed**: Lists created items with continuation guidance
+/// - **Errors**: Provides function-specific retry prompts (create vs update)
+///
+/// ## Usage
+///
+/// Typically instantiated by [LottiConversationProcessor] with handlers for
+/// single item creation, batch creation, and updates.
 class LottiChecklistStrategy extends ConversationStrategy {
   LottiChecklistStrategy({
     required this.checklistHandler,
@@ -238,7 +269,11 @@ class LottiChecklistStrategy extends ConversationStrategy {
   bool _hadErrors = false;
   final List<FunctionCallResult> _failedResults = [];
 
-  /// Track successfully updated items (separate from created items)
+  /// Track successfully updated items (separate from created items).
+  ///
+  /// This allows [getResponseSummary] and [getContinuationPrompt] to provide
+  /// accurate feedback for update-only conversations without misleading
+  /// "No items created" messages.
   int _successfulUpdates = 0;
 
   bool get hadErrors => _hadErrors;
@@ -731,6 +766,22 @@ For updating existing items, use:
 Please retry with the correct format.''';
   }
 
+  /// Process an `update_checklist_items` function call.
+  ///
+  /// This method handles updates to existing checklist items, supporting:
+  /// - Marking items as checked/unchecked
+  /// - Fixing titles (e.g., transcription error corrections)
+  /// - Combined status and title updates
+  ///
+  /// ## Error Handling
+  ///
+  /// - **Validation errors** (missing ID, wrong types): Sets [_hadErrors] to true
+  ///   and adds to [_failedResults] for retry prompt generation.
+  /// - **Skipped items** (not found, out of scope, no changes): Logged but NOT
+  ///   treated as errors. The prompt contract states these are "not an error
+  ///   for you", allowing the conversation to complete normally.
+  ///
+  /// Returns the tool response string for the AI.
   Future<String> _processUpdateChecklistItemsCall(
     ChatCompletionMessageToolCall call,
     LottiChecklistItemHandler handler,

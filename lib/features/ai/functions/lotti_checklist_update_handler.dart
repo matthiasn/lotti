@@ -35,23 +35,43 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   final List<UpdatedItemDetail> _updatedItems = [];
   final List<SkippedItemDetail> _skippedItems = [];
 
+  /// Helper to record a skipped item with a reason.
+  void _skip(String id, String reason) {
+    _skippedItems.add(SkippedItemDetail(id: id, reason: reason));
+  }
+
   static const int maxBatchSize = 20;
   static const int maxTitleLength = 400;
 
   @override
   String get functionName => 'update_checklist_items';
 
+  /// Creates a standardized error result for validation failures.
+  FunctionCallResult _createErrorResult(
+    ChatCompletionMessageToolCall call,
+    String error, {
+    bool includeTaskId = true,
+  }) {
+    return FunctionCallResult(
+      success: false,
+      functionName: functionName,
+      arguments: call.function.arguments,
+      data: {
+        'toolCallId': call.id,
+        if (includeTaskId) 'taskId': task.id,
+      },
+      error: error,
+    );
+  }
+
   @override
   FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
     // Early check: verify function name matches
     if (call.function.name != functionName) {
-      return FunctionCallResult(
-        success: false,
-        functionName: functionName,
-        arguments: call.function.arguments,
-        data: {'toolCallId': call.id},
-        error:
-            'Function name mismatch: expected "$functionName", got "${call.function.name}"',
+      return _createErrorResult(
+        call,
+        'Function name mismatch: expected "$functionName", got "${call.function.name}"',
+        includeTaskId: false,
       );
     }
 
@@ -60,43 +80,24 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final raw = args['items'];
 
       if (raw is! List) {
-        return FunctionCallResult(
-          success: false,
-          functionName: functionName,
-          arguments: call.function.arguments,
-          data: {
-            'toolCallId': call.id,
-            'taskId': task.id,
-          },
-          error:
-              'Invalid or missing "items". Provide a JSON array of update objects: '
-              '{"items": [{"id": "...", "isChecked": true}]}',
+        return _createErrorResult(
+          call,
+          'Invalid or missing "items". Provide a JSON array of update objects: '
+          '{"items": [{"id": "...", "isChecked": true}]}',
         );
       }
 
       if (raw.isEmpty) {
-        return FunctionCallResult(
-          success: false,
-          functionName: functionName,
-          arguments: call.function.arguments,
-          data: {
-            'toolCallId': call.id,
-            'taskId': task.id,
-          },
-          error: 'Empty items array. Provide at least one update.',
+        return _createErrorResult(
+          call,
+          'Empty items array. Provide at least one update.',
         );
       }
 
       if (raw.length > maxBatchSize) {
-        return FunctionCallResult(
-          success: false,
-          functionName: functionName,
-          arguments: call.function.arguments,
-          data: {
-            'toolCallId': call.id,
-            'taskId': task.id,
-          },
-          error: 'Too many items. Maximum batch size is $maxBatchSize.',
+        return _createErrorResult(
+          call,
+          'Too many items. Maximum batch size is $maxBatchSize.',
         );
       }
 
@@ -106,30 +107,18 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         final item = raw[i];
 
         if (item is! Map<String, dynamic>) {
-          return FunctionCallResult(
-            success: false,
-            functionName: functionName,
-            arguments: call.function.arguments,
-            data: {
-              'toolCallId': call.id,
-              'taskId': task.id,
-            },
-            error:
-                'Item at index $i is not an object. Each item must be an object with id and at least one of isChecked or title.',
+          return _createErrorResult(
+            call,
+            'Item at index $i is not an object. Each item must be an object '
+            'with id and at least one of isChecked or title.',
           );
         }
 
         final id = item['id'];
         if (id is! String || id.trim().isEmpty) {
-          return FunctionCallResult(
-            success: false,
-            functionName: functionName,
-            arguments: call.function.arguments,
-            data: {
-              'toolCallId': call.id,
-              'taskId': task.id,
-            },
-            error: 'Item at index $i is missing required "id" field.',
+          return _createErrorResult(
+            call,
+            'Item at index $i is missing required "id" field.',
           );
         }
 
@@ -138,31 +127,18 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
         // Must have at least one update field
         if (isChecked == null && title == null) {
-          return FunctionCallResult(
-            success: false,
-            functionName: functionName,
-            arguments: call.function.arguments,
-            data: {
-              'toolCallId': call.id,
-              'taskId': task.id,
-            },
-            error:
-                'Item at index $i (id: $id) has no update fields. Provide at least one of isChecked or title.',
+          return _createErrorResult(
+            call,
+            'Item at index $i (id: $id) has no update fields. '
+            'Provide at least one of isChecked or title.',
           );
         }
 
         // Validate isChecked type if present
         if (isChecked != null && isChecked is! bool) {
-          return FunctionCallResult(
-            success: false,
-            functionName: functionName,
-            arguments: call.function.arguments,
-            data: {
-              'toolCallId': call.id,
-              'taskId': task.id,
-            },
-            error:
-                'Item at index $i has invalid isChecked value. Must be a boolean.',
+          return _createErrorResult(
+            call,
+            'Item at index $i has invalid isChecked value. Must be a boolean.',
           );
         }
 
@@ -170,46 +146,26 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         String? normalizedTitle;
         if (title != null) {
           if (title is! String) {
-            return FunctionCallResult(
-              success: false,
-              functionName: functionName,
-              arguments: call.function.arguments,
-              data: {
-                'toolCallId': call.id,
-                'taskId': task.id,
-              },
-              error:
-                  'Item at index $i has invalid title value. Must be a string.',
+            return _createErrorResult(
+              call,
+              'Item at index $i has invalid title value. Must be a string.',
             );
           }
 
           normalizedTitle = normalizeWhitespace(title);
 
           if (normalizedTitle.isEmpty) {
-            return FunctionCallResult(
-              success: false,
-              functionName: functionName,
-              arguments: call.function.arguments,
-              data: {
-                'toolCallId': call.id,
-                'taskId': task.id,
-              },
-              error:
-                  'Item at index $i has empty title after normalization. Title must not be blank.',
+            return _createErrorResult(
+              call,
+              'Item at index $i has empty title after normalization. '
+              'Title must not be blank.',
             );
           }
 
           if (normalizedTitle.length > maxTitleLength) {
-            return FunctionCallResult(
-              success: false,
-              functionName: functionName,
-              arguments: call.function.arguments,
-              data: {
-                'toolCallId': call.id,
-                'taskId': task.id,
-              },
-              error:
-                  'Item at index $i has title exceeding $maxTitleLength characters.',
+            return _createErrorResult(
+              call,
+              'Item at index $i has title exceeding $maxTitleLength characters.',
             );
           }
         }
@@ -232,16 +188,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         },
       );
     } catch (e) {
-      return FunctionCallResult(
-        success: false,
-        functionName: functionName,
-        arguments: call.function.arguments,
-        data: {
-          'toolCallId': call.id,
-          'taskId': task.id,
-        },
-        error: 'Invalid JSON: $e',
-      );
+      return _createErrorResult(call, 'Invalid JSON: $e');
     }
   }
 
@@ -267,10 +214,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
     if (allowedChecklistIds.isEmpty) {
       for (final item in items) {
-        _skippedItems.add(SkippedItemDetail(
-          id: item['id'] as String,
-          reason: 'Task has no checklists',
-        ));
+        _skip(item['id'] as String, 'Task has no checklists');
       }
       return 0;
     }
@@ -295,10 +239,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
       // Check entity exists and is a ChecklistItem
       if (entity is! ChecklistItem) {
-        _skippedItems.add(SkippedItemDetail(
-          id: id,
-          reason: entity == null ? 'Item not found' : 'Not a checklist item',
-        ));
+        _skip(id, entity == null ? 'Item not found' : 'Not a checklist item');
         continue;
       }
 
@@ -306,10 +247,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final belongsToTask =
           entity.data.linkedChecklists.any(allowedChecklistIds.contains);
       if (!belongsToTask) {
-        _skippedItems.add(SkippedItemDetail(
-          id: id,
-          reason: 'Item does not belong to this task',
-        ));
+        _skip(id, 'Item does not belong to this task');
         continue;
       }
 
@@ -322,10 +260,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final titleChanged = newTitle != null && newTitle != currentTitle;
 
       if (!isCheckedChanged && !titleChanged) {
-        _skippedItems.add(SkippedItemDetail(
-          id: id,
-          reason: 'No changes detected',
-        ));
+        _skip(id, 'No changes detected');
         continue;
       }
 
@@ -359,10 +294,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           name: 'LottiChecklistUpdateHandler',
         );
       } else {
-        _skippedItems.add(SkippedItemDetail(
-          id: id,
-          reason: 'Update failed',
-        ));
+        _skip(id, 'Update failed');
       }
     }
 

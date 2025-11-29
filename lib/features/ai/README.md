@@ -112,6 +112,9 @@ The repository layer has been refactored for better separation of concerns:
   - Normalizes whitespace in titles
   - Handles batch updates (up to 20 items per call)
   - Reactive title corrections (only when user mentions the item)
+  - Graceful skipping: invalid/out-of-scope IDs are skipped (not treated as errors)
+  - Centralized error creation via `_createErrorResult` helper
+  - Centralized skip tracking via `_skip` helper
 - **`task_functions.dart`**: Function definitions for task operations
   - `set_task_language`: Automatically detects and sets task language
 - **`lotti_conversation_processor.dart`**: Conversation-based processing for better batching
@@ -617,6 +620,26 @@ AI can automatically create new checklist items based on content analysis:
 - **Common Triggers**: "I need to...", "Next I'll...", task mentions
 - **Batch Processing**: Uses conversation-based approach for efficient handling
 - **Error Recovery**: Automatic retry with corrected format on failures
+
+### Updating Checklist Items
+
+AI can update existing checklist items based on user intent:
+
+- **Semantic Matching**: Say "I did the shopping" and the AI marks the matching item complete—no exact text match required
+- **Title Corrections**: Fix transcription errors like "mac OS" → "macOS" or "i Phone" → "iPhone"
+- **Combined Updates**: Change both status and title in a single call
+- **Graceful Skipping**: Invalid or out-of-scope item IDs are skipped without causing errors (per prompt contract: "not an error for you")
+- **Function-Specific Retry**: Validation errors (missing ID, wrong types) trigger update-specific retry prompts with correct format guidance
+- **Context-Aware Continuation**: Update-only success shows appropriate message ("You've updated N item(s)") rather than misleading "No items created"
+
+#### Error Handling Philosophy
+
+The update handler distinguishes between two types of issues:
+
+1. **Validation Errors** (retry-able): Missing required fields, wrong types, empty arrays → Sets `hadErrors=true`, provides specific retry guidance
+2. **Skipped Items** (graceful): Item not found, doesn't belong to task, no changes detected → Logged but NOT treated as errors, allows conversation to complete normally
+
+This ensures the AI receives actionable feedback for fixable problems while gracefully handling expected edge cases like stale item IDs.
 
 #### Per-Entry Directive Behavior (Checklist Updates)
 
