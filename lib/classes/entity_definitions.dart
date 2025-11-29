@@ -127,6 +127,7 @@ sealed class EntityDefinition with _$EntityDefinition {
     List<String>? allowedPromptIds,
     Map<AiResponseType, List<String>>? automaticPrompts,
     @CategoryIconConverter() CategoryIcon? icon,
+    List<String>? speechDictionary,
   }) = CategoryDefinition;
 
   const factory EntityDefinition.labelDefinition({

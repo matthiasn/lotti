@@ -1971,7 +1971,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
             Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
+            @CategoryIconConverter() CategoryIcon? icon,
+            List<String>? speechDictionary)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -2058,7 +2059,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.defaultLanguageCode,
             _that.allowedPromptIds,
             _that.automaticPrompts,
-            _that.icon);
+            _that.icon,
+            _that.speechDictionary);
       case LabelDefinition() when labelDefinition != null:
         return labelDefinition(
             _that.id,
@@ -2159,7 +2161,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
             Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)
+            @CategoryIconConverter() CategoryIcon? icon,
+            List<String>? speechDictionary)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -2245,7 +2248,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.defaultLanguageCode,
             _that.allowedPromptIds,
             _that.automaticPrompts,
-            _that.icon);
+            _that.icon,
+            _that.speechDictionary);
       case LabelDefinition():
         return labelDefinition(
             _that.id,
@@ -2343,7 +2347,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             String? defaultLanguageCode,
             List<String>? allowedPromptIds,
             Map<AiResponseType, List<String>>? automaticPrompts,
-            @CategoryIconConverter() CategoryIcon? icon)?
+            @CategoryIconConverter() CategoryIcon? icon,
+            List<String>? speechDictionary)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -2429,7 +2434,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.defaultLanguageCode,
             _that.allowedPromptIds,
             _that.automaticPrompts,
-            _that.icon);
+            _that.icon,
+            _that.speechDictionary);
       case LabelDefinition() when labelDefinition != null:
         return labelDefinition(
             _that.id,
@@ -2727,9 +2733,11 @@ class CategoryDefinition implements EntityDefinition {
       final List<String>? allowedPromptIds,
       final Map<AiResponseType, List<String>>? automaticPrompts,
       @CategoryIconConverter() this.icon,
+      final List<String>? speechDictionary,
       final String? $type})
       : _allowedPromptIds = allowedPromptIds,
         _automaticPrompts = automaticPrompts,
+        _speechDictionary = speechDictionary,
         $type = $type ?? 'categoryDefinition';
   factory CategoryDefinition.fromJson(Map<String, dynamic> json) =>
       _$CategoryDefinitionFromJson(json);
@@ -2773,6 +2781,15 @@ class CategoryDefinition implements EntityDefinition {
 
   @CategoryIconConverter()
   final CategoryIcon? icon;
+  final List<String>? _speechDictionary;
+  List<String>? get speechDictionary {
+    final value = _speechDictionary;
+    if (value == null) return null;
+    if (_speechDictionary is EqualUnmodifiableListView)
+      return _speechDictionary;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -2820,7 +2837,9 @@ class CategoryDefinition implements EntityDefinition {
                 .equals(other._allowedPromptIds, _allowedPromptIds) &&
             const DeepCollectionEquality()
                 .equals(other._automaticPrompts, _automaticPrompts) &&
-            (identical(other.icon, icon) || other.icon == icon));
+            (identical(other.icon, icon) || other.icon == icon) &&
+            const DeepCollectionEquality()
+                .equals(other._speechDictionary, _speechDictionary));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2841,11 +2860,12 @@ class CategoryDefinition implements EntityDefinition {
       defaultLanguageCode,
       const DeepCollectionEquality().hash(_allowedPromptIds),
       const DeepCollectionEquality().hash(_automaticPrompts),
-      icon);
+      icon,
+      const DeepCollectionEquality().hash(_speechDictionary));
 
   @override
   String toString() {
-    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts, icon: $icon)';
+    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts, icon: $icon, speechDictionary: $speechDictionary)';
   }
 }
 
@@ -2872,7 +2892,8 @@ abstract mixin class $CategoryDefinitionCopyWith<$Res>
       String? defaultLanguageCode,
       List<String>? allowedPromptIds,
       Map<AiResponseType, List<String>>? automaticPrompts,
-      @CategoryIconConverter() CategoryIcon? icon});
+      @CategoryIconConverter() CategoryIcon? icon,
+      List<String>? speechDictionary});
 }
 
 /// @nodoc
@@ -2903,6 +2924,7 @@ class _$CategoryDefinitionCopyWithImpl<$Res>
     Object? allowedPromptIds = freezed,
     Object? automaticPrompts = freezed,
     Object? icon = freezed,
+    Object? speechDictionary = freezed,
   }) {
     return _then(CategoryDefinition(
       id: null == id
@@ -2965,6 +2987,10 @@ class _$CategoryDefinitionCopyWithImpl<$Res>
           ? _self.icon
           : icon // ignore: cast_nullable_to_non_nullable
               as CategoryIcon?,
+      speechDictionary: freezed == speechDictionary
+          ? _self._speechDictionary
+          : speechDictionary // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ));
   }
 }
