@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
+import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -219,7 +220,38 @@ class ConversationResult {
   final List<ChatCompletionMessage> messages;
 }
 
-/// Strategy for handling checklist creation in Lotti
+/// Strategy for handling checklist operations (create and update) in Lotti.
+///
+/// This strategy processes three types of AI function calls:
+/// - `add_checklist_item`: Creates a single checklist item
+/// - `add_multiple_checklist_items`: Creates multiple items in a batch
+/// - `update_checklist_items`: Updates existing items (status and/or title)
+///
+/// ## Error Handling Philosophy
+///
+/// The strategy distinguishes between two types of issues:
+///
+/// 1. **Validation Errors** (retry-able): Missing required fields, wrong types,
+///    empty arrays. These set [hadErrors] to true and populate [_failedResults]
+///    for function-specific retry prompts.
+///
+/// 2. **Skipped Items** (graceful): Item not found, doesn't belong to task,
+///    no changes detected. These are logged but NOT treated as errors per the
+///    prompt contract: "If an item ID is invalid or doesn't belong to this
+///    task, it will be skipped (not an error for you)."
+///
+/// ## Continuation Logic
+///
+/// The [getContinuationPrompt] method provides context-aware feedback:
+/// - **Update-only success**: "You've updated N item(s)" without encouraging
+///   unnecessary item creation
+/// - **Create-only or mixed**: Lists created items with continuation guidance
+/// - **Errors**: Provides function-specific retry prompts (create vs update)
+///
+/// ## Usage
+///
+/// Typically instantiated by [LottiConversationProcessor] with handlers for
+/// single item creation, batch creation, and updates.
 class LottiChecklistStrategy extends ConversationStrategy {
   LottiChecklistStrategy({
     required this.checklistHandler,
@@ -237,6 +269,13 @@ class LottiChecklistStrategy extends ConversationStrategy {
   bool _hadErrors = false;
   final List<FunctionCallResult> _failedResults = [];
 
+  /// Track successfully updated items (separate from created items).
+  ///
+  /// This allows [getResponseSummary] and [getContinuationPrompt] to provide
+  /// accurate feedback for update-only conversations without misleading
+  /// "No items created" messages.
+  int _successfulUpdates = 0;
+
   bool get hadErrors => _hadErrors;
 
   String getResponseSummary() {
@@ -246,14 +285,26 @@ class LottiChecklistStrategy extends ConversationStrategy {
       ...batchChecklistHandler.successfulItems,
     }.toList();
 
-    if (allItems.isEmpty) {
-      return 'No checklist items were created.';
+    final parts = <String>[];
+
+    if (allItems.isNotEmpty) {
+      final itemCount = allItems.length;
+      final itemWord = itemCount == 1 ? 'item' : 'items';
+      parts.add(
+        'Created $itemCount checklist $itemWord:\n${allItems.map((item) => '• $item').join('\n')}',
+      );
     }
 
-    final itemCount = allItems.length;
-    final itemWord = itemCount == 1 ? 'item' : 'items';
+    if (_successfulUpdates > 0) {
+      final updateWord = _successfulUpdates == 1 ? 'item' : 'items';
+      parts.add('Updated $_successfulUpdates checklist $updateWord.');
+    }
 
-    return 'Created $itemCount checklist $itemWord:\n${allItems.map((item) => '• $item').join('\n')}';
+    if (parts.isEmpty) {
+      return 'No checklist items were created or updated.';
+    }
+
+    return parts.join('\n\n');
   }
 
   @override
@@ -332,9 +383,9 @@ class LottiChecklistStrategy extends ConversationStrategy {
           response: batchChecklistHandler.createToolResponse(result),
         );
       } else if (call.function.name ==
-          ChecklistCompletionFunctions.completeChecklistItems) {
+          ChecklistCompletionFunctions.updateChecklistItems) {
         final response =
-            await _processCompleteChecklistItemsCall(call, checklistHandler);
+            await _processUpdateChecklistItemsCall(call, checklistHandler);
 
         manager.addToolResponse(
           toolCallId: call.id,
@@ -562,16 +613,18 @@ class LottiChecklistStrategy extends ConversationStrategy {
         provider.inferenceProviderType != InferenceProviderType.ollama;
 
     // Continue logic depends on provider type
+    // Count both created items AND successful updates as work done
     final totalSuccessfulItems = checklistHandler.successfulItems.length;
+    final totalWorkDone = totalSuccessfulItems + _successfulUpdates;
     final shouldContinue = !isCloudProvider && // Only continue for Ollama
         _rounds < 10 &&
-        (_rounds == 1 || totalSuccessfulItems > 0);
+        (_rounds == 1 || totalWorkDone > 0);
 
     developer.log(
       'Deciding whether to continue: provider=${provider.inferenceProviderType}, '
       'isCloudProvider=$isCloudProvider, checklistItems=${checklistHandler.successfulItems.length}, '
       'batchItems=${batchChecklistHandler.successfulItems.length}, '
-      'totalItems=$totalSuccessfulItems, rounds=$_rounds, shouldContinue=$shouldContinue',
+      'updatedItems=$_successfulUpdates, totalWorkDone=$totalWorkDone, rounds=$_rounds, shouldContinue=$shouldContinue',
       name: 'LottiConversationProcessor',
     );
 
@@ -589,8 +642,10 @@ class LottiChecklistStrategy extends ConversationStrategy {
       return false;
     }
 
+    // Count both created items AND successful updates as work done
     final totalSuccessfulItems = checklistHandler.successfulItems.length;
-    return _rounds < 10 && (_rounds == 1 || totalSuccessfulItems > 0);
+    final totalWorkDone = totalSuccessfulItems + _successfulUpdates;
+    return _rounds < 10 && (_rounds == 1 || totalWorkDone > 0);
   }
 
   @override
@@ -599,10 +654,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
 
     // Check if we have failed items to retry
     if (_failedResults.isNotEmpty && _rounds <= 2) {
-      final retryPrompt = checklistHandler.getRetryPrompt(
-        failedItems: _failedResults,
-        successfulDescriptions: checklistHandler.successfulItems,
-      );
+      final retryPrompt = _getRetryPromptForFailedResults();
       _failedResults.clear(); // Clear for next round
       return retryPrompt;
     }
@@ -613,10 +665,10 @@ class LottiChecklistStrategy extends ConversationStrategy {
       ...batchChecklistHandler.successfulItems,
     }.toList();
 
-    // If no items created yet, provide explicit instructions
-    if (allSuccessfulItems.isEmpty) {
+    // If no items created or updated yet, provide explicit instructions
+    if (allSuccessfulItems.isEmpty && _successfulUpdates == 0) {
       return '''
-You haven't created any checklist items yet. Please review the user's original request.
+You haven't created or updated any checklist items yet. Please review the user's original request.
 
 IMPORTANT: When you have multiple items to add (2 or more), you MUST use add_multiple_checklist_items in a SINGLE call.
 
@@ -629,8 +681,29 @@ add_multiple_checklist_items with {"items": [{"title": "cheese"}, {"title": "pep
 Please create the checklist items now using the required function and format.''';
     }
 
+    // Build a summary of work done
+    final workSummary = <String>[];
+    if (allSuccessfulItems.isNotEmpty) {
+      workSummary.add(
+        'created ${allSuccessfulItems.length} item(s): ${allSuccessfulItems.join(', ')}',
+      );
+    }
+    if (_successfulUpdates > 0) {
+      workSummary.add('updated $_successfulUpdates item(s)');
+    }
+
+    // Context-aware continuation: different guidance based on what was done
+    if (allSuccessfulItems.isEmpty && _successfulUpdates > 0) {
+      // Only updates were done - don't encourage adding new items unnecessarily
+      return '''
+Great! You've updated $_successfulUpdates item(s).
+
+If the user's request mentioned additional items to update or new items to create, continue processing.
+Otherwise, you're done - no further action needed.''';
+    }
+
     return '''
-Great! You've created ${allSuccessfulItems.length} checklist item(s) so far: ${allSuccessfulItems.join(', ')}.
+Great! You've ${workSummary.join(' and ')}.
 
 If there are more items to add from the user's original request:
 - Use add_multiple_checklist_items with {"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3"}]}
@@ -639,55 +712,135 @@ If there are more items to add from the user's original request:
 Continue until all items from the user's request have been added.''';
   }
 
-  Future<String> _processCompleteChecklistItemsCall(
+  /// Generate a retry prompt appropriate for the type of failed function call.
+  String _getRetryPromptForFailedResults() {
+    // Check if any failures are from update_checklist_items
+    final hasUpdateFailures = _failedResults.any(
+      (r) =>
+          r.functionName == ChecklistCompletionFunctions.updateChecklistItems,
+    );
+    final hasCreateFailures = _failedResults.any(
+      (r) =>
+          r.functionName == checklistHandler.functionName ||
+          r.functionName == batchChecklistHandler.functionName,
+    );
+
+    final errorSummary =
+        _failedResults.map((item) => '- ${item.error}').join('\n');
+
+    if (hasUpdateFailures && !hasCreateFailures) {
+      // Only update failures - provide update-specific guidance
+      return '''
+I noticed errors in your update_checklist_items call:
+$errorSummary
+
+Required format for updating existing items:
+{"items": [{"id": "item-uuid", "isChecked": true}, {"id": "other-uuid", "title": "Fixed title"}]}
+
+Each item must have:
+- "id" (required): The exact UUID of the checklist item from the task context
+- At least one of "isChecked" (boolean) or "title" (string)
+
+Please retry with the correct format. Use the exact item IDs from the checklist items shown in the task context.''';
+    }
+
+    if (hasCreateFailures && !hasUpdateFailures) {
+      // Only create failures - use existing handler's prompt
+      return checklistHandler.getRetryPrompt(
+        failedItems: _failedResults,
+        successfulDescriptions: checklistHandler.successfulItems,
+      );
+    }
+
+    // Mixed failures - provide combined guidance
+    return '''
+I noticed errors in your function calls:
+$errorSummary
+
+For creating new items, use:
+{"items": [{"title": "item1"}, {"title": "item2"}]}
+
+For updating existing items, use:
+{"items": [{"id": "item-uuid", "isChecked": true}]}
+
+Please retry with the correct format.''';
+  }
+
+  /// Process an `update_checklist_items` function call.
+  ///
+  /// This method handles updates to existing checklist items, supporting:
+  /// - Marking items as checked/unchecked
+  /// - Fixing titles (e.g., transcription error corrections)
+  /// - Combined status and title updates
+  ///
+  /// ## Error Handling
+  ///
+  /// - **Validation errors** (missing ID, wrong types): Sets [_hadErrors] to true
+  ///   and adds to [_failedResults] for retry prompt generation.
+  /// - **Skipped items** (not found, out of scope, no changes): Logged but NOT
+  ///   treated as errors. The prompt contract states these are "not an error
+  ///   for you", allowing the conversation to complete normally.
+  ///
+  /// Returns the tool response string for the AI.
+  Future<String> _processUpdateChecklistItemsCall(
     ChatCompletionMessageToolCall call,
     LottiChecklistItemHandler handler,
   ) async {
     try {
-      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
-      final rawItems = args['items'];
-      if (rawItems is! List) {
-        return 'complete_checklist_items requires an array of checklist item IDs.';
-      }
-
-      final ids = rawItems
-          .whereType<String>()
-          .map((id) => id.trim())
-          .where((id) => id.isNotEmpty)
-          .toList();
-
-      if (ids.isEmpty) {
-        return 'No checklist item IDs provided for completion.';
-      }
-
-      final reason = args['reason'] as String?;
-      final result =
-          await handler.checklistRepository.completeChecklistItemsForTask(
+      final updateHandler = LottiChecklistUpdateHandler(
         task: handler.task,
-        itemIds: ids,
+        checklistRepository: handler.checklistRepository,
+        onTaskUpdated: handler.onTaskUpdated,
       );
 
-      final buffer = StringBuffer();
-      if (result.updated.isNotEmpty) {
-        buffer.writeln(
-          'Marked ${result.updated.length} checklist item(s) as complete: ${result.updated.join(', ')}.',
+      final result = updateHandler.processFunctionCall(call);
+
+      if (!result.success) {
+        // Track the error for retry logic
+        _hadErrors = true;
+        _failedResults.add(result);
+        developer.log(
+          'Update checklist items validation failed: ${result.error}',
+          name: 'LottiConversationProcessor',
         );
-      }
-      if (result.skipped.isNotEmpty) {
-        buffer.writeln(
-          'Skipped ${result.skipped.length} item(s): ${result.skipped.join(', ')}.',
-        );
-      }
-      if (reason != null && reason.trim().isNotEmpty) {
-        buffer.writeln('Reason: ${reason.trim()}');
+        return 'Error: ${result.error}';
       }
 
-      final response = buffer.toString().trim();
-      return response.isEmpty
-          ? 'No checklist items were marked complete. Ensure the IDs belong to this task and are not already checked.'
-          : response;
+      final count = await updateHandler.executeUpdates(result);
+      final response = updateHandler.createToolResponse(result);
+
+      // Track successful updates
+      _successfulUpdates += count;
+
+      // Log results - skipped items are NOT errors per prompt contract:
+      // "If an item ID is invalid or doesn't belong to this task, it will be skipped (not an error for you)"
+      final skippedCount = updateHandler.skippedItems.length;
+      if (skippedCount > 0 && count > 0) {
+        developer.log(
+          'Updated $count items, skipped $skippedCount (graceful)',
+          name: 'LottiConversationProcessor',
+        );
+      } else if (skippedCount > 0) {
+        // All items skipped - not an error, just no work to do
+        developer.log(
+          'All items skipped ($skippedCount) - IDs may be stale or out of scope',
+          name: 'LottiConversationProcessor',
+        );
+      } else if (count > 0) {
+        developer.log(
+          'Updated $count checklist items',
+          name: 'LottiConversationProcessor',
+        );
+      }
+
+      return response;
     } catch (e) {
-      return 'Error processing complete_checklist_items: $e';
+      _hadErrors = true;
+      developer.log(
+        'Exception in update_checklist_items: $e',
+        name: 'LottiConversationProcessor',
+      );
+      return 'Error processing update_checklist_items: $e';
     }
   }
 }

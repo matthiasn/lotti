@@ -28,7 +28,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.742" date="2025-11-29">
+    <release version="0.9.744" date="2025-11-29">
+      <description>
+        <p>Smarter AI checklist updates: Say "I did the shopping" and the AI marks the right item complete. Mention "fix the typo in iPhone" and it corrects transcription errors. The AI now understands what you mean, not just what you type.</p>
+      </description>
+    </release>
+    <release version="0.9.743" date="2025-11-29">
       <description>
         <p>Improved task search field width and layout for better use of available space.</p>
       </description>

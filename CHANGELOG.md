@@ -19,7 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI – Checklist Updates improvements
   - Current Entry hint: recording modal and entry-level AI popup now pass the focused entry ID so prompts prioritize the user-edited transcript/text before falling back to the full task log.
   - Deleted items context: prompt builder injects every soft-deleted checklist title (with deletion timestamps) so the LLM can avoid recreating them.
-  - `complete_checklist_items` tool: direct completion path alongside `add_multiple_checklist_items`, wired through both streaming and conversation handlers with repository guards/tests.
+  - `update_checklist_items` tool: unified update path for existing checklist items, supporting:
+    - Mark items as checked/unchecked (e.g., "I did X" → item marked complete)
+    - Fix transcription errors in titles (e.g., "mac OS" → "macOS", "i Phone" → "iPhone")
+    - Combined updates: status and title correction in a single call
+    - Semantic matching: AI matches user references to items by meaning, not exact text
   - Popup parity: running Checklist Updates from a linked audio/image entry now threads that entry as `linkedEntityId`; task-level runs keep the parameter unset for whole-task analysis.
 - Checklists: Ergonomics improvements
   - TitleTextField: Cmd/Ctrl+S saves; add-item field retains focus after save for rapid entry

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Selectable;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -103,6 +104,8 @@ class FakeChecklistData extends Fake implements ChecklistData {}
 class FakeChecklistItemData extends Fake implements ChecklistItemData {}
 
 class MockLabelsRepository extends Mock implements LabelsRepository {}
+
+class MockSelectable<T> extends Mock implements Selectable<T> {}
 
 void main() {
   UnifiedAiInferenceRepository? repository;
@@ -337,7 +340,7 @@ void main() {
           ));
     });
 
-    test('processToolCalls completes checklist items', () async {
+    test('processToolCalls updates checklist items', () async {
       final taskEntity = Task(
         meta: _createMetadata(id: 'task-1'),
         data: TaskData(
@@ -354,32 +357,29 @@ void main() {
         ),
       );
 
-      when(
-        () => mockChecklistRepo.completeChecklistItemsForTask(
-          task: any(named: 'task'),
-          itemIds: any(named: 'itemIds'),
-        ),
-      ).thenAnswer((_) async => (updated: ['item-1'], skipped: ['item-2']));
+      // Mock the database query for items - return empty so items are skipped
+      // (detailed update behavior is tested in LottiChecklistUpdateHandler tests)
+      final mockSelectable = MockSelectable<JournalDbEntity>();
+      when(mockSelectable.get).thenAnswer((_) async => []);
+      when(() => mockJournalDb.entriesForIds(any())).thenReturn(mockSelectable);
 
       final toolCalls = [
         _createMockMessageToolCall(
-          id: 'tool-complete',
-          functionName: 'complete_checklist_items',
-          arguments: '{"items":["item-1","item-2"]}',
+          id: 'tool-update',
+          functionName: 'update_checklist_items',
+          arguments:
+              '{"items":[{"id":"item-1","isChecked":true},{"id":"item-2","isChecked":true}]}',
         ),
       ];
 
+      // Should not throw - the handler will process but skip items not found
       await repository!.processToolCalls(
         toolCalls: toolCalls,
         task: taskEntity,
       );
 
-      verify(
-        () => mockChecklistRepo.completeChecklistItemsForTask(
-          task: any(named: 'task'),
-          itemIds: ['item-1', 'item-2'],
-        ),
-      ).called(1);
+      // Verify DB was queried for the items
+      verify(() => mockJournalDb.entriesForIds(['item-1', 'item-2'])).called(1);
     });
     group('tool injection logging and gating', () {
       test('stream checklistUpdates logs OpenAI tools without multi-item',

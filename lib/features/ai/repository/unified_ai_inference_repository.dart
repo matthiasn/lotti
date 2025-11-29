@@ -16,6 +16,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/functions/checklist_tool_selector.dart';
 import 'package:lotti/features/ai/functions/label_functions.dart';
+import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
@@ -1300,50 +1301,38 @@ class UnifiedAiInferenceRepository {
           );
         }
       } else if (toolCall.function.name ==
-          ChecklistCompletionFunctions.completeChecklistItems) {
+          ChecklistCompletionFunctions.updateChecklistItems) {
         try {
-          final arguments =
-              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
-          final itemsField = arguments['items'];
-          if (itemsField is! List) {
+          final updateHandler = LottiChecklistUpdateHandler(
+            task: currentTask,
+            checklistRepository: ref.read(checklistRepositoryProvider),
+            onTaskUpdated: (Task updatedTask) {
+              currentTask = updatedTask;
+            },
+          );
+
+          final result = updateHandler.processFunctionCall(toolCall);
+
+          if (!result.success) {
             developer.log(
-              'Invalid or missing items for complete_checklist_items',
+              'Invalid update_checklist_items call: ${result.error}',
               name: 'UnifiedAiInferenceRepository',
             );
             continue;
           }
 
-          final normalizedIds = <String>[];
-          for (final value in itemsField) {
-            if (value is String && value.trim().isNotEmpty) {
-              normalizedIds.add(value.trim());
-            }
-          }
-
-          if (normalizedIds.isEmpty) {
-            developer.log(
-              'No valid checklist item IDs provided for completion',
-              name: 'UnifiedAiInferenceRepository',
-            );
-            continue;
-          }
-
-          final result = await ref
-              .read(checklistRepositoryProvider)
-              .completeChecklistItemsForTask(
-                task: currentTask,
-                itemIds: normalizedIds,
-              );
+          final count = await updateHandler.executeUpdates(result);
 
           developer.log(
-            'Completed ${result.updated.length} checklist items, skipped ${result.skipped.length}',
+            'Updated $count checklist items, '
+            'skipped ${updateHandler.skippedItems.length}',
             name: 'UnifiedAiInferenceRepository',
           );
 
           ref.invalidate(checklistItemControllerProvider);
         } catch (e, stackTrace) {
           developer.log(
-            'Error processing complete_checklist_items: $e',
+            'Error processing update_checklist_items: $e',
             name: 'UnifiedAiInferenceRepository',
             error: e,
             stackTrace: stackTrace,
