@@ -6,6 +6,7 @@ import 'package:lotti/features/tasks/ui/filtering/task_label_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -16,7 +17,7 @@ class TaskFilterIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.only(right: AppTheme.spacingSmall),
       child: IconButton(
         onPressed: () {
           ModalUtils.showSinglePageModal<void>(
