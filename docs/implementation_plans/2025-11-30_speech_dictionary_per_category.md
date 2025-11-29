@@ -240,41 +240,17 @@ document.
 - [ ] Widget: Context menu appears with selection
 - [ ] Integration: End-to-end add term flow
 
-## Open Questions
+## Decisions
 
-1. **UI Format**: Should the settings UI use a semicolon-separated text field (simpler) or a list
-   view with individual term management (more structured)? semicolon-separated
-
-2. **Context Menu Scope**: Should "Add to Dictionary" appear in:
-  - Only the main Quill editor? => yes
-  - Also in transcript `SelectableText` widgets?
-  - Task title fields?
-
-3. **Dictionary Scope**: Should there also be a global dictionary (not category-specific) for terms
-   that apply everywhere? Or is category-specific sufficient for now? => sufficient for now
-
-4. **Find-and-Replace**: After adding a term, should the app offer to replace all occurrences in the
-   current text? Or is manual correction sufficient? => manual is sufficient for now
-
-5. **Term Validation**: Should we validate terms before adding (e.g., no empty strings, reasonable
-   length limits)? => no empty sounds reasonable and limit to 50 chars
-
-6. **Duplicate Handling**: When adding a term that already exists in the dictionary, should we:
-  - Silently ignore?
-  - Show a message "Term already in dictionary"? 
-  - Allow duplicates (user's responsibility)? => ok for now
-
-## Risks & Mitigations
-
-- **Prompt Length**: Many dictionary terms could bloat prompts. Mitigation: Limit to reasonable
-  count (e.g., 50-100 terms) or truncate with warning. => user's responsibility, don't do dumb 
-  things
-- **Context Menu Complexity**: Flutter Quill's context menu API may have quirks. Mitigation:
-  Fallback to a floating action button or toolbar icon if context menu proves difficult. => 
-  let's make it work without fallback required
-- **Category Resolution**: In some contexts, the category may not be immediately available.
-  Mitigation: Disable "Add to Dictionary" when category cannot be resolved; show helpful message.
-  => sounds good
+1. **UI Format**: Semicolon-separated text field in settings (simple, supports bulk editing)
+2. **Context Menu Scope**: Only the main Quill editor (not transcripts or title fields)
+3. **Dictionary Scope**: Category-specific only (no global dictionary for now)
+4. **Find-and-Replace**: Manual correction only (no automatic replacement offer)
+5. **Term Validation**: Reject empty strings, limit terms to 50 characters
+6. **Duplicate Handling**: Allow duplicates (user's responsibility to manage)
+7. **Prompt Length**: No artificial limits (user's responsibility)
+8. **Context Menu**: Implement properly without fallback alternatives
+9. **Category Resolution**: Disable "Add to Dictionary" when no category; show helpful message
 
 ## Rollout
 
