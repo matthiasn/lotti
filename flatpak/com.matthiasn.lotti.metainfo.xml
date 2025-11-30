@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.746" date="2025-12-01">
+      <description>
+        <p>Checklist Correction Examples: The AI now learns from your manual corrections. When you fix a checklist item title (like "test flight" to "TestFlight"), Lotti remembers and uses these examples to improve future AI suggestions for both checklist updates and audio transcription.</p>
+      </description>
+    </release>
     <release version="0.9.745" date="2025-11-30">
       <description>
         <p>Speech Dictionary per Category: Teach the AI your domain-specific terms. Add names, places, and technical words to a category's dictionary, and transcriptions automatically use the correct spellings. Select misrecognized text and add corrections via the editor context menu.</p>

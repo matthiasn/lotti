@@ -15,6 +15,7 @@ The Categories feature allows users to create, manage, and assign categories to 
 5. **AI Integration**: Configure which AI prompts are available per category
 6. **Automatic Processing**: Set up automatic AI prompt execution for specific content types
 7. **Speech Dictionary**: Store domain-specific terms for improved transcription accuracy
+8. **Correction Examples**: Learn from user corrections to improve AI suggestions over time
 
 ## Architecture
 
@@ -43,6 +44,7 @@ The Categories feature allows users to create, manage, and assign categories to 
   - `CategoryPromptSelection`: AI prompt configuration
   - `CategoryAutomaticPrompts`: Automatic prompt settings
   - `CategorySpeechDictionary`: Speech recognition dictionary editor
+  - `CategoryCorrectionExamples`: Correction examples viewer with swipe-to-delete
 
 ## AI-Powered Category Settings
 
@@ -180,6 +182,82 @@ class CategoryDefinition {
 - Terms are trimmed of whitespace
 - Maximum term length: 50 characters
 - Duplicates are allowed (user's responsibility)
+
+## Checklist Correction Examples
+
+Categories can store correction examples learned from user's manual edits to improve AI accuracy.
+
+### Overview
+
+When users manually correct a checklist item title (e.g., "test flight" → "TestFlight"), the correction is captured and stored on the category. These examples are then injected into AI prompts to teach the model domain-specific terminology and preferences.
+
+### Data Model
+
+```dart
+class ChecklistCorrectionExample {
+  final String before;     // Original text before correction
+  final String after;      // Corrected text after user edit
+  final DateTime? capturedAt;  // When the correction was captured
+}
+
+class CategoryDefinition {
+  // List of correction examples for AI learning
+  final List<ChecklistCorrectionExample>? correctionExamples;
+}
+```
+
+### How It Works
+
+1. **Capture**: When a user edits a checklist item title, the before/after pair is captured
+2. **Filtering**: Trivial changes (whitespace-only, case-only on short text, duplicates) are skipped
+3. **Storage**: Valid corrections are appended to the category's `correctionExamples` list
+4. **Prompt Injection**: `{{correction_examples}}` placeholder injects examples into AI prompts
+5. **Token Budget**: Maximum 500 examples injected; warning shown at 400+
+6. **Sync**: Corrections sync across devices via existing category sync
+
+### Smart Filtering
+
+Not all edits are worth capturing. The service filters out:
+- **No change**: Edits that result in identical text after whitespace normalization
+- **Trivial case changes**: Single letter or very short texts with only case changes
+- **Duplicates**: Corrections already present in the category
+
+### Adding Corrections
+
+Corrections are captured automatically when:
+- User edits a checklist item title
+- The edit represents a meaningful change
+- The task is assigned to a category
+
+### UI Components
+
+- **Widget**: `CategoryCorrectionExamples` in category settings
+- **Display**: List of before→after pairs with timestamps
+- **Delete**: Swipe-to-delete individual examples
+- **Warning**: Yellow banner when approaching token limit (400+ examples)
+
+### Implementation
+
+- **Service**: `CorrectionCaptureService` - handles capture with smart filtering
+- **Notifier**: `CorrectionCaptureNotifier` - emits events for snackbar feedback
+- **Controller**: `ChecklistItemController.updateTitle()` - triggers capture via `unawaited()`
+- **Prompt Helper**: `PromptBuilderHelper` - injects examples into AI prompts
+
+### Prompt Integration
+
+Examples are injected into prompts for:
+- `AiResponseType.checklistUpdates` - Improves checklist item suggestions
+- `AiResponseType.audioTranscription` - Helps with domain-specific transcription
+
+Format in prompt:
+```
+The user has made the following corrections to checklist items in this category.
+Use these as guidance for correct terminology and formatting:
+
+- "test flight" → "TestFlight"
+- "mac OS" → "macOS"
+- "i Phone" → "iPhone"
+```
 
 ## Usage Examples
 

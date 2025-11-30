@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Checklist Correction Examples: Learn from manual corrections to improve AI accuracy
+  - When users manually correct a checklist item title, the before/after pair is captured
+  - Examples are stored per-category and injected into AI prompts via `{{correction_examples}}`
+  - Supports both checklist update prompts and audio transcription prompts
+  - New `CategoryCorrectionExamples` widget in category settings with swipe-to-delete
+  - Smart filtering: ignores no-change, trivial case-only, and duplicate corrections
+  - Warning banner when approaching token budget (400+ examples, max 500 injected)
+  - Auto-dismissing snackbar confirms successful correction capture
+  - Fire-and-forget capture via `unawaited()` for zero UI latency
+  - Syncs across devices via existing category sync infrastructure
+  - See: `docs/implementation_plans/2025-11-30_checklist_item_correction_examples.md`
 - Speech Dictionary per Category: Improve transcription accuracy with domain-specific terms
   - Categories can now store a speech dictionary of correct spellings for names, places, and technical terms
   - Dictionary terms are injected into AI transcription prompts via `{{speech_dictionary}}` placeholder

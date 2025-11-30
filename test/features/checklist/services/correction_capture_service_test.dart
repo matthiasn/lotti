@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -237,6 +238,78 @@ void main() {
           CorrectionCaptureResult.saveFailed,
         ]),
       );
+    });
+  });
+
+  group('CorrectionCaptureEvent', () {
+    test('creates event with required properties', () {
+      const event = CorrectionCaptureEvent(
+        before: 'test flight',
+        after: 'TestFlight',
+        categoryName: 'iOS Development',
+      );
+
+      expect(event.before, equals('test flight'));
+      expect(event.after, equals('TestFlight'));
+      expect(event.categoryName, equals('iOS Development'));
+    });
+  });
+
+  group('CorrectionCaptureNotifier', () {
+    test('notify sets state and resets after delay', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      const event = CorrectionCaptureEvent(
+        before: 'before',
+        after: 'after',
+        categoryName: 'Test',
+      );
+
+      // Initial state should be null
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        isNull,
+      );
+
+      // Notify sets the state
+      container.read(correctionCaptureNotifierProvider.notifier).notify(event);
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        equals(event),
+      );
+
+      // After delay, state resets to null
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        isNull,
+      );
+    });
+
+    test('build returns null initially', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        isNull,
+      );
+    });
+  });
+
+  group('correctionCaptureServiceProvider', () {
+    test('creates service with category repository', () {
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider
+              .overrideWithValue(MockCategoryRepository()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final service = container.read(correctionCaptureServiceProvider);
+      expect(service, isA<CorrectionCaptureService>());
     });
   });
 }
