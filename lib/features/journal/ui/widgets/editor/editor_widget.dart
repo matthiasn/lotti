@@ -114,6 +114,10 @@ class EditorWidget extends ConsumerWidget {
     );
   }
 
+  /// Builds a custom context menu with standard items plus "Add to Dictionary".
+  ///
+  /// The "Add to Dictionary" option appears only when text is selected.
+  /// It adds the selected term to the speech dictionary of the entry's category.
   Widget _buildContextMenu(
     BuildContext context,
     QuillRawEditorState rawEditorState,
@@ -150,6 +154,10 @@ class EditorWidget extends ConsumerWidget {
     );
   }
 
+  /// Adds the selected term to the entry's category speech dictionary.
+  ///
+  /// Shows a success snackbar on success, or an informative message
+  /// if the entry has no associated category. Silent for other edge cases.
   Future<void> _addToDictionary(
     BuildContext context,
     WidgetRef ref,

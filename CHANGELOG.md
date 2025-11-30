@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Speech Dictionary per Category: Improve transcription accuracy with domain-specific terms
+  - Categories can now store a speech dictionary of correct spellings for names, places, and technical terms
+  - Dictionary terms are injected into AI transcription prompts via `{{speech_dictionary}}` placeholder
+  - New `CategorySpeechDictionary` widget in category settings (semicolon-separated text field)
+  - Context menu in QuillEditor: select corrected text and "Add to Speech Dictionary"
+  - Works for tasks, linked audio entries, and linked image entries
+  - `SpeechDictionaryService` handles term addition with validation (max 50 chars, trimming)
+  - Terms sync across devices via existing category sync infrastructure
+  - Tests: 22 service tests, 16 widget tests, 14 prompt builder tests
+  - See: `docs/implementation_plans/2025-11-30_speech_dictionary_per_category.md`
 - AI Task Summary: Scheduled refresh with countdown UX
   - Changed from 500ms debounce to 5-minute scheduled delay
   - UI shows countdown "Summary in 4:32" when refresh is scheduled
