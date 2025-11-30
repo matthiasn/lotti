@@ -8,8 +8,69 @@ import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+
+/// Returns the appropriate user-facing message for a speech dictionary result.
+/// Returns null for edge cases that should be silent (no user notification needed).
+///
+/// This is extracted as a top-level function for testability.
+String? getDictionaryResultMessage(
+  SpeechDictionaryResult result,
+  AppLocalizations messages,
+) {
+  return switch (result) {
+    SpeechDictionaryResult.success => messages.addToDictionarySuccess,
+    SpeechDictionaryResult.noCategory => messages.addToDictionaryNoCategory,
+    SpeechDictionaryResult.duplicate => messages.addToDictionaryDuplicate,
+    SpeechDictionaryResult.termTooLong => messages.addToDictionaryTooLong,
+    SpeechDictionaryResult.saveFailed => messages.addToDictionarySaveFailed,
+    // Silent for truly unexpected edge cases
+    SpeechDictionaryResult.emptyTerm ||
+    SpeechDictionaryResult.entryNotFound ||
+    SpeechDictionaryResult.categoryNotFound =>
+      null,
+  };
+}
+
+/// Extracts the currently selected text from a QuillController.
+/// Returns an empty string if no text is selected (selection is collapsed).
+///
+/// This is extracted as a top-level function for testability.
+String getSelectedText(QuillController controller) {
+  final selection = controller.selection;
+  if (selection.isCollapsed) {
+    return '';
+  }
+  return controller.document.getPlainText(
+    selection.start,
+    selection.end - selection.start,
+  );
+}
+
+/// Shows a snackbar with the dictionary result message if applicable.
+/// Returns true if a snackbar was shown, false otherwise.
+///
+/// This is extracted as a top-level function for testability.
+bool showDictionaryResultSnackbar(
+  BuildContext context,
+  SpeechDictionaryResult result,
+  AppLocalizations messages,
+) {
+  final message = getDictionaryResultMessage(result, messages);
+  if (message == null) {
+    return false;
+  }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+  return true;
+}
 
 class EditorWidget extends ConsumerWidget {
   const EditorWidget({
@@ -124,24 +185,19 @@ class EditorWidget extends ConsumerWidget {
     WidgetRef ref,
     QuillController controller,
   ) {
-    final selection = controller.selection;
-    final selectedText = selection.isCollapsed
-        ? ''
-        : controller.document.getPlainText(
-            selection.start,
-            selection.end - selection.start,
-          );
+    final selectedText = getSelectedText(controller);
+    final trimmedText = selectedText.trim();
 
     final buttonItems = <ContextMenuButtonItem>[
       // Standard context menu items
       ...rawEditorState.contextMenuButtonItems,
 
       // Add "Add to Dictionary" option if text is selected
-      if (selectedText.trim().isNotEmpty)
+      if (trimmedText.isNotEmpty)
         ContextMenuButtonItem(
           label: context.messages.addToDictionary,
           onPressed: () {
-            _addToDictionary(context, ref, selectedText.trim());
+            _addToDictionary(context, ref, trimmedText);
             // Hide context menu
             ContextMenuController.removeAny();
           },
@@ -171,32 +227,6 @@ class EditorWidget extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    final messenger = ScaffoldMessenger.of(context);
-
-    final message = switch (result) {
-      SpeechDictionaryResult.success => context.messages.addToDictionarySuccess,
-      SpeechDictionaryResult.noCategory =>
-        context.messages.addToDictionaryNoCategory,
-      SpeechDictionaryResult.duplicate =>
-        context.messages.addToDictionaryDuplicate,
-      SpeechDictionaryResult.termTooLong =>
-        context.messages.addToDictionaryTooLong,
-      SpeechDictionaryResult.saveFailed =>
-        context.messages.addToDictionarySaveFailed,
-      // Silent for truly unexpected edge cases
-      SpeechDictionaryResult.emptyTerm ||
-      SpeechDictionaryResult.entryNotFound ||
-      SpeechDictionaryResult.categoryNotFound =>
-        null,
-    };
-
-    if (message != null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    showDictionaryResultSnackbar(context, result, context.messages);
   }
 }

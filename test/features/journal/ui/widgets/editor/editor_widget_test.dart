@@ -276,6 +276,279 @@ void main() {
       expect(result, equals(SpeechDictionaryResult.entryNotFound));
     });
   });
+
+  group('getSelectedText', () {
+    test('returns empty string when selection is collapsed', () {
+      final controller = QuillController.basic();
+      // Insert some text
+      controller.document.insert(0, 'Hello World');
+      // Move cursor to position 5 (collapsed selection)
+      controller.updateSelection(
+        const TextSelection.collapsed(offset: 5),
+        ChangeSource.local,
+      );
+
+      final result = getSelectedText(controller);
+      expect(result, isEmpty);
+    });
+
+    test('returns selected text when selection is not collapsed', () {
+      final controller = QuillController.basic();
+      // Insert some text
+      controller.document.insert(0, 'Hello World');
+      // Select "World" (positions 6-11)
+      controller.updateSelection(
+        const TextSelection(baseOffset: 6, extentOffset: 11),
+        ChangeSource.local,
+      );
+
+      final result = getSelectedText(controller);
+      expect(result, equals('World'));
+    });
+
+    test('returns correct text for partial selection', () {
+      final controller = QuillController.basic();
+      controller.document.insert(0, 'Testing selection functionality');
+      // Select "selection" (positions 8-17)
+      controller.updateSelection(
+        const TextSelection(baseOffset: 8, extentOffset: 17),
+        ChangeSource.local,
+      );
+
+      final result = getSelectedText(controller);
+      expect(result, equals('selection'));
+    });
+
+    test('returns empty string for empty document', () {
+      final controller = QuillController.basic();
+
+      final result = getSelectedText(controller);
+      expect(result, isEmpty);
+    });
+  });
+
+  group('showDictionaryResultSnackbar', () {
+    late AppLocalizations messages;
+
+    setUpAll(() async {
+      messages = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    testWidgets('shows snackbar for success result', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    showDictionaryResultSnackbar(
+                      context,
+                      SpeechDictionaryResult.success,
+                      messages,
+                    );
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(messages.addToDictionarySuccess), findsOneWidget);
+    });
+
+    testWidgets('shows snackbar for noCategory result', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    showDictionaryResultSnackbar(
+                      context,
+                      SpeechDictionaryResult.noCategory,
+                      messages,
+                    );
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(messages.addToDictionaryNoCategory), findsOneWidget);
+    });
+
+    testWidgets('returns false and shows no snackbar for silent results',
+        (tester) async {
+      late bool showResult;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    showResult = showDictionaryResultSnackbar(
+                      context,
+                      SpeechDictionaryResult.emptyTerm,
+                      messages,
+                    );
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(showResult, isFalse);
+      // No snackbar should be shown
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('returns true when snackbar is shown', (tester) async {
+      late bool showResult;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    showResult = showDictionaryResultSnackbar(
+                      context,
+                      SpeechDictionaryResult.duplicate,
+                      messages,
+                    );
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(showResult, isTrue);
+      expect(find.text(messages.addToDictionaryDuplicate), findsOneWidget);
+    });
+  });
+
+  group('getDictionaryResultMessage', () {
+    late AppLocalizations messages;
+
+    setUpAll(() async {
+      // Load English localizations for testing
+      messages = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    test('returns success message for success result', () {
+      final message = getDictionaryResultMessage(
+        SpeechDictionaryResult.success,
+        messages,
+      );
+      expect(message, equals(messages.addToDictionarySuccess));
+      expect(message, isNotNull);
+    });
+
+    test('returns noCategory message for noCategory result', () {
+      final message = getDictionaryResultMessage(
+        SpeechDictionaryResult.noCategory,
+        messages,
+      );
+      expect(message, equals(messages.addToDictionaryNoCategory));
+      expect(message, isNotNull);
+    });
+
+    test('returns duplicate message for duplicate result', () {
+      final message = getDictionaryResultMessage(
+        SpeechDictionaryResult.duplicate,
+        messages,
+      );
+      expect(message, equals(messages.addToDictionaryDuplicate));
+      expect(message, isNotNull);
+    });
+
+    test('returns termTooLong message for termTooLong result', () {
+      final message = getDictionaryResultMessage(
+        SpeechDictionaryResult.termTooLong,
+        messages,
+      );
+      expect(message, equals(messages.addToDictionaryTooLong));
+      expect(message, isNotNull);
+    });
+
+    test('returns saveFailed message for saveFailed result', () {
+      final message = getDictionaryResultMessage(
+        SpeechDictionaryResult.saveFailed,
+        messages,
+      );
+      expect(message, equals(messages.addToDictionarySaveFailed));
+      expect(message, isNotNull);
+    });
+
+    test('returns null for emptyTerm result (silent)', () {
+      final message = getDictionaryResultMessage(
+        SpeechDictionaryResult.emptyTerm,
+        messages,
+      );
+      expect(message, isNull);
+    });
+
+    test('returns null for entryNotFound result (silent)', () {
+      final message = getDictionaryResultMessage(
+        SpeechDictionaryResult.entryNotFound,
+        messages,
+      );
+      expect(message, isNull);
+    });
+
+    test('returns null for categoryNotFound result (silent)', () {
+      final message = getDictionaryResultMessage(
+        SpeechDictionaryResult.categoryNotFound,
+        messages,
+      );
+      expect(message, isNull);
+    });
+
+    test('covers all SpeechDictionaryResult enum values', () {
+      // Ensure every enum value is handled
+      for (final result in SpeechDictionaryResult.values) {
+        // Should not throw - all cases are handled
+        final message = getDictionaryResultMessage(result, messages);
+
+        // Verify expected nullability based on result type
+        if (result == SpeechDictionaryResult.emptyTerm ||
+            result == SpeechDictionaryResult.entryNotFound ||
+            result == SpeechDictionaryResult.categoryNotFound) {
+          expect(message, isNull, reason: '$result should be silent');
+        } else {
+          expect(message, isNotNull, reason: '$result should have a message');
+        }
+      }
+    });
+  });
 }
 
 class _TestEntryController extends EntryController {
