@@ -237,10 +237,11 @@ document.
 
 ### 5. Testing ✅
 
-- [x] Unit: `PromptBuilderHelper` injects dictionary correctly (17 tests)
+- [x] Unit: `PromptBuilderHelper` injects dictionary correctly (18 tests)
 - [x] Unit: `SpeechDictionaryService` term addition (25 tests)
+- [x] Unit: `CategoryDetailsController` speech dictionary updates (2 tests)
 - [x] Widget: Dictionary editor saves/loads correctly (19 tests)
-- [x] Widget: Context menu integration
+- [x] Widget: Context menu integration (1 test)
 - [x] Fixed existing tests affected by new field (FakeCategoryDefinition updates)
 
 ## Decisions
@@ -286,9 +287,11 @@ document.
 
 ### Test Files ✅
 
-- `test/features/ai/helpers/prompt_builder_helper_speech_dictionary_test.dart` - 17 tests
+- `test/features/ai/helpers/prompt_builder_helper_speech_dictionary_test.dart` - 18 tests
 - `test/features/categories/ui/widgets/category_speech_dictionary_test.dart` - 19 tests
+- `test/features/categories/state/category_details_controller_test.dart` - 2 new tests (speech dictionary)
 - `test/features/speech/services/speech_dictionary_service_test.dart` - 25 tests
+- `test/features/journal/ui/widgets/editor/editor_widget_test.dart` - 1 new test (context menu)
 
 ### Fixed Test Files ✅
 

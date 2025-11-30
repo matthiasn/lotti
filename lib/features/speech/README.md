@@ -266,12 +266,14 @@ final canAdd = await speechDictionaryService.canAddTermForEntry('audio-456');
 
 ```dart
 enum SpeechDictionaryResult {
-  success,          // Term was added
+  success,          // Term was added successfully
   emptyTerm,        // Term was empty after trimming
   termTooLong,      // Term exceeds 50 characters
   entryNotFound,    // Entry doesn't exist
   noCategory,       // Entry has no associated category
   categoryNotFound, // Category was deleted
+  duplicate,        // Term already exists (case-insensitive)
+  saveFailed,       // Failed to save category update
 }
 ```
 
@@ -281,7 +283,7 @@ Dictionary terms are injected into AI transcription prompts via the `{{speech_di
 
 ### Testing
 
-- `test/features/speech/services/speech_dictionary_service_test.dart`: 22 unit tests covering all result types and edge cases
+- `test/features/speech/services/speech_dictionary_service_test.dart`: 25 unit tests covering all result types and edge cases
 
 ## Future Enhancements
 

@@ -19,6 +19,7 @@ class CategoryTestUtils {
     String? defaultLanguageCode,
     List<String>? allowedPromptIds,
     Map<AiResponseType, List<String>>? automaticPrompts,
+    List<String>? speechDictionary,
     CategoryIcon? icon,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -40,6 +41,7 @@ class CategoryTestUtils {
       defaultLanguageCode: defaultLanguageCode,
       allowedPromptIds: allowedPromptIds,
       automaticPrompts: automaticPrompts,
+      speechDictionary: speechDictionary,
       icon: icon,
     );
   }

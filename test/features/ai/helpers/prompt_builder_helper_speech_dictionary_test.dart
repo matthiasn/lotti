@@ -206,8 +206,7 @@ void main() {
         expect(result, contains('You are a transcription assistant.'));
         expect(
           result,
-          contains(
-              'The following are correct spellings for domain-specific terms'),
+          contains('IMPORTANT - SPEECH DICTIONARY (MUST USE)'),
         );
         expect(result, contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'));
       });
@@ -234,7 +233,7 @@ void main() {
         );
 
         expect(result, equals('You are a transcription assistant.\n\n'));
-        expect(result, isNot(contains('domain-specific terms')));
+        expect(result, isNot(contains('SPEECH DICTIONARY')));
       });
 
       test(
@@ -375,8 +374,7 @@ void main() {
         expect(result, isNotNull);
         expect(
           result,
-          contains(
-              'The following are correct spellings for domain-specific terms'),
+          contains('IMPORTANT - SPEECH DICTIONARY (MUST USE)'),
         );
         expect(result, contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'));
         expect(result, contains('Transcribe this audio.'));
@@ -616,7 +614,7 @@ void main() {
         );
 
         expect(result, equals('You are a transcription assistant.\n\n'));
-        expect(result, isNot(contains('domain-specific terms')));
+        expect(result, isNot(contains('SPEECH DICTIONARY')));
       });
     });
 
@@ -729,6 +727,46 @@ void main() {
         expect(result, contains(r'\\'));
       });
 
+      test('escapes newlines in dictionary terms', () async {
+        final categoryWithNewline = CategoryDefinition(
+          id: 'category-1',
+          name: 'Test Category',
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          vectorClock: null,
+          private: false,
+          active: true,
+          color: '#FF0000',
+          speechDictionary: ['Term with\nnewline', 'Normal'],
+        );
+
+        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
+            .thenReturn(categoryWithNewline);
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Audio Transcription',
+          systemMessage: '{{speech_dictionary}}',
+          userMessage: 'Transcribe.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final result = await promptBuilder.buildSystemMessageWithData(
+          promptConfig: config,
+          entity: testTask,
+        );
+
+        // Verify newlines are escaped
+        expect(result, contains(r'\n'));
+        // Verify it doesn't contain actual newline in the term part
+        expect(result, contains(r'Term with\nnewline'));
+      });
+
       test('includes casing guidance in prompt', () async {
         when(() => mockEntitiesCacheService.getCategoryById('category-1'))
             .thenReturn(testCategory);
@@ -752,7 +790,7 @@ void main() {
         );
 
         // Verify casing guidance is included
-        expect(result, contains('Preserve the exact casing'));
+        expect(result, contains('MUST use the exact spelling and casing'));
         expect(result, contains('macOS'));
       });
     });

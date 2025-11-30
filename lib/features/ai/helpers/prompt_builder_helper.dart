@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -73,7 +74,12 @@ class PromptBuilderHelper {
     );
 
     // Inject speech dictionary if requested (from task's category)
-    if (systemMessage.contains('{{speech_dictionary}}')) {
+    final hasPlaceholder = systemMessage.contains('{{speech_dictionary}}');
+    developer.log(
+      'Speech dictionary: systemMessage has placeholder=$hasPlaceholder',
+      name: 'PromptBuilderHelper',
+    );
+    if (hasPlaceholder) {
       String dictionaryText;
       try {
         dictionaryText = await _buildSpeechDictionaryPromptText(entity);
@@ -511,11 +517,23 @@ class PromptBuilderHelper {
   Future<String> _buildSpeechDictionaryPromptText(JournalEntity entity) async {
     // Get the task (directly or via linked entity)
     final task = entity is Task ? entity : await _findLinkedTask(entity);
-    if (task == null) return '';
+    if (task == null) {
+      developer.log(
+        'Speech dictionary: no task found for entity ${entity.id}',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
 
     // Get the category ID from the task
     final categoryId = task.meta.categoryId;
-    if (categoryId == null) return '';
+    if (categoryId == null) {
+      developer.log(
+        'Speech dictionary: task ${task.id} has no category',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
 
     // Get the category from cache service
     CategoryDefinition? category;
@@ -524,26 +542,57 @@ class PromptBuilderHelper {
         final cache = getIt<EntitiesCacheService>();
         category = cache.getCategoryById(categoryId);
       }
-    } catch (_) {
+    } catch (e) {
+      developer.log(
+        'Speech dictionary: error getting category $categoryId: $e',
+        name: 'PromptBuilderHelper',
+      );
       return '';
     }
 
-    if (category == null) return '';
+    if (category == null) {
+      developer.log(
+        'Speech dictionary: category $categoryId not found in cache',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
 
     // Get the speech dictionary
     final dictionary = category.speechDictionary;
-    if (dictionary == null || dictionary.isEmpty) return '';
+    if (dictionary == null || dictionary.isEmpty) {
+      developer.log(
+        'Speech dictionary: category "${category.name}" has no dictionary',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    developer.log(
+      'Speech dictionary: injecting ${dictionary.length} terms from '
+      'category "${category.name}": ${dictionary.join(", ")}',
+      name: 'PromptBuilderHelper',
+    );
 
     // Format the dictionary terms as prompt text
-    // Escape quotes and special characters for safety
-    String escapeForJson(String s) =>
-        s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    // Escape quotes, backslashes, and newlines for safety
+    String escapeForJson(String s) => s
+        .replaceAll(r'\', r'\\')
+        .replaceAll('"', r'\"')
+        .replaceAll('\n', r'\n');
     final termsJson = dictionary.map((t) => '"${escapeForJson(t)}"').join(', ');
     return '''
-The following are correct spellings for domain-specific terms that may appear in the audio.
-Use these exact spellings when you encounter words that sound similar.
-Preserve the exact casing as shown (e.g., "macOS" not "MacOS", "iPhone" not "Iphone").
-Terms: [$termsJson]''';
+IMPORTANT - SPEECH DICTIONARY (MUST USE):
+The following terms are domain-specific and MUST be spelled exactly as shown when they appear in the audio.
+Speech recognition often misinterprets these terms. When you hear anything that sounds like these terms,
+you MUST use the exact spelling and casing provided below - do NOT use alternative spellings.
+
+Required spellings: [$termsJson]
+
+Examples of what to correct:
+- "mac OS" or "Mac OS" → use the dictionary spelling if "macOS" is listed
+- "i phone" or "I Phone" → use the dictionary spelling if "iPhone" is listed
+- Any phonetically similar word → use the exact dictionary term''';
   }
 
   String _resolveEntryText(JournalEntity entry) {

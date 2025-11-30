@@ -397,17 +397,17 @@ Format the transcription clearly with proper punctuation and paragraph breaks wh
 If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
 
-Take into account the following task context:
+{{speech_dictionary}}
 
 **Task Context:**
 ```json
 {{task}}
 ```
 
-The task context will provide additional information about the task, such as the project,
-goal, and any relevant details such as names of people or places. If in doubt
-about names or concepts mentioned in the audio, then the task context should
-be consulted to ensure accuracy.
+The task context provides names, places, and concepts relevant to this recording.
+When you hear something that sounds like a term from the speech dictionary above,
+you MUST use the exact spelling from the dictionary - the audio may be unclear but
+these are the correct spellings for this context.
 ''',
   requiredInputData: [InputDataType.audioFiles, InputDataType.task],
   aiResponseType: AiResponseType.audioTranscription,

@@ -172,6 +172,25 @@ void main() {
       expect(
           quillEditor.config.unknownEmbedBuilder, isA<UnknownEmbedBuilder>());
     });
+
+    testWidgets('configures custom context menu builder',
+        (WidgetTester tester) async {
+      const entryId = 'context-menu';
+
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: entryId,
+          showToolbar: false,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+
+      // Verify context menu builder is configured
+      expect(quillEditor.config.contextMenuBuilder, isNotNull);
+    });
   });
 }
 
