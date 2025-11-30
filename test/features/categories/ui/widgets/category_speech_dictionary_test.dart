@@ -235,18 +235,11 @@ void main() {
     });
 
     testWidgets('updates when dictionary changes externally', (tester) async {
-      final key = GlobalKey<State>();
-
       await tester.pumpWidget(
         WidgetTestBench(
-          child: StatefulBuilder(
-            key: key,
-            builder: (context, setState) {
-              return CategorySpeechDictionary(
-                dictionary: const ['initial'],
-                onChanged: (_) {},
-              );
-            },
+          child: CategorySpeechDictionary(
+            dictionary: const ['initial'],
+            onChanged: (_) {},
           ),
         ),
       );
@@ -411,12 +404,12 @@ void main() {
       // Enter terms with Unicode characters
       await tester.enterText(
         find.byType(TextField),
-        'Kirkjubaejarklaustur',
+        'Kirkjubæjarklaustur',
       );
       await tester.pumpAndSettle();
 
       // Verify Unicode characters are preserved
-      expect(changedTerms, equals(['Kirkjubaejarklaustur']));
+      expect(changedTerms, equals(['Kirkjubæjarklaustur']));
     });
   });
 
