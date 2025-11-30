@@ -333,8 +333,8 @@ void main() {
         streamController.add(category);
         await tester.pumpAndSettle();
 
-        // Change the name
-        final nameField = find.byType(TextFormField);
+        // Change the name (use .first to target name field, not speech dictionary)
+        final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, 'Updated Name');
         await tester.pumpAndSettle();
 
@@ -606,8 +606,8 @@ void main() {
         streamController.add(category);
         await tester.pumpAndSettle();
 
-        // Clear the name field
-        final nameField = find.byType(TextFormField);
+        // Clear the name field (use .first to target name field, not speech dictionary)
+        final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, '   '); // Only spaces
         await tester.pumpAndSettle();
 
@@ -691,8 +691,8 @@ void main() {
         streamController.add(category);
         await tester.pumpAndSettle();
 
-        // Enter name with whitespace
-        final nameField = find.byType(TextFormField);
+        // Enter name with whitespace (use .first to target name field, not speech dictionary)
+        final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, 'New Name');
         await tester.pumpAndSettle();
 
@@ -806,8 +806,8 @@ void main() {
         streamController.add(category);
         await tester.pumpAndSettle();
 
-        // Change name to enable save
-        await tester.enterText(find.byType(TextFormField), 'Updated');
+        // Change name to enable save (use .first to target name field, not speech dictionary)
+        await tester.enterText(find.byType(TextFormField).first, 'Updated');
         await tester.pumpAndSettle();
 
         // Tap save button
@@ -893,8 +893,8 @@ void main() {
           findsNothing,
         );
 
-        // Make a change
-        await tester.enterText(find.byType(TextFormField), 'Changed Name');
+        // Make a change (use .first to target name field, not speech dictionary)
+        await tester.enterText(find.byType(TextFormField).first, 'Changed Name');
         await tester.pumpAndSettle();
 
         // Save button should remain absent in app bar; save is in bottom bar only

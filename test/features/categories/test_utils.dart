@@ -26,7 +26,7 @@ class CategoryTestUtils {
     DateTime? deletedAt,
     VectorClock? vectorClock,
   }) {
-    final now = DateTime.now();
+    final defaultDate = DateTime(2024);
     return CategoryDefinition(
       id: id ?? const Uuid().v4(),
       name: name,
@@ -34,8 +34,8 @@ class CategoryTestUtils {
       private: private,
       active: active,
       favorite: favorite,
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
+      createdAt: createdAt ?? defaultDate,
+      updatedAt: updatedAt ?? defaultDate,
       deletedAt: deletedAt,
       vectorClock: vectorClock,
       defaultLanguageCode: defaultLanguageCode,
