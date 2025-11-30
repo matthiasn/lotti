@@ -355,6 +355,71 @@ void main() {
         expect(result, equals('\n\nTranscribe this audio.'));
       });
 
+      test('replaces with empty when task has no categoryId', () async {
+        // Task without a category ID
+        final taskNoCategory = Task(
+          data: testTask.data,
+          meta: Metadata(
+            id: 'task-no-cat',
+            createdAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+            updatedAt: DateTime(2025),
+            // No categoryId
+          ),
+        );
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Audio Transcription',
+          systemMessage: 'System message',
+          userMessage: '{{speech_dictionary}}\n\nTranscribe.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: taskNoCategory,
+        );
+
+        // Task without category should result in empty replacement
+        expect(result, equals('\n\nTranscribe.'));
+        expect(result, isNot(contains('SPEECH DICTIONARY')));
+      });
+
+      test('replaces with empty when category not found in cache', () async {
+        // Category lookup returns null
+        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
+            .thenReturn(null);
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Audio Transcription',
+          systemMessage: 'System message',
+          userMessage: '{{speech_dictionary}}\n\nTranscribe.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: testTask,
+        );
+
+        // Category not found should result in empty replacement
+        expect(result, equals('\n\nTranscribe.'));
+        expect(result, isNot(contains('SPEECH DICTIONARY')));
+      });
+
       test('handles multiple dictionary terms correctly', () async {
         final categoryWithManyTerms = CategoryDefinition(
           id: 'category-many',
