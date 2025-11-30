@@ -3522,7 +3522,7 @@ abstract class AppLocalizations {
   /// No description provided for @speechDictionaryHelper.
   ///
   /// In en, this message translates to:
-  /// **'Semicolon-separated terms for better speech recognition'**
+  /// **'Semicolon-separated terms (max 50 chars) for better speech recognition'**
   String get speechDictionaryHelper;
 
   /// No description provided for @speechDictionaryWarning.

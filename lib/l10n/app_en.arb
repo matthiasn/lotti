@@ -672,7 +672,7 @@
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorized.",
   "speechDictionaryLabel": "Speech Dictionary",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
-  "speechDictionaryHelper": "Semicolon-separated terms for better speech recognition",
+  "speechDictionaryHelper": "Semicolon-separated terms (max 50 chars) for better speech recognition",
   "speechDictionaryWarning": "Large dictionary ({count} terms) may increase API costs",
   "speechDictionarySectionTitle": "Speech Recognition",
   "speechDictionarySectionDescription": "Add terms that are often misspelled by speech recognition (names, places, technical terms)",

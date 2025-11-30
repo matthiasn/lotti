@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
@@ -89,11 +90,7 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
   }
 
   bool _listsEqual(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
+    return const DeepCollectionEquality().equals(a, b);
   }
 
   void _onChanged(String value) {

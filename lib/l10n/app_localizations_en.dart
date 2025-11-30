@@ -1882,7 +1882,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechDictionaryHelper =>
-      'Semicolon-separated terms for better speech recognition';
+      'Semicolon-separated terms (max 50 chars) for better speech recognition';
 
   @override
   String speechDictionaryWarning(Object count) {

@@ -323,7 +323,7 @@
   "speechModalTranscriptionProgress": "Transkriptionsfortschritt",
   "speechDictionaryLabel": "Sprachwörterbuch",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
-  "speechDictionaryHelper": "Durch Semikolon getrennte Begriffe für bessere Spracherkennung",
+  "speechDictionaryHelper": "Durch Semikolon getrennte Begriffe (max. 50 Zeichen) für bessere Spracherkennung",
   "speechDictionaryWarning": "Großes Wörterbuch ({count} Begriffe) kann API-Kosten erhöhen",
   "speechDictionarySectionTitle": "Spracherkennung",
   "speechDictionarySectionDescription": "Begriffe hinzufügen, die von der Spracherkennung oft falsch geschrieben werden (Namen, Orte, Fachbegriffe)",

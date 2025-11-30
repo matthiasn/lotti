@@ -16,6 +16,21 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 
+/// Template for the speech dictionary prompt injection.
+/// The {terms} placeholder will be replaced with the actual dictionary terms.
+const String _kSpeechDictionaryPromptTemplate = '''
+IMPORTANT - SPEECH DICTIONARY (MUST USE):
+The following terms are domain-specific and MUST be spelled exactly as shown when they appear in the audio.
+Speech recognition often misinterprets these terms. When you hear anything that sounds like these terms,
+you MUST use the exact spelling and casing provided below - do NOT use alternative spellings.
+
+Required spellings: {terms}
+
+Examples of what to correct:
+- "mac OS" or "Mac OS" → use the dictionary spelling if "macOS" is listed
+- "i phone" or "I Phone" → use the dictionary spelling if "iPhone" is listed
+- Any phonetically similar word → use the exact dictionary term''';
+
 /// Helper class for building AI prompts with support for template tracking
 typedef LabelFilterFn = List<LabelDefinition> Function(
   List<LabelDefinition> all,
@@ -559,18 +574,9 @@ class PromptBuilderHelper {
         .replaceAll('"', r'\"')
         .replaceAll('\n', r'\n');
     final termsJson = dictionary.map((t) => '"${escapeForJson(t)}"').join(', ');
-    return '''
-IMPORTANT - SPEECH DICTIONARY (MUST USE):
-The following terms are domain-specific and MUST be spelled exactly as shown when they appear in the audio.
-Speech recognition often misinterprets these terms. When you hear anything that sounds like these terms,
-you MUST use the exact spelling and casing provided below - do NOT use alternative spellings.
 
-Required spellings: [$termsJson]
-
-Examples of what to correct:
-- "mac OS" or "Mac OS" → use the dictionary spelling if "macOS" is listed
-- "i phone" or "I Phone" → use the dictionary spelling if "iPhone" is listed
-- Any phonetically similar word → use the exact dictionary term''';
+    return _kSpeechDictionaryPromptTemplate.replaceAll(
+        '{terms}', '[$termsJson]');
   }
 
   String _resolveEntryText(JournalEntity entry) {

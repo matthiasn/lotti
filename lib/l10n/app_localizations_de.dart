@@ -1888,7 +1888,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechDictionaryHelper =>
-      'Durch Semikolon getrennte Begriffe für bessere Spracherkennung';
+      'Durch Semikolon getrennte Begriffe (max. 50 Zeichen) für bessere Spracherkennung';
 
   @override
   String speechDictionaryWarning(Object count) {

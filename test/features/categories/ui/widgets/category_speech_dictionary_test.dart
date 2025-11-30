@@ -27,7 +27,8 @@ void main() {
 
       // Verify helper text is shown (actual l10n string)
       expect(
-        find.text('Semicolon-separated terms for better speech recognition'),
+        find.text(
+            'Semicolon-separated terms (max 50 chars) for better speech recognition'),
         findsOneWidget,
       );
 
@@ -457,7 +458,8 @@ void main() {
 
       // Verify normal helper text is shown
       expect(
-        find.text('Semicolon-separated terms for better speech recognition'),
+        find.text(
+            'Semicolon-separated terms (max 50 chars) for better speech recognition'),
         findsOneWidget,
       );
     });
