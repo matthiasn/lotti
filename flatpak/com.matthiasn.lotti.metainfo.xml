@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.745" date="2025-11-30">
+      <description>
+        <p>Speech Dictionary per Category: Teach the AI your domain-specific terms. Add names, places, and technical words to a category's dictionary, and transcriptions automatically use the correct spellings. Select misrecognized text and add corrections via the editor context menu.</p>
+      </description>
+    </release>
     <release version="0.9.744" date="2025-11-29">
       <description>
         <p>Smarter AI checklist updates: Say "I did the shopping" and the AI marks the right item complete. Mention "fix the typo in iPhone" and it corrects transcription errors. The AI now understands what you mean, not just what you type.</p>

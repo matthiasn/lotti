@@ -894,7 +894,8 @@ void main() {
         );
 
         // Make a change (use .first to target name field, not speech dictionary)
-        await tester.enterText(find.byType(TextFormField).first, 'Changed Name');
+        await tester.enterText(
+            find.byType(TextFormField).first, 'Changed Name');
         await tester.pumpAndSettle();
 
         // Save button should remain absent in app bar; save is in bottom bar only

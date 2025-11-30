@@ -64,39 +64,17 @@ class PromptBuilderHelper {
   }
 
   /// Build system message with entity data (placeholder substitution)
+  ///
+  /// Note: {{speech_dictionary}} is only supported in user messages (buildPromptWithData)
+  /// to avoid token waste from duplication in both system and user messages.
   Future<String> buildSystemMessageWithData({
     required AiConfigPrompt promptConfig,
     required JournalEntity entity,
   }) async {
-    var systemMessage = getEffectiveMessage(
+    return getEffectiveMessage(
       promptConfig: promptConfig,
       isSystemMessage: true,
     );
-
-    // Inject speech dictionary if requested (from task's category)
-    final hasPlaceholder = systemMessage.contains('{{speech_dictionary}}');
-    developer.log(
-      'Speech dictionary: systemMessage has placeholder=$hasPlaceholder',
-      name: 'PromptBuilderHelper',
-    );
-    if (hasPlaceholder) {
-      String dictionaryText;
-      try {
-        dictionaryText = await _buildSpeechDictionaryPromptText(entity);
-      } catch (error, stackTrace) {
-        _logPlaceholderFailure(
-          entity: entity,
-          placeholder: 'speech_dictionary',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        dictionaryText = '';
-      }
-      systemMessage =
-          systemMessage.replaceAll('{{speech_dictionary}}', dictionaryText);
-    }
-
-    return systemMessage;
   }
 
   /// Build prompt with entity data

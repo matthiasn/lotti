@@ -44,17 +44,6 @@ void main() {
     speechDictionary: ['macOS', 'iPhone', 'Kirkjubaejarklaustur'],
   );
 
-  final testCategoryNoDict = CategoryDefinition(
-    id: 'category-2',
-    name: 'Category Without Dictionary',
-    createdAt: DateTime(2025),
-    updatedAt: DateTime(2025),
-    vectorClock: null,
-    private: false,
-    active: true,
-    color: '#00FF00',
-  );
-
   final testTask = Task(
     data: TaskData(
       title: 'Test Task',
@@ -75,28 +64,6 @@ void main() {
       dateTo: DateTime(2025),
       updatedAt: DateTime(2025),
       categoryId: 'category-1',
-    ),
-  );
-
-  final testTaskNoCategory = Task(
-    data: TaskData(
-      title: 'Task Without Category',
-      checklistIds: const [],
-      status: TaskStatus.open(
-        id: 'status',
-        createdAt: DateTime(2025),
-        utcOffset: 0,
-      ),
-      statusHistory: const [],
-      dateFrom: DateTime(2025),
-      dateTo: DateTime(2025),
-    ),
-    meta: Metadata(
-      id: 'task-2',
-      createdAt: DateTime(2025),
-      dateFrom: DateTime(2025),
-      dateTo: DateTime(2025),
-      updatedAt: DateTime(2025),
     ),
   );
 
@@ -178,12 +145,12 @@ void main() {
 
   group('PromptBuilderHelper - Speech Dictionary', () {
     group('buildSystemMessageWithData', () {
-      test(
-          'injects speech dictionary into system message for task with category',
-          () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategory);
+      // Note: {{speech_dictionary}} is intentionally NOT supported in system messages
+      // to avoid token waste from duplication. Use it only in user messages.
 
+      test('does not process speech_dictionary placeholder in system message',
+          () async {
+        // Speech dictionary is only supported in user messages for efficiency
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
@@ -203,101 +170,16 @@ void main() {
           entity: testTask,
         );
 
-        expect(result, contains('You are a transcription assistant.'));
+        // Placeholder should remain unchanged - not processed in system messages
         expect(
           result,
-          contains('IMPORTANT - SPEECH DICTIONARY (MUST USE)'),
+          equals('You are a transcription assistant.\n\n{{speech_dictionary}}'),
         );
-        expect(result, contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'));
+        // Cache service should NOT be called for system message placeholder
+        verifyNever(() => mockEntitiesCacheService.getCategoryById(any()));
       });
 
-      test('replaces placeholder with empty string when task has no category',
-          () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Audio Transcription',
-          systemMessage:
-              'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe the audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
-
-        final result = await promptBuilder.buildSystemMessageWithData(
-          promptConfig: config,
-          entity: testTaskNoCategory,
-        );
-
-        expect(result, equals('You are a transcription assistant.\n\n'));
-        expect(result, isNot(contains('SPEECH DICTIONARY')));
-      });
-
-      test(
-          'replaces placeholder with empty string when category has no dictionary',
-          () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-2'))
-            .thenReturn(testCategoryNoDict);
-
-        final taskWithEmptyDictCategory = Task(
-          data: testTask.data,
-          meta: testTask.meta.copyWith(categoryId: 'category-2'),
-        );
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Audio Transcription',
-          systemMessage:
-              'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe the audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
-
-        final result = await promptBuilder.buildSystemMessageWithData(
-          promptConfig: config,
-          entity: taskWithEmptyDictCategory,
-        );
-
-        expect(result, equals('You are a transcription assistant.\n\n'));
-      });
-
-      test('replaces placeholder with empty string when category not found',
-          () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(null);
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Audio Transcription',
-          systemMessage:
-              'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe the audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
-
-        final result = await promptBuilder.buildSystemMessageWithData(
-          promptConfig: config,
-          entity: testTask,
-        );
-
-        expect(result, equals('You are a transcription assistant.\n\n'));
-      });
-
-      test('leaves system message unchanged when no placeholder present',
-          () async {
+      test('returns system message unchanged', () async {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Simple Prompt',
@@ -317,34 +199,6 @@ void main() {
         );
 
         expect(result, equals('You are a helpful assistant.'));
-        verifyNever(() => mockEntitiesCacheService.getCategoryById(any()));
-      });
-
-      test('handles exception gracefully and replaces with empty string',
-          () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenThrow(Exception('Cache error'));
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Audio Transcription',
-          systemMessage:
-              'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe the audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
-
-        final result = await promptBuilder.buildSystemMessageWithData(
-          promptConfig: config,
-          entity: testTask,
-        );
-
-        expect(result, equals('You are a transcription assistant.\n\n'));
       });
     });
 
@@ -502,9 +356,8 @@ void main() {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
-          systemMessage:
-              'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe.',
+          systemMessage: 'You are a transcription assistant.',
+          userMessage: '{{speech_dictionary}}',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           createdAt: DateTime(2025),
@@ -513,7 +366,7 @@ void main() {
           aiResponseType: AiResponseType.audioTranscription,
         );
 
-        final result = await promptBuilder.buildSystemMessageWithData(
+        final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
           entity: taskWithManyTerms,
         );
@@ -554,9 +407,8 @@ void main() {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
-          systemMessage:
-              'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe.',
+          systemMessage: 'You are a transcription assistant.',
+          userMessage: '{{speech_dictionary}}',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           createdAt: DateTime(2025),
@@ -565,7 +417,7 @@ void main() {
           aiResponseType: AiResponseType.audioTranscription,
         );
 
-        final result = await promptBuilder.buildSystemMessageWithData(
+        final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
           entity: taskWithOneTerm,
         );
@@ -597,9 +449,8 @@ void main() {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
-          systemMessage:
-              'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe.',
+          systemMessage: 'You are a transcription assistant.',
+          userMessage: '{{speech_dictionary}}\n\nTranscribe.',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           createdAt: DateTime(2025),
@@ -608,12 +459,13 @@ void main() {
           aiResponseType: AiResponseType.audioTranscription,
         );
 
-        final result = await promptBuilder.buildSystemMessageWithData(
+        final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
           entity: taskWithEmptyList,
         );
 
-        expect(result, equals('You are a transcription assistant.\n\n'));
+        // Empty dictionary returns empty string replacement
+        expect(result, equals('\n\nTranscribe.'));
         expect(result, isNot(contains('SPEECH DICTIONARY')));
       });
     });
@@ -629,9 +481,8 @@ void main() {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
-          systemMessage:
-              'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe.',
+          systemMessage: 'You are a transcription assistant.',
+          userMessage: '{{speech_dictionary}}\n\nTranscribe.',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           createdAt: DateTime(2025),
@@ -640,12 +491,13 @@ void main() {
           aiResponseType: AiResponseType.audioTranscription,
         );
 
-        final result = await promptBuilder.buildSystemMessageWithData(
+        final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
           entity: testTask,
         );
 
-        expect(result, equals('You are a transcription assistant.\n\n'));
+        // When cache service is not registered, placeholder is replaced with empty
+        expect(result, equals('\n\nTranscribe.'));
       });
     });
 
@@ -669,8 +521,8 @@ void main() {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
-          systemMessage: '{{speech_dictionary}}',
-          userMessage: 'Transcribe.',
+          systemMessage: 'You are a transcription assistant.',
+          userMessage: '{{speech_dictionary}}',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           createdAt: DateTime(2025),
@@ -679,7 +531,7 @@ void main() {
           aiResponseType: AiResponseType.audioTranscription,
         );
 
-        final result = await promptBuilder.buildSystemMessageWithData(
+        final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
           entity: testTask,
         );
@@ -708,8 +560,8 @@ void main() {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
-          systemMessage: '{{speech_dictionary}}',
-          userMessage: 'Transcribe.',
+          systemMessage: 'You are a transcription assistant.',
+          userMessage: '{{speech_dictionary}}',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           createdAt: DateTime(2025),
@@ -718,7 +570,7 @@ void main() {
           aiResponseType: AiResponseType.audioTranscription,
         );
 
-        final result = await promptBuilder.buildSystemMessageWithData(
+        final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
           entity: testTask,
         );
@@ -746,8 +598,8 @@ void main() {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
-          systemMessage: '{{speech_dictionary}}',
-          userMessage: 'Transcribe.',
+          systemMessage: 'You are a transcription assistant.',
+          userMessage: '{{speech_dictionary}}',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           createdAt: DateTime(2025),
@@ -756,7 +608,7 @@ void main() {
           aiResponseType: AiResponseType.audioTranscription,
         );
 
-        final result = await promptBuilder.buildSystemMessageWithData(
+        final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
           entity: testTask,
         );
@@ -774,8 +626,8 @@ void main() {
         final config = AiConfigPrompt(
           id: 'prompt',
           name: 'Audio Transcription',
-          systemMessage: '{{speech_dictionary}}',
-          userMessage: 'Transcribe.',
+          systemMessage: 'You are a transcription assistant.',
+          userMessage: '{{speech_dictionary}}',
           defaultModelId: 'model-1',
           modelIds: const ['model-1'],
           createdAt: DateTime(2025),
@@ -784,7 +636,7 @@ void main() {
           aiResponseType: AiResponseType.audioTranscription,
         );
 
-        final result = await promptBuilder.buildSystemMessageWithData(
+        final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
           entity: testTask,
         );
