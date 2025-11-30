@@ -361,14 +361,14 @@ const audioTranscriptionPrompt = PreconfiguredPrompt(
   name: 'Audio Transcription',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content.
-Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
-
-{{speech_dictionary}}''',
+Your goal is to provide accurate, well-formatted transcriptions of audio recordings.''',
   userMessage: '''
 Please transcribe the provided audio file(s).
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
 If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
+
+{{speech_dictionary}}
 ''',
   requiredInputData: [InputDataType.audioFiles],
   aiResponseType: AiResponseType.audioTranscription,
@@ -388,9 +388,7 @@ When transcribing audio in the context of a task, pay attention to:
 1. Any mentions of completed checklist items (e.g., "I finished...", "I've completed...", "That's done")
 2. Any new action items or tasks mentioned (e.g., "I need to...", "Next I'll...", "We should...")
 
-Include these observations in your transcription so the user can update their task accordingly.
-
-{{speech_dictionary}}''',
+Include these observations in your transcription so the user can update their task accordingly.''',
   userMessage: '''
 Please transcribe the provided audio.
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
