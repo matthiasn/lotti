@@ -548,6 +548,9 @@ void main() {
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
       );
+      when(() => mockRepository.getCategoryById(testCategoryId)).thenAnswer(
+        (_) async => category,
+      );
       when(() => mockRepository.updateCategory(any())).thenAnswer(
         (_) async => category.copyWith(name: 'Updated'),
       );
@@ -652,6 +655,9 @@ void main() {
 
       when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
         (_) => Stream.value(category),
+      );
+      when(() => mockRepository.getCategoryById(testCategoryId)).thenAnswer(
+        (_) async => category,
       );
       when(() => mockRepository.updateCategory(any())).thenThrow(
         Exception('Save failed'),
@@ -832,6 +838,218 @@ void main() {
       expect(state.errorMessage,
           equals('Failed to delete category. Please try again.'));
       expect(state.isSaving, isFalse);
+
+      subscription.close();
+    });
+
+    test(
+        'saveChanges merges remote correctionExamples when user has unsaved edits',
+        () async {
+      // Simulate scenario where user has unsaved name edits while background
+      // correction capture has added new examples to the remote category
+      const testId = 'test-category-id';
+      final originalCategory = CategoryTestUtils.createTestCategory(
+        id: testId,
+        name: 'Original Name',
+        correctionExamples: [
+          ChecklistCorrectionExample(
+            before: 'original before',
+            after: 'original after',
+            capturedAt: DateTime(2025),
+          ),
+        ],
+      );
+
+      // Remote category has a new correction example added in background
+      final remoteCategory = originalCategory.copyWith(
+        correctionExamples: [
+          ChecklistCorrectionExample(
+            before: 'original before',
+            after: 'original after',
+            capturedAt: DateTime(2025),
+          ),
+          ChecklistCorrectionExample(
+            before: 'new before',
+            after: 'new after',
+            capturedAt: DateTime(2025),
+          ),
+        ],
+      );
+
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testId))
+          .thenAnswer((_) => Stream.value(originalCategory));
+      when(() => mockRepository.getCategoryById(testId))
+          .thenAnswer((_) async => remoteCategory);
+      when(() => mockRepository.updateCategory(any()))
+          .thenAnswer((_) async => remoteCategory);
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Wait for initial load
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // User makes local edits (name change)
+      controller.updateFormField(name: 'Updated Name');
+
+      expect(
+        container.read(categoryDetailsControllerProvider(testId)).hasChanges,
+        isTrue,
+      );
+
+      // Save should fetch latest and merge correctionExamples
+      await controller.saveChanges();
+
+      // Verify updateCategory was called with merged correctionExamples
+      final captured = verify(() => mockRepository.updateCategory(captureAny()))
+          .captured
+          .single as CategoryDefinition;
+
+      // Should have the user's name change
+      expect(captured.name, equals('Updated Name'));
+      // Should have merged the remote correctionExamples (2 examples)
+      expect(captured.correctionExamples, hasLength(2));
+      expect(captured.correctionExamples![1].before, equals('new before'));
+
+      subscription.close();
+    });
+
+    test('deleteCorrectionExample removes example from pending category',
+        () async {
+      final exampleToDelete = ChecklistCorrectionExample(
+        before: 'delete me',
+        after: 'deleted',
+        capturedAt: DateTime(2025),
+      );
+      final exampleToKeep = ChecklistCorrectionExample(
+        before: 'keep me',
+        after: 'kept',
+        capturedAt: DateTime(2025),
+      );
+
+      final category = CategoryTestUtils.createTestCategory(
+        correctionExamples: [exampleToDelete, exampleToKeep],
+      );
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(category),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Wait for initial load
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testCategoryId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // Delete the example
+      controller.deleteCorrectionExample(exampleToDelete);
+
+      final state = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+
+      // Should have changes and only one example left
+      expect(state.hasChanges, isTrue);
+      expect(state.category?.correctionExamples, hasLength(1));
+      expect(
+          state.category?.correctionExamples!.first.before, equals('keep me'));
+
+      subscription.close();
+    });
+
+    test('deleteCorrectionExample sets null when last example deleted',
+        () async {
+      final onlyExample = ChecklistCorrectionExample(
+        before: 'only',
+        after: 'one',
+        capturedAt: DateTime(2025),
+      );
+
+      final category = CategoryTestUtils.createTestCategory(
+        correctionExamples: [onlyExample],
+      );
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(category),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Wait for initial load
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testCategoryId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // Delete the only example
+      controller.deleteCorrectionExample(onlyExample);
+
+      final state = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+
+      // Should have changes and null correctionExamples
+      expect(state.hasChanges, isTrue);
+      expect(state.category?.correctionExamples, isNull);
 
       subscription.close();
     });

@@ -296,6 +296,72 @@ void main() {
         isNull,
       );
     });
+
+    test('disposal before timer fires does not throw', () async {
+      // This test verifies the P2 fix: disposing the provider before the
+      // 100ms reset timer fires should not throw an exception
+      final container = ProviderContainer();
+
+      const event = CorrectionCaptureEvent(
+        before: 'before',
+        after: 'after',
+        categoryName: 'Test',
+      );
+
+      // Notify the event (starts the 100ms timer)
+      container.read(correctionCaptureNotifierProvider.notifier).notify(event);
+
+      // Immediately dispose before the timer fires
+      container.dispose();
+
+      // Wait for longer than the timer would have fired
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // If we get here without throwing, the test passes
+      // The timer was properly cancelled on disposal
+    });
+
+    test('new notify cancels pending timer', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      const event1 = CorrectionCaptureEvent(
+        before: 'first',
+        after: 'event',
+        categoryName: 'Test',
+      );
+      const event2 = CorrectionCaptureEvent(
+        before: 'second',
+        after: 'event',
+        categoryName: 'Test',
+      );
+
+      // Notify first event
+      container.read(correctionCaptureNotifierProvider.notifier).notify(event1);
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        equals(event1),
+      );
+
+      // Wait a bit but less than the reset delay
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Notify second event (should cancel the first timer)
+      container.read(correctionCaptureNotifierProvider.notifier).notify(event2);
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        equals(event2),
+      );
+
+      // Wait for the timer to fire (relative to second notify)
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // State should be null (reset occurred)
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        isNull,
+      );
+    });
   });
 
   group('correctionCaptureServiceProvider', () {

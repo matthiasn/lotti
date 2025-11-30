@@ -200,6 +200,17 @@ class CategoryDetailsController
     state = state.copyWith(isSaving: true, errorMessage: null);
 
     try {
+      // Fetch the latest category to preserve correction examples that may have
+      // been captured in the background while the user was editing other fields.
+      // This prevents data loss when the user has unsaved changes and background
+      // correction capture updates the category in parallel.
+      final latestCategory = await _repository.getCategoryById(_categoryId);
+      if (latestCategory != null) {
+        _pendingCategory = _pendingCategory!.copyWith(
+          correctionExamples: latestCategory.correctionExamples,
+        );
+      }
+
       await _repository.updateCategory(_pendingCategory!);
       // Reset the original category after successful save
       _originalCategory = _pendingCategory;

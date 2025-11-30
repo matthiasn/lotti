@@ -675,6 +675,9 @@ void main() {
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
         );
+        when(() => mockRepository.getCategoryById(testCategoryId)).thenAnswer(
+          (_) async => category,
+        );
         when(() => mockRepository.updateCategory(any())).thenAnswer(
           (_) async => category,
         );
@@ -782,6 +785,9 @@ void main() {
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
+        );
+        when(() => mockRepository.getCategoryById(testCategoryId)).thenAnswer(
+          (_) async => category,
         );
         when(() => mockRepository.updateCategory(any())).thenAnswer(
           (_) async => category,

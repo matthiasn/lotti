@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,13 +21,23 @@ CorrectionCaptureService correctionCaptureService(Ref ref) {
 /// UI can watch this to show snackbar notifications.
 @riverpod
 class CorrectionCaptureNotifier extends _$CorrectionCaptureNotifier {
+  Timer? _resetTimer;
+
   @override
-  CorrectionCaptureEvent? build() => null;
+  CorrectionCaptureEvent? build() {
+    ref.onDispose(() {
+      _resetTimer?.cancel();
+      _resetTimer = null;
+    });
+    return null;
+  }
 
   void notify(CorrectionCaptureEvent event) {
     state = event;
+    // Cancel any pending reset timer
+    _resetTimer?.cancel();
     // Reset after a short delay to allow UI to react
-    Future.delayed(const Duration(milliseconds: 100), () {
+    _resetTimer = Timer(const Duration(milliseconds: 100), () {
       if (state == event) {
         state = null;
       }
