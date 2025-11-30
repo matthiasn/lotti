@@ -1,0 +1,20 @@
+[flake8]
+max-line-length = 100
+extend-ignore = E203, W503, E501
+exclude =
+    .git,
+    __pycache__,
+    venv,
+    .venv,
+    build,
+    dist,
+    *.egg-info
+
+# Per file ignores
+per-file-ignores =
+    __init__.py:F401
+
+# Error codes
+# E203: whitespace before ':'
+# W503: line break before binary operator
+# E501: line too long (handled by black)
