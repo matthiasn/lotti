@@ -3507,6 +3507,54 @@ abstract class AppLocalizations {
   /// **'This action cannot be undone. All entries in this category will remain but will no longer be categorized.'**
   String get categoryDeleteConfirmation;
 
+  /// No description provided for @speechDictionaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech Dictionary'**
+  String get speechDictionaryLabel;
+
+  /// No description provided for @speechDictionaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'macOS; Kirkjubæjarklaustur; Claude Code'**
+  String get speechDictionaryHint;
+
+  /// No description provided for @speechDictionaryHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Semicolon-separated terms for better speech recognition'**
+  String get speechDictionaryHelper;
+
+  /// No description provided for @speechDictionarySectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech Recognition'**
+  String get speechDictionarySectionTitle;
+
+  /// No description provided for @speechDictionarySectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add terms that are often misspelled by speech recognition (names, places, technical terms)'**
+  String get speechDictionarySectionDescription;
+
+  /// No description provided for @addToDictionary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Dictionary'**
+  String get addToDictionary;
+
+  /// No description provided for @addToDictionarySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Term added to dictionary'**
+  String get addToDictionarySuccess;
+
+  /// No description provided for @addToDictionaryNoCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot add to dictionary: task has no category'**
+  String get addToDictionaryNoCategory;
+
   /// No description provided for @deleteButton.
   ///
   /// In en, this message translates to:

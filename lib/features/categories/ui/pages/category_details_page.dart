@@ -15,6 +15,7 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_prompt_selection.dart';
+import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -355,6 +356,18 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                         _buildAutomaticPromptSettings(category),
                       ],
                     ),
+                    const SizedBox(height: 24),
+
+                    // Speech Dictionary Section
+                    LottiFormSection(
+                      title: context.messages.speechDictionarySectionTitle,
+                      icon: Icons.spellcheck_outlined,
+                      description:
+                          context.messages.speechDictionarySectionDescription,
+                      children: [
+                        _buildSpeechDictionary(category),
+                      ],
+                    ),
                     const SizedBox(height: 80), // Space for bottom bar
                   ]),
                 ),
@@ -609,6 +622,17 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
   static void _dummyAutomaticPromptChanged(
       AiResponseType responseType, List<String> selectedPromptIds) {}
+
+  Widget _buildSpeechDictionary(CategoryDefinition category) {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return CategorySpeechDictionary(
+      dictionary: category.speechDictionary,
+      onChanged: controller.updateSpeechDictionary,
+    );
+  }
 
   AutomaticPromptConfig _buildAutomaticPromptConfig(
     CategoryDefinition category,

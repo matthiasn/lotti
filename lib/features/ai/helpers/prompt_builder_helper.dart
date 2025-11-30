@@ -62,6 +62,37 @@ class PromptBuilderHelper {
     return baseMessage;
   }
 
+  /// Build system message with entity data (placeholder substitution)
+  Future<String> buildSystemMessageWithData({
+    required AiConfigPrompt promptConfig,
+    required JournalEntity entity,
+  }) async {
+    var systemMessage = getEffectiveMessage(
+      promptConfig: promptConfig,
+      isSystemMessage: true,
+    );
+
+    // Inject speech dictionary if requested (from task's category)
+    if (systemMessage.contains('{{speech_dictionary}}')) {
+      String dictionaryText;
+      try {
+        dictionaryText = await _buildSpeechDictionaryPromptText(entity);
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'speech_dictionary',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        dictionaryText = '';
+      }
+      systemMessage =
+          systemMessage.replaceAll('{{speech_dictionary}}', dictionaryText);
+    }
+
+    return systemMessage;
+  }
+
   /// Build prompt with entity data
   Future<String?> buildPromptWithData({
     required AiConfigPrompt promptConfig,
@@ -198,6 +229,23 @@ class PromptBuilderHelper {
         languageCodeToInject = '';
       }
       prompt = prompt.replaceAll('{{languageCode}}', languageCodeToInject);
+    }
+
+    // Inject speech dictionary if requested (from task's category)
+    if (prompt.contains('{{speech_dictionary}}')) {
+      String dictionaryText;
+      try {
+        dictionaryText = await _buildSpeechDictionaryPromptText(entity);
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'speech_dictionary',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        dictionaryText = '';
+      }
+      prompt = prompt.replaceAll('{{speech_dictionary}}', dictionaryText);
     }
 
     return prompt;
@@ -455,6 +503,43 @@ class PromptBuilderHelper {
   Future<String?> _getLanguageCodeForEntity(JournalEntity entity) async {
     final task = entity is Task ? entity : await _findLinkedTask(entity);
     return task?.data.languageCode;
+  }
+
+  /// Build speech dictionary prompt text for a given entity.
+  /// Returns formatted text with dictionary terms from the task's category,
+  /// or empty string if no dictionary is available.
+  Future<String> _buildSpeechDictionaryPromptText(JournalEntity entity) async {
+    // Get the task (directly or via linked entity)
+    final task = entity is Task ? entity : await _findLinkedTask(entity);
+    if (task == null) return '';
+
+    // Get the category ID from the task
+    final categoryId = task.meta.categoryId;
+    if (categoryId == null) return '';
+
+    // Get the category from cache service
+    CategoryDefinition? category;
+    try {
+      if (getIt.isRegistered<EntitiesCacheService>()) {
+        final cache = getIt<EntitiesCacheService>();
+        category = cache.getCategoryById(categoryId);
+      }
+    } catch (_) {
+      return '';
+    }
+
+    if (category == null) return '';
+
+    // Get the speech dictionary
+    final dictionary = category.speechDictionary;
+    if (dictionary == null || dictionary.isEmpty) return '';
+
+    // Format the dictionary terms as prompt text
+    final terms = dictionary.join(', ');
+    return '''
+The following are correct spellings for domain-specific terms that may appear in the audio.
+Use these exact spellings when you encounter words that sound similar:
+$terms''';
   }
 
   String _resolveEntryText(JournalEntity entry) {

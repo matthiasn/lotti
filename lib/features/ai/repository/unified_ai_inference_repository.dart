@@ -292,10 +292,10 @@ class UnifiedAiInferenceRepository {
           .read(journalDbProvider)
           .getConfigFlag(enableAiStreamingFlag);
 
-      // Get system message - use preconfigured if tracking is enabled
-      var systemMessage = promptBuilderHelper.getEffectiveMessage(
+      // Get system message with placeholder substitution
+      var systemMessage = await promptBuilderHelper.buildSystemMessageWithData(
         promptConfig: promptConfig,
-        isSystemMessage: true,
+        entity: entity,
       );
 
       // Modify system message if task has language preference

@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
+import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -97,6 +98,13 @@ class EditorWidget extends ConsumerWidget {
                   customStyles: customEditorStyles(
                     themeData: Theme.of(context),
                   ),
+                  contextMenuBuilder: (context, rawEditorState) =>
+                      _buildContextMenu(
+                    context,
+                    rawEditorState,
+                    ref,
+                    controller,
+                  ),
                 ),
               ),
             ),
@@ -104,5 +112,80 @@ class EditorWidget extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildContextMenu(
+    BuildContext context,
+    QuillRawEditorState rawEditorState,
+    WidgetRef ref,
+    QuillController controller,
+  ) {
+    final selection = controller.selection;
+    final selectedText = selection.isCollapsed
+        ? ''
+        : controller.document.getPlainText(
+            selection.start,
+            selection.end - selection.start,
+          );
+
+    final buttonItems = <ContextMenuButtonItem>[
+      // Standard context menu items
+      ...rawEditorState.contextMenuButtonItems,
+
+      // Add "Add to Dictionary" option if text is selected
+      if (selectedText.trim().isNotEmpty)
+        ContextMenuButtonItem(
+          label: context.messages.addToDictionary,
+          onPressed: () {
+            _addToDictionary(context, ref, selectedText.trim());
+            // Hide context menu
+            ContextMenuController.removeAny();
+          },
+        ),
+    ];
+
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: rawEditorState.contextMenuAnchors,
+      buttonItems: buttonItems,
+    );
+  }
+
+  Future<void> _addToDictionary(
+    BuildContext context,
+    WidgetRef ref,
+    String term,
+  ) async {
+    final service = ref.read(speechDictionaryServiceProvider);
+    final result = await service.addTermForEntry(
+      entryId: entryId,
+      term: term,
+    );
+
+    if (!context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    switch (result) {
+      case SpeechDictionaryResult.success:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(context.messages.addToDictionarySuccess),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      case SpeechDictionaryResult.noCategory:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(context.messages.addToDictionaryNoCategory),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      case SpeechDictionaryResult.emptyTerm:
+      case SpeechDictionaryResult.termTooLong:
+      case SpeechDictionaryResult.entryNotFound:
+      case SpeechDictionaryResult.categoryNotFound:
+        // Silent failures for edge cases
+        break;
+    }
   }
 }

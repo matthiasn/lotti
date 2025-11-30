@@ -1881,6 +1881,33 @@ class AppLocalizationsDe extends AppLocalizations {
       'This action cannot be undone. All entries in this category will remain but will no longer be categorized.';
 
   @override
+  String get speechDictionaryLabel => 'Sprachwörterbuch';
+
+  @override
+  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
+
+  @override
+  String get speechDictionaryHelper =>
+      'Durch Semikolon getrennte Begriffe für bessere Spracherkennung';
+
+  @override
+  String get speechDictionarySectionTitle => 'Spracherkennung';
+
+  @override
+  String get speechDictionarySectionDescription =>
+      'Begriffe hinzufügen, die von der Spracherkennung oft falsch geschrieben werden (Namen, Orte, Fachbegriffe)';
+
+  @override
+  String get addToDictionary => 'Zum Wörterbuch hinzufügen';
+
+  @override
+  String get addToDictionarySuccess => 'Begriff zum Wörterbuch hinzugefügt';
+
+  @override
+  String get addToDictionaryNoCategory =>
+      'Kann nicht zum Wörterbuch hinzufügen: Aufgabe hat keine Kategorie';
+
+  @override
   String get deleteButton => 'Delete';
 
   @override

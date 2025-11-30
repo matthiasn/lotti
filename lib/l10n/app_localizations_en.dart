@@ -1875,6 +1875,33 @@ class AppLocalizationsEn extends AppLocalizations {
       'This action cannot be undone. All entries in this category will remain but will no longer be categorized.';
 
   @override
+  String get speechDictionaryLabel => 'Speech Dictionary';
+
+  @override
+  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
+
+  @override
+  String get speechDictionaryHelper =>
+      'Semicolon-separated terms for better speech recognition';
+
+  @override
+  String get speechDictionarySectionTitle => 'Speech Recognition';
+
+  @override
+  String get speechDictionarySectionDescription =>
+      'Add terms that are often misspelled by speech recognition (names, places, technical terms)';
+
+  @override
+  String get addToDictionary => 'Add to Dictionary';
+
+  @override
+  String get addToDictionarySuccess => 'Term added to dictionary';
+
+  @override
+  String get addToDictionaryNoCategory =>
+      'Cannot add to dictionary: task has no category';
+
+  @override
   String get deleteButton => 'Delete';
 
   @override

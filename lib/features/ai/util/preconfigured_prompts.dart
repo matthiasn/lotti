@@ -360,12 +360,14 @@ const audioTranscriptionPrompt = PreconfiguredPrompt(
   id: 'audio_transcription',
   name: 'Audio Transcription',
   systemMessage: '''
-You are a helpful AI assistant that transcribes audio content. 
-Your goal is to provide accurate, well-formatted transcriptions of audio recordings.''',
+You are a helpful AI assistant that transcribes audio content.
+Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
+
+{{speech_dictionary}}''',
   userMessage: '''
-Please transcribe the provided audio file(s). 
-Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
-If there are multiple speakers, try to indicate speaker changes. 
+Please transcribe the provided audio file(s).
+Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
+If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
 ''',
   requiredInputData: [InputDataType.audioFiles],
@@ -379,18 +381,20 @@ const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
   id: 'audio_transcription_task_context',
   name: 'Audio Transcription with Task Context',
   systemMessage: '''
-You are a helpful AI assistant that transcribes audio content. 
+You are a helpful AI assistant that transcribes audio content.
 Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
 
 When transcribing audio in the context of a task, pay attention to:
 1. Any mentions of completed checklist items (e.g., "I finished...", "I've completed...", "That's done")
 2. Any new action items or tasks mentioned (e.g., "I need to...", "Next I'll...", "We should...")
 
-Include these observations in your transcription so the user can update their task accordingly.''',
+Include these observations in your transcription so the user can update their task accordingly.
+
+{{speech_dictionary}}''',
   userMessage: '''
-Please transcribe the provided audio. 
-Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
-If there are multiple speakers, try to indicate speaker changes. 
+Please transcribe the provided audio.
+Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
+If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
 
 Take into account the following task context:
@@ -400,8 +404,8 @@ Take into account the following task context:
 {{task}}
 ```
 
-The task context will provide additional information about the task, such as the project, 
-goal, and any relevant details such as names of people or places. If in doubt 
+The task context will provide additional information about the task, such as the project,
+goal, and any relevant details such as names of people or places. If in doubt
 about names or concepts mentioned in the audio, then the task context should
 be consulted to ensure accuracy.
 ''',

@@ -219,8 +219,9 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Check for form fields
-        expect(find.byType(LottiTextField), findsOneWidget); // Name field
+        // Check for form fields in the visible area
+        // Name field is in Basic Settings (Speech Dictionary is scrolled out)
+        expect(find.byType(LottiTextField), findsAtLeastNWidgets(1));
         expect(find.text('Private'), findsOneWidget);
         expect(find.text('Active'), findsOneWidget);
         expect(find.text('Favorite'), findsOneWidget);
@@ -274,10 +275,10 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Find the text field and check its value
-        final textField = find.byType(TextFormField);
-        expect(textField, findsOneWidget);
-        final textFieldWidget = tester.widget<TextFormField>(textField);
+        // Find the name text field (first one) and check its value
+        final textFields = find.byType(TextFormField);
+        expect(textFields, findsAtLeastNWidgets(1)); // Name field visible
+        final textFieldWidget = tester.widget<TextFormField>(textFields.first);
         expect(textFieldWidget.controller?.text, equals('My Test Category'));
       });
     });
