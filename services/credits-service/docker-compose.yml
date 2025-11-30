@@ -1,0 +1,43 @@
+services:
+  tigerbeetle:
+    image: ghcr.io/tigerbeetle/tigerbeetle:0.16.16
+    container_name: credits-tigerbeetle
+    ports:
+      - "3000:3000"
+    volumes:
+      - tigerbeetle-data:/data
+      - ./init-tigerbeetle.sh:/init-tigerbeetle.sh:ro
+    entrypoint: ["/bin/sh", "/init-tigerbeetle.sh"]
+    healthcheck:
+      test: ["CMD", "/tigerbeetle", "version"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - credits-network
+
+  credits-service:
+    build: .
+    container_name: credits-service
+    ports:
+      - "8001:8001"
+    environment:
+      - TIGERBEETLE_HOST=tigerbeetle
+      - TIGERBEETLE_PORT=3000
+      - LOG_LEVEL=INFO
+      - PORT=8001
+    depends_on:
+      tigerbeetle:
+        condition: service_healthy
+    networks:
+      - credits-network
+    restart: unless-stopped
+
+volumes:
+  tigerbeetle-data:
+    driver: local
+
+networks:
+  credits-network:
+    driver: bridge

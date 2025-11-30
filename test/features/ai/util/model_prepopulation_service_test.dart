@@ -229,23 +229,32 @@ void main() {
             .called(geminiModels.length - 1);
       });
 
-      test('should return 0 when provider has no known models', () async {
+      test('should create all known models for Generic OpenAI provider',
+          () async {
         // Arrange
+        const providerId = 'generic-provider-id';
         final provider = AiConfigInferenceProvider(
-          id: 'generic-provider-id',
-          baseUrl: 'https://api.generic.com',
-          apiKey: 'test-key',
-          name: 'Generic',
+          id: providerId,
+          baseUrl: 'http://localhost:8002/v1',
+          apiKey: '',
+          name: 'AI Proxy (local)',
           createdAt: DateTime.now(),
           inferenceProviderType: InferenceProviderType.genericOpenAi,
         );
+
+        when(() => mockRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => []);
+
+        when(() => mockRepository.saveConfig(any()))
+            .thenAnswer((_) async => {});
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
 
         // Assert
-        expect(result, equals(0));
-        verifyNever(() => mockRepository.saveConfig(any()));
+        expect(result, equals(genericOpenAiModels.length));
+        verify(() => mockRepository.saveConfig(any()))
+            .called(genericOpenAiModels.length);
       });
 
       test('should create models with correct properties', () async {
