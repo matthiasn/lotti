@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -80,6 +81,34 @@ class ChecklistItemController extends _$ChecklistItemController {
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null && title != null) {
+      final oldTitle = data.title;
+      final categoryId = current.meta.categoryId;
+
+      // Fire-and-forget capture with snackbar notification
+      unawaited(
+        ref
+            .read(correctionCaptureServiceProvider)
+            .captureCorrection(
+              categoryId: categoryId,
+              beforeText: oldTitle,
+              afterText: title,
+            )
+            .then((result) {
+          if (result == CorrectionCaptureResult.success) {
+            // Notify for snackbar display
+            ref.read(correctionCaptureNotifierProvider.notifier).notify(
+                  CorrectionCaptureEvent(
+                    before: oldTitle,
+                    after: title,
+                    categoryName:
+                        '', // Category name not readily available here
+                  ),
+                );
+          }
+        }),
+      );
+
+      // Existing update logic continues synchronously
       final updated = current.copyWith(
         data: data.copyWith(title: title),
       );

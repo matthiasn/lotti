@@ -422,15 +422,16 @@ void main() {
 
   group('kDictionaryWarningThreshold constant', () {
     test('has correct value', () {
-      expect(kDictionaryWarningThreshold, equals(30));
+      // Raised from 30 to 500 to align with correction examples limit
+      expect(kDictionaryWarningThreshold, equals(500));
     });
   });
 
   group('Large dictionary warning', () {
     testWidgets('shows warning when dictionary exceeds threshold',
         (tester) async {
-      // Create a dictionary with more than 30 terms
-      final largeDict = List.generate(35, (i) => 'term$i');
+      // Create a dictionary with more than 500 terms
+      final largeDict = List.generate(505, (i) => 'term$i');
 
       await tester.pumpWidget(
         WidgetTestBench(
@@ -442,7 +443,7 @@ void main() {
       );
 
       // Verify warning message is shown (contains term count)
-      expect(find.textContaining('35'), findsOneWidget);
+      expect(find.textContaining('505'), findsOneWidget);
     });
 
     testWidgets('shows normal helper text when below threshold',

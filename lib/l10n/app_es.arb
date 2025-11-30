@@ -366,4 +366,16 @@
   "syncEntitiesSuccessDescription": "Todo está al día.",
   "syncEntitiesMessage": "Elige los datos que quieres sincronizar.",
   "syncStepAiSettings": "Configuración de IA"
+  ,
+  "correctionExamplesSectionTitle": "Ejemplos de Corrección de Lista",
+  "correctionExamplesSectionDescription": "Cuando corriges manualmente elementos de la lista, esas correcciones se guardan aquí y se usan para mejorar las sugerencias de IA.",
+  "correctionExamplesEmpty": "Aún no se han capturado correcciones. Edita un elemento de la lista para agregar tu primer ejemplo.",
+  "correctionExamplesWarning": "Tienes {count} correcciones. Solo las {max} más recientes se usarán en los prompts de IA. Considera eliminar ejemplos antiguos o redundantes.",
+  "@correctionExamplesWarning": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "correctionExampleCaptured": "Corrección guardada para aprendizaje de IA"
 }

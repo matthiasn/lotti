@@ -7,7 +7,8 @@ import 'package:lotti/widgets/form/lotti_text_field.dart';
 const int kMaxTermLength = 50;
 
 /// Warning threshold for number of terms (token budget concern).
-const int kDictionaryWarningThreshold = 30;
+/// Raised from 30 to 500 to align with correction examples limit.
+const int kDictionaryWarningThreshold = 500;
 
 /// A widget for editing the speech dictionary of a category.
 ///

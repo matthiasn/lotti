@@ -2622,4 +2622,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checklistAllDone => 'All items completed!';
+
+  @override
+  String get correctionExamplesSectionTitle => 'Checklisten-Korrekturbeispiele';
+
+  @override
+  String get correctionExamplesSectionDescription =>
+      'Wenn Sie Checklistenelemente manuell korrigieren, werden diese Korrekturen hier gespeichert und zur Verbesserung der KI-Vorschläge verwendet.';
+
+  @override
+  String get correctionExamplesEmpty =>
+      'Noch keine Korrekturen erfasst. Bearbeiten Sie ein Checklistenelement, um Ihr erstes Beispiel hinzuzufügen.';
+
+  @override
+  String correctionExamplesWarning(int count, int max) {
+    return 'Sie haben $count Korrekturen. Nur die neuesten $max werden in KI-Prompts verwendet. Erwägen Sie, alte oder redundante Beispiele zu löschen.';
+  }
+
+  @override
+  String get correctionExampleCaptured => 'Korrektur für KI-Lernen gespeichert';
 }

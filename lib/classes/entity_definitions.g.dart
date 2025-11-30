@@ -6,6 +6,24 @@ part of 'entity_definitions.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_ChecklistCorrectionExample _$ChecklistCorrectionExampleFromJson(
+        Map<String, dynamic> json) =>
+    _ChecklistCorrectionExample(
+      before: json['before'] as String,
+      after: json['after'] as String,
+      capturedAt: json['capturedAt'] == null
+          ? null
+          : DateTime.parse(json['capturedAt'] as String),
+    );
+
+Map<String, dynamic> _$ChecklistCorrectionExampleToJson(
+        _ChecklistCorrectionExample instance) =>
+    <String, dynamic>{
+      'before': instance.before,
+      'after': instance.after,
+      'capturedAt': instance.capturedAt?.toIso8601String(),
+    };
+
 DailyHabitSchedule _$DailyHabitScheduleFromJson(Map<String, dynamic> json) =>
     DailyHabitSchedule(
       requiredCompletions: (json['requiredCompletions'] as num).toInt(),
@@ -261,6 +279,10 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
       speechDictionary: (json['speechDictionary'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      correctionExamples: (json['correctionExamples'] as List<dynamic>?)
+          ?.map((e) =>
+              ChecklistCorrectionExample.fromJson(e as Map<String, dynamic>))
+          .toList(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -283,6 +305,7 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
           ?.map((k, e) => MapEntry(_$AiResponseTypeEnumMap[k]!, e)),
       'icon': const CategoryIconConverter().toJson(instance.icon),
       'speechDictionary': instance.speechDictionary,
+      'correctionExamples': instance.correctionExamples,
       'runtimeType': instance.$type,
     };
 

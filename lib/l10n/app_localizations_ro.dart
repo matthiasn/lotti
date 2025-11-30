@@ -2617,4 +2617,24 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checklistAllDone => 'All items completed!';
+
+  @override
+  String get correctionExamplesSectionTitle => 'Exemple de Corecție a Listei';
+
+  @override
+  String get correctionExamplesSectionDescription =>
+      'Când corectați manual elementele listei, acele corecții sunt salvate aici și utilizate pentru a îmbunătăți sugestiile AI.';
+
+  @override
+  String get correctionExamplesEmpty =>
+      'Nu s-au capturat corecții încă. Editați un element din listă pentru a adăuga primul exemplu.';
+
+  @override
+  String correctionExamplesWarning(int count, int max) {
+    return 'Aveți $count corecții. Doar cele mai recente $max vor fi folosite în prompturile AI. Luați în considerare ștergerea exemplelor vechi sau redundante.';
+  }
+
+  @override
+  String get correctionExampleCaptured =>
+      'Corecție salvată pentru învățarea AI';
 }

@@ -402,4 +402,16 @@
   "syncEntitiesSuccessDescription": "Alles ist auf dem neuesten Stand.",
   "syncEntitiesMessage": "Wähle die Daten, die du synchronisieren möchtest.",
   "syncStepAiSettings": "KI-Einstellungen"
+  ,
+  "correctionExamplesSectionTitle": "Checklisten-Korrekturbeispiele",
+  "correctionExamplesSectionDescription": "Wenn Sie Checklistenelemente manuell korrigieren, werden diese Korrekturen hier gespeichert und zur Verbesserung der KI-Vorschläge verwendet.",
+  "correctionExamplesEmpty": "Noch keine Korrekturen erfasst. Bearbeiten Sie ein Checklistenelement, um Ihr erstes Beispiel hinzuzufügen.",
+  "correctionExamplesWarning": "Sie haben {count} Korrekturen. Nur die neuesten {max} werden in KI-Prompts verwendet. Erwägen Sie, alte oder redundante Beispiele zu löschen.",
+  "@correctionExamplesWarning": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "correctionExampleCaptured": "Korrektur für KI-Lernen gespeichert"
 }

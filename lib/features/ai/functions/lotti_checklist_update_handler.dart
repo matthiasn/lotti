@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/string_utils.dart' as string_utils;
 import 'package:openai_dart/openai_dart.dart';
 
 /// Handler for updating existing checklist items in Lotti.
@@ -193,9 +194,9 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   }
 
   /// Normalize whitespace: trim edges and collapse internal spaces.
-  static String normalizeWhitespace(String input) {
-    return input.trim().replaceAll(RegExp(r'\s+'), ' ');
-  }
+  /// Delegates to the shared utility for consistent behavior across features.
+  static String normalizeWhitespace(String input) =>
+      string_utils.normalizeWhitespace(input);
 
   /// Execute the validated updates.
   ///

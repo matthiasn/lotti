@@ -104,8 +104,28 @@ class CategoryDetailsController
             _originalCategory!.allowedPromptIds) ||
         _hasListChanges(_pendingCategory!.speechDictionary,
             _originalCategory!.speechDictionary) ||
+        _hasCorrectionExamplesChanges(_pendingCategory!.correctionExamples,
+            _originalCategory!.correctionExamples) ||
         _hasMapChanges(_pendingCategory!.automaticPrompts,
             _originalCategory!.automaticPrompts);
+  }
+
+  bool _hasCorrectionExamplesChanges(
+    List<ChecklistCorrectionExample>? current,
+    List<ChecklistCorrectionExample>? original,
+  ) {
+    if (current == null && original == null) return false;
+    if (current == null || original == null) return true;
+    if (current.length != original.length) return true;
+
+    // Compare each example (order matters for this comparison)
+    for (var i = 0; i < current.length; i++) {
+      if (current[i].before != original[i].before ||
+          current[i].after != original[i].after) {
+        return true;
+      }
+    }
+    return false;
   }
 
   bool _hasListChanges(List<String>? current, List<String>? original) {
@@ -258,6 +278,29 @@ class CategoryDetailsController
 
     _pendingCategory = _pendingCategory!.copyWith(
       speechDictionary: terms.isEmpty ? null : terms,
+    );
+
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
+  }
+
+  /// Deletes a correction example from the pending category.
+  ///
+  /// Note: Deletions update `_pendingCategory` but are NOT auto-persisted.
+  /// The user must tap the Save button to persist changes. This matches
+  /// the speech dictionary and other category settings behavior.
+  void deleteCorrectionExample(ChecklistCorrectionExample example) {
+    if (_pendingCategory == null) return;
+
+    final currentExamples = _pendingCategory!.correctionExamples ?? [];
+    final updatedExamples = currentExamples
+        .where((e) => e.before != example.before || e.after != example.after)
+        .toList();
+
+    _pendingCategory = _pendingCategory!.copyWith(
+      correctionExamples: updatedExamples.isEmpty ? null : updatedExamples,
     );
 
     state = state.copyWith(
