@@ -1881,6 +1881,49 @@ class AppLocalizationsDe extends AppLocalizations {
       'This action cannot be undone. All entries in this category will remain but will no longer be categorized.';
 
   @override
+  String get speechDictionaryLabel => 'Sprachwörterbuch';
+
+  @override
+  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
+
+  @override
+  String get speechDictionaryHelper =>
+      'Durch Semikolon getrennte Begriffe (max. 50 Zeichen) für bessere Spracherkennung';
+
+  @override
+  String speechDictionaryWarning(Object count) {
+    return 'Großes Wörterbuch ($count Begriffe) kann API-Kosten erhöhen';
+  }
+
+  @override
+  String get speechDictionarySectionTitle => 'Spracherkennung';
+
+  @override
+  String get speechDictionarySectionDescription =>
+      'Begriffe hinzufügen, die von der Spracherkennung oft falsch geschrieben werden (Namen, Orte, Fachbegriffe)';
+
+  @override
+  String get addToDictionary => 'Zum Wörterbuch hinzufügen';
+
+  @override
+  String get addToDictionarySuccess => 'Begriff zum Wörterbuch hinzugefügt';
+
+  @override
+  String get addToDictionaryNoCategory =>
+      'Kann nicht zum Wörterbuch hinzufügen: Aufgabe hat keine Kategorie';
+
+  @override
+  String get addToDictionaryDuplicate =>
+      'Begriff bereits im Wörterbuch vorhanden';
+
+  @override
+  String get addToDictionaryTooLong => 'Begriff zu lang (max. 50 Zeichen)';
+
+  @override
+  String get addToDictionarySaveFailed =>
+      'Wörterbuch konnte nicht gespeichert werden';
+
+  @override
   String get deleteButton => 'Delete';
 
   @override

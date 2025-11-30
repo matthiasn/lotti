@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -14,6 +15,21 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+
+/// Template for the speech dictionary prompt injection.
+/// The {terms} placeholder will be replaced with the actual dictionary terms.
+const String _kSpeechDictionaryPromptTemplate = '''
+IMPORTANT - SPEECH DICTIONARY (MUST USE):
+The following terms are domain-specific and MUST be spelled exactly as shown when they appear in the audio.
+Speech recognition often misinterprets these terms. When you hear anything that sounds like these terms,
+you MUST use the exact spelling and casing provided below - do NOT use alternative spellings.
+
+Required spellings: {terms}
+
+Examples of what to correct:
+- "mac OS" or "Mac OS" → use the dictionary spelling if "macOS" is listed
+- "i phone" or "I Phone" → use the dictionary spelling if "iPhone" is listed
+- Any phonetically similar word → use the exact dictionary term''';
 
 /// Helper class for building AI prompts with support for template tracking
 typedef LabelFilterFn = List<LabelDefinition> Function(
@@ -60,6 +76,20 @@ class PromptBuilderHelper {
     }
 
     return baseMessage;
+  }
+
+  /// Build system message with entity data (placeholder substitution)
+  ///
+  /// Note: {{speech_dictionary}} is only supported in user messages (buildPromptWithData)
+  /// to avoid token waste from duplication in both system and user messages.
+  Future<String> buildSystemMessageWithData({
+    required AiConfigPrompt promptConfig,
+    required JournalEntity entity,
+  }) async {
+    return getEffectiveMessage(
+      promptConfig: promptConfig,
+      isSystemMessage: true,
+    );
   }
 
   /// Build prompt with entity data
@@ -198,6 +228,23 @@ class PromptBuilderHelper {
         languageCodeToInject = '';
       }
       prompt = prompt.replaceAll('{{languageCode}}', languageCodeToInject);
+    }
+
+    // Inject speech dictionary if requested (from task's category)
+    if (prompt.contains('{{speech_dictionary}}')) {
+      String dictionaryText;
+      try {
+        dictionaryText = await _buildSpeechDictionaryPromptText(entity);
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'speech_dictionary',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        dictionaryText = '';
+      }
+      prompt = prompt.replaceAll('{{speech_dictionary}}', dictionaryText);
     }
 
     return prompt;
@@ -455,6 +502,81 @@ class PromptBuilderHelper {
   Future<String?> _getLanguageCodeForEntity(JournalEntity entity) async {
     final task = entity is Task ? entity : await _findLinkedTask(entity);
     return task?.data.languageCode;
+  }
+
+  /// Build speech dictionary prompt text for a given entity.
+  /// Returns formatted text with dictionary terms from the task's category,
+  /// or empty string if no dictionary is available.
+  Future<String> _buildSpeechDictionaryPromptText(JournalEntity entity) async {
+    // Get the task (directly or via linked entity)
+    final task = entity is Task ? entity : await _findLinkedTask(entity);
+    if (task == null) {
+      developer.log(
+        'Speech dictionary: no task found for entity ${entity.id}',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the category ID from the task
+    final categoryId = task.meta.categoryId;
+    if (categoryId == null) {
+      developer.log(
+        'Speech dictionary: task ${task.id} has no category',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the category from cache service
+    CategoryDefinition? category;
+    try {
+      if (getIt.isRegistered<EntitiesCacheService>()) {
+        final cache = getIt<EntitiesCacheService>();
+        category = cache.getCategoryById(categoryId);
+      }
+    } catch (e) {
+      developer.log(
+        'Speech dictionary: error getting category $categoryId: $e',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    if (category == null) {
+      developer.log(
+        'Speech dictionary: category $categoryId not found in cache',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the speech dictionary
+    final dictionary = category.speechDictionary;
+    if (dictionary == null || dictionary.isEmpty) {
+      developer.log(
+        'Speech dictionary: category "${category.name}" has no dictionary',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    developer.log(
+      'Speech dictionary: injecting ${dictionary.length} terms from '
+      'category "${category.name}": ${dictionary.join(", ")}',
+      name: 'PromptBuilderHelper',
+    );
+
+    // Format the dictionary terms as prompt text
+    // Escape quotes, backslashes, and newlines for safety
+    String escapeForJson(String s) => s
+        .replaceAll(r'\', r'\\')
+        .replaceAll('"', r'\"')
+        .replaceAll('\n', r'\n');
+    final termsJson = dictionary.map((t) => '"${escapeForJson(t)}"').join(', ');
+
+    return _kSpeechDictionaryPromptTemplate.replaceAll(
+        '{terms}', '[$termsJson]');
   }
 
   String _resolveEntryText(JournalEntity entry) {

@@ -19,13 +19,14 @@ class CategoryTestUtils {
     String? defaultLanguageCode,
     List<String>? allowedPromptIds,
     Map<AiResponseType, List<String>>? automaticPrompts,
+    List<String>? speechDictionary,
     CategoryIcon? icon,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
     VectorClock? vectorClock,
   }) {
-    final now = DateTime.now();
+    final defaultDate = DateTime(2024);
     return CategoryDefinition(
       id: id ?? const Uuid().v4(),
       name: name,
@@ -33,13 +34,14 @@ class CategoryTestUtils {
       private: private,
       active: active,
       favorite: favorite,
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
+      createdAt: createdAt ?? defaultDate,
+      updatedAt: updatedAt ?? defaultDate,
       deletedAt: deletedAt,
       vectorClock: vectorClock,
       defaultLanguageCode: defaultLanguageCode,
       allowedPromptIds: allowedPromptIds,
       automaticPrompts: automaticPrompts,
+      speechDictionary: speechDictionary,
       icon: icon,
     );
   }

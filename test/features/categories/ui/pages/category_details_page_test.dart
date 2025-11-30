@@ -219,8 +219,9 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Check for form fields
-        expect(find.byType(LottiTextField), findsOneWidget); // Name field
+        // Check for form fields in the visible area
+        // Name field is in Basic Settings (Speech Dictionary is scrolled out)
+        expect(find.byType(LottiTextField), findsAtLeastNWidgets(1));
         expect(find.text('Private'), findsOneWidget);
         expect(find.text('Active'), findsOneWidget);
         expect(find.text('Favorite'), findsOneWidget);
@@ -274,10 +275,10 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Find the text field and check its value
-        final textField = find.byType(TextFormField);
-        expect(textField, findsOneWidget);
-        final textFieldWidget = tester.widget<TextFormField>(textField);
+        // Find the name text field (first one) and check its value
+        final textFields = find.byType(TextFormField);
+        expect(textFields, findsAtLeastNWidgets(1)); // Name field visible
+        final textFieldWidget = tester.widget<TextFormField>(textFields.first);
         expect(textFieldWidget.controller?.text, equals('My Test Category'));
       });
     });
@@ -332,8 +333,8 @@ void main() {
         streamController.add(category);
         await tester.pumpAndSettle();
 
-        // Change the name
-        final nameField = find.byType(TextFormField);
+        // Change the name (use .first to target name field, not speech dictionary)
+        final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, 'Updated Name');
         await tester.pumpAndSettle();
 
@@ -605,8 +606,8 @@ void main() {
         streamController.add(category);
         await tester.pumpAndSettle();
 
-        // Clear the name field
-        final nameField = find.byType(TextFormField);
+        // Clear the name field (use .first to target name field, not speech dictionary)
+        final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, '   '); // Only spaces
         await tester.pumpAndSettle();
 
@@ -690,8 +691,8 @@ void main() {
         streamController.add(category);
         await tester.pumpAndSettle();
 
-        // Enter name with whitespace
-        final nameField = find.byType(TextFormField);
+        // Enter name with whitespace (use .first to target name field, not speech dictionary)
+        final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, 'New Name');
         await tester.pumpAndSettle();
 
@@ -805,8 +806,8 @@ void main() {
         streamController.add(category);
         await tester.pumpAndSettle();
 
-        // Change name to enable save
-        await tester.enterText(find.byType(TextFormField), 'Updated');
+        // Change name to enable save (use .first to target name field, not speech dictionary)
+        await tester.enterText(find.byType(TextFormField).first, 'Updated');
         await tester.pumpAndSettle();
 
         // Tap save button
@@ -892,8 +893,9 @@ void main() {
           findsNothing,
         );
 
-        // Make a change
-        await tester.enterText(find.byType(TextFormField), 'Changed Name');
+        // Make a change (use .first to target name field, not speech dictionary)
+        await tester.enterText(
+            find.byType(TextFormField).first, 'Changed Name');
         await tester.pumpAndSettle();
 
         // Save button should remain absent in app bar; save is in bottom bar only

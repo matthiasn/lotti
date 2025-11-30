@@ -364,6 +364,115 @@ void main() {
       subscription.close();
     });
 
+    test('updates speech dictionary', () async {
+      final category = CategoryTestUtils.createTestCategory(
+        speechDictionary: ['term1'],
+      );
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(category),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Wait for initial load
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testCategoryId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // Update speech dictionary
+      controller.updateSpeechDictionary(['term1', 'term2', 'term3']);
+
+      final state = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+
+      expect(state.hasChanges, isTrue);
+      expect(
+        state.category?.speechDictionary,
+        equals(['term1', 'term2', 'term3']),
+      );
+
+      // Test setting empty list converts to null
+      controller.updateSpeechDictionary([]);
+      expect(
+        container
+            .read(categoryDetailsControllerProvider(testCategoryId))
+            .category
+            ?.speechDictionary,
+        isNull,
+      );
+
+      subscription.close();
+    });
+
+    test('no changes when setting same speech dictionary', () async {
+      final category = CategoryTestUtils.createTestCategory(
+        speechDictionary: ['term1', 'term2'],
+      );
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(category),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Wait for initial load
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testCategoryId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // Set same values
+      controller.updateSpeechDictionary(['term1', 'term2']);
+
+      expect(
+        container
+            .read(categoryDetailsControllerProvider(testCategoryId))
+            .hasChanges,
+        isFalse,
+      );
+
+      subscription.close();
+    });
+
     test('updates automatic prompts', () async {
       final category = CategoryTestUtils.createTestCategory();
       final completer = Completer<void>();

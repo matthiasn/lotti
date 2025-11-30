@@ -102,6 +102,8 @@ class CategoryDetailsController
             _originalCategory!.defaultLanguageCode ||
         _hasListChanges(_pendingCategory!.allowedPromptIds,
             _originalCategory!.allowedPromptIds) ||
+        _hasListChanges(_pendingCategory!.speechDictionary,
+            _originalCategory!.speechDictionary) ||
         _hasMapChanges(_pendingCategory!.automaticPrompts,
             _originalCategory!.automaticPrompts);
   }
@@ -243,6 +245,19 @@ class CategoryDetailsController
 
     _pendingCategory = _pendingCategory!.copyWith(
       automaticPrompts: updatedPrompts.isEmpty ? null : updatedPrompts,
+    );
+
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
+  }
+
+  void updateSpeechDictionary(List<String> terms) {
+    if (_pendingCategory == null) return;
+
+    _pendingCategory = _pendingCategory!.copyWith(
+      speechDictionary: terms.isEmpty ? null : terms,
     );
 
     state = state.copyWith(

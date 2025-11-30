@@ -258,6 +258,9 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
             (e as List<dynamic>).map((e) => e as String).toList()),
       ),
       icon: const CategoryIconConverter().fromJson(json['icon'] as String?),
+      speechDictionary: (json['speechDictionary'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -279,6 +282,7 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
       'automaticPrompts': instance.automaticPrompts
           ?.map((k, e) => MapEntry(_$AiResponseTypeEnumMap[k]!, e)),
       'icon': const CategoryIconConverter().toJson(instance.icon),
+      'speechDictionary': instance.speechDictionary,
       'runtimeType': instance.$type,
     };
 

@@ -98,6 +98,9 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   List<String>? get allowedPromptIds => null;
 
   @override
+  List<String>? get speechDictionary => null;
+
+  @override
   Map<AiResponseType, List<String>>? get automaticPrompts {
     final prompts = <AiResponseType, List<String>>{};
 

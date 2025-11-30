@@ -14,6 +14,7 @@ The Categories feature allows users to create, manage, and assign categories to 
 4. **Favorites**: Mark frequently used categories as favorites for quick access
 5. **AI Integration**: Configure which AI prompts are available per category
 6. **Automatic Processing**: Set up automatic AI prompt execution for specific content types
+7. **Speech Dictionary**: Store domain-specific terms for improved transcription accuracy
 
 ## Architecture
 
@@ -41,6 +42,7 @@ The Categories feature allows users to create, manage, and assign categories to 
   - `CategoryLanguageDropdown`: Language preference selector
   - `CategoryPromptSelection`: AI prompt configuration
   - `CategoryAutomaticPrompts`: Automatic prompt settings
+  - `CategorySpeechDictionary`: Speech recognition dictionary editor
 
 ## AI-Powered Category Settings
 
@@ -125,6 +127,59 @@ class CategoryDefinition {
 - [ ] Show notifications for completed automatic prompts
 - [ ] Allow users to review and accept/reject automatic results
 - [ ] Add settings to pause/resume automatic processing
+
+## Speech Dictionary
+
+Categories can store a speech dictionary of domain-specific terms to improve transcription accuracy.
+
+### Overview
+
+The speech dictionary helps with:
+- **Proper nouns**: Names like "Sigurðsson" or places like "Kirkjubæjarklaustur"
+- **Technical terms**: Product names like "macOS", "iPhone", or "Claude Code"
+- **Domain jargon**: Industry-specific terminology unique to each category
+
+### Data Model
+
+```dart
+class CategoryDefinition {
+  // List of correct spellings for speech recognition
+  final List<String>? speechDictionary;
+  // Example: ['macOS', 'Kirkjubæjarklaustur', 'Claude Code']
+}
+```
+
+### How It Works
+
+1. **Storage**: Terms stored as a list of strings per category
+2. **Prompt Injection**: `{{speech_dictionary}}` placeholder injects terms into AI prompts
+3. **Context**: Dictionary is fetched from task's category (or linked task for audio/images)
+4. **Sync**: Dictionaries sync across devices via existing category sync
+
+### Adding Terms
+
+**From Category Settings:**
+- Edit category → Speech Dictionary field
+- Enter semicolon-separated terms: `macOS; iPhone; Claude Code`
+
+**From Text Editor (Context Menu):**
+- Select corrected text in QuillEditor
+- Right-click or long-press → "Add to Speech Dictionary"
+- Term is added to the current task's category
+
+### Implementation
+
+- **Widget**: `CategorySpeechDictionary` - semicolon-separated text field
+- **Service**: `SpeechDictionaryService` - handles term addition with validation
+- **Prompt Helper**: `PromptBuilderHelper` - injects dictionary into AI prompts
+- **Context Menu**: Custom `contextMenuBuilder` in QuillEditor
+
+### Validation
+
+- Empty terms are rejected
+- Terms are trimmed of whitespace
+- Maximum term length: 50 characters
+- Duplicates are allowed (user's responsibility)
 
 ## Usage Examples
 

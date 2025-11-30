@@ -234,6 +234,57 @@ The speech feature supports multiple transcription providers:
 - Provides high-quality transcription with streaming support
 - Automatically selected when configured as a provider
 
+## Speech Dictionary Service
+
+The speech feature includes a dictionary service for improving transcription accuracy with domain-specific terms.
+
+### Overview
+
+`SpeechDictionaryService` (`services/speech_dictionary_service.dart`) manages adding terms to category speech dictionaries from various contexts (e.g., text editor context menus).
+
+### Key Features
+
+- **Term Addition**: Add corrected spellings to the category's speech dictionary
+- **Entry Resolution**: Resolves category from tasks, linked audio, or linked images
+- **Validation**: Rejects empty terms, trims whitespace, enforces max length (50 chars)
+- **Result Feedback**: Returns detailed result enum for UI feedback
+
+### API
+
+```dart
+// Add a term to the dictionary for an entry's category
+final result = await speechDictionaryService.addTermForEntry(
+  entryId: 'task-123',
+  term: 'macOS',
+);
+
+// Check if term can be added (entry has a category)
+final canAdd = await speechDictionaryService.canAddTermForEntry('audio-456');
+```
+
+### Result Types
+
+```dart
+enum SpeechDictionaryResult {
+  success,          // Term was added successfully
+  emptyTerm,        // Term was empty after trimming
+  termTooLong,      // Term exceeds 50 characters
+  entryNotFound,    // Entry doesn't exist
+  noCategory,       // Entry has no associated category
+  categoryNotFound, // Category was deleted
+  duplicate,        // Term already exists (case-insensitive)
+  saveFailed,       // Failed to save category update
+}
+```
+
+### Integration with Prompts
+
+Dictionary terms are injected into AI transcription prompts via the `{{speech_dictionary}}` placeholder in `PromptBuilderHelper`. The prompt text guides the AI to use exact spellings when encountering similar-sounding words.
+
+### Testing
+
+- `test/features/speech/services/speech_dictionary_service_test.dart`: 25 unit tests covering all result types and edge cases
+
 ## Future Enhancements
 
 Potential improvements to consider:
@@ -242,3 +293,4 @@ Potential improvements to consider:
 - Voice activity detection for auto-stop
 - Audio enhancement filters
 - Export capabilities for audio files
+- Global speech dictionary (cross-category terms)

@@ -7,7 +7,7 @@ part of 'direct_task_summary_refresh_controller.dart';
 // **************************************************************************
 
 String _$scheduledTaskSummaryRefreshHash() =>
-    r'10ef33041194409d07cc985c799396f053d3444d';
+    r'dec86e9ad67e7fcca315e32fec9f4e4be601983b';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -174,10 +174,22 @@ class _ScheduledTaskSummaryRefreshProviderElement
 }
 
 String _$directTaskSummaryRefreshControllerHash() =>
-    r'c95bb1c91334b7745100390d828ea7bf0759768e';
+    r'c43ba295aa153442e084ea681bed55d93c2b8744';
 
-/// Manages direct task summary refresh requests from checklist actions
-/// This bypasses the notification system to avoid circular dependencies and infinite loops
+/// Manages scheduled task summary refresh requests from checklist actions.
+///
+/// This controller implements a "delayed refresh with countdown" pattern:
+/// - First checklist change schedules a refresh with 5-minute delay
+/// - UI shows countdown: "Summary in 4:32" with cancel/trigger-now buttons
+/// - Additional changes batch into existing countdown (no timer reset)
+/// - User can cancel the scheduled refresh or trigger immediately
+///
+/// This reduces API costs while actively working on a task, since summaries
+/// are most valuable when returning to a task to catch up.
+///
+/// The controller bypasses the notification system to avoid circular
+/// dependencies and infinite loops that could occur if checklist changes
+/// triggered notifications that triggered refreshes that updated checklists.
 ///
 /// Copied from [DirectTaskSummaryRefreshController].
 @ProviderFor(DirectTaskSummaryRefreshController)

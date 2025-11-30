@@ -1881,6 +1881,47 @@ class AppLocalizationsRo extends AppLocalizations {
       'This action cannot be undone. All entries in this category will remain but will no longer be categorized.';
 
   @override
+  String get speechDictionaryLabel => 'Speech Dictionary';
+
+  @override
+  String get speechDictionaryHint => 'macOS; Kirkjubæjarklaustur; Claude Code';
+
+  @override
+  String get speechDictionaryHelper =>
+      'Semicolon-separated terms (max 50 chars) for better speech recognition';
+
+  @override
+  String speechDictionaryWarning(Object count) {
+    return 'Large dictionary ($count terms) may increase API costs';
+  }
+
+  @override
+  String get speechDictionarySectionTitle => 'Speech Recognition';
+
+  @override
+  String get speechDictionarySectionDescription =>
+      'Add terms that are often misspelled by speech recognition (names, places, technical terms)';
+
+  @override
+  String get addToDictionary => 'Add to Dictionary';
+
+  @override
+  String get addToDictionarySuccess => 'Term added to dictionary';
+
+  @override
+  String get addToDictionaryNoCategory =>
+      'Cannot add to dictionary: task has no category';
+
+  @override
+  String get addToDictionaryDuplicate => 'Term already exists in dictionary';
+
+  @override
+  String get addToDictionaryTooLong => 'Term too long (max 50 characters)';
+
+  @override
+  String get addToDictionarySaveFailed => 'Failed to save dictionary';
+
+  @override
   String get deleteButton => 'Delete';
 
   @override

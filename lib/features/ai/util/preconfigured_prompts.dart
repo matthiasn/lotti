@@ -360,13 +360,15 @@ const audioTranscriptionPrompt = PreconfiguredPrompt(
   id: 'audio_transcription',
   name: 'Audio Transcription',
   systemMessage: '''
-You are a helpful AI assistant that transcribes audio content. 
+You are a helpful AI assistant that transcribes audio content.
 Your goal is to provide accurate, well-formatted transcriptions of audio recordings.''',
   userMessage: '''
-Please transcribe the provided audio file(s). 
-Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
-If there are multiple speakers, try to indicate speaker changes. 
+Please transcribe the provided audio file(s).
+Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
+If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
+
+{{speech_dictionary}}
 ''',
   requiredInputData: [InputDataType.audioFiles],
   aiResponseType: AiResponseType.audioTranscription,
@@ -379,7 +381,7 @@ const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
   id: 'audio_transcription_task_context',
   name: 'Audio Transcription with Task Context',
   systemMessage: '''
-You are a helpful AI assistant that transcribes audio content. 
+You are a helpful AI assistant that transcribes audio content.
 Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
 
 When transcribing audio in the context of a task, pay attention to:
@@ -388,22 +390,22 @@ When transcribing audio in the context of a task, pay attention to:
 
 Include these observations in your transcription so the user can update their task accordingly.''',
   userMessage: '''
-Please transcribe the provided audio. 
-Format the transcription clearly with proper punctuation and paragraph breaks where appropriate. 
-If there are multiple speakers, try to indicate speaker changes. 
+Please transcribe the provided audio.
+Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
+If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
 
-Take into account the following task context:
+{{speech_dictionary}}
 
 **Task Context:**
 ```json
 {{task}}
 ```
 
-The task context will provide additional information about the task, such as the project, 
-goal, and any relevant details such as names of people or places. If in doubt 
-about names or concepts mentioned in the audio, then the task context should
-be consulted to ensure accuracy.
+The task context provides names, places, and concepts relevant to this recording.
+When you hear something that sounds like a term from the speech dictionary above,
+you MUST use the exact spelling from the dictionary - the audio may be unclear but
+these are the correct spellings for this context.
 ''',
   requiredInputData: [InputDataType.audioFiles, InputDataType.task],
   aiResponseType: AiResponseType.audioTranscription,
