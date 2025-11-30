@@ -535,11 +535,15 @@ class PromptBuilderHelper {
     if (dictionary == null || dictionary.isEmpty) return '';
 
     // Format the dictionary terms as prompt text
-    final terms = dictionary.join(', ');
+    // Escape quotes and special characters for safety
+    String escapeForJson(String s) =>
+        s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    final termsJson = dictionary.map((t) => '"${escapeForJson(t)}"').join(', ');
     return '''
 The following are correct spellings for domain-specific terms that may appear in the audio.
-Use these exact spellings when you encounter words that sound similar:
-$terms''';
+Use these exact spellings when you encounter words that sound similar.
+Preserve the exact casing as shown (e.g., "macOS" not "MacOS", "iPhone" not "Iphone").
+Terms: [$termsJson]''';
   }
 
   String _resolveEntryText(JournalEntity entry) {

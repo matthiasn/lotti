@@ -209,7 +209,7 @@ void main() {
           contains(
               'The following are correct spellings for domain-specific terms'),
         );
-        expect(result, contains('macOS, iPhone, Kirkjubaejarklaustur'));
+        expect(result, contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'));
       });
 
       test('replaces placeholder with empty string when task has no category',
@@ -378,7 +378,7 @@ void main() {
           contains(
               'The following are correct spellings for domain-specific terms'),
         );
-        expect(result, contains('macOS, iPhone, Kirkjubaejarklaustur'));
+        expect(result, contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'));
         expect(result, contains('Transcribe this audio.'));
       });
 
@@ -411,7 +411,7 @@ void main() {
         expect(result, isNotNull);
         expect(
           result,
-          contains('macOS, iPhone, Kirkjubaejarklaustur'),
+          contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'),
         );
       });
 
@@ -444,7 +444,7 @@ void main() {
         expect(result, isNotNull);
         expect(
           result,
-          contains('macOS, iPhone, Kirkjubaejarklaustur'),
+          contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'),
         );
       });
 
@@ -527,7 +527,8 @@ void main() {
         expect(result, contains('pandas'));
         expect(
           result,
-          contains('TensorFlow, PyTorch, scikit-learn, NumPy, pandas'),
+          contains(
+              '["TensorFlow", "PyTorch", "scikit-learn", "NumPy", "pandas"]'),
         );
       });
 
@@ -571,8 +572,7 @@ void main() {
           entity: taskWithOneTerm,
         );
 
-        expect(result, contains('Anthropic'));
-        expect(result, isNot(contains(', '))); // No comma since only one term
+        expect(result, contains('["Anthropic"]')); // Single term in JSON array
       });
 
       test('handles empty dictionary list', () async {
@@ -648,6 +648,112 @@ void main() {
         );
 
         expect(result, equals('You are a transcription assistant.\n\n'));
+      });
+    });
+
+    group('special character handling', () {
+      test('escapes quotes in dictionary terms', () async {
+        final categoryWithQuotes = CategoryDefinition(
+          id: 'category-1',
+          name: 'Test Category',
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          vectorClock: null,
+          private: false,
+          active: true,
+          color: '#FF0000',
+          speechDictionary: ['Term with "quotes"', 'Normal term'],
+        );
+
+        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
+            .thenReturn(categoryWithQuotes);
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Audio Transcription',
+          systemMessage: '{{speech_dictionary}}',
+          userMessage: 'Transcribe.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final result = await promptBuilder.buildSystemMessageWithData(
+          promptConfig: config,
+          entity: testTask,
+        );
+
+        // Verify quotes are escaped
+        expect(result, contains(r'\"quotes\"'));
+        expect(result, contains(r'["Term with \"quotes\"", "Normal term"]'));
+      });
+
+      test('escapes backslashes in dictionary terms', () async {
+        final categoryWithBackslash = CategoryDefinition(
+          id: 'category-1',
+          name: 'Test Category',
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          vectorClock: null,
+          private: false,
+          active: true,
+          color: '#FF0000',
+          speechDictionary: [r'Path\To\File', 'Normal'],
+        );
+
+        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
+            .thenReturn(categoryWithBackslash);
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Audio Transcription',
+          systemMessage: '{{speech_dictionary}}',
+          userMessage: 'Transcribe.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final result = await promptBuilder.buildSystemMessageWithData(
+          promptConfig: config,
+          entity: testTask,
+        );
+
+        // Verify backslashes are escaped
+        expect(result, contains(r'\\'));
+      });
+
+      test('includes casing guidance in prompt', () async {
+        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
+            .thenReturn(testCategory);
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Audio Transcription',
+          systemMessage: '{{speech_dictionary}}',
+          userMessage: 'Transcribe.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final result = await promptBuilder.buildSystemMessageWithData(
+          promptConfig: config,
+          entity: testTask,
+        );
+
+        // Verify casing guidance is included
+        expect(result, contains('Preserve the exact casing'));
+        expect(result, contains('macOS'));
       });
     });
   });

@@ -173,27 +173,30 @@ class EditorWidget extends ConsumerWidget {
 
     final messenger = ScaffoldMessenger.of(context);
 
-    switch (result) {
-      case SpeechDictionaryResult.success:
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(context.messages.addToDictionarySuccess),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      case SpeechDictionaryResult.noCategory:
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(context.messages.addToDictionaryNoCategory),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      case SpeechDictionaryResult.emptyTerm:
-      case SpeechDictionaryResult.termTooLong:
-      case SpeechDictionaryResult.entryNotFound:
-      case SpeechDictionaryResult.categoryNotFound:
-        // Silent failures for edge cases
-        break;
+    final message = switch (result) {
+      SpeechDictionaryResult.success => context.messages.addToDictionarySuccess,
+      SpeechDictionaryResult.noCategory =>
+        context.messages.addToDictionaryNoCategory,
+      SpeechDictionaryResult.duplicate =>
+        context.messages.addToDictionaryDuplicate,
+      SpeechDictionaryResult.termTooLong =>
+        context.messages.addToDictionaryTooLong,
+      SpeechDictionaryResult.saveFailed =>
+        context.messages.addToDictionarySaveFailed,
+      // Silent for truly unexpected edge cases
+      SpeechDictionaryResult.emptyTerm ||
+      SpeechDictionaryResult.entryNotFound ||
+      SpeechDictionaryResult.categoryNotFound =>
+        null,
+    };
+
+    if (message != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 }

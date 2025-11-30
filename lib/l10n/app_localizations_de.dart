@@ -1891,6 +1891,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Durch Semikolon getrennte Begriffe für bessere Spracherkennung';
 
   @override
+  String speechDictionaryWarning(Object count) {
+    return 'Großes Wörterbuch ($count Begriffe) kann API-Kosten erhöhen';
+  }
+
+  @override
   String get speechDictionarySectionTitle => 'Spracherkennung';
 
   @override
@@ -1906,6 +1911,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get addToDictionaryNoCategory =>
       'Kann nicht zum Wörterbuch hinzufügen: Aufgabe hat keine Kategorie';
+
+  @override
+  String get addToDictionaryDuplicate =>
+      'Begriff bereits im Wörterbuch vorhanden';
+
+  @override
+  String get addToDictionaryTooLong => 'Begriff zu lang (max. 50 Zeichen)';
+
+  @override
+  String get addToDictionarySaveFailed =>
+      'Wörterbuch konnte nicht gespeichert werden';
 
   @override
   String get deleteButton => 'Delete';

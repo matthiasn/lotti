@@ -3525,6 +3525,12 @@ abstract class AppLocalizations {
   /// **'Semicolon-separated terms for better speech recognition'**
   String get speechDictionaryHelper;
 
+  /// No description provided for @speechDictionaryWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Large dictionary ({count} terms) may increase API costs'**
+  String speechDictionaryWarning(Object count);
+
   /// No description provided for @speechDictionarySectionTitle.
   ///
   /// In en, this message translates to:
@@ -3554,6 +3560,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cannot add to dictionary: task has no category'**
   String get addToDictionaryNoCategory;
+
+  /// No description provided for @addToDictionaryDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Term already exists in dictionary'**
+  String get addToDictionaryDuplicate;
+
+  /// No description provided for @addToDictionaryTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Term too long (max 50 characters)'**
+  String get addToDictionaryTooLong;
+
+  /// No description provided for @addToDictionarySaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save dictionary'**
+  String get addToDictionarySaveFailed;
 
   /// No description provided for @deleteButton.
   ///

@@ -379,6 +379,54 @@ void main() {
           equals(['existingTerm', 'trimmed']),
         );
       });
+
+      test('returns duplicate when term already exists (exact match)',
+          () async {
+        when(() => mockJournalRepository.getJournalEntityById('task-1'))
+            .thenAnswer((_) async => testTask);
+        when(() => mockCategoryRepository.getCategoryById('category-1'))
+            .thenAnswer((_) async => testCategory);
+
+        final result = await service.addTermForEntry(
+          entryId: 'task-1',
+          term: 'existingTerm',
+        );
+
+        expect(result, equals(SpeechDictionaryResult.duplicate));
+        verifyNever(() => mockCategoryRepository.updateCategory(any()));
+      });
+
+      test('returns duplicate when term already exists (case-insensitive)',
+          () async {
+        when(() => mockJournalRepository.getJournalEntityById('task-1'))
+            .thenAnswer((_) async => testTask);
+        when(() => mockCategoryRepository.getCategoryById('category-1'))
+            .thenAnswer((_) async => testCategory);
+
+        final result = await service.addTermForEntry(
+          entryId: 'task-1',
+          term: 'EXISTINGTERM',
+        );
+
+        expect(result, equals(SpeechDictionaryResult.duplicate));
+        verifyNever(() => mockCategoryRepository.updateCategory(any()));
+      });
+
+      test('returns saveFailed when updateCategory throws', () async {
+        when(() => mockJournalRepository.getJournalEntityById('task-1'))
+            .thenAnswer((_) async => testTask);
+        when(() => mockCategoryRepository.getCategoryById('category-1'))
+            .thenAnswer((_) async => testCategory);
+        when(() => mockCategoryRepository.updateCategory(any()))
+            .thenThrow(Exception('Database error'));
+
+        final result = await service.addTermForEntry(
+          entryId: 'task-1',
+          term: 'newTerm',
+        );
+
+        expect(result, equals(SpeechDictionaryResult.saveFailed));
+      });
     });
 
     group('canAddTermForEntry', () {
@@ -458,16 +506,18 @@ void main() {
 
   group('SpeechDictionaryResult enum', () {
     test('has all expected values', () {
-      expect(SpeechDictionaryResult.values, hasLength(6));
+      expect(SpeechDictionaryResult.values, hasLength(8));
       expect(
         SpeechDictionaryResult.values,
         containsAll([
           SpeechDictionaryResult.success,
           SpeechDictionaryResult.emptyTerm,
           SpeechDictionaryResult.termTooLong,
+          SpeechDictionaryResult.duplicate,
           SpeechDictionaryResult.entryNotFound,
           SpeechDictionaryResult.noCategory,
           SpeechDictionaryResult.categoryNotFound,
+          SpeechDictionaryResult.saveFailed,
         ]),
       );
     });

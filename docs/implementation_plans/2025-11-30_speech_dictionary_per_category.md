@@ -100,9 +100,12 @@ Example injected text:
 
 ```
 The following are correct spellings for domain-specific terms that may appear in the audio.
-Use these exact spellings when you encounter words that sound similar:
-macOS, Kirkjubæjarklaustur, Sigurðsson, Claude Code
+Use these exact spellings when you encounter words that sound similar.
+Preserve the exact casing as shown (e.g., "macOS" not "MacOS", "iPhone" not "Iphone").
+Terms: ["macOS", "Kirkjubæjarklaustur", "Sigurðsson", "Claude Code"]
 ```
+
+**Note**: Terms are formatted as a JSON array with proper escaping for quotes and backslashes.
 
 ### 3. Category Settings UI
 
@@ -234,9 +237,9 @@ document.
 
 ### 5. Testing ✅
 
-- [x] Unit: `PromptBuilderHelper` injects dictionary correctly (14 tests)
-- [x] Unit: `SpeechDictionaryService` term addition (22 tests)
-- [x] Widget: Dictionary editor saves/loads correctly (16 tests)
+- [x] Unit: `PromptBuilderHelper` injects dictionary correctly (17 tests)
+- [x] Unit: `SpeechDictionaryService` term addition (25 tests)
+- [x] Widget: Dictionary editor saves/loads correctly (19 tests)
 - [x] Widget: Context menu integration
 - [x] Fixed existing tests affected by new field (FakeCategoryDefinition updates)
 
@@ -246,11 +249,13 @@ document.
 2. **Context Menu Scope**: Only the main Quill editor (not transcripts or title fields)
 3. **Dictionary Scope**: Category-specific only (no global dictionary for now)
 4. **Find-and-Replace**: Manual correction only (no automatic replacement offer)
-5. **Term Validation**: Reject empty strings, limit terms to 50 characters
-6. **Duplicate Handling**: Allow duplicates (user's responsibility to manage)
-7. **Prompt Length**: No artificial limits (user's responsibility)
+5. **Term Validation**: Reject empty strings, limit terms to 50 characters (`kMaxTermLength`)
+6. **Duplicate Handling**: Case-insensitive duplicate detection prevents adding existing terms
+7. **Prompt Length**: Warning shown when >30 terms (`kDictionaryWarningThreshold`), no hard limit
 8. **Context Menu**: Implement properly without fallback alternatives
 9. **Category Resolution**: Disable "Add to Dictionary" when no category; show helpful message
+10. **Prompt Format**: JSON array with escaping for special characters (quotes, backslashes)
+11. **User Feedback**: Snackbar messages for all actionable results (success, duplicate, too long, etc.)
 
 ## Rollout
 
@@ -264,8 +269,9 @@ document.
 ### New Files ✅
 
 - `lib/features/categories/ui/widgets/category_speech_dictionary.dart` - Widget for editing dictionary
-- `lib/features/speech/services/speech_dictionary_service.dart` - Service for adding terms
-- `lib/features/journal/ui/widgets/editor/editor_context_menu.dart` - Context menu builder
+- `lib/features/speech/services/speech_dictionary_service.dart` - Service for adding terms (with Riverpod provider)
+
+**Note**: Context menu logic is integrated directly into `editor_widget.dart` rather than in a separate file.
 
 ### Modified Files ✅
 
@@ -274,14 +280,15 @@ document.
 - `lib/features/ai/helpers/prompt_builder_helper.dart` - Handle placeholder injection
 - `lib/features/categories/ui/pages/category_details_page.dart` - Added speech dictionary section
 - `lib/features/categories/state/category_details_controller.dart` - State management
-- `lib/features/journal/ui/widgets/editor/editor_widget.dart` - Custom context menu
-- `lib/l10n/app_en.arb` - Added l10n strings
+- `lib/features/journal/ui/widgets/editor/editor_widget.dart` - Custom context menu with "Add to Dictionary"
+- `lib/l10n/app_en.arb` - Added l10n strings (labels, hints, success/error messages)
+- `lib/l10n/app_de.arb` - German translations for all new strings
 
 ### Test Files ✅
 
-- `test/features/ai/helpers/prompt_builder_helper_speech_dictionary_test.dart` - 14 tests
-- `test/features/categories/ui/widgets/category_speech_dictionary_test.dart` - 16 tests
-- `test/features/speech/services/speech_dictionary_service_test.dart` - 22 tests
+- `test/features/ai/helpers/prompt_builder_helper_speech_dictionary_test.dart` - 17 tests
+- `test/features/categories/ui/widgets/category_speech_dictionary_test.dart` - 19 tests
+- `test/features/speech/services/speech_dictionary_service_test.dart` - 25 tests
 
 ### Fixed Test Files ✅
 

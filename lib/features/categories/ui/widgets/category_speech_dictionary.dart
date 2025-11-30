@@ -5,6 +5,9 @@ import 'package:lotti/widgets/form/lotti_text_field.dart';
 /// Maximum length for individual dictionary terms.
 const int kMaxTermLength = 50;
 
+/// Warning threshold for number of terms (token budget concern).
+const int kDictionaryWarningThreshold = 30;
+
 /// A widget for editing the speech dictionary of a category.
 ///
 /// This widget displays a text field where terms are separated by semicolons.
@@ -47,15 +50,13 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
   @override
   void didUpdateWidget(CategorySpeechDictionary oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only update if the dictionary changed externally
-    final newText = _formatDictionary(widget.dictionary);
-    if (_controller.text != newText && !_controller.text.contains(newText)) {
-      // Avoid clobbering user input - only sync if substantially different
-      final currentParsed = _parseDictionary(_controller.text);
-      final newParsed = widget.dictionary ?? [];
-      if (!_listsEqual(currentParsed, newParsed)) {
-        _controller.text = newText;
-      }
+    // Only update text field if the dictionary changed externally
+    // and differs from what the user has typed (to avoid clobbering input)
+    final currentParsed = _parseDictionary(_controller.text);
+    final newParsed = widget.dictionary ?? [];
+
+    if (!_listsEqual(currentParsed, newParsed)) {
+      _controller.text = _formatDictionary(widget.dictionary);
     }
   }
 
@@ -97,11 +98,15 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
 
   void _onChanged(String value) {
     final terms = _parseDictionary(value);
+    setState(() {}); // Trigger rebuild to update warning
     widget.onChanged(terms);
   }
 
   @override
   Widget build(BuildContext context) {
+    final termCount = _parseDictionary(_controller.text).length;
+    final showWarning = termCount > kDictionaryWarningThreshold;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -109,7 +114,9 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
           controller: _controller,
           labelText: context.messages.speechDictionaryLabel,
           hintText: context.messages.speechDictionaryHint,
-          helperText: context.messages.speechDictionaryHelper,
+          helperText: showWarning
+              ? context.messages.speechDictionaryWarning(termCount)
+              : context.messages.speechDictionaryHelper,
           prefixIcon: Icons.spellcheck_outlined,
           onChanged: _onChanged,
           maxLines: 3,

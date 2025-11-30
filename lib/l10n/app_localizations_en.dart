@@ -1885,6 +1885,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Semicolon-separated terms for better speech recognition';
 
   @override
+  String speechDictionaryWarning(Object count) {
+    return 'Large dictionary ($count terms) may increase API costs';
+  }
+
+  @override
   String get speechDictionarySectionTitle => 'Speech Recognition';
 
   @override
@@ -1900,6 +1905,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get addToDictionaryNoCategory =>
       'Cannot add to dictionary: task has no category';
+
+  @override
+  String get addToDictionaryDuplicate => 'Term already exists in dictionary';
+
+  @override
+  String get addToDictionaryTooLong => 'Term too long (max 50 characters)';
+
+  @override
+  String get addToDictionarySaveFailed => 'Failed to save dictionary';
 
   @override
   String get deleteButton => 'Delete';

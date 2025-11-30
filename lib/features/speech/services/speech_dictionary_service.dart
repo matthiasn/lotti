@@ -65,8 +65,15 @@ class SpeechDictionaryService {
       return SpeechDictionaryResult.categoryNotFound;
     }
 
-    // Add term to dictionary
+    // Check for duplicates (case-insensitive)
     final currentDictionary = category.speechDictionary ?? [];
+    final lowerCaseDictionary =
+        currentDictionary.map((t) => t.toLowerCase()).toSet();
+    if (lowerCaseDictionary.contains(trimmedTerm.toLowerCase())) {
+      return SpeechDictionaryResult.duplicate;
+    }
+
+    // Add term to dictionary
     final updatedDictionary = [...currentDictionary, trimmedTerm];
 
     // Update category
@@ -74,7 +81,11 @@ class SpeechDictionaryService {
       speechDictionary: updatedDictionary,
     );
 
-    await categoryRepository.updateCategory(updatedCategory);
+    try {
+      await categoryRepository.updateCategory(updatedCategory);
+    } on Exception {
+      return SpeechDictionaryResult.saveFailed;
+    }
 
     return SpeechDictionaryResult.success;
   }
@@ -127,6 +138,9 @@ enum SpeechDictionaryResult {
   /// The term exceeds the maximum length.
   termTooLong,
 
+  /// The term already exists in the dictionary (case-insensitive).
+  duplicate,
+
   /// The entry was not found.
   entryNotFound,
 
@@ -135,4 +149,7 @@ enum SpeechDictionaryResult {
 
   /// The category was not found.
   categoryNotFound,
+
+  /// Failed to save the updated category.
+  saveFailed,
 }

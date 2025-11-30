@@ -339,4 +339,48 @@ void main() {
       expect(kMaxTermLength, equals(50));
     });
   });
+
+  group('kDictionaryWarningThreshold constant', () {
+    test('has correct value', () {
+      expect(kDictionaryWarningThreshold, equals(30));
+    });
+  });
+
+  group('Large dictionary warning', () {
+    testWidgets('shows warning when dictionary exceeds threshold',
+        (tester) async {
+      // Create a dictionary with more than 30 terms
+      final largeDict = List.generate(35, (i) => 'term$i');
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySpeechDictionary(
+            dictionary: largeDict,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify warning message is shown (contains term count)
+      expect(find.textContaining('35'), findsOneWidget);
+    });
+
+    testWidgets('shows normal helper text when below threshold',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySpeechDictionary(
+            dictionary: const ['term1', 'term2'],
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify normal helper text is shown
+      expect(
+        find.text('Semicolon-separated terms for better speech recognition'),
+        findsOneWidget,
+      );
+    });
+  });
 }
