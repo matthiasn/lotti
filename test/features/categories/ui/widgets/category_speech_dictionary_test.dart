@@ -269,6 +269,92 @@ void main() {
       expect(find.text('updated; terms'), findsOneWidget);
     });
 
+    testWidgets('does not update when dictionary is same as current text',
+        (tester) async {
+      // This tests the _listsEqual logic - when user has typed same terms,
+      // didUpdateWidget should not clobber the text field
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySpeechDictionary(
+            dictionary: const ['term1', 'term2'],
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify initial value
+      expect(find.text('term1; term2'), findsOneWidget);
+
+      // Rebuild with same dictionary (simulates external update with same data)
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySpeechDictionary(
+            dictionary: const ['term1', 'term2'],
+            onChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Text should remain unchanged
+      expect(find.text('term1; term2'), findsOneWidget);
+    });
+
+    testWidgets('updates when dictionary lengths differ', (tester) async {
+      // Tests _listsEqual early return when lengths differ
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySpeechDictionary(
+            dictionary: const ['term1'],
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      expect(find.text('term1'), findsOneWidget);
+
+      // Rebuild with more terms
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySpeechDictionary(
+            dictionary: const ['term1', 'term2', 'term3'],
+            onChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('term1; term2; term3'), findsOneWidget);
+    });
+
+    testWidgets('updates when dictionary item differs at index',
+        (tester) async {
+      // Tests _listsEqual loop finding difference
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySpeechDictionary(
+            dictionary: const ['term1', 'term2'],
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      expect(find.text('term1; term2'), findsOneWidget);
+
+      // Rebuild with same length but different item at index 1
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySpeechDictionary(
+            dictionary: const ['term1', 'differentTerm'],
+            onChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('term1; differentTerm'), findsOneWidget);
+    });
+
     testWidgets('preserves single term formatting', (tester) async {
       await tester.pumpWidget(
         WidgetTestBench(

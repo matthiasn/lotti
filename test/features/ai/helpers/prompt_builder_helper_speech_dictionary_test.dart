@@ -300,6 +300,35 @@ void main() {
         );
       });
 
+      test('replaces with empty when getCategoryById throws exception',
+          () async {
+        // This tests the catch block in _buildSpeechDictionaryPromptText
+        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
+            .thenThrow(Exception('Cache service error'));
+
+        final config = AiConfigPrompt(
+          id: 'prompt',
+          name: 'Audio Transcription',
+          systemMessage: 'System message',
+          userMessage: '{{speech_dictionary}}\n\nTranscribe.',
+          defaultModelId: 'model-1',
+          modelIds: const ['model-1'],
+          createdAt: DateTime(2025),
+          useReasoning: false,
+          requiredInputData: const [],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        final result = await promptBuilder.buildPromptWithData(
+          promptConfig: config,
+          entity: testTask,
+        );
+
+        // Exception should be caught and placeholder replaced with empty string
+        expect(result, equals('\n\nTranscribe.'));
+        expect(result, isNot(contains('SPEECH DICTIONARY')));
+      });
+
       test('replaces with empty when audio not linked to any task', () async {
         when(() => mockJournalRepository.getLinkedToEntities(
               linkedTo: 'audio-1',
