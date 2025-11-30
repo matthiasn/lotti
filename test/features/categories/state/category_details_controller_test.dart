@@ -935,7 +935,8 @@ void main() {
       subscription.close();
     });
 
-    test('deleteCorrectionExample removes example from pending category',
+    test(
+        'deleteCorrectionExampleAt removes example at index from pending category',
         () async {
       final exampleToDelete = ChecklistCorrectionExample(
         before: 'delete me',
@@ -982,8 +983,8 @@ void main() {
 
       await completer.future.timeout(const Duration(milliseconds: 100));
 
-      // Delete the example
-      controller.deleteCorrectionExample(exampleToDelete);
+      // Delete the first example (index 0)
+      controller.deleteCorrectionExampleAt(0);
 
       final state = container.read(
         categoryDetailsControllerProvider(testCategoryId),
@@ -998,7 +999,7 @@ void main() {
       subscription.close();
     });
 
-    test('deleteCorrectionExample sets null when last example deleted',
+    test('deleteCorrectionExampleAt sets null when last example deleted',
         () async {
       final onlyExample = ChecklistCorrectionExample(
         before: 'only',
@@ -1040,8 +1041,8 @@ void main() {
 
       await completer.future.timeout(const Duration(milliseconds: 100));
 
-      // Delete the only example
-      controller.deleteCorrectionExample(onlyExample);
+      // Delete the only example (index 0)
+      controller.deleteCorrectionExampleAt(0);
 
       final state = container.read(
         categoryDetailsControllerProvider(testCategoryId),
@@ -1050,6 +1051,118 @@ void main() {
       // Should have changes and null correctionExamples
       expect(state.hasChanges, isTrue);
       expect(state.category?.correctionExamples, isNull);
+
+      subscription.close();
+    });
+
+    test('deleteCorrectionExampleAt ignores invalid index', () async {
+      final example = ChecklistCorrectionExample(
+        before: 'test',
+        after: 'TEST',
+        capturedAt: DateTime(2025),
+      );
+
+      final category = CategoryTestUtils.createTestCategory(
+        correctionExamples: [example],
+      );
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(category),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testCategoryId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // Try to delete at invalid indices
+      controller
+        ..deleteCorrectionExampleAt(-1)
+        ..deleteCorrectionExampleAt(5);
+
+      final state = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+
+      // Should have no changes - examples remain unchanged
+      expect(state.hasChanges, isFalse);
+      expect(state.category?.correctionExamples, hasLength(1));
+
+      subscription.close();
+    });
+
+    test('deleteCorrectionExampleAt handles duplicates correctly', () async {
+      // Create two identical examples
+      final duplicateExample = ChecklistCorrectionExample(
+        before: 'same',
+        after: 'SAME',
+        capturedAt: DateTime(2025),
+      );
+
+      final category = CategoryTestUtils.createTestCategory(
+        correctionExamples: [duplicateExample, duplicateExample],
+      );
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(category),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testCategoryId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // Delete only the first duplicate (index 0)
+      controller.deleteCorrectionExampleAt(0);
+
+      final state = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+
+      // Should have one example left (the second duplicate was not deleted)
+      expect(state.hasChanges, isTrue);
+      expect(state.category?.correctionExamples, hasLength(1));
+      expect(state.category?.correctionExamples!.first.before, equals('same'));
 
       subscription.close();
     });

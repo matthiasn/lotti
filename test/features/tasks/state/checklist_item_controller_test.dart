@@ -143,6 +143,7 @@ void main() {
         );
 
         // Update title - this should trigger correction capture
+        // ignore: cascade_invocations
         notifier.updateTitle('Updated Title');
 
         // Wait for the async correction capture to complete
@@ -194,6 +195,7 @@ void main() {
         );
 
         // Update with normalized identical text (should be noChange)
+        // ignore: cascade_invocations
         notifier.updateTitle('  Original Title  ');
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -244,6 +246,7 @@ void main() {
         );
 
         // Update should work even without category
+        // ignore: cascade_invocations
         notifier.updateTitle('New Title');
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -282,6 +285,7 @@ void main() {
               .notifier,
         );
 
+        // ignore: cascade_invocations
         notifier.updateTitle(null);
 
         await Future<void>.delayed(const Duration(milliseconds: 50));

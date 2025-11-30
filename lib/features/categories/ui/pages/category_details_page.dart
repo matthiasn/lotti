@@ -646,7 +646,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
     return CategoryCorrectionExamples(
       examples: category.correctionExamples,
-      onDelete: controller.deleteCorrectionExample,
+      onDeleteAt: controller.deleteCorrectionExampleAt,
     );
   }
 

@@ -23,7 +23,7 @@ void main() {
         WidgetTestBench(
           child: CategoryCorrectionExamples(
             examples: null,
-            onDelete: (_) {},
+            onDeleteAt: (_) {},
           ),
         ),
       );
@@ -46,7 +46,7 @@ void main() {
         WidgetTestBench(
           child: CategoryCorrectionExamples(
             examples: const [],
-            onDelete: (_) {},
+            onDeleteAt: (_) {},
           ),
         ),
       );
@@ -75,7 +75,7 @@ void main() {
         WidgetTestBench(
           child: CategoryCorrectionExamples(
             examples: examples,
-            onDelete: (_) {},
+            onDeleteAt: (_) {},
           ),
         ),
       );
@@ -92,14 +92,20 @@ void main() {
       expect(findRichTextContaining('macOS'), findsOneWidget);
     });
 
-    testWidgets('calls onDelete when swiped', (tester) async {
-      ChecklistCorrectionExample? deletedExample;
+    testWidgets('calls onDeleteAt with correct index when swiped',
+        (tester) async {
+      int? deletedIndex;
 
       final examples = [
         ChecklistCorrectionExample(
-          before: 'test flight',
-          after: 'TestFlight',
+          before: 'first',
+          after: 'FIRST',
           capturedAt: DateTime(2025, 1, 15),
+        ),
+        ChecklistCorrectionExample(
+          before: 'second',
+          after: 'SECOND',
+          capturedAt: DateTime(2025, 1, 16),
         ),
       ];
 
@@ -107,25 +113,23 @@ void main() {
         WidgetTestBench(
           child: CategoryCorrectionExamples(
             examples: examples,
-            onDelete: (example) {
-              deletedExample = example;
+            onDeleteAt: (index) {
+              deletedIndex = index;
             },
           ),
         ),
       );
 
-      // Find the Dismissible widget
+      // Find all Dismissible widgets
       final dismissibleFinder = find.byType(Dismissible);
-      expect(dismissibleFinder, findsOneWidget);
+      expect(dismissibleFinder, findsNWidgets(2));
 
-      // Swipe left to dismiss
-      await tester.drag(dismissibleFinder, const Offset(-500, 0));
+      // Swipe the first one left to dismiss
+      await tester.drag(dismissibleFinder.first, const Offset(-500, 0));
       await tester.pumpAndSettle();
 
-      // Verify onDelete was called with the correct example
-      expect(deletedExample, isNotNull);
-      expect(deletedExample!.before, equals('test flight'));
-      expect(deletedExample!.after, equals('TestFlight'));
+      // Verify onDeleteAt was called with index 0
+      expect(deletedIndex, equals(0));
     });
 
     testWidgets('shows warning when threshold exceeded', (tester) async {
@@ -144,7 +148,7 @@ void main() {
           child: SingleChildScrollView(
             child: CategoryCorrectionExamples(
               examples: examples,
-              onDelete: (_) {},
+              onDeleteAt: (_) {},
             ),
           ),
         ),
@@ -168,7 +172,7 @@ void main() {
         WidgetTestBench(
           child: CategoryCorrectionExamples(
             examples: examples,
-            onDelete: (_) {},
+            onDeleteAt: (_) {},
           ),
         ),
       );
@@ -182,7 +186,7 @@ void main() {
         WidgetTestBench(
           child: CategoryCorrectionExamples(
             examples: const [],
-            onDelete: (_) {},
+            onDeleteAt: (_) {},
           ),
         ),
       );
@@ -206,7 +210,7 @@ void main() {
         WidgetTestBench(
           child: CategoryCorrectionExamples(
             examples: examples,
-            onDelete: (_) {},
+            onDeleteAt: (_) {},
           ),
         ),
       );

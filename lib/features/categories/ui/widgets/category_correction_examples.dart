@@ -25,16 +25,17 @@ const int kMaxCorrectionExamplesForPrompt = 500;
 class CategoryCorrectionExamples extends StatelessWidget {
   const CategoryCorrectionExamples({
     required this.examples,
-    required this.onDelete,
+    required this.onDeleteAt,
     super.key,
   });
 
   /// The current correction examples, or null if empty.
   final List<ChecklistCorrectionExample>? examples;
 
-  /// Called when an example should be deleted.
+  /// Called when an example at the given index should be deleted.
+  /// Uses index-based deletion to correctly handle duplicates.
   /// The parent should update state and enable the Save button.
-  final ValueChanged<ChecklistCorrectionExample> onDelete;
+  final ValueChanged<int> onDeleteAt;
 
   @override
   Widget build(BuildContext context) {
@@ -147,8 +148,9 @@ class CategoryCorrectionExamples extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final example = examplesList[index];
                   return _CorrectionExampleTile(
+                    index: index,
                     example: example,
-                    onDelete: () => onDelete(example),
+                    onDelete: () => onDeleteAt(index),
                   );
                 },
               ),
@@ -161,10 +163,12 @@ class CategoryCorrectionExamples extends StatelessWidget {
 
 class _CorrectionExampleTile extends StatelessWidget {
   const _CorrectionExampleTile({
+    required this.index,
     required this.example,
     required this.onDelete,
   });
 
+  final int index;
   final ChecklistCorrectionExample example;
   final VoidCallback onDelete;
 
@@ -176,7 +180,7 @@ class _CorrectionExampleTile extends StatelessWidget {
         : null;
 
     return Dismissible(
-      key: ValueKey('${example.before}-${example.after}'),
+      key: ValueKey('correction-example-$index'),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => onDelete(),
       background: Container(

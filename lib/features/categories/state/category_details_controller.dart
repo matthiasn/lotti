@@ -297,18 +297,21 @@ class CategoryDetailsController
     );
   }
 
-  /// Deletes a correction example from the pending category.
+  /// Deletes a correction example at the given index from the pending category.
+  ///
+  /// Uses index-based deletion to correctly handle duplicates - only the
+  /// specific item the user swiped is removed, not all matching examples.
   ///
   /// Note: Deletions update `_pendingCategory` but are NOT auto-persisted.
   /// The user must tap the Save button to persist changes. This matches
   /// the speech dictionary and other category settings behavior.
-  void deleteCorrectionExample(ChecklistCorrectionExample example) {
+  void deleteCorrectionExampleAt(int index) {
     if (_pendingCategory == null) return;
 
     final currentExamples = _pendingCategory!.correctionExamples ?? [];
-    final updatedExamples = currentExamples
-        .where((e) => e.before != example.before || e.after != example.after)
-        .toList();
+    if (index < 0 || index >= currentExamples.length) return;
+
+    final updatedExamples = [...currentExamples]..removeAt(index);
 
     _pendingCategory = _pendingCategory!.copyWith(
       correctionExamples: updatedExamples.isEmpty ? null : updatedExamples,
