@@ -12,8 +12,10 @@ creation/updates to improve accuracy based on user-provided context.
 - Capture manual corrections to checklist item titles as bad/good example pairs
 - Store correction examples per category (synced automatically via existing category sync)
 - Display and manage examples in category settings UI (list with swipe-to-delete)
-- Inject examples into AI prompts for checklist operations
+- Show auto-dismissing snackbar when correction is captured (user feedback)
+- Inject examples into AI prompts for checklist operations AND audio transcription (task context)
 - Improve AI accuracy through user-driven context engineering
+- Update speech dictionary warning threshold from 30 to 500 terms (related cleanup)
 
 ## Prior Work & References
 
@@ -269,13 +271,18 @@ void updateTitle(String? title) {
     final oldTitle = data.title;
     final categoryId = current.meta.categoryId; // Already available on checklist items!
 
-    // Fire-and-forget capture (doesn't block UI callback)
+    // Fire-and-forget capture with snackbar feedback
     unawaited(
       ref.read(correctionCaptureServiceProvider).captureCorrection(
         categoryId: categoryId,
         beforeText: oldTitle,
         afterText: title,
-      ),
+      ).then((result) {
+        if (result == CorrectionCaptureResult.success) {
+          // Show auto-dismissing snackbar (requires BuildContext access - see note below)
+          _showCorrectionCapturedSnackbar();
+        }
+      }),
     );
 
     // Existing update logic continues synchronously...
@@ -293,6 +300,14 @@ void updateTitle(String? title) {
   }
 }
 ```
+
+**Snackbar Implementation Note**: The controller doesn't have direct `BuildContext` access. Options:
+1. Use a global snackbar service (e.g., `ScaffoldMessenger` key approach)
+2. Use a state-based approach where the controller sets a flag and the UI reacts
+3. Use a Riverpod `StateNotifier` for snackbar messages that the UI watches
+
+Recommended approach: Use existing snackbar/toast infrastructure in the codebase. Look for patterns
+like `showToast()` or similar utilities.
 
 **Note**: This approach keeps the UI callback synchronous while allowing async capture to happen in
 the background. The fire-and-forget pattern is acceptable here because:
@@ -348,28 +363,32 @@ When creating or updating items, apply these corrections when you see matching p
 ```
 
 Add handler in `buildPromptWithData()` for `{{correction_examples}}` placeholder.
-**IMPORTANT**: Gate on `aiResponseType == AiResponseType.checklistUpdates` to avoid injecting into
-unintended prompts (mirrors the speech dictionary pattern):
+**IMPORTANT**: Gate on appropriate response types to avoid injecting into unintended prompts:
 
 ```dart
-// Inject correction examples if requested (only for checklist updates)
+// Inject correction examples if requested (checklist updates AND audio transcription in task context)
 if (prompt.contains('{{correction_examples}}') &&
-promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
-String examplesText;
-try {
-examplesText = await _buildCorrectionExamplesPromptText(entity);
-} catch (error, stackTrace) {
-_logPlaceholderFailure(
-entity: entity,
-placeholder: 'correction_examples',
-error: error,
-stackTrace: stackTrace,
-);
-examplesText = '';
-}
-prompt = prompt.replaceAll('{{correction_examples}}', examplesText);
+    (promptConfig.aiResponseType == AiResponseType.checklistUpdates ||
+     promptConfig.aiResponseType == AiResponseType.audioTranscription)) {
+  String examplesText;
+  try {
+    examplesText = await _buildCorrectionExamplesPromptText(entity);
+  } catch (error, stackTrace) {
+    _logPlaceholderFailure(
+      entity: entity,
+      placeholder: 'correction_examples',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    examplesText = '';
+  }
+  prompt = prompt.replaceAll('{{correction_examples}}', examplesText);
 }
 ```
+
+**Note**: For audio transcription, only inject into the task context prompt (not standalone
+transcription). The placeholder should be added to the appropriate audio transcription prompt
+that includes task context.
 
 Add the builder function (following `_buildSpeechDictionaryPromptText` pattern at ~line 510).
 
@@ -775,7 +794,8 @@ issues.
 "correctionExamplesSectionTitle": "Checklist Correction Examples",
 "correctionExamplesSectionDescription": "When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.",
 "correctionExamplesEmpty": "No corrections captured yet. Edit a checklist item to add your first example.",
-"correctionExamplesWarning": "You have {count} corrections. Only the most recent {max} will be used in AI prompts. Consider deleting old or redundant examples."
+"correctionExamplesWarning": "You have {count} corrections. Only the most recent {max} will be used in AI prompts. Consider deleting old or redundant examples.",
+"correctionExampleCaptured": "Correction saved for AI learning"
 ```
 
 **File: `lib/l10n/app_de.arb`**
@@ -784,7 +804,8 @@ issues.
 "correctionExamplesSectionTitle": "Checklisten-Korrekturbeispiele",
 "correctionExamplesSectionDescription": "Wenn Sie Checklistenelemente manuell korrigieren, werden diese Korrekturen hier gespeichert und zur Verbesserung der KI-Vorschläge verwendet.",
 "correctionExamplesEmpty": "Noch keine Korrekturen erfasst. Bearbeiten Sie ein Checklistenelement, um Ihr erstes Beispiel hinzuzufügen.",
-"correctionExamplesWarning": "Sie haben {count} Korrekturen. Nur die neuesten {max} werden in KI-Prompts verwendet. Erwägen Sie, alte oder redundante Beispiele zu löschen."
+"correctionExamplesWarning": "Sie haben {count} Korrekturen. Nur die neuesten {max} werden in KI-Prompts verwendet. Erwägen Sie, alte oder redundante Beispiele zu löschen.",
+"correctionExampleCaptured": "Korrektur für KI-Lernen gespeichert"
 ```
 
 **File: `lib/l10n/app_es.arb`**
@@ -793,7 +814,8 @@ issues.
 "correctionExamplesSectionTitle": "Ejemplos de Corrección de Lista",
 "correctionExamplesSectionDescription": "Cuando corriges manualmente elementos de la lista, esas correcciones se guardan aquí y se usan para mejorar las sugerencias de IA.",
 "correctionExamplesEmpty": "Aún no se han capturado correcciones. Edita un elemento de la lista para agregar tu primer ejemplo.",
-"correctionExamplesWarning": "Tienes {count} correcciones. Solo las {max} más recientes se usarán en los prompts de IA. Considera eliminar ejemplos antiguos o redundantes."
+"correctionExamplesWarning": "Tienes {count} correcciones. Solo las {max} más recientes se usarán en los prompts de IA. Considera eliminar ejemplos antiguos o redundantes.",
+"correctionExampleCaptured": "Corrección guardada para aprendizaje de IA"
 ```
 
 **File: `lib/l10n/app_fr.arb`**
@@ -802,7 +824,8 @@ issues.
 "correctionExamplesSectionTitle": "Exemples de Correction de Liste",
 "correctionExamplesSectionDescription": "Lorsque vous corrigez manuellement des éléments de liste, ces corrections sont enregistrées ici et utilisées pour améliorer les suggestions de l'IA.",
 "correctionExamplesEmpty": "Aucune correction capturée pour l'instant. Modifiez un élément de liste pour ajouter votre premier exemple.",
-"correctionExamplesWarning": "Vous avez {count} corrections. Seules les {max} plus récentes seront utilisées dans les prompts IA. Pensez à supprimer les exemples anciens ou redondants."
+"correctionExamplesWarning": "Vous avez {count} corrections. Seules les {max} plus récentes seront utilisées dans les prompts IA. Pensez à supprimer les exemples anciens ou redondants.",
+"correctionExampleCaptured": "Correction enregistrée pour l'apprentissage IA"
 ```
 
 **File: `lib/l10n/app_ro.arb`**
@@ -811,7 +834,8 @@ issues.
 "correctionExamplesSectionTitle": "Exemple de Corecție a Listei",
 "correctionExamplesSectionDescription": "Când corectați manual elementele listei, acele corecții sunt salvate aici și utilizate pentru a îmbunătăți sugestiile AI.",
 "correctionExamplesEmpty": "Nu s-au capturat corecții încă. Editați un element din listă pentru a adăuga primul exemplu.",
-"correctionExamplesWarning": "Aveți {count} corecții. Doar cele mai recente {max} vor fi folosite în prompturile AI. Luați în considerare ștergerea exemplelor vechi sau redundante."
+"correctionExamplesWarning": "Aveți {count} corecții. Doar cele mai recente {max} vor fi folosite în prompturile AI. Luați în considerare ștergerea exemplelor vechi sau redundante.",
+"correctionExampleCaptured": "Corecție salvată pentru învățarea AI"
 ```
 
 **File: `lib/l10n/app_en_GB.arb`**
@@ -820,7 +844,8 @@ issues.
 "correctionExamplesSectionTitle": "Checklist Correction Examples",
 "correctionExamplesSectionDescription": "When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.",
 "correctionExamplesEmpty": "No corrections captured yet. Edit a checklist item to add your first example.",
-"correctionExamplesWarning": "You have {count} corrections. Only the most recent {max} will be used in AI prompts. Consider deleting old or redundant examples."
+"correctionExamplesWarning": "You have {count} corrections. Only the most recent {max} will be used in AI prompts. Consider deleting old or redundant examples.",
+"correctionExampleCaptured": "Correction saved for AI learning"
 ```
 
 ## Workstreams
@@ -844,15 +869,23 @@ issues.
 - [ ] Create `CorrectionCaptureService` with provider (using shared utility)
 - [ ] Write unit tests for capture service (validation, deduplication, normalization)
 - [ ] Integrate into `ChecklistItemController.updateTitle()` with `unawaited()`
+- [ ] Show auto-dismissing snackbar on successful capture
 - [ ] Add tests for controller integration
 
 ### 4. Prompt Integration
 
 - [ ] Add `{{correction_examples}}` placeholder to `checklistUpdatesPrompt` USER message
+- [ ] Add `{{correction_examples}}` placeholder to audio transcription task context prompt
 - [ ] Add `_buildCorrectionExamplesPromptText` function to `PromptBuilderHelper`
-- [ ] Add placeholder handling to `PromptBuilderHelper.buildPromptWithData()`
+- [ ] Add placeholder handling to `PromptBuilderHelper.buildPromptWithData()` for both response types
 - [ ] Add correction examples template constant
 - [ ] Add tests for placeholder injection (with/without examples)
+
+### 4b. Speech Dictionary Limit Update
+
+- [ ] Change speech dictionary warning threshold from 30 to 500 terms
+- [ ] Update any related UI constants
+- [ ] Update related tests if any
 
 ### 5. Category Settings UI
 
@@ -896,53 +929,21 @@ getIt.unregister<EntitiesCacheService>();
 });
 ```
 
-## Questions for User
-
-1. **Maximum Examples Limit**: Should we cap the number of stored examples per category?
-  - **Decision: 500 examples max** for prompt injection (≈10k tokens, reasonable for modern context
-    windows). Storage is unbounded; only prompt injection is capped.
-  - Ordering: Most recent first (by `capturedAt`) for relevance
-  - UI warning: Show warning in settings at 400+ examples
-  - Future: Make limit configurable in AI settings
-
-2. **Capture Sensitivity**: What minimum difference should trigger capture?
-  - Current approach: Any non-whitespace change that's not purely case-only for very short texts
-  - Alternative: Only capture if Levenshtein distance > threshold
-  - **Is current approach acceptable?**
-
-3. **User Feedback on Capture**: Should we show a subtle snackbar when a correction is captured?
-  - Pro: User knows the system is learning
-  - Con: Could be annoying if many corrections
-  - **Preference?**
-
-4. **Include `capturedAt` Timestamp**: Should we store when each correction was captured?
-  - Pro: Enables sorting by recency, future cleanup of old examples
-  - Con: Slightly more data, minor complexity
-  - Recommendation: Yes, minimal overhead
-  - **Preference?**
-
-5. **AI Response Type Scope**: Should examples be injected only for `checklistUpdates` or also for
-   `audioTranscription`?
-  - Current plan: Only `checklistUpdates` (directly relevant)
-  - Alternative: Also inject for audio transcription (could help with spelling)
-  - **Preference?**
-
-6. **Prompt Token Budget**: The speech dictionary feature has a 30-term warning threshold. Should we
-   have a similar limit for correction examples?
-  - **Decision**: Warn at 400 examples in UI, cap prompt injection at 500
-  - Storage remains unbounded (old examples just won't be injected into prompts)
-  - Future: Make configurable in AI settings
-
-## Decisions (to be confirmed)
+## Decisions
 
 1. **Data Structure**: Use named keys (`before`/`after`) rather than positional array/tuple
 2. **Storage Location**: On `CategoryDefinition` (syncs automatically)
 3. **UI Pattern**: List with swipe-to-delete (not semicolon-separated text like speech dictionary)
 4. **Capture Trigger**: In `ChecklistItemController.updateTitle()` with `unawaited()` for async
-5. **Normalization**: Extract to `lib/utils/string_utils.dart` shared utility (avoids AI→checklist
-   coupling)
+5. **Normalization**: Extract to `lib/utils/string_utils.dart` shared utility (avoids AI→checklist coupling)
 6. **Prompt Injection**: New placeholder `{{correction_examples}}` in USER message (not system)
 7. **Category ID Access**: Use `current.meta.categoryId` directly (already available on items)
+8. **Maximum Examples Limit**: 500 examples max for prompt injection (≈10k tokens). Storage unbounded; only prompt injection is capped. Order by most recent first (`capturedAt`). Show UI warning at 400+ examples.
+9. **Capture Sensitivity**: Any non-whitespace change that's not purely case-only for very short texts
+10. **User Feedback on Capture**: Show auto-dismissing snackbar when correction is captured
+11. **Include `capturedAt` Timestamp**: Yes, store when each correction was captured
+12. **AI Response Type Scope**: Inject into both `checklistUpdates` AND audio transcription (task context prompt only)
+13. **Speech Dictionary Limit**: Change warning threshold from 30 to 500 terms (as part of this work)
 
 ## Risks & Mitigations
 
@@ -1057,11 +1058,14 @@ analyzer, formatter, and relevant tests after each step.
 - [ ] Manual edits to checklist item titles capture before/after pairs
 - [ ] Corrections are stored on the item's category (via `meta.categoryId`)
 - [ ] Duplicate corrections are not stored
+- [ ] Auto-dismissing snackbar shown when correction is captured
 - [ ] Corrections appear in category settings UI
 - [ ] Swipe-left deletes individual corrections
 - [ ] Corrections inject into AI prompts for checklist operations
+- [ ] Corrections inject into AI prompts for audio transcription (task context)
 - [ ] Categories without corrections work normally (empty list)
 - [ ] Items without categories skip capture gracefully
+- [ ] Speech dictionary warning threshold updated from 30 to 500 terms
 
 ### Quality Gates
 
@@ -1083,12 +1087,13 @@ analyzer, formatter, and relevant tests after each step.
 ## Files to Modify
 
 - `lib/classes/entity_definitions.dart` - Add `ChecklistCorrectionExample` and field
-- `lib/features/tasks/state/checklist_item_controller.dart` - Integrate capture with `unawaited()`
-- `lib/features/ai/util/preconfigured_prompts.dart` - Add placeholder to USER message
+- `lib/features/tasks/state/checklist_item_controller.dart` - Integrate capture with `unawaited()` and snackbar
+- `lib/features/ai/util/preconfigured_prompts.dart` - Add placeholder to USER message (checklist + audio)
 - `lib/features/ai/helpers/prompt_builder_helper.dart` - Handle placeholder in `buildPromptWithData`
 - `lib/features/categories/ui/pages/category_details_page.dart` - Add section
 - `lib/features/categories/state/category_details_controller.dart` - State management
-- `lib/l10n/app_en.arb` - English strings
+- `lib/features/categories/ui/widgets/category_speech_dictionary.dart` - Update warning threshold 30→500
+- `lib/l10n/app_en.arb` - English strings (including snackbar message)
 - `lib/l10n/app_en_GB.arb` - British English strings
 - `lib/l10n/app_de.arb` - German strings
 - `lib/l10n/app_es.arb` - Spanish strings
@@ -1140,5 +1145,5 @@ examples used in AI prompts is currently capped at 500. Future work:
 
 ## Status
 
-- [ ] Questions answered by user
-- [ ] Ready for implementation
+- [x] Questions answered by user
+- [x] Ready for implementation
