@@ -1,7 +1,20 @@
 """Pytest configuration and fixtures"""
 
 import os
+import socket
+
 import pytest
+
+from src.core.exceptions import DatabaseConnectionException
+
+
+def is_tigerbeetle_available(host: str = "localhost", port: int = 3000) -> bool:
+    """Check if TigerBeetle is reachable via TCP connection."""
+    try:
+        with socket.create_connection((host, port), timeout=1):
+            return True
+    except OSError:
+        return False
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -33,11 +46,28 @@ def anyio_backend():
     return "asyncio"
 
 
+@pytest.fixture(scope="session")
+def tigerbeetle_available():
+    """Check if TigerBeetle is available for integration tests."""
+    host = os.environ.get("TIGERBEETLE_HOST", "localhost")
+    port = int(os.environ.get("TIGERBEETLE_PORT", "3000"))
+    return is_tigerbeetle_available(host, port)
+
+
 @pytest.fixture
-async def app():
-    """Get the FastAPI app with lifespan"""
+async def app(tigerbeetle_available):
+    """Get the FastAPI app with lifespan.
+
+    Skips tests if TigerBeetle is not available.
+    """
+    if not tigerbeetle_available:
+        pytest.skip("TigerBeetle is not available - skipping integration test")
+
     from src.main import app
 
     # Trigger lifespan startup
-    async with app.router.lifespan_context(app):
-        yield app
+    try:
+        async with app.router.lifespan_context(app):
+            yield app
+    except DatabaseConnectionException as e:
+        pytest.skip(f"TigerBeetle connection failed: {e}")

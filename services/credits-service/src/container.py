@@ -42,9 +42,7 @@ class Container:
         host = os.getenv("TIGERBEETLE_HOST", "localhost")
         port = os.getenv("TIGERBEETLE_PORT", "3000")
 
-        # TigerBeetle Python client expects just port for localhost, or "host:port" format
-        # For localhost, just use port
-        addresses = port if host in ("localhost", "127.0.0.1") else f"{host}:{port}"
+        addresses = f"{host}:{port}"
 
         return TigerBeetleClient(cluster_id=cluster_id, addresses=addresses)
 

@@ -30,7 +30,7 @@ test-watch: ## Run tests in watch mode
 
 ##@ Code Quality
 lint: ## Run linting
-	flake8 src tests --max-line-length=100 --extend-ignore=E203,W503
+	flake8 src tests
 	isort --check-only --diff src tests
 	black --check src tests --line-length=100
 
@@ -39,7 +39,7 @@ format: ## Format code
 	black src tests --line-length=100
 
 type-check: ## Run type checking
-	mypy src --ignore-missing-imports --disable-error-code=import
+	mypy src
 
 security-scan: ## Run security scans
 	safety check -r requirements.txt -r requirements-test.txt

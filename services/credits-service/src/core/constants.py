@@ -19,5 +19,8 @@ TRANSFER_FLAGS_BALANCING = 16
 ACCOUNT_CODE_USER = 1
 ACCOUNT_CODE_SYSTEM = 2
 
+# System account for credits (acts as a bank)
+SYSTEM_ACCOUNT_ID = 1
+
 # Currency precision (cents)
 CURRENCY_PRECISION = 100  # 1 USD = 100 cents

@@ -5,7 +5,15 @@ import logging
 import uuid
 from typing import Optional
 
-from tigerbeetle import ClientAsync, Account, Transfer, AccountFlags, TransferFlags
+from tigerbeetle import (
+    Account,
+    AccountFlags,
+    ClientAsync,
+    CreateAccountResult,
+    CreateTransferResult,
+    Transfer,
+    TransferFlags,
+)
 
 from ..core.constants import (
     LEDGER_ID,
@@ -78,13 +86,14 @@ class TigerBeetleClient(ITigerBeetleClient):
         account_id = int.from_bytes(hash_bytes[:16], byteorder="big")
         return account_id
 
-    async def create_account(self, account_id: int, user_id: str) -> None:
+    async def create_account(self, account_id: int, user_id: str, is_system_account: bool = False) -> None:
         """
         Create a new account in TigerBeetle
 
         Args:
             account_id: Unique account ID (128-bit integer)
             user_id: User identifier (for logging purposes)
+            is_system_account: Whether this is the system account (allows overdrafts)
 
         Raises:
             AccountAlreadyExistsException: If account already exists
@@ -93,12 +102,21 @@ class TigerBeetleClient(ITigerBeetleClient):
         Note:
             TigerBeetle requires accounts to be created with zero balance.
             Use create_transfer() to set an initial balance after creation.
+            User accounts enforce DEBITS_MUST_NOT_EXCEED_CREDITS to prevent overdrafts.
         """
         client = self._ensure_connected()
 
         try:
             # TigerBeetle requires accounts to be created with zero balance
             # Initial balance must be set via transfers after creation
+
+            # User accounts: Prevent overdrafts by enforcing debits <= credits
+            # System account: Allow unlimited debits for "minting" credits
+            if is_system_account:
+                flags = AccountFlags.NONE  # System can overdraft (mint credits)
+            else:
+                flags = AccountFlags.DEBITS_MUST_NOT_EXCEED_CREDITS  # Users cannot overdraft
+
             account = Account(
                 id=account_id,
                 debits_pending=0,
@@ -110,7 +128,7 @@ class TigerBeetleClient(ITigerBeetleClient):
                 user_data_32=0,
                 ledger=LEDGER_ID,  # USD ledger
                 code=ACCOUNT_CODE_USER,  # User account type
-                flags=AccountFlags.NONE,
+                flags=flags,
                 timestamp=0,  # Let TigerBeetle set the timestamp
             )
 
@@ -118,8 +136,10 @@ class TigerBeetleClient(ITigerBeetleClient):
 
             if errors:
                 error = errors[0]
-                # Check for account already exists errors (21 = EXISTS, 25 = exists_with_different_flags)
-                if error.result in (21, 25):
+                if error.result in (
+                    CreateAccountResult.exists,
+                    CreateAccountResult.exists_with_different_flags,
+                ):
                     logger.warning(f"Account {account_id} already exists")
                     raise AccountAlreadyExistsException(f"Account for user {user_id} already exists")
                 else:
@@ -211,12 +231,13 @@ class TigerBeetleClient(ITigerBeetleClient):
 
             if errors:
                 error = errors[0]
-                # Check for account not found errors
-                if error.result in (15, 22):  # DEBIT_ACCOUNT_NOT_FOUND, CREDIT_ACCOUNT_NOT_FOUND
+                if error.result in (
+                    CreateTransferResult.debit_account_not_found,
+                    CreateTransferResult.credit_account_not_found,
+                ):
                     logger.warning(f"Account not found for transfer: {error}")
                     raise AccountNotFoundException("Account not found for transfer")
-                # Check for insufficient balance
-                elif error.result == 35:  # DEBITS_WOULD_EXCEED_CREDITS
+                elif error.result == CreateTransferResult.exceeds_credits:
                     logger.warning(f"Insufficient balance for transfer: {error}")
                     raise InsufficientBalanceException(f"Insufficient balance for account {debit_account_id}")
                 else:

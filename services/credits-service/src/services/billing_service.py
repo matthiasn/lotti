@@ -4,7 +4,7 @@ import logging
 from decimal import Decimal
 from typing import Optional
 
-from ..core.constants import CURRENCY_PRECISION
+from ..core.constants import CURRENCY_PRECISION, SYSTEM_ACCOUNT_ID
 from ..core.exceptions import (
     AccountNotFoundException,
     InsufficientBalanceException,
@@ -13,9 +13,6 @@ from ..core.exceptions import (
 from ..core.interfaces import IBillingService, ITigerBeetleClient
 
 logger = logging.getLogger(__name__)
-
-# System account for credits (acts as a bank)
-SYSTEM_ACCOUNT_ID = 1
 
 
 class BillingService(IBillingService):
@@ -42,9 +39,9 @@ class BillingService(IBillingService):
             self._system_account_initialized = True
         except AccountNotFoundException:
             # Create system account with zero balance
-            # TigerBeetle requires accounts to be created with zero balance
+            # System account allows overdrafts for "minting" credits
             logger.info("Creating system account")
-            await self.client.create_account(SYSTEM_ACCOUNT_ID, "system")
+            await self.client.create_account(SYSTEM_ACCOUNT_ID, "system", is_system_account=True)
             self._system_account_initialized = True
 
     async def top_up(self, user_id: str, amount: Decimal) -> Decimal:

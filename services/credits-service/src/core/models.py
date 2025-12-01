@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 
 class AccountCreateRequest(BaseModel):
@@ -10,14 +10,6 @@ class AccountCreateRequest(BaseModel):
 
     user_id: str = Field(..., description="Unique user identifier")
     initial_balance: Decimal = Field(default=Decimal("0.00"), description="Initial balance in USD", ge=0)
-
-    @field_validator("initial_balance")
-    @classmethod
-    def validate_initial_balance(cls, v: Decimal) -> Decimal:
-        """Ensure initial balance is non-negative"""
-        if v < 0:
-            raise ValueError("Initial balance must be non-negative")
-        return v
 
 
 class AccountCreateResponse(BaseModel):
@@ -47,14 +39,6 @@ class TopUpRequest(BaseModel):
     user_id: str = Field(..., description="User identifier")
     amount: Decimal = Field(..., description="Amount to add in USD", gt=0)
 
-    @field_validator("amount")
-    @classmethod
-    def validate_amount(cls, v: Decimal) -> Decimal:
-        """Ensure amount is positive"""
-        if v <= 0:
-            raise ValueError("Amount must be positive")
-        return v
-
 
 class TopUpResponse(BaseModel):
     """Response after adding credits"""
@@ -70,14 +54,6 @@ class BillRequest(BaseModel):
     user_id: str = Field(..., description="User identifier")
     amount: Decimal = Field(..., description="Amount to bill in USD", gt=0)
     description: Optional[str] = Field(None, description="Description of the charge (e.g., 'Gemini API call')")
-
-    @field_validator("amount")
-    @classmethod
-    def validate_amount(cls, v: Decimal) -> Decimal:
-        """Ensure amount is positive"""
-        if v <= 0:
-            raise ValueError("Amount must be positive")
-        return v
 
 
 class BillResponse(BaseModel):

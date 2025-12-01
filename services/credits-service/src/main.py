@@ -2,13 +2,21 @@
 
 import logging
 import os
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .api.routes import router
 from .container import container
+from .core.exceptions import (
+    AccountAlreadyExistsException,
+    AccountNotFoundException,
+    InsufficientBalanceException,
+    InvalidAmountException,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -20,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler"""
     # Startup
     logger.info("Starting Credits Service...")
@@ -47,6 +55,32 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
+# Exception handlers
+@app.exception_handler(AccountNotFoundException)
+async def account_not_found_handler(request: Request, exc: AccountNotFoundException) -> JSONResponse:
+    logger.warning(f"Account not found: {exc}")
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(AccountAlreadyExistsException)
+async def account_already_exists_handler(request: Request, exc: AccountAlreadyExistsException) -> JSONResponse:
+    logger.warning(f"Account already exists: {exc}")
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(InvalidAmountException)
+async def invalid_amount_handler(request: Request, exc: InvalidAmountException) -> JSONResponse:
+    logger.warning(f"Invalid amount: {exc}")
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(InsufficientBalanceException)
+async def insufficient_balance_handler(request: Request, exc: InsufficientBalanceException) -> JSONResponse:
+    logger.warning(f"Insufficient balance: {exc}")
+    return JSONResponse(status_code=402, content={"detail": str(exc)})
+
+
 # Add CORS middleware
 # Configure allowed origins from environment variable
 # Example: CORS_ALLOWED_ORIGINS="https://app.lotti.com,https://dev.lotti.com"
@@ -57,8 +91,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
 # Include routes
