@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/helpers/smart_task_summary_trigger.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
@@ -233,6 +234,68 @@ void main() {
       expect(refreshedTaskId, equals(taskId));
       // Should NOT look up category since summary already exists
       verifyNever(() => mockCategoryRepository.getCategoryById(any()));
+
+      testContainer.dispose();
+    });
+
+    test('schedules refresh when no summary but inference already running',
+        () async {
+      // Arrange
+      const categoryId = 'test-category';
+      const taskId = 'test-task';
+
+      // Track refresh calls
+      String? refreshedTaskId;
+      final trackingController = _TrackingRefreshController(
+        onRequestRefresh: (id) => refreshedTaskId = id,
+      );
+
+      // Create active inference data to simulate running inference
+      final activeInference = ActiveInferenceData(
+        entityId: taskId,
+        promptId: 'some-prompt',
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          promptCapabilityFilterProvider
+              .overrideWithValue(mockPromptCapabilityFilter),
+          directTaskSummaryRefreshControllerProvider
+              .overrideWith(() => trackingController),
+          // No summary exists
+          latestSummaryControllerProvider(
+            id: taskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => _MockLatestSummaryController(null)),
+          // But inference IS running
+          activeInferenceControllerProvider(
+            entityId: taskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => _MockActiveInferenceController(activeInference)),
+        ],
+      );
+
+      final trigger = testContainer.read(smartTaskSummaryTriggerProvider);
+
+      // Act
+      await trigger.triggerTaskSummary(
+        taskId: taskId,
+        categoryId: categoryId,
+      );
+
+      // Assert - should schedule refresh instead of creating duplicate
+      expect(refreshedTaskId, equals(taskId));
+      // Should NOT look up category since we're deduping
+      verifyNever(() => mockCategoryRepository.getCategoryById(any()));
+
+      // Verify log message
+      verify(() => mockLoggingService.captureEvent(
+            'Task $taskId has inference running, scheduling 5-min update',
+            domain: 'smart_task_summary_trigger',
+            subDomain: 'triggerTaskSummary',
+          )).called(1);
 
       testContainer.dispose();
     });
@@ -617,5 +680,19 @@ class _TrackingRefreshController extends DirectTaskSummaryRefreshController {
   @override
   Future<void> requestTaskSummaryRefresh(String taskId) async {
     onRequestRefresh(taskId);
+  }
+}
+
+/// Mock active inference controller that returns a fixed value
+class _MockActiveInferenceController extends ActiveInferenceController {
+  _MockActiveInferenceController(this._value);
+  final ActiveInferenceData? _value;
+
+  @override
+  ActiveInferenceData? build({
+    required String entityId,
+    required AiResponseType aiResponseType,
+  }) {
+    return _value;
   }
 }
