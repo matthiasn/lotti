@@ -150,7 +150,8 @@ CORS_ALLOWED_ORIGINS=https://app.yourcompany.com,http://ai-proxy-service:8002
 
 # TigerBeetle Configuration
 TIGERBEETLE_CLUSTER_ID=0
-TIGERBEETLE_ADDRESSES=tigerbeetle:3000
+TIGERBEETLE_HOST=tigerbeetle
+TIGERBEETLE_PORT=3000
 ```
 
 ---
@@ -230,7 +231,7 @@ docker-compose up -d
 curl https://api.yourcompany.com/ai/health
 
 # Credits Service (internal)
-curl http://credits-service:8001/health
+curl http://credits-service:8001/api/v1/health
 ```
 
 ### Metrics
@@ -319,7 +320,7 @@ Authorization: Bearer your_api_key_here
 
 **Fix**: Top up user account via Credits Service:
 ```bash
-curl -X POST https://api.yourcompany.com/credits/topup \
+curl -X POST http://credits-service:8001/api/v1/topup \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "user@example.com", "amount": 100.0}'
@@ -330,7 +331,7 @@ curl -X POST https://api.yourcompany.com/credits/topup \
 **Cause**: Credits Service is down or unreachable
 
 **Fix**:
-- Check Credits Service health: `curl http://credits-service:8001/health`
+- Check Credits Service health: `curl http://credits-service:8001/api/v1/health`
 - Check network connectivity between services
 - Review Credits Service logs
 
