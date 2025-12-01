@@ -207,10 +207,19 @@ class JournalRepository {
     }
   }
 
+  /// Creates a new image entry in the journal.
+  ///
+  /// Parameters:
+  /// - [imageData]: The image data to create an entry for
+  /// - [linkedId]: Optional ID of an entry to link this image to (e.g., a task)
+  /// - [categoryId]: Optional category ID for the image
+  /// - [onCreated]: Optional callback invoked after the image entry is created
+  ///   (used for automatic image analysis triggering)
   static Future<JournalEntity?> createImageEntry(
     ImageData imageData, {
     String? linkedId,
     String? categoryId,
+    void Function(JournalEntity)? onCreated,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -231,6 +240,10 @@ class JournalRepository {
         linkedId: linkedId,
         shouldAddGeolocation: false,
       );
+
+      // Invoke callback after successful creation
+      onCreated?.call(journalEntity);
+
       return journalEntity;
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(

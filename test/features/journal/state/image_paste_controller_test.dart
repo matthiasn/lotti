@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -54,6 +55,9 @@ class MockTimeService extends Mock implements TimeService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockAutomaticImageAnalysisTrigger extends Mock
+    implements AutomaticImageAnalysisTrigger {}
+
 class FakeJournalImage extends Fake implements JournalImage {}
 
 void main() {
@@ -66,6 +70,7 @@ void main() {
   late MockDataReaderFile mockFile;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockLoggingService mockLoggingService;
+  late MockAutomaticImageAnalysisTrigger mockImageAnalysisTrigger;
 
   setUpAll(() async {
     // Isolate all registrations in a dedicated scope for this file
@@ -181,10 +186,20 @@ void main() {
     mockReader = MockClipboardReader();
     mockItem = MockClipboardDataReader();
     mockFile = MockDataReaderFile();
+    mockImageAnalysisTrigger = MockAutomaticImageAnalysisTrigger();
+
+    // Setup default mock behavior for image analysis trigger
+    when(() => mockImageAnalysisTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: any(named: 'imageEntryId'),
+          categoryId: any(named: 'categoryId'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+        )).thenAnswer((_) async {});
 
     container = ProviderContainer(
       overrides: [
         clipboardRepositoryProvider.overrideWithValue(mockClipboard),
+        automaticImageAnalysisTriggerProvider
+            .overrideWithValue(mockImageAnalysisTrigger),
       ],
     );
 

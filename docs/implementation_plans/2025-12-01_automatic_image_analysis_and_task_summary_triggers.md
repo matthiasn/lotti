@@ -1,6 +1,30 @@
 # Automatic Image Analysis and Enhanced Task Summary Triggers
 
-**Status**: Planned
+**Status**: Phase 1-3 Complete (Phase 4 deferred to separate PR)
+
+## Implementation Progress
+
+### Phase 1: Automatic Image Analysis Trigger ✓
+- [x] 1.1 Create `AutomaticImageAnalysisTrigger` helper class
+- [x] 1.2 Modify `JournalRepository.createImageEntry()` with `onCreated` callback
+- [x] 1.3 Update image import functions (`importImageAssets`, `importDroppedImages`, `importPastedImages`)
+- [x] 1.4 Update UI callers (drop targets, paste controller)
+
+### Phase 2: Smart Task Summary Triggering (Core)
+- [x] 2.1 Create `SmartTaskSummaryTrigger` helper class
+- [x] 2.2 Add triggers in `UnifiedAiInferenceRepository._handlePostProcessing()` for image/audio completion
+- [x] 2.3 Add trigger on manual text save in entry_controller
+
+### Phase 3: Tests
+- [x] 3.1 Unit tests for AutomaticImageAnalysisTrigger (10 tests, 100% coverage)
+- [x] 3.2 Unit tests for SmartTaskSummaryTrigger (9 tests, 100% coverage)
+- [ ] 3.3 Integration tests for image import (optional)
+
+### Phase 4: Audio Modal Simplification (Future)
+- [ ] 4.1 Remove task summary checkbox from audio modal
+- [ ] 4.2 Remove `enableTaskSummary` from `AudioRecorderState`
+- [ ] 4.3 Remove task summary handling from `AutomaticPromptTrigger`
+- [ ] 4.4 Update audio modal tests
 
 ## Problem Statement
 

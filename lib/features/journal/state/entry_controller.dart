@@ -11,6 +11,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/helpers/smart_task_summary_trigger.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
@@ -231,11 +232,19 @@ class EntryController extends _$EntryController {
     } else {
       final running = getIt<TimeService>().getCurrent();
 
+      final entryText = entryTextFromController(controller);
       await _persistenceLogic.updateJournalEntityText(
         id,
-        entryTextFromController(controller),
+        entryText,
         running?.id == id ? DateTime.now() : entry.meta.dateTo,
       );
+
+      // Trigger smart task summary if this entry is linked to a task
+      // and has meaningful (non-empty) content
+      final hasNonEmptyText = entryText.plainText.trim().isNotEmpty;
+      if (hasNonEmptyText) {
+        unawaited(_triggerLinkedTaskSummary(entry));
+      }
 
       if (stopRecording) {
         await Future<void>.delayed(const Duration(milliseconds: 100)).then((_) {
@@ -526,6 +535,33 @@ class EntryController extends _$EntryController {
           checklistIds: filtered,
         ),
       );
+    }
+  }
+
+  /// Looks up if this entry is linked to a task and triggers smart
+  /// task summary if so. This is called after saving non-task entries
+  /// that have meaningful content.
+  Future<void> _triggerLinkedTaskSummary(JournalEntity entry) async {
+    try {
+      final journalRepository = ref.read(journalRepositoryProvider);
+      final links = await journalRepository.getLinksFromId(entry.id);
+
+      // Find a link where the target is a task
+      for (final link in links) {
+        final targetEntity =
+            await journalRepository.getJournalEntityById(link.toId);
+        if (targetEntity is Task) {
+          final trigger = ref.read(smartTaskSummaryTriggerProvider);
+          await trigger.triggerTaskSummary(
+            taskId: targetEntity.id,
+            categoryId: entry.meta.categoryId,
+          );
+          // Only trigger for first linked task (avoid multiple triggers)
+          return;
+        }
+      }
+    } catch (_) {
+      // Silently fail - this is a fire-and-forget enhancement
     }
   }
 }
