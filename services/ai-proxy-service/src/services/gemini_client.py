@@ -44,33 +44,57 @@ class GeminiClient(IGeminiClient):
         logger.debug(f"Mapped model '{requested_model}' to '{mapped_model}'")
         return mapped_model
 
-    def _convert_messages_to_prompt(self, messages: List[ChatMessage]) -> str:
+    def _convert_messages_to_gemini_format(self, messages: List[ChatMessage]) -> tuple[str | None, list[dict], str]:
         """
-        Convert OpenAI-style messages to a single prompt for Gemini
+        Convert OpenAI-style messages to Gemini's native chat format
 
         Args:
             messages: List of chat messages
 
         Returns:
-            Combined prompt string
+            Tuple of (system_instruction, history, last_user_message)
+            - system_instruction: System message content if present, None otherwise
+            - history: List of previous messages in Gemini format for chat history
+            - last_user_message: The final user message to send
         """
-        # Gemini 1.5 supports multi-turn conversations, but for simplicity
-        # we'll combine them into a single prompt for now
-        prompt_parts = []
+        system_instruction = None
+        history = []
+        last_user_message = ""
 
+        # Extract system instruction if present
+        non_system_messages = []
         for message in messages:
             if message.role == "system":
-                prompt_parts.append(f"System: {message.content}")
-            elif message.role == "user":
-                prompt_parts.append(f"User: {message.content}")
-            elif message.role == "assistant":
-                prompt_parts.append(f"Assistant: {message.content}")
+                # Combine multiple system messages if present
+                if system_instruction:
+                    system_instruction += "\n\n" + message.content
+                else:
+                    system_instruction = message.content
+            else:
+                non_system_messages.append(message)
 
-        # For single user message (most common case), just use the content
-        if len(messages) == 1 and messages[0].role == "user":
-            return messages[0].content
+        # Convert remaining messages to Gemini format
+        # Gemini uses "user" and "model" roles
+        for i, message in enumerate(non_system_messages):
+            gemini_role = "user" if message.role == "user" else "model"
 
-        return "\n\n".join(prompt_parts)
+            # Last user message is sent separately via send_message()
+            if i == len(non_system_messages) - 1 and message.role == "user":
+                last_user_message = message.content
+            else:
+                history.append(
+                    {
+                        "role": gemini_role,
+                        "parts": [message.content],
+                    }
+                )
+
+        # If the last message wasn't from user, include it in history
+        # and use empty string for last_user_message (edge case)
+        if non_system_messages and non_system_messages[-1].role != "user":
+            last_user_message = ""
+
+        return system_instruction, history, last_user_message
 
     async def generate_completion(
         self,
@@ -99,8 +123,8 @@ class GeminiClient(IGeminiClient):
             # Map the model name
             gemini_model = self._map_model(model)
 
-            # Convert messages to prompt
-            prompt = self._convert_messages_to_prompt(messages)
+            # Convert messages to Gemini's native format
+            system_instruction, history, last_user_message = self._convert_messages_to_gemini_format(messages)
 
             logger.info(f"Generating completion with model '{gemini_model}', temperature={temperature}")
 
@@ -110,15 +134,27 @@ class GeminiClient(IGeminiClient):
                 max_output_tokens=max_tokens,
             )
 
-            # Create the model
-            gemini = genai.GenerativeModel(gemini_model)
-
-            # Generate content (run in executor to avoid blocking event loop)
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                lambda: gemini.generate_content(prompt, generation_config=generation_config),
+            # Create the model with optional system instruction
+            gemini = genai.GenerativeModel(
+                gemini_model,
+                system_instruction=system_instruction,
             )
+
+            # Use chat for multi-turn conversations
+            loop = asyncio.get_event_loop()
+            if history or system_instruction:
+                # Start chat with history and send the last message
+                chat = gemini.start_chat(history=history)
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: chat.send_message(last_user_message, generation_config=generation_config),
+                )
+            else:
+                # Simple single-message case - use generate_content directly
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: gemini.generate_content(last_user_message, generation_config=generation_config),
+                )
 
             # Extract the generated text
             if not response.candidates:
@@ -193,8 +229,8 @@ class GeminiClient(IGeminiClient):
             # Map the model name
             gemini_model = self._map_model(model)
 
-            # Convert messages to prompt
-            prompt = self._convert_messages_to_prompt(messages)
+            # Convert messages to Gemini's native format
+            system_instruction, history, last_user_message = self._convert_messages_to_gemini_format(messages)
 
             logger.info(f"Generating streaming completion with model '{gemini_model}', temperature={temperature}")
 
@@ -204,15 +240,29 @@ class GeminiClient(IGeminiClient):
                 max_output_tokens=max_tokens,
             )
 
-            # Create the model
-            gemini = genai.GenerativeModel(gemini_model)
-
-            # Generate streaming content (run in executor to avoid blocking event loop)
-            loop = asyncio.get_event_loop()
-            response_stream = await loop.run_in_executor(
-                None,
-                lambda: gemini.generate_content(prompt, generation_config=generation_config, stream=True),
+            # Create the model with optional system instruction
+            gemini = genai.GenerativeModel(
+                gemini_model,
+                system_instruction=system_instruction,
             )
+
+            # Generate streaming content
+            loop = asyncio.get_event_loop()
+            if history or system_instruction:
+                # Start chat with history and send the last message with streaming
+                chat = gemini.start_chat(history=history)
+                response_stream = await loop.run_in_executor(
+                    None,
+                    lambda: chat.send_message(last_user_message, generation_config=generation_config, stream=True),
+                )
+            else:
+                # Simple single-message case - use generate_content directly
+                response_stream = await loop.run_in_executor(
+                    None,
+                    lambda: gemini.generate_content(
+                        last_user_message, generation_config=generation_config, stream=True
+                    ),
+                )
 
             # Track token usage (accumulated from chunks)
             prompt_tokens = 0

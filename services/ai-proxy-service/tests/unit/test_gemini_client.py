@@ -43,8 +43,10 @@ class TestGeminiClient:
     def test_convert_messages_single_user(self, gemini_client):
         """Test message conversion with single user message"""
         messages = [ChatMessage(role="user", content="Hello, AI!")]
-        result = gemini_client._convert_messages_to_prompt(messages)
-        assert result == "Hello, AI!"
+        system_instruction, history, last_user_message = gemini_client._convert_messages_to_gemini_format(messages)
+        assert system_instruction is None
+        assert history == []
+        assert last_user_message == "Hello, AI!"
 
     def test_convert_messages_with_system(self, gemini_client):
         """Test message conversion with system message"""
@@ -52,35 +54,39 @@ class TestGeminiClient:
             ChatMessage(role="system", content="You are a helpful assistant."),
             ChatMessage(role="user", content="Hello!"),
         ]
-        result = gemini_client._convert_messages_to_prompt(messages)
-        assert "System: You are a helpful assistant." in result
-        assert "User: Hello!" in result
+        system_instruction, history, last_user_message = gemini_client._convert_messages_to_gemini_format(messages)
+        assert system_instruction == "You are a helpful assistant."
+        assert history == []
+        assert last_user_message == "Hello!"
 
     def test_convert_messages_with_assistant(self, gemini_client):
-        """Test message conversion with assistant message"""
+        """Test message conversion with assistant message (multi-turn)"""
         messages = [
             ChatMessage(role="user", content="What is 2+2?"),
             ChatMessage(role="assistant", content="4"),
             ChatMessage(role="user", content="What is 3+3?"),
         ]
-        result = gemini_client._convert_messages_to_prompt(messages)
-        assert "User: What is 2+2?" in result
-        assert "Assistant: 4" in result
-        assert "User: What is 3+3?" in result
+        system_instruction, history, last_user_message = gemini_client._convert_messages_to_gemini_format(messages)
+        assert system_instruction is None
+        assert len(history) == 2
+        assert history[0] == {"role": "user", "parts": ["What is 2+2?"]}
+        assert history[1] == {"role": "model", "parts": ["4"]}
+        assert last_user_message == "What is 3+3?"
 
     def test_convert_messages_multi_turn(self, gemini_client):
-        """Test message conversion with multiple messages"""
+        """Test message conversion with system + multi-turn conversation"""
         messages = [
             ChatMessage(role="system", content="Be concise."),
             ChatMessage(role="user", content="Hi"),
             ChatMessage(role="assistant", content="Hello!"),
+            ChatMessage(role="user", content="How are you?"),
         ]
-        result = gemini_client._convert_messages_to_prompt(messages)
-        parts = result.split("\n\n")
-        assert len(parts) == 3
-        assert "System:" in parts[0]
-        assert "User:" in parts[1]
-        assert "Assistant:" in parts[2]
+        system_instruction, history, last_user_message = gemini_client._convert_messages_to_gemini_format(messages)
+        assert system_instruction == "Be concise."
+        assert len(history) == 2
+        assert history[0] == {"role": "user", "parts": ["Hi"]}
+        assert history[1] == {"role": "model", "parts": ["Hello!"]}
+        assert last_user_message == "How are you?"
 
     @pytest.mark.asyncio
     async def test_generate_completion_success(self, gemini_client):
