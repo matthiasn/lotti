@@ -52,8 +52,7 @@ class TigerBeetleClient(ITigerBeetleClient):
         """Disconnect from TigerBeetle"""
         if self._client:
             try:
-                # close() returns None, no need to await
-                self._client.close()
+                await self._client.close()
                 logger.info("Disconnected from TigerBeetle")
             except Exception as e:
                 logger.warning(f"Error during TigerBeetle disconnect: {e}")
