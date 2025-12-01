@@ -24,9 +24,9 @@ class TestBillingService:
             completion_tokens=1000,
         )
 
-        # Expected: (1000/1000 * 0.00025) + (1000/1000 * 0.0005)
-        # = 0.00025 + 0.0005 = 0.00075
-        assert cost == pytest.approx(0.00075, rel=1e-6)
+        # Expected (Pro pricing): (1000/1000 * 0.00125) + (1000/1000 * 0.01)
+        # = 0.00125 + 0.01 = 0.01125
+        assert cost == pytest.approx(0.01125, rel=1e-6)
 
     def test_calculate_cost_small_request(self, billing_service):
         """Test cost calculation for small request"""
@@ -37,9 +37,9 @@ class TestBillingService:
             completion_tokens=50,
         )
 
-        # Expected: (100/1000 * 0.00025) + (50/1000 * 0.0005)
-        # = 0.000025 + 0.000025 = 0.00005
-        assert cost == pytest.approx(0.00005, rel=1e-6)
+        # Expected (Pro pricing): (100/1000 * 0.00125) + (50/1000 * 0.01)
+        # = 0.000125 + 0.0005 = 0.000625
+        assert cost == pytest.approx(0.000625, rel=1e-6)
 
     def test_calculate_cost_large_request(self, billing_service):
         """Test cost calculation for large request"""
@@ -50,9 +50,9 @@ class TestBillingService:
             completion_tokens=2000,
         )
 
-        # Expected: (5000/1000 * 0.00025) + (2000/1000 * 0.0005)
-        # = 0.00125 + 0.001 = 0.00225
-        assert cost == pytest.approx(0.00225, rel=1e-6)
+        # Expected (Pro pricing): (5000/1000 * 0.00125) + (2000/1000 * 0.01)
+        # = 0.00625 + 0.02 = 0.02625
+        assert cost == pytest.approx(0.02625, rel=1e-6)
 
     def test_calculate_cost_zero_tokens(self, billing_service):
         """Test cost calculation with zero tokens"""
@@ -73,9 +73,9 @@ class TestBillingService:
             completion_tokens=1000,
         )
 
-        # Expected: (1000/1000 * 0.000075) + (1000/1000 * 0.0003)
-        # = 0.000075 + 0.0003 = 0.000375
-        assert cost == pytest.approx(0.000375, rel=1e-6)
+        # Expected (Flash pricing): (1000/1000 * 0.0003) + (1000/1000 * 0.0025)
+        # = 0.0003 + 0.0025 = 0.0028
+        assert cost == pytest.approx(0.0028, rel=1e-6)
 
     def test_calculate_cost_openai_model_mapping(self, billing_service):
         """Test cost calculation with OpenAI model name (maps to Gemini)"""
@@ -86,9 +86,9 @@ class TestBillingService:
             completion_tokens=1000,
         )
 
-        # Should use Pro pricing: (1000/1000 * 0.00025) + (1000/1000 * 0.0005)
-        # = 0.00025 + 0.0005 = 0.00075
-        assert cost == pytest.approx(0.00075, rel=1e-6)
+        # Should use Pro pricing: (1000/1000 * 0.00125) + (1000/1000 * 0.01)
+        # = 0.00125 + 0.01 = 0.01125
+        assert cost == pytest.approx(0.01125, rel=1e-6)
 
     def test_calculate_cost_gpt35_mapping(self, billing_service):
         """Test cost calculation with gpt-3.5-turbo (maps to flash)"""
@@ -99,9 +99,9 @@ class TestBillingService:
             completion_tokens=1000,
         )
 
-        # Should use Flash pricing: (1000/1000 * 0.000075) + (1000/1000 * 0.0003)
-        # = 0.000075 + 0.0003 = 0.000375
-        assert cost == pytest.approx(0.000375, rel=1e-6)
+        # Should use Flash pricing: (1000/1000 * 0.0003) + (1000/1000 * 0.0025)
+        # = 0.0003 + 0.0025 = 0.0028
+        assert cost == pytest.approx(0.0028, rel=1e-6)
 
     def test_calculate_cost_unknown_model_uses_default(self, billing_service):
         """Test cost calculation for unknown model (uses default Pro pricing)"""
@@ -111,8 +111,8 @@ class TestBillingService:
             completion_tokens=1000,
         )
 
-        # Should use default (Pro) pricing: 0.00025 + 0.0005 = 0.00075
-        assert cost == pytest.approx(0.00075, rel=1e-6)
+        # Should use default (Pro) pricing: 0.00125 + 0.01 = 0.01125
+        assert cost == pytest.approx(0.01125, rel=1e-6)
 
     @pytest.mark.asyncio
     async def test_log_billing(self, billing_service, caplog):

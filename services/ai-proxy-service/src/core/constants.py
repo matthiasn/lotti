@@ -5,28 +5,24 @@ SERVICE_GEMINI_CLIENT = "gemini_client"
 SERVICE_BILLING_SERVICE = "billing_service"
 
 # Model pricing (USD per 1K tokens)
-# Based on Gemini pricing as of 2024
-# Each model has input_price and output_price per 1K tokens
+# Based on Gemini pricing as of 2025
+# https://ai.google.dev/gemini-api/docs/pricing
 MODEL_PRICING = {
     "gemini-2.5-pro": {
-        "input_price_per_1k": 0.00025,  # $0.00025 per 1K input tokens
-        "output_price_per_1k": 0.0005,  # $0.0005 per 1K output tokens
+        "input_price_per_1k": 0.00125,  # $1.25 per 1M input tokens
+        "output_price_per_1k": 0.01,  # $10.00 per 1M output tokens
     },
     "gemini-2.5-flash": {
-        "input_price_per_1k": 0.000075,  # $0.000075 per 1K input tokens
-        "output_price_per_1k": 0.0003,  # $0.0003 per 1K output tokens
+        "input_price_per_1k": 0.0003,  # $0.30 per 1M input tokens
+        "output_price_per_1k": 0.0025,  # $2.50 per 1M output tokens
     },
 }
 
 # Default pricing for unknown models (use Pro pricing as fallback)
 DEFAULT_MODEL_PRICING = {
-    "input_price_per_1k": 0.00025,
-    "output_price_per_1k": 0.0005,
+    "input_price_per_1k": 0.00125,
+    "output_price_per_1k": 0.01,
 }
-
-# Legacy constants (deprecated - use MODEL_PRICING instead)
-GEMINI_PRO_INPUT_PRICE_PER_1K = 0.00025  # $0.00025 per 1K input tokens
-GEMINI_PRO_OUTPUT_PRICE_PER_1K = 0.0005  # $0.0005 per 1K output tokens
 
 # Model mappings (OpenAI model names to Gemini models)
 # Using stable Gemini 2.5 models with correct API format
