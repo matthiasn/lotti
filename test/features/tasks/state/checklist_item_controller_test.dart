@@ -167,6 +167,8 @@ void main() {
         expect(capturedEvent, isNotNull);
         expect(capturedEvent?.before, equals('Original Title'));
         expect(capturedEvent?.after, equals('Updated Title'));
+        // Service now populates category name (not empty string)
+        expect(capturedEvent?.categoryName, equals('Test Category'));
       });
 
       test('does not notify when capture returns non-success', () async {

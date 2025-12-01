@@ -14,6 +14,7 @@ part 'correction_capture_service.g.dart';
 CorrectionCaptureService correctionCaptureService(Ref ref) {
   return CorrectionCaptureService(
     categoryRepository: ref.watch(categoryRepositoryProvider),
+    notifier: ref.read(correctionCaptureNotifierProvider.notifier),
   );
 }
 
@@ -68,9 +69,11 @@ class CorrectionCaptureEvent {
 class CorrectionCaptureService {
   CorrectionCaptureService({
     required this.categoryRepository,
+    this.notifier,
   });
 
   final CategoryRepository categoryRepository;
+  final CorrectionCaptureNotifier? notifier;
 
   /// Captures a correction if the before and after texts differ meaningfully.
   ///
@@ -146,6 +149,15 @@ class CorrectionCaptureService {
         'Correction capture: saved "$normalizedBefore" -> "$normalizedAfter" '
         'to category "${category.name}"',
         name: 'CorrectionCaptureService',
+      );
+
+      // Notify UI for snackbar display - service has full context
+      notifier?.notify(
+        CorrectionCaptureEvent(
+          before: normalizedBefore,
+          after: normalizedAfter,
+          categoryName: category.name,
+        ),
       );
 
       return CorrectionCaptureResult.success;

@@ -114,18 +114,8 @@ class CategoryDetailsController
     List<ChecklistCorrectionExample>? current,
     List<ChecklistCorrectionExample>? original,
   ) {
-    if (current == null && original == null) return false;
-    if (current == null || original == null) return true;
-    if (current.length != original.length) return true;
-
-    // Compare each example (order matters for this comparison)
-    for (var i = 0; i < current.length; i++) {
-      if (current[i].before != original[i].before ||
-          current[i].after != original[i].after) {
-        return true;
-      }
-    }
-    return false;
+    // Uses freezed-generated equality which considers all fields
+    return !const DeepCollectionEquality().equals(current, original);
   }
 
   bool _hasListChanges(List<String>? current, List<String>? original) {
@@ -217,9 +207,8 @@ class CategoryDetailsController
 
         // Start with the latest examples from DB (includes background additions)
         // and remove the ones the user explicitly deleted
-        final finalExamples = latestExamples
-            .where((ex) => !deletedByUser.contains(ex))
-            .toList();
+        final finalExamples =
+            latestExamples.where((ex) => !deletedByUser.contains(ex)).toList();
 
         _pendingCategory = _pendingCategory!.copyWith(
           correctionExamples: finalExamples.isEmpty ? null : finalExamples,

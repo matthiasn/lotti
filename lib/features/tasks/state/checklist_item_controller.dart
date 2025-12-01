@@ -84,28 +84,13 @@ class ChecklistItemController extends _$ChecklistItemController {
       final oldTitle = data.title;
       final categoryId = current.meta.categoryId;
 
-      // Fire-and-forget capture with snackbar notification
+      // Fire-and-forget capture. The service will handle notifications.
       unawaited(
-        ref
-            .read(correctionCaptureServiceProvider)
-            .captureCorrection(
+        ref.read(correctionCaptureServiceProvider).captureCorrection(
               categoryId: categoryId,
               beforeText: oldTitle,
               afterText: title,
-            )
-            .then((result) {
-          if (result == CorrectionCaptureResult.success) {
-            // Notify for snackbar display
-            ref.read(correctionCaptureNotifierProvider.notifier).notify(
-                  CorrectionCaptureEvent(
-                    before: oldTitle,
-                    after: title,
-                    categoryName:
-                        '', // Category name not readily available here
-                  ),
-                );
-          }
-        }),
+            ),
       );
 
       // Existing update logic continues synchronously

@@ -143,6 +143,68 @@ void main() {
         expect(captured.correctionExamples!.first.capturedAt, isNotNull);
       });
 
+      test('notifies via notifier on success', () async {
+        when(() => mockCategoryRepository.getCategoryById('category-1'))
+            .thenAnswer((_) async => testCategory);
+        when(() => mockCategoryRepository.updateCategory(any()))
+            .thenAnswer((_) async => testCategory);
+
+        final container = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider
+                .overrideWithValue(mockCategoryRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Listen for notification events
+        CorrectionCaptureEvent? capturedEvent;
+        container.listen<CorrectionCaptureEvent?>(
+          correctionCaptureNotifierProvider,
+          (previous, next) {
+            if (next != null) {
+              capturedEvent = next;
+            }
+          },
+          fireImmediately: true,
+        );
+
+        // Use service from container (has notifier injected)
+        final serviceWithNotifier =
+            container.read(correctionCaptureServiceProvider);
+
+        final result = await serviceWithNotifier.captureCorrection(
+          categoryId: 'category-1',
+          beforeText: 'test flight',
+          afterText: 'TestFlight',
+        );
+
+        expect(result, equals(CorrectionCaptureResult.success));
+
+        // Verify notification was sent with correct data
+        expect(capturedEvent, isNotNull);
+        expect(capturedEvent?.before, equals('test flight'));
+        expect(capturedEvent?.after, equals('TestFlight'));
+        expect(capturedEvent?.categoryName, equals('Test Category'));
+      });
+
+      test('does not notify when no notifier provided', () async {
+        when(() => mockCategoryRepository.getCategoryById('category-1'))
+            .thenAnswer((_) async => testCategory);
+        when(() => mockCategoryRepository.updateCategory(any()))
+            .thenAnswer((_) async => testCategory);
+
+        // Service without notifier (created manually in setUp)
+        final result = await service.captureCorrection(
+          categoryId: 'category-1',
+          beforeText: 'test flight',
+          afterText: 'TestFlight',
+        );
+
+        // Still succeeds, just no notification
+        expect(result, equals(CorrectionCaptureResult.success));
+      });
+
       test('appends to existing corrections', () async {
         when(() => mockCategoryRepository.getCategoryById('category-2'))
             .thenAnswer((_) async => categoryWithExamples);

@@ -7,7 +7,7 @@ part of 'correction_capture_service.dart';
 // **************************************************************************
 
 String _$correctionCaptureServiceHash() =>
-    r'bdbad3406c2af6b074bf2fad856c44756d2bbc51';
+    r'd71f1420b5b44651f64a81c3bde4a783701f4886';
 
 /// Provider for the correction capture service.
 ///
@@ -29,7 +29,7 @@ final correctionCaptureServiceProvider =
 typedef CorrectionCaptureServiceRef
     = AutoDisposeProviderRef<CorrectionCaptureService>;
 String _$correctionCaptureNotifierHash() =>
-    r'b8ad78534e145b5e96632ca46cbbae7ebfa9e870';
+    r'f86442af5e9604f99d708168f5d04fdfad835948';
 
 /// Notifier for correction capture events.
 /// UI can watch this to show snackbar notifications.

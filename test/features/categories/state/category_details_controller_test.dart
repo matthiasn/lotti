@@ -935,7 +935,8 @@ void main() {
       subscription.close();
     });
 
-    test('saveChanges preserves user deletions while adding background captures',
+    test(
+        'saveChanges preserves user deletions while adding background captures',
         () async {
       const testId = 'merge-deletions-test';
       final completer = Completer<void>();
