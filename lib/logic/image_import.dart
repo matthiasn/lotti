@@ -21,6 +21,25 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
+/// Creates an onCreated callback for automatic image analysis.
+///
+/// Returns null if [analysisTrigger] is null, otherwise returns a callback
+/// that triggers automatic image analysis in a fire-and-forget manner.
+void Function(JournalEntity)? _createAnalysisCallback(
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+  String? categoryId,
+  String? linkedId,
+) {
+  if (analysisTrigger == null) return null;
+  return (entity) => unawaited(
+        analysisTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: entity.id,
+          categoryId: categoryId,
+          linkedTaskId: linkedId,
+        ),
+      );
+}
+
 /// Constants for media import operations
 class MediaImportConstants {
   const MediaImportConstants._();
@@ -133,15 +152,8 @@ Future<void> importImageAssets(
           imageData,
           linkedId: linkedId,
           categoryId: categoryId,
-          onCreated: analysisTrigger != null
-              ? (entity) => unawaited(
-                    analysisTrigger.triggerAutomaticImageAnalysis(
-                      imageEntryId: entity.id,
-                      categoryId: categoryId,
-                      linkedTaskId: linkedId,
-                    ),
-                  )
-              : null,
+          onCreated:
+              _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
         );
       }
     }
@@ -206,15 +218,8 @@ Future<void> importDroppedImages({
         imageData,
         linkedId: linkedId,
         categoryId: categoryId,
-        onCreated: analysisTrigger != null
-            ? (entity) => unawaited(
-                  analysisTrigger.triggerAutomaticImageAnalysis(
-                    imageEntryId: entity.id,
-                    categoryId: categoryId,
-                    linkedTaskId: linkedId,
-                  ),
-                )
-            : null,
+        onCreated:
+            _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
       );
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -479,15 +484,7 @@ Future<void> importPastedImages({
     imageData,
     linkedId: linkedId,
     categoryId: categoryId,
-    onCreated: analysisTrigger != null
-        ? (entity) => unawaited(
-              analysisTrigger.triggerAutomaticImageAnalysis(
-                imageEntryId: entity.id,
-                categoryId: categoryId,
-                linkedTaskId: linkedId,
-              ),
-            )
-        : null,
+    onCreated: _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
   );
 }
 

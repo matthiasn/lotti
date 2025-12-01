@@ -46,16 +46,12 @@ class AutomaticImageAnalysisTrigger {
 
     try {
       final category = await categoryRepository.getCategoryById(categoryId);
-      if (category?.automaticPrompts == null) return;
-
-      final hasAutomaticImageAnalysis = category!.automaticPrompts!
-              .containsKey(AiResponseType.imageAnalysis) &&
-          category.automaticPrompts![AiResponseType.imageAnalysis]!.isNotEmpty;
-
-      if (!hasAutomaticImageAnalysis) return;
-
       final imageAnalysisPromptIds =
-          category.automaticPrompts![AiResponseType.imageAnalysis]!;
+          category?.automaticPrompts?[AiResponseType.imageAnalysis];
+
+      if (imageAnalysisPromptIds == null || imageAnalysisPromptIds.isEmpty) {
+        return;
+      }
 
       // Get the first available prompt for the current platform
       final capabilityFilter = ref.read(promptCapabilityFilterProvider);

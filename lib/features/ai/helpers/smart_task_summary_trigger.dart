@@ -98,11 +98,10 @@ class SmartTaskSummaryTrigger {
 
       // No summary yet, no inference running: check if category has auto-summary
       final category = await categoryRepository.getCategoryById(categoryId);
-      final hasAutoSummary = category?.automaticPrompts != null &&
-          category!.automaticPrompts!.containsKey(AiResponseType.taskSummary) &&
-          category.automaticPrompts![AiResponseType.taskSummary]!.isNotEmpty;
+      final summaryPromptIds =
+          category?.automaticPrompts?[AiResponseType.taskSummary];
 
-      if (hasAutoSummary) {
+      if (summaryPromptIds?.isNotEmpty ?? false) {
         // Create first summary immediately
         loggingService.captureEvent(
           'No summary exists for task $taskId, creating first summary immediately',
@@ -110,12 +109,9 @@ class SmartTaskSummaryTrigger {
           subDomain: 'triggerTaskSummary',
         );
 
-        final summaryPromptIds =
-            category.automaticPrompts![AiResponseType.taskSummary]!;
-
         final capabilityFilter = ref.read(promptCapabilityFilterProvider);
         final availablePrompt = await capabilityFilter.getFirstAvailablePrompt(
-          summaryPromptIds,
+          summaryPromptIds!,
         );
 
         if (availablePrompt != null) {
