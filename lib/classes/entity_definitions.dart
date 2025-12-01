@@ -7,6 +7,25 @@ import 'package:lotti/features/sync/vector_clock.dart';
 part 'entity_definitions.freezed.dart';
 part 'entity_definitions.g.dart';
 
+/// Represents a user correction to a checklist item title.
+/// Captured when users manually edit titles to fix transcription/spelling errors.
+@freezed
+abstract class ChecklistCorrectionExample with _$ChecklistCorrectionExample {
+  const factory ChecklistCorrectionExample({
+    /// The original (incorrect) text before correction.
+    required String before,
+
+    /// The corrected (correct) text after user edit.
+    required String after,
+
+    /// When this correction was captured.
+    DateTime? capturedAt,
+  }) = _ChecklistCorrectionExample;
+
+  factory ChecklistCorrectionExample.fromJson(Map<String, dynamic> json) =>
+      _$ChecklistCorrectionExampleFromJson(json);
+}
+
 /// Custom JSON converter for CategoryIcon enum.
 ///
 /// Handles serialization and deserialization of CategoryIcon values to/from JSON strings.
@@ -128,6 +147,7 @@ sealed class EntityDefinition with _$EntityDefinition {
     Map<AiResponseType, List<String>>? automaticPrompts,
     @CategoryIconConverter() CategoryIcon? icon,
     List<String>? speechDictionary,
+    List<ChecklistCorrectionExample>? correctionExamples,
   }) = CategoryDefinition;
 
   const factory EntityDefinition.labelDefinition({

@@ -2606,6 +2606,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checklistAllDone => 'All items completed!';
+
+  @override
+  String get correctionExamplesSectionTitle => 'Checklist Correction Examples';
+
+  @override
+  String get correctionExamplesSectionDescription =>
+      'When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.';
+
+  @override
+  String get correctionExamplesEmpty =>
+      'No corrections captured yet. Edit a checklist item to add your first example.';
+
+  @override
+  String correctionExamplesWarning(int count, int max) {
+    return 'You have $count corrections. Only the most recent $max will be used in AI prompts. Consider deleting old or redundant examples.';
+  }
+
+  @override
+  String get correctionExampleCaptured => 'Correction saved for AI learning';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -3897,4 +3916,23 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get viewMenuTitle => 'View';
+
+  @override
+  String get correctionExamplesSectionTitle => 'Checklist Correction Examples';
+
+  @override
+  String get correctionExamplesSectionDescription =>
+      'When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.';
+
+  @override
+  String get correctionExamplesEmpty =>
+      'No corrections captured yet. Edit a checklist item to add your first example.';
+
+  @override
+  String correctionExamplesWarning(int count, int max) {
+    return 'You have $count corrections. Only the most recent $max will be used in AI prompts. Consider deleting old or redundant examples.';
+  }
+
+  @override
+  String get correctionExampleCaptured => 'Correction saved for AI learning';
 }

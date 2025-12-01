@@ -104,8 +104,18 @@ class CategoryDetailsController
             _originalCategory!.allowedPromptIds) ||
         _hasListChanges(_pendingCategory!.speechDictionary,
             _originalCategory!.speechDictionary) ||
+        _hasCorrectionExamplesChanges(_pendingCategory!.correctionExamples,
+            _originalCategory!.correctionExamples) ||
         _hasMapChanges(_pendingCategory!.automaticPrompts,
             _originalCategory!.automaticPrompts);
+  }
+
+  bool _hasCorrectionExamplesChanges(
+    List<ChecklistCorrectionExample>? current,
+    List<ChecklistCorrectionExample>? original,
+  ) {
+    // Uses freezed-generated equality which considers all fields
+    return !const DeepCollectionEquality().equals(current, original);
   }
 
   bool _hasListChanges(List<String>? current, List<String>? original) {
@@ -180,6 +190,31 @@ class CategoryDetailsController
     state = state.copyWith(isSaving: true, errorMessage: null);
 
     try {
+      // Merge correction examples: preserve background additions while respecting
+      // user's explicit deletions. This prevents data loss in both directions:
+      // - Background captures are not lost when user saves other changes
+      // - User's deletions are not overwritten by background captures
+      final latestCategory = await _repository.getCategoryById(_categoryId);
+      if (latestCategory != null && _originalCategory != null) {
+        final originalExamples = _originalCategory!.correctionExamples ?? [];
+        final pendingExamples = _pendingCategory!.correctionExamples ?? [];
+        final latestExamples = latestCategory.correctionExamples ?? [];
+
+        // Identify examples deleted by the user in the UI
+        final originalSet = originalExamples.toSet();
+        final pendingSet = pendingExamples.toSet();
+        final deletedByUser = originalSet.difference(pendingSet);
+
+        // Start with the latest examples from DB (includes background additions)
+        // and remove the ones the user explicitly deleted
+        final finalExamples =
+            latestExamples.where((ex) => !deletedByUser.contains(ex)).toList();
+
+        _pendingCategory = _pendingCategory!.copyWith(
+          correctionExamples: finalExamples.isEmpty ? null : finalExamples,
+        );
+      }
+
       await _repository.updateCategory(_pendingCategory!);
       // Reset the original category after successful save
       _originalCategory = _pendingCategory;
@@ -258,6 +293,32 @@ class CategoryDetailsController
 
     _pendingCategory = _pendingCategory!.copyWith(
       speechDictionary: terms.isEmpty ? null : terms,
+    );
+
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
+  }
+
+  /// Deletes a correction example at the given index from the pending category.
+  ///
+  /// Uses index-based deletion to correctly handle duplicates - only the
+  /// specific item the user swiped is removed, not all matching examples.
+  ///
+  /// Note: Deletions update `_pendingCategory` but are NOT auto-persisted.
+  /// The user must tap the Save button to persist changes. This matches
+  /// the speech dictionary and other category settings behavior.
+  void deleteCorrectionExampleAt(int index) {
+    if (_pendingCategory == null) return;
+
+    final currentExamples = _pendingCategory!.correctionExamples ?? [];
+    if (index < 0 || index >= currentExamples.length) return;
+
+    final updatedExamples = [...currentExamples]..removeAt(index);
+
+    _pendingCategory = _pendingCategory!.copyWith(
+      correctionExamples: updatedExamples.isEmpty ? null : updatedExamples,
     );
 
     state = state.copyWith(

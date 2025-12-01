@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
@@ -501,6 +502,85 @@ void main() {
       expect(find.byType(ChecklistWrapper), findsOneWidget);
       // No ChecklistWidget renders inside
       expect(find.byType(ChecklistWidget), findsNothing);
+    });
+
+    testWidgets('shows snackbar when correction capture event is emitted',
+        (tester) async {
+      const checklistId = 'correction-1';
+      const taskId = 't-correction';
+      const itemId1 = 'c1';
+
+      final checklist = Checklist(
+        meta: Metadata(
+          id: checklistId,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: const ChecklistData(
+          title: 'Correction Test',
+          linkedChecklistItems: [itemId1],
+          linkedTasks: [],
+        ),
+      );
+
+      final item1 = ChecklistItem(
+        meta: Metadata(
+          id: itemId1,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: const ChecklistItemData(
+          title: 'Item',
+          isChecked: false,
+          linkedChecklists: [],
+        ),
+      );
+
+      late ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistControllerProvider(
+              id: checklistId,
+              taskId: taskId,
+            ).overrideWith(() => _MockChecklistController(checklist)),
+            checklistItemControllerProvider(id: itemId1, taskId: taskId)
+                .overrideWith(() => _MockChecklistItemController(item1)),
+          ],
+          child: Consumer(
+            builder: (context, ref, child) {
+              container = ProviderScope.containerOf(context);
+              return const WidgetTestBench(
+                child: ChecklistWrapper(
+                  entryId: checklistId,
+                  taskId: taskId,
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Emit a correction capture event
+      container.read(correctionCaptureNotifierProvider.notifier).notify(
+            const CorrectionCaptureEvent(
+              before: 'test flight',
+              after: 'TestFlight',
+              categoryName: 'Dev',
+            ),
+          );
+
+      await tester.pump();
+
+      // Snackbar should appear with correction captured message
+      expect(find.byType(SnackBar), findsOneWidget);
     });
 
     /* Skipped: loading-state null branch is transient and racey in tests.

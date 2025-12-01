@@ -366,4 +366,16 @@
   "syncEntitiesSuccessDescription": "Totul este actualizat.",
   "syncEntitiesMessage": "Alege datele pe care vrei să le sincronizezi.",
   "syncStepAiSettings": "Setări AI"
+  ,
+  "correctionExamplesSectionTitle": "Exemple de Corecție a Listei",
+  "correctionExamplesSectionDescription": "Când corectați manual elementele listei, acele corecții sunt salvate aici și utilizate pentru a îmbunătăți sugestiile AI.",
+  "correctionExamplesEmpty": "Nu s-au capturat corecții încă. Editați un element din listă pentru a adăuga primul exemplu.",
+  "correctionExamplesWarning": "Aveți {count} corecții. Doar cele mai recente {max} vor fi folosite în prompturile AI. Luați în considerare ștergerea exemplelor vechi sau redundante.",
+  "@correctionExamplesWarning": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "correctionExampleCaptured": "Corecție salvată pentru învățarea AI"
 }

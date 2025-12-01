@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/tasks/services/checklist_markdown_exporter.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/share_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
@@ -73,6 +75,23 @@ class ChecklistWrapper extends ConsumerWidget {
           ),
         )
         .value;
+
+    // Listen for correction capture events and show snackbar
+    ref.listen<CorrectionCaptureEvent?>(
+      correctionCaptureNotifierProvider,
+      (previous, next) {
+        if (next != null && previous != next) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.messages.correctionExampleCaptured),
+              backgroundColor: context.colorScheme.primaryContainer,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
 
     if (checklist == null || completionRate == null) {
       return const SizedBox.shrink();

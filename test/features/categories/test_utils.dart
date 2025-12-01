@@ -20,6 +20,7 @@ class CategoryTestUtils {
     List<String>? allowedPromptIds,
     Map<AiResponseType, List<String>>? automaticPrompts,
     List<String>? speechDictionary,
+    List<ChecklistCorrectionExample>? correctionExamples,
     CategoryIcon? icon,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -42,6 +43,7 @@ class CategoryTestUtils {
       allowedPromptIds: allowedPromptIds,
       automaticPrompts: automaticPrompts,
       speechDictionary: speechDictionary,
+      correctionExamples: correctionExamples,
       icon: icon,
     );
   }

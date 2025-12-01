@@ -415,4 +415,16 @@
   "syncEntitiesSuccessTitle": "Sync complete",
   "syncEntitiesSuccessDescription": "Everything is up to date.",
   "syncEntitiesMessage": "Choose the data you want to sync."
+  ,
+  "correctionExamplesSectionTitle": "Checklist Correction Examples",
+  "correctionExamplesSectionDescription": "When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.",
+  "correctionExamplesEmpty": "No corrections captured yet. Edit a checklist item to add your first example.",
+  "correctionExamplesWarning": "You have {count} corrections. Only the most recent {max} will be used in AI prompts. Consider deleting old or redundant examples.",
+  "@correctionExamplesWarning": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "correctionExampleCaptured": "Correction saved for AI learning"
 }

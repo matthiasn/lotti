@@ -11,6 +11,357 @@ part of 'entity_definitions.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$ChecklistCorrectionExample {
+  /// The original (incorrect) text before correction.
+  String get before;
+
+  /// The corrected (correct) text after user edit.
+  String get after;
+
+  /// When this correction was captured.
+  DateTime? get capturedAt;
+
+  /// Create a copy of ChecklistCorrectionExample
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $ChecklistCorrectionExampleCopyWith<ChecklistCorrectionExample>
+      get copyWith =>
+          _$ChecklistCorrectionExampleCopyWithImpl<ChecklistCorrectionExample>(
+              this as ChecklistCorrectionExample, _$identity);
+
+  /// Serializes this ChecklistCorrectionExample to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is ChecklistCorrectionExample &&
+            (identical(other.before, before) || other.before == before) &&
+            (identical(other.after, after) || other.after == after) &&
+            (identical(other.capturedAt, capturedAt) ||
+                other.capturedAt == capturedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, before, after, capturedAt);
+
+  @override
+  String toString() {
+    return 'ChecklistCorrectionExample(before: $before, after: $after, capturedAt: $capturedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $ChecklistCorrectionExampleCopyWith<$Res> {
+  factory $ChecklistCorrectionExampleCopyWith(ChecklistCorrectionExample value,
+          $Res Function(ChecklistCorrectionExample) _then) =
+      _$ChecklistCorrectionExampleCopyWithImpl;
+  @useResult
+  $Res call({String before, String after, DateTime? capturedAt});
+}
+
+/// @nodoc
+class _$ChecklistCorrectionExampleCopyWithImpl<$Res>
+    implements $ChecklistCorrectionExampleCopyWith<$Res> {
+  _$ChecklistCorrectionExampleCopyWithImpl(this._self, this._then);
+
+  final ChecklistCorrectionExample _self;
+  final $Res Function(ChecklistCorrectionExample) _then;
+
+  /// Create a copy of ChecklistCorrectionExample
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? before = null,
+    Object? after = null,
+    Object? capturedAt = freezed,
+  }) {
+    return _then(_self.copyWith(
+      before: null == before
+          ? _self.before
+          : before // ignore: cast_nullable_to_non_nullable
+              as String,
+      after: null == after
+          ? _self.after
+          : after // ignore: cast_nullable_to_non_nullable
+              as String,
+      capturedAt: freezed == capturedAt
+          ? _self.capturedAt
+          : capturedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [ChecklistCorrectionExample].
+extension ChecklistCorrectionExamplePatterns on ChecklistCorrectionExample {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_ChecklistCorrectionExample value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _ChecklistCorrectionExample() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_ChecklistCorrectionExample value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _ChecklistCorrectionExample():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_ChecklistCorrectionExample value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _ChecklistCorrectionExample() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(String before, String after, DateTime? capturedAt)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _ChecklistCorrectionExample() when $default != null:
+        return $default(_that.before, _that.after, _that.capturedAt);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(String before, String after, DateTime? capturedAt)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _ChecklistCorrectionExample():
+        return $default(_that.before, _that.after, _that.capturedAt);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(String before, String after, DateTime? capturedAt)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _ChecklistCorrectionExample() when $default != null:
+        return $default(_that.before, _that.after, _that.capturedAt);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _ChecklistCorrectionExample implements ChecklistCorrectionExample {
+  const _ChecklistCorrectionExample(
+      {required this.before, required this.after, this.capturedAt});
+  factory _ChecklistCorrectionExample.fromJson(Map<String, dynamic> json) =>
+      _$ChecklistCorrectionExampleFromJson(json);
+
+  /// The original (incorrect) text before correction.
+  @override
+  final String before;
+
+  /// The corrected (correct) text after user edit.
+  @override
+  final String after;
+
+  /// When this correction was captured.
+  @override
+  final DateTime? capturedAt;
+
+  /// Create a copy of ChecklistCorrectionExample
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$ChecklistCorrectionExampleCopyWith<_ChecklistCorrectionExample>
+      get copyWith => __$ChecklistCorrectionExampleCopyWithImpl<
+          _ChecklistCorrectionExample>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ChecklistCorrectionExampleToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _ChecklistCorrectionExample &&
+            (identical(other.before, before) || other.before == before) &&
+            (identical(other.after, after) || other.after == after) &&
+            (identical(other.capturedAt, capturedAt) ||
+                other.capturedAt == capturedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, before, after, capturedAt);
+
+  @override
+  String toString() {
+    return 'ChecklistCorrectionExample(before: $before, after: $after, capturedAt: $capturedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$ChecklistCorrectionExampleCopyWith<$Res>
+    implements $ChecklistCorrectionExampleCopyWith<$Res> {
+  factory _$ChecklistCorrectionExampleCopyWith(
+          _ChecklistCorrectionExample value,
+          $Res Function(_ChecklistCorrectionExample) _then) =
+      __$ChecklistCorrectionExampleCopyWithImpl;
+  @override
+  @useResult
+  $Res call({String before, String after, DateTime? capturedAt});
+}
+
+/// @nodoc
+class __$ChecklistCorrectionExampleCopyWithImpl<$Res>
+    implements _$ChecklistCorrectionExampleCopyWith<$Res> {
+  __$ChecklistCorrectionExampleCopyWithImpl(this._self, this._then);
+
+  final _ChecklistCorrectionExample _self;
+  final $Res Function(_ChecklistCorrectionExample) _then;
+
+  /// Create a copy of ChecklistCorrectionExample
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? before = null,
+    Object? after = null,
+    Object? capturedAt = freezed,
+  }) {
+    return _then(_ChecklistCorrectionExample(
+      before: null == before
+          ? _self.before
+          : before // ignore: cast_nullable_to_non_nullable
+              as String,
+      after: null == after
+          ? _self.after
+          : after // ignore: cast_nullable_to_non_nullable
+              as String,
+      capturedAt: freezed == capturedAt
+          ? _self.capturedAt
+          : capturedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
 HabitSchedule _$HabitScheduleFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
     case 'daily':
@@ -1972,7 +2323,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             List<String>? allowedPromptIds,
             Map<AiResponseType, List<String>>? automaticPrompts,
             @CategoryIconConverter() CategoryIcon? icon,
-            List<String>? speechDictionary)?
+            List<String>? speechDictionary,
+            List<ChecklistCorrectionExample>? correctionExamples)?
         categoryDefinition,
     TResult Function(
             String id,
@@ -2060,7 +2412,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.allowedPromptIds,
             _that.automaticPrompts,
             _that.icon,
-            _that.speechDictionary);
+            _that.speechDictionary,
+            _that.correctionExamples);
       case LabelDefinition() when labelDefinition != null:
         return labelDefinition(
             _that.id,
@@ -2162,7 +2515,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             List<String>? allowedPromptIds,
             Map<AiResponseType, List<String>>? automaticPrompts,
             @CategoryIconConverter() CategoryIcon? icon,
-            List<String>? speechDictionary)
+            List<String>? speechDictionary,
+            List<ChecklistCorrectionExample>? correctionExamples)
         categoryDefinition,
     required TResult Function(
             String id,
@@ -2249,7 +2603,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.allowedPromptIds,
             _that.automaticPrompts,
             _that.icon,
-            _that.speechDictionary);
+            _that.speechDictionary,
+            _that.correctionExamples);
       case LabelDefinition():
         return labelDefinition(
             _that.id,
@@ -2348,7 +2703,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             List<String>? allowedPromptIds,
             Map<AiResponseType, List<String>>? automaticPrompts,
             @CategoryIconConverter() CategoryIcon? icon,
-            List<String>? speechDictionary)?
+            List<String>? speechDictionary,
+            List<ChecklistCorrectionExample>? correctionExamples)?
         categoryDefinition,
     TResult? Function(
             String id,
@@ -2435,7 +2791,8 @@ extension EntityDefinitionPatterns on EntityDefinition {
             _that.allowedPromptIds,
             _that.automaticPrompts,
             _that.icon,
-            _that.speechDictionary);
+            _that.speechDictionary,
+            _that.correctionExamples);
       case LabelDefinition() when labelDefinition != null:
         return labelDefinition(
             _that.id,
@@ -2734,10 +3091,12 @@ class CategoryDefinition implements EntityDefinition {
       final Map<AiResponseType, List<String>>? automaticPrompts,
       @CategoryIconConverter() this.icon,
       final List<String>? speechDictionary,
+      final List<ChecklistCorrectionExample>? correctionExamples,
       final String? $type})
       : _allowedPromptIds = allowedPromptIds,
         _automaticPrompts = automaticPrompts,
         _speechDictionary = speechDictionary,
+        _correctionExamples = correctionExamples,
         $type = $type ?? 'categoryDefinition';
   factory CategoryDefinition.fromJson(Map<String, dynamic> json) =>
       _$CategoryDefinitionFromJson(json);
@@ -2791,6 +3150,16 @@ class CategoryDefinition implements EntityDefinition {
     return EqualUnmodifiableListView(value);
   }
 
+  final List<ChecklistCorrectionExample>? _correctionExamples;
+  List<ChecklistCorrectionExample>? get correctionExamples {
+    final value = _correctionExamples;
+    if (value == null) return null;
+    if (_correctionExamples is EqualUnmodifiableListView)
+      return _correctionExamples;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @JsonKey(name: 'runtimeType')
   final String $type;
 
@@ -2839,7 +3208,9 @@ class CategoryDefinition implements EntityDefinition {
                 .equals(other._automaticPrompts, _automaticPrompts) &&
             (identical(other.icon, icon) || other.icon == icon) &&
             const DeepCollectionEquality()
-                .equals(other._speechDictionary, _speechDictionary));
+                .equals(other._speechDictionary, _speechDictionary) &&
+            const DeepCollectionEquality()
+                .equals(other._correctionExamples, _correctionExamples));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2861,11 +3232,12 @@ class CategoryDefinition implements EntityDefinition {
       const DeepCollectionEquality().hash(_allowedPromptIds),
       const DeepCollectionEquality().hash(_automaticPrompts),
       icon,
-      const DeepCollectionEquality().hash(_speechDictionary));
+      const DeepCollectionEquality().hash(_speechDictionary),
+      const DeepCollectionEquality().hash(_correctionExamples));
 
   @override
   String toString() {
-    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts, icon: $icon, speechDictionary: $speechDictionary)';
+    return 'EntityDefinition.categoryDefinition(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, name: $name, vectorClock: $vectorClock, private: $private, active: $active, favorite: $favorite, color: $color, categoryId: $categoryId, deletedAt: $deletedAt, defaultLanguageCode: $defaultLanguageCode, allowedPromptIds: $allowedPromptIds, automaticPrompts: $automaticPrompts, icon: $icon, speechDictionary: $speechDictionary, correctionExamples: $correctionExamples)';
   }
 }
 
@@ -2893,7 +3265,8 @@ abstract mixin class $CategoryDefinitionCopyWith<$Res>
       List<String>? allowedPromptIds,
       Map<AiResponseType, List<String>>? automaticPrompts,
       @CategoryIconConverter() CategoryIcon? icon,
-      List<String>? speechDictionary});
+      List<String>? speechDictionary,
+      List<ChecklistCorrectionExample>? correctionExamples});
 }
 
 /// @nodoc
@@ -2925,6 +3298,7 @@ class _$CategoryDefinitionCopyWithImpl<$Res>
     Object? automaticPrompts = freezed,
     Object? icon = freezed,
     Object? speechDictionary = freezed,
+    Object? correctionExamples = freezed,
   }) {
     return _then(CategoryDefinition(
       id: null == id
@@ -2991,6 +3365,10 @@ class _$CategoryDefinitionCopyWithImpl<$Res>
           ? _self._speechDictionary
           : speechDictionary // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      correctionExamples: freezed == correctionExamples
+          ? _self._correctionExamples
+          : correctionExamples // ignore: cast_nullable_to_non_nullable
+              as List<ChecklistCorrectionExample>?,
     ));
   }
 }

@@ -4923,6 +4923,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All items completed!'**
   String get checklistAllDone;
+
+  /// No description provided for @correctionExamplesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist Correction Examples'**
+  String get correctionExamplesSectionTitle;
+
+  /// No description provided for @correctionExamplesSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.'**
+  String get correctionExamplesSectionDescription;
+
+  /// No description provided for @correctionExamplesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No corrections captured yet. Edit a checklist item to add your first example.'**
+  String get correctionExamplesEmpty;
+
+  /// No description provided for @correctionExamplesWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {count} corrections. Only the most recent {max} will be used in AI prompts. Consider deleting old or redundant examples.'**
+  String correctionExamplesWarning(int count, int max);
+
+  /// No description provided for @correctionExampleCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'Correction saved for AI learning'**
+  String get correctionExampleCaptured;
 }
 
 class _AppLocalizationsDelegate

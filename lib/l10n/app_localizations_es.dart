@@ -2625,4 +2625,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get checklistAllDone => 'All items completed!';
+
+  @override
+  String get correctionExamplesSectionTitle =>
+      'Ejemplos de Corrección de Lista';
+
+  @override
+  String get correctionExamplesSectionDescription =>
+      'Cuando corriges manualmente elementos de la lista, esas correcciones se guardan aquí y se usan para mejorar las sugerencias de IA.';
+
+  @override
+  String get correctionExamplesEmpty =>
+      'Aún no se han capturado correcciones. Edita un elemento de la lista para agregar tu primer ejemplo.';
+
+  @override
+  String correctionExamplesWarning(int count, int max) {
+    return 'Tienes $count correcciones. Solo las $max más recientes se usarán en los prompts de IA. Considera eliminar ejemplos antiguos o redundantes.';
+  }
+
+  @override
+  String get correctionExampleCaptured =>
+      'Corrección guardada para aprendizaje de IA';
 }

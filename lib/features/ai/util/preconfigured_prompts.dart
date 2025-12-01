@@ -267,7 +267,9 @@ REMEMBER:
 - After creating items, ALWAYS set the task language (even if it's English, use "en")
 - For labels: if there are already 3 or more assigned, do not call assign_task_labels. Otherwise, call assign_task_labels using the preferred {labels: [{id, confidence}]} shape, omit low confidence, order highest confidence first, and cap to 3 labels.
 - Do not propose any labels listed under Suppressed Labels; callers will remove suppressed IDs if used.
-- Only use the functions listed in the system message''',
+- Only use the functions listed in the system message
+
+{{correction_examples}}''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.checklistUpdates,
   useReasoning: true,
@@ -406,7 +408,8 @@ The task context provides names, places, and concepts relevant to this recording
 When you hear something that sounds like a term from the speech dictionary above,
 you MUST use the exact spelling from the dictionary - the audio may be unclear but
 these are the correct spellings for this context.
-''',
+
+{{correction_examples}}''',
   requiredInputData: [InputDataType.audioFiles, InputDataType.task],
   aiResponseType: AiResponseType.audioTranscription,
   useReasoning: false,

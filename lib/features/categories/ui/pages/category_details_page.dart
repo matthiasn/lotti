@@ -10,6 +10,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_automatic_prompts.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
+import 'package:lotti/features/categories/ui/widgets/category_correction_examples.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
@@ -368,6 +369,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                         _buildSpeechDictionary(category),
                       ],
                     ),
+                    const SizedBox(height: 24),
+
+                    // Correction Examples Section
+                    _buildCorrectionExamples(category),
                     const SizedBox(height: 80), // Space for bottom bar
                   ]),
                 ),
@@ -631,6 +636,17 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     return CategorySpeechDictionary(
       dictionary: category.speechDictionary,
       onChanged: controller.updateSpeechDictionary,
+    );
+  }
+
+  Widget _buildCorrectionExamples(CategoryDefinition category) {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return CategoryCorrectionExamples(
+      examples: category.correctionExamples,
+      onDeleteAt: controller.deleteCorrectionExampleAt,
     );
   }
 

@@ -152,6 +152,9 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
 
   @override
   CategoryIcon? get icon => null;
+
+  @override
+  List<ChecklistCorrectionExample>? get correctionExamples => null;
 }
 
 void main() {

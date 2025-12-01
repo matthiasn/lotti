@@ -16,6 +16,20 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 
+/// Maximum number of correction examples to inject into prompts.
+/// Examples beyond this limit are not injected (but remain stored for future use).
+const int _kMaxCorrectionExamples = 500;
+
+/// Template for the correction examples prompt injection.
+/// The {examples} placeholder will be replaced with the actual examples.
+const String _kCorrectionExamplesPromptTemplate = '''
+USER-PROVIDED CORRECTION EXAMPLES:
+The user has manually corrected these checklist item titles in the past.
+When creating or updating items, apply these corrections when you see matching patterns.
+
+{examples}
+''';
+
 /// Template for the speech dictionary prompt injection.
 /// The {terms} placeholder will be replaced with the actual dictionary terms.
 const String _kSpeechDictionaryPromptTemplate = '''
@@ -245,6 +259,25 @@ class PromptBuilderHelper {
         dictionaryText = '';
       }
       prompt = prompt.replaceAll('{{speech_dictionary}}', dictionaryText);
+    }
+
+    // Inject correction examples if requested (checklist updates + audio transcription)
+    if (prompt.contains('{{correction_examples}}') &&
+        (promptConfig.aiResponseType == AiResponseType.checklistUpdates ||
+            promptConfig.aiResponseType == AiResponseType.audioTranscription)) {
+      String examplesText;
+      try {
+        examplesText = await _buildCorrectionExamplesPromptText(entity);
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'correction_examples',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        examplesText = '';
+      }
+      prompt = prompt.replaceAll('{{correction_examples}}', examplesText);
     }
 
     return prompt;
@@ -577,6 +610,96 @@ class PromptBuilderHelper {
 
     return _kSpeechDictionaryPromptTemplate.replaceAll(
         '{terms}', '[$termsJson]');
+  }
+
+  /// Build correction examples prompt text for a given entity.
+  /// Returns formatted text with examples from the task's category,
+  /// or empty string if no examples are available.
+  ///
+  /// INTENTIONAL: Uses cache-only lookup (no repository fallback) matching
+  /// the speech dictionary pattern. If cache is not populated (cold start, tests),
+  /// injection returns empty. Tests must stub EntitiesCacheService registration.
+  Future<String> _buildCorrectionExamplesPromptText(
+      JournalEntity entity) async {
+    // Get the task (directly or via linked entity)
+    final task = entity is Task ? entity : await _findLinkedTask(entity);
+    if (task == null) {
+      developer.log(
+        'Correction examples: no task found for entity ${entity.id}',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the category ID from the task
+    final categoryId = task.meta.categoryId;
+    if (categoryId == null) {
+      developer.log(
+        'Correction examples: task ${task.id} has no category',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the category from cache service (INTENTIONAL: no repo fallback)
+    CategoryDefinition? category;
+    try {
+      if (getIt.isRegistered<EntitiesCacheService>()) {
+        final cache = getIt<EntitiesCacheService>();
+        category = cache.getCategoryById(categoryId);
+      }
+    } catch (e) {
+      developer.log(
+        'Correction examples: error getting category $categoryId: $e',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    if (category == null) {
+      developer.log(
+        'Correction examples: category $categoryId not found in cache',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the correction examples
+    final examples = category.correctionExamples;
+    if (examples == null || examples.isEmpty) {
+      developer.log(
+        'Correction examples: category "${category.name}" has no examples',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Sort by capturedAt descending (most recent first) and cap at limit
+    final sortedExamples = [...examples]..sort((a, b) {
+        final aTime = a.capturedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.capturedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime); // Descending (most recent first)
+      });
+    final cappedExamples =
+        sortedExamples.take(_kMaxCorrectionExamples).toList();
+
+    developer.log(
+      'Correction examples: injecting ${cappedExamples.length} examples '
+      '(of ${examples.length} total) from category "${category.name}"',
+      name: 'PromptBuilderHelper',
+    );
+
+    // Format examples as "before" -> "after" pairs
+    final formattedExamples = cappedExamples.map((e) {
+      final escapedBefore = e.before.replaceAll('"', r'\"');
+      final escapedAfter = e.after.replaceAll('"', r'\"');
+      return '- "$escapedBefore" → "$escapedAfter"';
+    }).join('\n');
+
+    return _kCorrectionExamplesPromptTemplate.replaceAll(
+      '{examples}',
+      formattedExamples,
+    );
   }
 
   String _resolveEntryText(JournalEntity entry) {
