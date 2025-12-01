@@ -186,3 +186,207 @@ class TestGeminiClient:
                 temperature=0.5,
                 max_output_tokens=100,
             )
+
+    # ==================== Streaming Tests ====================
+
+    @pytest.mark.asyncio
+    async def test_generate_completion_stream_success(self, gemini_client):
+        """Test successful streaming completion with multiple chunks"""
+        messages = [ChatMessage(role="user", content="Hello")]
+
+        # Create mock chunks that simulate streaming response
+        mock_chunk1 = Mock()
+        mock_chunk1.text = "Hello"
+        mock_chunk1.usage_metadata = None
+
+        mock_chunk2 = Mock()
+        mock_chunk2.text = " there"
+        mock_chunk2.usage_metadata = None
+
+        mock_chunk3 = Mock()
+        mock_chunk3.text = "!"
+        mock_chunk3.usage_metadata = Mock(
+            prompt_token_count=5,
+            candidates_token_count=3,
+            total_token_count=8,
+        )
+
+        # Mock the streaming response as an iterable
+        mock_stream = [mock_chunk1, mock_chunk2, mock_chunk3]
+
+        mock_model = Mock()
+        mock_model.generate_content = Mock(return_value=iter(mock_stream))
+
+        with patch("google.generativeai.GenerativeModel", return_value=mock_model):
+            chunks = []
+            async for chunk in gemini_client.generate_completion_stream(
+                messages=messages,
+                model="gemini-pro",
+                temperature=0.7,
+            ):
+                chunks.append(chunk)
+
+        # First chunk should have role
+        assert chunks[0]["choices"][0]["delta"]["role"] == "assistant"
+
+        # Content chunks (chunks 1-3 are the text chunks)
+        content_chunks = [c for c in chunks if "content" in c["choices"][0]["delta"]]
+        assert len(content_chunks) == 3
+        assert content_chunks[0]["choices"][0]["delta"]["content"] == "Hello"
+        assert content_chunks[1]["choices"][0]["delta"]["content"] == " there"
+        assert content_chunks[2]["choices"][0]["delta"]["content"] == "!"
+
+        # Final chunk should have finish_reason and usage
+        final_chunk = chunks[-1]
+        assert final_chunk["choices"][0]["finish_reason"] == "stop"
+        assert final_chunk["usage"]["prompt_tokens"] == 5
+        assert final_chunk["usage"]["completion_tokens"] == 3
+        assert final_chunk["usage"]["total_tokens"] == 8
+
+    @pytest.mark.asyncio
+    async def test_generate_completion_stream_empty(self, gemini_client):
+        """Test streaming with no chunks returns empty content but no exception"""
+        messages = [ChatMessage(role="user", content="Hello")]
+
+        # Empty stream - no chunks
+        mock_stream = []
+
+        mock_model = Mock()
+        mock_model.generate_content = Mock(return_value=iter(mock_stream))
+
+        with patch("google.generativeai.GenerativeModel", return_value=mock_model):
+            chunks = []
+            async for chunk in gemini_client.generate_completion_stream(
+                messages=messages,
+                model="gemini-pro",
+            ):
+                chunks.append(chunk)
+
+        # Should still get first chunk (role) and final chunk (finish_reason)
+        assert len(chunks) == 2
+        assert chunks[0]["choices"][0]["delta"]["role"] == "assistant"
+        assert chunks[-1]["choices"][0]["finish_reason"] == "stop"
+        # Usage should be zeros since no chunks had metadata
+        assert chunks[-1]["usage"]["prompt_tokens"] == 0
+        assert chunks[-1]["usage"]["completion_tokens"] == 0
+
+    @pytest.mark.asyncio
+    async def test_generate_completion_stream_api_error(self, gemini_client):
+        """Test streaming when Gemini API raises an error"""
+        messages = [ChatMessage(role="user", content="Hello")]
+
+        mock_model = Mock()
+        mock_model.generate_content = Mock(side_effect=Exception("Stream API Error"))
+
+        with patch("google.generativeai.GenerativeModel", return_value=mock_model):
+            with pytest.raises(AIProviderException, match="Gemini API error"):
+                async for _ in gemini_client.generate_completion_stream(
+                    messages=messages,
+                    model="gemini-pro",
+                ):
+                    pass
+
+    @pytest.mark.asyncio
+    async def test_generate_completion_stream_error_mid_stream(self, gemini_client):
+        """Test streaming when error occurs mid-stream during iteration"""
+        messages = [ChatMessage(role="user", content="Hello")]
+
+        # Create an iterator that raises an exception after yielding some chunks
+        def error_iterator():
+            mock_chunk = Mock()
+            mock_chunk.text = "Hello"
+            mock_chunk.usage_metadata = None
+            yield mock_chunk
+            raise Exception("Mid-stream error")
+
+        mock_model = Mock()
+        mock_model.generate_content = Mock(return_value=error_iterator())
+
+        with patch("google.generativeai.GenerativeModel", return_value=mock_model):
+            with pytest.raises(AIProviderException, match="Gemini API error"):
+                chunks = []
+                async for chunk in gemini_client.generate_completion_stream(
+                    messages=messages,
+                    model="gemini-pro",
+                ):
+                    chunks.append(chunk)
+
+    @pytest.mark.asyncio
+    async def test_generate_completion_stream_with_max_tokens(self, gemini_client):
+        """Test streaming completion with temperature and max_tokens parameters"""
+        messages = [ChatMessage(role="user", content="Hello")]
+
+        mock_chunk = Mock()
+        mock_chunk.text = "Response"
+        mock_chunk.usage_metadata = Mock(
+            prompt_token_count=5,
+            candidates_token_count=1,
+            total_token_count=6,
+        )
+        mock_stream = [mock_chunk]
+
+        mock_model = Mock()
+        mock_model.generate_content = Mock(return_value=iter(mock_stream))
+
+        with patch("google.generativeai.GenerativeModel", return_value=mock_model), patch(
+            "google.generativeai.GenerationConfig"
+        ) as mock_config:
+            async for _ in gemini_client.generate_completion_stream(
+                messages=messages,
+                model="gemini-pro",
+                temperature=0.3,
+                max_tokens=50,
+            ):
+                pass
+
+            # Verify GenerationConfig was called with correct parameters
+            mock_config.assert_called_once_with(
+                temperature=0.3,
+                max_output_tokens=50,
+            )
+
+    @pytest.mark.asyncio
+    async def test_generate_completion_stream_with_history(self, gemini_client):
+        """Test streaming with conversation history uses start_chat"""
+        messages = [
+            ChatMessage(role="user", content="Hi"),
+            ChatMessage(role="assistant", content="Hello!"),
+            ChatMessage(role="user", content="How are you?"),
+        ]
+
+        mock_chunk = Mock()
+        mock_chunk.text = "I'm doing well!"
+        mock_chunk.usage_metadata = Mock(
+            prompt_token_count=20,
+            candidates_token_count=5,
+            total_token_count=25,
+        )
+        mock_stream = [mock_chunk]
+
+        mock_chat = Mock()
+        mock_chat.send_message = Mock(return_value=iter(mock_stream))
+
+        mock_model = Mock()
+        mock_model.start_chat = Mock(return_value=mock_chat)
+
+        with patch("google.generativeai.GenerativeModel", return_value=mock_model):
+            chunks = []
+            async for chunk in gemini_client.generate_completion_stream(
+                messages=messages,
+                model="gemini-pro",
+            ):
+                chunks.append(chunk)
+
+        # Verify start_chat was called with history
+        mock_model.start_chat.assert_called_once()
+        call_kwargs = mock_model.start_chat.call_args
+        history = call_kwargs[1]["history"]
+        assert len(history) == 2
+        assert history[0]["role"] == "user"
+        assert history[0]["parts"] == ["Hi"]
+        assert history[1]["role"] == "model"
+        assert history[1]["parts"] == ["Hello!"]
+
+        # Verify send_message was called with the last user message
+        mock_chat.send_message.assert_called_once()
+        assert mock_chat.send_message.call_args[0][0] == "How are you?"
