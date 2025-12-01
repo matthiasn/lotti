@@ -200,14 +200,29 @@ class CategoryDetailsController
     state = state.copyWith(isSaving: true, errorMessage: null);
 
     try {
-      // Fetch the latest category to preserve correction examples that may have
-      // been captured in the background while the user was editing other fields.
-      // This prevents data loss when the user has unsaved changes and background
-      // correction capture updates the category in parallel.
+      // Merge correction examples: preserve background additions while respecting
+      // user's explicit deletions. This prevents data loss in both directions:
+      // - Background captures are not lost when user saves other changes
+      // - User's deletions are not overwritten by background captures
       final latestCategory = await _repository.getCategoryById(_categoryId);
-      if (latestCategory != null) {
+      if (latestCategory != null && _originalCategory != null) {
+        final originalExamples = _originalCategory!.correctionExamples ?? [];
+        final pendingExamples = _pendingCategory!.correctionExamples ?? [];
+        final latestExamples = latestCategory.correctionExamples ?? [];
+
+        // Identify examples deleted by the user in the UI
+        final originalSet = originalExamples.toSet();
+        final pendingSet = pendingExamples.toSet();
+        final deletedByUser = originalSet.difference(pendingSet);
+
+        // Start with the latest examples from DB (includes background additions)
+        // and remove the ones the user explicitly deleted
+        final finalExamples = latestExamples
+            .where((ex) => !deletedByUser.contains(ex))
+            .toList();
+
         _pendingCategory = _pendingCategory!.copyWith(
-          correctionExamples: latestCategory.correctionExamples,
+          correctionExamples: finalExamples.isEmpty ? null : finalExamples,
         );
       }
 

@@ -935,6 +935,110 @@ void main() {
       subscription.close();
     });
 
+    test('saveChanges preserves user deletions while adding background captures',
+        () async {
+      const testId = 'merge-deletions-test';
+      final completer = Completer<void>();
+
+      // Original category has 2 examples
+      final example1 = ChecklistCorrectionExample(
+        before: 'example1',
+        after: 'EXAMPLE1',
+        capturedAt: DateTime(2025),
+      );
+      final example2 = ChecklistCorrectionExample(
+        before: 'example2',
+        after: 'EXAMPLE2',
+        capturedAt: DateTime(2025),
+      );
+      final originalCategory = CategoryTestUtils.createTestCategory(
+        id: testId,
+        correctionExamples: [example1, example2],
+      );
+
+      // Background capture adds example3 while user was editing
+      final example3 = ChecklistCorrectionExample(
+        before: 'background',
+        after: 'BACKGROUND',
+        capturedAt: DateTime(2025),
+      );
+      final remoteCategory = originalCategory.copyWith(
+        correctionExamples: [example1, example2, example3],
+      );
+
+      when(() => mockRepository.watchCategory(testId))
+          .thenAnswer((_) => Stream.value(originalCategory));
+      when(() => mockRepository.getCategoryById(testId))
+          .thenAnswer((_) async => remoteCategory);
+      when(() => mockRepository.updateCategory(any()))
+          .thenAnswer((_) async => remoteCategory);
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // User deletes example1 (index 0)
+      controller.deleteCorrectionExampleAt(0);
+
+      // Verify user now sees only example2
+      final stateAfterDelete = container.read(
+        categoryDetailsControllerProvider(testId),
+      );
+      expect(stateAfterDelete.category?.correctionExamples, hasLength(1));
+      expect(
+        stateAfterDelete.category?.correctionExamples!.first.before,
+        equals('example2'),
+      );
+
+      // Save should merge: keep example2, add example3, but NOT restore example1
+      await controller.saveChanges();
+
+      final captured = verify(() => mockRepository.updateCategory(captureAny()))
+          .captured
+          .single as CategoryDefinition;
+
+      // Should have example2 (kept) and example3 (background addition)
+      // but NOT example1 (user deleted it)
+      expect(captured.correctionExamples, hasLength(2));
+      expect(
+        captured.correctionExamples!.any((e) => e.before == 'example1'),
+        isFalse,
+        reason: 'User deletion of example1 should be preserved',
+      );
+      expect(
+        captured.correctionExamples!.any((e) => e.before == 'example2'),
+        isTrue,
+        reason: 'example2 should be kept',
+      );
+      expect(
+        captured.correctionExamples!.any((e) => e.before == 'background'),
+        isTrue,
+        reason: 'Background addition should be included',
+      );
+
+      subscription.close();
+    });
+
     test(
         'deleteCorrectionExampleAt removes example at index from pending category',
         () async {
