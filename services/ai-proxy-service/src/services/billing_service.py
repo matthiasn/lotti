@@ -6,8 +6,9 @@ import os
 import httpx
 
 from ..core.constants import (
-    GEMINI_PRO_INPUT_PRICE_PER_1K,
-    GEMINI_PRO_OUTPUT_PRICE_PER_1K,
+    DEFAULT_MODEL_PRICING,
+    MODEL_MAPPINGS,
+    MODEL_PRICING,
 )
 from ..core.exceptions import AIProviderException
 from ..core.interfaces import IBillingService
@@ -30,6 +31,25 @@ class BillingService(IBillingService):
         else:
             logger.info("ℹ️  Phase 2 billing disabled - Using Phase 1 (logging only)")
 
+    def _get_pricing_for_model(self, model: str) -> dict:
+        """
+        Get pricing for a specific model
+
+        Args:
+            model: Model name (can be OpenAI-style or Gemini model name)
+
+        Returns:
+            Dict with input_price_per_1k and output_price_per_1k
+        """
+        # First, map the model name if it's an OpenAI-style name
+        mapped_model = MODEL_MAPPINGS.get(model, model)
+
+        # Look up pricing for the mapped model
+        pricing = MODEL_PRICING.get(mapped_model, DEFAULT_MODEL_PRICING)
+
+        logger.debug(f"Pricing for model '{model}' (mapped to '{mapped_model}'): {pricing}")
+        return pricing
+
     def calculate_cost(
         self,
         model: str,
@@ -40,21 +60,22 @@ class BillingService(IBillingService):
         Calculate the cost of an AI request
 
         Args:
-            model: Model used (currently using Gemini Pro pricing for all)
+            model: Model used
             prompt_tokens: Number of prompt tokens
             completion_tokens: Number of completion tokens
 
         Returns:
             Cost in USD
         """
-        # Calculate cost based on Gemini Pro pricing
-        # (In future, we could have different pricing for different models)
-        input_cost = (prompt_tokens / 1000) * GEMINI_PRO_INPUT_PRICE_PER_1K
-        output_cost = (completion_tokens / 1000) * GEMINI_PRO_OUTPUT_PRICE_PER_1K
+        # Get model-specific pricing
+        pricing = self._get_pricing_for_model(model)
+
+        input_cost = (prompt_tokens / 1000) * pricing["input_price_per_1k"]
+        output_cost = (completion_tokens / 1000) * pricing["output_price_per_1k"]
         total_cost = input_cost + output_cost
 
         logger.debug(
-            f"Cost calculation: {prompt_tokens} input tokens (${input_cost:.6f}) + "
+            f"Cost calculation for {model}: {prompt_tokens} input tokens (${input_cost:.6f}) + "
             f"{completion_tokens} output tokens (${output_cost:.6f}) = ${total_cost:.6f}"
         )
 
