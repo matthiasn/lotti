@@ -1012,20 +1012,9 @@ class UnifiedAiInferenceRepository {
               name: 'UnifiedAiInferenceRepository',
             );
 
-            // Trigger smart task summary if audio is linked to a task
-            final linkedTask = await _getTaskForEntity(entity);
-            if (linkedTask != null) {
-              developer.log(
-                'Triggering smart task summary for task ${linkedTask.id} after audio transcription',
-                name: 'UnifiedAiInferenceRepository',
-              );
-              await ref
-                  .read(smartTaskSummaryTriggerProvider)
-                  .triggerTaskSummary(
-                    taskId: linkedTask.id,
-                    categoryId: linkedTask.meta.categoryId,
-                  );
-            }
+            // Note: Task summary for audio is handled by AutomaticPromptTrigger
+            // which respects the user's enableTaskSummary checkbox preference.
+            // See lib/features/speech/helpers/automatic_prompt_trigger.dart
           } catch (e) {
             developer.log(
               'Failed to update audio transcription for audio ${entity.id}',

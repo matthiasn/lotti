@@ -554,7 +554,9 @@ class EntryController extends _$EntryController {
           final trigger = ref.read(smartTaskSummaryTriggerProvider);
           await trigger.triggerTaskSummary(
             taskId: targetEntity.id,
-            categoryId: entry.meta.categoryId,
+            // Use the task's category, not the entry's - the task's category
+            // determines if automatic summaries are enabled
+            categoryId: targetEntity.meta.categoryId,
           );
           // Only trigger for first linked task (avoid multiple triggers)
           return;

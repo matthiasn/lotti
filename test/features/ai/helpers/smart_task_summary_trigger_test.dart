@@ -636,6 +636,90 @@ void main() {
 
       testContainer.dispose();
     });
+
+    test(
+        'multi-source dedupe: second trigger defers when first inference is running',
+        () async {
+      // This test simulates two different sources (e.g., image analysis + text save)
+      // both trying to create the first task summary. When an inference is already
+      // running, subsequent triggers should defer to 5-min countdown.
+      const categoryId = 'test-category';
+      const taskId = 'test-task';
+      const promptId = 'summary-prompt';
+
+      final category = createTestCategory(
+        id: categoryId,
+        name: 'Test Category',
+        automaticPrompts: {
+          AiResponseType.taskSummary: [promptId],
+        },
+      );
+
+      when(() => mockCategoryRepository.getCategoryById(categoryId))
+          .thenAnswer((_) async => category);
+
+      when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]))
+          .thenAnswer((_) async => createTestPrompt(id: promptId));
+
+      // Scenario: Inference IS already running (simulates first trigger completed)
+      // Both second and third triggers should defer to refresh
+      var refreshCallCount = 0;
+
+      final activeInference = ActiveInferenceData(
+        entityId: taskId,
+        promptId: promptId,
+        aiResponseType: AiResponseType.taskSummary,
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          promptCapabilityFilterProvider
+              .overrideWithValue(mockPromptCapabilityFilter),
+          directTaskSummaryRefreshControllerProvider.overrideWith(
+            () => _TrackingRefreshController(
+              onRequestRefresh: (_) => refreshCallCount++,
+            ),
+          ),
+          // No summary exists yet
+          latestSummaryControllerProvider(
+            id: taskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => _MockLatestSummaryController(null)),
+          // Inference IS running (simulates first trigger already started it)
+          activeInferenceControllerProvider(
+            entityId: taskId,
+            aiResponseType: AiResponseType.taskSummary,
+          ).overrideWith(() => _MockActiveInferenceController(activeInference)),
+        ],
+      );
+
+      final trigger = testContainer.read(smartTaskSummaryTriggerProvider);
+
+      // Second trigger (simulates text save) - inference already running
+      await trigger.triggerTaskSummary(
+        taskId: taskId,
+        categoryId: categoryId,
+      );
+
+      // Third trigger (simulates another event) - still running
+      await trigger.triggerTaskSummary(
+        taskId: taskId,
+        categoryId: categoryId,
+      );
+
+      // Assert: BOTH deferred to refresh (no new inference started)
+      expect(refreshCallCount, equals(2));
+
+      // Verify the log messages indicate deferred behavior
+      verify(() => mockLoggingService.captureEvent(
+            'Task $taskId has inference running, scheduling 5-min update',
+            domain: 'smart_task_summary_trigger',
+            subDomain: 'triggerTaskSummary',
+          )).called(2);
+
+      testContainer.dispose();
+    });
   });
 }
 

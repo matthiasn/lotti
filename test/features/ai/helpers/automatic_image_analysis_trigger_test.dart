@@ -464,5 +464,70 @@ void main() {
 
       testContainer.dispose();
     });
+
+    test('callback invocation triggers analysis with correct parameters',
+        () async {
+      // This test verifies the integration between image import and analysis trigger.
+      // When createImageEntry's onCreated callback is invoked, it should trigger
+      // automatic image analysis with the correct parameters.
+
+      const categoryId = 'test-category';
+      const imageEntryId = 'test-image';
+      const linkedTaskId = 'test-task';
+      const promptId = 'image-analysis-prompt';
+
+      final category = createTestCategory(
+        id: categoryId,
+        name: 'Test Category',
+        automaticPrompts: {
+          AiResponseType.imageAnalysis: [promptId],
+        },
+      );
+
+      when(() => mockCategoryRepository.getCategoryById(categoryId))
+          .thenAnswer((_) async => category);
+
+      when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]))
+          .thenAnswer((_) async => createTestPrompt(id: promptId));
+
+      // Track the parameters passed to inference
+      String? capturedEntityId;
+      String? capturedPromptId;
+      String? capturedLinkedId;
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+          promptCapabilityFilterProvider
+              .overrideWithValue(mockPromptCapabilityFilter),
+          triggerNewInferenceProvider(
+            entityId: imageEntryId,
+            promptId: promptId,
+            linkedEntityId: linkedTaskId,
+          ).overrideWith((ref) async {
+            capturedEntityId = imageEntryId;
+            capturedPromptId = promptId;
+            capturedLinkedId = linkedTaskId;
+          }),
+        ],
+      );
+
+      final trigger = testContainer.read(automaticImageAnalysisTriggerProvider);
+
+      // Simulate what happens when createImageEntry's onCreated callback is invoked
+      // This is the same pattern used in _createAnalysisCallback in image_import.dart
+      await trigger.triggerAutomaticImageAnalysis(
+        imageEntryId: imageEntryId,
+        categoryId: categoryId,
+        linkedTaskId: linkedTaskId,
+      );
+
+      // Verify the inference was called with correct parameters
+      expect(capturedEntityId, equals(imageEntryId));
+      expect(capturedPromptId, equals(promptId));
+      expect(capturedLinkedId, equals(linkedTaskId));
+
+      testContainer.dispose();
+    });
   });
 }

@@ -2316,15 +2316,22 @@ void main() {
     });
 
     test(
-        'triggers smart task summary when saving text entry linked to a task with non-empty content',
+        'triggers smart task summary using task category (not entry category) when saving linked text entry',
         () async {
       final localMockJournalRepository = MockJournalRepository();
 
-      // Text entry linked to a task
+      // Task with its own category
+      const taskCategoryId = 'task-category';
+      final taskWithCategory = testTaskEntry.copyWith(
+        meta: testTaskEntry.meta.copyWith(categoryId: taskCategoryId),
+      );
+
+      // Text entry linked to a task - with DIFFERENT category
+      const entryCategoryId = 'entry-category';
       final textEntryLinkedToTask = testTextEntry.copyWith(
         meta: testTextEntry.meta.copyWith(
           id: 'text-linked-to-task',
-          categoryId: 'test-category',
+          categoryId: entryCategoryId,
         ),
         entryText: const EntryText(plainText: 'Some meaningful content'),
       );
@@ -2333,7 +2340,7 @@ void main() {
       final linkToTask = EntryLink.basic(
         id: 'link-1',
         fromId: textEntryLinkedToTask.id,
-        toId: testTaskEntry.id,
+        toId: taskWithCategory.id,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
         vectorClock: null,
@@ -2348,8 +2355,9 @@ void main() {
       ).thenAnswer((_) async => [linkToTask]);
 
       when(
-        () => localMockJournalRepository.getJournalEntityById(testTaskEntry.id),
-      ).thenAnswer((_) async => testTaskEntry);
+        () => localMockJournalRepository
+            .getJournalEntityById(taskWithCategory.id),
+      ).thenAnswer((_) async => taskWithCategory);
 
       final container = makeProviderContainer(
         overrides: [
@@ -2381,12 +2389,21 @@ void main() {
       // Allow async fire-and-forget to complete
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
+      // Verify we use the TASK's category, not the entry's
       verify(
         () => mockSmartTrigger.triggerTaskSummary(
-          taskId: testTaskEntry.id,
-          categoryId: textEntryLinkedToTask.meta.categoryId,
+          taskId: taskWithCategory.id,
+          categoryId: taskCategoryId, // Task's category, not entry's
         ),
       ).called(1);
+
+      // Ensure we did NOT use the entry's category
+      verifyNever(
+        () => mockSmartTrigger.triggerTaskSummary(
+          taskId: any(named: 'taskId'),
+          categoryId: entryCategoryId,
+        ),
+      );
     });
 
     test('does not trigger when saving text entry with empty content',

@@ -12,8 +12,9 @@
 
 ### Phase 2: Smart Task Summary Triggering (Core)
 - [x] 2.1 Create `SmartTaskSummaryTrigger` helper class
-- [x] 2.2 Add triggers in `UnifiedAiInferenceRepository._handlePostProcessing()` for image/audio completion
-- [x] 2.3 Add trigger on manual text save in entry_controller
+- [x] 2.2 Add trigger in `UnifiedAiInferenceRepository._handlePostProcessing()` for image analysis completion
+  - Note: Audio transcription trigger NOT added here (deferred to Phase 4) - `AutomaticPromptTrigger` handles audio with checkbox preference
+- [x] 2.3 Add trigger on manual text save in entry_controller (uses linked task's category)
 
 ### Phase 3: Tests
 - [x] 3.1 Unit tests for AutomaticImageAnalysisTrigger (10 tests, 100% coverage)
@@ -70,9 +71,12 @@ The current UX for triggering task summaries is fragmented and confusing:
 - Audio transcription completion - only if checkbox was manually enabled
 - Manual text edits on linked entries - NOT triggered
 
-### Proposed Simplified UX
+### Proposed Simplified UX (Phase 4 - Deferred)
 
-Remove manual checkbox for task summary entirely. Use a simple rule:
+**Note:** The checkbox removal is deferred to Phase 4. Currently, audio still uses `AutomaticPromptTrigger`
+with the checkbox preference. Image analysis and manual text saves use the new `SmartTaskSummaryTrigger`.
+
+When Phase 4 is complete, the UX will use a simple rule:
 
 **Task Summary Trigger Logic:**
 1. If task **already has a summary**: schedule 5-min update (existing countdown mechanism)
@@ -91,11 +95,14 @@ Remove manual checkbox for task summary entirely. Use a simple rule:
 
 ## Goals
 
-1. Automatically trigger image analysis when images are added to task-linked entries
-2. Simplify task summary triggering - remove manual checkbox from audio modal
-3. Create first task summary immediately when meaningful content is added (if auto-summary enabled)
-4. Update existing summaries via 5-minute countdown (existing mechanism)
-5. Avoid infinite loops (AI-generated content should NOT trigger more AI)
+1. ✅ Automatically trigger image analysis when images are added to task-linked entries
+2. ⏳ Simplify task summary triggering - remove manual checkbox from audio modal (deferred to Phase 4)
+3. ✅ Create first task summary immediately when meaningful content is added (if auto-summary enabled)
+   - ✅ Image analysis completion triggers SmartTaskSummaryTrigger
+   - ⏳ Audio transcription still uses checkbox via AutomaticPromptTrigger (Phase 4)
+   - ✅ Manual text save triggers SmartTaskSummaryTrigger (uses task's category)
+4. ✅ Update existing summaries via 5-minute countdown (existing mechanism)
+5. ✅ Avoid infinite loops (AI-generated content does NOT trigger more AI)
 
 ## Key Decisions
 
@@ -104,7 +111,7 @@ Remove manual checkbox for task summary entirely. Use a simple rule:
 | **Image creation hook** | Callback Pattern | Simple, direct, already used elsewhere in codebase |
 | **Checklist updates checkbox** | Keep it | Users retain control over auto-checklist creation |
 | **Task ID lookup** | UI context + DB fallback | Reliability: try fast path first, ensure correctness |
-| **Checkbox removal rollout** | Immediate | Clean implementation, no deprecated code paths |
+| **Task summary checkbox removal** | Deferred (Phase 4) | Audio still uses `AutomaticPromptTrigger` with checkbox; full removal in separate PR |
 
 ## Related Implementation Plans
 
