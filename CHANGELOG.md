@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Automatic Image Analysis: Images added to tasks are now analyzed automatically
+  - When dropping, pasting, or importing images to a task with image analysis enabled, analysis runs in background
+  - Uses category's `automaticPrompts[imageAnalysis]` configuration
+  - Fire-and-forget pattern ensures image import is never blocked
+  - Platform-aware: automatically selects available prompts for current platform
+  - New `AutomaticImageAnalysisTrigger` helper class with `onCreated` callback in `JournalRepository.createImageEntry()`
+  - Tests: 10 unit tests with 100% coverage
+  - See: `docs/implementation_plans/2025-12-01_automatic_image_analysis_and_task_summary_triggers.md`
+- Smart Task Summary Triggers: Simplified and unified task summary creation
+  - First summary created immediately when meaningful content is added (if auto-summary enabled)
+  - Subsequent updates use existing 5-minute countdown mechanism
+  - Triggers on: image analysis completion, audio transcription completion, manual text save (non-empty)
+  - Avoids "lame" first summaries by requiring meaningful content before triggering
+  - New `SmartTaskSummaryTrigger` helper class with dual-path logic
+  - Integrated into `UnifiedAiInferenceRepository._handlePostProcessing()` and `EntryController.save()`
+  - Tests: 9 unit tests with 100% coverage + 5 entry controller tests
+  - See: `docs/implementation_plans/2025-12-01_automatic_image_analysis_and_task_summary_triggers.md`
 - Checklist Correction Examples: Learn from manual corrections to improve AI accuracy
   - When users manually correct a checklist item title, the before/after pair is captured
   - Examples are stored per-category and injected into AI prompts via `{{correction_examples}}`

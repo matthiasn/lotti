@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -49,6 +50,7 @@ class ImagePasteController extends _$ImagePasteController {
     String fileExtension,
   ) {
     final completer = Completer<void>();
+    final analysisTrigger = ref.read(automaticImageAnalysisTriggerProvider);
     item.getFile(format, (file) async {
       try {
         await importPastedImages(
@@ -56,6 +58,7 @@ class ImagePasteController extends _$ImagePasteController {
           fileExtension: fileExtension,
           linkedId: linkedFromId,
           categoryId: categoryId,
+          analysisTrigger: analysisTrigger,
         );
         completer.complete();
       } catch (e, st) {

@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
@@ -19,6 +20,25 @@ import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
+
+/// Creates an onCreated callback for automatic image analysis.
+///
+/// Returns null if [analysisTrigger] is null, otherwise returns a callback
+/// that triggers automatic image analysis in a fire-and-forget manner.
+void Function(JournalEntity)? _createAnalysisCallback(
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+  String? categoryId,
+  String? linkedId,
+) {
+  if (analysisTrigger == null) return null;
+  return (entity) => unawaited(
+        analysisTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: entity.id,
+          categoryId: categoryId,
+          linkedTaskId: linkedId,
+        ),
+      );
+}
 
 /// Constants for media import operations
 class MediaImportConstants {
@@ -45,10 +65,16 @@ class MediaImportConstants {
   static const String loggingDomain = 'media_import';
 }
 
+/// Imports images from the device's photo library.
+///
+/// Opens a photo picker UI and creates journal entries for selected images.
+/// If [analysisTrigger] is provided, triggers automatic image analysis
+/// for each imported image (fire-and-forget, doesn't block import).
 Future<void> importImageAssets(
   BuildContext context, {
   String? linkedId,
   String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
   final ps = await PhotoManager.requestPermissionExtend();
   if (!ps.isAuth) {
@@ -126,22 +152,27 @@ Future<void> importImageAssets(
           imageData,
           linkedId: linkedId,
           categoryId: categoryId,
+          onCreated:
+              _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
         );
       }
     }
   }
 }
 
-/// Imports dropped image files and creates journal entries
+/// Imports dropped image files and creates journal entries.
 ///
 /// Validates file extensions and size limits before importing.
 /// Only processes files with supported image extensions.
+/// If [analysisTrigger] is provided, triggers automatic image analysis
+/// for each imported image (fire-and-forget, doesn't block import).
 ///
 /// Throws exceptions on file system errors which should be handled by caller.
 Future<void> importDroppedImages({
   required DropDoneDetails data,
   String? linkedId,
   String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
   for (final file in data.files) {
     try {
@@ -187,6 +218,8 @@ Future<void> importDroppedImages({
         imageData,
         linkedId: linkedId,
         categoryId: categoryId,
+        onCreated:
+            _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
       );
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -402,14 +435,17 @@ Future<Geolocation?> extractGpsCoordinates(
   }
 }
 
-/// Imports pasted image data from clipboard and creates journal entry
+/// Imports pasted image data from clipboard and creates journal entry.
 ///
 /// Validates file size before importing.
+/// If [analysisTrigger] is provided, triggers automatic image analysis
+/// for the imported image (fire-and-forget, doesn't block import).
 Future<void> importPastedImages({
   required Uint8List data,
   required String fileExtension,
   String? linkedId,
   String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
   // Validate file size
   if (data.length > MediaImportConstants.maxImageFileSizeBytes) {
@@ -448,17 +484,21 @@ Future<void> importPastedImages({
     imageData,
     linkedId: linkedId,
     categoryId: categoryId,
+    onCreated: _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
   );
 }
 
-/// Handles dropped files and routes them to appropriate import functions
+/// Handles dropped files and routes them to appropriate import functions.
 ///
 /// Examines file extensions and calls the correct import function based on
 /// file type. Supports both images and audio files.
+/// If [analysisTrigger] is provided, triggers automatic image analysis
+/// for each imported image (fire-and-forget, doesn't block import).
 Future<void> handleDroppedMedia({
   required DropDoneDetails data,
   required String linkedId,
   String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
   // Group files by type for efficient processing
   final hasImages = data.files.any((file) {
@@ -477,6 +517,7 @@ Future<void> handleDroppedMedia({
       data: data,
       linkedId: linkedId,
       categoryId: categoryId,
+      analysisTrigger: analysisTrigger,
     );
   }
 

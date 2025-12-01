@@ -19,7 +19,7 @@
       <li>Customizable dashboards and analytics</li>
     </ul>
     <p>
-      Coming December 1, 2025: A 10-part blog series with video walkthroughs exploring everything Lotti can do — from task management to AI-powered insights. Learn how to take control of your productivity while keeping your data private!
+      Coming in December 2025: A 10-part blog series with video walkthroughs exploring everything Lotti can do — from task management to AI-powered insights. Learn how to take control of your productivity while keeping your data private!
     </p>
   </description>
   <developer id="com.matthiasn">
@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.747" date="2025-12-01">
+      <description>
+        <p>Automatic Image Analysis: Drop, paste, or import images to a task and they're analyzed automatically. Smart Task Summaries: Your first task summary is created immediately when you add meaningful content (image analysis, audio transcription, or text). No more manual checkbox clicks—just work naturally and let the AI keep up.</p>
+      </description>
+    </release>
     <release version="0.9.746" date="2025-12-01">
       <description>
         <p>Checklist Correction Examples: The AI now learns from your manual corrections. When you fix a checklist item title (like "test flight" to "TestFlight"), Lotti remembers and uses these examples to improve future AI suggestions for both checklist updates and audio transcription.</p>

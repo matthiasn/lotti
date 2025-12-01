@@ -14,7 +14,7 @@ Lotti is now available on [Flathub](https://flathub.org/en/apps/com.matthiasn.lo
 
 ## Coming Soon: Deep Dive Series
 
-Starting **December 1, 2025**, join us for a **10-part blog series with video walkthroughs** exploring everything Lotti can do. From task management to AI-powered insights — learn how to take control of your productivity while keeping your data private.
+Coming in **December 2025**: a **10-part blog series with video walkthroughs** exploring everything Lotti can do. From task management to AI-powered insights — learn how to take control of your productivity while keeping your data private.
 
 ![AI Assistant](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.662+3261/tasks_category_summary.png)
 

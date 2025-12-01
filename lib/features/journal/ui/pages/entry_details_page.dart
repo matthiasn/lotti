@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -111,6 +112,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
           data: data,
           linkedId: item.meta.id,
           categoryId: item.meta.categoryId,
+          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
         );
       },
       child: Scaffold(

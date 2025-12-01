@@ -22,6 +22,7 @@ import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
+import 'package:lotti/features/ai/helpers/smart_task_summary_trigger.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -945,6 +946,21 @@ class UnifiedAiInferenceRepository {
               'Successfully updated image analysis for image ${entity.id}',
               name: 'UnifiedAiInferenceRepository',
             );
+
+            // Trigger smart task summary if image is linked to a task
+            final linkedTask = await _getTaskForEntity(entity);
+            if (linkedTask != null) {
+              developer.log(
+                'Triggering smart task summary for task ${linkedTask.id} after image analysis',
+                name: 'UnifiedAiInferenceRepository',
+              );
+              await ref
+                  .read(smartTaskSummaryTriggerProvider)
+                  .triggerTaskSummary(
+                    taskId: linkedTask.id,
+                    categoryId: linkedTask.meta.categoryId,
+                  );
+            }
           } catch (e) {
             developer.log(
               'Failed to update image analysis for image ${entity.id}',
@@ -995,6 +1011,10 @@ class UnifiedAiInferenceRepository {
               'Successfully updated audio transcription for audio ${entity.id}',
               name: 'UnifiedAiInferenceRepository',
             );
+
+            // Note: Task summary for audio is handled by AutomaticPromptTrigger
+            // which respects the user's enableTaskSummary checkbox preference.
+            // See lib/features/speech/helpers/automatic_prompt_trigger.dart
           } catch (e) {
             developer.log(
               'Failed to update audio transcription for audio ${entity.id}',
