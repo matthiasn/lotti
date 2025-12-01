@@ -533,6 +533,80 @@ Triggers new AI inference for task summary
 Task summary updates to reflect all completed items
 ```
 
+## Automatic Image Analysis Trigger
+
+When images are added to a task (via drag-and-drop, paste, or import), the system can automatically trigger image analysis if the task's category has image analysis prompts configured.
+
+### How It Works
+
+1. **Image Addition**: User adds an image to a task via any method
+2. **Callback Invocation**: `JournalRepository.createImageEntry()` invokes `onCreated` callback
+3. **Category Check**: `AutomaticImageAnalysisTrigger` checks if category has `automaticPrompts[imageAnalysis]`
+4. **Platform Filtering**: `PromptCapabilityFilter.getFirstAvailablePrompt()` selects an available prompt
+5. **Fire-and-Forget**: Analysis runs in background via `unawaited()` - never blocks image import
+
+### Implementation
+
+- **`AutomaticImageAnalysisTrigger`**: Helper class in `lib/features/ai/helpers/automatic_image_analysis_trigger.dart`
+- **`JournalRepository.createImageEntry()`**: Modified to accept `onCreated` callback
+- **Integration Points**: `importDroppedImages()`, `importPastedImages()`, `importImageAssets()`
+
+### Key Features
+
+- **Platform-aware**: Local-only models (Whisper, Ollama) filtered on mobile platforms
+- **Non-blocking**: Fire-and-forget pattern ensures image import is never delayed
+- **Linked context**: When image is linked to a task, `linkedTaskId` is passed for context-aware analysis
+
+## Smart Task Summary Triggers
+
+Unified task summary triggering with simplified UX - removes the need for manual checkbox management.
+
+### Trigger Logic
+
+| Task State | Category Config | Action |
+|------------|-----------------|--------|
+| Has existing summary | Any | Schedule 5-min countdown update |
+| No summary yet | Auto-summary enabled | Create first summary immediately |
+| No summary yet | Auto-summary disabled | Do nothing |
+
+### Valid Trigger Events
+
+These events trigger the smart task summary logic when linked to a task:
+
+1. **Image analysis completion** - After AI analyzes an image linked to the task
+2. **Audio transcription completion** - After AI transcribes audio linked to the task
+3. **Manual text save** - When user saves non-empty text in a linked entry
+
+### NOT a Trigger (Avoids "Lame" First Summaries)
+
+- Adding an empty text entry
+- Creating an image without analysis
+- Creating an audio without transcription
+
+### Implementation
+
+- **`SmartTaskSummaryTrigger`**: Helper class in `lib/features/ai/helpers/smart_task_summary_trigger.dart`
+- **Integration in `UnifiedAiInferenceRepository._handlePostProcessing()`**: Triggers after image/audio AI completion
+- **Integration in `EntryController.save()`**: Triggers on manual text save for linked entries
+
+### Example Flow
+
+```
+User drops screenshot onto task
+    ↓
+createImageEntry() with onCreated callback
+    ↓
+AutomaticImageAnalysisTrigger.triggerAutomaticImageAnalysis()
+    ↓
+[Image analysis runs in background]
+    ↓
+_handlePostProcessing() receives completed analysis
+    ↓
+SmartTaskSummaryTrigger.triggerTaskSummary()
+    ↓
+[If first summary: create immediately | If existing: schedule 5-min countdown]
+```
+
 ## Automatic Checklist Creation with Smart Re-run
 
 ### Overview
