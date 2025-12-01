@@ -141,7 +141,7 @@ class GeminiClient(IGeminiClient):
             )
 
             # Use chat for multi-turn conversations
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             if history or system_instruction:
                 # Start chat with history and send the last message
                 chat = gemini.start_chat(history=history)
@@ -247,7 +247,7 @@ class GeminiClient(IGeminiClient):
             )
 
             # Generate streaming content
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             if history or system_instruction:
                 # Start chat with history and send the last message with streaming
                 chat = gemini.start_chat(history=history)
