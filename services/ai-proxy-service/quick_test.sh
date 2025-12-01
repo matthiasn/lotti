@@ -21,8 +21,8 @@ if ! grep -q "GEMINI_API_KEY=AIza" .env 2>/dev/null; then
     read -p "Enter your Gemini API key (or press Enter to skip): " gemini_key
 
     if [ -n "$gemini_key" ]; then
-        # Update .env file
-        sed -i.bak "s/^GEMINI_API_KEY=.*/GEMINI_API_KEY=$gemini_key/" .env
+        # Update .env file (portable sed - works on both macOS and Linux)
+        sed "s/^GEMINI_API_KEY=.*/GEMINI_API_KEY=$gemini_key/" .env > .env.tmp && mv .env.tmp .env
         echo "✅ API key added to .env"
     else
         echo "⏭️  Skipping - you can add it later"
