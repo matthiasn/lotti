@@ -4,7 +4,7 @@ import logging
 from decimal import Decimal
 from typing import Optional
 
-from ..core.constants import CURRENCY_PRECISION
+from ..core.constants import CURRENCY_PRECISION, SYSTEM_ACCOUNT_ID
 from ..core.exceptions import AccountAlreadyExistsException, AccountNotFoundException
 from ..core.interfaces import IAccountService, ITigerBeetleClient
 
@@ -52,8 +52,6 @@ class AccountService(IAccountService):
 
             # If an initial balance is specified, transfer from system account
             if initial_balance > 0:
-                from ..services.billing_service import SYSTEM_ACCOUNT_ID
-
                 initial_balance_cents = int(initial_balance * CURRENCY_PRECISION)
                 transfer_id = self.client.generate_transfer_id()
                 await self.client.create_transfer(

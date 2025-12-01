@@ -4,7 +4,7 @@ import logging
 from decimal import Decimal
 from typing import Optional
 
-from ..core.constants import CURRENCY_PRECISION
+from ..core.constants import CURRENCY_PRECISION, SYSTEM_ACCOUNT_ID
 from ..core.exceptions import (
     AccountNotFoundException,
     InsufficientBalanceException,
@@ -13,9 +13,6 @@ from ..core.exceptions import (
 from ..core.interfaces import IBillingService, ITigerBeetleClient
 
 logger = logging.getLogger(__name__)
-
-# System account for credits (acts as a bank)
-SYSTEM_ACCOUNT_ID = 1
 
 
 class BillingService(IBillingService):

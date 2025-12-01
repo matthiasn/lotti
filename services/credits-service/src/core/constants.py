@@ -8,6 +8,7 @@ SERVICE_BILLING_SERVICE = "billing_service"
 
 # TigerBeetle constants
 LEDGER_ID = 1  # USD ledger
+SYSTEM_ACCOUNT_ID = 1  # System account for credits (acts as a bank)
 TRANSFER_FLAGS_NONE = 0
 TRANSFER_FLAGS_LINKED = 1
 TRANSFER_FLAGS_PENDING = 2

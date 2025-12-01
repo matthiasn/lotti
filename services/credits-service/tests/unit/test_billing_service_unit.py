@@ -4,7 +4,8 @@ import pytest
 from decimal import Decimal
 from unittest.mock import AsyncMock, Mock
 
-from src.services.billing_service import BillingService, SYSTEM_ACCOUNT_ID
+from src.core.constants import SYSTEM_ACCOUNT_ID
+from src.services.billing_service import BillingService
 from src.core.exceptions import (
     AccountNotFoundException,
     InsufficientBalanceException,
