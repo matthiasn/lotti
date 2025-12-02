@@ -686,6 +686,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     _catchupDebounceTimer = null;
     _catchUpRetryTimer?.cancel();
     _catchUpRetryTimer = null;
+    _wakeCatchUpRetryTimer?.cancel();
+    _wakeCatchUpRetryTimer = null;
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
@@ -745,7 +747,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     });
   }
 
-  Future<void> _attachCatchUp() async {
+  /// Runs catch-up and returns true on success, false on failure.
+  Future<bool> _attachCatchUp() async {
     try {
       final room = _roomManager.currentRoom;
       final roomId = _roomManager.currentRoomId;
@@ -757,7 +760,7 @@ class MatrixStreamConsumer implements SyncPipeline {
             subDomain: 'catchup',
           );
         }
-        return;
+        return false;
       }
       if (_catchupLogStartPending) {
         final marker = !_initialCatchUpCompleted
@@ -792,12 +795,21 @@ class MatrixStreamConsumer implements SyncPipeline {
       _lastCatchupEventsCount = slice.length;
       if (slice.isNotEmpty) {
         if (_collectMetrics) _metrics.incCatchupBatches();
-        // Log event summary for catch-up diagnostics
-        final syncPayloads =
-            slice.where(ec.MatrixEventClassifier.isSyncPayloadEvent);
-        final attachments = slice.where(ec.MatrixEventClassifier.isAttachment);
+        // Log event summary for catch-up diagnostics (single pass)
+        final counts = slice.fold(
+          (payloads: 0, attachments: 0),
+          (counts, event) {
+            final isPayload =
+                ec.MatrixEventClassifier.isSyncPayloadEvent(event);
+            final isAttachment = ec.MatrixEventClassifier.isAttachment(event);
+            return (
+              payloads: counts.payloads + (isPayload ? 1 : 0),
+              attachments: counts.attachments + (isAttachment ? 1 : 0),
+            );
+          },
+        );
         _loggingService.captureEvent(
-          'catchup.slice total=${slice.length} payloads=${syncPayloads.length} attachments=${attachments.length} marker=$catchUpMarker',
+          'catchup.slice total=${slice.length} payloads=${counts.payloads} attachments=${counts.attachments} marker=$catchUpMarker',
           domain: syncLoggingDomain,
           subDomain: 'catchup',
         );
@@ -814,7 +826,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           subDomain: 'catchup',
         );
       }
-      // Catch-up completed.
+      return true; // Success
     } catch (e, st) {
       _loggingService.captureException(
         e,
@@ -822,10 +834,66 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'catchup',
         stackTrace: st,
       );
+      return false; // Failure
     }
   }
 
   Timeline? _liveTimeline;
+  Timer? _wakeCatchUpRetryTimer;
+  static const Duration _wakeCatchUpRetryDelay = Duration(milliseconds: 500);
+
+  /// Starts wake catch-up, handling in-flight and failure cases.
+  void _startWakeCatchUp() {
+    // If catch-up is already in-flight, schedule retry after it completes.
+    if (_catchUpInFlight) {
+      _loggingService.captureEvent(
+        'wake.catchup.deferred (catch-up in flight)',
+        domain: syncLoggingDomain,
+        subDomain: 'wake',
+      );
+      _wakeCatchUpRetryTimer?.cancel();
+      _wakeCatchUpRetryTimer = Timer(_wakeCatchUpRetryDelay, () {
+        if (_wakeCatchUpPending) {
+          _startWakeCatchUp();
+        }
+      });
+      return;
+    }
+
+    _catchUpInFlight = true;
+    _loggingService.captureEvent(
+      'wake.catchup.start',
+      domain: syncLoggingDomain,
+      subDomain: 'wake',
+    );
+
+    unawaited(
+      _attachCatchUp().then((success) {
+        _catchUpInFlight = false;
+        if (success) {
+          _wakeCatchUpPending = false;
+          _loggingService.captureEvent(
+            'wake.catchup.done success=true',
+            domain: syncLoggingDomain,
+            subDomain: 'wake',
+          );
+        } else {
+          // Catch-up failed; retry after delay.
+          _loggingService.captureEvent(
+            'wake.catchup.done success=false, scheduling retry',
+            domain: syncLoggingDomain,
+            subDomain: 'wake',
+          );
+          _wakeCatchUpRetryTimer?.cancel();
+          _wakeCatchUpRetryTimer = Timer(_wakeCatchUpRetryDelay, () {
+            if (_wakeCatchUpPending) {
+              _startWakeCatchUp();
+            }
+          });
+        }
+      }),
+    );
+  }
 
   void _scheduleLiveScan() {
     // Test seam: allow tests to inject behavior/failures to exercise
@@ -851,26 +919,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           domain: syncLoggingDomain,
           subDomain: 'wake',
         );
-        // Trigger catch-up immediately to ensure we process older events first.
-        if (!_catchUpInFlight) {
-          _catchUpInFlight = true;
-          _loggingService.captureEvent(
-            'wake.catchup.start',
-            domain: syncLoggingDomain,
-            subDomain: 'wake',
-          );
-          unawaited(
-            _attachCatchUp().whenComplete(() {
-              _catchUpInFlight = false;
-              _wakeCatchUpPending = false;
-              _loggingService.captureEvent(
-                'wake.catchup.done',
-                domain: syncLoggingDomain,
-                subDomain: 'wake',
-              );
-            }),
-          );
-        }
+        _startWakeCatchUp();
       }
     }
     if (_liveTimeline == null) {
