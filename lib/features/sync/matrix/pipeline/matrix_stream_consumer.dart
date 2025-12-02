@@ -216,7 +216,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final MetricsCounters _metrics;
   // Descriptor-focused catch-up helper (manages pending jsonPaths)
   DescriptorCatchUpManager? _descriptorCatchUp;
-  static const int _liveScanTailLimit = 30;
+  static const int _liveScanTailLimit = 1000;
   // Live-scan look-behind policy. Can be tuned via constructor (test seams).
   final bool _liveScanIncludeLookBehind;
   int _liveScanAuditScansRemaining;
@@ -340,17 +340,19 @@ class MatrixStreamConsumer implements SyncPipeline {
         );
         if (_collectMetrics) _metrics.incRetriesScheduled();
       } else {
-        treatAsHandled = true;
-        _retryTracker.clear(id);
+        // Keep retrying indefinitely - never permanently skip sync payloads.
+        // Data loss from skipping is worse than retrying forever.
+        final nextAttempts = attempts + 1;
+        final backoff = _computeBackoff(nextAttempts);
+        final due = clock.now().add(backoff);
+        _retryTracker.scheduleNext(id, nextAttempts, due);
+        nextDue = due;
         _loggingService.captureEvent(
-          'dropping after retry cap$dropSuffix: $id (attempts=$attempts)',
+          'keepRetrying after cap$dropSuffix: $id (attempts=$nextAttempts)',
           domain: syncLoggingDomain,
-          subDomain: 'retry.cap',
+          subDomain: 'retry.keepRetrying',
         );
-        if (_collectMetrics) {
-          _metrics.incSkippedByRetryLimit();
-          _bumpDroppedType(_extractRuntimeType(e));
-        }
+        if (_collectMetrics) _metrics.incRetriesScheduled();
       }
     } else if (processedOk) {
       try {
@@ -385,39 +387,16 @@ class MatrixStreamConsumer implements SyncPipeline {
         final nextAttempts = attempts + 1;
         final backoff = _computeBackoff(nextAttempts);
         final due = clock.now().add(backoff);
-        // If this looks like a missing attachment/descriptor scenario, keep the
-        // event blocking and do not advance the marker even after the retry cap.
-        // We detect this via a FileSystemException earlier, which records the
-        // jsonPath into _pendingJsonPaths. When present, continue scheduling
-        // retries and avoid marking as handled.
-        final jp = _extractJsonPath(e);
-        final isMissingAttachment =
-            jp != null && (_descriptorCatchUp?.contains(jp) ?? false);
-        if (nextAttempts >= _maxRetriesPerEvent && !isMissingAttachment) {
-          _retryTracker.clear(id);
-          treatAsHandled = true;
-          _loggingService.captureEvent(
-            'dropping after retry cap$dropSuffix: $id (attempts=$nextAttempts)',
-            domain: syncLoggingDomain,
-            subDomain: 'retry.cap',
-          );
-          if (_collectMetrics) {
-            _metrics.incSkippedByRetryLimit();
-            _bumpDroppedType(_extractRuntimeType(e));
-          }
-        } else {
-          // Keep retrying (or start retrying) for missing attachments and normal failures
-          // below the cap.
-          _retryTracker.scheduleNext(id, nextAttempts, due);
-          if (isMissingAttachment) {
-            _loggingService.captureEvent(
-              'missingAttachment keepRetrying: $id (attempts=$nextAttempts)',
-              domain: syncLoggingDomain,
-              subDomain: 'retry.missingAttachment',
-            );
-          }
-        }
+        // Keep retrying indefinitely - never permanently skip sync payloads.
+        // Data loss from skipping is worse than retrying forever.
+        _retryTracker.scheduleNext(id, nextAttempts, due);
         nextDue = due;
+        _loggingService.captureEvent(
+          'keepRetrying$dropSuffix: $id (attempts=$nextAttempts)',
+          domain: syncLoggingDomain,
+          subDomain: 'retry.keepRetrying',
+        );
+        if (_collectMetrics) _metrics.incRetriesScheduled();
         // Record pending JSON path for faster recovery when the failure is
         // due to a missing attachment.
         if (err is FileSystemException) {
