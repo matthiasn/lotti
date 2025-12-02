@@ -76,7 +76,7 @@ class TestTopUp(TestBillingService):
         # System account should now exist
         assert SYSTEM_ACCOUNT_ID in mock_client._accounts
 
-    async def test_top_up_accumulates_balance(self, billing_service, user_account, mock_client):
+    async def test_top_up_accumulates_balance(self, billing_service, user_account):
         """Test that multiple top-ups accumulate balance"""
         user_id = user_account
 
