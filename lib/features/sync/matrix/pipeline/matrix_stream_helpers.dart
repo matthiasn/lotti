@@ -156,15 +156,16 @@ List<Event> buildLiveScanSlice({
 ///
 /// - When [dropOldSyncPayloads] is false, returns [events] unchanged.
 /// - When true, a sync payload event is kept only if it is strictly newer than
-///   ([lastTimestamp], [lastEventId]) or when [hasAttempts] returns true for
-///   its eventId. Non‑payload events (attachments) are always kept.
+///   ([lastTimestamp], [lastEventId]) or when [wasCompleted] returns false for
+///   its eventId (meaning it has pending retries). Non‑payload events
+///   (attachments) are always kept.
 /// - Invokes [onSkipped] each time a payload is dropped (for metrics).
 List<Event> filterSyncPayloadsByMonotonic({
   required List<Event> events,
   required bool dropOldSyncPayloads,
   required num? lastTimestamp,
   required String? lastEventId,
-  required bool Function(String eventId) hasAttempts,
+  required bool Function(String eventId) wasCompleted,
   void Function()? onSkipped,
 }) {
   if (!dropOldSyncPayloads) return events;
@@ -181,10 +182,10 @@ List<Event> filterSyncPayloadsByMonotonic({
       latestTimestamp: lastTimestamp,
       latestEventId: lastEventId,
     );
-    // Only drop events that are not newer AND have been attempted (confirmed old).
-    // Keep zero-attempt events even if they appear older, as they may have arrived
-    // out of order in a burst and need their first processing attempt.
-    if (!newer && hasAttempts(e.eventId)) {
+    // Only drop events that are not newer AND have been successfully completed.
+    // Events that failed and have pending retries must NOT be dropped even if
+    // they appear older than the current marker.
+    if (!newer && wasCompleted(e.eventId)) {
       onSkipped?.call();
       continue;
     }

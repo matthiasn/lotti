@@ -238,27 +238,27 @@ void main() {
       final att = mk('A1', 50, payload: false);
       var skipped = 0;
 
-      // With zero attempts: keep all events (they haven't been tried yet)
-      // This fixes the bug where first-time events arriving out-of-order were dropped
+      // With nothing completed: keep all events (including ones with pending retries)
+      // This fixes the bug where failed events were incorrectly dropped
       final kept = filterSyncPayloadsByMonotonic(
         events: [old, equal, newer, att],
         dropOldSyncPayloads: true,
         lastTimestamp: 200,
         lastEventId: 'E1',
-        hasAttempts: (_) => false,
+        wasCompleted: (_) => false,
         onSkipped: () => skipped++,
       );
       expect(kept.map((e) => e.eventId), containsAll(['E0', 'E1', 'E2', 'A1']));
       expect(skipped, 0);
 
-      // Mark old events as having attempts -> they get dropped
+      // Mark old events as completed -> they get dropped
       skipped = 0;
       final kept2 = filterSyncPayloadsByMonotonic(
         events: [old, equal, newer, att],
         dropOldSyncPayloads: true,
         lastTimestamp: 200,
         lastEventId: 'E1',
-        hasAttempts: (id) => id == 'E0' || id == 'E1',
+        wasCompleted: (id) => id == 'E0' || id == 'E1',
         onSkipped: () => skipped++,
       );
       expect(kept2.map((e) => e.eventId), containsAll(['E2', 'A1']));

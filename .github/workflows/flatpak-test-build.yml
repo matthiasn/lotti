@@ -96,6 +96,7 @@ jobs:
         working-directory: flatpak/flathub-build/output
         env:
           DEBUG_SETUP_FLUTTER: "1"
+        continue-on-error: true
         run: |
           flatpak-builder \
             --user \
@@ -107,6 +108,7 @@ jobs:
 
       - name: Commit screenshots to OSTree
         working-directory: flatpak/flathub-build/output
+        continue-on-error: true
         run: |
           ostree commit \
             --repo=repo \

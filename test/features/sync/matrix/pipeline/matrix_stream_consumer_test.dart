@@ -2398,7 +2398,7 @@ void main() {
     });
   });
 
-  test('drops after retry cap for non-attachment failure (fakeAsync)',
+  test('keeps retrying after cap for non-attachment failure (fakeAsync)',
       () async {
     fakeAsync((async) async {
       final session = MockMatrixSessionManager();
@@ -2477,12 +2477,254 @@ void main() {
       async.elapse(const Duration(seconds: 1));
       async.flushMicrotasks();
 
-      // After retry cap, processor should log retry.cap
+      // After retry cap, should keep retrying (not drop) - data loss prevention
       verify(() => logger.captureEvent(
             any<String>(),
             domain: syncLoggingDomain,
-            subDomain: 'retry.cap',
+            subDomain: 'retry.keepRetrying',
           )).called(greaterThanOrEqualTo(1));
+
+      // Retry state should still be present (not cleared)
+      expect(consumer.metricsSnapshot()['retryStateSize'],
+          greaterThanOrEqualTo(1));
+    });
+  });
+
+  test('keeps retrying when already at cap on scan entry (fakeAsync)',
+      () async {
+    // This test ensures the "already at cap" branch (lines 320-335) is covered.
+    // The cap entry check runs when attempts >= maxRetriesPerEvent BEFORE
+    // attempting to process. This happens when the event was already at cap
+    // from a previous scan.
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('CAP1');
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(() => ev.senderId).thenReturn('@other:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => ev.text).thenReturn(
+          base64.encode(utf8.encode(json.encode({'runtimeType': 'test'}))));
+      when(() => ev.roomId).thenReturn('!room:server');
+      when(() => timeline.events).thenReturn(<Event>[ev]);
+
+      // Always fail processing - this will trigger the catch block on first
+      // attempt, which schedules retry with attempts=1
+      when(() => processor.process(event: ev, journalDb: journalDb))
+          .thenThrow(Exception('persistent failure'));
+
+      // Capture the log messages to verify "after cap" is logged
+      final logMessages = <String>[];
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
+        logMessages.add(inv.positionalArguments[0] as String);
+      });
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        maxRetriesPerEvent: 1, // Cap at 1 retry
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // First scan: attempts=0, enters catch block, schedules retry with attempts=1
+      async.elapse(const Duration(milliseconds: 500));
+      async.flushMicrotasks();
+
+      // Wait for backoff to expire (base 200ms * 2^1 = 400ms + jitter)
+      // and trigger another scan
+      async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+
+      // Force another scan to hit the cap entry check
+      await consumer.forceRescan(includeCatchUp: false);
+      async.flushMicrotasks();
+
+      // Third scan - by now attempts should be >= maxRetries (1)
+      // and we should hit the cap entry branch
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+
+      // Verify "after cap" message was logged - this is ONLY logged from
+      // the cap entry check at lines 330-334, not from the catch block
+      final afterCapLogs =
+          logMessages.where((m) => m.contains('after cap')).toList();
+      expect(afterCapLogs, isNotEmpty,
+          reason:
+              'Should have logged "keepRetrying after cap" from entry check');
+
+      // Retry state must still be present
+      expect(consumer.metricsSnapshot()['retryStateSize'],
+          greaterThanOrEqualTo(1));
+    });
+  });
+
+  test('failed event not filtered out when newer event succeeds (fakeAsync)',
+      () async {
+    // This test verifies that the wasCompleted filter logic works correctly:
+    // An older event that failed should NOT be dropped even after a newer
+    // event succeeds and the marker advances past it.
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+
+      // E1 is older, will fail
+      final e1 = MockEvent();
+      when(() => e1.eventId).thenReturn('E1');
+      when(() => e1.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+      when(() => e1.senderId).thenReturn('@other:server');
+      when(() => e1.attachmentMimetype).thenReturn('');
+      when(() => e1.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => e1.text).thenReturn(
+          base64.encode(utf8.encode(json.encode({'runtimeType': 'test'}))));
+
+      // E2 is newer, will succeed
+      final e2 = MockEvent();
+      when(() => e2.eventId).thenReturn('E2');
+      when(() => e2.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(200));
+      when(() => e2.senderId).thenReturn('@other:server');
+      when(() => e2.attachmentMimetype).thenReturn('');
+      when(() => e2.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => e2.text).thenReturn(
+          base64.encode(utf8.encode(json.encode({'runtimeType': 'test'}))));
+
+      when(() => timeline.events).thenReturn(<Event>[e1, e2]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      // E1 fails, E2 succeeds
+      var e1Calls = 0;
+      when(() => processor.process(event: e1, journalDb: journalDb))
+          .thenAnswer((_) async {
+        e1Calls++;
+        if (e1Calls == 1) {
+          throw Exception('E1 fails first time');
+        }
+        // Succeeds on retry
+      });
+      when(() => processor.process(event: e2, journalDb: journalDb))
+          .thenAnswer((_) async {});
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+      when(() => settingsDb.saveSettingsItem(any<String>(), any<String>()))
+          .thenAnswer((_) async => 1);
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+            timeline: any<Timeline?>(named: 'timeline'),
+          )).thenAnswer((_) async {});
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
+        dropOldPayloadsInLiveScan: true, // Enable the filter
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // First scan: E1 fails, E2 succeeds
+      async.elapse(const Duration(milliseconds: 500));
+      async.flushMicrotasks();
+
+      // Second scan: E1 should be retried (not filtered out)
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+
+      // E1 should have been called twice (once failed, once retried)
+      expect(e1Calls, greaterThanOrEqualTo(2));
     });
   });
 
