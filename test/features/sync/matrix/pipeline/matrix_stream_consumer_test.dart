@@ -2490,6 +2490,108 @@ void main() {
     });
   });
 
+  test('keeps retrying when already at cap on scan entry (fakeAsync)',
+      () async {
+    // This test ensures the "already at cap" branch (lines 320-335) is covered.
+    // The event must fail multiple times so that on a subsequent scan,
+    // attempts >= maxRetriesPerEvent is true at the entry check.
+    fakeAsync((async) async {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => room.getTimeline(
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('CAP1');
+      when(() => ev.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(() => ev.senderId).thenReturn('@other:server');
+      when(() => ev.attachmentMimetype).thenReturn('');
+      when(() => ev.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => ev.roomId).thenReturn('!room:server');
+      when(() => timeline.events).thenReturn(<Event>[ev]);
+
+      // Always fail processing
+      when(() => processor.process(event: ev, journalDb: journalDb))
+          .thenThrow(Exception('persistent failure'));
+
+      when(() => logger.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logger.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        maxRetriesPerEvent: 1, // Cap at 1 retry
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      await consumer.initialize();
+      await consumer.start();
+
+      // First scan: attempts=0, fails, schedules retry with attempts=1
+      async.elapse(const Duration(milliseconds: 500));
+      async.flushMicrotasks();
+
+      // Second scan: attempts=1 >= maxRetries(1), hits the "already at cap" branch
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+
+      // Third scan to ensure we keep retrying even after cap
+      async.elapse(const Duration(seconds: 5));
+      async.flushMicrotasks();
+
+      // Verify keepRetrying is logged (from the entry check branch)
+      verify(() => logger.captureEvent(
+            any<String>(),
+            domain: syncLoggingDomain,
+            subDomain: 'retry.keepRetrying',
+          )).called(greaterThanOrEqualTo(2));
+
+      // Retry state must still be present
+      expect(consumer.metricsSnapshot()['retryStateSize'],
+          greaterThanOrEqualTo(1));
+    });
+  });
+
   test('missing attachment continues retry beyond cap (fakeAsync)', () async {
     fakeAsync((async) async {
       final session = MockMatrixSessionManager();
