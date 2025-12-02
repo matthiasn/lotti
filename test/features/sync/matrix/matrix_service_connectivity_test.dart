@@ -9,7 +9,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -125,7 +124,6 @@ void main() {
           eventProcessor: eventProcessor,
           secureStorage: storage,
           sentEventRegistry: SentEventRegistry(),
-          attachmentIndex: AttachmentIndex(logging: logging),
           roomManager: roomManager,
           sessionManager: sessionManager,
           pipelineOverride: pipeline,

@@ -1,10 +1,8 @@
-// Records attachment descriptors and eagerly downloads attachments to disk.
+// Eagerly downloads attachments to disk during sync.
 
 import 'dart:io';
 
 import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
-import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -13,10 +11,9 @@ import 'package:path/path.dart' as p;
 /// AttachmentIngestor
 ///
 /// Purpose
-/// - Encapsulates first-pass attachment handling for the sync pipeline:
-///   - Record descriptors into AttachmentIndex and emit observability logs
-///   - Eagerly download and save attachments to disk
-///   - Clear pending jsonPaths via [DescriptorCatchUpManager] and nudge scans
+/// - Eagerly download and save attachments to disk during sync.
+/// - All attachments must be downloaded for sync to work, so we download
+///   them immediately when we see the event.
 ///
 /// This helper operates on provided arguments and the documents directory.
 class AttachmentIngestor {
@@ -25,8 +22,7 @@ class AttachmentIngestor {
   });
 
   /// The documents directory for saving attachments. If null, eager download
-  /// is skipped (descriptor-only mode for testing or when fs access is not
-  /// available).
+  /// is skipped (for testing or when fs access is not available).
   final Directory? documentsDirectory;
 
   /// Processes attachment-related behavior for an event.
@@ -35,17 +31,12 @@ class AttachmentIngestor {
   Future<bool> process({
     required Event event,
     required LoggingService logging,
-    required AttachmentIndex? attachmentIndex,
-    required DescriptorCatchUpManager? descriptorCatchUp,
-    required void Function() scheduleLiveScan,
-    required Future<void> Function() retryNow,
   }) async {
     var fileWritten = false;
 
-    // Record descriptors when present and emit a compact observability line.
+    // Check if this event has a relativePath (indicates an attachment).
     final rpAny = event.content['relativePath'];
     if (rpAny is String && rpAny.isNotEmpty) {
-      attachmentIndex?.record(event);
       // Observability log for attachment-like events.
       try {
         final mime = event.attachmentMimetype;
@@ -72,11 +63,6 @@ class AttachmentIngestor {
           relativePath: rpAny,
           logging: logging,
         );
-      }
-
-      if (descriptorCatchUp?.removeIfPresent(rpAny) ?? false) {
-        scheduleLiveScan();
-        await retryNow();
       }
     }
 
@@ -121,9 +107,6 @@ class AttachmentIngestor {
       final file = File(resolved);
       // Fast-path dedupe: if the file already exists and is non-empty,
       // skip re-downloading to avoid repeated writes and log spam.
-      // Note: We don't validate the file's vector clock here because
-      // SmartJournalEntityLoader.load() will do that validation and
-      // re-download via DescriptorDownloader if the local file is stale.
       if (file.existsSync()) {
         try {
           final len = file.lengthSync();
@@ -166,7 +149,7 @@ class AttachmentIngestor {
       );
       return true;
     } catch (e, st) {
-      // Log but don't throw - SmartJournalEntityLoader can retry later
+      // Log but don't throw - retry will happen on next catch-up cycle
       logging.captureException(
         e,
         domain: syncLoggingDomain,
