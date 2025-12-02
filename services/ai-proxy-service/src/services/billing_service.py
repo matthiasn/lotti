@@ -138,15 +138,15 @@ class BillingService(IBillingService):
                     # Billing successful
                     logger.info(f"✓ Billed ${metadata.estimated_cost_usd:.6f} to {metadata.user_id}")
 
-            except httpx.TimeoutException:
+            except httpx.TimeoutException as e:
                 logger.error(f"Timeout calling credits service for {metadata.user_id}")
-                raise AIProviderException("Billing service timeout - please try again later")
+                raise AIProviderException("Billing service timeout - please try again later") from e
             except httpx.RequestError as e:
                 logger.error(f"Request error calling credits service for {metadata.user_id}: {e}")
-                raise AIProviderException("Billing service unavailable - please try again later")
+                raise AIProviderException("Billing service unavailable - please try again later") from e
             except AIProviderException:
                 # Re-raise our custom exceptions
                 raise
-            except Exception:
+            except Exception as e:
                 logger.exception(f"Unexpected error billing {metadata.user_id}")
-                raise AIProviderException("Billing error - please contact support")
+                raise AIProviderException("Billing error - please contact support") from e
