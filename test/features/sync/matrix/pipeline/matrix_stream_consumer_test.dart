@@ -2398,7 +2398,7 @@ void main() {
     });
   });
 
-  test('drops after retry cap for non-attachment failure (fakeAsync)',
+  test('keeps retrying after cap for non-attachment failure (fakeAsync)',
       () async {
     fakeAsync((async) async {
       final session = MockMatrixSessionManager();
@@ -2477,12 +2477,16 @@ void main() {
       async.elapse(const Duration(seconds: 1));
       async.flushMicrotasks();
 
-      // After retry cap, processor should log retry.cap
+      // After retry cap, should keep retrying (not drop) - data loss prevention
       verify(() => logger.captureEvent(
             any<String>(),
             domain: syncLoggingDomain,
-            subDomain: 'retry.cap',
+            subDomain: 'retry.keepRetrying',
           )).called(greaterThanOrEqualTo(1));
+
+      // Retry state should still be present (not cleared)
+      expect(consumer.metricsSnapshot()['retryStateSize'],
+          greaterThanOrEqualTo(1));
     });
   });
 

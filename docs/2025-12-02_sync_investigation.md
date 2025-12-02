@@ -72,6 +72,8 @@ final slice = idx >= 0
 
 ## Fixes Applied (2025-12-02)
 
+**PR:** https://github.com/matthiasn/lotti/pull/2485
+
 ### Fix 1: Remove `treatAsHandled` Marker Advancement ✅ DONE
 
 Changed `matrix_stream_consumer.dart` to keep retrying indefinitely instead of marking events as handled after retry cap. Failed events now block marker advancement forever until they succeed.

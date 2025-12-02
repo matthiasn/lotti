@@ -301,7 +301,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     String dropSuffix = '',
   }) async {
     var processedOk = true;
-    var treatAsHandled = false;
+    const treatAsHandled = false;
     var hadFailure = false;
     var failureDelta = 0;
     DateTime? nextDue;
@@ -318,42 +318,21 @@ class MatrixStreamConsumer implements SyncPipeline {
 
     final attempts = _retryTracker.attempts(id);
     if (attempts >= _maxRetriesPerEvent) {
-      // Special-case: if this event is blocked by a missing attachment
-      // descriptor (jsonPath tracked in _pendingJsonPaths), keep retrying and
-      // do not treat as handled. This aligns with intended behavior to block
-      // advancement until descriptors land.
-      final jpAtCap = _extractJsonPath(e);
-      final isMissingAtCap =
-          jpAtCap != null && (_descriptorCatchUp?.contains(jpAtCap) ?? false);
-      if (isMissingAtCap) {
-        processedOk = false;
-        hadFailure = true;
-        final nextAttempts = attempts + 1;
-        final backoff = _computeBackoff(nextAttempts);
-        final due = clock.now().add(backoff);
-        _retryTracker.scheduleNext(id, nextAttempts, due);
-        nextDue = due;
-        _loggingService.captureEvent(
-          'missingAttachment keepRetrying: $id (attempts=$nextAttempts)',
-          domain: syncLoggingDomain,
-          subDomain: 'retry.missingAttachment',
-        );
-        if (_collectMetrics) _metrics.incRetriesScheduled();
-      } else {
-        // Keep retrying indefinitely - never permanently skip sync payloads.
-        // Data loss from skipping is worse than retrying forever.
-        final nextAttempts = attempts + 1;
-        final backoff = _computeBackoff(nextAttempts);
-        final due = clock.now().add(backoff);
-        _retryTracker.scheduleNext(id, nextAttempts, due);
-        nextDue = due;
-        _loggingService.captureEvent(
-          'keepRetrying after cap$dropSuffix: $id (attempts=$nextAttempts)',
-          domain: syncLoggingDomain,
-          subDomain: 'retry.keepRetrying',
-        );
-        if (_collectMetrics) _metrics.incRetriesScheduled();
-      }
+      // Keep retrying indefinitely - never permanently skip sync payloads.
+      // Data loss from skipping is worse than retrying forever.
+      processedOk = false;
+      hadFailure = true;
+      final nextAttempts = attempts + 1;
+      final backoff = _computeBackoff(nextAttempts);
+      final due = clock.now().add(backoff);
+      _retryTracker.scheduleNext(id, nextAttempts, due);
+      nextDue = due;
+      _loggingService.captureEvent(
+        'keepRetrying after cap$dropSuffix: $id (attempts=$nextAttempts)',
+        domain: syncLoggingDomain,
+        subDomain: 'retry.keepRetrying',
+      );
+      if (_collectMetrics) _metrics.incRetriesScheduled();
     } else if (processedOk) {
       try {
         await _eventProcessor.process(event: e, journalDb: _journalDb);
