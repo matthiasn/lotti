@@ -2493,8 +2493,9 @@ void main() {
   test('keeps retrying when already at cap on scan entry (fakeAsync)',
       () async {
     // This test ensures the "already at cap" branch (lines 320-335) is covered.
-    // The event must fail multiple times so that on a subsequent scan,
-    // attempts >= maxRetriesPerEvent is true at the entry check.
+    // The cap entry check runs when attempts >= maxRetriesPerEvent BEFORE
+    // attempting to process. This happens when the event was already at cap
+    // from a previous scan.
     fakeAsync((async) async {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -2536,16 +2537,23 @@ void main() {
       when(() => ev.attachmentMimetype).thenReturn('');
       when(() => ev.content)
           .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => ev.text).thenReturn(
+          base64.encode(utf8.encode(json.encode({'runtimeType': 'test'}))));
       when(() => ev.roomId).thenReturn('!room:server');
       when(() => timeline.events).thenReturn(<Event>[ev]);
 
-      // Always fail processing
+      // Always fail processing - this will trigger the catch block on first
+      // attempt, which schedules retry with attempts=1
       when(() => processor.process(event: ev, journalDb: journalDb))
           .thenThrow(Exception('persistent failure'));
 
+      // Capture the log messages to verify "after cap" is logged
+      final logMessages = <String>[];
       when(() => logger.captureEvent(any<String>(),
           domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
+        logMessages.add(inv.positionalArguments[0] as String);
+      });
       when(() => logger.captureException(any<Object>(),
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
@@ -2567,24 +2575,31 @@ void main() {
       await consumer.initialize();
       await consumer.start();
 
-      // First scan: attempts=0, fails, schedules retry with attempts=1
+      // First scan: attempts=0, enters catch block, schedules retry with attempts=1
       async.elapse(const Duration(milliseconds: 500));
       async.flushMicrotasks();
 
-      // Second scan: attempts=1 >= maxRetries(1), hits the "already at cap" branch
+      // Wait for backoff to expire (base 200ms * 2^1 = 400ms + jitter)
+      // and trigger another scan
+      async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+
+      // Force another scan to hit the cap entry check
+      await consumer.forceRescan(includeCatchUp: false);
+      async.flushMicrotasks();
+
+      // Third scan - by now attempts should be >= maxRetries (1)
+      // and we should hit the cap entry branch
       async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
 
-      // Third scan to ensure we keep retrying even after cap
-      async.elapse(const Duration(seconds: 5));
-      async.flushMicrotasks();
-
-      // Verify keepRetrying is logged (from the entry check branch)
-      verify(() => logger.captureEvent(
-            any<String>(),
-            domain: syncLoggingDomain,
-            subDomain: 'retry.keepRetrying',
-          )).called(greaterThanOrEqualTo(2));
+      // Verify "after cap" message was logged - this is ONLY logged from
+      // the cap entry check at lines 330-334, not from the catch block
+      final afterCapLogs =
+          logMessages.where((m) => m.contains('after cap')).toList();
+      expect(afterCapLogs, isNotEmpty,
+          reason:
+              'Should have logged "keepRetrying after cap" from entry check');
 
       // Retry state must still be present
       expect(consumer.metricsSnapshot()['retryStateSize'],
