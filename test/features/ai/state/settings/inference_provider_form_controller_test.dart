@@ -100,7 +100,7 @@ void main() {
       await controller.addConfig(testConfig);
 
       // Assert
-      verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
+      verify(() => mockRepository.saveConfig(testConfig)).called(1);
     });
 
     test('should update an existing configuration', () async {
@@ -131,8 +131,16 @@ void main() {
       // Act
       await controller.updateConfig(updatedConfig);
 
-      // Assert
-      verify(() => mockRepository.saveConfig(any())).called(1);
+      // Assert - capture the argument to verify properties
+      final captured = verify(
+        () => mockRepository.saveConfig(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      final savedConfig = captured.first as AiConfigInferenceProvider;
+      expect(savedConfig.id, equals('test-id'));
+      expect(savedConfig.name, equals('Updated API'));
+      expect(savedConfig.baseUrl, equals('https://updated.example.com'));
+      expect(savedConfig.apiKey, equals('updated-key'));
     });
 
     test('should delete a configuration', () async {
