@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
     """Middleware to validate API keys for protected endpoints"""
 
-    def __init__(self, app, exempt_paths: list[str] = None):
+    def __init__(self, app, exempt_paths: list[str] | None = None):
         """
         Initialize authentication middleware
 
