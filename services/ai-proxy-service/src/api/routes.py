@@ -105,7 +105,7 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
                     billing_service=billing_service,
                     messages=body.messages,
                     model=body.model,
-                    temperature=body.temperature or 0.7,
+                    temperature=body.temperature if body.temperature is not None else 0.7,
                     max_tokens=body.max_tokens,
                     user_id=body.user_id or "anonymous",
                     request_id=request_id,
@@ -117,7 +117,7 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
             response = await gemini_client.generate_completion(
                 messages=body.messages,
                 model=body.model,
-                temperature=body.temperature or 0.7,
+                temperature=body.temperature if body.temperature is not None else 0.7,
                 max_tokens=body.max_tokens,
             )
 
