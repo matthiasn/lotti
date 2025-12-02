@@ -25,6 +25,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart' show isTestEnv;
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -134,6 +135,7 @@ class MatrixService {
             attachmentIndex: attachmentIndex,
             collectMetrics: collectSyncMetrics,
             sentEventRegistry: _sentEventRegistry,
+            documentsDirectory: getDocumentsDirectory(),
           );
       _pipeline = pipeline;
 

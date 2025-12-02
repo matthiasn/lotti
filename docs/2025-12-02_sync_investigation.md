@@ -105,11 +105,20 @@ wasCompleted: _wasCompletedSync,
 
 ## Deferred Improvements
 
-### Priority 2: Restore Eager Attachment Download (DEFERRED)
+### Priority 2: Restore Eager Attachment Download ✅ DONE (2025-12-02)
 
-Either:
-- Download attachments immediately when recording in `AttachmentIndex`
-- Or at minimum, ensure attachment processing happens before payload processing in the batch
+Modified `AttachmentIngestor` to eagerly download and save attachments when recording descriptors:
+- Added `documentsDirectory` parameter to `AttachmentIngestor`
+- Downloads attachment via `event.downloadAndDecryptAttachment()` when descriptor is recorded
+- Writes to disk using `atomicWriteBytes()` for safe file operations
+- Fast-path deduplication: skips download if file already exists and is non-empty
+- Graceful error handling: logs exceptions but doesn't throw (SmartJournalEntityLoader can retry later)
+- Path traversal protection: blocks attempts to write outside documents directory
+
+Files modified:
+- `lib/features/sync/matrix/pipeline/attachment_ingestor.dart` - Added eager download logic
+- `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart` - Pass documentsDirectory to ingestor
+- `lib/features/sync/matrix/matrix_service.dart` - Pass getDocumentsDirectory() to consumer
 
 ### Priority 3: Persist Failed Event IDs (DEFERRED)
 
@@ -141,13 +150,10 @@ The code has `JournalUpdateSkipReason.missingBase` but it doesn't seem to block 
 
 ## Files to Modify (Deferred)
 
-1. `lib/features/sync/matrix/pipeline/attachment_ingestor.dart`
-   - Add eager download capability
-
-2. `lib/database/database.dart` (or new file)
+1. `lib/database/database.dart` (or new file)
    - Add persistence for failed sync events
 
-3. `lib/features/sync/matrix/smart_journal_entity_loader.dart`
+2. `lib/features/sync/matrix/smart_journal_entity_loader.dart`
    - Improve handling when attachment not in index
 
 ## Testing Recommendations
