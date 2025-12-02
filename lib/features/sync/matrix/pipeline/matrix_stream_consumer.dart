@@ -205,6 +205,10 @@ class MatrixStreamConsumer implements SyncPipeline {
       0; // guards overlapping scans and trailing scheduling
   bool _liveScanDeferred = false;
   DateTime? _lastLiveScanAt;
+  // Tracks wake-from-standby detection and forces catch-up before marker
+  // advancement.
+  bool _wakeCatchUpPending = false;
+  static const Duration _standbyThreshold = Duration(seconds: 30);
   static const Duration _minLiveScanGap = SyncTuning.minLiveScanGap;
   static const Duration _trailingLiveScanDebounce =
       SyncTuning.trailingLiveScanDebounce;
@@ -788,6 +792,15 @@ class MatrixStreamConsumer implements SyncPipeline {
       _lastCatchupEventsCount = slice.length;
       if (slice.isNotEmpty) {
         if (_collectMetrics) _metrics.incCatchupBatches();
+        // Log event summary for catch-up diagnostics
+        final syncPayloads =
+            slice.where(ec.MatrixEventClassifier.isSyncPayloadEvent);
+        final attachments = slice.where(ec.MatrixEventClassifier.isAttachment);
+        _loggingService.captureEvent(
+          'catchup.slice total=${slice.length} payloads=${syncPayloads.length} attachments=${attachments.length} marker=$catchUpMarker',
+          domain: syncLoggingDomain,
+          subDomain: 'catchup',
+        );
         await _processOrdered(slice);
       }
       // Mark initial catch-up as completed and cancel retry timer.
@@ -822,6 +835,44 @@ class MatrixStreamConsumer implements SyncPipeline {
     // null during early startup (hydration/catch-up still in progress). We
     // record the signal and log for observability either way.
     if (_collectMetrics) _lastSignalAt = clock.now();
+    // Detect wake from standby: if the gap since the last scan exceeds the
+    // threshold, trigger a catch-up before allowing marker advancement.
+    final now = clock.now();
+    final lastScan = _lastLiveScanAt;
+    if (lastScan != null && !_wakeCatchUpPending) {
+      final gap = now.difference(lastScan);
+      if (gap > _standbyThreshold) {
+        _wakeCatchUpPending = true;
+        // Reset audit mode to scan a larger tail on wake.
+        _liveScanAuditScansRemaining = 3;
+        _liveScanAuditTail = _computeAuditTailCountByDelta();
+        _loggingService.captureEvent(
+          'wake.detected gapMs=${gap.inMilliseconds} auditTail=$_liveScanAuditTail auditScans=$_liveScanAuditScansRemaining',
+          domain: syncLoggingDomain,
+          subDomain: 'wake',
+        );
+        // Trigger catch-up immediately to ensure we process older events first.
+        if (!_catchUpInFlight) {
+          _catchUpInFlight = true;
+          _loggingService.captureEvent(
+            'wake.catchup.start',
+            domain: syncLoggingDomain,
+            subDomain: 'wake',
+          );
+          unawaited(
+            _attachCatchUp().whenComplete(() {
+              _catchUpInFlight = false;
+              _wakeCatchUpPending = false;
+              _loggingService.captureEvent(
+                'wake.catchup.done',
+                domain: syncLoggingDomain,
+                subDomain: 'wake',
+              );
+            }),
+          );
+        }
+      }
+    }
     if (_liveTimeline == null) {
       _loggingService.captureEvent(
         'signal.noTimeline',
@@ -1074,6 +1125,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     var batchFailures = 0;
     DateTime? earliestNextDue;
     var syncPayloadEventsSeen = 0;
+    var syncPayloadsApplied = 0;
+    var syncPayloadsSkippedCompleted = 0;
     for (final e in ordered) {
       final ts = TimelineEventOrdering.timestamp(e);
       final id = e.eventId;
@@ -1104,6 +1157,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           isSyncPayloadEvent = true;
           processedOk = true;
           treatAsHandled = true;
+          syncPayloadsSkippedCompleted++;
         } else {
           isSyncPayloadEvent = true;
           syncPayloadEventsSeen++;
@@ -1112,6 +1166,7 @@ class MatrixStreamConsumer implements SyncPipeline {
             final outcome = await _processSyncPayloadEvent(e);
             processedOk = outcome.processedOk;
             treatAsHandled = outcome.treatAsHandled;
+            if (processedOk) syncPayloadsApplied++;
             if (outcome.hadFailure) hadFailure = true;
             if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
             if (outcome.nextDue != null &&
@@ -1196,44 +1251,61 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
     }
 
+    // Log batch processing summary for diagnostics
+    _loggingService.captureEvent(
+      'batch.summary total=${ordered.length} seen=$syncPayloadEventsSeen applied=$syncPayloadsApplied skippedCompleted=$syncPayloadsSkippedCompleted suppressed=$suppressedCount blocked=$blockedByFailure',
+      domain: syncLoggingDomain,
+      subDomain: 'batch',
+    );
+
     if (latestEventId != null && latestTs != null) {
-      final shouldAdvance = msh.shouldAdvanceMarker(
-        candidateTimestamp: latestTs,
-        candidateEventId: latestEventId,
-        lastTimestamp: _lastProcessedTs,
-        lastEventId: _lastProcessedEventId,
-      );
-      if (shouldAdvance) {
-        _lastProcessedEventId = latestEventId;
-        _lastProcessedTs = latestTs;
-        // Persist locally immediately to avoid losing progress if the app
-        // backgrounds or exits before the debounced remote flush fires.
-        try {
-          await setLastReadMatrixEventId(latestEventId, _settingsDb);
-          await setLastReadMatrixEventTs(latestTs.toInt(), _settingsDb);
-          if (_collectMetrics) {
-            _loggingService.captureEvent(
-              'marker.local id=$latestEventId ts=${latestTs.toInt()}',
+      // Defer marker advancement if a wake catch-up is pending. This prevents
+      // live scans from skipping ahead before older events are processed.
+      if (_wakeCatchUpPending) {
+        _loggingService.captureEvent(
+          'marker.deferred.wake latestId=$latestEventId latestTs=${latestTs.toInt()}',
+          domain: syncLoggingDomain,
+          subDomain: 'marker.deferred',
+        );
+      } else {
+        final shouldAdvance = msh.shouldAdvanceMarker(
+          candidateTimestamp: latestTs,
+          candidateEventId: latestEventId,
+          lastTimestamp: _lastProcessedTs,
+          lastEventId: _lastProcessedEventId,
+        );
+        if (shouldAdvance) {
+          _lastProcessedEventId = latestEventId;
+          _lastProcessedTs = latestTs;
+          // Persist locally immediately to avoid losing progress if the app
+          // backgrounds or exits before the debounced remote flush fires.
+          try {
+            await setLastReadMatrixEventId(latestEventId, _settingsDb);
+            await setLastReadMatrixEventTs(latestTs.toInt(), _settingsDb);
+            if (_collectMetrics) {
+              _loggingService.captureEvent(
+                'marker.local id=$latestEventId ts=${latestTs.toInt()}',
+                domain: syncLoggingDomain,
+                subDomain: 'marker.local',
+              );
+            }
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
               domain: syncLoggingDomain,
               subDomain: 'marker.local',
+              stackTrace: st,
             );
           }
-        } catch (e, st) {
-          _loggingService.captureException(
-            e,
-            domain: syncLoggingDomain,
-            subDomain: 'marker.local',
-            stackTrace: st,
-          );
+          _readMarkerManager.schedule(room, latestEventId);
+          _circuit.reset(); // reset on successful advancement
+          // Nudge a quick tail rescan to catch immediately subsequent events
+          // that may have landed while we were applying this batch.
+          _liveScanTimer?.cancel();
+          _liveScanTimer = Timer(const Duration(milliseconds: 100), () {
+            unawaited(_scanLiveTimeline());
+          });
         }
-        _readMarkerManager.schedule(room, latestEventId);
-        _circuit.reset(); // reset on successful advancement
-        // Nudge a quick tail rescan to catch immediately subsequent events
-        // that may have landed while we were applying this batch.
-        _liveScanTimer?.cancel();
-        _liveScanTimer = Timer(const Duration(milliseconds: 100), () {
-          unawaited(_scanLiveTimeline());
-        });
       }
     }
 

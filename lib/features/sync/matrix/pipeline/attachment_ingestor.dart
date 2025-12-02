@@ -121,6 +121,9 @@ class AttachmentIngestor {
       final file = File(resolved);
       // Fast-path dedupe: if the file already exists and is non-empty,
       // skip re-downloading to avoid repeated writes and log spam.
+      // Note: We don't validate the file's vector clock here because
+      // SmartJournalEntityLoader.load() will do that validation and
+      // re-download via DescriptorDownloader if the local file is stale.
       if (file.existsSync()) {
         try {
           final len = file.lengthSync();
