@@ -120,6 +120,28 @@ Files modified:
 - `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart` - Pass documentsDirectory to ingestor
 - `lib/features/sync/matrix/matrix_service.dart` - Pass getDocumentsDirectory() to consumer
 
+### Priority 2.5: Wake From Standby Detection ✅ DONE (2025-12-02)
+
+**Problem Identified:** When a device wakes from standby after being asleep for >30 seconds, the live scan would immediately process recent events and advance the marker before a proper catch-up could process older events in the backlog. This caused events sent during standby to be permanently skipped.
+
+**Root Cause:**
+1. Desktop wakes from standby after 15 minutes
+2. LiveScan runs immediately and processes only the tail of the timeline (30 events)
+3. Marker advances to the newest event
+4. CatchUp eventually runs but uses the NEW marker - missing older events
+
+**Fix Applied:**
+- Added `_wakeCatchUpPending` flag and `_standbyThreshold` (30 seconds)
+- When a signal arrives after a gap > 30 seconds, detect "wake from standby"
+- Trigger an immediate catch-up and defer marker advancement until catch-up completes
+- Reset audit mode to scan larger tails on wake (3 scans with computed audit tail)
+
+**Files Modified:**
+- `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart`
+  - Added wake detection in `_scheduleLiveScan()`
+  - Added marker deferral in `_processOrdered()` when `_wakeCatchUpPending`
+  - New logging: `wake.detected`, `wake.catchup.start/done`, `marker.deferred.wake`
+
 ### Priority 3: Persist Failed Event IDs (DEFERRED)
 
 Store failed event IDs in the database (not just in-memory) so they can be retried after app restart:
@@ -143,6 +165,9 @@ The code has `JournalUpdateSkipReason.missingBase` but it doesn't seem to block 
    - ✅ Removed `treatAsHandled = true` for retry cap (lines 342-355, 390-399)
    - ✅ Increased `_liveScanTailLimit` from 30 to 1000 (line 219)
    - ✅ Changed filter callback from `hasAttempts` to `wasCompleted` (line 915)
+   - ✅ Added `_wakeCatchUpPending` flag and `_standbyThreshold` constant
+   - ✅ Added wake detection in `_scheduleLiveScan()` with catch-up trigger
+   - ✅ Added marker deferral in `_processOrdered()` when wake catch-up pending
 
 2. `lib/features/sync/matrix/pipeline/matrix_stream_helpers.dart`
    - ✅ Renamed `hasAttempts` → `wasCompleted` in `filterSyncPayloadsByMonotonic`
