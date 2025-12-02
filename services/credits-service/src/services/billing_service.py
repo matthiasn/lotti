@@ -1,11 +1,13 @@
 """Billing and transaction service"""
 
+import asyncio
 import logging
 from decimal import Decimal
 from typing import Optional
 
 from ..core.constants import CURRENCY_PRECISION, SYSTEM_ACCOUNT_ID
 from ..core.exceptions import (
+    AccountAlreadyExistsException,
     AccountNotFoundException,
     InsufficientBalanceException,
     InvalidAmountException,
@@ -27,22 +29,33 @@ class BillingService(IBillingService):
         """
         self.client = tigerbeetle_client
         self._system_account_initialized = False
+        self._system_account_lock = asyncio.Lock()
 
     async def _ensure_system_account(self) -> None:
-        """Ensure system account exists"""
+        """Ensure system account exists (concurrency-safe)"""
         if self._system_account_initialized:
             return
 
-        try:
-            # Try to get balance to check if it exists
-            await self.client.get_account_balance(SYSTEM_ACCOUNT_ID)
-            self._system_account_initialized = True
-        except AccountNotFoundException:
-            # Create system account with zero balance
-            # System account allows overdrafts for "minting" credits
-            logger.info("Creating system account")
-            await self.client.create_account(SYSTEM_ACCOUNT_ID, "system", is_system_account=True)
-            self._system_account_initialized = True
+        async with self._system_account_lock:
+            # Re-check after acquiring lock (another coroutine may have created it)
+            if self._system_account_initialized:
+                return
+
+            try:
+                # Try to get balance to check if it exists
+                await self.client.get_account_balance(SYSTEM_ACCOUNT_ID)
+                self._system_account_initialized = True
+            except AccountNotFoundException:
+                # Create system account with zero balance
+                # System account allows overdrafts for "minting" credits
+                try:
+                    logger.info("Creating system account")
+                    await self.client.create_account(SYSTEM_ACCOUNT_ID, "system", is_system_account=True)
+                    self._system_account_initialized = True
+                except AccountAlreadyExistsException:
+                    # Another coroutine created it concurrently - that's fine
+                    logger.debug("System account already exists (concurrent creation)")
+                    self._system_account_initialized = True
 
     async def top_up(self, user_id: str, amount: Decimal) -> Decimal:
         """
