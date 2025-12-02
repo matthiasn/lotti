@@ -12,7 +12,7 @@ services:
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
