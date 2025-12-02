@@ -31,11 +31,11 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         if not self.valid_api_keys:
             logger.warning(
-                "⚠️  No API keys configured! Set API_KEYS environment variable to enable authentication. "
+                "No API keys configured! Set API_KEYS environment variable to enable authentication. "
                 "All requests will be rejected until API keys are configured."
             )
         else:
-            logger.info(f"✓ API key authentication enabled with {len(self.valid_api_keys)} key(s)")
+            logger.info(f"API key authentication enabled with {len(self.valid_api_keys)} key(s)")
 
     async def dispatch(self, request: Request, call_next: Callable):
         """

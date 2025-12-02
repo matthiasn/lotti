@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import router
 from .container import container
-from .middleware.auth import APIKeyAuthMiddleware
+from shared.auth import APIKeyAuthMiddleware
 
 # Configure logging
 logging.basicConfig(

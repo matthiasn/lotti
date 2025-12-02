@@ -13,10 +13,10 @@ install-dev: ## Install dependencies including dev/test tools
 	pip install -r requirements.txt -r requirements-test.txt
 
 run: ## Run the service locally
-	python -m uvicorn src.main:app --host 0.0.0.0 --port 8002
+	PYTHONPATH=.. python -m uvicorn src.main:app --host 0.0.0.0 --port 8002
 
 run-dev: ## Run the service with auto-reload
-	python -m uvicorn src.main:app --host 0.0.0.0 --port 8002 --reload
+	PYTHONPATH=.. python -m uvicorn src.main:app --host 0.0.0.0 --port 8002 --reload
 
 test: ## Run all tests
 	pytest

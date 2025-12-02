@@ -52,10 +52,10 @@ check-all: ## Run all checks
 
 ##@ Development
 run: ## Run the service locally
-	python -m src.main
+	PYTHONPATH=.. python -m src.main
 
 run-dev: ## Run the service in development mode with auto-reload
-	uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+	PYTHONPATH=.. uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
 
 ##@ Docker
 docker-build: ## Build Docker image

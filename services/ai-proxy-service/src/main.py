@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import router
-from .middleware.auth import APIKeyAuthMiddleware
+from shared.auth import APIKeyAuthMiddleware
 from .middleware.rate_limit import limiter, rate_limit_handler
 from .middleware.request_id import RequestIDMiddleware
 from slowapi.errors import RateLimitExceeded
