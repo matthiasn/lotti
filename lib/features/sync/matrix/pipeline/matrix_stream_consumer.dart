@@ -106,6 +106,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       required int maxPages,
       required LoggingService logging,
     })? backfill,
+    Directory? documentsDirectory,
   })  : _sessionManager = sessionManager,
         _roomManager = roomManager,
         _loggingService = loggingService,
@@ -128,7 +129,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
         _overrideAuditTail = liveScanInitialAuditTail,
         _liveScanAuditScansRemaining = liveScanInitialAuditScans,
-        _sentEventRegistry = sentEventRegistry {
+        _sentEventRegistry = sentEventRegistry,
+        _ingestor = AttachmentIngestor(documentsDirectory: documentsDirectory) {
     _retryTracker = rc.RetryTracker(
       ttl: _retryTtl,
       maxEntries: _retryMaxEntries,
@@ -172,6 +174,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final AttachmentIndex? _attachmentIndex;
   final bool _collectMetrics;
   final SentEventRegistry _sentEventRegistry;
+  final AttachmentIngestor _ingestor;
   final Future<bool> Function({
     required Timeline timeline,
     required String? lastEventId,
@@ -1018,7 +1021,6 @@ class MatrixStreamConsumer implements SyncPipeline {
 
     // First pass: observe attachment descriptors for remote events.
     var suppressedCount = 0; // count self-origin/suppressed events
-    const ingestor = AttachmentIngestor();
     for (final e in ordered) {
       final eventId = e.eventId;
       // Skip duplicate attachment work if we've already seen this eventId.
@@ -1042,8 +1044,8 @@ class MatrixStreamConsumer implements SyncPipeline {
           continue;
         }
       }
-      // Centralize descriptor record logic.
-      await ingestor.process(
+      // Centralize descriptor record and eager download logic.
+      await _ingestor.process(
         event: e,
         logging: _loggingService,
         attachmentIndex: _attachmentIndex,
