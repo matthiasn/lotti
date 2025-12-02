@@ -82,6 +82,27 @@ Changed `matrix_stream_consumer.dart` to keep retrying indefinitely instead of m
 
 Changed `_liveScanTailLimit` from 30 to 1000 in `matrix_stream_consumer.dart:219`.
 
+### Fix 3: Stop Dropping Failed Events in Filter ✅ DONE
+
+**Location:** `lib/features/sync/matrix/pipeline/matrix_stream_helpers.dart:162-194`
+
+**Problem:** `filterSyncPayloadsByMonotonic()` was dropping events that were "not newer" AND "had attempts". But having attempts > 0 doesn't mean the event was **completed** - it might have **failed** and needs retry!
+
+**Scenario:**
+1. E1 (T=100) fails → attempts=1, marker stays before E1
+2. E2 (T=200) succeeds → attempts=0 (cleared), marker advances to E2
+3. Next scan: E1 is older than marker, has attempts → **DROPPED forever!**
+
+**Fix:** Changed `hasAttempts` parameter to `wasCompleted` - now only drops events that were **successfully completed**, not events with pending retries.
+
+```dart
+// OLD (buggy):
+hasAttempts: (id) => _retryTracker.attempts(id) > 0,
+
+// NEW (fixed):
+wasCompleted: _wasCompletedSync,
+```
+
 ## Deferred Improvements
 
 ### Priority 2: Restore Eager Attachment Download (DEFERRED)
@@ -112,16 +133,21 @@ The code has `JournalUpdateSkipReason.missingBase` but it doesn't seem to block 
 1. `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart`
    - ✅ Removed `treatAsHandled = true` for retry cap (lines 342-355, 390-399)
    - ✅ Increased `_liveScanTailLimit` from 30 to 1000 (line 219)
+   - ✅ Changed filter callback from `hasAttempts` to `wasCompleted` (line 915)
+
+2. `lib/features/sync/matrix/pipeline/matrix_stream_helpers.dart`
+   - ✅ Renamed `hasAttempts` → `wasCompleted` in `filterSyncPayloadsByMonotonic`
+   - ✅ Updated filter logic to only drop completed events, not failed retries
 
 ## Files to Modify (Deferred)
 
-2. `lib/features/sync/matrix/pipeline/attachment_ingestor.dart`
+1. `lib/features/sync/matrix/pipeline/attachment_ingestor.dart`
    - Add eager download capability
 
-3. `lib/database/database.dart` (or new file)
+2. `lib/database/database.dart` (or new file)
    - Add persistence for failed sync events
 
-4. `lib/features/sync/matrix/smart_journal_entity_loader.dart`
+3. `lib/features/sync/matrix/smart_journal_entity_loader.dart`
    - Improve handling when attachment not in index
 
 ## Testing Recommendations

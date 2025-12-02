@@ -912,7 +912,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           dropOldSyncPayloads: _dropOldPayloadsInLiveScan,
           lastTimestamp: _lastProcessedTs,
           lastEventId: _lastProcessedEventId,
-          hasAttempts: (id) => _retryTracker.attempts(id) > 0,
+          wasCompleted: _wasCompletedSync,
           onSkipped: _collectMetrics ? _metrics.incSkipped : null,
         );
 
