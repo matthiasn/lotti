@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
+import 'package:lotti/features/ai/ui/settings/services/gemini_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
@@ -64,6 +65,16 @@ class _InferenceProviderEditPageState
 
       if (widget.configId == null) {
         await controller.addConfig(config);
+
+        // Offer to set up default prompts for Gemini provider
+        if (context.mounted && config is AiConfigInferenceProvider) {
+          final setupService = ref.read(geminiPromptSetupServiceProvider);
+          await setupService.offerPromptSetup(
+            context: context,
+            ref: ref,
+            provider: config,
+          );
+        }
       } else {
         await controller.updateConfig(config);
       }

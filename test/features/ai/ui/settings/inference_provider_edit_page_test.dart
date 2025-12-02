@@ -618,4 +618,271 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
     });
   });
+
+  group('Gemini Prompt Setup Integration', () {
+    testWidgets('shows prompt setup dialog after saving new Gemini provider',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Track saved configs to return dynamically created models
+      final savedConfigs = <AiConfig>[];
+      when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
+        savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
+        return Future.value();
+      });
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer(
+              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Select Gemini provider type
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      // Find and tap Gemini option
+      final geminiOption = find.text('Google Gemini');
+      await tester.ensureVisible(geminiOption);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: geminiOption,
+        matching: find.byType(InkWell),
+      ));
+      await tester.pumpAndSettle();
+
+      // Fill required fields
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'My Gemini');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter your API key'),
+          'test-gemini-key');
+      await tester.pumpAndSettle();
+
+      // Scroll to save button and tap
+      final saveButton = find.text('Save');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Prompt setup dialog should appear
+      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
+    });
+
+    testWidgets('does not show prompt setup dialog for non-Gemini providers',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Select OpenAI provider type
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      final openAiOption = find.text('OpenAI').first;
+      await tester.ensureVisible(openAiOption);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: openAiOption,
+        matching: find.byType(InkWell),
+      ));
+      await tester.pumpAndSettle();
+
+      // Fill required fields
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'My OpenAI');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter your API key'),
+          'test-openai-key');
+      await tester.pumpAndSettle();
+
+      // Scroll to save button and tap
+      final saveButton = find.text('Save');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Prompt setup dialog should NOT appear
+      expect(find.text('Set Up Default Prompts?'), findsNothing);
+    });
+
+    testWidgets(
+        'does not show prompt setup dialog when editing existing provider',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Setup existing Gemini provider
+      final existingGemini = AiConfig.inferenceProvider(
+        id: 'existing-gemini-id',
+        name: 'Existing Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'existing-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(() => mockRepository.getConfigById('existing-gemini-id'))
+          .thenAnswer((_) async => existingGemini);
+
+      await tester.pumpWidget(buildTestWidget(configId: 'existing-gemini-id'));
+      await tester.pumpAndSettle();
+
+      // Modify a field
+      final nameField = find.widgetWithText(TextFormField, 'Existing Gemini');
+      await tester.enterText(nameField, 'Updated Gemini');
+      await tester.pumpAndSettle();
+
+      // Scroll to save button and tap
+      final saveButton = find.text('Save');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Prompt setup dialog should NOT appear for edits
+      expect(find.text('Set Up Default Prompts?'), findsNothing);
+    });
+
+    testWidgets('creates prompts when user confirms in setup dialog',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Track saved configs to return dynamically created models
+      final savedConfigs = <AiConfig>[];
+      when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
+        savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
+        return Future.value();
+      });
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer(
+              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Select Gemini
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      final geminiOption = find.text('Google Gemini');
+      await tester.ensureVisible(geminiOption);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: geminiOption,
+        matching: find.byType(InkWell),
+      ));
+      await tester.pumpAndSettle();
+
+      // Fill fields
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'My Gemini');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
+      await tester.pumpAndSettle();
+
+      // Save
+      final saveButton = find.text('Save');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Confirm prompt setup
+      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
+      await tester.tap(find.text('Set Up Prompts'));
+      await tester.pumpAndSettle();
+
+      // Verify prompts were created (should have 1 provider + 4 models + 4 prompts)
+      final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
+      expect(promptsCreated, equals(4));
+    });
+
+    testWidgets('skips prompt creation when user declines',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Track saved configs to return dynamically created models
+      final savedConfigs = <AiConfig>[];
+      when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
+        savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
+        return Future.value();
+      });
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer(
+              (_) async => savedConfigs.whereType<AiConfigModel>().toList());
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Select Gemini
+      await tester.tap(find.ancestor(
+        of: find.text('OpenAI Compatible'),
+        matching: find.byType(GestureDetector),
+      ));
+      await tester.pumpAndSettle();
+
+      final geminiOption = find.text('Google Gemini');
+      await tester.ensureVisible(geminiOption);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.ancestor(
+        of: geminiOption,
+        matching: find.byType(InkWell),
+      ));
+      await tester.pumpAndSettle();
+
+      // Fill fields
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter a friendly name'),
+          'My Gemini');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
+      await tester.pumpAndSettle();
+
+      // Save
+      final saveButton = find.text('Save');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Decline prompt setup
+      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
+      await tester.tap(find.text('No Thanks'));
+      await tester.pumpAndSettle();
+
+      // Dialog should close, no prompts created
+      expect(find.text('Set Up Default Prompts?'), findsNothing);
+      final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
+      expect(promptsCreated, equals(0));
+    });
+  });
 }
