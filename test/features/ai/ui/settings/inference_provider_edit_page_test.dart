@@ -23,7 +23,7 @@ void main() {
         baseUrl: 'https://fallback.example.com',
         apiKey: 'fallback-key',
         createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
+        inferenceProviderType: InferenceProviderType.openAi,
       ),
     );
   });
@@ -107,7 +107,8 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
+      // Use existing provider that requires API key to show Authentication section
+      await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
       await tester.pumpAndSettle();
 
       // Check section headers
@@ -133,16 +134,13 @@ void main() {
       final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
 
-      // Fill in required fields
+      // Fill in required fields (genericOpenAi default doesn't require API key)
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'),
           'My New Provider');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'https://api.myservice.com');
-      await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'),
-          'my-secret-key');
       await tester.pumpAndSettle();
 
       // Scroll to make save button visible
@@ -153,8 +151,8 @@ void main() {
       await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
-      // Verify save was called
-      verify(() => mockRepository.saveConfig(any())).called(1);
+      // Verify save was called (may be called multiple times for provider + models)
+      verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
     });
 
     testWidgets('opens provider type selection modal when field is tapped',
@@ -184,7 +182,8 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
+      // Use existing provider that requires API key to show API key field
+      await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
       await tester.pumpAndSettle();
 
       // Find visibility toggle button
@@ -326,15 +325,13 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Fill form to make it valid
+      // Fill form to make it valid (genericOpenAi default doesn't require API key)
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'),
           'Test Provider');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'https://test.com');
-      await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
       await tester.pumpAndSettle();
 
       // Verify CallbackShortcuts widget exists
@@ -443,15 +440,16 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
+      // Start with a provider that requires API key
+      await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
       await tester.pumpAndSettle();
 
-      // Initially with OpenAI Compatible, API key should be visible
+      // Initially with OpenAI, API key should be visible
       expect(find.text('API Key'), findsOneWidget);
 
-      // Switch to Ollama
+      // Switch to Ollama (no API key required)
       await tester.tap(find.ancestor(
-        of: find.text('OpenAI Compatible'),
+        of: find.text('OpenAI'),
         matching: find.byType(GestureDetector),
       ));
       await tester.pumpAndSettle();

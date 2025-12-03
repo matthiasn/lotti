@@ -1,0 +1,19 @@
+# Credits Service Dependencies
+# Python 3.13 compatible versions
+
+# Web framework
+fastapi==0.121.3
+uvicorn[standard]==0.34.0
+
+# TigerBeetle client
+tigerbeetle==0.16.66
+
+# Validation
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# HTTP client
+httpx==0.28.1
+
+# Utilities
+python-dotenv==1.0.1

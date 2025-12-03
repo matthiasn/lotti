@@ -1,0 +1,8 @@
+{
+  "model": "gemini-pro",
+  "messages": [
+    {"role": "user", "content": "Say 'Hello from AI Proxy!' and nothing else."}
+  ],
+  "temperature": 0.1,
+  "user_id": "test@example.com"
+}

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  ai-proxy:
+    build: .
+    ports:
+      - "8002:8002"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=INFO
+      - PORT=8002
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
