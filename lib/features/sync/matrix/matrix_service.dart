@@ -9,7 +9,6 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -58,7 +57,6 @@ class MatrixService {
     required SyncReadMarkerService readMarkerService,
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
-    required AttachmentIndex attachmentIndex,
     SentEventRegistry? sentEventRegistry,
     bool collectSyncMetrics = false,
     bool ownsActivityGate = false,
@@ -132,7 +130,6 @@ class MatrixService {
             settingsDb: _settingsDb,
             eventProcessor: _eventProcessor,
             readMarkerService: _readMarkerService,
-            attachmentIndex: attachmentIndex,
             collectMetrics: collectSyncMetrics,
             sentEventRegistry: _sentEventRegistry,
             documentsDirectory: getDocumentsDirectory(),

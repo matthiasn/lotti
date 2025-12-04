@@ -10,7 +10,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -83,7 +82,6 @@ void main() {
   late _MockMatrixSessionManager sessionManager;
   late _MockUserActivityGate activityGate;
   late _MockMatrixStreamConsumer pipeline;
-  late AttachmentIndex attachmentIndex;
   late _MockClient client;
 
   Future<MatrixService> createService({
@@ -124,7 +122,6 @@ void main() {
       roomManager: roomManager,
       sessionManager: sessionManager,
       pipelineOverride: pipeline,
-      attachmentIndex: attachmentIndex,
       connectivityStream: connectivityStream,
     );
     // Allow the eager forceRescan task to run before assertions.
@@ -146,7 +143,6 @@ void main() {
     sessionManager = _MockMatrixSessionManager();
     activityGate = _MockUserActivityGate();
     pipeline = _MockMatrixStreamConsumer();
-    attachmentIndex = AttachmentIndex(logging: logging);
     client = _MockClient();
   });
 

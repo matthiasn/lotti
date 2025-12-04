@@ -25,7 +25,6 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -171,8 +170,6 @@ Future<void> registerSingletons() async {
     documentsDirectory: documentsDirectory,
     sentEventRegistry: sentEventRegistry,
   );
-  // Shared in-memory index of latest attachment events keyed by relativePath.
-  final attachmentIndex = AttachmentIndex(logging: loggingService);
   final readMarkerService = SyncReadMarkerService(
     settingsDb: settingsDb,
     loggingService: loggingService,
@@ -182,10 +179,6 @@ Future<void> registerSingletons() async {
     updateNotifications: getIt<UpdateNotifications>(),
     aiConfigRepository: aiConfigRepository,
     settingsDb: settingsDb,
-    journalEntityLoader: SmartJournalEntityLoader(
-      attachmentIndex: attachmentIndex,
-      loggingService: loggingService,
-    ),
   );
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
@@ -203,14 +196,12 @@ Future<void> registerSingletons() async {
     eventProcessor: syncEventProcessor,
     secureStorage: secureStorage,
     collectSyncMetrics: collectSyncMetrics,
-    attachmentIndex: attachmentIndex,
   );
 
   getIt
     ..registerSingleton<MatrixSyncGateway>(matrixGateway)
     ..registerSingleton<MatrixMessageSender>(matrixMessageSender)
     ..registerSingleton<SentEventRegistry>(sentEventRegistry)
-    ..registerSingleton<AttachmentIndex>(attachmentIndex)
     ..registerSingleton<SyncReadMarkerService>(readMarkerService)
     ..registerSingleton<SyncEventProcessor>(syncEventProcessor)
     ..registerSingleton<MatrixService>(matrixService)

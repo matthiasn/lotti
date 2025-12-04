@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.750" date="2025-12-05">
+      <description>
+          Multiple improvements and simplifications in Sync code.
+      </description>
+    </release>
     <release version="0.9.747" date="2025-12-01">
       <description>
         <p>Automatic Image Analysis: Drop, paste, or import images to a task and they're analyzed automatically. Smart Task Summaries: Your first task summary is created immediately when you add meaningful content (image analysis, audio transcription, or text). No more manual checkbox clicks—just work naturally and let the AI keep up.</p>
