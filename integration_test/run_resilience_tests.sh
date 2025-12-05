@@ -7,7 +7,7 @@ DOCKER_DIR="$SCRIPT_DIR/docker"
 
 # Create 4 user pairs (one for each test to avoid device accumulation)
 TEST_USERS=()
-for i in {1..8}; do
+for _ in {1..8}; do
   uuid=$(uuidgen)
   TEST_USERS+=("$(tr '[:upper:]' '[:lower:]' <<< "$uuid")")
 done
