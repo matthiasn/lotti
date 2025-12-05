@@ -331,12 +331,13 @@ void main() {
 
         debugPrint('\n--- Alice invites Bob into room $roomId');
         await alice.inviteToSyncRoom(userId: bobUserName);
+        // Allow invite to propagate to Bob's homeserver before joining
         await waitSeconds(defaultDelay);
 
         final joinRes2 = await bob.joinRoom(roomId);
         debugPrint('Bob - room joined: $joinRes2');
-        await waitSeconds(defaultDelay);
 
+        // Wait for devices to discover each other (event-driven)
         await waitUntil(
           () => alice.getUnverifiedDevices().isNotEmpty,
           timeout: timeout,
@@ -358,8 +359,6 @@ void main() {
         final outgoingKeyVerificationStream = alice.keyVerificationStream;
         final incomingKeyVerificationRunnerStream =
             bob.incomingKeyVerificationRunnerStream;
-
-        await waitSeconds(defaultDelay);
 
         var emojisFromBob = '';
         var emojisFromAlice = '';
@@ -421,6 +420,7 @@ void main() {
         );
         addTearDown(outgoingSubscription.cancel);
 
+        // Allow stream subscriptions to be fully established before initiating verification
         await waitSeconds(defaultDelay);
 
         debugPrint('\n--- Alice verifies Bob');
@@ -451,8 +451,6 @@ void main() {
 
         expect(alice.getUnverifiedDevices(), isEmpty);
         expect(bob.getUnverifiedDevices(), isEmpty);
-
-        await waitSeconds(defaultDelay);
 
         Future<void> sendTestMessage(
           int index, {
@@ -573,8 +571,6 @@ void main() {
         final bobEntriesCount = await bobDb.getJournalCount();
         expect(bobEntriesCount, expectedEntriesPerDb);
         debugPrint('Bob persisted $bobEntriesCount entries');
-
-        await waitSeconds(defaultDelay);
       },
       timeout: const Timeout(Duration(minutes: 15)),
       skip: skipReason ?? false,

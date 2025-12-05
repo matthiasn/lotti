@@ -1,6 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+/// Exception thrown when a Toxiproxy API call fails.
+class ToxiproxyException implements Exception {
+  ToxiproxyException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'ToxiproxyException: $message';
+}
+
 /// Controller for Toxiproxy to simulate network conditions during tests.
 ///
 /// Toxiproxy API documentation: https://github.com/Shopify/toxiproxy#http-api
@@ -41,6 +50,8 @@ class ToxiproxyController {
   }
 
   /// Enable a proxy
+  ///
+  /// Throws [ToxiproxyException] if the request fails.
   Future<void> enableProxy(String name) async {
     final body = jsonEncode({'enabled': true});
     final request = await _client.postUrl(Uri.parse('$baseUrl/proxies/$name'));
@@ -48,6 +59,12 @@ class ToxiproxyController {
     request.write(body);
     final response = await request.close();
     await response.drain<void>();
+
+    if (response.statusCode != 200) {
+      throw ToxiproxyException(
+        'Failed to enable proxy "$name": HTTP ${response.statusCode}',
+      );
+    }
   }
 
   /// Disable a proxy (simulates complete network outage)
@@ -77,6 +94,8 @@ class ToxiproxyController {
   }
 
   /// Add a toxic to a proxy
+  ///
+  /// Throws [ToxiproxyException] if the request fails.
   Future<void> addToxic({
     required String proxyName,
     required String toxicName,
@@ -99,6 +118,13 @@ class ToxiproxyController {
     request.write(body);
     final response = await request.close();
     await response.drain<void>();
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw ToxiproxyException(
+        'Failed to add toxic "$toxicName" to proxy "$proxyName": '
+        'HTTP ${response.statusCode}',
+      );
+    }
   }
 
   /// Remove a toxic from a proxy
@@ -165,6 +191,12 @@ class ToxiproxyController {
   }
 
   /// Limit bandwidth (simulates congested network)
+  ///
+  /// The [bytesPerSecond] parameter specifies the desired throughput limit.
+  /// Note: Toxiproxy's bandwidth toxic expects the rate in KB/s, so this
+  /// method converts bytes/s to KB/s by dividing by 1000.
+  ///
+  /// Example: `limitBandwidth(proxyName, bytesPerSecond: 10000)` limits to ~10 KB/s.
   Future<void> limitBandwidth(
     String proxyName, {
     required int bytesPerSecond,
@@ -174,7 +206,8 @@ class ToxiproxyController {
       toxicName: 'bandwidth_downstream',
       type: 'bandwidth',
       attributes: {
-        'rate': bytesPerSecond ~/ 1000, // KB/s
+        'rate':
+            bytesPerSecond ~/ 1000, // Convert bytes/s to KB/s for Toxiproxy API
       },
     );
   }

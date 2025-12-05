@@ -1,56 +1,40 @@
 #!/bin/bash
-# Go to directory of script
-cd "$(dirname "$0")" || exit
+# Resilience tests for Matrix sync under adverse network conditions
+
+SCRIPT_DIR="$(dirname "$0")"
+PROJECT_ROOT="$SCRIPT_DIR/.."
+DOCKER_DIR="$SCRIPT_DIR/docker"
 
 # Create 4 user pairs (one for each test to avoid device accumulation)
-uuid1=$(uuidgen)
-uuid2=$(uuidgen)
-uuid3=$(uuidgen)
-uuid4=$(uuidgen)
-uuid5=$(uuidgen)
-uuid6=$(uuidgen)
-uuid7=$(uuidgen)
-uuid8=$(uuidgen)
+TEST_USERS=()
+for i in {1..8}; do
+  uuid=$(uuidgen)
+  TEST_USERS+=("$(tr '[:upper:]' '[:lower:]' <<< "$uuid")")
+done
 
-TEST_USER1="$(tr '[:upper:]' '[:lower:]' <<< "$uuid1")"
-TEST_USER2="$(tr '[:upper:]' '[:lower:]' <<< "$uuid2")"
-TEST_USER3="$(tr '[:upper:]' '[:lower:]' <<< "$uuid3")"
-TEST_USER4="$(tr '[:upper:]' '[:lower:]' <<< "$uuid4")"
-TEST_USER5="$(tr '[:upper:]' '[:lower:]' <<< "$uuid5")"
-TEST_USER6="$(tr '[:upper:]' '[:lower:]' <<< "$uuid6")"
-TEST_USER7="$(tr '[:upper:]' '[:lower:]' <<< "$uuid7")"
-TEST_USER8="$(tr '[:upper:]' '[:lower:]' <<< "$uuid8")"
-
-cd docker || exit
-
-# Create test users
+# Create test users in Dendrite
 echo "Creating test users..."
-docker compose exec dendrite create-account -config dendrite.yaml -username "$TEST_USER1" -admin -password "?Secret123@" 2>/dev/null || true
-docker compose exec dendrite create-account -config dendrite.yaml -username "$TEST_USER2" -admin -password "?Secret123@" 2>/dev/null || true
-docker compose exec dendrite create-account -config dendrite.yaml -username "$TEST_USER3" -admin -password "?Secret123@" 2>/dev/null || true
-docker compose exec dendrite create-account -config dendrite.yaml -username "$TEST_USER4" -admin -password "?Secret123@" 2>/dev/null || true
-docker compose exec dendrite create-account -config dendrite.yaml -username "$TEST_USER5" -admin -password "?Secret123@" 2>/dev/null || true
-docker compose exec dendrite create-account -config dendrite.yaml -username "$TEST_USER6" -admin -password "?Secret123@" 2>/dev/null || true
-docker compose exec dendrite create-account -config dendrite.yaml -username "$TEST_USER7" -admin -password "?Secret123@" 2>/dev/null || true
-docker compose exec dendrite create-account -config dendrite.yaml -username "$TEST_USER8" -admin -password "?Secret123@" 2>/dev/null || true
-
-cd - > /dev/null || exit
-cd ..
+for user in "${TEST_USERS[@]}"; do
+  docker compose -f "$DOCKER_DIR/docker-compose.yml" exec dendrite \
+    create-account -config dendrite.yaml -username "$user" -admin -password "?Secret123@" 2>/dev/null || true
+done
 
 echo "Running resilience tests..."
-echo "Test 1 users: @$TEST_USER1:localhost / @$TEST_USER2:localhost"
-echo "Test 2 users: @$TEST_USER3:localhost / @$TEST_USER4:localhost"
-echo "Test 3 users: @$TEST_USER5:localhost / @$TEST_USER6:localhost"
-echo "Test 4 users: @$TEST_USER7:localhost / @$TEST_USER8:localhost"
+echo "Test 1 users: @${TEST_USERS[0]}:localhost / @${TEST_USERS[1]}:localhost"
+echo "Test 2 users: @${TEST_USERS[2]}:localhost / @${TEST_USERS[3]}:localhost"
+echo "Test 3 users: @${TEST_USERS[4]}:localhost / @${TEST_USERS[5]}:localhost"
+echo "Test 4 users: @${TEST_USERS[6]}:localhost / @${TEST_USERS[7]}:localhost"
+
+cd "$PROJECT_ROOT" || exit
 
 fvm flutter test integration_test/sync_resilience_test.dart \
--d macos \
---dart-define=TEST_USER1="@$TEST_USER1:localhost" \
---dart-define=TEST_USER2="@$TEST_USER2:localhost" \
---dart-define=TEST_USER3="@$TEST_USER3:localhost" \
---dart-define=TEST_USER4="@$TEST_USER4:localhost" \
---dart-define=TEST_USER5="@$TEST_USER5:localhost" \
---dart-define=TEST_USER6="@$TEST_USER6:localhost" \
---dart-define=TEST_USER7="@$TEST_USER7:localhost" \
---dart-define=TEST_USER8="@$TEST_USER8:localhost" \
---dart-define=SLOW_NETWORK="false" "$@"
+  -d macos \
+  --dart-define=TEST_USER1="@${TEST_USERS[0]}:localhost" \
+  --dart-define=TEST_USER2="@${TEST_USERS[1]}:localhost" \
+  --dart-define=TEST_USER3="@${TEST_USERS[2]}:localhost" \
+  --dart-define=TEST_USER4="@${TEST_USERS[3]}:localhost" \
+  --dart-define=TEST_USER5="@${TEST_USERS[4]}:localhost" \
+  --dart-define=TEST_USER6="@${TEST_USERS[5]}:localhost" \
+  --dart-define=TEST_USER7="@${TEST_USERS[6]}:localhost" \
+  --dart-define=TEST_USER8="@${TEST_USERS[7]}:localhost" \
+  --dart-define=SLOW_NETWORK="false" "$@"
