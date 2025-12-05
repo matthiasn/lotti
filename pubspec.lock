@@ -734,26 +734,26 @@ packages:
     dependency: "direct main"
     description:
       name: flex_color_picker
-      sha256: a0979dd61f21b634717b98eb4ceaed2bfe009fe020ce8597aaf164b9eeb57aaa
+      sha256: f5b0b53d4ae0d59b1e28dfc21d5398e5028cf8e764518e491a52fd050aa23881
       url: "https://pub.dev"
     source: hosted
-    version: "3.8.0"
+    version: "3.7.2"
   flex_color_scheme:
     dependency: "direct main"
     description:
       name: flex_color_scheme
-      sha256: ab854146f201d2d62cc251fd525ef023b84182c4a0bfe4ae4c18ffc505b412d3
+      sha256: "6e713c27a2ebe63393a44d4bf9cdd2ac81e112724a4c69905fc41cbf231af11d"
       url: "https://pub.dev"
     source: hosted
-    version: "8.4.0"
+    version: "8.3.1"
   flex_seed_scheme:
     dependency: transitive
     description:
       name: flex_seed_scheme
-      sha256: a3183753bbcfc3af106224bff3ab3e1844b73f58062136b7499919f49f3667e7
+      sha256: "828291a5a4d4283590541519d8b57821946660ac61d2e07d955f81cfcab22e5d"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.1"
+    version: "3.6.1"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -1237,10 +1237,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_fonts
-      sha256: ba03d03bcaa2f6cb7bd920e3b5027181db75ab524f8891c8bc3aa603885b8055
+      sha256: "517b20870220c48752eafa0ba1a797a092fb22df0d89535fd9991e86ee2cdd9c"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.3"
+    version: "6.3.2"
   gpt_markdown:
     dependency: "direct main"
     description:
@@ -1405,10 +1405,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_ios
-      sha256: "956c16a42c0c708f914021666ffcd8265dde36e673c9fa68c81f7d085d9774ad"
+      sha256: "997d100ce1dda5b1ba4085194c5e36c9f8a1fb7987f6a36ab677a344cd2dc986"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.13+3"
+    version: "0.8.13+2"
   image_picker_linux:
     dependency: transitive
     description:
@@ -1745,10 +1745,10 @@ packages:
     dependency: "direct main"
     description:
       name: media_kit
-      sha256: "2a207ea7baf1a2ea2ff2016d512e572ca6fc02a937769effb5c27b4d682b4a53"
+      sha256: dfd5ab85d49a1806b1314a0b81f3d14da48f0db0a657336b2d77c5f17db28944
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.3"
+    version: "1.2.2"
   media_kit_libs_android_audio:
     dependency: transitive
     description:
@@ -2057,10 +2057,10 @@ packages:
     dependency: transitive
     description:
       name: photo_manager
-      sha256: "12c8873ec2e7488dd6a0cebcb3c4f1d6c51db34ba696c973faf121b53ffd210e"
+      sha256: "99355f3b3591a00416cc787bbf7f04510f672d602814e0063bf4dc40603041f0"
       url: "https://pub.dev"
     source: hosted
-    version: "3.8.2"
+    version: "3.8.0"
   photo_manager_image_provider:
     dependency: transitive
     description:
@@ -2522,10 +2522,10 @@ packages:
     dependency: transitive
     description:
       name: shared_preferences_android
-      sha256: "83af5c682796c0f7719c2bbf74792d113e40ae97981b8f266fa84574573556bc"
+      sha256: "46a46fd64659eff15f4638bbe19de43f9483f0e0bf024a9fb6b3582064bacc7b"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.18"
+    version: "2.4.17"
   shared_preferences_foundation:
     dependency: transitive
     description:
@@ -2743,10 +2743,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
-      sha256: "1e800ebe7f85a80a66adacaa6febe4d5f4d8b75f244e9838a27cb2ffc7aec08d"
+      sha256: "69c80d812ef2500202ebd22002cbfc1b6565e9ff56b2f971e757fac5d42294df"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.41"
+    version: "0.5.40"
   sqlparser:
     dependency: transitive
     description:
@@ -3111,18 +3111,18 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: d74b66f283afff135d5be0ceccca2ca74dff7df1e9b1eaca6bd4699875d3ae60
+      sha256: "3f7ef3fb7b29f510e58f4d56b6ffbc3463b1071f2cf56e10f8d25f5b991ed85b"
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.22"
+    version: "2.8.21"
   video_player_avfoundation:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: e4d33b79a064498c6eb3a6a492b6a5012573d4943c28d566caf1a6c0840fe78d
+      sha256: "6bced1739cf1f96f03058118adb8ac0dd6f96aa1a1a6e526424ab92fd2a6a77d"
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.8"
+    version: "2.8.7"
   video_player_platform_interface:
     dependency: transitive
     description:

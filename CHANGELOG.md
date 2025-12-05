@@ -5,17 +5,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Changed
-- **Sync pipeline simplification** (2025-12):
-  - Removed `AttachmentIndex` - no longer needed since attachments are eagerly downloaded
-  - Removed `DescriptorCatchUpManager` - only existed for lazy loading coordination
-  - Replaced `SmartJournalEntityLoader` with simple `FileSyncJournalEntityLoader`
-  - Removed vector-clock based descriptor fetching from Matrix - files are now read directly from disk
-  - Total reduction: ~500 lines of code, ~700 lines of tests
-  - Architecture remains robust: if a sync payload arrives before its attachment, processing fails
-    and retries on the next catch-up cycle (acceptable for personal app use)
-  - See: `docs/sync_simplification_plan.md`
-
 ### Added
 - Automatic Image Analysis: Images added to tasks are now analyzed automatically
   - When dropping, pasting, or importing images to a task with image analysis enabled, analysis runs in background

@@ -8,8 +8,10 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart'
     as ec;
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_helpers.dart'
@@ -85,6 +87,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required SyncEventProcessor eventProcessor,
     required SyncReadMarkerService readMarkerService,
     required SentEventRegistry sentEventRegistry,
+    AttachmentIndex? attachmentIndex,
     MetricsCounters? metricsCounters,
     bool collectMetrics = false,
     Duration markerDebounce = const Duration(milliseconds: 300),
@@ -111,6 +114,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _settingsDb = settingsDb,
         _eventProcessor = eventProcessor,
         _readMarkerService = readMarkerService,
+        _attachmentIndex = attachmentIndex,
         _collectMetrics = collectMetrics,
         _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
         _markerDebounce = markerDebounce,
@@ -146,6 +150,18 @@ class MatrixStreamConsumer implements SyncPipeline {
       ),
       logging: _loggingService,
     );
+    // Initialize descriptor catch-up manager to proactively discover
+    // attachment descriptors for pending jsonPaths.
+    if (_attachmentIndex != null) {
+      _descriptorCatchUp = DescriptorCatchUpManager(
+        logging: _loggingService,
+        attachmentIndex: _attachmentIndex!,
+        roomManager: _roomManager,
+        scheduleLiveScan: _scheduleLiveScan,
+        retryNow: retryNow,
+        now: clock.now,
+      );
+    }
   }
 
   final MatrixSessionManager _sessionManager;
@@ -155,6 +171,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final SettingsDb _settingsDb;
   final SyncEventProcessor _eventProcessor;
   final SyncReadMarkerService _readMarkerService;
+  final AttachmentIndex? _attachmentIndex;
   final bool _collectMetrics;
   final SentEventRegistry _sentEventRegistry;
   final AttachmentIngestor _ingestor;
@@ -204,6 +221,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Catch-up window is handled by strategy with sensible defaults.
 
   final MetricsCounters _metrics;
+  // Descriptor-focused catch-up helper (manages pending jsonPaths)
+  DescriptorCatchUpManager? _descriptorCatchUp;
   static const int _liveScanTailLimit = 1000;
   // Live-scan look-behind policy. Can be tuned via constructor (test seams).
   final bool _liveScanIncludeLookBehind;
@@ -279,6 +298,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   Client get _client => _sessionManager.client;
 
   String? _extractRuntimeType(Event ev) => msh.extractRuntimeTypeFromEvent(ev);
+
+  String? _extractJsonPath(Event ev) => msh.extractJsonPathFromEvent(ev);
 
   void _bumpDroppedType(String? rt) => _metrics.bumpDroppedType(rt);
 
@@ -362,6 +383,14 @@ class MatrixStreamConsumer implements SyncPipeline {
           subDomain: 'retry.keepRetrying',
         );
         if (_collectMetrics) _metrics.incRetriesScheduled();
+        // Record pending JSON path for faster recovery when the failure is
+        // due to a missing attachment.
+        if (err is FileSystemException) {
+          final jp = _extractJsonPath(e);
+          if (jp != null) {
+            _descriptorCatchUp?.addPending(jp);
+          }
+        }
         _loggingService.captureException(
           err,
           domain: syncLoggingDomain,
@@ -660,6 +689,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     _wakeCatchUpRetryTimer?.cancel();
     _wakeCatchUpRetryTimer = null;
     _readMarkerManager.dispose();
+    _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
     try {
       _liveTimeline?.cancelSubscriptions();
@@ -1114,10 +1144,14 @@ class MatrixStreamConsumer implements SyncPipeline {
           continue;
         }
       }
-      // Eagerly download attachments to disk.
+      // Centralize descriptor record and eager download logic.
       await _ingestor.process(
         event: e,
         logging: _loggingService,
+        attachmentIndex: _attachmentIndex,
+        descriptorCatchUp: _descriptorCatchUp,
+        scheduleLiveScan: _scheduleLiveScan,
+        retryNow: retryNow,
       );
 
       // (descriptor observe handled above)
@@ -1370,7 +1404,11 @@ class MatrixStreamConsumer implements SyncPipeline {
     final map = _metrics.snapshot(
       retryStateSize: _retryTracker.size(),
       circuitIsOpen: _circuit.isOpen(clock.now()),
-    );
+    )
+      ..putIfAbsent(
+          'pendingJsonPaths', () => _descriptorCatchUp?.pendingLength ?? 0)
+      ..putIfAbsent(
+          'descriptorCatchUpRuns', () => _descriptorCatchUp?.runs ?? 0);
     // Derived metric to assess processing efficiency when metrics collection is
     // enabled. When either value is zero, omit the ratio.
     try {
