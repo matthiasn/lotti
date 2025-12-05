@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.751" date="2025-12-05">
+      <description>
+          Automatically create Gemini prompts.
+      </description>
+    </release>
     <release version="0.9.750" date="2025-12-05">
       <description>
           Multiple improvements and simplifications in Sync code.

@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -86,6 +87,7 @@ MatrixService _createMatrixService({
     secureStorage: secureStorage,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
+    attachmentIndex: AttachmentIndex(logging: loggingService),
     sentEventRegistry: sentEventRegistry,
   );
 }
@@ -331,12 +333,13 @@ void main() {
 
         debugPrint('\n--- Alice invites Bob into room $roomId');
         await alice.inviteToSyncRoom(userId: bobUserName);
+        // Allow invite to propagate to Bob's homeserver before joining
         await waitSeconds(defaultDelay);
 
         final joinRes2 = await bob.joinRoom(roomId);
         debugPrint('Bob - room joined: $joinRes2');
-        await waitSeconds(defaultDelay);
 
+        // Wait for devices to discover each other (event-driven)
         await waitUntil(
           () => alice.getUnverifiedDevices().isNotEmpty,
           timeout: timeout,
@@ -358,8 +361,6 @@ void main() {
         final outgoingKeyVerificationStream = alice.keyVerificationStream;
         final incomingKeyVerificationRunnerStream =
             bob.incomingKeyVerificationRunnerStream;
-
-        await waitSeconds(defaultDelay);
 
         var emojisFromBob = '';
         var emojisFromAlice = '';
@@ -421,6 +422,7 @@ void main() {
         );
         addTearDown(outgoingSubscription.cancel);
 
+        // Allow stream subscriptions to be fully established before initiating verification
         await waitSeconds(defaultDelay);
 
         debugPrint('\n--- Alice verifies Bob');
@@ -451,8 +453,6 @@ void main() {
 
         expect(alice.getUnverifiedDevices(), isEmpty);
         expect(bob.getUnverifiedDevices(), isEmpty);
-
-        await waitSeconds(defaultDelay);
 
         Future<void> sendTestMessage(
           int index, {
@@ -573,8 +573,6 @@ void main() {
         final bobEntriesCount = await bobDb.getJournalCount();
         expect(bobEntriesCount, expectedEntriesPerDb);
         debugPrint('Bob persisted $bobEntriesCount entries');
-
-        await waitSeconds(defaultDelay);
       },
       timeout: const Timeout(Duration(minutes: 15)),
       skip: skipReason ?? false,

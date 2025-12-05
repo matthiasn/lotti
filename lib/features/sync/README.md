@@ -35,7 +35,7 @@ that keeps the pipeline testable and observable.
 | **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
 | **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, registers the Matrix event IDs it emits, increments send counters, and notifies `MatrixService`. |
 | **SentEventRegistry** (`matrix/sent_event_registry.dart`) | In-memory TTL cache of event IDs produced by this device so timeline ingestion can drop echo events without re-applying them. |
-| **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, eager attachment downloading via `AttachmentIngestor`, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
+| **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment descriptor observation, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
 | **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and surfaces precise `applied/skipReason` diagnostics so the pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
@@ -138,8 +138,7 @@ The stream-first consumer replaces the legacy multi-pass drain:
   present, then processes strictly after it (no rewind before the marker).
 - Micro-batches: orders oldest→newest with in-batch de-duplication by event ID.
 - Self-event suppression: consumes locally produced event IDs from `SentEventRegistry` so echoed payloads advance the marker without redundant database or attachment work; suppression counters and logs surface in the pipeline so Matrix Stats reflects the saved work.
-- Attachment downloading: `AttachmentIngestor` downloads attachments eagerly to disk.
-  Sync payloads read JSON directly from disk via `FileSyncJournalEntityLoader`.
+- Attachment descriptors only; descriptors are recorded to speed up local resolution.
 - Marker advancement: monotonic by server timestamp with eventId tie-breaker;
   remote updates are guarded to avoid downgrades.
 - Rescans: schedules a tail rescan on activity without advancement, and after
@@ -149,10 +148,11 @@ The stream-first consumer replaces the legacy multi-pass drain:
 Key helpers:
 - `matrix/pipeline/catch_up_strategy.dart`: no-rewind catch-up via SDK seam and
   snapshot-limit escalation fallback.
-- `matrix/sync_event_processor.dart`: decodes sync messages and applies them
-  using `FileSyncJournalEntityLoader` which reads JSON directly from disk.
-  If attachments haven't been downloaded yet, processing fails and retries
-  on the next catch-up cycle.
+- `matrix/pipeline/attachment_index.dart`: in-memory relativePath→event map used by
+  the apply phase.
+- `matrix/sync_event_processor.dart` smart loader: vector-clock aware JSON
+  fetching that uses `AttachmentIndex` to fetch newer JSON for same-path
+  updates before applying.
 - `matrix/read_marker_service.dart`: remote monotonic guard comparing candidate
   vs `fullyRead` using the timeline when available.
 
@@ -206,9 +206,6 @@ Key helpers:
 ## Current Status
 
 - Provider overrides and custom lint rules enforce the dependency model.
-- **Simplified architecture (2025-12):** Removed `AttachmentIndex`, `DescriptorCatchUpManager`,
-  and `SmartJournalEntityLoader`. The sync pipeline now uses eager attachment downloading
-  and simple file-based JSON loading. See `docs/sync_simplification_plan.md` for details.
 - When extending the sync feature, update both this README and the architecture
   documents so the narrative stays aligned with the implementation.
 
@@ -289,12 +286,10 @@ landed fixes, and how to verify behaviour using Matrix Stats and logs.
     (`journalEntity`, `entityDefinition`, `tagEntity`, `entryLink`, `aiConfig`,
     `aiConfigDelete`) and debounces emissions; unit tests cover each variant along
     with timer cancellation on `dispose`.
-- Simplified JSON loading (2025-12)
-  - `FileSyncJournalEntityLoader` reads JSON directly from disk.
-  - Attachments are downloaded eagerly by `AttachmentIngestor`, so files
-    should already be present when the loader is called.
-  - If a file is missing (e.g., attachment arrived in a later batch), processing
-    fails and retries on the next catch-up cycle.
+- Vector‑clock aware JSON
+  - `SmartJournalEntityLoader` reads local JSON first; if a vector clock is
+    provided and the local is older, it uses `AttachmentIndex` to fetch the
+    newer JSON, writes it atomically, then applies it.
 - File operations
   - JSON writes are atomic: write to a `*.tmp` file then rename to the final
     path. A best-effort fallback moves an existing target aside as `*.bak` to
