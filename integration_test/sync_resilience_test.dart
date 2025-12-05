@@ -6,103 +6,26 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/classes/entry_text.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
-import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
-import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:uuid/uuid.dart';
 
 import '../test/mocks/mocks.dart';
-import '../test/utils/utils.dart';
+import 'helpers/sync_test_helpers.dart';
 import 'helpers/toxiproxy_controller.dart';
-
-const uuid = Uuid();
-
-MatrixService _createMatrixService({
-  required MatrixConfig config,
-  required MatrixSyncGateway gateway,
-  required LoggingService loggingService,
-  required JournalDb journalDb,
-  required SettingsDb settingsDb,
-  required SecureStorage secureStorage,
-  required String deviceName,
-  required UserActivityService activityService,
-  required Directory documentsDirectory,
-  required UpdateNotifications updateNotifications,
-  required AiConfigRepository aiConfigRepository,
-  required SentEventRegistry sentEventRegistry,
-  bool collectSyncMetrics = true,
-}) {
-  final activityGate = UserActivityGate(
-    activityService: activityService,
-  );
-  final messageSender = MatrixMessageSender(
-    loggingService: loggingService,
-    journalDb: journalDb,
-    documentsDirectory: documentsDirectory,
-    sentEventRegistry: sentEventRegistry,
-  );
-  final readMarkerService = SyncReadMarkerService(
-    settingsDb: settingsDb,
-    loggingService: loggingService,
-  );
-  final eventProcessor = SyncEventProcessor(
-    loggingService: loggingService,
-    updateNotifications: updateNotifications,
-    aiConfigRepository: aiConfigRepository,
-    settingsDb: settingsDb,
-  );
-
-  return MatrixService(
-    matrixConfig: config,
-    gateway: gateway,
-    loggingService: loggingService,
-    activityGate: activityGate,
-    messageSender: messageSender,
-    journalDb: journalDb,
-    settingsDb: settingsDb,
-    readMarkerService: readMarkerService,
-    eventProcessor: eventProcessor,
-    secureStorage: secureStorage,
-    deviceDisplayName: deviceName,
-    ownsActivityGate: true,
-    sentEventRegistry: sentEventRegistry,
-    collectSyncMetrics: collectSyncMetrics,
-  );
-}
-
-String extractEmojiString(Iterable<KeyVerificationEmoji>? emojis) {
-  final buffer = StringBuffer();
-  if (emojis != null) {
-    for (final emoji in emojis) {
-      buffer.write(' ${emoji.emoji}  ');
-    }
-  }
-  return buffer.toString();
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -306,7 +229,7 @@ void main() {
         sentEventRegistry: aliceRegistry,
       );
       final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
-      final alice = _createMatrixService(
+      final alice = createMatrixService(
         config: aliceConfig,
         gateway: aliceGateway,
         loggingService: sharedLoggingService,
@@ -343,7 +266,7 @@ void main() {
         sentEventRegistry: bobRegistry,
       );
       final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
-      final bob = _createMatrixService(
+      final bob = createMatrixService(
         config: bobConfig,
         gateway: bobGateway,
         loggingService: sharedLoggingService,
@@ -494,44 +417,6 @@ void main() {
       return (alice: alice, bob: bob, roomId: roomId);
     }
 
-    Future<void> sendTestMessage({
-      required MatrixService device,
-      required String deviceName,
-      required int index,
-      required String roomId,
-    }) async {
-      final id = uuid.v1();
-      final now = DateTime.now();
-
-      final entity = JournalEntry(
-        meta: Metadata(
-          id: id,
-          createdAt: now,
-          dateFrom: now,
-          dateTo: now,
-          updatedAt: now,
-          starred: false,
-          vectorClock: VectorClock({deviceName: index}),
-        ),
-        entryText: EntryText(
-          plainText: 'Resilience test from $deviceName #$index - $now',
-        ),
-      );
-
-      final jsonPath = relativeEntityPath(entity);
-      await saveJournalEntityJson(entity);
-
-      await device.sendMatrixMsg(
-        SyncMessage.journalEntity(
-          id: id,
-          status: SyncEntryStatus.initial,
-          vectorClock: VectorClock({deviceName: index}),
-          jsonPath: jsonPath,
-        ),
-        myRoomId: roomId,
-      );
-    }
-
     test(
       'Network interruption during sync - messages eventually sync',
       () async {
@@ -558,7 +443,7 @@ void main() {
         // Send first batch
         for (var i = 0; i < interruptAfter; i++) {
           await sendTestMessage(
-            device: alice,
+            matrixService: alice,
             deviceName: 'aliceResilience',
             index: i,
             roomId: roomId,
@@ -577,7 +462,7 @@ void main() {
         for (var i = interruptAfter; i < totalMessages; i++) {
           // Use direct homeserver for Alice (not via proxy)
           await sendTestMessage(
-            device: alice,
+            matrixService: alice,
             deviceName: 'aliceResilience',
             index: i,
             roomId: roomId,
@@ -657,7 +542,7 @@ void main() {
             '\n--- Alice sends $totalMessages messages with high latency');
         for (var i = 0; i < totalMessages; i++) {
           await sendTestMessage(
-            device: alice,
+            matrixService: alice,
             deviceName: 'aliceLatency',
             index: i,
             roomId: roomId,
@@ -721,7 +606,7 @@ void main() {
             '\n--- Alice sends $totalMessages messages with limited bandwidth');
         for (var i = 0; i < totalMessages; i++) {
           await sendTestMessage(
-            device: alice,
+            matrixService: alice,
             deviceName: 'aliceBandwidth',
             index: i,
             roomId: roomId,
@@ -785,7 +670,7 @@ void main() {
 
           for (var i = start; i < end; i++) {
             await sendTestMessage(
-              device: alice,
+              matrixService: alice,
               deviceName: 'aliceIntermittent',
               index: i,
               roomId: roomId,

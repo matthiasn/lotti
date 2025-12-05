@@ -5,10 +5,24 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/read_marker_service.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:uuid/uuid.dart';
 
 import 'toxiproxy_controller.dart';
@@ -213,4 +227,69 @@ Future<bool> verifyTestEnvironment() async {
     debugPrint('Environment check failed: $e');
     return false;
   }
+}
+
+/// Create a MatrixService instance for testing
+MatrixService createMatrixService({
+  required MatrixConfig config,
+  required MatrixSyncGateway gateway,
+  required LoggingService loggingService,
+  required JournalDb journalDb,
+  required SettingsDb settingsDb,
+  required SecureStorage secureStorage,
+  required String deviceName,
+  required UserActivityService activityService,
+  required Directory documentsDirectory,
+  required UpdateNotifications updateNotifications,
+  required AiConfigRepository aiConfigRepository,
+  required SentEventRegistry sentEventRegistry,
+  bool collectSyncMetrics = true,
+}) {
+  final activityGate = UserActivityGate(
+    activityService: activityService,
+  );
+  final messageSender = MatrixMessageSender(
+    loggingService: loggingService,
+    journalDb: journalDb,
+    documentsDirectory: documentsDirectory,
+    sentEventRegistry: sentEventRegistry,
+  );
+  final readMarkerService = SyncReadMarkerService(
+    settingsDb: settingsDb,
+    loggingService: loggingService,
+  );
+  final eventProcessor = SyncEventProcessor(
+    loggingService: loggingService,
+    updateNotifications: updateNotifications,
+    aiConfigRepository: aiConfigRepository,
+    settingsDb: settingsDb,
+  );
+
+  return MatrixService(
+    matrixConfig: config,
+    gateway: gateway,
+    loggingService: loggingService,
+    activityGate: activityGate,
+    messageSender: messageSender,
+    journalDb: journalDb,
+    settingsDb: settingsDb,
+    readMarkerService: readMarkerService,
+    eventProcessor: eventProcessor,
+    secureStorage: secureStorage,
+    deviceDisplayName: deviceName,
+    ownsActivityGate: true,
+    sentEventRegistry: sentEventRegistry,
+    collectSyncMetrics: collectSyncMetrics,
+  );
+}
+
+/// Extract emoji string from key verification emojis
+String extractEmojiString(Iterable<KeyVerificationEmoji>? emojis) {
+  final buffer = StringBuffer();
+  if (emojis != null) {
+    for (final emoji in emojis) {
+      buffer.write(' ${emoji.emoji}  ');
+    }
+  }
+  return buffer.toString();
 }
