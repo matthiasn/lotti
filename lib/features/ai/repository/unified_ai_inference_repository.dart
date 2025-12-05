@@ -585,7 +585,9 @@ class UnifiedAiInferenceRepository {
 
       onStatusChange(InferenceStatus.idle);
     } catch (e, stackTrace) {
-      onStatusChange(InferenceStatus.error);
+      // NOTE: Do NOT call onStatusChange(error) here!
+      // The controller sets state.error THEN sets status, ensuring the widget
+      // can read the error object when it rebuilds on status change.
 
       // Log additional error details
       developer.log(

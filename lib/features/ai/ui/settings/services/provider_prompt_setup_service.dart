@@ -9,25 +9,55 @@ import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
-part 'gemini_prompt_setup_service.g.dart';
+part 'provider_prompt_setup_service.g.dart';
 
-/// Provider for [GeminiPromptSetupService].
+/// Provider for [ProviderPromptSetupService].
 @riverpod
-GeminiPromptSetupService geminiPromptSetupService(Ref ref) {
-  return const GeminiPromptSetupService();
+ProviderPromptSetupService providerPromptSetupService(Ref ref) {
+  return const ProviderPromptSetupService();
 }
 
-/// Service that handles automatic prompt setup after creating a Gemini provider.
-///
-/// When a user adds Gemini for the first time, this service:
-/// 1. Shows a confirmation dialog asking if they want default prompts
-/// 2. Creates prompts with dynamic naming (e.g., "Audio Transcript - Gemini Flash")
-/// 3. Associates prompts with appropriate models (Flash for audio, Pro for others)
-/// 4. Shows a success snackbar with the number of prompts created
-class GeminiPromptSetupService {
-  const GeminiPromptSetupService();
+/// Configuration for a prompt to be created, including its template and model.
+class PromptConfig {
+  const PromptConfig({
+    required this.template,
+    required this.model,
+  });
 
-  /// Shows a dialog offering to set up default prompts for Gemini.
+  final PreconfiguredPrompt template;
+  final AiConfigModel model;
+}
+
+/// Preview information for displaying in the setup dialog.
+class PromptPreviewInfo {
+  const PromptPreviewInfo({
+    required this.icon,
+    required this.name,
+    required this.modelName,
+  });
+
+  final IconData icon;
+  final String name;
+  final String modelName;
+}
+
+/// Service that handles automatic prompt setup after creating inference providers.
+///
+/// This service supports multiple provider types (Gemini, Ollama, etc.) and:
+/// 1. Shows a confirmation dialog asking if they want default prompts
+/// 2. Creates prompts with dynamic naming (e.g., "Task Summary - DeepSeek R1 8B")
+/// 3. Associates prompts with appropriate models based on provider capabilities
+/// 4. Shows a success snackbar with the number of prompts created
+class ProviderPromptSetupService {
+  const ProviderPromptSetupService();
+
+  /// Provider types that support automatic prompt setup.
+  static const Set<InferenceProviderType> supportedProviders = {
+    InferenceProviderType.gemini,
+    InferenceProviderType.ollama,
+  };
+
+  /// Shows a dialog offering to set up default prompts for supported providers.
   ///
   /// Returns true if prompts were created, false otherwise.
   Future<bool> offerPromptSetup({
@@ -35,40 +65,48 @@ class GeminiPromptSetupService {
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
   }) async {
-    // Only offer for Gemini provider
-    if (provider.inferenceProviderType != InferenceProviderType.gemini) {
+    // Only offer for supported provider types
+    if (!supportedProviders.contains(provider.inferenceProviderType)) {
       return false;
     }
 
-    // Fetch models first to determine what will be shown in the dialog
     final repository = ref.read(aiConfigRepositoryProvider);
     final modelSelection = await _selectModelsForProvider(
       repository: repository,
       provider: provider,
     );
 
-    // If no models available, skip the dialog
     if (modelSelection == null) {
       return false;
     }
 
     if (!context.mounted) return false;
 
-    // Show confirmation dialog with actual model names
+    // Get the prompt configs and preview info based on provider type
+    final promptConfigs = _getPromptConfigs(
+      providerType: provider.inferenceProviderType,
+      modelSelection: modelSelection,
+    );
+
+    final previewInfos = _getPromptPreviews(
+      providerType: provider.inferenceProviderType,
+      modelSelection: modelSelection,
+    );
+
+    // Show confirmation dialog
     final confirmed = await _showSetupDialog(
       context,
-      flashModelName: modelSelection.flashModel.name,
-      proModelName: modelSelection.proModel.name,
+      providerName: _getProviderDisplayName(provider.inferenceProviderType),
+      previews: previewInfos,
     );
-    if (!confirmed) return false;
 
+    if (!confirmed) return false;
     if (!context.mounted) return false;
 
     // Create the prompts
-    final promptsCreated = await _createDefaultPromptsWithModels(
+    final promptsCreated = await _createPrompts(
       repository: repository,
-      flashModel: modelSelection.flashModel,
-      proModel: modelSelection.proModel,
+      promptConfigs: promptConfigs,
     );
 
     if (context.mounted && promptsCreated > 0) {
@@ -78,8 +116,16 @@ class GeminiPromptSetupService {
     return promptsCreated > 0;
   }
 
-  /// Selects the appropriate Flash and Pro models for the provider.
-  /// Returns null if no models are available.
+  /// Gets the display name for a provider type.
+  String _getProviderDisplayName(InferenceProviderType type) {
+    return switch (type) {
+      InferenceProviderType.gemini => 'Gemini',
+      InferenceProviderType.ollama => 'Ollama',
+      _ => 'AI Provider',
+    };
+  }
+
+  /// Selects the appropriate models for the provider based on its type.
   Future<_ModelSelection?> _selectModelsForProvider({
     required AiConfigRepository repository,
     required AiConfigInferenceProvider provider,
@@ -94,32 +140,169 @@ class GeminiPromptSetupService {
       return null;
     }
 
+    return switch (provider.inferenceProviderType) {
+      InferenceProviderType.gemini => _selectGeminiModels(providerModels),
+      InferenceProviderType.ollama => _selectOllamaModels(providerModels),
+      _ => null,
+    };
+  }
+
+  /// Selects Flash and Pro models for Gemini provider.
+  _ModelSelection _selectGeminiModels(List<AiConfigModel> models) {
     // Find Flash model (for audio - fast processing)
-    final flashModel = providerModels.firstWhere(
+    final flashModel = models.firstWhere(
       (m) =>
           m.name.toLowerCase().contains('flash') &&
           m.inputModalities.contains(Modality.audio),
-      orElse: () => providerModels.first,
+      orElse: () => models.first,
     );
 
-    // Find Pro model (for reasoning tasks - image analysis, checklist, summary)
-    // Prioritize models with "pro" in the name, fall back to others excluding flash
-    final proModel = providerModels.firstWhere(
+    // Find Pro model (for reasoning tasks)
+    final proModel = models.firstWhere(
       (m) => m.name.toLowerCase().contains('pro'),
-      orElse: () => providerModels.firstWhere(
+      orElse: () => models.firstWhere(
         (m) => !m.name.toLowerCase().contains('flash'),
-        orElse: () => providerModels.first,
+        orElse: () => models.first,
       ),
     );
 
-    return _ModelSelection(flashModel: flashModel, proModel: proModel);
+    return _ModelSelection(
+      audioModel: flashModel,
+      reasoningModel: proModel,
+      imageModel: proModel,
+    );
+  }
+
+  /// Selects DeepSeek R1 8B for text tasks and Gemma 3 12B for image tasks.
+  _ModelSelection _selectOllamaModels(List<AiConfigModel> models) {
+    // Find DeepSeek R1 8B for reasoning/text tasks
+    final reasoningModel = models.firstWhere(
+      (m) =>
+          m.name.toLowerCase().contains('deepseek') &&
+          m.supportsFunctionCalling,
+      orElse: () => models.firstWhere(
+        (m) => m.supportsFunctionCalling,
+        orElse: () => models.first,
+      ),
+    );
+
+    // Find Gemma 3 12B for image analysis
+    final imageModel = models.firstWhere(
+      (m) =>
+          m.name.toLowerCase().contains('gemma') &&
+          m.name.contains('12') &&
+          m.inputModalities.contains(Modality.image),
+      orElse: () => models.firstWhere(
+        (m) => m.inputModalities.contains(Modality.image),
+        orElse: () => reasoningModel,
+      ),
+    );
+
+    return _ModelSelection(
+      audioModel: null, // Ollama models don't support audio
+      reasoningModel: reasoningModel,
+      imageModel: imageModel,
+    );
+  }
+
+  /// Gets the prompt configurations based on provider type.
+  List<PromptConfig> _getPromptConfigs({
+    required InferenceProviderType providerType,
+    required _ModelSelection modelSelection,
+  }) {
+    return switch (providerType) {
+      InferenceProviderType.gemini => [
+          if (modelSelection.audioModel != null)
+            PromptConfig(
+              template: audioTranscriptionPrompt,
+              model: modelSelection.audioModel!,
+            ),
+          PromptConfig(
+            template: imageAnalysisInTaskContextPrompt,
+            model: modelSelection.imageModel,
+          ),
+          PromptConfig(
+            template: checklistUpdatesPrompt,
+            model: modelSelection.reasoningModel,
+          ),
+          PromptConfig(
+            template: taskSummaryPrompt,
+            model: modelSelection.reasoningModel,
+          ),
+        ],
+      InferenceProviderType.ollama => [
+          PromptConfig(
+            template: imageAnalysisInTaskContextPrompt,
+            model: modelSelection.imageModel,
+          ),
+          PromptConfig(
+            template: checklistUpdatesPrompt,
+            model: modelSelection.reasoningModel,
+          ),
+          PromptConfig(
+            template: taskSummaryPrompt,
+            model: modelSelection.reasoningModel,
+          ),
+        ],
+      _ => [],
+    };
+  }
+
+  /// Gets preview information for the setup dialog.
+  List<PromptPreviewInfo> _getPromptPreviews({
+    required InferenceProviderType providerType,
+    required _ModelSelection modelSelection,
+  }) {
+    return switch (providerType) {
+      InferenceProviderType.gemini => [
+          if (modelSelection.audioModel != null)
+            PromptPreviewInfo(
+              icon: Icons.mic,
+              name: 'Audio Transcript',
+              modelName: modelSelection.audioModel!.name,
+            ),
+          PromptPreviewInfo(
+            icon: Icons.image,
+            name: 'Image Analysis',
+            modelName: modelSelection.imageModel.name,
+          ),
+          PromptPreviewInfo(
+            icon: Icons.checklist,
+            name: 'Checklist Updates',
+            modelName: modelSelection.reasoningModel.name,
+          ),
+          PromptPreviewInfo(
+            icon: Icons.summarize,
+            name: 'Task Summary',
+            modelName: modelSelection.reasoningModel.name,
+          ),
+        ],
+      InferenceProviderType.ollama => [
+          PromptPreviewInfo(
+            icon: Icons.image,
+            name: 'Image Analysis',
+            modelName: modelSelection.imageModel.name,
+          ),
+          PromptPreviewInfo(
+            icon: Icons.checklist,
+            name: 'Checklist Updates',
+            modelName: modelSelection.reasoningModel.name,
+          ),
+          PromptPreviewInfo(
+            icon: Icons.summarize,
+            name: 'Task Summary',
+            modelName: modelSelection.reasoningModel.name,
+          ),
+        ],
+      _ => [],
+    };
   }
 
   /// Shows the confirmation dialog for setting up prompts.
   Future<bool> _showSetupDialog(
     BuildContext context, {
-    required String flashModelName,
-    required String proModelName,
+    required String providerName,
+    required List<PromptPreviewInfo> previews,
   }) async {
     return await showDialog<bool>(
           context: context,
@@ -173,7 +356,7 @@ class GeminiPromptSetupService {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Get started quickly',
+                          'Get started quickly with $providerName',
                           style: context.textTheme.titleSmall?.copyWith(
                             color: context.colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.w600,
@@ -216,32 +399,16 @@ class GeminiPromptSetupService {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _buildPromptPreview(
-                          context,
-                          Icons.mic,
-                          'Audio Transcript',
-                          flashModelName,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildPromptPreview(
-                          context,
-                          Icons.image,
-                          'Image Analysis',
-                          proModelName,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildPromptPreview(
-                          context,
-                          Icons.checklist,
-                          'Checklist Updates',
-                          proModelName,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildPromptPreview(
-                          context,
-                          Icons.summarize,
-                          'Task Summary',
-                          proModelName,
+                        ...previews.map(
+                          (preview) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _buildPromptPreview(
+                              context,
+                              preview.icon,
+                              preview.name,
+                              preview.modelName,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -309,34 +476,13 @@ class GeminiPromptSetupService {
     );
   }
 
-  /// Creates the default prompts using the pre-selected models.
-  Future<int> _createDefaultPromptsWithModels({
+  /// Creates the prompts using the provided configurations.
+  Future<int> _createPrompts({
     required AiConfigRepository repository,
-    required AiConfigModel flashModel,
-    required AiConfigModel proModel,
+    required List<PromptConfig> promptConfigs,
   }) async {
     var promptsCreated = 0;
     const uuid = Uuid();
-
-    // Define prompts to create with their configurations
-    final promptConfigs = [
-      (
-        template: audioTranscriptionPrompt,
-        model: flashModel,
-      ),
-      (
-        template: imageAnalysisInTaskContextPrompt,
-        model: proModel,
-      ),
-      (
-        template: checklistUpdatesPrompt,
-        model: proModel,
-      ),
-      (
-        template: taskSummaryPrompt,
-        model: proModel,
-      ),
-    ];
 
     for (final config in promptConfigs) {
       final prompt = AiConfig.prompt(
@@ -408,10 +554,12 @@ class GeminiPromptSetupService {
 /// Internal class to hold the selected models for prompt creation.
 class _ModelSelection {
   const _ModelSelection({
-    required this.flashModel,
-    required this.proModel,
+    required this.audioModel,
+    required this.reasoningModel,
+    required this.imageModel,
   });
 
-  final AiConfigModel flashModel;
-  final AiConfigModel proModel;
+  final AiConfigModel? audioModel;
+  final AiConfigModel reasoningModel;
+  final AiConfigModel imageModel;
 }

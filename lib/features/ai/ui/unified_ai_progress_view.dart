@@ -233,7 +233,10 @@ class _UnifiedAiProgressContentState
         if (isError) {
           // Debug logging
           developer.log(
-            'Error detected, showExisting: ${widget.showExisting}, controllerState: $controllerState, error: ${controllerState?.error}, type: ${controllerState?.error.runtimeType}',
+            'Error detected, showExisting: ${widget.showExisting}, '
+            'entityId: ${widget.entityId}, promptId: ${widget.promptId}, '
+            'controllerState: $controllerState, error: ${controllerState?.error}, '
+            'type: ${controllerState?.error.runtimeType}',
             name: 'UnifiedAiProgressContent',
           );
 
