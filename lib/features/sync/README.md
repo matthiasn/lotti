@@ -237,6 +237,12 @@ Key helpers:
   full flow with the fake gateway (room creation, invites, verification, message
   exchange). Run with `dart-mcp.run_tests` targeting the file or via the project
   Make target.
+- **Backfill Integration:** `integration_test/backfill_integration_test.dart`
+  tests the self-healing backfill mechanism with real Matrix transport. After
+  normal sync completes, gaps are artificially injected into the sequence log
+  and backfill is triggered to verify end-to-end recovery. Run with
+  `./integration_test/run_backfill_tests.sh` (requires Docker with Dendrite and
+  Toxiproxy).
 - **Unit/Widget:** Coverage includes the client runner queue, activity gating,
   timeline error recovery, verification modals (provider overrides),
   dependency-injection helpers, and the modern sync pipeline:
