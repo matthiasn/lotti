@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -187,16 +188,15 @@ class ProviderPromptSetupService {
     );
 
     // Find Gemma 3 12B for image analysis
-    final imageModel = models.firstWhere(
-      (m) =>
-          m.name.toLowerCase().contains('gemma') &&
-          m.name.contains('12') &&
-          m.inputModalities.contains(Modality.image),
-      orElse: () => models.firstWhere(
-        (m) => m.inputModalities.contains(Modality.image),
-        orElse: () => reasoningModel,
-      ),
-    );
+    final imageModel = models.firstWhereOrNull(
+          (m) =>
+              m.name.toLowerCase().contains('gemma') &&
+              m.name.contains('12') &&
+              m.inputModalities.contains(Modality.image),
+        ) ??
+        models.firstWhereOrNull(
+          (m) => m.inputModalities.contains(Modality.image),
+        );
 
     return _ModelSelection(
       audioModel: null, // Ollama models don't support audio
@@ -217,10 +217,11 @@ class ProviderPromptSetupService {
               template: audioTranscriptionPrompt,
               model: modelSelection.audioModel!,
             ),
-          PromptConfig(
-            template: imageAnalysisInTaskContextPrompt,
-            model: modelSelection.imageModel,
-          ),
+          if (modelSelection.imageModel != null)
+            PromptConfig(
+              template: imageAnalysisInTaskContextPrompt,
+              model: modelSelection.imageModel!,
+            ),
           PromptConfig(
             template: checklistUpdatesPrompt,
             model: modelSelection.reasoningModel,
@@ -231,10 +232,11 @@ class ProviderPromptSetupService {
           ),
         ],
       InferenceProviderType.ollama => [
-          PromptConfig(
-            template: imageAnalysisInTaskContextPrompt,
-            model: modelSelection.imageModel,
-          ),
+          if (modelSelection.imageModel != null)
+            PromptConfig(
+              template: imageAnalysisInTaskContextPrompt,
+              model: modelSelection.imageModel!,
+            ),
           PromptConfig(
             template: checklistUpdatesPrompt,
             model: modelSelection.reasoningModel,
@@ -261,11 +263,12 @@ class ProviderPromptSetupService {
               name: 'Audio Transcript',
               modelName: modelSelection.audioModel!.name,
             ),
-          PromptPreviewInfo(
-            icon: Icons.image,
-            name: 'Image Analysis',
-            modelName: modelSelection.imageModel.name,
-          ),
+          if (modelSelection.imageModel != null)
+            PromptPreviewInfo(
+              icon: Icons.image,
+              name: 'Image Analysis',
+              modelName: modelSelection.imageModel!.name,
+            ),
           PromptPreviewInfo(
             icon: Icons.checklist,
             name: 'Checklist Updates',
@@ -278,11 +281,12 @@ class ProviderPromptSetupService {
           ),
         ],
       InferenceProviderType.ollama => [
-          PromptPreviewInfo(
-            icon: Icons.image,
-            name: 'Image Analysis',
-            modelName: modelSelection.imageModel.name,
-          ),
+          if (modelSelection.imageModel != null)
+            PromptPreviewInfo(
+              icon: Icons.image,
+              name: 'Image Analysis',
+              modelName: modelSelection.imageModel!.name,
+            ),
           PromptPreviewInfo(
             icon: Icons.checklist,
             name: 'Checklist Updates',
@@ -561,5 +565,5 @@ class _ModelSelection {
 
   final AiConfigModel? audioModel;
   final AiConfigModel reasoningModel;
-  final AiConfigModel imageModel;
+  final AiConfigModel? imageModel;
 }
