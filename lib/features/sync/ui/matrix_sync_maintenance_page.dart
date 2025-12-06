@@ -3,6 +3,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
+import 'package:lotti/features/sync/ui/sequence_log_populate_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
@@ -51,6 +52,13 @@ class MatrixSyncMaintenancePage extends StatelessWidget {
               subtitle: context.messages.maintenanceReSyncDescription,
               icon: Icons.refresh_rounded,
               onTap: () => ReSyncModal.show(context),
+            ),
+            AnimatedModernSettingsCardWithIcon(
+              title: context.messages.maintenancePopulateSequenceLog,
+              subtitle:
+                  context.messages.maintenancePopulateSequenceLogDescription,
+              icon: Icons.playlist_add_check_rounded,
+              onTap: () => SequenceLogPopulateModal.show(context),
             ),
           ],
         ),

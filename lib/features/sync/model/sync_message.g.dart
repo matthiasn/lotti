@@ -6,6 +6,20 @@ part of 'sync_message.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_BackfillRequestEntry _$BackfillRequestEntryFromJson(
+        Map<String, dynamic> json) =>
+    _BackfillRequestEntry(
+      hostId: json['hostId'] as String,
+      counter: (json['counter'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$BackfillRequestEntryToJson(
+        _BackfillRequestEntry instance) =>
+    <String, dynamic>{
+      'hostId': instance.hostId,
+      'counter': instance.counter,
+    };
+
 SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
     SyncJournalEntity(
       id: json['id'] as String,
@@ -17,6 +31,7 @@ SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
       entryLinks: (json['entryLinks'] as List<dynamic>?)
           ?.map((e) => EntryLink.fromJson(e as Map<String, dynamic>))
           .toList(),
+      originatingHostId: json['originatingHostId'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -27,6 +42,7 @@ Map<String, dynamic> _$SyncJournalEntityToJson(SyncJournalEntity instance) =>
       'vectorClock': instance.vectorClock,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'entryLinks': instance.entryLinks,
+      'originatingHostId': instance.originatingHostId,
       'runtimeType': instance.$type,
     };
 
@@ -124,5 +140,42 @@ Map<String, dynamic> _$SyncThemingSelectionToJson(
       'themeMode': instance.themeMode,
       'updatedAt': instance.updatedAt,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'runtimeType': instance.$type,
+    };
+
+SyncBackfillRequest _$SyncBackfillRequestFromJson(Map<String, dynamic> json) =>
+    SyncBackfillRequest(
+      entries: (json['entries'] as List<dynamic>)
+          .map((e) => BackfillRequestEntry.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      requesterId: json['requesterId'] as String,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncBackfillRequestToJson(
+        SyncBackfillRequest instance) =>
+    <String, dynamic>{
+      'entries': instance.entries,
+      'requesterId': instance.requesterId,
+      'runtimeType': instance.$type,
+    };
+
+SyncBackfillResponse _$SyncBackfillResponseFromJson(
+        Map<String, dynamic> json) =>
+    SyncBackfillResponse(
+      hostId: json['hostId'] as String,
+      counter: (json['counter'] as num).toInt(),
+      deleted: json['deleted'] as bool,
+      entryId: json['entryId'] as String?,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncBackfillResponseToJson(
+        SyncBackfillResponse instance) =>
+    <String, dynamic>{
+      'hostId': instance.hostId,
+      'counter': instance.counter,
+      'deleted': instance.deleted,
+      'entryId': instance.entryId,
       'runtimeType': instance.$type,
     };

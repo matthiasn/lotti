@@ -15,6 +15,7 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -51,6 +52,9 @@ class MockMatrixClient extends Mock implements Client {}
 
 class MockMatrixDatabase extends Mock implements DatabaseApi {}
 
+class MockBackfillResponseHandler extends Mock
+    implements BackfillResponseHandler {}
+
 //
 
 void main() {
@@ -71,6 +75,12 @@ void main() {
     registerFallbackValue(fallbackAiConfig);
     registerFallbackValue(Uri.parse('mxc://placeholder'));
     registerFallbackValue(Exception('test'));
+    registerFallbackValue(
+      const SyncBackfillRequest(entries: [], requesterId: ''),
+    );
+    registerFallbackValue(
+      const SyncBackfillResponse(hostId: '', counter: 0, deleted: false),
+    );
   });
   // Helper to normalize leading separators across platforms so that
   // path.join(docDir, rel) never treats rel as absolute.
@@ -2666,6 +2676,96 @@ void main() {
             {link.fromId, link.toId},
             fromSync: true,
           )).called(1);
+    });
+  });
+
+  group('SyncEventProcessor - Backfill Messages', () {
+    test('SyncBackfillRequest is ignored when no handler configured', () async {
+      const message = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: 'host-1', counter: 5),
+        ],
+        requesterId: 'requester-1',
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Should log that request was ignored
+      verify(
+        () => loggingService.captureEvent(
+          any<Object>(),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'apply',
+        ),
+      ).called(1);
+    });
+
+    test('SyncBackfillResponse is ignored when no handler configured',
+        () async {
+      const message = SyncBackfillResponse(
+        hostId: 'host-1',
+        counter: 5,
+        deleted: false,
+        entryId: 'entry-1',
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Should log that response was ignored
+      verify(
+        () => loggingService.captureEvent(
+          any<Object>(),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'apply',
+        ),
+      ).called(1);
+    });
+
+    test('SyncBackfillRequest is delegated to handler when configured',
+        () async {
+      const message = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: 'host-1', counter: 5),
+        ],
+        requesterId: 'requester-1',
+      );
+
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockHandler.handleBackfillRequest(any()))
+          .thenAnswer((_) async {});
+
+      processor.backfillResponseHandler = mockHandler;
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockHandler.handleBackfillRequest(message)).called(1);
+    });
+
+    test('SyncBackfillResponse is delegated to handler when configured',
+        () async {
+      const message = SyncBackfillResponse(
+        hostId: 'host-1',
+        counter: 5,
+        deleted: true,
+      );
+
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockHandler.handleBackfillResponse(any()))
+          .thenAnswer((_) async {});
+
+      processor.backfillResponseHandler = mockHandler;
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockHandler.handleBackfillResponse(message)).called(1);
     });
   });
 }

@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -43,6 +44,7 @@ class OutboxService {
     Future<void> Function(String path, String json)? saveJsonHandler,
     // Optional seams for testing/injection
     Stream<List<ConnectivityResult>>? connectivityStream,
+    SyncSequenceLogService? sequenceLogService,
   })  : _syncDatabase = syncDatabase,
         _loggingService = loggingService,
         _vectorClockService = vectorClockService,
@@ -56,7 +58,8 @@ class OutboxService {
             ),
         _ownsActivityGate = ownsActivityGate ?? activityGate == null,
         _matrixService = matrixService,
-        _connectivityStream = connectivityStream {
+        _connectivityStream = connectivityStream,
+        _sequenceLogService = sequenceLogService {
     // Runtime validation that works in release builds
     if (messageSender == null && matrixService == null) {
       throw ArgumentError(
@@ -155,6 +158,7 @@ class OutboxService {
   late final OutboxProcessor _processor;
   final MatrixService? _matrixService;
   final Stream<List<ConnectivityResult>>? _connectivityStream;
+  final SyncSequenceLogService? _sequenceLogService;
   final StreamController<void> _loginGateEventsController =
       StreamController<void>.broadcast();
 
@@ -240,18 +244,26 @@ class OutboxService {
       final host = await _vectorClockService.getHost();
       final docDir = _documentsDirectory;
 
-      // Fetch entry links for journal entities and attach them
+      // Fetch entry links for journal entities and attach originating host ID
       final messageToEnqueue = await () async {
         if (syncMessage is SyncJournalEntity) {
+          var journalMsg = syncMessage;
+
+          // Add originating host ID (this device) for sequence tracking
+          if (journalMsg.originatingHostId == null && host != null) {
+            journalMsg = journalMsg.copyWith(originatingHostId: host);
+          }
+
+          // Attach entry links if available
           try {
-            final links = await _journalDb.linksForEntryIds({syncMessage.id});
+            final links = await _journalDb.linksForEntryIds({journalMsg.id});
             if (links.isNotEmpty) {
               _loggingService.captureEvent(
-                'enqueueMessage.attachedLinks id=${syncMessage.id} count=${links.length}',
+                'enqueueMessage.attachedLinks id=${journalMsg.id} count=${links.length}',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage.attachLinks',
               );
-              return syncMessage.copyWith(entryLinks: links);
+              journalMsg = journalMsg.copyWith(entryLinks: links);
             }
           } catch (e, st) {
             _loggingService.captureException(
@@ -262,6 +274,8 @@ class OutboxService {
             );
             // Continue with original message without links on error
           }
+
+          return journalMsg;
         }
         return syncMessage;
       }();
@@ -339,6 +353,24 @@ class OutboxService {
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         );
+
+        // Record in sequence log for backfill support (self-healing sync)
+        if (_sequenceLogService != null &&
+            journalEntity.meta.vectorClock != null) {
+          try {
+            await _sequenceLogService!.recordSentEntry(
+              entryId: journalEntity.meta.id,
+              vectorClock: journalEntity.meta.vectorClock!,
+            );
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'recordSent',
+              stackTrace: st,
+            );
+          }
+        }
       }
 
       if (syncMessage is SyncEntityDefinition) {
@@ -413,6 +445,37 @@ class OutboxService {
           subDomain: 'enqueueMessage',
         );
       }
+
+      if (syncMessage is SyncBackfillRequest) {
+        await _syncDatabase.addOutboxItem(
+          commonFields.copyWith(
+            subject: Value(
+              'backfillRequest:batch:${syncMessage.entries.length}',
+            ),
+          ),
+        );
+        _loggingService.captureEvent(
+          'enqueue type=SyncBackfillRequest entries=${syncMessage.entries.length}',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
+      }
+
+      if (syncMessage is SyncBackfillResponse) {
+        await _syncDatabase.addOutboxItem(
+          commonFields.copyWith(
+            subject: Value(
+              'backfillResponse:${syncMessage.hostId}:${syncMessage.counter}',
+            ),
+          ),
+        );
+        _loggingService.captureEvent(
+          'enqueue type=SyncBackfillResponse hostId=${syncMessage.hostId} counter=${syncMessage.counter} deleted=${syncMessage.deleted}',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
+      }
+
       unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
     } catch (exception, stackTrace) {
       _loggingService.captureException(

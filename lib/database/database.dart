@@ -432,6 +432,55 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).toList();
   }
 
+  /// Stream entries with their vector clocks for populating the sequence log.
+  /// Yields batches of records with entry ID and vector clock map.
+  /// Uses lightweight JSON extraction to avoid full deserialization.
+  Stream<List<({String id, Map<String, int>? vectorClock})>>
+      streamEntriesWithVectorClock({int batchSize = 1000}) async* {
+    var offset = 0;
+
+    while (true) {
+      final batch = await (select(journal)..limit(batchSize, offset: offset))
+          .map(
+            (row) => (
+              id: row.id,
+              vectorClock: _extractVectorClock(row.serialized),
+            ),
+          )
+          .get();
+
+      if (batch.isEmpty) break;
+
+      yield batch;
+      offset += batchSize;
+    }
+  }
+
+  /// Count total entries for progress reporting (includes deleted).
+  Future<int> countAllJournalEntries() async {
+    final count = journal.id.count();
+    final query = selectOnly(journal)..addColumns([count]);
+    final result = await query.getSingle();
+    return result.read(count) ?? 0;
+  }
+
+  /// Lightweight extraction of vector clock from serialized JSON.
+  /// Avoids full deserialization of the entity.
+  static Map<String, int>? _extractVectorClock(String serialized) {
+    try {
+      final json = jsonDecode(serialized) as Map<String, dynamic>;
+      final meta = json['meta'] as Map<String, dynamic>?;
+      if (meta == null) return null;
+
+      final vc = meta['vectorClock'] as Map<String, dynamic>?;
+      if (vc == null) return null;
+
+      return vc.map((k, v) => MapEntry(k, (v as num).toInt()));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Selectable<JournalDbEntity> _selectJournalEntities({
     required List<String> types,
     required List<bool> starredStatuses,

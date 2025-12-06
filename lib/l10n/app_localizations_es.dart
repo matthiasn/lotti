@@ -1205,12 +1205,108 @@ class AppLocalizationsEs extends AppLocalizations {
       'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
+  String get maintenancePopulateSequenceLog => 'Populate sync sequence log';
+
+  @override
+  String get maintenancePopulateSequenceLogConfirm => 'YES, POPULATE';
+
+  @override
+  String get maintenancePopulateSequenceLogDescription =>
+      'Index existing entries for backfill support';
+
+  @override
+  String get maintenancePopulateSequenceLogMessage =>
+      'This will scan all journal entries and add them to the sync sequence log. This enables backfill responses for entries created before this feature was added.';
+
+  @override
+  String maintenancePopulateSequenceLogComplete(int count) {
+    return '$count entries indexed';
+  }
+
+  @override
   String get maintenanceSyncDefinitions =>
       'Sync tags, measurables, dashboards, habits, categories, AI settings';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
       'Sync tags, measurables, dashboards, habits, categories, and AI settings';
+
+  @override
+  String get backfillSettingsTitle => 'Backfill Sync';
+
+  @override
+  String get backfillSettingsSubtitle => 'Manage sync gap recovery';
+
+  @override
+  String get backfillSettingsInfo =>
+      'Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.';
+
+  @override
+  String get backfillToggleTitle => 'Automatic Backfill';
+
+  @override
+  String get backfillToggleEnabledDescription =>
+      'Automatically request missing sync entries';
+
+  @override
+  String get backfillToggleDisabledDescription =>
+      'Backfill disabled - useful on metered networks';
+
+  @override
+  String get backfillStatsTitle => 'Sync Statistics';
+
+  @override
+  String get backfillStatsRefresh => 'Refresh stats';
+
+  @override
+  String get backfillStatsNoData => 'No sync data available';
+
+  @override
+  String get backfillStatsTotalEntries => 'Total entries';
+
+  @override
+  String get backfillStatsReceived => 'Received';
+
+  @override
+  String get backfillStatsMissing => 'Missing';
+
+  @override
+  String get backfillStatsRequested => 'Requested';
+
+  @override
+  String get backfillStatsBackfilled => 'Backfilled';
+
+  @override
+  String get backfillStatsDeleted => 'Deleted';
+
+  @override
+  String backfillStatsHostsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count connected device$_temp0';
+  }
+
+  @override
+  String get backfillManualTitle => 'Manual Backfill';
+
+  @override
+  String get backfillManualDescription =>
+      'Request all missing entries regardless of age. Use this to recover older sync gaps.';
+
+  @override
+  String get backfillManualTrigger => 'Request Missing Entries';
+
+  @override
+  String get backfillManualProcessing => 'Processing...';
+
+  @override
+  String backfillManualSuccess(int count) {
+    return '$count entries requested';
+  }
 
   @override
   String get measurableDeleteConfirm => 'SÍ, ELIMINAR ESTE MEDIBLE';
@@ -1362,6 +1458,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPayloadThemingSelection => 'Theming selection';
+
+  @override
+  String get syncPayloadBackfillRequest => 'Backfill request';
+
+  @override
+  String get syncPayloadBackfillResponse => 'Backfill response';
 
   @override
   String syncListCountSummary(String label, int itemCount) {

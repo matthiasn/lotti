@@ -11,6 +11,330 @@ part of 'sync_message.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$BackfillRequestEntry {
+  /// The host UUID that originated the missing entry
+  String get hostId;
+
+  /// The monotonic counter for that host
+  int get counter;
+
+  /// Create a copy of BackfillRequestEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $BackfillRequestEntryCopyWith<BackfillRequestEntry> get copyWith =>
+      _$BackfillRequestEntryCopyWithImpl<BackfillRequestEntry>(
+          this as BackfillRequestEntry, _$identity);
+
+  /// Serializes this BackfillRequestEntry to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is BackfillRequestEntry &&
+            (identical(other.hostId, hostId) || other.hostId == hostId) &&
+            (identical(other.counter, counter) || other.counter == counter));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, hostId, counter);
+
+  @override
+  String toString() {
+    return 'BackfillRequestEntry(hostId: $hostId, counter: $counter)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $BackfillRequestEntryCopyWith<$Res> {
+  factory $BackfillRequestEntryCopyWith(BackfillRequestEntry value,
+          $Res Function(BackfillRequestEntry) _then) =
+      _$BackfillRequestEntryCopyWithImpl;
+  @useResult
+  $Res call({String hostId, int counter});
+}
+
+/// @nodoc
+class _$BackfillRequestEntryCopyWithImpl<$Res>
+    implements $BackfillRequestEntryCopyWith<$Res> {
+  _$BackfillRequestEntryCopyWithImpl(this._self, this._then);
+
+  final BackfillRequestEntry _self;
+  final $Res Function(BackfillRequestEntry) _then;
+
+  /// Create a copy of BackfillRequestEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? hostId = null,
+    Object? counter = null,
+  }) {
+    return _then(_self.copyWith(
+      hostId: null == hostId
+          ? _self.hostId
+          : hostId // ignore: cast_nullable_to_non_nullable
+              as String,
+      counter: null == counter
+          ? _self.counter
+          : counter // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [BackfillRequestEntry].
+extension BackfillRequestEntryPatterns on BackfillRequestEntry {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_BackfillRequestEntry value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _BackfillRequestEntry() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_BackfillRequestEntry value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _BackfillRequestEntry():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_BackfillRequestEntry value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _BackfillRequestEntry() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(String hostId, int counter)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _BackfillRequestEntry() when $default != null:
+        return $default(_that.hostId, _that.counter);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(String hostId, int counter) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _BackfillRequestEntry():
+        return $default(_that.hostId, _that.counter);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(String hostId, int counter)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _BackfillRequestEntry() when $default != null:
+        return $default(_that.hostId, _that.counter);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _BackfillRequestEntry implements BackfillRequestEntry {
+  const _BackfillRequestEntry({required this.hostId, required this.counter});
+  factory _BackfillRequestEntry.fromJson(Map<String, dynamic> json) =>
+      _$BackfillRequestEntryFromJson(json);
+
+  /// The host UUID that originated the missing entry
+  @override
+  final String hostId;
+
+  /// The monotonic counter for that host
+  @override
+  final int counter;
+
+  /// Create a copy of BackfillRequestEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$BackfillRequestEntryCopyWith<_BackfillRequestEntry> get copyWith =>
+      __$BackfillRequestEntryCopyWithImpl<_BackfillRequestEntry>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$BackfillRequestEntryToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _BackfillRequestEntry &&
+            (identical(other.hostId, hostId) || other.hostId == hostId) &&
+            (identical(other.counter, counter) || other.counter == counter));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, hostId, counter);
+
+  @override
+  String toString() {
+    return 'BackfillRequestEntry(hostId: $hostId, counter: $counter)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$BackfillRequestEntryCopyWith<$Res>
+    implements $BackfillRequestEntryCopyWith<$Res> {
+  factory _$BackfillRequestEntryCopyWith(_BackfillRequestEntry value,
+          $Res Function(_BackfillRequestEntry) _then) =
+      __$BackfillRequestEntryCopyWithImpl;
+  @override
+  @useResult
+  $Res call({String hostId, int counter});
+}
+
+/// @nodoc
+class __$BackfillRequestEntryCopyWithImpl<$Res>
+    implements _$BackfillRequestEntryCopyWith<$Res> {
+  __$BackfillRequestEntryCopyWithImpl(this._self, this._then);
+
+  final _BackfillRequestEntry _self;
+  final $Res Function(_BackfillRequestEntry) _then;
+
+  /// Create a copy of BackfillRequestEntry
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? hostId = null,
+    Object? counter = null,
+  }) {
+    return _then(_BackfillRequestEntry(
+      hostId: null == hostId
+          ? _self.hostId
+          : hostId // ignore: cast_nullable_to_non_nullable
+              as String,
+      counter: null == counter
+          ? _self.counter
+          : counter // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
 SyncMessage _$SyncMessageFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
     case 'journalEntity':
@@ -27,6 +351,10 @@ SyncMessage _$SyncMessageFromJson(Map<String, dynamic> json) {
       return SyncAiConfigDelete.fromJson(json);
     case 'themingSelection':
       return SyncThemingSelection.fromJson(json);
+    case 'backfillRequest':
+      return SyncBackfillRequest.fromJson(json);
+    case 'backfillResponse':
+      return SyncBackfillResponse.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'SyncMessage',
@@ -83,6 +411,8 @@ extension SyncMessagePatterns on SyncMessage {
     TResult Function(SyncAiConfig value)? aiConfig,
     TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
     TResult Function(SyncThemingSelection value)? themingSelection,
+    TResult Function(SyncBackfillRequest value)? backfillRequest,
+    TResult Function(SyncBackfillResponse value)? backfillResponse,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -101,6 +431,10 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfigDelete(_that);
       case SyncThemingSelection() when themingSelection != null:
         return themingSelection(_that);
+      case SyncBackfillRequest() when backfillRequest != null:
+        return backfillRequest(_that);
+      case SyncBackfillResponse() when backfillResponse != null:
+        return backfillResponse(_that);
       case _:
         return orElse();
     }
@@ -128,6 +462,8 @@ extension SyncMessagePatterns on SyncMessage {
     required TResult Function(SyncAiConfig value) aiConfig,
     required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
     required TResult Function(SyncThemingSelection value) themingSelection,
+    required TResult Function(SyncBackfillRequest value) backfillRequest,
+    required TResult Function(SyncBackfillResponse value) backfillResponse,
   }) {
     final _that = this;
     switch (_that) {
@@ -145,6 +481,10 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfigDelete(_that);
       case SyncThemingSelection():
         return themingSelection(_that);
+      case SyncBackfillRequest():
+        return backfillRequest(_that);
+      case SyncBackfillResponse():
+        return backfillResponse(_that);
     }
   }
 
@@ -169,6 +509,8 @@ extension SyncMessagePatterns on SyncMessage {
     TResult? Function(SyncAiConfig value)? aiConfig,
     TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
     TResult? Function(SyncThemingSelection value)? themingSelection,
+    TResult? Function(SyncBackfillRequest value)? backfillRequest,
+    TResult? Function(SyncBackfillResponse value)? backfillResponse,
   }) {
     final _that = this;
     switch (_that) {
@@ -186,6 +528,10 @@ extension SyncMessagePatterns on SyncMessage {
         return aiConfigDelete(_that);
       case SyncThemingSelection() when themingSelection != null:
         return themingSelection(_that);
+      case SyncBackfillRequest() when backfillRequest != null:
+        return backfillRequest(_that);
+      case SyncBackfillResponse() when backfillResponse != null:
+        return backfillResponse(_that);
       case _:
         return null;
     }
@@ -205,8 +551,13 @@ extension SyncMessagePatterns on SyncMessage {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String id, String jsonPath, VectorClock? vectorClock,
-            SyncEntryStatus status, List<EntryLink>? entryLinks)?
+    TResult Function(
+            String id,
+            String jsonPath,
+            VectorClock? vectorClock,
+            SyncEntryStatus status,
+            List<EntryLink>? entryLinks,
+            String? originatingHostId)?
         journalEntity,
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
@@ -217,13 +568,17 @@ extension SyncMessagePatterns on SyncMessage {
     TResult Function(String lightThemeName, String darkThemeName,
             String themeMode, int updatedAt, SyncEntryStatus status)?
         themingSelection,
+    TResult Function(List<BackfillRequestEntry> entries, String requesterId)?
+        backfillRequest,
+    TResult Function(String hostId, int counter, bool deleted, String? entryId)?
+        backfillResponse,
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity() when journalEntity != null:
         return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
-            _that.status, _that.entryLinks);
+            _that.status, _that.entryLinks, _that.originatingHostId);
       case SyncEntityDefinition() when entityDefinition != null:
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity() when tagEntity != null:
@@ -237,6 +592,11 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncThemingSelection() when themingSelection != null:
         return themingSelection(_that.lightThemeName, _that.darkThemeName,
             _that.themeMode, _that.updatedAt, _that.status);
+      case SyncBackfillRequest() when backfillRequest != null:
+        return backfillRequest(_that.entries, _that.requesterId);
+      case SyncBackfillResponse() when backfillResponse != null:
+        return backfillResponse(
+            _that.hostId, _that.counter, _that.deleted, _that.entryId);
       case _:
         return orElse();
     }
@@ -262,7 +622,8 @@ extension SyncMessagePatterns on SyncMessage {
             String jsonPath,
             VectorClock? vectorClock,
             SyncEntryStatus status,
-            List<EntryLink>? entryLinks)
+            List<EntryLink>? entryLinks,
+            String? originatingHostId)
         journalEntity,
     required TResult Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)
@@ -277,12 +638,18 @@ extension SyncMessagePatterns on SyncMessage {
     required TResult Function(String lightThemeName, String darkThemeName,
             String themeMode, int updatedAt, SyncEntryStatus status)
         themingSelection,
+    required TResult Function(
+            List<BackfillRequestEntry> entries, String requesterId)
+        backfillRequest,
+    required TResult Function(
+            String hostId, int counter, bool deleted, String? entryId)
+        backfillResponse,
   }) {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity():
         return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
-            _that.status, _that.entryLinks);
+            _that.status, _that.entryLinks, _that.originatingHostId);
       case SyncEntityDefinition():
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity():
@@ -296,6 +663,11 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncThemingSelection():
         return themingSelection(_that.lightThemeName, _that.darkThemeName,
             _that.themeMode, _that.updatedAt, _that.status);
+      case SyncBackfillRequest():
+        return backfillRequest(_that.entries, _that.requesterId);
+      case SyncBackfillResponse():
+        return backfillResponse(
+            _that.hostId, _that.counter, _that.deleted, _that.entryId);
     }
   }
 
@@ -313,8 +685,13 @@ extension SyncMessagePatterns on SyncMessage {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String id, String jsonPath, VectorClock? vectorClock,
-            SyncEntryStatus status, List<EntryLink>? entryLinks)?
+    TResult? Function(
+            String id,
+            String jsonPath,
+            VectorClock? vectorClock,
+            SyncEntryStatus status,
+            List<EntryLink>? entryLinks,
+            String? originatingHostId)?
         journalEntity,
     TResult? Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)?
@@ -326,12 +703,17 @@ extension SyncMessagePatterns on SyncMessage {
     TResult? Function(String lightThemeName, String darkThemeName,
             String themeMode, int updatedAt, SyncEntryStatus status)?
         themingSelection,
+    TResult? Function(List<BackfillRequestEntry> entries, String requesterId)?
+        backfillRequest,
+    TResult? Function(
+            String hostId, int counter, bool deleted, String? entryId)?
+        backfillResponse,
   }) {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity() when journalEntity != null:
         return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
-            _that.status, _that.entryLinks);
+            _that.status, _that.entryLinks, _that.originatingHostId);
       case SyncEntityDefinition() when entityDefinition != null:
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity() when tagEntity != null:
@@ -345,6 +727,11 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncThemingSelection() when themingSelection != null:
         return themingSelection(_that.lightThemeName, _that.darkThemeName,
             _that.themeMode, _that.updatedAt, _that.status);
+      case SyncBackfillRequest() when backfillRequest != null:
+        return backfillRequest(_that.entries, _that.requesterId);
+      case SyncBackfillResponse() when backfillResponse != null:
+        return backfillResponse(
+            _that.hostId, _that.counter, _that.deleted, _that.entryId);
       case _:
         return null;
     }
@@ -360,6 +747,7 @@ class SyncJournalEntity implements SyncMessage {
       required this.vectorClock,
       required this.status,
       final List<EntryLink>? entryLinks,
+      this.originatingHostId,
       final String? $type})
       : _entryLinks = entryLinks,
         $type = $type ?? 'journalEntity';
@@ -378,6 +766,10 @@ class SyncJournalEntity implements SyncMessage {
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(value);
   }
+
+  /// The host UUID that created/modified this entry version.
+  /// Used for sequence tracking to detect gaps in sync.
+  final String? originatingHostId;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -408,17 +800,25 @@ class SyncJournalEntity implements SyncMessage {
                 other.vectorClock == vectorClock) &&
             (identical(other.status, status) || other.status == status) &&
             const DeepCollectionEquality()
-                .equals(other._entryLinks, _entryLinks));
+                .equals(other._entryLinks, _entryLinks) &&
+            (identical(other.originatingHostId, originatingHostId) ||
+                other.originatingHostId == originatingHostId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, jsonPath, vectorClock,
-      status, const DeepCollectionEquality().hash(_entryLinks));
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      jsonPath,
+      vectorClock,
+      status,
+      const DeepCollectionEquality().hash(_entryLinks),
+      originatingHostId);
 
   @override
   String toString() {
-    return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, entryLinks: $entryLinks)';
+    return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, entryLinks: $entryLinks, originatingHostId: $originatingHostId)';
   }
 }
 
@@ -434,7 +834,8 @@ abstract mixin class $SyncJournalEntityCopyWith<$Res>
       String jsonPath,
       VectorClock? vectorClock,
       SyncEntryStatus status,
-      List<EntryLink>? entryLinks});
+      List<EntryLink>? entryLinks,
+      String? originatingHostId});
 }
 
 /// @nodoc
@@ -454,6 +855,7 @@ class _$SyncJournalEntityCopyWithImpl<$Res>
     Object? vectorClock = freezed,
     Object? status = null,
     Object? entryLinks = freezed,
+    Object? originatingHostId = freezed,
   }) {
     return _then(SyncJournalEntity(
       id: null == id
@@ -476,6 +878,10 @@ class _$SyncJournalEntityCopyWithImpl<$Res>
           ? _self._entryLinks
           : entryLinks // ignore: cast_nullable_to_non_nullable
               as List<EntryLink>?,
+      originatingHostId: freezed == originatingHostId
+          ? _self.originatingHostId
+          : originatingHostId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -1075,6 +1481,220 @@ class _$SyncThemingSelectionCopyWithImpl<$Res>
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as SyncEntryStatus,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class SyncBackfillRequest implements SyncMessage {
+  const SyncBackfillRequest(
+      {required final List<BackfillRequestEntry> entries,
+      required this.requesterId,
+      final String? $type})
+      : _entries = entries,
+        $type = $type ?? 'backfillRequest';
+  factory SyncBackfillRequest.fromJson(Map<String, dynamic> json) =>
+      _$SyncBackfillRequestFromJson(json);
+
+  /// List of missing entries to request, each with hostId and counter
+  final List<BackfillRequestEntry> _entries;
+
+  /// List of missing entries to request, each with hostId and counter
+  List<BackfillRequestEntry> get entries {
+    if (_entries is EqualUnmodifiableListView) return _entries;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_entries);
+  }
+
+  /// The host UUID of the device requesting the backfill
+  final String requesterId;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $SyncBackfillRequestCopyWith<SyncBackfillRequest> get copyWith =>
+      _$SyncBackfillRequestCopyWithImpl<SyncBackfillRequest>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$SyncBackfillRequestToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is SyncBackfillRequest &&
+            const DeepCollectionEquality().equals(other._entries, _entries) &&
+            (identical(other.requesterId, requesterId) ||
+                other.requesterId == requesterId));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, const DeepCollectionEquality().hash(_entries), requesterId);
+
+  @override
+  String toString() {
+    return 'SyncMessage.backfillRequest(entries: $entries, requesterId: $requesterId)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $SyncBackfillRequestCopyWith<$Res>
+    implements $SyncMessageCopyWith<$Res> {
+  factory $SyncBackfillRequestCopyWith(
+          SyncBackfillRequest value, $Res Function(SyncBackfillRequest) _then) =
+      _$SyncBackfillRequestCopyWithImpl;
+  @useResult
+  $Res call({List<BackfillRequestEntry> entries, String requesterId});
+}
+
+/// @nodoc
+class _$SyncBackfillRequestCopyWithImpl<$Res>
+    implements $SyncBackfillRequestCopyWith<$Res> {
+  _$SyncBackfillRequestCopyWithImpl(this._self, this._then);
+
+  final SyncBackfillRequest _self;
+  final $Res Function(SyncBackfillRequest) _then;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? entries = null,
+    Object? requesterId = null,
+  }) {
+    return _then(SyncBackfillRequest(
+      entries: null == entries
+          ? _self._entries
+          : entries // ignore: cast_nullable_to_non_nullable
+              as List<BackfillRequestEntry>,
+      requesterId: null == requesterId
+          ? _self.requesterId
+          : requesterId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class SyncBackfillResponse implements SyncMessage {
+  const SyncBackfillResponse(
+      {required this.hostId,
+      required this.counter,
+      required this.deleted,
+      this.entryId,
+      final String? $type})
+      : $type = $type ?? 'backfillResponse';
+  factory SyncBackfillResponse.fromJson(Map<String, dynamic> json) =>
+      _$SyncBackfillResponseFromJson(json);
+
+  /// The host UUID that originated the entry
+  final String hostId;
+
+  /// The monotonic counter for that host
+  final int counter;
+
+  /// True if the entry was deleted/purged and cannot be backfilled
+  final bool deleted;
+
+  /// The entry ID if found (null if deleted)
+  final String? entryId;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $SyncBackfillResponseCopyWith<SyncBackfillResponse> get copyWith =>
+      _$SyncBackfillResponseCopyWithImpl<SyncBackfillResponse>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$SyncBackfillResponseToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is SyncBackfillResponse &&
+            (identical(other.hostId, hostId) || other.hostId == hostId) &&
+            (identical(other.counter, counter) || other.counter == counter) &&
+            (identical(other.deleted, deleted) || other.deleted == deleted) &&
+            (identical(other.entryId, entryId) || other.entryId == entryId));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, hostId, counter, deleted, entryId);
+
+  @override
+  String toString() {
+    return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, entryId: $entryId)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $SyncBackfillResponseCopyWith<$Res>
+    implements $SyncMessageCopyWith<$Res> {
+  factory $SyncBackfillResponseCopyWith(SyncBackfillResponse value,
+          $Res Function(SyncBackfillResponse) _then) =
+      _$SyncBackfillResponseCopyWithImpl;
+  @useResult
+  $Res call({String hostId, int counter, bool deleted, String? entryId});
+}
+
+/// @nodoc
+class _$SyncBackfillResponseCopyWithImpl<$Res>
+    implements $SyncBackfillResponseCopyWith<$Res> {
+  _$SyncBackfillResponseCopyWithImpl(this._self, this._then);
+
+  final SyncBackfillResponse _self;
+  final $Res Function(SyncBackfillResponse) _then;
+
+  /// Create a copy of SyncMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? hostId = null,
+    Object? counter = null,
+    Object? deleted = null,
+    Object? entryId = freezed,
+  }) {
+    return _then(SyncBackfillResponse(
+      hostId: null == hostId
+          ? _self.hostId
+          : hostId // ignore: cast_nullable_to_non_nullable
+              as String,
+      counter: null == counter
+          ? _self.counter
+          : counter // ignore: cast_nullable_to_non_nullable
+              as int,
+      deleted: null == deleted
+          ? _self.deleted
+          : deleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      entryId: freezed == entryId
+          ? _self.entryId
+          : entryId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }

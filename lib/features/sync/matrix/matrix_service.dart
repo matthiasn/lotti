@@ -448,6 +448,8 @@ class MatrixService {
       aiConfig: (_) => 'aiConfig',
       aiConfigDelete: (_) => 'aiConfigDelete',
       themingSelection: (_) => 'themingSelection',
+      backfillRequest: (_) => 'backfillRequest',
+      backfillResponse: (_) => 'backfillResponse',
     );
 
     return _messageSender.sendMatrixMessage(

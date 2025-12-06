@@ -41,6 +41,9 @@ that keeps the pipeline testable and observable.
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
 | **OutboxService** (`outbox/outbox_service.dart`) | Stores pending messages, resolves attachments, and hands work to `MatrixMessageSender`. |
 | **UserActivityGate** (`features/user_activity/state/user_activity_gate.dart`) | Exposes reactive idleness signals so heavy timeline processing defers while the user is active. |
+| **SyncSequenceLogService** (`sequence/sync_sequence_log_service.dart`) | Tracks (hostId, counter) pairs for gap detection; enables self-healing backfill. |
+| **BackfillRequestService** (`backfill/backfill_request_service.dart`) | Periodically scans for missing entries and broadcasts batched backfill requests. |
+| **BackfillResponseHandler** (`backfill/backfill_response_handler.dart`) | Responds to backfill requests by re-sending entries; handles responses to update sequence log. |
 
 ### Provider Wiring & Lint Guard
 
@@ -112,6 +115,65 @@ that keeps the pipeline testable and observable.
 - Logging DB writes are best-effort (exceptions captured, file breadcrumbs kept)
   so diagnostics never block outbox progress.
 
+### Self-Healing Sync / Backfill (2025-12)
+
+Sync messages can occasionally go missing due to network issues, corruption, or
+timing problems. The self-healing sync mechanism detects these gaps and
+automatically requests missing entries from peer devices.
+
+**Problem:** When a sync message is lost, entries may never sync even after
+catch-up runs. The user observes data missing on one device but present on
+another.
+
+**Solution:** A sequence log tracks `(hostId, counter, entryId)` tuples. When a
+message arrives with counter N but the last seen counter for that host was N-2,
+the system detects counter N-1 is missing. Periodically, missing entries are
+requested via broadcast. Any device with the entry can respond.
+
+**Components:**
+- `SyncSequenceLog` table in `sync_db.dart` — stores sequence entries with
+  status (received, missing, requested, backfilled, deleted)
+- `HostActivity` table — tracks when each peer was last seen online
+- `SyncSequenceLogService` — records received/sent entries, detects gaps,
+  manages sequence status
+- `BackfillRequestService` — periodically scans for missing entries and sends
+  batched `SyncBackfillRequest` messages (up to 100 entries per message)
+- `BackfillResponseHandler` — handles incoming requests (re-sends entries or
+  responds with "deleted" if purged) and processes responses
+
+**Gap Detection:**
+- Examines ALL hosts in incoming vector clocks (not just the originator)
+- For each host, compares the counter against the last seen counter
+- Any counter jumps > 1 trigger gap entries marked as `missing`
+
+**Smart Retry with Exponential Backoff:**
+- Base interval: 5 minutes between backfill request cycles
+- Backoff: 5min → 10min → 20min → 40min → 80min → 2hr (capped)
+- Host activity filtering: only request entries from hosts that have been
+  online since the last request for that entry
+- Maximum 10 retry attempts before giving up
+
+**Message Flow:**
+1. Device A detects missing entry (host=X, counter=5)
+2. Device A broadcasts `SyncBackfillRequest` with entries list
+3. Device B receives request, looks up entry in its sequence log
+4. If found: Device B re-sends the journal entity via normal sync
+5. If deleted/purged: Device B sends `SyncBackfillResponse` with `deleted=true`
+6. Device A receives the entry via normal sync and updates sequence log to `backfilled`
+7. For deleted entries: Device A receives the response and marks entry as `deleted`
+
+**Logging:** Key domains include `SYNC_SEQUENCE` (gap detection, status changes)
+and `SYNC_BACKFILL` (request/response handling). Look for:
+- `gapDetected hostId=... counter=... (last seen: ..., observed: ...)`
+- `handleBackfillRequest: N entries from=...`
+- `handleBackfillResponse hostId=... counter=... deleted=...`
+
+**Configuration:** Tuning constants in `tuning.dart`:
+- `backfillRequestInterval`: 5 minutes between processing cycles
+- `backfillBatchSize`: 100 entries max per request message
+- `backfillMaxRequestCount`: 10 retries before giving up
+- `backfillBaseBackoff` / `backfillMaxBackoff`: exponential backoff bounds
+
 ### Documentation & Artefacts
 
 - Architecture: `docs/architecture/sync_engine.md`
@@ -175,6 +237,12 @@ Key helpers:
   full flow with the fake gateway (room creation, invites, verification, message
   exchange). Run with `dart-mcp.run_tests` targeting the file or via the project
   Make target.
+- **Backfill Integration:** `integration_test/backfill_integration_test.dart`
+  tests the self-healing backfill mechanism with real Matrix transport. After
+  normal sync completes, gaps are artificially injected into the sequence log
+  and backfill is triggered to verify end-to-end recovery. Run with
+  `./integration_test/run_backfill_tests.sh` (requires Docker with Dendrite and
+  Toxiproxy).
 - **Unit/Widget:** Coverage includes the client runner queue, activity gating,
   timeline error recovery, verification modals (provider overrides),
   dependency-injection helpers, and the modern sync pipeline:
@@ -185,6 +253,12 @@ Key helpers:
   - Lifecycle tests exercise activation, deactivation, and login/logout races with the pipeline.
   - `matrix_service_pipeline_test.dart` covers metrics exposure, retry/rescan
     delegation, diagnostics text, and resource disposal.
+  - `test/features/sync/sequence/sync_sequence_log_service_test.dart` covers gap detection,
+    host activity tracking, and sequence status management.
+  - `test/features/sync/backfill/backfill_request_service_test.dart` covers timer-based
+    processing, batching, exponential backoff, and lifecycle management.
+  - `test/features/sync/backfill/backfill_response_handler_test.dart` covers request
+    handling (re-send vs deleted response) and response processing.
 - Always run `dart-mcp.analyze_files` before committing. The custom lint will
   block any reintroduction of `getIt`.
 
@@ -202,6 +276,10 @@ Key helpers:
   `docs/architecture/sync_memory_audit.md` and compare against baseline numbers.
   The drain now disposes unused snapshot timelines during escalation to avoid
   leaks; if you see RSS growth, inspect timeline creation/disposal logs.
+- **Missing entries not syncing:** Check `SYNC_SEQUENCE` logs for `gapDetected`
+  events. If gaps are detected but not backfilled, verify peer devices are online
+  and check `SYNC_BACKFILL` logs for request/response activity. The sequence log
+  table can be queried to see missing entries and their request counts.
 
 ## Current Status
 

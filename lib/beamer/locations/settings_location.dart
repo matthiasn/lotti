@@ -28,6 +28,7 @@ import 'package:lotti/features/settings/ui/pages/tags/create_tag_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tags_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
@@ -43,6 +44,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/ai',
         '/settings/sync',
         '/settings/sync/matrix/maintenance',
+        '/settings/sync/backfill',
         '/settings/sync/stats',
         '/settings/sync/outbox',
         '/settings/tags',
@@ -115,6 +117,13 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey('settings-sync-matrix-maintenance'),
           title: 'Matrix Sync Maintenance',
           child: MatrixSyncMaintenancePage(),
+        ),
+
+      if (path == '/settings/sync/backfill')
+        const BeamPage(
+          key: ValueKey('settings-sync-backfill'),
+          title: 'Backfill Settings',
+          child: BackfillSettingsPage(),
         ),
 
       if (path == '/settings/sync/stats')

@@ -100,5 +100,90 @@ void main() {
         contains('unknown payload'),
       );
     });
+
+    testWidgets('shows backfill request payload label', (tester) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+
+      final item = OutboxItem(
+        id: 10,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        status: 0,
+        retries: 0,
+        message: jsonEncode({
+          'runtimeType': 'backfillRequest',
+          'entries': [
+            {'hostId': 'host-1', 'counter': 5},
+          ],
+          'requesterId': 'requester-1',
+        }),
+        subject: 'Backfill',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        viewModel.payloadKindLabel,
+        capturedContext.messages.syncPayloadBackfillRequest,
+      );
+    });
+
+    testWidgets('shows backfill response payload label', (tester) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+
+      final item = OutboxItem(
+        id: 11,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        status: 0,
+        retries: 0,
+        message: jsonEncode({
+          'runtimeType': 'backfillResponse',
+          'hostId': 'host-1',
+          'counter': 5,
+          'deleted': true,
+        }),
+        subject: 'Backfill Response',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        viewModel.payloadKindLabel,
+        capturedContext.messages.syncPayloadBackfillResponse,
+      );
+    });
   });
 }

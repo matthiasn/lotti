@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.752] - 2025-12-06
+### Added
+- Sync Backfill: Request missing journal entries from connected devices during sync
+  - Automatically detects gaps in local journal entries based on sync status
+  - Requests missing entries from peers to ensure complete synchronization
+  - Integration tests verify backfill functionality
+
 ## [Unreleased]
 ### Added
 - Automatic Image Analysis: Images added to tasks are now analyzed automatically

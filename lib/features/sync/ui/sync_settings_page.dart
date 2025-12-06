@@ -62,6 +62,14 @@ class SyncSettingsPage extends StatelessWidget {
               icon: Icons.bar_chart_rounded,
               onTap: () => context.beamToNamed('/settings/sync/stats'),
             ),
+
+            // 5) Backfill Settings
+            AnimatedModernSettingsCardWithIcon(
+              title: context.messages.backfillSettingsTitle,
+              subtitle: context.messages.backfillSettingsSubtitle,
+              icon: Icons.history_rounded,
+              onTap: () => context.beamToNamed('/settings/sync/backfill'),
+            ),
           ],
         ),
       ),
