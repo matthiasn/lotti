@@ -2,6 +2,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -29,8 +30,22 @@ class BackfillResponseHandler {
   /// - If we have the entry: re-send it via normal sync
   /// - If the entry was deleted/purged: send a deleted response
   /// - If we don't have it in our log: ignore (another device may have it)
+  ///
+  /// Note: If backfill is disabled, requests are silently ignored to conserve
+  /// bandwidth on metered/slow networks.
   Future<void> handleBackfillRequest(SyncBackfillRequest request) async {
     try {
+      // Check if backfill is enabled
+      final enabled = await isBackfillEnabled();
+      if (!enabled) {
+        _loggingService.captureEvent(
+          'handleBackfillRequest: backfill disabled, ignoring ${request.entries.length} entries from=${request.requesterId}',
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'handleRequest',
+        );
+        return;
+      }
+
       _loggingService.captureEvent(
         'handleBackfillRequest: ${request.entries.length} entries from=${request.requesterId}',
         domain: 'SYNC_BACKFILL',

@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
@@ -42,6 +43,9 @@ void main() {
   });
 
   setUp(() {
+    // Set up SharedPreferences with backfill enabled
+    SharedPreferences.setMockInitialValues({'backfill_enabled': true});
+
     mockSequenceService = MockSyncSequenceLogService();
     mockOutboxService = MockOutboxService();
     mockVcService = MockVectorClockService();
@@ -76,9 +80,12 @@ void main() {
           requestInterval: const Duration(seconds: 30),
         );
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        // Automatic backfill uses getMissingEntriesWithLimits
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async => []);
 
         service.start();
@@ -90,18 +97,22 @@ void main() {
         async.elapse(const Duration(seconds: 30));
         async.flushMicrotasks();
 
-        verify(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        verify(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).called(1);
 
         // Elapse second interval
         async.elapse(const Duration(seconds: 30));
         async.flushMicrotasks();
 
-        verify(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        verify(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).called(1);
 
         service.dispose();
@@ -124,9 +135,11 @@ void main() {
           _createMissingLogItem(aliceHostId, 4),
         ];
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async => missingEntries);
 
         when(() => mockOutboxService.enqueueMessage(any()))
@@ -172,9 +185,11 @@ void main() {
           maxBatchSize: maxBatch,
         );
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: maxBatch,
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async => [
               _createMissingLogItem(aliceHostId, 1),
               _createMissingLogItem(aliceHostId, 2),
@@ -191,9 +206,11 @@ void main() {
         async.elapse(const Duration(seconds: 5));
         async.flushMicrotasks();
 
-        verify(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        verify(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: maxBatch,
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).called(1);
 
         service.dispose();
@@ -210,18 +227,22 @@ void main() {
           requestInterval: const Duration(minutes: 5),
         );
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async => []);
 
         // Call processNow without starting the timer
         service.processNow();
         async.flushMicrotasks();
 
-        verify(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        verify(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).called(1);
 
         service.dispose();
@@ -306,9 +327,11 @@ void main() {
         );
 
         var callCount = 0;
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async {
           callCount++;
           // Simulate slow processing

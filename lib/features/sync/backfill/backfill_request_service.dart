@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -10,6 +11,9 @@ import 'package:meta/meta.dart';
 
 /// Service responsible for periodically sending backfill requests
 /// for missing entries detected in the sync sequence log.
+///
+/// By default, automatic backfill is bounded to recent entries (last day,
+/// max 250 per host). For full historical backfill, use [processFullBackfill].
 class BackfillRequestService {
   BackfillRequestService({
     required SyncSequenceLogService sequenceLogService,
@@ -19,6 +23,8 @@ class BackfillRequestService {
     Duration? requestInterval,
     int? maxBatchSize,
     int? maxRequestCount,
+    Duration? maxAge,
+    int? maxPerHost,
   })  : _sequenceLogService = sequenceLogService,
         _outboxService = outboxService,
         _vectorClockService = vectorClockService,
@@ -27,7 +33,9 @@ class BackfillRequestService {
             requestInterval ?? SyncTuning.backfillRequestInterval,
         _maxBatchSize = maxBatchSize ?? SyncTuning.backfillBatchSize,
         _maxRequestCount =
-            maxRequestCount ?? SyncTuning.backfillMaxRequestCount;
+            maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
+        _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,
+        _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost;
 
   final SyncSequenceLogService _sequenceLogService;
   final OutboxService _outboxService;
@@ -36,18 +44,23 @@ class BackfillRequestService {
   final Duration _requestInterval;
   final int _maxBatchSize;
   final int _maxRequestCount;
+  final Duration _maxAge;
+  final int _maxPerHost;
 
   Timer? _timer;
   bool _isProcessing = false;
   bool _isDisposed = false;
 
   /// Start the periodic backfill request processing.
+  /// Uses bounded limits (age and per-host) for automatic backfill.
   void start() {
     if (_isDisposed) return;
 
     _timer?.cancel();
-    _timer =
-        Timer.periodic(_requestInterval, (_) => _processBackfillRequests());
+    _timer = Timer.periodic(
+      _requestInterval,
+      (_) => _processBackfillRequests(useLimits: true),
+    );
 
     _loggingService.captureEvent(
       'start interval=${_requestInterval.inSeconds}s batchSize=$_maxBatchSize maxRetries=$_maxRequestCount',
@@ -69,28 +82,61 @@ class BackfillRequestService {
   }
 
   /// Force immediate processing (for testing or manual trigger).
-  Future<void> processNow() => _processBackfillRequests();
+  /// Uses bounded limits (age and per-host).
+  Future<void> processNow() => _processBackfillRequests(useLimits: true);
+
+  /// Process full historical backfill without age/per-host limits.
+  /// This should be triggered manually from the UI.
+  /// Note: This ignores the enabled flag since it's a manual trigger.
+  Future<int> processFullBackfill() async {
+    return _processBackfillRequests(useLimits: false, ignoreEnabledFlag: true);
+  }
 
   /// Main processing logic - fetch missing entries and send backfill requests.
-  Future<void> _processBackfillRequests() async {
-    if (_isDisposed || _isProcessing) return;
-    _isProcessing = true;
+  /// [useLimits] - If true, apply age and per-host limits for automatic backfill.
+  /// [ignoreEnabledFlag] - If true, process even when backfill is disabled (for manual trigger).
+  Future<int> _processBackfillRequests({
+    required bool useLimits,
+    bool ignoreEnabledFlag = false,
+  }) async {
+    if (_isDisposed || _isProcessing) return 0;
 
-    try {
-      // Use smart retry: only request from hosts that have been active
-      // since our last request (prevents wasteful repeated requests)
-      final missing = await _sequenceLogService.getMissingEntriesForActiveHosts(
-        limit: _maxBatchSize,
-        maxRequestCount: _maxRequestCount,
-      );
-
-      if (missing.isEmpty) {
+    // Check if backfill is enabled (skip check for manual triggers)
+    if (!ignoreEnabledFlag) {
+      final enabled = await isBackfillEnabled();
+      if (!enabled) {
         _loggingService.captureEvent(
-          'processBackfillRequests: no missing entries',
+          'processBackfillRequests: backfill is disabled, skipping',
           domain: 'SYNC_BACKFILL',
           subDomain: 'process',
         );
-        return;
+        return 0;
+      }
+    }
+
+    _isProcessing = true;
+
+    try {
+      // Get missing entries - either with limits (automatic) or without (manual)
+      final missing = useLimits
+          ? await _sequenceLogService.getMissingEntriesWithLimits(
+              limit: _maxBatchSize,
+              maxRequestCount: _maxRequestCount,
+              maxAge: _maxAge,
+              maxPerHost: _maxPerHost,
+            )
+          : await _sequenceLogService.getMissingEntriesForActiveHosts(
+              limit: _maxBatchSize,
+              maxRequestCount: _maxRequestCount,
+            );
+
+      if (missing.isEmpty) {
+        _loggingService.captureEvent(
+          'processBackfillRequests: no missing entries (useLimits=$useLimits)',
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'process',
+        );
+        return 0;
       }
 
       final requesterId = await _vectorClockService.getHost();
@@ -100,7 +146,7 @@ class BackfillRequestService {
           domain: 'SYNC_BACKFILL',
           subDomain: 'process',
         );
-        return;
+        return 0;
       }
 
       // Build request entries
@@ -127,10 +173,12 @@ class BackfillRequestService {
       );
 
       _loggingService.captureEvent(
-        'processBackfillRequests: sent ${missing.length} requests',
+        'processBackfillRequests: sent ${missing.length} requests (useLimits=$useLimits)',
         domain: 'SYNC_BACKFILL',
         subDomain: 'process',
       );
+
+      return missing.length;
     } catch (e, st) {
       _loggingService.captureException(
         e,
@@ -138,6 +186,7 @@ class BackfillRequestService {
         subDomain: 'process',
         stackTrace: st,
       );
+      return 0;
     } finally {
       _isProcessing = false;
     }

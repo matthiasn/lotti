@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
@@ -58,6 +59,9 @@ void main() {
   });
 
   setUp(() {
+    // Set up SharedPreferences with backfill enabled
+    SharedPreferences.setMockInitialValues({'backfill_enabled': true});
+
     mockJournalDb = MockJournalDb();
     mockSequenceService = MockSyncSequenceLogService();
     mockOutboxService = MockOutboxService();

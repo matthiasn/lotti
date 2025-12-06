@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockOutboxService extends Mock implements OutboxService {}
 
@@ -74,6 +75,9 @@ void main() {
   });
 
   setUp(() async {
+    // Set up SharedPreferences with backfill enabled
+    SharedPreferences.setMockInitialValues({'backfill_enabled': true});
+
     // Create in-memory databases for both devices
     aliceSyncDb = SyncDatabase(inMemoryDatabase: true);
     bobSyncDb = SyncDatabase(inMemoryDatabase: true);

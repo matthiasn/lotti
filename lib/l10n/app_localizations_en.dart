@@ -1221,6 +1221,83 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync tags, measurables, dashboards, habits, categories, and AI settings';
 
   @override
+  String get backfillSettingsTitle => 'Backfill Sync';
+
+  @override
+  String get backfillSettingsSubtitle => 'Manage sync gap recovery';
+
+  @override
+  String get backfillSettingsInfo =>
+      'Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.';
+
+  @override
+  String get backfillToggleTitle => 'Automatic Backfill';
+
+  @override
+  String get backfillToggleEnabledDescription =>
+      'Automatically request missing sync entries';
+
+  @override
+  String get backfillToggleDisabledDescription =>
+      'Backfill disabled - useful on metered networks';
+
+  @override
+  String get backfillStatsTitle => 'Sync Statistics';
+
+  @override
+  String get backfillStatsRefresh => 'Refresh stats';
+
+  @override
+  String get backfillStatsNoData => 'No sync data available';
+
+  @override
+  String get backfillStatsTotalEntries => 'Total entries';
+
+  @override
+  String get backfillStatsReceived => 'Received';
+
+  @override
+  String get backfillStatsMissing => 'Missing';
+
+  @override
+  String get backfillStatsRequested => 'Requested';
+
+  @override
+  String get backfillStatsBackfilled => 'Backfilled';
+
+  @override
+  String get backfillStatsDeleted => 'Deleted';
+
+  @override
+  String backfillStatsHostsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count connected device$_temp0';
+  }
+
+  @override
+  String get backfillManualTitle => 'Manual Backfill';
+
+  @override
+  String get backfillManualDescription =>
+      'Request all missing entries regardless of age. Use this to recover older sync gaps.';
+
+  @override
+  String get backfillManualTrigger => 'Request Missing Entries';
+
+  @override
+  String get backfillManualProcessing => 'Processing...';
+
+  @override
+  String backfillManualSuccess(int count) {
+    return '$count entries requested';
+  }
+
+  @override
   String get measurableDeleteConfirm => 'YES, DELETE THIS MEASURABLE';
 
   @override

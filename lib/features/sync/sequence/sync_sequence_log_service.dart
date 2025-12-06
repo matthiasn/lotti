@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -295,6 +296,27 @@ class SyncSequenceLogService {
   /// Watch the count of missing entries for UI display.
   Stream<int> watchMissingCount() {
     return _syncDatabase.watchMissingCount();
+  }
+
+  /// Get backfill statistics grouped by host.
+  Future<BackfillStats> getBackfillStats() {
+    return _syncDatabase.getBackfillStats();
+  }
+
+  /// Get missing entries with age and per-host limits for automatic backfill.
+  /// This is used for bounded automatic backfill that only looks at recent gaps.
+  Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
+    int limit = 50,
+    int maxRequestCount = 10,
+    Duration? maxAge,
+    int? maxPerHost,
+  }) {
+    return _syncDatabase.getMissingEntriesWithLimits(
+      limit: limit,
+      maxRequestCount: maxRequestCount,
+      maxAge: maxAge,
+      maxPerHost: maxPerHost,
+    );
   }
 
   /// Populate the sequence log from existing journal entries.

@@ -2307,6 +2307,132 @@ abstract class AppLocalizations {
   /// **'Sync tags, measurables, dashboards, habits, categories, and AI settings'**
   String get maintenanceSyncDefinitionsDescription;
 
+  /// No description provided for @backfillSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill Sync'**
+  String get backfillSettingsTitle;
+
+  /// No description provided for @backfillSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage sync gap recovery'**
+  String get backfillSettingsSubtitle;
+
+  /// No description provided for @backfillSettingsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.'**
+  String get backfillSettingsInfo;
+
+  /// No description provided for @backfillToggleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic Backfill'**
+  String get backfillToggleTitle;
+
+  /// No description provided for @backfillToggleEnabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically request missing sync entries'**
+  String get backfillToggleEnabledDescription;
+
+  /// No description provided for @backfillToggleDisabledDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill disabled - useful on metered networks'**
+  String get backfillToggleDisabledDescription;
+
+  /// No description provided for @backfillStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Statistics'**
+  String get backfillStatsTitle;
+
+  /// No description provided for @backfillStatsRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh stats'**
+  String get backfillStatsRefresh;
+
+  /// No description provided for @backfillStatsNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No sync data available'**
+  String get backfillStatsNoData;
+
+  /// No description provided for @backfillStatsTotalEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Total entries'**
+  String get backfillStatsTotalEntries;
+
+  /// No description provided for @backfillStatsReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get backfillStatsReceived;
+
+  /// No description provided for @backfillStatsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get backfillStatsMissing;
+
+  /// No description provided for @backfillStatsRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get backfillStatsRequested;
+
+  /// No description provided for @backfillStatsBackfilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Backfilled'**
+  String get backfillStatsBackfilled;
+
+  /// No description provided for @backfillStatsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get backfillStatsDeleted;
+
+  /// No description provided for @backfillStatsHostsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} connected device{count, plural, =1{} other{s}}'**
+  String backfillStatsHostsTitle(int count);
+
+  /// No description provided for @backfillManualTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Backfill'**
+  String get backfillManualTitle;
+
+  /// No description provided for @backfillManualDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Request all missing entries regardless of age. Use this to recover older sync gaps.'**
+  String get backfillManualDescription;
+
+  /// No description provided for @backfillManualTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Missing Entries'**
+  String get backfillManualTrigger;
+
+  /// No description provided for @backfillManualProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get backfillManualProcessing;
+
+  /// No description provided for @backfillManualSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries requested'**
+  String backfillManualSuccess(int count);
+
   /// No description provided for @measurableDeleteConfirm.
   ///
   /// In en, this message translates to:

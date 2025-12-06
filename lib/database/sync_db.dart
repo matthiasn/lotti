@@ -369,6 +369,86 @@ class SyncDatabase extends _$SyncDatabase {
     });
   }
 
+  /// Get backfill statistics grouped by host.
+  /// Returns counts of entries in each status per host.
+  Future<BackfillStats> getBackfillStats() async {
+    // Get all unique hosts with their status counts
+    final query = customSelect(
+      '''
+      SELECT
+        ssl.host_id,
+        MAX(ssl.counter) as latest_counter,
+        SUM(CASE WHEN ssl.status = 0 THEN 1 ELSE 0 END) as received_count,
+        SUM(CASE WHEN ssl.status = 1 THEN 1 ELSE 0 END) as missing_count,
+        SUM(CASE WHEN ssl.status = 2 THEN 1 ELSE 0 END) as requested_count,
+        SUM(CASE WHEN ssl.status = 3 THEN 1 ELSE 0 END) as backfilled_count,
+        SUM(CASE WHEN ssl.status = 4 THEN 1 ELSE 0 END) as deleted_count,
+        ha.last_seen_at
+      FROM sync_sequence_log ssl
+      LEFT JOIN host_activity ha ON ssl.host_id = ha.host_id
+      GROUP BY ssl.host_id
+      ORDER BY ssl.host_id
+      ''',
+      readsFrom: {syncSequenceLog, hostActivity},
+    );
+
+    final results = await query.get();
+    final hostStats = results.map((row) {
+      return BackfillHostStats(
+        hostId: row.read<String>('host_id'),
+        latestCounter: row.read<int>('latest_counter'),
+        receivedCount: row.read<int>('received_count'),
+        missingCount: row.read<int>('missing_count'),
+        requestedCount: row.read<int>('requested_count'),
+        backfilledCount: row.read<int>('backfilled_count'),
+        deletedCount: row.read<int>('deleted_count'),
+        lastSeenAt: row.readNullable<DateTime>('last_seen_at'),
+      );
+    }).toList();
+
+    return BackfillStats.fromHostStats(hostStats);
+  }
+
+  /// Get missing entries with age and per-host limits for automatic backfill.
+  /// [maxAge] - Only include entries created within this duration
+  /// [maxPerHost] - Maximum entries to include per host
+  Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
+    int limit = 50,
+    int maxRequestCount = 10,
+    Duration? maxAge,
+    int? maxPerHost,
+  }) async {
+    // Get all missing/requested entries respecting request count
+    final baseQuery = select(syncSequenceLog)
+      ..where(
+        (t) =>
+            (t.status.equals(SyncSequenceStatus.missing.index) |
+                t.status.equals(SyncSequenceStatus.requested.index)) &
+            t.requestCount.isSmallerThanValue(maxRequestCount),
+      )
+      ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
+
+    var entries = await baseQuery.get();
+
+    // Apply age filter if specified
+    if (maxAge != null) {
+      final cutoff = DateTime.now().subtract(maxAge);
+      entries = entries.where((e) => e.createdAt.isAfter(cutoff)).toList();
+    }
+
+    // Apply per-host limit if specified
+    if (maxPerHost != null) {
+      final byHost = <String, List<SyncSequenceLogItem>>{};
+      for (final entry in entries) {
+        byHost.putIfAbsent(entry.hostId, () => []).add(entry);
+      }
+      entries = byHost.values.expand((list) => list.take(maxPerHost)).toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    }
+
+    return entries.take(limit).toList();
+  }
+
   @override
   int get schemaVersion => 2;
 

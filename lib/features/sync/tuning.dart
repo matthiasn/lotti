@@ -1,3 +1,73 @@
+/// Stats for backfill status per host.
+class BackfillHostStats {
+  const BackfillHostStats({
+    required this.hostId,
+    required this.receivedCount,
+    required this.missingCount,
+    required this.requestedCount,
+    required this.backfilledCount,
+    required this.deletedCount,
+    required this.latestCounter,
+    this.lastSeenAt,
+  });
+
+  final String hostId;
+  final int receivedCount;
+  final int missingCount;
+  final int requestedCount;
+  final int backfilledCount;
+  final int deletedCount;
+  final int latestCounter;
+  final DateTime? lastSeenAt;
+
+  int get totalCount =>
+      receivedCount +
+      missingCount +
+      requestedCount +
+      backfilledCount +
+      deletedCount;
+
+  int get pendingCount => missingCount + requestedCount;
+}
+
+/// Aggregate stats across all hosts.
+class BackfillStats {
+  const BackfillStats({
+    required this.hostStats,
+    required this.totalReceived,
+    required this.totalMissing,
+    required this.totalRequested,
+    required this.totalBackfilled,
+    required this.totalDeleted,
+  });
+
+  factory BackfillStats.fromHostStats(List<BackfillHostStats> stats) {
+    return BackfillStats(
+      hostStats: stats,
+      totalReceived: stats.fold(0, (sum, s) => sum + s.receivedCount),
+      totalMissing: stats.fold(0, (sum, s) => sum + s.missingCount),
+      totalRequested: stats.fold(0, (sum, s) => sum + s.requestedCount),
+      totalBackfilled: stats.fold(0, (sum, s) => sum + s.backfilledCount),
+      totalDeleted: stats.fold(0, (sum, s) => sum + s.deletedCount),
+    );
+  }
+
+  final List<BackfillHostStats> hostStats;
+  final int totalReceived;
+  final int totalMissing;
+  final int totalRequested;
+  final int totalBackfilled;
+  final int totalDeleted;
+
+  int get totalPending => totalMissing + totalRequested;
+  int get totalEntries =>
+      totalReceived +
+      totalMissing +
+      totalRequested +
+      totalBackfilled +
+      totalDeleted;
+}
+
 /// Sync and Outbox tuning constants, centralized for easy documentation and
 /// future adjustments. Values are chosen to balance responsiveness and UI
 /// smoothness while preventing redundant work under bursty conditions.
@@ -29,6 +99,12 @@ class SyncTuning {
 
   // Maximum entries to query and include per backfill request message
   static const int backfillBatchSize = 100;
+
+  // Default limits for automatic backfill (prevents unbounded historical sync)
+  // Only request entries from the last day OR 250 entries per host, whichever
+  // is more restrictive. Deeper historical backfill requires manual trigger.
+  static const Duration defaultBackfillMaxAge = Duration(days: 1);
+  static const int defaultBackfillMaxEntriesPerHost = 250;
 
   // Exponential backoff for retry requests
   // Backoff = min(baseBackoff * 2^(requestCount-1), maxBackoff)
