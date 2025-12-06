@@ -225,21 +225,19 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   /// Increment the request count, update status to 'requested', and set lastRequestedAt.
-  Future<int> incrementRequestCount(String hostId, int counter) async {
-    final existing = await getEntryByHostAndCounter(hostId, counter);
-    if (existing == null) return 0;
-
+  /// Uses atomic SQL expression to avoid race conditions.
+  Future<int> incrementRequestCount(String hostId, int counter) {
     final now = DateTime.now();
     return (update(syncSequenceLog)
           ..where(
             (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
           ))
         .write(
-      SyncSequenceLogCompanion(
-        requestCount: Value(existing.requestCount + 1),
-        status: Value(SyncSequenceStatus.requested.index),
-        updatedAt: Value(now),
-        lastRequestedAt: Value(now),
+      SyncSequenceLogCompanion.custom(
+        requestCount: syncSequenceLog.requestCount + const Constant(1),
+        status: Constant(SyncSequenceStatus.requested.index),
+        updatedAt: Variable(now),
+        lastRequestedAt: Variable(now),
       ),
     );
   }
@@ -311,15 +309,14 @@ class SyncDatabase extends _$SyncDatabase {
 
     if (missingEntries.isEmpty) return [];
 
-    // Get host activity for all relevant hosts
-    final hostIds = missingEntries.map((e) => e.hostId).toSet();
-    final activityMap = <String, DateTime>{};
-    for (final hostId in hostIds) {
-      final lastSeen = await getHostLastSeen(hostId);
-      if (lastSeen != null) {
-        activityMap[hostId] = lastSeen;
-      }
-    }
+    // Get host activity for all relevant hosts in a single query
+    final hostIds = missingEntries.map((e) => e.hostId).toSet().toList();
+    final activities = await (select(hostActivity)
+          ..where((tbl) => tbl.hostId.isIn(hostIds)))
+        .get();
+    final activityMap = {
+      for (final activity in activities) activity.hostId: activity.lastSeenAt,
+    };
 
     final now = DateTime.now();
 

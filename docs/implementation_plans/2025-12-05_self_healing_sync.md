@@ -318,22 +318,14 @@ class BackfillResponseHandler {
     }
 
     // Entry exists - re-send it via normal sync
+    // No confirmation response needed - the sequence log is updated when
+    // the entry arrives via recordReceivedEntry()
     await _outboxService.enqueueMessage(
       SyncMessage.journalEntity(
         id: journalEntry.meta.id,
         jsonPath: getRelativeJsonPath(journalEntry.meta.id),
         vectorClock: journalEntry.meta.vectorClock,
         status: SyncEntryStatus.update,
-      ),
-    );
-
-    // Also send confirmation response
-    await _outboxService.enqueueMessage(
-      SyncMessage.backfillResponse(
-        hostId: request.hostId,
-        counter: request.counter,
-        deleted: false,
-        entryId: journalEntry.meta.id,
       ),
     );
   }
