@@ -101,6 +101,7 @@ class BackfillResponseHandler {
     }
 
     // Entry exists - re-send it via normal sync mechanism
+    // The sequence log will be updated when the recipient receives the entry
     final jsonPath = relativeEntityPath(journalEntry);
 
     await _outboxService.enqueueMessage(
@@ -109,16 +110,6 @@ class BackfillResponseHandler {
         jsonPath: jsonPath,
         vectorClock: journalEntry.meta.vectorClock,
         status: SyncEntryStatus.update,
-      ),
-    );
-
-    // Also send a confirmation response
-    await _outboxService.enqueueMessage(
-      SyncMessage.backfillResponse(
-        hostId: hostId,
-        counter: counter,
-        deleted: false,
-        entryId: journalEntry.meta.id,
       ),
     );
 

@@ -268,36 +268,28 @@ void main() {
       // === STEP 5: Alice receives and handles the backfill request ===
       await aliceResponseHandler.handleBackfillRequest(backfillRequest);
 
-      // Verify Alice enqueued both the journal entity and response
+      // Verify Alice enqueued only the journal entity (no BackfillResponse)
       final capturedMessages = verify(
         () => aliceOutbox.enqueueMessage(captureAny()),
       ).captured;
 
-      expect(capturedMessages, hasLength(2));
+      expect(capturedMessages, hasLength(1));
 
-      // First message should be the journal entity
+      // Should be the journal entity
       expect(capturedMessages[0], isA<SyncJournalEntity>());
       final journalEntity = capturedMessages[0] as SyncJournalEntity;
       expect(journalEntity.id, entryId2);
       expect(journalEntity.status, SyncEntryStatus.update);
 
-      // Second message should be the backfill response
-      expect(capturedMessages[1], isA<SyncBackfillResponse>());
-      final backfillResponse = capturedMessages[1] as SyncBackfillResponse;
-      expect(backfillResponse.hostId, aliceHostId);
-      expect(backfillResponse.counter, 2);
-      expect(backfillResponse.deleted, false);
-      expect(backfillResponse.entryId, entryId2);
-
-      // === STEP 6: Bob receives and handles the backfill response ===
-      await bobSequenceService.handleBackfillResponse(
-        hostId: backfillResponse.hostId,
-        counter: backfillResponse.counter,
-        deleted: backfillResponse.deleted,
-        entryId: backfillResponse.entryId,
+      // === STEP 6: Bob receives the entry via normal sync ===
+      // When the entry arrives, recordReceivedEntry updates the status to backfilled
+      await bobSequenceService.recordReceivedEntry(
+        entryId: entryId2,
+        vectorClock: VectorClock({aliceHostId: 2}),
+        originatingHostId: aliceHostId,
       );
 
-      // Verify Bob's sequence log is updated
+      // Verify Bob's sequence log is updated to backfilled
       final bobEntry2Final =
           await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 2);
       expect(bobEntry2Final, isNotNull);

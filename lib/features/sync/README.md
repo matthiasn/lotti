@@ -157,9 +157,10 @@ requested via broadcast. Any device with the entry can respond.
 1. Device A detects missing entry (host=X, counter=5)
 2. Device A broadcasts `SyncBackfillRequest` with entries list
 3. Device B receives request, looks up entry in its sequence log
-4. If found: Device B re-sends the journal entity + `SyncBackfillResponse`
-5. If deleted: Device B sends `SyncBackfillResponse` with `deleted=true`
-6. Device A receives response and updates sequence log status
+4. If found: Device B re-sends the journal entity via normal sync
+5. If deleted/purged: Device B sends `SyncBackfillResponse` with `deleted=true`
+6. Device A receives the entry via normal sync and updates sequence log to `backfilled`
+7. For deleted entries: Device A receives the response and marks entry as `deleted`
 
 **Logging:** Key domains include `SYNC_SEQUENCE` (gap detection, status changes)
 and `SYNC_BACKFILL` (request/response handling). Look for:

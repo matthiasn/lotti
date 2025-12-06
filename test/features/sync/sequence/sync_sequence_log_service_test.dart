@@ -349,9 +349,9 @@ void main() {
       ).called(1);
     });
 
-    test('records entry as backfilled when not deleted', () async {
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
-
+    test('ignores non-deleted response (backwards compat)', () async {
+      // Non-deleted responses are no longer sent - entries arrive via normal
+      // sync and recordReceivedEntry handles the status update.
       await service.handleBackfillResponse(
         hostId: aliceHostId,
         counter: 3,
@@ -359,7 +359,9 @@ void main() {
         entryId: 'backfilled-entry',
       );
 
-      verify(() => mockDb.recordSequenceEntry(any())).called(1);
+      // Should not call any database methods
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+      verifyNever(() => mockDb.updateSequenceStatus(any(), any(), any()));
     });
   });
 

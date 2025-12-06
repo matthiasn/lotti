@@ -161,7 +161,7 @@ void main() {
       );
     });
 
-    test('re-sends entry and confirmation when entry exists', () async {
+    test('re-sends entry via normal sync when entry exists', () async {
       final request = SyncBackfillRequest(
         entries: [
           const BackfillRequestEntry(hostId: aliceHostId, counter: 3),
@@ -183,26 +183,18 @@ void main() {
 
       await handler.handleBackfillRequest(request);
 
-      // Should send two messages: journal entity + confirmation response
+      // Should send only the journal entity (no confirmation response needed)
       final captured = verify(
         () => mockOutboxService.enqueueMessage(captureAny()),
       ).captured;
 
-      expect(captured.length, 2);
+      expect(captured.length, 1);
 
-      // First should be the journal entity
+      // Should be the journal entity
       expect(captured[0], isA<SyncJournalEntity>());
       final syncEntity = captured[0] as SyncJournalEntity;
       expect(syncEntity.id, entryId);
       expect(syncEntity.status, SyncEntryStatus.update);
-
-      // Second should be the confirmation response
-      expect(captured[1], isA<SyncBackfillResponse>());
-      final confirmResponse = captured[1] as SyncBackfillResponse;
-      expect(confirmResponse.hostId, aliceHostId);
-      expect(confirmResponse.counter, 3);
-      expect(confirmResponse.deleted, false);
-      expect(confirmResponse.entryId, entryId);
     });
 
     test('handles errors gracefully', () async {
@@ -258,7 +250,11 @@ void main() {
       ).called(1);
     });
 
-    test('delegates to sequenceLogService for non-deleted response', () async {
+    test(
+        'delegates non-deleted response to sequenceLogService (backwards compat)',
+        () async {
+      // Non-deleted responses are no longer sent by newer clients,
+      // but we still delegate to sequenceLogService for backwards compatibility
       const response = SyncBackfillResponse(
         hostId: aliceHostId,
         counter: 3,
@@ -277,6 +273,7 @@ void main() {
 
       await handler.handleBackfillResponse(response);
 
+      // Still delegates to sequenceLogService which will ignore it
       verify(
         () => mockSequenceService.handleBackfillResponse(
           hostId: aliceHostId,

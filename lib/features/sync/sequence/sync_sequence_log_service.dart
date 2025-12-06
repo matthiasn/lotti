@@ -214,36 +214,36 @@ class SyncSequenceLogService {
     }
   }
 
-  /// Handle a backfill response, updating the sequence log status.
+  /// Handle a backfill response indicating the entry was deleted/purged.
+  /// For successful backfills, the entry arrives via normal sync and
+  /// [recordReceivedEntry] handles updating the status to backfilled.
   Future<void> handleBackfillResponse({
     required String hostId,
     required int counter,
     required bool deleted,
     String? entryId,
   }) async {
-    final status =
-        deleted ? SyncSequenceStatus.deleted : SyncSequenceStatus.backfilled;
-
-    // If we got an entry ID, record it
-    if (!deleted && entryId != null) {
-      final now = DateTime.now();
-      await _syncDatabase.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: Value(hostId),
-          counter: Value(counter),
-          entryId: Value(entryId),
-          status: Value(status.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
+    if (!deleted) {
+      // Non-deleted responses are no longer sent - the entry arrives via
+      // normal sync and recordReceivedEntry handles the status update.
+      // This path is kept for backwards compatibility with older clients.
+      _loggingService.captureEvent(
+        'handleBackfillResponse: ignoring non-deleted response hostId=$hostId counter=$counter',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'backfillResponse',
       );
-    } else {
-      // Just update the status
-      await _syncDatabase.updateSequenceStatus(hostId, counter, status);
+      return;
     }
 
+    // Mark as deleted - the entry was purged and cannot be backfilled
+    await _syncDatabase.updateSequenceStatus(
+      hostId,
+      counter,
+      SyncSequenceStatus.deleted,
+    );
+
     _loggingService.captureEvent(
-      'handleBackfillResponse hostId=$hostId counter=$counter deleted=$deleted entryId=$entryId',
+      'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
       domain: 'SYNC_SEQUENCE',
       subDomain: 'backfillResponse',
     );
