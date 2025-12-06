@@ -63,6 +63,7 @@ class AiTestDataFactory {
     List<Modality> inputModalities = const [Modality.text],
     List<Modality> outputModalities = const [Modality.text],
     bool isReasoningModel = false,
+    bool supportsFunctionCalling = false,
   }) {
     return AiConfig.model(
       id: id,
@@ -74,6 +75,7 @@ class AiTestDataFactory {
       inputModalities: inputModalities,
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
+      supportsFunctionCalling: supportsFunctionCalling,
     ) as AiConfigModel;
   }
 

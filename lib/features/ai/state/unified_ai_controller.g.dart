@@ -648,10 +648,9 @@ class _TriggerNewInferenceProviderElement
 }
 
 String _$unifiedAiControllerHash() =>
-    r'e6bee84745297a0816b36a2d79d7e42add11f05e';
+    r'e582d7d622c628b4c58bdff7965ff0a155e676cb';
 
-abstract class _$UnifiedAiController
-    extends BuildlessAutoDisposeNotifier<UnifiedAiState> {
+abstract class _$UnifiedAiController extends BuildlessNotifier<UnifiedAiState> {
   late final String entityId;
   late final String promptId;
 
@@ -662,21 +661,29 @@ abstract class _$UnifiedAiController
 }
 
 /// Controller for running unified AI inference with configurable prompts
+/// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
+/// ensuring error state persists until the widget can read it.
 ///
 /// Copied from [UnifiedAiController].
 @ProviderFor(UnifiedAiController)
 const unifiedAiControllerProvider = UnifiedAiControllerFamily();
 
 /// Controller for running unified AI inference with configurable prompts
+/// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
+/// ensuring error state persists until the widget can read it.
 ///
 /// Copied from [UnifiedAiController].
 class UnifiedAiControllerFamily extends Family<UnifiedAiState> {
   /// Controller for running unified AI inference with configurable prompts
+  /// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
+  /// ensuring error state persists until the widget can read it.
   ///
   /// Copied from [UnifiedAiController].
   const UnifiedAiControllerFamily();
 
   /// Controller for running unified AI inference with configurable prompts
+  /// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
+  /// ensuring error state persists until the widget can read it.
   ///
   /// Copied from [UnifiedAiController].
   UnifiedAiControllerProvider call({
@@ -715,11 +722,15 @@ class UnifiedAiControllerFamily extends Family<UnifiedAiState> {
 }
 
 /// Controller for running unified AI inference with configurable prompts
+/// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
+/// ensuring error state persists until the widget can read it.
 ///
 /// Copied from [UnifiedAiController].
-class UnifiedAiControllerProvider extends AutoDisposeNotifierProviderImpl<
-    UnifiedAiController, UnifiedAiState> {
+class UnifiedAiControllerProvider
+    extends NotifierProviderImpl<UnifiedAiController, UnifiedAiState> {
   /// Controller for running unified AI inference with configurable prompts
+  /// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
+  /// ensuring error state persists until the widget can read it.
   ///
   /// Copied from [UnifiedAiController].
   UnifiedAiControllerProvider({
@@ -786,8 +797,7 @@ class UnifiedAiControllerProvider extends AutoDisposeNotifierProviderImpl<
   }
 
   @override
-  AutoDisposeNotifierProviderElement<UnifiedAiController, UnifiedAiState>
-      createElement() {
+  NotifierProviderElement<UnifiedAiController, UnifiedAiState> createElement() {
     return _UnifiedAiControllerProviderElement(this);
   }
 
@@ -810,7 +820,7 @@ class UnifiedAiControllerProvider extends AutoDisposeNotifierProviderImpl<
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin UnifiedAiControllerRef on AutoDisposeNotifierProviderRef<UnifiedAiState> {
+mixin UnifiedAiControllerRef on NotifierProviderRef<UnifiedAiState> {
   /// The parameter `entityId` of this provider.
   String get entityId;
 
@@ -819,8 +829,8 @@ mixin UnifiedAiControllerRef on AutoDisposeNotifierProviderRef<UnifiedAiState> {
 }
 
 class _UnifiedAiControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<UnifiedAiController,
-        UnifiedAiState> with UnifiedAiControllerRef {
+    extends NotifierProviderElement<UnifiedAiController, UnifiedAiState>
+    with UnifiedAiControllerRef {
   _UnifiedAiControllerProviderElement(super.provider);
 
   @override

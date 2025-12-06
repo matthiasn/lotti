@@ -2347,8 +2347,8 @@ void main() {
 
           // Deterministically process queued microtasks
           async.flushMicrotasks();
-          expect(
-              statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+          // Note: Repository no longer emits error status - controller handles it
+          expect(statusChanges, [InferenceStatus.running]);
         });
       });
 
@@ -2421,8 +2421,8 @@ void main() {
 
           // Deterministically process queued microtasks
           async.flushMicrotasks();
-          expect(
-              statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+          // Note: Repository no longer emits error status - controller handles it
+          expect(statusChanges, [InferenceStatus.running]);
         });
       });
 
@@ -2573,8 +2573,8 @@ void main() {
 
           // Deterministically process queued microtasks
           async.flushMicrotasks();
-          expect(
-              statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+          // Note: Repository no longer emits error status - controller handles it
+          expect(statusChanges, [InferenceStatus.running]);
         });
       });
 
@@ -2603,8 +2603,8 @@ void main() {
 
           // Deterministically process queued microtasks
           async.flushMicrotasks();
-          expect(
-              statusChanges, [InferenceStatus.running, InferenceStatus.error]);
+          // Note: Repository no longer emits error status - controller handles it
+          expect(statusChanges, [InferenceStatus.running]);
         });
       });
 
