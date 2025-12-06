@@ -560,7 +560,7 @@ class _ModelSelection {
   const _ModelSelection({
     required this.audioModel,
     required this.reasoningModel,
-    required this.imageModel,
+    this.imageModel,
   });
 
   final AiConfigModel? audioModel;
