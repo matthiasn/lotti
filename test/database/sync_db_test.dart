@@ -885,4 +885,456 @@ void main() {
       expect(missing, hasLength(3));
     });
   });
+
+  group('getBackfillStats Tests', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('returns empty stats when no entries', () async {
+      final database = db!;
+      final stats = await database.getBackfillStats();
+
+      expect(stats.hostStats, isEmpty);
+      expect(stats.totalReceived, 0);
+      expect(stats.totalMissing, 0);
+      expect(stats.totalRequested, 0);
+      expect(stats.totalBackfilled, 0);
+      expect(stats.totalDeleted, 0);
+    });
+
+    test('counts entries by status for single host', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      // Add entries with different statuses
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(3),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(DateTime(2024, 1, 3)),
+          updatedAt: Value(DateTime(2024, 1, 3)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(4),
+          status: Value(SyncSequenceStatus.backfilled.index),
+          createdAt: Value(DateTime(2024, 1, 4)),
+          updatedAt: Value(DateTime(2024, 1, 4)),
+        ),
+      );
+
+      final stats = await database.getBackfillStats();
+
+      expect(stats.hostStats, hasLength(1));
+      expect(stats.hostStats.first.hostId, hostId);
+      expect(stats.hostStats.first.receivedCount, 2);
+      expect(stats.hostStats.first.missingCount, 1);
+      expect(stats.hostStats.first.backfilledCount, 1);
+      expect(stats.hostStats.first.latestCounter, 4);
+
+      expect(stats.totalReceived, 2);
+      expect(stats.totalMissing, 1);
+      expect(stats.totalBackfilled, 1);
+    });
+
+    test('counts entries across multiple hosts', () async {
+      final database = db!;
+
+      // Host 1: 2 received
+      for (var i = 1; i <= 2; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(DateTime(2024, 1, i)),
+            updatedAt: Value(DateTime(2024, 1, i)),
+          ),
+        );
+      }
+
+      // Host 2: 3 missing
+      for (var i = 1; i <= 3; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-2'),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2024, 2, i)),
+            updatedAt: Value(DateTime(2024, 2, i)),
+          ),
+        );
+      }
+
+      final stats = await database.getBackfillStats();
+
+      expect(stats.hostStats, hasLength(2));
+      expect(stats.totalReceived, 2);
+      expect(stats.totalMissing, 3);
+      expect(stats.totalEntries, 5);
+    });
+
+    test('includes host activity lastSeenAt', () async {
+      final database = db!;
+      const hostId = 'host-1';
+      final lastSeen = DateTime(2024, 5, 15);
+
+      await database.updateHostActivity(hostId, lastSeen);
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+
+      final stats = await database.getBackfillStats();
+
+      expect(stats.hostStats.first.lastSeenAt, lastSeen);
+    });
+  });
+
+  group('getMissingEntriesWithLimits Tests', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('returns missing entries without limits', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      for (var i = 1; i <= 5; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2024, 1, i)),
+            updatedAt: Value(DateTime(2024, 1, i)),
+          ),
+        );
+      }
+
+      final missing = await database.getMissingEntriesWithLimits();
+      expect(missing, hasLength(5));
+    });
+
+    test('respects maxAge limit', () async {
+      final database = db!;
+      const hostId = 'host-1';
+      final now = DateTime.now();
+
+      // Entry from 2 hours ago (should be included with 1 day limit)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(now.subtract(const Duration(hours: 2))),
+          updatedAt: Value(now.subtract(const Duration(hours: 2))),
+        ),
+      );
+
+      // Entry from 2 days ago (should be excluded with 1 day limit)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(now.subtract(const Duration(days: 2))),
+          updatedAt: Value(now.subtract(const Duration(days: 2))),
+        ),
+      );
+
+      final missing = await database.getMissingEntriesWithLimits(
+        maxAge: const Duration(days: 1),
+      );
+      expect(missing, hasLength(1));
+      expect(missing.first.counter, 1);
+    });
+
+    test('respects maxPerHost limit', () async {
+      final database = db!;
+
+      // Add 5 entries for host-1
+      for (var i = 1; i <= 5; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2024, 1, i)),
+            updatedAt: Value(DateTime(2024, 1, i)),
+          ),
+        );
+      }
+
+      // Add 5 entries for host-2
+      for (var i = 1; i <= 5; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-2'),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2024, 2, i)),
+            updatedAt: Value(DateTime(2024, 2, i)),
+          ),
+        );
+      }
+
+      final missing = await database.getMissingEntriesWithLimits(
+        maxPerHost: 2,
+      );
+      // 2 from host-1 + 2 from host-2 = 4
+      expect(missing, hasLength(4));
+
+      // Check we got 2 from each host
+      final host1Entries = missing.where((e) => e.hostId == 'host-1').toList();
+      final host2Entries = missing.where((e) => e.hostId == 'host-2').toList();
+      expect(host1Entries, hasLength(2));
+      expect(host2Entries, hasLength(2));
+    });
+
+    test('respects overall limit', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      for (var i = 1; i <= 10; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2024, 1, i)),
+            updatedAt: Value(DateTime(2024, 1, i)),
+          ),
+        );
+      }
+
+      final missing = await database.getMissingEntriesWithLimits(limit: 3);
+      expect(missing, hasLength(3));
+    });
+
+    test('respects maxRequestCount', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      // Entry with low request count (should be included)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.missing.index),
+          requestCount: const Value(2),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+
+      // Entry with high request count (should be excluded)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.missing.index),
+          requestCount: const Value(15),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+
+      final missing = await database.getMissingEntriesWithLimits(
+        maxRequestCount: 10,
+      );
+      expect(missing, hasLength(1));
+      expect(missing.first.counter, 1);
+    });
+
+    test('combines all limits correctly', () async {
+      final database = db!;
+      final now = DateTime.now();
+
+      // Recent entries for host-1 (10 entries)
+      for (var i = 1; i <= 10; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now.subtract(Duration(hours: i))),
+            updatedAt: Value(now.subtract(Duration(hours: i))),
+          ),
+        );
+      }
+
+      // Old entries for host-2 (should be filtered by maxAge)
+      for (var i = 1; i <= 5; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-2'),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now.subtract(const Duration(days: 5))),
+            updatedAt: Value(now.subtract(const Duration(days: 5))),
+          ),
+        );
+      }
+
+      final missing = await database.getMissingEntriesWithLimits(
+        limit: 5,
+        maxAge: const Duration(days: 1),
+        maxPerHost: 3,
+      );
+
+      // Only host-1 entries (maxAge filters host-2)
+      // maxPerHost limits to 3
+      // overall limit is 5 but maxPerHost restricts to 3
+      expect(missing, hasLength(3));
+      expect(missing.every((e) => e.hostId == 'host-1'), isTrue);
+    });
+  });
+
+  group('Batch Operations Tests', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('batchInsertSequenceEntries inserts multiple entries', () async {
+      final database = db!;
+      final now = DateTime(2024, 1, 1);
+
+      final entries = [
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-2'),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      ];
+
+      await database.batchInsertSequenceEntries(entries);
+
+      final host1Entry1 =
+          await database.getEntryByHostAndCounter('host-1', 1);
+      final host1Entry2 =
+          await database.getEntryByHostAndCounter('host-1', 2);
+      final host2Entry1 =
+          await database.getEntryByHostAndCounter('host-2', 1);
+
+      expect(host1Entry1, isNotNull);
+      expect(host1Entry2, isNotNull);
+      expect(host2Entry1, isNotNull);
+    });
+
+    test('batchInsertSequenceEntries ignores duplicates', () async {
+      final database = db!;
+      final now = DateTime(2024, 1, 1);
+
+      // Insert initial entry
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(1),
+          entryId: const Value('original-entry'),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // Batch insert with duplicate
+      final entries = [
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(1),
+          entryId: const Value('duplicate-entry'),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      ];
+
+      await database.batchInsertSequenceEntries(entries);
+
+      // Original entry should be unchanged
+      final entry = await database.getEntryByHostAndCounter('host-1', 1);
+      expect(entry!.entryId, 'original-entry');
+      expect(entry.status, SyncSequenceStatus.received.index);
+    });
+
+    test('getCountersForHost returns all counters', () async {
+      final database = db!;
+      const hostId = 'host-1';
+      final now = DateTime(2024, 1, 1);
+
+      for (var i in [1, 3, 5, 7]) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+
+      final counters = await database.getCountersForHost(hostId);
+      expect(counters, {1, 3, 5, 7});
+    });
+
+    test('getCountersForHost returns empty set for unknown host', () async {
+      final database = db!;
+      final counters = await database.getCountersForHost('unknown');
+      expect(counters, isEmpty);
+    });
+  });
 }

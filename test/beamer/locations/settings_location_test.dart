@@ -73,6 +73,7 @@ void main() {
         '/settings/ai',
         '/settings/sync',
         '/settings/sync/matrix/maintenance',
+        '/settings/sync/backfill',
         '/settings/sync/stats',
         '/settings/sync/outbox',
         '/settings/tags',

@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -684,6 +685,101 @@ void main() {
       expect(progressValues.length, 2);
       expect(progressValues[0], closeTo(2 / 3, 0.01));
       expect(progressValues[1], closeTo(1.0, 0.01));
+    });
+  });
+
+  group('getBackfillStats', () {
+    test('delegates to database', () async {
+      final mockStats = BackfillStats.fromHostStats([
+        BackfillHostStats(
+          hostId: aliceHostId,
+          receivedCount: 10,
+          missingCount: 2,
+          requestedCount: 1,
+          backfilledCount: 3,
+          deletedCount: 0,
+          latestCounter: 15,
+        ),
+      ]);
+
+      when(() => mockDb.getBackfillStats()).thenAnswer((_) async => mockStats);
+
+      final result = await service.getBackfillStats();
+
+      expect(result, mockStats);
+      verify(() => mockDb.getBackfillStats()).called(1);
+    });
+  });
+
+  group('getMissingEntriesWithLimits', () {
+    test('delegates to database with default parameters', () async {
+      when(
+        () => mockDb.getMissingEntriesWithLimits(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+          maxAge: any(named: 'maxAge'),
+          maxPerHost: any(named: 'maxPerHost'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await service.getMissingEntriesWithLimits();
+
+      verify(
+        () => mockDb.getMissingEntriesWithLimits(
+          limit: 50,
+          maxRequestCount: 10,
+          maxAge: null,
+          maxPerHost: null,
+        ),
+      ).called(1);
+    });
+
+    test('passes custom parameters', () async {
+      when(
+        () => mockDb.getMissingEntriesWithLimits(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+          maxAge: any(named: 'maxAge'),
+          maxPerHost: any(named: 'maxPerHost'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await service.getMissingEntriesWithLimits(
+        limit: 25,
+        maxRequestCount: 5,
+        maxAge: const Duration(hours: 12),
+        maxPerHost: 100,
+      );
+
+      verify(
+        () => mockDb.getMissingEntriesWithLimits(
+          limit: 25,
+          maxRequestCount: 5,
+          maxAge: const Duration(hours: 12),
+          maxPerHost: 100,
+        ),
+      ).called(1);
+    });
+
+    test('returns missing entries', () async {
+      final entries = [
+        _createLogItem(aliceHostId, 1),
+        _createLogItem(aliceHostId, 2),
+      ];
+
+      when(
+        () => mockDb.getMissingEntriesWithLimits(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+          maxAge: any(named: 'maxAge'),
+          maxPerHost: any(named: 'maxPerHost'),
+        ),
+      ).thenAnswer((_) async => entries);
+
+      final result = await service.getMissingEntriesWithLimits();
+
+      expect(result, entries);
+      expect(result.length, 2);
     });
   });
 }
