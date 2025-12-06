@@ -154,8 +154,8 @@ class OutboxListItemViewModel {
         aiConfig: (_) => messages.syncPayloadAiConfig,
         aiConfigDelete: (_) => messages.syncPayloadAiConfigDelete,
         themingSelection: (_) => messages.syncPayloadThemingSelection,
-        backfillRequest: (_) => 'Backfill Request',
-        backfillResponse: (_) => 'Backfill Response',
+        backfillRequest: (_) => messages.syncPayloadBackfillRequest,
+        backfillResponse: (_) => messages.syncPayloadBackfillResponse,
       );
     } catch (_) {
       return messages.syncListUnknownPayload;

@@ -2559,6 +2559,18 @@ abstract class AppLocalizations {
   /// **'Theming selection'**
   String get syncPayloadThemingSelection;
 
+  /// No description provided for @syncPayloadBackfillRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill request'**
+  String get syncPayloadBackfillRequest;
+
+  /// No description provided for @syncPayloadBackfillResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Backfill response'**
+  String get syncPayloadBackfillResponse;
+
   /// No description provided for @syncListCountSummary.
   ///
   /// In en, this message translates to:

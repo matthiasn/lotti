@@ -102,10 +102,12 @@ class HostActivity extends Table {
 
 @DriftDatabase(tables: [Outbox, SyncSequenceLog, HostActivity])
 class SyncDatabase extends _$SyncDatabase {
-  SyncDatabase({this.inMemoryDatabase = false})
-      : super(
+  SyncDatabase({
+    this.inMemoryDatabase = false,
+    String? overriddenFilename,
+  }) : super(
           openDbConnection(
-            syncDbFileName,
+            overriddenFilename ?? syncDbFileName,
             inMemoryDatabase: inMemoryDatabase,
           ),
         );

@@ -1368,6 +1368,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Theming selection';
 
   @override
+  String get syncPayloadBackfillRequest => 'Backfill request';
+
+  @override
+  String get syncPayloadBackfillResponse => 'Backfill response';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
