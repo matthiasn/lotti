@@ -15,6 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
 
+class MockSyncDatabase extends Mock implements SyncDatabase {}
+
 class MockOutboxService extends Mock implements OutboxService {}
 
 class MockVectorClockService extends Mock implements VectorClockService {}
@@ -25,6 +27,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockSyncSequenceLogService mockSequenceService;
+  late MockSyncDatabase mockSyncDatabase;
   late MockOutboxService mockOutboxService;
   late MockVectorClockService mockVcService;
   late MockLoggingService mockLogging;
@@ -47,11 +50,15 @@ void main() {
     SharedPreferences.setMockInitialValues({'backfill_enabled': true});
 
     mockSequenceService = MockSyncSequenceLogService();
+    mockSyncDatabase = MockSyncDatabase();
     mockOutboxService = MockOutboxService();
     mockVcService = MockVectorClockService();
     mockLogging = MockLoggingService();
 
     when(() => mockVcService.getHost()).thenAnswer((_) async => myHostId);
+    // Default: no pending backfill entries in outbox
+    when(() => mockSyncDatabase.getPendingBackfillEntries())
+        .thenAnswer((_) async => {});
     when(
       () => mockLogging.captureEvent(
         any<String>(),
@@ -74,6 +81,7 @@ void main() {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,
@@ -124,6 +132,7 @@ void main() {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,
@@ -178,6 +187,7 @@ void main() {
         const maxBatch = 2;
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,
@@ -221,6 +231,7 @@ void main() {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,
@@ -253,6 +264,7 @@ void main() {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,
@@ -286,6 +298,7 @@ void main() {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,
@@ -320,6 +333,7 @@ void main() {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,
@@ -368,6 +382,7 @@ void main() {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,
@@ -403,6 +418,7 @@ void main() {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
           outboxService: mockOutboxService,
           vectorClockService: mockVcService,
           loggingService: mockLogging,

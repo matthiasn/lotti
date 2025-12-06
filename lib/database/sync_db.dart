@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/common.dart';
@@ -169,6 +171,42 @@ class SyncDatabase extends _$SyncDatabase {
 
   Future<int> deleteOutboxItems() {
     return delete(outbox).go();
+  }
+
+  /// Get (hostId, counter) pairs from pending backfill request messages in outbox.
+  /// Used to avoid enqueuing duplicate backfill requests.
+  Future<Set<({String hostId, int counter})>>
+      getPendingBackfillEntries() async {
+    final pendingItems = await (select(outbox)
+          ..where((t) => t.status.equals(OutboxStatus.pending.index)))
+        .get();
+
+    final entries = <({String hostId, int counter})>{};
+
+    for (final item in pendingItems) {
+      try {
+        final json = jsonDecode(item.message) as Map<String, dynamic>;
+        // Check if this is a backfillRequest message
+        if (json['runtimeType'] == 'backfillRequest') {
+          final entriesList = json['entries'] as List<dynamic>?;
+          if (entriesList != null) {
+            for (final entry in entriesList) {
+              if (entry is Map<String, dynamic>) {
+                final hostId = entry['hostId'] as String?;
+                final counter = entry['counter'] as int?;
+                if (hostId != null && counter != null) {
+                  entries.add((hostId: hostId, counter: counter));
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {
+        // Skip malformed messages
+      }
+    }
+
+    return entries;
   }
 
   // ============ Sync Sequence Log Methods ============

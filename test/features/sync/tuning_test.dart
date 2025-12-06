@@ -4,69 +4,36 @@ import 'package:lotti/features/sync/tuning.dart';
 void main() {
   group('SyncTuning', () {
     group('calculateBackoff', () {
-      test('returns zero for requestCount <= 0', () {
+      test('returns zero for requestCount <= 0 (first request is immediate)',
+          () {
         expect(SyncTuning.calculateBackoff(0), Duration.zero);
         expect(SyncTuning.calculateBackoff(-1), Duration.zero);
         expect(SyncTuning.calculateBackoff(-100), Duration.zero);
       });
 
-      test('returns base backoff for first request', () {
+      test('returns 12h for any retry (requestCount >= 1)', () {
         expect(
           SyncTuning.calculateBackoff(1),
-          SyncTuning.backfillBaseBackoff,
+          SyncTuning.backfillMinRetryInterval,
         );
-      });
-
-      test('doubles backoff for each subsequent request', () {
-        // 2^0 = 1 -> 5 min
-        expect(
-          SyncTuning.calculateBackoff(1),
-          const Duration(minutes: 5),
-        );
-        // 2^1 = 2 -> 10 min
         expect(
           SyncTuning.calculateBackoff(2),
-          const Duration(minutes: 10),
+          SyncTuning.backfillMinRetryInterval,
         );
-        // 2^2 = 4 -> 20 min
-        expect(
-          SyncTuning.calculateBackoff(3),
-          const Duration(minutes: 20),
-        );
-        // 2^3 = 8 -> 40 min
-        expect(
-          SyncTuning.calculateBackoff(4),
-          const Duration(minutes: 40),
-        );
-        // 2^4 = 16 -> 80 min
-        expect(
-          SyncTuning.calculateBackoff(5),
-          const Duration(minutes: 80),
-        );
-      });
-
-      test('caps at maxBackoff (2 hours)', () {
-        // 2^5 = 32 -> 160 min, but capped at 120 min
-        expect(
-          SyncTuning.calculateBackoff(6),
-          SyncTuning.backfillMaxBackoff,
-        );
-        // Higher counts should also be capped
         expect(
           SyncTuning.calculateBackoff(10),
-          SyncTuning.backfillMaxBackoff,
+          SyncTuning.backfillMinRetryInterval,
         );
         expect(
           SyncTuning.calculateBackoff(100),
-          SyncTuning.backfillMaxBackoff,
+          SyncTuning.backfillMinRetryInterval,
         );
       });
 
-      test('handles edge case of very high requestCount', () {
-        // Should not overflow and should be capped
+      test('backfillMinRetryInterval is 12 hours', () {
         expect(
-          SyncTuning.calculateBackoff(1000),
-          SyncTuning.backfillMaxBackoff,
+          SyncTuning.backfillMinRetryInterval,
+          const Duration(hours: 12),
         );
       });
     });
@@ -80,12 +47,8 @@ void main() {
         expect(SyncTuning.backfillMaxRequestCount, 10);
         expect(SyncTuning.backfillBatchSize, 100);
         expect(
-          SyncTuning.backfillBaseBackoff,
-          const Duration(minutes: 5),
-        );
-        expect(
-          SyncTuning.backfillMaxBackoff,
-          const Duration(hours: 2),
+          SyncTuning.backfillMinRetryInterval,
+          const Duration(hours: 12),
         );
       });
     });

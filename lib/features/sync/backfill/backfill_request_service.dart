@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -17,6 +18,7 @@ import 'package:meta/meta.dart';
 class BackfillRequestService {
   BackfillRequestService({
     required SyncSequenceLogService sequenceLogService,
+    required SyncDatabase syncDatabase,
     required OutboxService outboxService,
     required VectorClockService vectorClockService,
     required LoggingService loggingService,
@@ -26,6 +28,7 @@ class BackfillRequestService {
     Duration? maxAge,
     int? maxPerHost,
   })  : _sequenceLogService = sequenceLogService,
+        _syncDatabase = syncDatabase,
         _outboxService = outboxService,
         _vectorClockService = vectorClockService,
         _loggingService = loggingService,
@@ -38,6 +41,7 @@ class BackfillRequestService {
         _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost;
 
   final SyncSequenceLogService _sequenceLogService;
+  final SyncDatabase _syncDatabase;
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
   final LoggingService _loggingService;
@@ -118,7 +122,7 @@ class BackfillRequestService {
 
     try {
       // Get missing entries - either with limits (automatic) or without (manual)
-      final missing = useLimits
+      var missing = useLimits
           ? await _sequenceLogService.getMissingEntriesWithLimits(
               limit: _maxBatchSize,
               maxRequestCount: _maxRequestCount,
@@ -133,6 +137,35 @@ class BackfillRequestService {
       if (missing.isEmpty) {
         _loggingService.captureEvent(
           'processBackfillRequests: no missing entries (useLimits=$useLimits)',
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'process',
+        );
+        return 0;
+      }
+
+      // Filter out entries that are already queued in the outbox
+      final alreadyQueued = await _syncDatabase.getPendingBackfillEntries();
+      if (alreadyQueued.isNotEmpty) {
+        final beforeCount = missing.length;
+        missing = missing
+            .where(
+              (m) => !alreadyQueued
+                  .contains((hostId: m.hostId, counter: m.counter)),
+            )
+            .toList();
+        final filtered = beforeCount - missing.length;
+        if (filtered > 0) {
+          _loggingService.captureEvent(
+            'processBackfillRequests: filtered $filtered already-queued entries',
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'process',
+          );
+        }
+      }
+
+      if (missing.isEmpty) {
+        _loggingService.captureEvent(
+          'processBackfillRequests: all entries already queued (useLimits=$useLimits)',
           domain: 'SYNC_BACKFILL',
           subDomain: 'process',
         );

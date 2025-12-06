@@ -106,21 +106,16 @@ class SyncTuning {
   static const Duration defaultBackfillMaxAge = Duration(days: 1);
   static const int defaultBackfillMaxEntriesPerHost = 250;
 
-  // Exponential backoff for retry requests
-  // Backoff = min(baseBackoff * 2^(requestCount-1), maxBackoff)
-  // e.g., 5min, 10min, 20min, 40min, 80min, 120min (capped)
-  static const Duration backfillBaseBackoff = Duration(minutes: 5);
-  static const Duration backfillMaxBackoff = Duration(hours: 2);
+  // Backoff for retry requests - 12 hours minimum between retries
+  // First request is immediate, then 12h wait before any retry.
+  // This prevents hammering the network on slow/metered connections.
+  static const Duration backfillMinRetryInterval = Duration(hours: 12);
 
-  /// Calculate backoff duration based on request count using exponential backoff.
-  /// Returns the minimum wait time before the next retry.
+  /// Calculate backoff duration based on request count.
+  /// First request (requestCount=0) is immediate.
+  /// All retries (requestCount>=1) wait 12 hours minimum.
   static Duration calculateBackoff(int requestCount) {
     if (requestCount <= 0) return Duration.zero;
-
-    // 2^(requestCount-1) multiplier, capped at maxBackoff
-    final multiplier = 1 << (requestCount - 1).clamp(0, 10);
-    final backoff = backfillBaseBackoff * multiplier;
-
-    return backoff > backfillMaxBackoff ? backfillMaxBackoff : backoff;
+    return backfillMinRetryInterval;
   }
 }
