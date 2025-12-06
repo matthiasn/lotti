@@ -409,16 +409,725 @@ class OutboxCompanion extends UpdateCompanion<OutboxItem> {
   }
 }
 
+class $SyncSequenceLogTable extends SyncSequenceLog
+    with TableInfo<$SyncSequenceLogTable, SyncSequenceLogItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncSequenceLogTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _hostIdMeta = const VerificationMeta('hostId');
+  @override
+  late final GeneratedColumn<String> hostId = GeneratedColumn<String>(
+      'host_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _counterMeta =
+      const VerificationMeta('counter');
+  @override
+  late final GeneratedColumn<int> counter = GeneratedColumn<int>(
+      'counter', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _entryIdMeta =
+      const VerificationMeta('entryId');
+  @override
+  late final GeneratedColumn<String> entryId = GeneratedColumn<String>(
+      'entry_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _originatingHostIdMeta =
+      const VerificationMeta('originatingHostId');
+  @override
+  late final GeneratedColumn<String> originatingHostId =
+      GeneratedColumn<String>('originating_host_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<int> status = GeneratedColumn<int>(
+      'status', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: Constant(SyncSequenceStatus.received.index));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _requestCountMeta =
+      const VerificationMeta('requestCount');
+  @override
+  late final GeneratedColumn<int> requestCount = GeneratedColumn<int>(
+      'request_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _lastRequestedAtMeta =
+      const VerificationMeta('lastRequestedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastRequestedAt =
+      GeneratedColumn<DateTime>('last_requested_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        hostId,
+        counter,
+        entryId,
+        originatingHostId,
+        status,
+        createdAt,
+        updatedAt,
+        requestCount,
+        lastRequestedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_sequence_log';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<SyncSequenceLogItem> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('host_id')) {
+      context.handle(_hostIdMeta,
+          hostId.isAcceptableOrUnknown(data['host_id']!, _hostIdMeta));
+    } else if (isInserting) {
+      context.missing(_hostIdMeta);
+    }
+    if (data.containsKey('counter')) {
+      context.handle(_counterMeta,
+          counter.isAcceptableOrUnknown(data['counter']!, _counterMeta));
+    } else if (isInserting) {
+      context.missing(_counterMeta);
+    }
+    if (data.containsKey('entry_id')) {
+      context.handle(_entryIdMeta,
+          entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta));
+    }
+    if (data.containsKey('originating_host_id')) {
+      context.handle(
+          _originatingHostIdMeta,
+          originatingHostId.isAcceptableOrUnknown(
+              data['originating_host_id']!, _originatingHostIdMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('request_count')) {
+      context.handle(
+          _requestCountMeta,
+          requestCount.isAcceptableOrUnknown(
+              data['request_count']!, _requestCountMeta));
+    }
+    if (data.containsKey('last_requested_at')) {
+      context.handle(
+          _lastRequestedAtMeta,
+          lastRequestedAt.isAcceptableOrUnknown(
+              data['last_requested_at']!, _lastRequestedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {hostId, counter};
+  @override
+  SyncSequenceLogItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncSequenceLogItem(
+      hostId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}host_id'])!,
+      counter: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}counter'])!,
+      entryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entry_id']),
+      originatingHostId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}originating_host_id']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}status'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      requestCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}request_count'])!,
+      lastRequestedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_requested_at']),
+    );
+  }
+
+  @override
+  $SyncSequenceLogTable createAlias(String alias) {
+    return $SyncSequenceLogTable(attachedDatabase, alias);
+  }
+}
+
+class SyncSequenceLogItem extends DataClass
+    implements Insertable<SyncSequenceLogItem> {
+  /// The host UUID whose counter this record tracks
+  final String hostId;
+
+  /// The monotonic counter for that host
+  final int counter;
+
+  /// The journal entry ID (null if entry is missing/unknown)
+  final String? entryId;
+
+  /// The host UUID that sent the message which informed us about this record.
+  /// For received entries, this is the sender. For gaps detected from VCs,
+  /// this is the host whose message contained the VC that revealed the gap.
+  final String? originatingHostId;
+
+  /// Status of this sequence entry (received, missing, requested, etc.)
+  final int status;
+
+  /// When this log entry was created
+  final DateTime createdAt;
+
+  /// When this log entry was last updated
+  final DateTime updatedAt;
+
+  /// Number of backfill requests sent for this entry
+  final int requestCount;
+
+  /// When a backfill request was last sent for this entry
+  final DateTime? lastRequestedAt;
+  const SyncSequenceLogItem(
+      {required this.hostId,
+      required this.counter,
+      this.entryId,
+      this.originatingHostId,
+      required this.status,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.requestCount,
+      this.lastRequestedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['host_id'] = Variable<String>(hostId);
+    map['counter'] = Variable<int>(counter);
+    if (!nullToAbsent || entryId != null) {
+      map['entry_id'] = Variable<String>(entryId);
+    }
+    if (!nullToAbsent || originatingHostId != null) {
+      map['originating_host_id'] = Variable<String>(originatingHostId);
+    }
+    map['status'] = Variable<int>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['request_count'] = Variable<int>(requestCount);
+    if (!nullToAbsent || lastRequestedAt != null) {
+      map['last_requested_at'] = Variable<DateTime>(lastRequestedAt);
+    }
+    return map;
+  }
+
+  SyncSequenceLogCompanion toCompanion(bool nullToAbsent) {
+    return SyncSequenceLogCompanion(
+      hostId: Value(hostId),
+      counter: Value(counter),
+      entryId: entryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entryId),
+      originatingHostId: originatingHostId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originatingHostId),
+      status: Value(status),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      requestCount: Value(requestCount),
+      lastRequestedAt: lastRequestedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastRequestedAt),
+    );
+  }
+
+  factory SyncSequenceLogItem.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncSequenceLogItem(
+      hostId: serializer.fromJson<String>(json['hostId']),
+      counter: serializer.fromJson<int>(json['counter']),
+      entryId: serializer.fromJson<String?>(json['entryId']),
+      originatingHostId:
+          serializer.fromJson<String?>(json['originatingHostId']),
+      status: serializer.fromJson<int>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      requestCount: serializer.fromJson<int>(json['requestCount']),
+      lastRequestedAt: serializer.fromJson<DateTime?>(json['lastRequestedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'hostId': serializer.toJson<String>(hostId),
+      'counter': serializer.toJson<int>(counter),
+      'entryId': serializer.toJson<String?>(entryId),
+      'originatingHostId': serializer.toJson<String?>(originatingHostId),
+      'status': serializer.toJson<int>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'requestCount': serializer.toJson<int>(requestCount),
+      'lastRequestedAt': serializer.toJson<DateTime?>(lastRequestedAt),
+    };
+  }
+
+  SyncSequenceLogItem copyWith(
+          {String? hostId,
+          int? counter,
+          Value<String?> entryId = const Value.absent(),
+          Value<String?> originatingHostId = const Value.absent(),
+          int? status,
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          int? requestCount,
+          Value<DateTime?> lastRequestedAt = const Value.absent()}) =>
+      SyncSequenceLogItem(
+        hostId: hostId ?? this.hostId,
+        counter: counter ?? this.counter,
+        entryId: entryId.present ? entryId.value : this.entryId,
+        originatingHostId: originatingHostId.present
+            ? originatingHostId.value
+            : this.originatingHostId,
+        status: status ?? this.status,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        requestCount: requestCount ?? this.requestCount,
+        lastRequestedAt: lastRequestedAt.present
+            ? lastRequestedAt.value
+            : this.lastRequestedAt,
+      );
+  SyncSequenceLogItem copyWithCompanion(SyncSequenceLogCompanion data) {
+    return SyncSequenceLogItem(
+      hostId: data.hostId.present ? data.hostId.value : this.hostId,
+      counter: data.counter.present ? data.counter.value : this.counter,
+      entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      originatingHostId: data.originatingHostId.present
+          ? data.originatingHostId.value
+          : this.originatingHostId,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      requestCount: data.requestCount.present
+          ? data.requestCount.value
+          : this.requestCount,
+      lastRequestedAt: data.lastRequestedAt.present
+          ? data.lastRequestedAt.value
+          : this.lastRequestedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncSequenceLogItem(')
+          ..write('hostId: $hostId, ')
+          ..write('counter: $counter, ')
+          ..write('entryId: $entryId, ')
+          ..write('originatingHostId: $originatingHostId, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('requestCount: $requestCount, ')
+          ..write('lastRequestedAt: $lastRequestedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(hostId, counter, entryId, originatingHostId,
+      status, createdAt, updatedAt, requestCount, lastRequestedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncSequenceLogItem &&
+          other.hostId == this.hostId &&
+          other.counter == this.counter &&
+          other.entryId == this.entryId &&
+          other.originatingHostId == this.originatingHostId &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.requestCount == this.requestCount &&
+          other.lastRequestedAt == this.lastRequestedAt);
+}
+
+class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
+  final Value<String> hostId;
+  final Value<int> counter;
+  final Value<String?> entryId;
+  final Value<String?> originatingHostId;
+  final Value<int> status;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> requestCount;
+  final Value<DateTime?> lastRequestedAt;
+  final Value<int> rowid;
+  const SyncSequenceLogCompanion({
+    this.hostId = const Value.absent(),
+    this.counter = const Value.absent(),
+    this.entryId = const Value.absent(),
+    this.originatingHostId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.requestCount = const Value.absent(),
+    this.lastRequestedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncSequenceLogCompanion.insert({
+    required String hostId,
+    required int counter,
+    this.entryId = const Value.absent(),
+    this.originatingHostId = const Value.absent(),
+    this.status = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.requestCount = const Value.absent(),
+    this.lastRequestedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : hostId = Value(hostId),
+        counter = Value(counter),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<SyncSequenceLogItem> custom({
+    Expression<String>? hostId,
+    Expression<int>? counter,
+    Expression<String>? entryId,
+    Expression<String>? originatingHostId,
+    Expression<int>? status,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? requestCount,
+    Expression<DateTime>? lastRequestedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (hostId != null) 'host_id': hostId,
+      if (counter != null) 'counter': counter,
+      if (entryId != null) 'entry_id': entryId,
+      if (originatingHostId != null) 'originating_host_id': originatingHostId,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (requestCount != null) 'request_count': requestCount,
+      if (lastRequestedAt != null) 'last_requested_at': lastRequestedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncSequenceLogCompanion copyWith(
+      {Value<String>? hostId,
+      Value<int>? counter,
+      Value<String?>? entryId,
+      Value<String?>? originatingHostId,
+      Value<int>? status,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<int>? requestCount,
+      Value<DateTime?>? lastRequestedAt,
+      Value<int>? rowid}) {
+    return SyncSequenceLogCompanion(
+      hostId: hostId ?? this.hostId,
+      counter: counter ?? this.counter,
+      entryId: entryId ?? this.entryId,
+      originatingHostId: originatingHostId ?? this.originatingHostId,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      requestCount: requestCount ?? this.requestCount,
+      lastRequestedAt: lastRequestedAt ?? this.lastRequestedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (hostId.present) {
+      map['host_id'] = Variable<String>(hostId.value);
+    }
+    if (counter.present) {
+      map['counter'] = Variable<int>(counter.value);
+    }
+    if (entryId.present) {
+      map['entry_id'] = Variable<String>(entryId.value);
+    }
+    if (originatingHostId.present) {
+      map['originating_host_id'] = Variable<String>(originatingHostId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<int>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (requestCount.present) {
+      map['request_count'] = Variable<int>(requestCount.value);
+    }
+    if (lastRequestedAt.present) {
+      map['last_requested_at'] = Variable<DateTime>(lastRequestedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncSequenceLogCompanion(')
+          ..write('hostId: $hostId, ')
+          ..write('counter: $counter, ')
+          ..write('entryId: $entryId, ')
+          ..write('originatingHostId: $originatingHostId, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('requestCount: $requestCount, ')
+          ..write('lastRequestedAt: $lastRequestedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HostActivityTable extends HostActivity
+    with TableInfo<$HostActivityTable, HostActivityItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HostActivityTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _hostIdMeta = const VerificationMeta('hostId');
+  @override
+  late final GeneratedColumn<String> hostId = GeneratedColumn<String>(
+      'host_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _lastSeenAtMeta =
+      const VerificationMeta('lastSeenAt');
+  @override
+  late final GeneratedColumn<DateTime> lastSeenAt = GeneratedColumn<DateTime>(
+      'last_seen_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [hostId, lastSeenAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'host_activity';
+  @override
+  VerificationContext validateIntegrity(Insertable<HostActivityItem> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('host_id')) {
+      context.handle(_hostIdMeta,
+          hostId.isAcceptableOrUnknown(data['host_id']!, _hostIdMeta));
+    } else if (isInserting) {
+      context.missing(_hostIdMeta);
+    }
+    if (data.containsKey('last_seen_at')) {
+      context.handle(
+          _lastSeenAtMeta,
+          lastSeenAt.isAcceptableOrUnknown(
+              data['last_seen_at']!, _lastSeenAtMeta));
+    } else if (isInserting) {
+      context.missing(_lastSeenAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {hostId};
+  @override
+  HostActivityItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HostActivityItem(
+      hostId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}host_id'])!,
+      lastSeenAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_seen_at'])!,
+    );
+  }
+
+  @override
+  $HostActivityTable createAlias(String alias) {
+    return $HostActivityTable(attachedDatabase, alias);
+  }
+}
+
+class HostActivityItem extends DataClass
+    implements Insertable<HostActivityItem> {
+  /// The host UUID
+  final String hostId;
+
+  /// When we last received a message from this host
+  final DateTime lastSeenAt;
+  const HostActivityItem({required this.hostId, required this.lastSeenAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['host_id'] = Variable<String>(hostId);
+    map['last_seen_at'] = Variable<DateTime>(lastSeenAt);
+    return map;
+  }
+
+  HostActivityCompanion toCompanion(bool nullToAbsent) {
+    return HostActivityCompanion(
+      hostId: Value(hostId),
+      lastSeenAt: Value(lastSeenAt),
+    );
+  }
+
+  factory HostActivityItem.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HostActivityItem(
+      hostId: serializer.fromJson<String>(json['hostId']),
+      lastSeenAt: serializer.fromJson<DateTime>(json['lastSeenAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'hostId': serializer.toJson<String>(hostId),
+      'lastSeenAt': serializer.toJson<DateTime>(lastSeenAt),
+    };
+  }
+
+  HostActivityItem copyWith({String? hostId, DateTime? lastSeenAt}) =>
+      HostActivityItem(
+        hostId: hostId ?? this.hostId,
+        lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      );
+  HostActivityItem copyWithCompanion(HostActivityCompanion data) {
+    return HostActivityItem(
+      hostId: data.hostId.present ? data.hostId.value : this.hostId,
+      lastSeenAt:
+          data.lastSeenAt.present ? data.lastSeenAt.value : this.lastSeenAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HostActivityItem(')
+          ..write('hostId: $hostId, ')
+          ..write('lastSeenAt: $lastSeenAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(hostId, lastSeenAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HostActivityItem &&
+          other.hostId == this.hostId &&
+          other.lastSeenAt == this.lastSeenAt);
+}
+
+class HostActivityCompanion extends UpdateCompanion<HostActivityItem> {
+  final Value<String> hostId;
+  final Value<DateTime> lastSeenAt;
+  final Value<int> rowid;
+  const HostActivityCompanion({
+    this.hostId = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HostActivityCompanion.insert({
+    required String hostId,
+    required DateTime lastSeenAt,
+    this.rowid = const Value.absent(),
+  })  : hostId = Value(hostId),
+        lastSeenAt = Value(lastSeenAt);
+  static Insertable<HostActivityItem> custom({
+    Expression<String>? hostId,
+    Expression<DateTime>? lastSeenAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (hostId != null) 'host_id': hostId,
+      if (lastSeenAt != null) 'last_seen_at': lastSeenAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HostActivityCompanion copyWith(
+      {Value<String>? hostId, Value<DateTime>? lastSeenAt, Value<int>? rowid}) {
+    return HostActivityCompanion(
+      hostId: hostId ?? this.hostId,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (hostId.present) {
+      map['host_id'] = Variable<String>(hostId.value);
+    }
+    if (lastSeenAt.present) {
+      map['last_seen_at'] = Variable<DateTime>(lastSeenAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HostActivityCompanion(')
+          ..write('hostId: $hostId, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$SyncDatabase extends GeneratedDatabase {
   _$SyncDatabase(QueryExecutor e) : super(e);
   _$SyncDatabase.connect(DatabaseConnection c) : super.connect(c);
   $SyncDatabaseManager get managers => $SyncDatabaseManager(this);
   late final $OutboxTable outbox = $OutboxTable(this);
+  late final $SyncSequenceLogTable syncSequenceLog =
+      $SyncSequenceLogTable(this);
+  late final $HostActivityTable hostActivity = $HostActivityTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [outbox];
+  List<DatabaseSchemaEntity> get allSchemaEntities =>
+      [outbox, syncSequenceLog, hostActivity];
 }
 
 typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
@@ -625,10 +1334,381 @@ typedef $$OutboxTableProcessedTableManager = ProcessedTableManager<
     (OutboxItem, BaseReferences<_$SyncDatabase, $OutboxTable, OutboxItem>),
     OutboxItem,
     PrefetchHooks Function()>;
+typedef $$SyncSequenceLogTableCreateCompanionBuilder = SyncSequenceLogCompanion
+    Function({
+  required String hostId,
+  required int counter,
+  Value<String?> entryId,
+  Value<String?> originatingHostId,
+  Value<int> status,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<int> requestCount,
+  Value<DateTime?> lastRequestedAt,
+  Value<int> rowid,
+});
+typedef $$SyncSequenceLogTableUpdateCompanionBuilder = SyncSequenceLogCompanion
+    Function({
+  Value<String> hostId,
+  Value<int> counter,
+  Value<String?> entryId,
+  Value<String?> originatingHostId,
+  Value<int> status,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<int> requestCount,
+  Value<DateTime?> lastRequestedAt,
+  Value<int> rowid,
+});
+
+class $$SyncSequenceLogTableFilterComposer
+    extends Composer<_$SyncDatabase, $SyncSequenceLogTable> {
+  $$SyncSequenceLogTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get hostId => $composableBuilder(
+      column: $table.hostId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get counter => $composableBuilder(
+      column: $table.counter, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get entryId => $composableBuilder(
+      column: $table.entryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get originatingHostId => $composableBuilder(
+      column: $table.originatingHostId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get requestCount => $composableBuilder(
+      column: $table.requestCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastRequestedAt => $composableBuilder(
+      column: $table.lastRequestedAt,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$SyncSequenceLogTableOrderingComposer
+    extends Composer<_$SyncDatabase, $SyncSequenceLogTable> {
+  $$SyncSequenceLogTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get hostId => $composableBuilder(
+      column: $table.hostId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get counter => $composableBuilder(
+      column: $table.counter, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get entryId => $composableBuilder(
+      column: $table.entryId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get originatingHostId => $composableBuilder(
+      column: $table.originatingHostId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get requestCount => $composableBuilder(
+      column: $table.requestCount,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastRequestedAt => $composableBuilder(
+      column: $table.lastRequestedAt,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$SyncSequenceLogTableAnnotationComposer
+    extends Composer<_$SyncDatabase, $SyncSequenceLogTable> {
+  $$SyncSequenceLogTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get hostId =>
+      $composableBuilder(column: $table.hostId, builder: (column) => column);
+
+  GeneratedColumn<int> get counter =>
+      $composableBuilder(column: $table.counter, builder: (column) => column);
+
+  GeneratedColumn<String> get entryId =>
+      $composableBuilder(column: $table.entryId, builder: (column) => column);
+
+  GeneratedColumn<String> get originatingHostId => $composableBuilder(
+      column: $table.originatingHostId, builder: (column) => column);
+
+  GeneratedColumn<int> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get requestCount => $composableBuilder(
+      column: $table.requestCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastRequestedAt => $composableBuilder(
+      column: $table.lastRequestedAt, builder: (column) => column);
+}
+
+class $$SyncSequenceLogTableTableManager extends RootTableManager<
+    _$SyncDatabase,
+    $SyncSequenceLogTable,
+    SyncSequenceLogItem,
+    $$SyncSequenceLogTableFilterComposer,
+    $$SyncSequenceLogTableOrderingComposer,
+    $$SyncSequenceLogTableAnnotationComposer,
+    $$SyncSequenceLogTableCreateCompanionBuilder,
+    $$SyncSequenceLogTableUpdateCompanionBuilder,
+    (
+      SyncSequenceLogItem,
+      BaseReferences<_$SyncDatabase, $SyncSequenceLogTable, SyncSequenceLogItem>
+    ),
+    SyncSequenceLogItem,
+    PrefetchHooks Function()> {
+  $$SyncSequenceLogTableTableManager(
+      _$SyncDatabase db, $SyncSequenceLogTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncSequenceLogTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncSequenceLogTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncSequenceLogTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> hostId = const Value.absent(),
+            Value<int> counter = const Value.absent(),
+            Value<String?> entryId = const Value.absent(),
+            Value<String?> originatingHostId = const Value.absent(),
+            Value<int> status = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> requestCount = const Value.absent(),
+            Value<DateTime?> lastRequestedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SyncSequenceLogCompanion(
+            hostId: hostId,
+            counter: counter,
+            entryId: entryId,
+            originatingHostId: originatingHostId,
+            status: status,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            requestCount: requestCount,
+            lastRequestedAt: lastRequestedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String hostId,
+            required int counter,
+            Value<String?> entryId = const Value.absent(),
+            Value<String?> originatingHostId = const Value.absent(),
+            Value<int> status = const Value.absent(),
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<int> requestCount = const Value.absent(),
+            Value<DateTime?> lastRequestedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SyncSequenceLogCompanion.insert(
+            hostId: hostId,
+            counter: counter,
+            entryId: entryId,
+            originatingHostId: originatingHostId,
+            status: status,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            requestCount: requestCount,
+            lastRequestedAt: lastRequestedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SyncSequenceLogTableProcessedTableManager = ProcessedTableManager<
+    _$SyncDatabase,
+    $SyncSequenceLogTable,
+    SyncSequenceLogItem,
+    $$SyncSequenceLogTableFilterComposer,
+    $$SyncSequenceLogTableOrderingComposer,
+    $$SyncSequenceLogTableAnnotationComposer,
+    $$SyncSequenceLogTableCreateCompanionBuilder,
+    $$SyncSequenceLogTableUpdateCompanionBuilder,
+    (
+      SyncSequenceLogItem,
+      BaseReferences<_$SyncDatabase, $SyncSequenceLogTable, SyncSequenceLogItem>
+    ),
+    SyncSequenceLogItem,
+    PrefetchHooks Function()>;
+typedef $$HostActivityTableCreateCompanionBuilder = HostActivityCompanion
+    Function({
+  required String hostId,
+  required DateTime lastSeenAt,
+  Value<int> rowid,
+});
+typedef $$HostActivityTableUpdateCompanionBuilder = HostActivityCompanion
+    Function({
+  Value<String> hostId,
+  Value<DateTime> lastSeenAt,
+  Value<int> rowid,
+});
+
+class $$HostActivityTableFilterComposer
+    extends Composer<_$SyncDatabase, $HostActivityTable> {
+  $$HostActivityTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get hostId => $composableBuilder(
+      column: $table.hostId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSeenAt => $composableBuilder(
+      column: $table.lastSeenAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$HostActivityTableOrderingComposer
+    extends Composer<_$SyncDatabase, $HostActivityTable> {
+  $$HostActivityTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get hostId => $composableBuilder(
+      column: $table.hostId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSeenAt => $composableBuilder(
+      column: $table.lastSeenAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$HostActivityTableAnnotationComposer
+    extends Composer<_$SyncDatabase, $HostActivityTable> {
+  $$HostActivityTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get hostId =>
+      $composableBuilder(column: $table.hostId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSeenAt => $composableBuilder(
+      column: $table.lastSeenAt, builder: (column) => column);
+}
+
+class $$HostActivityTableTableManager extends RootTableManager<
+    _$SyncDatabase,
+    $HostActivityTable,
+    HostActivityItem,
+    $$HostActivityTableFilterComposer,
+    $$HostActivityTableOrderingComposer,
+    $$HostActivityTableAnnotationComposer,
+    $$HostActivityTableCreateCompanionBuilder,
+    $$HostActivityTableUpdateCompanionBuilder,
+    (
+      HostActivityItem,
+      BaseReferences<_$SyncDatabase, $HostActivityTable, HostActivityItem>
+    ),
+    HostActivityItem,
+    PrefetchHooks Function()> {
+  $$HostActivityTableTableManager(_$SyncDatabase db, $HostActivityTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HostActivityTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HostActivityTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$HostActivityTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> hostId = const Value.absent(),
+            Value<DateTime> lastSeenAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HostActivityCompanion(
+            hostId: hostId,
+            lastSeenAt: lastSeenAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String hostId,
+            required DateTime lastSeenAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HostActivityCompanion.insert(
+            hostId: hostId,
+            lastSeenAt: lastSeenAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$HostActivityTableProcessedTableManager = ProcessedTableManager<
+    _$SyncDatabase,
+    $HostActivityTable,
+    HostActivityItem,
+    $$HostActivityTableFilterComposer,
+    $$HostActivityTableOrderingComposer,
+    $$HostActivityTableAnnotationComposer,
+    $$HostActivityTableCreateCompanionBuilder,
+    $$HostActivityTableUpdateCompanionBuilder,
+    (
+      HostActivityItem,
+      BaseReferences<_$SyncDatabase, $HostActivityTable, HostActivityItem>
+    ),
+    HostActivityItem,
+    PrefetchHooks Function()>;
 
 class $SyncDatabaseManager {
   final _$SyncDatabase _db;
   $SyncDatabaseManager(this._db);
   $$OutboxTableTableManager get outbox =>
       $$OutboxTableTableManager(_db, _db.outbox);
+  $$SyncSequenceLogTableTableManager get syncSequenceLog =>
+      $$SyncSequenceLogTableTableManager(_db, _db.syncSequenceLog);
+  $$HostActivityTableTableManager get hostActivity =>
+      $$HostActivityTableTableManager(_db, _db.hostActivity);
 }

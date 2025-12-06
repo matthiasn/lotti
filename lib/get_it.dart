@@ -20,6 +20,8 @@ import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dar
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
@@ -31,6 +33,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -177,6 +180,17 @@ Future<void> registerSingletons() async {
     settingsDb: settingsDb,
     loggingService: loggingService,
   );
+
+  // Self-healing sync: sequence log service for gap detection
+  final syncSequenceLogService = SyncSequenceLogService(
+    syncDatabase: syncDatabase,
+    vectorClockService: vectorClockService,
+    loggingService: loggingService,
+  );
+
+  // Note: SyncEventProcessor is created here but BackfillResponseHandler
+  // needs OutboxService which depends on MatrixService. We'll create
+  // the handler later and inject it after OutboxService is available.
   final syncEventProcessor = SyncEventProcessor(
     loggingService: loggingService,
     updateNotifications: getIt<UpdateNotifications>(),
@@ -186,6 +200,8 @@ Future<void> registerSingletons() async {
       attachmentIndex: attachmentIndex,
       loggingService: loggingService,
     ),
+    sequenceLogService: syncSequenceLogService,
+    // backfillResponseHandler will be injected later to avoid circular dependency
   );
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
@@ -214,6 +230,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<SyncReadMarkerService>(readMarkerService)
     ..registerSingleton<SyncEventProcessor>(syncEventProcessor)
     ..registerSingleton<MatrixService>(matrixService)
+    ..registerSingleton<SyncSequenceLogService>(syncSequenceLogService)
     ..registerSingleton<OutboxService>(
       OutboxService(
         syncDatabase: syncDatabase,
@@ -224,8 +241,34 @@ Future<void> registerSingletons() async {
         userActivityService: userActivityService,
         activityGate: userActivityGate,
         matrixService: matrixService,
+        sequenceLogService: syncSequenceLogService,
       ),
-    )
+    );
+
+  // Self-healing sync: create backfill services after OutboxService is available
+  final outboxService = getIt<OutboxService>();
+  final backfillResponseHandler = BackfillResponseHandler(
+    journalDb: journalDb,
+    sequenceLogService: syncSequenceLogService,
+    outboxService: outboxService,
+    loggingService: loggingService,
+  );
+  final backfillRequestService = BackfillRequestService(
+    sequenceLogService: syncSequenceLogService,
+    outboxService: outboxService,
+    vectorClockService: vectorClockService,
+    loggingService: loggingService,
+  );
+
+  // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
+  syncEventProcessor.backfillResponseHandler = backfillResponseHandler;
+
+  // Start the backfill request service
+  backfillRequestService.start();
+
+  getIt
+    ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
+    ..registerSingleton<BackfillRequestService>(backfillRequestService)
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(

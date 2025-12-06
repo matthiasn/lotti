@@ -11,9 +11,11 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
+import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -488,18 +490,27 @@ class SyncEventProcessor {
     required AiConfigRepository aiConfigRepository,
     required SettingsDb settingsDb,
     SyncJournalEntityLoader? journalEntityLoader,
+    SyncSequenceLogService? sequenceLogService,
+    BackfillResponseHandler? backfillResponseHandler,
   })  : _loggingService = loggingService,
         _updateNotifications = updateNotifications,
         _aiConfigRepository = aiConfigRepository,
         _settingsDb = settingsDb,
         _journalEntityLoader =
-            journalEntityLoader ?? const FileSyncJournalEntityLoader();
+            journalEntityLoader ?? const FileSyncJournalEntityLoader(),
+        _sequenceLogService = sequenceLogService,
+        backfillResponseHandler = backfillResponseHandler;
 
   final LoggingService _loggingService;
   final UpdateNotifications _updateNotifications;
   final AiConfigRepository _aiConfigRepository;
   final SettingsDb _settingsDb;
   final SyncJournalEntityLoader _journalEntityLoader;
+  final SyncSequenceLogService? _sequenceLogService;
+
+  /// Backfill response handler, injected after construction
+  /// to resolve circular dependency in DI setup.
+  BackfillResponseHandler? backfillResponseHandler;
   void Function(SyncApplyDiagnostics diag)? applyObserver;
   void Function()? _cachePurgeListener;
 
@@ -640,6 +651,35 @@ class SyncEventProcessor {
             journalEntity.affectedIds,
             fromSync: true,
           );
+
+          // Record in sequence log for gap detection (self-healing sync)
+          if (_sequenceLogService != null &&
+              updateResult.applied &&
+              syncMessage.vectorClock != null &&
+              syncMessage.originatingHostId != null) {
+            try {
+              final gaps = await _sequenceLogService!.recordReceivedEntry(
+                entryId: journalEntity.meta.id,
+                vectorClock: syncMessage.vectorClock!,
+                originatingHostId: syncMessage.originatingHostId!,
+              );
+              if (gaps.isNotEmpty) {
+                _loggingService.captureEvent(
+                  'apply.gapsDetected count=${gaps.length} for entity=${journalEntity.meta.id}',
+                  domain: 'SYNC_SEQUENCE',
+                  subDomain: 'gapDetection',
+                );
+              }
+            } catch (e, st) {
+              _loggingService.captureException(
+                e,
+                domain: 'SYNC_SEQUENCE',
+                subDomain: 'recordReceived',
+                stackTrace: st,
+              );
+            }
+          }
+
           return diag;
         } on FileSystemException catch (error, stackTrace) {
           _loggingService.captureException(
@@ -763,6 +803,30 @@ class SyncEventProcessor {
             domain: 'THEMING_SYNC',
             subDomain: 'apply',
             stackTrace: st,
+          );
+        }
+        return null;
+      case SyncBackfillRequest():
+        // Handle backfill request - another device is asking for a missing entry
+        if (backfillResponseHandler != null) {
+          await backfillResponseHandler!.handleBackfillRequest(syncMessage);
+        } else {
+          _loggingService.captureEvent(
+            'backfillRequest.ignored no handler configured',
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'apply',
+          );
+        }
+        return null;
+      case SyncBackfillResponse():
+        // Handle backfill response - another device responded to our request
+        if (backfillResponseHandler != null) {
+          await backfillResponseHandler!.handleBackfillResponse(syncMessage);
+        } else {
+          _loggingService.captureEvent(
+            'backfillResponse.ignored no handler configured',
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'apply',
           );
         }
         return null;
