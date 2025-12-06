@@ -103,7 +103,7 @@ class BackfillRequestService {
         return;
       }
 
-      // Batch entries into messages (up to backfillMessageBatchSize per message)
+      // Build request entries
       final entries = missing
           .map(
             (item) => BackfillRequestEntry(
@@ -113,21 +113,13 @@ class BackfillRequestService {
           )
           .toList();
 
-      // Send batched request(s)
-      for (var i = 0;
-          i < entries.length;
-          i += SyncTuning.backfillMessageBatchSize) {
-        final batch = entries.sublist(
-          i,
-          (i + SyncTuning.backfillMessageBatchSize).clamp(0, entries.length),
-        );
-        await _outboxService.enqueueMessage(
-          SyncMessage.backfillRequest(
-            entries: batch,
-            requesterId: requesterId,
-          ),
-        );
-      }
+      // Send single backfill request message
+      await _outboxService.enqueueMessage(
+        SyncMessage.backfillRequest(
+          entries: entries,
+          requesterId: requesterId,
+        ),
+      );
 
       // Mark all as requested (increments request count and sets lastRequestedAt)
       await _sequenceLogService.markAsRequested(
@@ -135,7 +127,7 @@ class BackfillRequestService {
       );
 
       _loggingService.captureEvent(
-        'processBackfillRequests: sent ${missing.length} requests in ${(entries.length / SyncTuning.backfillMessageBatchSize).ceil()} batch(es)',
+        'processBackfillRequests: sent ${missing.length} requests',
         domain: 'SYNC_BACKFILL',
         subDomain: 'process',
       );

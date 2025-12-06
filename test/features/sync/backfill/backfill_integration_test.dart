@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -285,7 +287,7 @@ void main() {
       // When the entry arrives, recordReceivedEntry updates the status to backfilled
       await bobSequenceService.recordReceivedEntry(
         entryId: entryId2,
-        vectorClock: VectorClock({aliceHostId: 2}),
+        vectorClock: const VectorClock({aliceHostId: 2}),
         originatingHostId: aliceHostId,
       );
 

@@ -1,3 +1,5 @@
+// ignore_for_file: cascade_invocations, avoid_redundant_argument_values
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';

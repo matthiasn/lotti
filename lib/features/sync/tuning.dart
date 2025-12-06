@@ -25,17 +25,16 @@ class SyncTuning {
 
   // Backfill tuning - self-healing sync for missing entries
   static const Duration backfillRequestInterval = Duration(minutes: 5);
-  static const int backfillBatchSize = 20;
   static const int backfillMaxRequestCount = 10;
+
+  // Maximum entries to query and include per backfill request message
+  static const int backfillBatchSize = 100;
 
   // Exponential backoff for retry requests
   // Backoff = min(baseBackoff * 2^(requestCount-1), maxBackoff)
   // e.g., 5min, 10min, 20min, 40min, 80min, 120min (capped)
   static const Duration backfillBaseBackoff = Duration(minutes: 5);
   static const Duration backfillMaxBackoff = Duration(hours: 2);
-
-  // Maximum entries per batched backfill request message
-  static const int backfillMessageBatchSize = 100;
 
   /// Calculate backoff duration based on request count using exponential backoff.
   /// Returns the minimum wait time before the next retry.

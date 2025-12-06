@@ -169,10 +169,9 @@ and `SYNC_BACKFILL` (request/response handling). Look for:
 - `handleBackfillResponse hostId=... counter=... deleted=...`
 
 **Configuration:** Tuning constants in `tuning.dart`:
-- `backfillRequestInterval`: 5 minutes
-- `backfillBatchSize`: 20 entries per processing cycle
+- `backfillRequestInterval`: 5 minutes between processing cycles
+- `backfillBatchSize`: 100 entries max per request message
 - `backfillMaxRequestCount`: 10 retries before giving up
-- `backfillMessageBatchSize`: 100 entries per message
 - `backfillBaseBackoff` / `backfillMaxBackoff`: exponential backoff bounds
 
 ### Documentation & Artefacts

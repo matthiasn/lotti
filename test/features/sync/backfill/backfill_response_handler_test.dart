@@ -89,9 +89,9 @@ void main() {
 
   group('handleBackfillRequest', () {
     test('ignores request when entry not in sequence log', () async {
-      final request = SyncBackfillRequest(
+      const request = SyncBackfillRequest(
         entries: [
-          const BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
         ],
         requesterId: requesterId,
       );
@@ -106,9 +106,9 @@ void main() {
     });
 
     test('ignores request when entry in log but has no entryId', () async {
-      final request = SyncBackfillRequest(
+      const request = SyncBackfillRequest(
         entries: [
-          const BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
         ],
         requesterId: requesterId,
       );
@@ -125,9 +125,9 @@ void main() {
     });
 
     test('sends deleted response when journal entry was deleted', () async {
-      final request = SyncBackfillRequest(
+      const request = SyncBackfillRequest(
         entries: [
-          const BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
         ],
         requesterId: requesterId,
       );
@@ -162,9 +162,9 @@ void main() {
     });
 
     test('re-sends entry via normal sync when entry exists', () async {
-      final request = SyncBackfillRequest(
+      const request = SyncBackfillRequest(
         entries: [
-          const BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
         ],
         requesterId: requesterId,
       );
@@ -198,9 +198,9 @@ void main() {
     });
 
     test('handles errors gracefully', () async {
-      final request = SyncBackfillRequest(
+      const request = SyncBackfillRequest(
         entries: [
-          const BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
         ],
         requesterId: requesterId,
       );

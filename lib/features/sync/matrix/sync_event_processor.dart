@@ -491,15 +491,14 @@ class SyncEventProcessor {
     required SettingsDb settingsDb,
     SyncJournalEntityLoader? journalEntityLoader,
     SyncSequenceLogService? sequenceLogService,
-    BackfillResponseHandler? backfillResponseHandler,
+    this.backfillResponseHandler,
   })  : _loggingService = loggingService,
         _updateNotifications = updateNotifications,
         _aiConfigRepository = aiConfigRepository,
         _settingsDb = settingsDb,
         _journalEntityLoader =
             journalEntityLoader ?? const FileSyncJournalEntityLoader(),
-        _sequenceLogService = sequenceLogService,
-        backfillResponseHandler = backfillResponseHandler;
+        _sequenceLogService = sequenceLogService;
 
   final LoggingService _loggingService;
   final UpdateNotifications _updateNotifications;
