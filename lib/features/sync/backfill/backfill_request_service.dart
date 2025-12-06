@@ -34,7 +34,9 @@ class BackfillRequestService {
         _loggingService = loggingService,
         _requestInterval =
             requestInterval ?? SyncTuning.backfillRequestInterval,
-        _maxBatchSize = maxBatchSize ?? SyncTuning.backfillBatchSize,
+        // Use processing batch size for per-cycle limits (smaller to avoid
+        // overwhelming the network). backfillBatchSize is for DB fetch limits.
+        _maxBatchSize = maxBatchSize ?? SyncTuning.backfillProcessingBatchSize,
         _maxRequestCount =
             maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
         _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,

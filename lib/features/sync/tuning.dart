@@ -97,8 +97,12 @@ class SyncTuning {
   static const Duration backfillRequestInterval = Duration(minutes: 5);
   static const int backfillMaxRequestCount = 10;
 
-  // Maximum entries to query and include per backfill request message
+  // Maximum entries to fetch from DB per backfill request message
   static const int backfillBatchSize = 100;
+
+  // Maximum entries to process per processing cycle (smaller to avoid
+  // overwhelming the network on each timer tick)
+  static const int backfillProcessingBatchSize = 20;
 
   // Default limits for automatic backfill (prevents unbounded historical sync)
   // Only request entries from the last day OR 250 entries per host, whichever
@@ -106,16 +110,33 @@ class SyncTuning {
   static const Duration defaultBackfillMaxAge = Duration(days: 1);
   static const int defaultBackfillMaxEntriesPerHost = 250;
 
-  // Backoff for retry requests - 12 hours minimum between retries
-  // First request is immediate, then 12h wait before any retry.
-  // This prevents hammering the network on slow/metered connections.
-  static const Duration backfillMinRetryInterval = Duration(hours: 12);
+  // Exponential backoff for retry requests
+  // Base interval that doubles with each attempt, capped at max interval.
+  // First request (requestCount=0) is immediate.
+  static const Duration backfillBackoffBase = Duration(minutes: 5);
+  static const Duration backfillBackoffMax = Duration(hours: 2);
 
-  /// Calculate backoff duration based on request count.
+  /// Calculate backoff duration based on request count using exponential backoff.
   /// First request (requestCount=0) is immediate.
-  /// All retries (requestCount>=1) wait 12 hours minimum.
+  /// Retries use exponential backoff: min(2h, 5min * 2^(attempt-1))
+  /// - attempt 1: 5 minutes
+  /// - attempt 2: 10 minutes
+  /// - attempt 3: 20 minutes
+  /// - attempt 4: 40 minutes
+  /// - attempt 5: 80 minutes
+  /// - attempt 6+: 2 hours (capped)
   static Duration calculateBackoff(int requestCount) {
     if (requestCount <= 0) return Duration.zero;
-    return backfillMinRetryInterval;
+
+    // Cap early to avoid integer overflow (2^5 * 5 = 160 already exceeds max)
+    // After attempt 5, always return max backoff
+    if (requestCount >= 6) return backfillBackoffMax;
+
+    // Exponential backoff: base * 2^(attempt-1), capped at max
+    final multiplier = 1 << (requestCount - 1); // 2^(requestCount-1)
+    final backoffMinutes = backfillBackoffBase.inMinutes * multiplier;
+    final cappedMinutes = backoffMinutes.clamp(0, backfillBackoffMax.inMinutes);
+
+    return Duration(minutes: cappedMinutes);
   }
 }
