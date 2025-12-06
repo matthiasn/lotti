@@ -575,6 +575,117 @@ void main() {
       verify(() => mockDb.watchMissingCount()).called(1);
     });
   });
+
+  group('populateFromJournal', () {
+    test('populates sequence log for ALL hosts in vector clock', () async {
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final entries = [
+        // Entry with 2 hosts in VC = 2 sequence log entries
+        (id: 'entry-1', vectorClock: {myHostId: 10, aliceHostId: 5}),
+        // Entry with 1 host = 1 sequence log entry
+        (id: 'entry-2', vectorClock: {myHostId: 20}),
+      ];
+
+      final count = await service.populateFromJournal(
+        entryStream: Stream.value(entries),
+        getTotalCount: () async => 2,
+      );
+
+      // 2 entries from entry-1 + 1 entry from entry-2 = 3 total
+      expect(count, 3);
+      verify(() => mockDb.batchInsertSequenceEntries(any())).called(1);
+    });
+
+    test('skips entries that already exist in log', () async {
+      when(() => mockDb.getCountersForHost(myHostId))
+          .thenAnswer((_) async => {10}); // Counter 10 already exists
+      when(() => mockDb.getCountersForHost(aliceHostId))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final entries = [
+        (id: 'entry-1', vectorClock: {myHostId: 10, aliceHostId: 5}),
+      ];
+
+      final count = await service.populateFromJournal(
+        entryStream: Stream.value(entries),
+        getTotalCount: () async => 1,
+      );
+
+      // myHostId:10 exists, but aliceHostId:5 doesn't = 1 new entry
+      expect(count, 1);
+      verify(() => mockDb.batchInsertSequenceEntries(any())).called(1);
+    });
+
+    test('skips entries with null or empty vectorClock', () async {
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+
+      final entries = [
+        (id: 'entry-1', vectorClock: <String, int>{}), // Empty
+        (id: 'entry-2', vectorClock: null), // Null
+      ];
+
+      final count = await service.populateFromJournal(
+        entryStream: Stream.value(entries),
+        getTotalCount: () async => 2,
+      );
+
+      expect(count, 0);
+      verifyNever(() => mockDb.batchInsertSequenceEntries(any()));
+    });
+
+    test('works even when host is not set', () async {
+      // populateFromJournal no longer requires myHost
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final entries = [
+        (id: 'entry-1', vectorClock: {aliceHostId: 5}),
+      ];
+
+      final count = await service.populateFromJournal(
+        entryStream: Stream.value(entries),
+        getTotalCount: () async => 1,
+      );
+
+      expect(count, 1);
+    });
+
+    test('reports progress after each batch', () async {
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final batch1 = [
+        (id: 'entry-1', vectorClock: {myHostId: 10}),
+        (id: 'entry-2', vectorClock: {myHostId: 20}),
+      ];
+      final batch2 = [
+        (id: 'entry-3', vectorClock: {myHostId: 30}),
+      ];
+
+      final progressValues = <double>[];
+
+      await service.populateFromJournal(
+        entryStream: Stream.fromIterable([batch1, batch2]),
+        getTotalCount: () async => 3,
+        onProgress: progressValues.add,
+      );
+
+      expect(progressValues.length, 2);
+      expect(progressValues[0], closeTo(2 / 3, 0.01));
+      expect(progressValues[1], closeTo(1.0, 0.01));
+    });
+  });
 }
 
 SyncSequenceLogItem _createLogItem(

@@ -296,4 +296,107 @@ class SyncSequenceLogService {
   Stream<int> watchMissingCount() {
     return _syncDatabase.watchMissingCount();
   }
+
+  /// Populate the sequence log from existing journal entries.
+  /// This is used to backfill the sequence log for entries that were
+  /// created before the sequence log feature was added.
+  ///
+  /// This method streams journal entries in batches and records their vector
+  /// clocks in the sequence log. Records entries for ALL hosts in each entry's
+  /// vector clock so any device with the entry can respond to backfill requests.
+  ///
+  /// [onProgress] is called with progress from 0.0 to 1.0 as entries are
+  /// processed.
+  ///
+  /// Returns the number of entries populated.
+  Future<int> populateFromJournal({
+    required Stream<List<({String id, Map<String, int>? vectorClock})>>
+        entryStream,
+    required Future<int> Function() getTotalCount,
+    void Function(double progress)? onProgress,
+  }) async {
+    final total = await getTotalCount();
+    var processed = 0;
+    var populated = 0;
+    final now = DateTime.now();
+
+    // Cache of existing (hostId, counter) pairs to avoid duplicates
+    // We'll populate this lazily per-host as we encounter them
+    final existingByHost = <String, Set<int>>{};
+
+    await for (final batch in entryStream) {
+      final toInsert = <SyncSequenceLogCompanion>[];
+
+      for (final entry in batch) {
+        processed++;
+
+        final vc = entry.vectorClock;
+        if (vc == null || vc.isEmpty) continue;
+
+        // Find the originating host (the one with the highest counter,
+        // which is typically the creator of this specific entry version)
+        String? originatingHost;
+        var maxCounter = 0;
+        for (final e in vc.entries) {
+          if (e.value > maxCounter) {
+            maxCounter = e.value;
+            originatingHost = e.key;
+          }
+        }
+
+        // Record entry for each host in the vector clock
+        for (final vcEntry in vc.entries) {
+          final hostId = vcEntry.key;
+          final counter = vcEntry.value;
+
+          // Lazily load existing counters for this host
+          if (!existingByHost.containsKey(hostId)) {
+            existingByHost[hostId] =
+                await _syncDatabase.getCountersForHost(hostId);
+          }
+
+          final existing = existingByHost[hostId]!;
+
+          // Skip if already exists
+          if (existing.contains(counter)) continue;
+
+          // Mark as existing to avoid duplicates within this run
+          existing.add(counter);
+
+          toInsert.add(
+            SyncSequenceLogCompanion(
+              hostId: Value(hostId),
+              counter: Value(counter),
+              entryId: Value(entry.id),
+              originatingHostId: Value(originatingHost ?? hostId),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+        }
+      }
+
+      // Batch insert
+      if (toInsert.isNotEmpty) {
+        await _syncDatabase.batchInsertSequenceEntries(toInsert);
+        populated += toInsert.length;
+      }
+
+      // Report progress after each batch
+      if (onProgress != null && total > 0) {
+        onProgress(processed / total);
+      }
+    }
+
+    if (populated > 0) {
+      _loggingService.captureEvent(
+        'populateFromJournal: added $populated sequence log entries',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'populate',
+      );
+    }
+
+    return populated;
+  }
 }

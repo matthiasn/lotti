@@ -439,6 +439,18 @@
   "maintenanceRecreateFts5Confirm": "YES, RECREATE INDEX",
   "maintenanceRecreateFts5Description": "Recreate full-text search index",
   "maintenanceRecreateFts5Message": "Are you sure you want to recreate the full-text index? This may take some time.",
+  "maintenancePopulateSequenceLog": "Populate sync sequence log",
+  "maintenancePopulateSequenceLogConfirm": "YES, POPULATE",
+  "maintenancePopulateSequenceLogDescription": "Index existing entries for backfill support",
+  "maintenancePopulateSequenceLogMessage": "This will scan all journal entries and add them to the sync sequence log. This enables backfill responses for entries created before this feature was added.",
+  "maintenancePopulateSequenceLogComplete": "{count} entries indexed",
+  "@maintenancePopulateSequenceLogComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceSyncDefinitions": "Sync tags, measurables, dashboards, habits, categories, AI settings",
   "maintenanceSyncDefinitionsDescription": "Sync tags, measurables, dashboards, habits, categories, and AI settings",
   "measurableDeleteConfirm": "YES, DELETE THIS MEASURABLE",

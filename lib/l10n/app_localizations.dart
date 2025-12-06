@@ -2265,6 +2265,36 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to recreate the full-text index? This may take some time.'**
   String get maintenanceRecreateFts5Message;
 
+  /// No description provided for @maintenancePopulateSequenceLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Populate sync sequence log'**
+  String get maintenancePopulateSequenceLog;
+
+  /// No description provided for @maintenancePopulateSequenceLogConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'YES, POPULATE'**
+  String get maintenancePopulateSequenceLogConfirm;
+
+  /// No description provided for @maintenancePopulateSequenceLogDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Index existing entries for backfill support'**
+  String get maintenancePopulateSequenceLogDescription;
+
+  /// No description provided for @maintenancePopulateSequenceLogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will scan all journal entries and add them to the sync sequence log. This enables backfill responses for entries created before this feature was added.'**
+  String get maintenancePopulateSequenceLogMessage;
+
+  /// No description provided for @maintenancePopulateSequenceLogComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries indexed'**
+  String maintenancePopulateSequenceLogComplete(int count);
+
   /// No description provided for @maintenanceSyncDefinitions.
   ///
   /// In en, this message translates to:

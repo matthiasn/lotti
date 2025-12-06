@@ -350,6 +350,25 @@ class SyncDatabase extends _$SyncDatabase {
     return filtered;
   }
 
+  /// Get all existing counters for a specific host.
+  /// Used for efficient bulk population to avoid N+1 queries.
+  Future<Set<int>> getCountersForHost(String hostId) async {
+    final entries = await (select(syncSequenceLog)
+          ..where((t) => t.hostId.equals(hostId)))
+        .map((row) => row.counter)
+        .get();
+    return entries.toSet();
+  }
+
+  /// Batch insert multiple sequence log entries.
+  Future<void> batchInsertSequenceEntries(
+    List<SyncSequenceLogCompanion> entries,
+  ) async {
+    await batch((b) {
+      b.insertAll(syncSequenceLog, entries, mode: InsertMode.insertOrIgnore);
+    });
+  }
+
   @override
   int get schemaVersion => 2;
 

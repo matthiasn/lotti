@@ -1205,6 +1205,25 @@ class AppLocalizationsEs extends AppLocalizations {
       'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
+  String get maintenancePopulateSequenceLog => 'Populate sync sequence log';
+
+  @override
+  String get maintenancePopulateSequenceLogConfirm => 'YES, POPULATE';
+
+  @override
+  String get maintenancePopulateSequenceLogDescription =>
+      'Index existing entries for backfill support';
+
+  @override
+  String get maintenancePopulateSequenceLogMessage =>
+      'This will scan all journal entries and add them to the sync sequence log. This enables backfill responses for entries created before this feature was added.';
+
+  @override
+  String maintenancePopulateSequenceLogComplete(int count) {
+    return '$count entries indexed';
+  }
+
+  @override
   String get maintenanceSyncDefinitions =>
       'Sync tags, measurables, dashboards, habits, categories, AI settings';
 
