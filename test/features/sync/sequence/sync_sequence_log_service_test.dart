@@ -1,6 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -405,6 +405,39 @@ void main() {
 
       verifyNever(() => mockDb.recordSequenceEntry(any()));
     });
+
+    test('does nothing when entry does not exist', () async {
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 99))
+          .thenAnswer((_) async => null);
+
+      await service.markAsReceived(
+        hostId: aliceHostId,
+        counter: 99,
+        entryId: 'new-entry',
+      );
+
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+
+    test('updates requested entry to backfilled', () async {
+      final existingRequested = _createLogItem(
+        aliceHostId,
+        5,
+        status: SyncSequenceStatus.requested,
+      );
+
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => existingRequested);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.markAsReceived(
+        hostId: aliceHostId,
+        counter: 5,
+        entryId: 'arrived-entry',
+      );
+
+      verify(() => mockDb.recordSequenceEntry(any())).called(1);
+    });
   });
 
   group('markAsRequested', () {
@@ -468,6 +501,78 @@ void main() {
           maxRequestCount: 5,
         ),
       ).called(1);
+    });
+  });
+
+  group('getMissingEntries', () {
+    test('delegates to database with default parameters', () async {
+      when(
+        () => mockDb.getMissingEntries(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await service.getMissingEntries();
+
+      verify(
+        () => mockDb.getMissingEntries(
+          limit: 50,
+          maxRequestCount: 10,
+        ),
+      ).called(1);
+    });
+
+    test('passes custom parameters', () async {
+      when(
+        () => mockDb.getMissingEntries(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await service.getMissingEntries(limit: 25, maxRequestCount: 8);
+
+      verify(
+        () => mockDb.getMissingEntries(
+          limit: 25,
+          maxRequestCount: 8,
+        ),
+      ).called(1);
+    });
+  });
+
+  group('getEntryByHostAndCounter', () {
+    test('delegates to database and returns result', () async {
+      final item = _createLogItem(aliceHostId, 5);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => item);
+
+      final result = await service.getEntryByHostAndCounter(aliceHostId, 5);
+
+      expect(result, item);
+      verify(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).called(1);
+    });
+
+    test('returns null when entry does not exist', () async {
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 99))
+          .thenAnswer((_) async => null);
+
+      final result = await service.getEntryByHostAndCounter(aliceHostId, 99);
+
+      expect(result, isNull);
+    });
+  });
+
+  group('watchMissingCount', () {
+    test('delegates to database stream', () async {
+      when(() => mockDb.watchMissingCount())
+          .thenAnswer((_) => Stream.value(42));
+
+      final count = await service.watchMissingCount().first;
+
+      expect(count, 42);
+      verify(() => mockDb.watchMissingCount()).called(1);
     });
   });
 }

@@ -441,6 +441,35 @@ void main() {
       expect(item.message, '{"payload":true}');
       expect(item.subject, 'with-file');
     });
+
+    test('deleteOutboxItems removes all items', () async {
+      final database = db!;
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 9, 1),
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.sent,
+          createdAt: DateTime(2024, 9, 2),
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.error,
+          createdAt: DateTime(2024, 9, 3),
+        ),
+      );
+
+      expect(await database.allOutboxItems, hasLength(3));
+
+      final deletedCount = await database.deleteOutboxItems();
+      expect(deletedCount, 3);
+
+      expect(await database.allOutboxItems, isEmpty);
+    });
   });
 
   group('SyncSequenceLog Tests', () {
