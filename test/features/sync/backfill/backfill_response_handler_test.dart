@@ -92,6 +92,26 @@ void main() {
   });
 
   group('handleBackfillRequest', () {
+    test('ignores request when backfill is disabled', () async {
+      // Set backfill_enabled to false
+      SharedPreferences.setMockInitialValues({'backfill_enabled': false});
+
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      // Should not call any database methods
+      verifyNever(
+        () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+      );
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+
     test('ignores request when entry not in sequence log', () async {
       const request = SyncBackfillRequest(
         entries: [

@@ -1334,4 +1334,251 @@ void main() {
       expect(counters, isEmpty);
     });
   });
+
+  group('getPendingBackfillEntries Tests', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('returns empty set when no outbox items', () async {
+      final database = db!;
+      final entries = await database.getPendingBackfillEntries();
+      expect(entries, isEmpty);
+    });
+
+    test('returns empty set when no backfill request messages', () async {
+      final database = db!;
+
+      // Add a regular message (not backfill request)
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 1, 1),
+          message: '{"runtimeType":"journalEntity","id":"test-1"}',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+      expect(entries, isEmpty);
+    });
+
+    test('extracts entries from pending backfill request messages', () async {
+      final database = db!;
+
+      // Add a backfill request message with entries
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 1, 1),
+          message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [
+    {"hostId": "host-1", "counter": 5},
+    {"hostId": "host-1", "counter": 6},
+    {"hostId": "host-2", "counter": 10}
+  ],
+  "requesterId": "requester-1"
+}
+''',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+
+      expect(entries, hasLength(3));
+      expect(
+        entries,
+        containsAll([
+          (hostId: 'host-1', counter: 5),
+          (hostId: 'host-1', counter: 6),
+          (hostId: 'host-2', counter: 10),
+        ]),
+      );
+    });
+
+    test('ignores sent backfill request messages', () async {
+      final database = db!;
+
+      // Add a sent (not pending) backfill request message
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.sent,
+          createdAt: DateTime(2024, 1, 1),
+          message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [{"hostId": "host-1", "counter": 5}],
+  "requesterId": "requester-1"
+}
+''',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+      expect(entries, isEmpty);
+    });
+
+    test('ignores error backfill request messages', () async {
+      final database = db!;
+
+      // Add an error (not pending) backfill request message
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.error,
+          createdAt: DateTime(2024, 1, 1),
+          message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [{"hostId": "host-1", "counter": 5}],
+  "requesterId": "requester-1"
+}
+''',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+      expect(entries, isEmpty);
+    });
+
+    test('handles malformed JSON gracefully', () async {
+      final database = db!;
+
+      // Add a malformed message
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 1, 1),
+          message: 'not valid json',
+        ),
+      );
+
+      // Should not throw, just return empty
+      final entries = await database.getPendingBackfillEntries();
+      expect(entries, isEmpty);
+    });
+
+    test('handles missing entries array gracefully', () async {
+      final database = db!;
+
+      // Add a backfill request without entries array
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 1, 1),
+          message: '{"runtimeType": "backfillRequest", "requesterId": "req-1"}',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+      expect(entries, isEmpty);
+    });
+
+    test('handles invalid entry format gracefully', () async {
+      final database = db!;
+
+      // Add a backfill request with invalid entry format
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 1, 1),
+          message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [
+    {"hostId": "host-1"},
+    {"counter": 5},
+    "invalid",
+    null,
+    {"hostId": "host-2", "counter": 10}
+  ],
+  "requesterId": "requester-1"
+}
+''',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+
+      // Only the valid entry should be extracted
+      expect(entries, hasLength(1));
+      expect(entries.first, (hostId: 'host-2', counter: 10));
+    });
+
+    test('combines entries from multiple pending backfill requests', () async {
+      final database = db!;
+
+      // Add first backfill request
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 1, 1),
+          message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [{"hostId": "host-1", "counter": 1}],
+  "requesterId": "req-1"
+}
+''',
+        ),
+      );
+
+      // Add second backfill request
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 1, 2),
+          message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [{"hostId": "host-2", "counter": 2}],
+  "requesterId": "req-2"
+}
+''',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+
+      expect(entries, hasLength(2));
+      expect(
+        entries,
+        containsAll([
+          (hostId: 'host-1', counter: 1),
+          (hostId: 'host-2', counter: 2),
+        ]),
+      );
+    });
+
+    test('deduplicates identical entries', () async {
+      final database = db!;
+
+      // Add backfill request with duplicate entries
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 1, 1),
+          message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [
+    {"hostId": "host-1", "counter": 5},
+    {"hostId": "host-1", "counter": 5}
+  ],
+  "requesterId": "req-1"
+}
+''',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+
+      // Set automatically deduplicates
+      expect(entries, hasLength(1));
+      expect(entries.first, (hostId: 'host-1', counter: 5));
+    });
+  });
 }

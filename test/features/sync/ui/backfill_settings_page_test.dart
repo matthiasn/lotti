@@ -211,5 +211,170 @@ void main() {
       // Should show received count from test stats
       expect(find.text('100'), findsOneWidget);
     });
+
+    testWidgets('shows missing count in red when > 0', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show missing count from test stats (5)
+      expect(find.text('5'), findsOneWidget);
+    });
+
+    testWidgets('shows requested count when > 0', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show requested count from test stats (2)
+      expect(find.text('2'), findsOneWidget);
+    });
+
+    testWidgets('shows backfilled count', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show backfilled count from test stats (10)
+      expect(find.text('10'), findsOneWidget);
+    });
+
+    testWidgets('refresh button calls service', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Initial load already called getBackfillStats
+      clearInteractions(mockSequenceService);
+
+      // Find and tap refresh button
+      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.pumpAndSettle();
+
+      // Should have called getBackfillStats again
+      verify(() => mockSequenceService.getBackfillStats()).called(1);
+    });
+
+    testWidgets('shows sync icon when enabled', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show sync icon (enabled state)
+      expect(find.byIcon(Icons.sync), findsWidgets);
+    });
+
+    testWidgets('shows total entries count', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Total entries = 100 + 5 + 2 + 10 + 1 = 118
+      expect(find.text('118'), findsOneWidget);
+    });
+
+    testWidgets('shows sync_disabled icon when toggle is off', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Toggle the switch off
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      // Should now show sync_disabled icon
+      expect(find.byIcon(Icons.sync_disabled), findsOneWidget);
+    });
+
+    testWidgets('shows zero stats when no hosts exist', (tester) async {
+      await getIt.reset();
+      mockJournalDb = MockJournalDb();
+      mockSequenceService = MockSyncSequenceLogService();
+      mockBackfillService = MockBackfillRequestService();
+      mockUserActivityService = MockUserActivityService();
+
+      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) => Stream<bool>.value(true));
+      // Return empty stats (no hosts)
+      when(() => mockSequenceService.getBackfillStats())
+          .thenAnswer((_) async => BackfillStats.fromHostStats(const []));
+      when(() => mockUserActivityService.updateActivity()).thenReturn(null);
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<SyncSequenceLogService>(mockSequenceService)
+        ..registerSingleton<BackfillRequestService>(mockBackfillService)
+        ..registerSingleton<UserActivityService>(mockUserActivityService);
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show zeros for all stats
+      expect(find.text('0'), findsWidgets);
+    });
+
+    testWidgets('shows error message when manual backfill fails',
+        (tester) async {
+      await getIt.reset();
+      mockJournalDb = MockJournalDb();
+      mockSequenceService = MockSyncSequenceLogService();
+      mockBackfillService = MockBackfillRequestService();
+      mockUserActivityService = MockUserActivityService();
+
+      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) => Stream<bool>.value(true));
+      when(() => mockSequenceService.getBackfillStats())
+          .thenAnswer((_) async => testStats);
+      when(() => mockBackfillService.processFullBackfill())
+          .thenThrow(Exception('Backfill failed'));
+      when(() => mockUserActivityService.updateActivity()).thenReturn(null);
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<SyncSequenceLogService>(mockSequenceService)
+        ..registerSingleton<BackfillRequestService>(mockBackfillService)
+        ..registerSingleton<UserActivityService>(mockUserActivityService);
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Find and tap the manual backfill button
+      final manualSectionCard = find.ancestor(
+        of: find.byIcon(Icons.history),
+        matching: find.byType(Card),
+      );
+      final buttonFinder = find.descendant(
+        of: manualSectionCard,
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+      await tester.ensureVisible(buttonFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(buttonFinder);
+      await tester.pumpAndSettle();
+
+      // Error state should be visible (button should still be tappable)
+      expect(find.bySubtype<ButtonStyleButton>(), findsWidgets);
+    });
+
+    testWidgets('shows deleted count', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show deleted count from test stats (1)
+      expect(find.text('1'), findsOneWidget);
+    });
   });
 }

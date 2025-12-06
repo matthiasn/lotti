@@ -271,9 +271,11 @@ void main() {
           requestInterval: const Duration(seconds: 5),
         );
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async => [
               _createMissingLogItem(aliceHostId, 1),
             ]);
@@ -305,9 +307,11 @@ void main() {
           requestInterval: const Duration(seconds: 5),
         );
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async => []);
 
         service.start();
@@ -320,9 +324,11 @@ void main() {
         async.elapse(const Duration(seconds: 10));
         async.flushMicrotasks();
 
-        verifyNever(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        verifyNever(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             ));
 
         service.dispose();
@@ -389,9 +395,11 @@ void main() {
           requestInterval: const Duration(seconds: 5),
         );
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async => []);
 
         service.start();
@@ -407,9 +415,11 @@ void main() {
         service.processNow();
         async.flushMicrotasks();
 
-        verifyNever(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        verifyNever(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             ));
       });
     });
@@ -425,9 +435,11 @@ void main() {
           requestInterval: const Duration(seconds: 5),
         );
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
             )).thenThrow(Exception('Database error'));
 
         service.start();
@@ -450,6 +462,180 @@ void main() {
         // Service should still be running
         expect(service.isRunning, isTrue);
         expect(service.isProcessing, isFalse);
+
+        service.dispose();
+      });
+    });
+
+    test('processFullBackfill uses getMissingEntriesForActiveHosts', () {
+      fakeAsync((async) {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          requestInterval: const Duration(minutes: 5),
+        );
+
+        final missingEntries = [
+          _createMissingLogItem(aliceHostId, 1),
+          _createMissingLogItem(aliceHostId, 2),
+        ];
+
+        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+            )).thenAnswer((_) async => missingEntries);
+
+        when(() => mockOutboxService.enqueueMessage(any()))
+            .thenAnswer((_) async {});
+        when(() => mockSequenceService.markAsRequested(any()))
+            .thenAnswer((_) async {});
+
+        // Call processFullBackfill (ignores enabled flag)
+        service.processFullBackfill();
+        async.flushMicrotasks();
+
+        // Should use getMissingEntriesForActiveHosts (no limits)
+        verify(() => mockSequenceService.getMissingEntriesForActiveHosts(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+            )).called(1);
+
+        // Should NOT use getMissingEntriesWithLimits
+        verifyNever(() => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+            ));
+
+        service.dispose();
+      });
+    });
+
+    test('skips processing when backfill is disabled', () {
+      fakeAsync((async) {
+        // Disable backfill
+        SharedPreferences.setMockInitialValues({'backfill_enabled': false});
+
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          requestInterval: const Duration(seconds: 5),
+        );
+
+        service.start();
+        async.flushMicrotasks();
+
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+
+        // Should not fetch missing entries when disabled
+        verifyNever(() => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+            ));
+
+        service.dispose();
+      });
+    });
+
+    test('filters out already-queued entries from outbox', () {
+      fakeAsync((async) {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          requestInterval: const Duration(seconds: 5),
+        );
+
+        final missingEntries = [
+          _createMissingLogItem(aliceHostId, 1),
+          _createMissingLogItem(aliceHostId, 2),
+          _createMissingLogItem(aliceHostId, 3),
+        ];
+
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+            )).thenAnswer((_) async => missingEntries);
+
+        // Entry 2 is already in outbox
+        when(() => mockSyncDatabase.getPendingBackfillEntries()).thenAnswer(
+          (_) async => {(hostId: aliceHostId, counter: 2)},
+        );
+
+        when(() => mockOutboxService.enqueueMessage(any()))
+            .thenAnswer((_) async {});
+        when(() => mockSequenceService.markAsRequested(any()))
+            .thenAnswer((_) async {});
+
+        service.start();
+        async.flushMicrotasks();
+
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+
+        // Should only request entries 1 and 3 (entry 2 filtered out)
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(captured.length, 1);
+        final request = captured[0] as SyncBackfillRequest;
+        expect(request.entries.length, 2);
+        expect(request.entries.map((e) => e.counter), containsAll([1, 3]));
+        expect(request.entries.map((e) => e.counter), isNot(contains(2)));
+
+        service.dispose();
+      });
+    });
+
+    test('returns zero when all entries already queued', () {
+      fakeAsync((async) {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          requestInterval: const Duration(seconds: 5),
+        );
+
+        final missingEntries = [
+          _createMissingLogItem(aliceHostId, 1),
+        ];
+
+        when(() => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+            )).thenAnswer((_) async => missingEntries);
+
+        // Entry 1 is already in outbox
+        when(() => mockSyncDatabase.getPendingBackfillEntries()).thenAnswer(
+          (_) async => {(hostId: aliceHostId, counter: 1)},
+        );
+
+        service.start();
+        async.flushMicrotasks();
+
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+
+        // Should not enqueue any message
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
 
         service.dispose();
       });

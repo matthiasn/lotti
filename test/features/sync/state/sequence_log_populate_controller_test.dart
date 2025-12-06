@@ -172,7 +172,7 @@ void main() {
       ).thenAnswer((invocation) async {
         final onProgress =
             invocation.namedArguments[#onProgress] as void Function(double)?;
-        onProgress?.call(1.0);
+        onProgress?.call(1);
         return 10;
       });
 
@@ -187,7 +187,6 @@ void main() {
             completer.complete(next);
           }
         },
-        fireImmediately: false,
       );
 
       final controller =

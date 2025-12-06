@@ -410,17 +410,24 @@ class SyncDatabase extends _$SyncDatabase {
   /// Get backfill statistics grouped by host.
   /// Returns counts of entries in each status per host.
   Future<BackfillStats> getBackfillStats() async {
+    // Use enum indices for status values to stay correct if enum order changes
+    final received = SyncSequenceStatus.received.index;
+    final missing = SyncSequenceStatus.missing.index;
+    final requested = SyncSequenceStatus.requested.index;
+    final backfilled = SyncSequenceStatus.backfilled.index;
+    final deleted = SyncSequenceStatus.deleted.index;
+
     // Get all unique hosts with their status counts
     final query = customSelect(
       '''
       SELECT
         ssl.host_id,
         MAX(ssl.counter) as latest_counter,
-        SUM(CASE WHEN ssl.status = 0 THEN 1 ELSE 0 END) as received_count,
-        SUM(CASE WHEN ssl.status = 1 THEN 1 ELSE 0 END) as missing_count,
-        SUM(CASE WHEN ssl.status = 2 THEN 1 ELSE 0 END) as requested_count,
-        SUM(CASE WHEN ssl.status = 3 THEN 1 ELSE 0 END) as backfilled_count,
-        SUM(CASE WHEN ssl.status = 4 THEN 1 ELSE 0 END) as deleted_count,
+        SUM(CASE WHEN ssl.status = $received THEN 1 ELSE 0 END) as received_count,
+        SUM(CASE WHEN ssl.status = $missing THEN 1 ELSE 0 END) as missing_count,
+        SUM(CASE WHEN ssl.status = $requested THEN 1 ELSE 0 END) as requested_count,
+        SUM(CASE WHEN ssl.status = $backfilled THEN 1 ELSE 0 END) as backfilled_count,
+        SUM(CASE WHEN ssl.status = $deleted THEN 1 ELSE 0 END) as deleted_count,
         ha.last_seen_at
       FROM sync_sequence_log ssl
       LEFT JOIN host_activity ha ON ssl.host_id = ha.host_id
