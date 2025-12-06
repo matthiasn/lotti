@@ -691,7 +691,7 @@ void main() {
   group('getBackfillStats', () {
     test('delegates to database', () async {
       final mockStats = BackfillStats.fromHostStats([
-        BackfillHostStats(
+        const BackfillHostStats(
           hostId: aliceHostId,
           receivedCount: 10,
           missingCount: 2,

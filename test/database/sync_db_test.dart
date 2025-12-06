@@ -1262,12 +1262,9 @@ void main() {
 
       await database.batchInsertSequenceEntries(entries);
 
-      final host1Entry1 =
-          await database.getEntryByHostAndCounter('host-1', 1);
-      final host1Entry2 =
-          await database.getEntryByHostAndCounter('host-1', 2);
-      final host2Entry1 =
-          await database.getEntryByHostAndCounter('host-2', 1);
+      final host1Entry1 = await database.getEntryByHostAndCounter('host-1', 1);
+      final host1Entry2 = await database.getEntryByHostAndCounter('host-1', 2);
+      final host2Entry1 = await database.getEntryByHostAndCounter('host-2', 1);
 
       expect(host1Entry1, isNotNull);
       expect(host1Entry2, isNotNull);
@@ -1315,7 +1312,7 @@ void main() {
       const hostId = 'host-1';
       final now = DateTime(2024, 1, 1);
 
-      for (var i in [1, 3, 5, 7]) {
+      for (final i in [1, 3, 5, 7]) {
         await database.recordSequenceEntry(
           SyncSequenceLogCompanion(
             hostId: const Value(hostId),

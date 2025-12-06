@@ -1,0 +1,215 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../mocks/mocks.dart';
+import '../../../test_helper.dart';
+
+class MockSyncSequenceLogService extends Mock
+    implements SyncSequenceLogService {}
+
+class MockBackfillRequestService extends Mock
+    implements BackfillRequestService {}
+
+class MockUserActivityService extends Mock implements UserActivityService {}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late MockJournalDb mockJournalDb;
+  late MockSyncSequenceLogService mockSequenceService;
+  late MockBackfillRequestService mockBackfillService;
+  late MockUserActivityService mockUserActivityService;
+
+  final testStats = BackfillStats.fromHostStats([
+    const BackfillHostStats(
+      hostId: 'host-1',
+      receivedCount: 100,
+      missingCount: 5,
+      requestedCount: 2,
+      backfilledCount: 10,
+      deletedCount: 1,
+      latestCounter: 118,
+    ),
+  ]);
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({'backfill_enabled': true});
+    mockJournalDb = MockJournalDb();
+    mockSequenceService = MockSyncSequenceLogService();
+    mockBackfillService = MockBackfillRequestService();
+    mockUserActivityService = MockUserActivityService();
+
+    when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
+        .thenAnswer((_) => Stream<bool>.value(true));
+    when(() => mockSequenceService.getBackfillStats())
+        .thenAnswer((_) async => testStats);
+    when(() => mockBackfillService.processFullBackfill())
+        .thenAnswer((_) async => 5);
+    when(() => mockUserActivityService.updateActivity()).thenReturn(null);
+
+    getIt
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<SyncSequenceLogService>(mockSequenceService)
+      ..registerSingleton<BackfillRequestService>(mockBackfillService)
+      ..registerSingleton<UserActivityService>(mockUserActivityService);
+  });
+
+  tearDown(getIt.reset);
+
+  group('BackfillSettingsPage', () {
+    testWidgets('renders page with toggle card', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should find the toggle switch
+      expect(find.byType(Switch), findsOneWidget);
+    });
+
+    testWidgets('renders stats section', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should find bar_chart icon for stats section
+      expect(find.byIcon(Icons.bar_chart), findsOneWidget);
+    });
+
+    testWidgets('renders manual backfill button', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the manual backfill section Card (contains history icon)
+      final manualSectionCard = find.ancestor(
+        of: find.byIcon(Icons.history),
+        matching: find.byType(Card),
+      );
+      expect(manualSectionCard, findsOneWidget);
+
+      // Find the button inside that Card
+      final buttonFinder = find.descendant(
+        of: manualSectionCard,
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+      expect(buttonFinder, findsOneWidget);
+    });
+
+    testWidgets('renders history icon for manual section', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should find history icon
+      expect(find.byIcon(Icons.history), findsOneWidget);
+    });
+
+    testWidgets('renders refresh button', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should find refresh icon button
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+    });
+
+    testWidgets('toggle can be tapped', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the switch
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      // Switch should now be off
+      final switchWidget = tester.widget<Switch>(find.byType(Switch));
+      expect(switchWidget.value, isFalse);
+    });
+
+    testWidgets('manual backfill button triggers service', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the manual backfill section Card (contains history icon)
+      final manualSectionCard = find.ancestor(
+        of: find.byIcon(Icons.history),
+        matching: find.byType(Card),
+      );
+
+      // Find the button inside that Card
+      final buttonFinder = find.descendant(
+        of: manualSectionCard,
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+
+      // Scroll to make the button visible
+      await tester.ensureVisible(buttonFinder);
+      await tester.pumpAndSettle();
+
+      // Tap the button
+      await tester.tap(buttonFinder);
+      await tester.pumpAndSettle();
+
+      // Verify the service was called
+      verify(() => mockBackfillService.processFullBackfill()).called(1);
+    });
+
+    testWidgets('gate hides page when Matrix flag is OFF', (tester) async {
+      await getIt.reset();
+      mockJournalDb = MockJournalDb();
+      mockSequenceService = MockSyncSequenceLogService();
+      mockBackfillService = MockBackfillRequestService();
+      mockUserActivityService = MockUserActivityService();
+
+      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) => Stream<bool>.value(false));
+      when(() => mockSequenceService.getBackfillStats())
+          .thenAnswer((_) async => testStats);
+      when(() => mockUserActivityService.updateActivity()).thenReturn(null);
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<SyncSequenceLogService>(mockSequenceService)
+        ..registerSingleton<BackfillRequestService>(mockBackfillService)
+        ..registerSingleton<UserActivityService>(mockUserActivityService);
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pump();
+
+      // Page content should not be visible
+      expect(find.byType(Switch), findsNothing);
+      expect(find.byType(FilledButton), findsNothing);
+    });
+
+    testWidgets('displays stats values when loaded', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show received count from test stats
+      expect(find.text('100'), findsOneWidget);
+    });
+  });
+}
