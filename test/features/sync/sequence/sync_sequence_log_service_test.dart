@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -402,6 +404,70 @@ void main() {
       );
 
       verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+  });
+
+  group('markAsRequested', () {
+    test('increments request count for each entry', () async {
+      when(() => mockDb.incrementRequestCount(any(), any()))
+          .thenAnswer((_) async => 1);
+
+      await service.markAsRequested([
+        (hostId: aliceHostId, counter: 1),
+        (hostId: aliceHostId, counter: 2),
+        (hostId: bobHostId, counter: 1),
+      ]);
+
+      verify(() => mockDb.incrementRequestCount(aliceHostId, 1)).called(1);
+      verify(() => mockDb.incrementRequestCount(aliceHostId, 2)).called(1);
+      verify(() => mockDb.incrementRequestCount(bobHostId, 1)).called(1);
+    });
+
+    test('handles empty list', () async {
+      await service.markAsRequested([]);
+
+      verifyNever(() => mockDb.incrementRequestCount(any(), any()));
+    });
+  });
+
+  group('getMissingEntriesForActiveHosts', () {
+    test('delegates to database with default parameters', () async {
+      when(
+        () => mockDb.getMissingEntriesForActiveHosts(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await service.getMissingEntriesForActiveHosts();
+
+      verify(
+        () => mockDb.getMissingEntriesForActiveHosts(
+          limit: 50,
+          maxRequestCount: 10,
+        ),
+      ).called(1);
+    });
+
+    test('passes custom parameters', () async {
+      when(
+        () => mockDb.getMissingEntriesForActiveHosts(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await service.getMissingEntriesForActiveHosts(
+        limit: 20,
+        maxRequestCount: 5,
+      );
+
+      verify(
+        () => mockDb.getMissingEntriesForActiveHosts(
+          limit: 20,
+          maxRequestCount: 5,
+        ),
+      ).called(1);
     });
   });
 }

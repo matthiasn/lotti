@@ -768,5 +768,92 @@ void main() {
       expect(missing, hasLength(1));
       expect(missing.first.hostId, activeHost);
     });
+
+    test(
+        'getMissingEntriesForActiveHosts returns empty when no missing entries',
+        () async {
+      final database = db!;
+
+      // No entries at all
+      final missing = await database.getMissingEntriesForActiveHosts();
+      expect(missing, isEmpty);
+    });
+
+    test('getMissingEntriesForActiveHosts respects exponential backoff',
+        () async {
+      final database = db!;
+      const hostId = 'test-host';
+
+      // Set up host activity (very recent)
+      await database.updateHostActivity(hostId, DateTime.now());
+
+      // Add missing entry that was recently requested (should be filtered out)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.requested.index),
+          requestCount: const Value(1),
+          lastRequestedAt: Value(DateTime.now()), // Just requested
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+
+      // Should be filtered out due to backoff
+      final missing = await database.getMissingEntriesForActiveHosts();
+      expect(missing, isEmpty);
+    });
+
+    test(
+        'getMissingEntriesForActiveHosts excludes entries when host not active since last request',
+        () async {
+      final database = db!;
+      const hostId = 'test-host';
+
+      // Host was last seen BEFORE the entry was requested
+      await database.updateHostActivity(hostId, DateTime(2024, 1, 1));
+
+      // Entry was requested AFTER host was last seen
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.requested.index),
+          requestCount: const Value(1),
+          lastRequestedAt: Value(DateTime(2024, 1, 5)), // After host last seen
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+
+      // Should be filtered out because host hasn't been active since request
+      final missing = await database.getMissingEntriesForActiveHosts();
+      expect(missing, isEmpty);
+    });
+
+    test('getMissingEntriesForActiveHosts respects limit', () async {
+      final database = db!;
+      const hostId = 'test-host';
+
+      // Set up host activity
+      await database.updateHostActivity(hostId, DateTime.now());
+
+      // Add multiple missing entries
+      for (var i = 1; i <= 10; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2024, 1, i)),
+            updatedAt: Value(DateTime(2024, 1, i)),
+          ),
+        );
+      }
+
+      final missing = await database.getMissingEntriesForActiveHosts(limit: 3);
+      expect(missing, hasLength(3));
+    });
   });
 }
