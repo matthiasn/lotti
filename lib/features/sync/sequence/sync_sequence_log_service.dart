@@ -123,11 +123,15 @@ class SyncSequenceLogService {
       if (hostId == originatingHostId) {
         final existing =
             await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
-        final wasMissing = existing != null &&
-            (existing.status == SyncSequenceStatus.missing.index ||
-                existing.status == SyncSequenceStatus.requested.index);
 
-        final status = wasMissing
+        // Determine the new status:
+        // - If we explicitly requested this entry → backfilled (request fulfilled)
+        // - If it was missing but not yet requested → received (arrived via normal sync)
+        // - Otherwise → received
+        final wasRequested = existing != null &&
+            existing.status == SyncSequenceStatus.requested.index;
+
+        final status = wasRequested
             ? SyncSequenceStatus.backfilled
             : SyncSequenceStatus.received;
 
@@ -143,7 +147,7 @@ class SyncSequenceLogService {
           ),
         );
 
-        if (wasMissing) {
+        if (wasRequested) {
           _loggingService.captureEvent(
             'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
             domain: 'SYNC_SEQUENCE',
@@ -316,6 +320,27 @@ class SyncSequenceLogService {
       maxRequestCount: maxRequestCount,
       maxAge: maxAge,
       maxPerHost: maxPerHost,
+    );
+  }
+
+  /// Get entries with status 'requested' for re-requesting.
+  /// These are entries that were requested but never received.
+  Future<List<SyncSequenceLogItem>> getRequestedEntries({
+    int limit = 50,
+  }) {
+    return _syncDatabase.getRequestedEntries(limit: limit);
+  }
+
+  /// Reset request counts for specified entries to allow re-requesting.
+  Future<void> resetRequestCounts(
+    List<({String hostId, int counter})> entries,
+  ) async {
+    await _syncDatabase.resetRequestCounts(entries);
+
+    _loggingService.captureEvent(
+      'resetRequestCounts: reset ${entries.length} entries for re-request',
+      domain: 'SYNC_SEQUENCE',
+      subDomain: 'reRequest',
     );
   }
 

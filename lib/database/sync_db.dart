@@ -454,6 +454,44 @@ class SyncDatabase extends _$SyncDatabase {
     return BackfillStats.fromHostStats(hostStats);
   }
 
+  /// Get entries with status 'requested' for re-requesting.
+  /// These are entries that were requested but never received.
+  /// Ignores maxRequestCount to allow re-requesting stuck entries.
+  Future<List<SyncSequenceLogItem>> getRequestedEntries({
+    int limit = 50,
+  }) {
+    return (select(syncSequenceLog)
+          ..where(
+            (t) => t.status.equals(SyncSequenceStatus.requested.index),
+          )
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..limit(limit))
+        .get();
+  }
+
+  /// Reset request count and last requested time for specified entries.
+  /// This allows them to be re-requested as if they were new.
+  Future<void> resetRequestCounts(
+    List<({String hostId, int counter})> entries,
+  ) async {
+    final now = DateTime.now();
+    for (final entry in entries) {
+      await (update(syncSequenceLog)
+            ..where(
+              (t) =>
+                  t.hostId.equals(entry.hostId) &
+                  t.counter.equals(entry.counter),
+            ))
+          .write(
+        SyncSequenceLogCompanion(
+          requestCount: const Value(0),
+          lastRequestedAt: const Value(null),
+          updatedAt: Value(now),
+        ),
+      );
+    }
+  }
+
   /// Get missing entries with age and per-host limits for automatic backfill.
   /// [maxAge] - Only include entries created within this duration
   /// [maxPerHost] - Maximum entries to include per host

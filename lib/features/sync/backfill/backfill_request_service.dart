@@ -98,6 +98,104 @@ class BackfillRequestService {
     return _processBackfillRequests(useLimits: false, ignoreEnabledFlag: true);
   }
 
+  /// Re-request entries that are in 'requested' status but haven't been received.
+  /// This resets their request counts and sends new backfill requests.
+  /// Uses pagination to process all requested entries, not just the batch size.
+  Future<int> processReRequest() async {
+    if (_isDisposed || _isProcessing) return 0;
+
+    _isProcessing = true;
+    var totalProcessed = 0;
+
+    try {
+      final requesterId = await _vectorClockService.getHost();
+      if (requesterId == null) {
+        _loggingService.captureEvent(
+          'processReRequest: no host ID available, skipping',
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'reRequest',
+        );
+        return 0;
+      }
+
+      // Process in batches until no more requested entries
+      while (true) {
+        // Get next batch of requested entries
+        var requested = await _sequenceLogService.getRequestedEntries(
+          limit: _maxBatchSize,
+        );
+
+        if (requested.isEmpty) break;
+
+        // Filter out entries that are already queued in the outbox
+        final alreadyQueued = await _syncDatabase.getPendingBackfillEntries();
+        if (alreadyQueued.isNotEmpty) {
+          requested = requested
+              .where(
+                (m) => !alreadyQueued
+                    .contains((hostId: m.hostId, counter: m.counter)),
+              )
+              .toList();
+        }
+
+        if (requested.isEmpty) break;
+
+        // Reset request counts for these entries
+        final entries = requested
+            .map((item) => (hostId: item.hostId, counter: item.counter))
+            .toList();
+        await _sequenceLogService.resetRequestCounts(entries);
+
+        // Build request entries
+        final requestEntries = requested
+            .map(
+              (item) => BackfillRequestEntry(
+                hostId: item.hostId,
+                counter: item.counter,
+              ),
+            )
+            .toList();
+
+        // Send backfill request message
+        await _outboxService.enqueueMessage(
+          SyncMessage.backfillRequest(
+            entries: requestEntries,
+            requesterId: requesterId,
+          ),
+        );
+
+        // Mark all as requested (increments request count and sets lastRequestedAt)
+        await _sequenceLogService.markAsRequested(entries);
+
+        totalProcessed += requested.length;
+
+        _loggingService.captureEvent(
+          'processReRequest: sent ${requested.length} re-requests (total: $totalProcessed)',
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'reRequest',
+        );
+      }
+
+      _loggingService.captureEvent(
+        'processReRequest: completed, total $totalProcessed entries re-requested',
+        domain: 'SYNC_BACKFILL',
+        subDomain: 'reRequest',
+      );
+
+      return totalProcessed;
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_BACKFILL',
+        subDomain: 'reRequest',
+        stackTrace: st,
+      );
+      return totalProcessed;
+    } finally {
+      _isProcessing = false;
+    }
+  }
+
   /// Main processing logic - fetch missing entries and send backfill requests.
   /// [useLimits] - If true, apply age and per-host limits for automatic backfill.
   /// [ignoreEnabledFlag] - If true, process even when backfill is disabled (for manual trigger).

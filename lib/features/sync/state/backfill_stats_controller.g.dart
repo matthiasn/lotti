@@ -7,7 +7,7 @@ part of 'backfill_stats_controller.dart';
 // **************************************************************************
 
 String _$backfillStatsControllerHash() =>
-    r'd427c08769fe50917b80a31f17c98f1cf0f55d9a';
+    r'772bd42791a2edc3214b6b91fed7be05e77cbea2';
 
 /// See also [BackfillStatsController].
 @ProviderFor(BackfillStatsController)

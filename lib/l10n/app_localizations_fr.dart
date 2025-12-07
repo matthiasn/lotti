@@ -1313,6 +1313,24 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get backfillReRequestTitle => 'Re-Request Pending';
+
+  @override
+  String get backfillReRequestDescription =>
+      'Re-request entries that were requested but never received. Use this when responses are stuck.';
+
+  @override
+  String get backfillReRequestTrigger => 'Re-Request Pending Entries';
+
+  @override
+  String get backfillReRequestProcessing => 'Re-requesting...';
+
+  @override
+  String backfillReRequestSuccess(int count) {
+    return '$count entries re-requested';
+  }
+
+  @override
   String get measurableDeleteConfirm => 'OUI, SUPPRIMER CET ÉLÉMENT MESURABLE';
 
   @override

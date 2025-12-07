@@ -244,8 +244,9 @@ void main() {
       verify(() => mockDb.recordSequenceEntry(any())).called(2);
     });
 
-    test('marks previously missing entry as backfilled', () async {
-      // Entry was marked missing before, now it arrives
+    test('marks previously missing entry as received', () async {
+      // Entry was marked missing before, now it arrives via normal sync
+      // (not via backfill request). Missing entries become received.
       const vectorClock = VectorClock({aliceHostId: 3});
       const entryId = 'entry-3';
 
@@ -254,6 +255,42 @@ void main() {
       // Entry 3 exists and is missing
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
           .thenAnswer((_) async => _createLogItem(aliceHostId, 3));
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(gaps, isEmpty);
+
+      // Verify the entry was recorded with received status
+      // (only explicitly requested entries become backfilled)
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      final companion = captured[0] as SyncSequenceLogCompanion;
+      expect(companion.status.value, SyncSequenceStatus.received.index);
+    });
+
+    test('marks previously requested entry as backfilled', () async {
+      // Entry was explicitly requested via backfill, now it arrives
+      // Requested entries become backfilled (request was fulfilled).
+      const vectorClock = VectorClock({aliceHostId: 3});
+      const entryId = 'entry-3';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 2);
+      // Entry 3 exists and is requested
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.requested,
+        ),
+      );
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(

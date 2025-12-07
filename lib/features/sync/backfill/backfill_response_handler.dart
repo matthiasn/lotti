@@ -119,12 +119,17 @@ class BackfillResponseHandler {
     // The sequence log will be updated when the recipient receives the entry
     final jsonPath = relativeEntityPath(journalEntry);
 
+    // Use the originatingHostId from the sequence log entry, or derive from
+    // vector clock (the host with the highest counter is typically the originator)
+    final originatingHostId = logEntry.originatingHostId ?? hostId;
+
     await _outboxService.enqueueMessage(
       SyncMessage.journalEntity(
         id: journalEntry.meta.id,
         jsonPath: jsonPath,
         vectorClock: journalEntry.meta.vectorClock,
         status: SyncEntryStatus.update,
+        originatingHostId: originatingHostId,
       ),
     );
 
