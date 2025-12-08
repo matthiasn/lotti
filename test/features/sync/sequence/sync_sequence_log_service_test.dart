@@ -310,6 +310,38 @@ void main() {
       expect(companion.status.value, SyncSequenceStatus.backfilled.index);
     });
 
+    test('does not downgrade backfilled entry to received', () async {
+      // Entry was already backfilled, receiving it again should NOT change status
+      const vectorClock = VectorClock({aliceHostId: 3});
+      const entryId = 'entry-3';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 2);
+      // Entry 3 exists and is already backfilled
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.backfilled,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      // Verify the entry keeps backfilled status (not downgraded to received)
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      final companion = captured[0] as SyncSequenceLogCompanion;
+      expect(companion.status.value, SyncSequenceStatus.backfilled.index);
+    });
+
     test('updates host activity for originating host', () async {
       // When receiving an entry, we should update host activity
       const vectorClock = VectorClock({aliceHostId: 1});

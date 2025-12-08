@@ -125,15 +125,24 @@ class SyncSequenceLogService {
             await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
 
         // Determine the new status:
+        // - If already received/backfilled → keep existing status (don't downgrade)
         // - If we explicitly requested this entry → backfilled (request fulfilled)
         // - If it was missing but not yet requested → received (arrived via normal sync)
         // - Otherwise → received
-        final wasRequested = existing != null &&
-            existing.status == SyncSequenceStatus.requested.index;
-
-        final status = wasRequested
-            ? SyncSequenceStatus.backfilled
-            : SyncSequenceStatus.received;
+        final SyncSequenceStatus status;
+        if (existing != null &&
+            (existing.status == SyncSequenceStatus.received.index ||
+                existing.status == SyncSequenceStatus.backfilled.index)) {
+          // Already received or backfilled - keep the existing status
+          status = SyncSequenceStatus.values[existing.status];
+        } else if (existing != null &&
+            existing.status == SyncSequenceStatus.requested.index) {
+          // Explicitly requested - mark as backfilled
+          status = SyncSequenceStatus.backfilled;
+        } else {
+          // New entry or was missing - mark as received
+          status = SyncSequenceStatus.received;
+        }
 
         await _syncDatabase.recordSequenceEntry(
           SyncSequenceLogCompanion(
@@ -147,7 +156,8 @@ class SyncSequenceLogService {
           ),
         );
 
-        if (wasRequested) {
+        if (status == SyncSequenceStatus.backfilled &&
+            existing?.status == SyncSequenceStatus.requested.index) {
           _loggingService.captureEvent(
             'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
             domain: 'SYNC_SEQUENCE',
