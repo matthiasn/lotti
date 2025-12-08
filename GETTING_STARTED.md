@@ -231,8 +231,6 @@ Now that AI is set up, explore these features:
 - **Smart Checklists:** Dictate tasks and let AI organize them
 - **Weekly Reviews:** Generate AI summaries of your accomplishments
 
-For more detailed documentation, visit the [Lotti Documentation](https://github.com/matthiasn/lotti-docs).
-
 ---
 
 *This guide covers Lotti version 0.9.751 and later. UI may vary slightly between versions.*
