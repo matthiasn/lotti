@@ -24,6 +24,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -207,6 +208,7 @@ void main() {
     late MockPersistenceLogic persistenceLogic;
     late MockTagsService tagsService;
     late MockEntitiesCacheService entitiesCacheService;
+    late MockVectorClockService vectorClockService;
     late List<SyncMessage> sentMessages;
     late List<String> loggedEvents;
     late List<dynamic> loggedExceptions;
@@ -238,6 +240,11 @@ void main() {
       entitiesCacheService = MockEntitiesCacheService();
       when(() => entitiesCacheService.getDataTypeById(any())).thenReturn(null);
       getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
+
+      vectorClockService = MockVectorClockService();
+      when(() => vectorClockService.getHost())
+          .thenAnswer((_) async => 'test-host-id');
+      getIt.registerSingleton<VectorClockService>(vectorClockService);
 
       initialFts5 = Fts5Db(inMemoryDatabase: true);
       getIt.registerSingleton<Fts5Db>(initialFts5);

@@ -656,6 +656,10 @@ class SyncEventProcessor {
           // the entry may already exist (e.g., from earlier sync) but the
           // sequence log status still needs to be updated from "requested"
           // to "backfilled". We check that the entry actually exists in journal.
+          //
+          // originatingHostId must be provided by the sender - it identifies
+          // which host sent this message and can respond to backfill requests.
+          // Messages without originatingHostId (from older clients) are skipped.
           if (_sequenceLogService != null &&
               syncMessage.vectorClock != null &&
               syncMessage.originatingHostId != null) {

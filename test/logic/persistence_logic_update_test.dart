@@ -176,6 +176,8 @@ void main() {
         previous: any<VectorClock?>(named: 'previous'),
       ),
     ).thenAnswer((_) async => const VectorClock({'host': 1}));
+    when(() => vectorClockService.getHost())
+        .thenAnswer((_) async => 'test-host-id');
     when(() => tagsService.getFilteredStoryTagIds(any<List<String>?>()))
         .thenReturn(<String>[]);
     when(() => journalDb.addTagged(any<JournalEntity>()))
