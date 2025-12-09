@@ -386,9 +386,9 @@ When the AI thinks an item is done, you'll see:
 
 | Color | Confidence | Meaning |
 |-------|------------|---------|
-| **Blue** (Primary) | High | AI is confident this is complete |
-| **Purple** (Secondary) | Medium | Likely complete based on context |
-| **Gray** (Tertiary) | Low | Possibly complete, needs confirmation |
+| **Blue** | High | AI is confident this is complete |
+| **Purple** | Medium | Likely complete based on context |
+| **Gray** | Low | Possibly complete, needs confirmation |
 
 <!-- Screenshot: Checklist item with AI suggestion indicator -->
 ![AI Suggestion Indicator](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/tasks_getting_started/ai_suggestion_indicator.png)
