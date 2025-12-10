@@ -282,6 +282,36 @@ class SyncDatabase extends _$SyncDatabase {
     );
   }
 
+  /// Batch increment request counts for multiple entries.
+  /// Uses batch operations for efficiency while maintaining atomic increments.
+  Future<void> batchIncrementRequestCounts(
+    List<({String hostId, int counter})> entries,
+  ) async {
+    if (entries.isEmpty) return;
+
+    final now = DateTime.now();
+    final nowMs = now.millisecondsSinceEpoch;
+    await batch((b) {
+      for (final entry in entries) {
+        b.customStatement(
+          'UPDATE sync_sequence_log '
+          'SET request_count = request_count + 1, '
+          'status = ?, '
+          'updated_at = ?, '
+          'last_requested_at = ? '
+          'WHERE host_id = ? AND counter = ?',
+          [
+            SyncSequenceStatus.requested.index,
+            nowMs,
+            nowMs,
+            entry.hostId,
+            entry.counter,
+          ],
+        );
+      }
+    });
+  }
+
   /// Get a specific sequence log entry by host ID and counter.
   Future<SyncSequenceLogItem?> getEntryByHostAndCounter(
     String hostId,
@@ -292,6 +322,19 @@ class SyncDatabase extends _$SyncDatabase {
             (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
           ))
         .getSingleOrNull();
+  }
+
+  /// Get all pending (missing/requested) sequence log entries for a given entryId.
+  /// Used to resolve pending backfill hints when an entry arrives via sync.
+  Future<List<SyncSequenceLogItem>> getPendingEntriesByEntryId(String entryId) {
+    return (select(syncSequenceLog)
+          ..where(
+            (t) =>
+                t.entryId.equals(entryId) &
+                (t.status.equals(SyncSequenceStatus.missing.index) |
+                    t.status.equals(SyncSequenceStatus.requested.index)),
+          ))
+        .get();
   }
 
   /// Watch the count of missing entries for UI display.
@@ -452,6 +495,46 @@ class SyncDatabase extends _$SyncDatabase {
     }).toList();
 
     return BackfillStats.fromHostStats(hostStats);
+  }
+
+  /// Get entries with status 'requested' for re-requesting.
+  /// These are entries that were requested but never received.
+  /// Ignores maxRequestCount to allow re-requesting stuck entries.
+  Future<List<SyncSequenceLogItem>> getRequestedEntries({
+    int limit = 50,
+  }) {
+    return (select(syncSequenceLog)
+          ..where(
+            (t) => t.status.equals(SyncSequenceStatus.requested.index),
+          )
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..limit(limit))
+        .get();
+  }
+
+  /// Reset request count and last requested time for specified entries.
+  /// This allows them to be re-requested as if they were new.
+  /// Uses batch operations for efficiency.
+  Future<void> resetRequestCounts(
+    List<({String hostId, int counter})> entries,
+  ) async {
+    if (entries.isEmpty) return;
+
+    final now = DateTime.now();
+    await batch((b) {
+      for (final entry in entries) {
+        b.update(
+          syncSequenceLog,
+          SyncSequenceLogCompanion(
+            requestCount: const Value(0),
+            lastRequestedAt: const Value(null),
+            updatedAt: Value(now),
+          ),
+          where: (t) =>
+              t.hostId.equals(entry.hostId) & t.counter.equals(entry.counter),
+        );
+      }
+    });
   }
 
   /// Get missing entries with age and per-host limits for automatic backfill.

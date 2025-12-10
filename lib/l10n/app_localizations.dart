@@ -2433,6 +2433,36 @@ abstract class AppLocalizations {
   /// **'{count} entries requested'**
   String backfillManualSuccess(int count);
 
+  /// No description provided for @backfillReRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-Request Pending'**
+  String get backfillReRequestTitle;
+
+  /// No description provided for @backfillReRequestDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-request entries that were requested but never received. Use this when responses are stuck.'**
+  String get backfillReRequestDescription;
+
+  /// No description provided for @backfillReRequestTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-Request Pending Entries'**
+  String get backfillReRequestTrigger;
+
+  /// No description provided for @backfillReRequestProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-requesting...'**
+  String get backfillReRequestProcessing;
+
+  /// No description provided for @backfillReRequestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries re-requested'**
+  String backfillReRequestSuccess(int count);
+
   /// No description provided for @measurableDeleteConfirm.
   ///
   /// In en, this message translates to:

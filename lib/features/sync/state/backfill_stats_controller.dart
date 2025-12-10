@@ -12,32 +12,43 @@ class BackfillStatsState {
     this.stats,
     this.isLoading = false,
     this.isProcessing = false,
+    this.isReRequesting = false,
     this.lastProcessedCount,
+    this.lastReRequestedCount,
     this.error,
   });
 
   final BackfillStats? stats;
   final bool isLoading;
   final bool isProcessing;
+  final bool isReRequesting;
   final int? lastProcessedCount;
+  final int? lastReRequestedCount;
   final String? error;
 
   BackfillStatsState copyWith({
     BackfillStats? stats,
     bool? isLoading,
     bool? isProcessing,
+    bool? isReRequesting,
     int? lastProcessedCount,
+    int? lastReRequestedCount,
     String? error,
     bool clearError = false,
     bool clearLastProcessed = false,
+    bool clearLastReRequested = false,
   }) {
     return BackfillStatsState(
       stats: stats ?? this.stats,
       isLoading: isLoading ?? this.isLoading,
       isProcessing: isProcessing ?? this.isProcessing,
+      isReRequesting: isReRequesting ?? this.isReRequesting,
       lastProcessedCount: clearLastProcessed
           ? null
           : lastProcessedCount ?? this.lastProcessedCount,
+      lastReRequestedCount: clearLastReRequested
+          ? null
+          : lastReRequestedCount ?? this.lastReRequestedCount,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -77,7 +88,7 @@ class BackfillStatsController extends _$BackfillStatsController {
 
   /// Trigger a full historical backfill request.
   Future<void> triggerFullBackfill() async {
-    if (state.isProcessing) return;
+    if (state.isProcessing || state.isReRequesting) return;
 
     state = state.copyWith(
       isProcessing: true,
@@ -99,6 +110,35 @@ class BackfillStatsController extends _$BackfillStatsController {
     } catch (e) {
       state = state.copyWith(
         isProcessing: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  /// Re-request entries that are in 'requested' status but never received.
+  Future<void> triggerReRequest() async {
+    if (state.isProcessing || state.isReRequesting) return;
+
+    state = state.copyWith(
+      isReRequesting: true,
+      clearError: true,
+      clearLastReRequested: true,
+    );
+
+    try {
+      final backfillService = getIt<BackfillRequestService>();
+      final count = await backfillService.processReRequest();
+
+      state = state.copyWith(
+        isReRequesting: false,
+        lastReRequestedCount: count,
+      );
+
+      // Refresh stats after processing
+      await _loadStats();
+    } catch (e) {
+      state = state.copyWith(
+        isReRequesting: false,
         error: e.toString(),
       );
     }

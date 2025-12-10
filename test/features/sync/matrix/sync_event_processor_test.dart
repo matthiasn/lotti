@@ -55,8 +55,6 @@ class MockMatrixDatabase extends Mock implements DatabaseApi {}
 class MockBackfillResponseHandler extends Mock
     implements BackfillResponseHandler {}
 
-//
-
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -2768,4 +2766,8 @@ void main() {
       verify(() => mockHandler.handleBackfillResponse(message)).called(1);
     });
   });
+
+  // Note: Sequence log integration tests for the sync processor are covered
+  // by sync_sequence_log_service_test.dart which tests recordReceivedEntry
+  // behavior including gap detection and status transitions.
 }

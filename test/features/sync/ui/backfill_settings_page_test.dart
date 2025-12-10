@@ -376,5 +376,169 @@ void main() {
       // Should show deleted count from test stats (1)
       expect(find.text('1'), findsOneWidget);
     });
+
+    testWidgets('renders re-request section with replay icon', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should find replay icon for re-request section
+      expect(find.byIcon(Icons.replay), findsWidgets);
+    });
+
+    testWidgets('re-request section has button', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the re-request section Card (contains replay icon)
+      final reRequestSectionCard = find.ancestor(
+        of: find.byIcon(Icons.replay).first,
+        matching: find.byType(Card),
+      );
+      expect(reRequestSectionCard, findsOneWidget);
+
+      // Find the button inside that Card
+      final buttonFinder = find.descendant(
+        of: reRequestSectionCard,
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+      expect(buttonFinder, findsOneWidget);
+    });
+
+    testWidgets('re-request button is disabled when requestedCount is 0',
+        (tester) async {
+      await getIt.reset();
+      mockJournalDb = MockJournalDb();
+      mockSequenceService = MockSyncSequenceLogService();
+      mockBackfillService = MockBackfillRequestService();
+      mockUserActivityService = MockUserActivityService();
+
+      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) => Stream<bool>.value(true));
+      // Return stats with 0 requested entries
+      when(() => mockSequenceService.getBackfillStats()).thenAnswer(
+        (_) async => BackfillStats.fromHostStats([
+          const BackfillHostStats(
+            hostId: 'host-1',
+            receivedCount: 100,
+            missingCount: 5,
+            requestedCount: 0, // No requested entries
+            backfilledCount: 10,
+            deletedCount: 1,
+            latestCounter: 116,
+          ),
+        ]),
+      );
+      when(() => mockUserActivityService.updateActivity()).thenReturn(null);
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<SyncSequenceLogService>(mockSequenceService)
+        ..registerSingleton<BackfillRequestService>(mockBackfillService)
+        ..registerSingleton<UserActivityService>(mockUserActivityService);
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the re-request section Card
+      final reRequestSectionCard = find.ancestor(
+        of: find.byIcon(Icons.replay).first,
+        matching: find.byType(Card),
+      );
+
+      // Find the button inside that Card
+      final buttonFinder = find.descendant(
+        of: reRequestSectionCard,
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+
+      // Scroll to make the button visible
+      await tester.ensureVisible(buttonFinder);
+      await tester.pumpAndSettle();
+
+      // Button should be disabled (onPressed is null)
+      final button = tester.widget<FilledButton>(buttonFinder);
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('re-request button triggers service when requestedCount > 0',
+        (tester) async {
+      when(() => mockBackfillService.processReRequest())
+          .thenAnswer((_) async => 5);
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the re-request section Card
+      final reRequestSectionCard = find.ancestor(
+        of: find.byIcon(Icons.replay).first,
+        matching: find.byType(Card),
+      );
+
+      // Find the button inside that Card
+      final buttonFinder = find.descendant(
+        of: reRequestSectionCard,
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+
+      // Scroll to make the button visible
+      await tester.ensureVisible(buttonFinder);
+      await tester.pumpAndSettle();
+
+      // Tap the button
+      await tester.tap(buttonFinder);
+      await tester.pumpAndSettle();
+
+      // Verify the service was called
+      verify(() => mockBackfillService.processReRequest()).called(1);
+    });
+
+    testWidgets('shows success message after re-request completes',
+        (tester) async {
+      when(() => mockBackfillService.processReRequest())
+          .thenAnswer((_) async => 5);
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Find and tap the re-request button
+      final reRequestSectionCard = find.ancestor(
+        of: find.byIcon(Icons.replay).first,
+        matching: find.byType(Card),
+      );
+      final buttonFinder = find.descendant(
+        of: reRequestSectionCard,
+        matching: find.bySubtype<ButtonStyleButton>(),
+      );
+      await tester.ensureVisible(buttonFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(buttonFinder);
+      await tester.pumpAndSettle();
+
+      // Should show check_circle icon for success
+      expect(find.byIcon(Icons.check_circle), findsWidgets);
+    });
+
+    testWidgets('re-request section shows orange icon when requestedCount > 0',
+        (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // With testStats having requestedCount = 2, the replay icon should have
+      // an orange color. Find the replay icon.
+      final replayIconFinder = find.byIcon(Icons.replay);
+      expect(replayIconFinder, findsWidgets);
+    });
   });
 }

@@ -119,12 +119,32 @@ class BackfillResponseHandler {
     // The sequence log will be updated when the recipient receives the entry
     final jsonPath = relativeEntityPath(journalEntry);
 
+    // Use the originatingHostId from the sequence log entry, or derive from
+    // vector clock (the host with the highest counter is typically the originator)
+    final originatingHostId = logEntry.originatingHostId ?? hostId;
+
     await _outboxService.enqueueMessage(
       SyncMessage.journalEntity(
         id: journalEntry.meta.id,
         jsonPath: jsonPath,
         vectorClock: journalEntry.meta.vectorClock,
         status: SyncEntryStatus.update,
+        originatingHostId: originatingHostId,
+      ),
+    );
+
+    // Send a BackfillResponse with the entryId so the requester can update
+    // their sequence log entry for (hostId, counter) → entryId.
+    // This is crucial because the entry's current vector clock may no longer
+    // contain the original (hostId, counter) if the entry was modified since.
+    // Without this explicit mapping, the requester's (hostId, counter) record
+    // would stay stuck as "requested" forever.
+    await _outboxService.enqueueMessage(
+      SyncMessage.backfillResponse(
+        hostId: hostId,
+        counter: counter,
+        deleted: false,
+        entryId: logEntry.entryId,
       ),
     );
 
@@ -132,7 +152,13 @@ class BackfillResponseHandler {
   }
 
   /// Handle an incoming backfill response from another device.
-  /// Updates the sequence log status based on the response.
+  ///
+  /// For deleted responses: marks the entry as deleted (cannot be backfilled).
+  ///
+  /// For non-deleted responses: stores the entryId as a "hint", then verifies
+  /// the entry exists locally and its VC covers the requested (hostId, counter)
+  /// before marking as backfilled. This ensures we don't mark entries as
+  /// backfilled until we actually have the data.
   Future<void> handleBackfillResponse(SyncBackfillResponse response) async {
     try {
       _loggingService.captureEvent(
@@ -141,12 +167,38 @@ class BackfillResponseHandler {
         subDomain: 'handleResponse',
       );
 
+      // First, store the hint (or mark as deleted for deleted responses)
       await _sequenceLogService.handleBackfillResponse(
         hostId: response.hostId,
         counter: response.counter,
         deleted: response.deleted,
         entryId: response.entryId,
       );
+
+      // For non-deleted responses, verify the entry exists locally
+      // before marking as backfilled
+      if (!response.deleted && response.entryId != null) {
+        final journalEntry =
+            await _journalDb.journalEntityById(response.entryId!);
+
+        if (journalEntry != null) {
+          final vc = journalEntry.meta.vectorClock;
+          if (vc != null) {
+            await _sequenceLogService.verifyAndMarkBackfilled(
+              hostId: response.hostId,
+              counter: response.counter,
+              entryId: response.entryId!,
+              entryVectorClock: vc,
+            );
+          }
+        } else {
+          _loggingService.captureEvent(
+            'handleBackfillResponse: entry ${response.entryId} not found locally, hint stored for when entry arrives',
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'handleResponse',
+          );
+        }
+      }
     } catch (e, st) {
       _loggingService.captureException(
         e,

@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 class Maintenance {
@@ -22,6 +23,8 @@ class Maintenance {
     required DateTime end,
   }) async {
     final outboxService = getIt<OutboxService>();
+    final vectorClockService = getIt<VectorClockService>();
+    final hostId = await vectorClockService.getHost();
     final count = await _db.countJournalEntries().getSingle();
     const pageSize = 100;
     final pages = (count / pageSize).ceil();
@@ -45,6 +48,7 @@ class Maintenance {
             vectorClock: entry.meta.vectorClock,
             jsonPath: jsonPath,
             status: SyncEntryStatus.update,
+            originatingHostId: hostId,
           ),
         );
 

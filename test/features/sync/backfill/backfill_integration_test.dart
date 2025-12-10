@@ -274,18 +274,27 @@ void main() {
       // === STEP 5: Alice receives and handles the backfill request ===
       await aliceResponseHandler.handleBackfillRequest(backfillRequest);
 
-      // Verify Alice enqueued only the journal entity (no BackfillResponse)
+      // Verify Alice enqueued both the journal entity AND a BackfillResponse
+      // The BackfillResponse is crucial for cases where the entry's VC has evolved
       final capturedMessages = verify(
         () => aliceOutbox.enqueueMessage(captureAny()),
       ).captured;
 
-      expect(capturedMessages, hasLength(1));
+      expect(capturedMessages, hasLength(2));
 
-      // Should be the journal entity
+      // First should be the journal entity
       expect(capturedMessages[0], isA<SyncJournalEntity>());
       final journalEntity = capturedMessages[0] as SyncJournalEntity;
       expect(journalEntity.id, entryId2);
       expect(journalEntity.status, SyncEntryStatus.update);
+
+      // Second should be the BackfillResponse with entryId
+      expect(capturedMessages[1], isA<SyncBackfillResponse>());
+      final backfillResponse = capturedMessages[1] as SyncBackfillResponse;
+      expect(backfillResponse.hostId, aliceHostId);
+      expect(backfillResponse.counter, 2);
+      expect(backfillResponse.deleted, false);
+      expect(backfillResponse.entryId, entryId2);
 
       // === STEP 6: Bob receives the entry via normal sync ===
       // When the entry arrives, recordReceivedEntry updates the status to backfilled

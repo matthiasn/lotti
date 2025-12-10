@@ -652,30 +652,43 @@ class SyncEventProcessor {
           );
 
           // Record in sequence log for gap detection (self-healing sync)
+          // Note: We update the sequence log even if applied=false, because
+          // the entry may already exist (e.g., from earlier sync) but the
+          // sequence log status still needs to be updated from "requested"
+          // to "backfilled". We check that the entry actually exists in journal.
+          //
+          // originatingHostId must be provided by the sender - it identifies
+          // which host sent this message and can respond to backfill requests.
+          // Messages without originatingHostId (from older clients) are skipped.
           if (_sequenceLogService != null &&
-              updateResult.applied &&
               syncMessage.vectorClock != null &&
               syncMessage.originatingHostId != null) {
-            try {
-              final gaps = await _sequenceLogService!.recordReceivedEntry(
-                entryId: journalEntity.meta.id,
-                vectorClock: syncMessage.vectorClock!,
-                originatingHostId: syncMessage.originatingHostId!,
-              );
-              if (gaps.isNotEmpty) {
-                _loggingService.captureEvent(
-                  'apply.gapsDetected count=${gaps.length} for entity=${journalEntity.meta.id}',
+            // Check if entry exists (either just applied, or already in journal)
+            final entryExistsInJournal = updateResult.applied ||
+                await journalDb.journalEntityById(journalEntity.meta.id) !=
+                    null;
+            if (entryExistsInJournal) {
+              try {
+                final gaps = await _sequenceLogService!.recordReceivedEntry(
+                  entryId: journalEntity.meta.id,
+                  vectorClock: syncMessage.vectorClock!,
+                  originatingHostId: syncMessage.originatingHostId!,
+                );
+                if (gaps.isNotEmpty) {
+                  _loggingService.captureEvent(
+                    'apply.gapsDetected count=${gaps.length} for entity=${journalEntity.meta.id}',
+                    domain: 'SYNC_SEQUENCE',
+                    subDomain: 'gapDetection',
+                  );
+                }
+              } catch (e, st) {
+                _loggingService.captureException(
+                  e,
                   domain: 'SYNC_SEQUENCE',
-                  subDomain: 'gapDetection',
+                  subDomain: 'recordReceived',
+                  stackTrace: st,
                 );
               }
-            } catch (e, st) {
-              _loggingService.captureException(
-                e,
-                domain: 'SYNC_SEQUENCE',
-                subDomain: 'recordReceived',
-                stackTrace: st,
-              );
             }
           }
 

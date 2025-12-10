@@ -470,6 +470,7 @@ class PersistenceLogic {
             vectorClock: withTags.meta.vectorClock,
             jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.initial,
+            originatingHostId: await _vectorClockService.getHost(),
           ),
         );
       }
@@ -784,6 +785,7 @@ class PersistenceLogic {
             vectorClock: journalEntity.meta.vectorClock,
             jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.update,
+            originatingHostId: await _vectorClockService.getHost(),
           ),
         );
       }
