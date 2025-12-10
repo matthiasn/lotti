@@ -1876,4 +1876,180 @@ void main() {
       expect(entry2!.requestCount, 20); // Unchanged
     });
   });
+
+  group('batchIncrementRequestCounts Tests', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('increments request count for single entry', () async {
+      final database = db!;
+      const hostId = 'host-1';
+      const counter = 1;
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(counter),
+          status: Value(SyncSequenceStatus.missing.index),
+          requestCount: const Value(0),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+
+      await database.batchIncrementRequestCounts([
+        (hostId: hostId, counter: counter),
+      ]);
+
+      final entry = await database.getEntryByHostAndCounter(hostId, counter);
+      expect(entry!.requestCount, 1);
+      expect(entry.status, SyncSequenceStatus.requested.index);
+      expect(entry.lastRequestedAt, isNotNull);
+    });
+
+    test('increments multiple entries in single batch', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      // Add multiple entries
+      for (var i = 1; i <= 3; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            requestCount: const Value(0),
+            createdAt: Value(DateTime(2024, 1, i)),
+            updatedAt: Value(DateTime(2024, 1, i)),
+          ),
+        );
+      }
+
+      await database.batchIncrementRequestCounts([
+        (hostId: hostId, counter: 1),
+        (hostId: hostId, counter: 2),
+        (hostId: hostId, counter: 3),
+      ]);
+
+      for (var i = 1; i <= 3; i++) {
+        final entry = await database.getEntryByHostAndCounter(hostId, i);
+        expect(entry!.requestCount, 1);
+        expect(entry.status, SyncSequenceStatus.requested.index);
+        expect(entry.lastRequestedAt, isNotNull);
+      }
+    });
+
+    test('increments different hosts in single batch', () async {
+      final database = db!;
+
+      // Add entries for different hosts
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.missing.index),
+          requestCount: const Value(5),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-2'),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.missing.index),
+          requestCount: const Value(3),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+
+      await database.batchIncrementRequestCounts([
+        (hostId: 'host-1', counter: 1),
+        (hostId: 'host-2', counter: 1),
+      ]);
+
+      final entry1 = await database.getEntryByHostAndCounter('host-1', 1);
+      final entry2 = await database.getEntryByHostAndCounter('host-2', 1);
+      expect(entry1!.requestCount, 6); // 5 + 1
+      expect(entry2!.requestCount, 4); // 3 + 1
+    });
+
+    test('handles empty list gracefully', () async {
+      final database = db!;
+
+      // Should not throw
+      await database.batchIncrementRequestCounts([]);
+    });
+
+    test('does not affect other entries', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      // Add two entries
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.missing.index),
+          requestCount: const Value(5),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.missing.index),
+          requestCount: const Value(10),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+
+      // Only increment counter 1
+      await database.batchIncrementRequestCounts([
+        (hostId: hostId, counter: 1),
+      ]);
+
+      final entry1 = await database.getEntryByHostAndCounter(hostId, 1);
+      final entry2 = await database.getEntryByHostAndCounter(hostId, 2);
+
+      expect(entry1!.requestCount, 6); // 5 + 1
+      expect(entry2!.requestCount, 10); // Unchanged
+      expect(entry2.status, SyncSequenceStatus.missing.index); // Unchanged
+    });
+
+    test('updates updatedAt and lastRequestedAt timestamps', () async {
+      final database = db!;
+      const hostId = 'host-1';
+      const counter = 1;
+      final originalDate = DateTime(2024, 1, 1);
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(counter),
+          status: Value(SyncSequenceStatus.missing.index),
+          requestCount: const Value(0),
+          createdAt: Value(originalDate),
+          updatedAt: Value(originalDate),
+        ),
+      );
+
+      await database.batchIncrementRequestCounts([
+        (hostId: hostId, counter: counter),
+      ]);
+
+      final entry = await database.getEntryByHostAndCounter(hostId, counter);
+      expect(entry!.updatedAt.isAfter(originalDate), isTrue);
+      expect(entry.lastRequestedAt, isNotNull);
+      expect(entry.lastRequestedAt!.isAfter(originalDate), isTrue);
+    });
+  });
 }

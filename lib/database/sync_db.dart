@@ -282,6 +282,36 @@ class SyncDatabase extends _$SyncDatabase {
     );
   }
 
+  /// Batch increment request counts for multiple entries.
+  /// Uses batch operations for efficiency while maintaining atomic increments.
+  Future<void> batchIncrementRequestCounts(
+    List<({String hostId, int counter})> entries,
+  ) async {
+    if (entries.isEmpty) return;
+
+    final now = DateTime.now();
+    final nowMs = now.millisecondsSinceEpoch;
+    await batch((b) {
+      for (final entry in entries) {
+        b.customStatement(
+          'UPDATE sync_sequence_log '
+          'SET request_count = request_count + 1, '
+          'status = ?, '
+          'updated_at = ?, '
+          'last_requested_at = ? '
+          'WHERE host_id = ? AND counter = ?',
+          [
+            SyncSequenceStatus.requested.index,
+            nowMs,
+            nowMs,
+            entry.hostId,
+            entry.counter,
+          ],
+        );
+      }
+    });
+  }
+
   /// Get a specific sequence log entry by host ID and counter.
   Future<SyncSequenceLogItem?> getEntryByHostAndCounter(
     String hostId,
@@ -484,25 +514,27 @@ class SyncDatabase extends _$SyncDatabase {
 
   /// Reset request count and last requested time for specified entries.
   /// This allows them to be re-requested as if they were new.
+  /// Uses batch operations for efficiency.
   Future<void> resetRequestCounts(
     List<({String hostId, int counter})> entries,
   ) async {
+    if (entries.isEmpty) return;
+
     final now = DateTime.now();
-    for (final entry in entries) {
-      await (update(syncSequenceLog)
-            ..where(
-              (t) =>
-                  t.hostId.equals(entry.hostId) &
-                  t.counter.equals(entry.counter),
-            ))
-          .write(
-        SyncSequenceLogCompanion(
-          requestCount: const Value(0),
-          lastRequestedAt: const Value(null),
-          updatedAt: Value(now),
-        ),
-      );
-    }
+    await batch((b) {
+      for (final entry in entries) {
+        b.update(
+          syncSequenceLog,
+          SyncSequenceLogCompanion(
+            requestCount: const Value(0),
+            lastRequestedAt: const Value(null),
+            updatedAt: Value(now),
+          ),
+          where: (t) =>
+              t.hostId.equals(entry.hostId) & t.counter.equals(entry.counter),
+        );
+      }
+    });
   }
 
   /// Get missing entries with age and per-host limits for automatic backfill.

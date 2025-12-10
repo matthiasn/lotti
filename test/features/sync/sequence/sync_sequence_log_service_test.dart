@@ -747,25 +747,27 @@ void main() {
   });
 
   group('markAsRequested', () {
-    test('increments request count for each entry', () async {
-      when(() => mockDb.incrementRequestCount(any(), any()))
-          .thenAnswer((_) async => 1);
-
-      await service.markAsRequested([
+    test('delegates to batchIncrementRequestCounts', () async {
+      final entries = [
         (hostId: aliceHostId, counter: 1),
         (hostId: aliceHostId, counter: 2),
         (hostId: bobHostId, counter: 1),
-      ]);
+      ];
+      when(() => mockDb.batchIncrementRequestCounts(any()))
+          .thenAnswer((_) async {});
 
-      verify(() => mockDb.incrementRequestCount(aliceHostId, 1)).called(1);
-      verify(() => mockDb.incrementRequestCount(aliceHostId, 2)).called(1);
-      verify(() => mockDb.incrementRequestCount(bobHostId, 1)).called(1);
+      await service.markAsRequested(entries);
+
+      verify(() => mockDb.batchIncrementRequestCounts(entries)).called(1);
     });
 
     test('handles empty list', () async {
+      when(() => mockDb.batchIncrementRequestCounts(any()))
+          .thenAnswer((_) async {});
+
       await service.markAsRequested([]);
 
-      verifyNever(() => mockDb.incrementRequestCount(any(), any()));
+      verify(() => mockDb.batchIncrementRequestCounts([])).called(1);
     });
   });
 

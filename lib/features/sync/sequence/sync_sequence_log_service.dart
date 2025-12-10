@@ -259,12 +259,11 @@ class SyncSequenceLogService {
   }
 
   /// Mark entries as requested and increment their request count.
+  /// Uses batch operations for efficiency.
   Future<void> markAsRequested(
     List<({String hostId, int counter})> entries,
   ) async {
-    for (final entry in entries) {
-      await _syncDatabase.incrementRequestCount(entry.hostId, entry.counter);
-    }
+    await _syncDatabase.batchIncrementRequestCounts(entries);
   }
 
   /// Handle a backfill response from another device.
