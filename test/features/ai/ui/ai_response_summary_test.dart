@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/expandable_ai_response_summary.dart';
+import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 
 import '../../../test_helper.dart';
 
@@ -165,6 +166,38 @@ The image shows a beautiful landscape with mountains.''';
 
       // Modal should be opened (we can't directly test the modal content
       // as it's shown in a different route)
+    });
+
+    testWidgets('uses GeneratedPromptCard for prompt generation responses',
+        (tester) async {
+      const promptResponse = '''## Summary
+A well-crafted prompt for implementing OAuth authentication.
+
+## Prompt
+Help me implement OAuth 2.0 authentication in my Flutter app.''';
+
+      final aiResponse = testAiResponseEntry.copyWith(
+        data: testAiResponseEntry.data.copyWith(
+          response: promptResponse,
+          type: AiResponseType.promptGeneration,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummary(
+            aiResponse,
+            linkedFromId: 'test-id',
+            fadeOut: false,
+          ),
+        ),
+      );
+
+      // Should use GeneratedPromptCard for prompt generation
+      expect(find.byType(GeneratedPromptCard), findsOneWidget);
+
+      // Should not use ExpandableAiResponseSummary
+      expect(find.byType(ExpandableAiResponseSummary), findsNothing);
     });
   });
 }

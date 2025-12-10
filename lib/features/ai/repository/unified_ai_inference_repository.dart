@@ -1088,6 +1088,13 @@ class UnifiedAiInferenceRepository {
           'Processing actionItemSuggestions is no longer supported',
           name: 'UnifiedAiInferenceRepository',
         );
+      case AiResponseType.promptGeneration:
+        // Prompt generation has no special post-processing - the response
+        // is saved as an AiResponseEntry which is handled by the caller
+        developer.log(
+          'Prompt generation completed for entity ${entity.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
     }
   }
 

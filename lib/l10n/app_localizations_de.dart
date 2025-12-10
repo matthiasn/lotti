@@ -437,6 +437,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiResponseTypeImageAnalysis => 'Image Analysis';
 
   @override
+  String get aiResponseTypePromptGeneration => 'Generierter Prompt';
+
+  @override
   String get aiResponseTypeTaskSummary => 'Task Summary';
 
   @override
@@ -1631,6 +1634,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get promptUserPromptLabel => 'User Prompt';
+
+  @override
+  String get promptGenerationCardTitle => 'KI-Coding-Prompt';
+
+  @override
+  String get promptGenerationCopyTooltip => 'Prompt in Zwischenablage kopieren';
+
+  @override
+  String get promptGenerationCopiedSnackbar =>
+      'Prompt in Zwischenablage kopiert';
+
+  @override
+  String get promptGenerationExpandTooltip => 'Vollständigen Prompt anzeigen';
+
+  @override
+  String get promptGenerationFullPromptLabel => 'Vollständiger Prompt:';
 
   @override
   String get saveButtonLabel => 'Save';
