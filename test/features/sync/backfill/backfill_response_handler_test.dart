@@ -56,6 +56,7 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
     );
+    registerFallbackValue(const VectorClock({}));
   });
 
   setUp(() {
@@ -284,11 +285,7 @@ void main() {
       ).called(1);
     });
 
-    test(
-        'delegates non-deleted response to sequenceLogService (backwards compat)',
-        () async {
-      // Non-deleted responses are no longer sent by newer clients,
-      // but we still delegate to sequenceLogService for backwards compatibility
+    test('stores hint and verifies entry when it exists locally', () async {
       const response = SyncBackfillResponse(
         hostId: aliceHostId,
         counter: 3,
@@ -305,9 +302,23 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
+      // Entry exists locally
+      final journalEntry = _createJournalEntry(entryId);
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntry);
+
+      when(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: aliceHostId,
+          counter: 3,
+          entryId: entryId,
+          entryVectorClock: any(named: 'entryVectorClock'),
+        ),
+      ).thenAnswer((_) async => true);
+
       await handler.handleBackfillResponse(response);
 
-      // Still delegates to sequenceLogService which will ignore it
+      // Should store the hint
       verify(
         () => mockSequenceService.handleBackfillResponse(
           hostId: aliceHostId,
@@ -316,6 +327,127 @@ void main() {
           entryId: entryId,
         ),
       ).called(1);
+
+      // Should verify and mark as backfilled
+      verify(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: aliceHostId,
+          counter: 3,
+          entryId: entryId,
+          entryVectorClock: any(named: 'entryVectorClock'),
+        ),
+      ).called(1);
+    });
+
+    test('stores hint but skips verification when entry not found locally',
+        () async {
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        entryId: entryId,
+      );
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          entryId: entryId,
+        ),
+      ).thenAnswer((_) async {});
+
+      // Entry does NOT exist locally
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => null);
+
+      await handler.handleBackfillResponse(response);
+
+      // Should store the hint
+      verify(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          entryId: entryId,
+        ),
+      ).called(1);
+
+      // Should NOT try to verify (entry not found)
+      verifyNever(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+        ),
+      );
+    });
+
+    test('skips verification when response has no entryId', () async {
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        // No entryId
+      );
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+        ),
+      ).thenAnswer((_) async {});
+
+      await handler.handleBackfillResponse(response);
+
+      // Should store the hint
+      verify(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+        ),
+      ).called(1);
+
+      // Should NOT try to verify (no entryId)
+      verifyNever(() => mockJournalDb.journalEntityById(any()));
+    });
+
+    test('skips verification when entry has null vectorClock', () async {
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        entryId: entryId,
+      );
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          entryId: entryId,
+        ),
+      ).thenAnswer((_) async {});
+
+      // Entry exists but has null vectorClock
+      final journalEntry = _createJournalEntryWithoutVC(entryId);
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntry);
+
+      await handler.handleBackfillResponse(response);
+
+      // Should NOT try to verify (no VC)
+      verifyNever(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+        ),
+      );
     });
 
     test('handles errors gracefully', () async {
@@ -378,6 +510,20 @@ JournalEntity _createJournalEntry(String id) {
       dateFrom: DateTime(2024),
       dateTo: DateTime(2024),
       vectorClock: const VectorClock({'test-host': 1}),
+    ),
+    entryText: const EntryText(plainText: 'Test entry'),
+  );
+}
+
+JournalEntity _createJournalEntryWithoutVC(String id) {
+  return JournalEntity.journalEntry(
+    meta: Metadata(
+      id: id,
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+      dateFrom: DateTime(2024),
+      dateTo: DateTime(2024),
+      // vectorClock is null
     ),
     entryText: const EntryText(plainText: 'Test entry'),
   );

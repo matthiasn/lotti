@@ -1103,6 +1103,251 @@ void main() {
     });
   });
 
+  group('verifyAndMarkBackfilled', () {
+    test('marks entry as backfilled when VC covers the counter', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-to-verify';
+
+      // Entry exists and is in requested status
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.requested,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final result = await service.verifyAndMarkBackfilled(
+        hostId: aliceHostId,
+        counter: 5,
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(result, true);
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      final companion = captured[0] as SyncSequenceLogCompanion;
+      expect(companion.status.value, SyncSequenceStatus.backfilled.index);
+      expect(companion.entryId.value, entryId);
+    });
+
+    test('returns false when VC does not cover the counter', () async {
+      const vectorClock = VectorClock({aliceHostId: 3}); // Counter 3, not 5
+      const entryId = 'entry-to-verify';
+
+      final result = await service.verifyAndMarkBackfilled(
+        hostId: aliceHostId,
+        counter: 5, // Asking for counter 5
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(result, false);
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+
+    test('returns false when host not in VC', () async {
+      const vectorClock = VectorClock({bobHostId: 10}); // Only bob, no alice
+      const entryId = 'entry-to-verify';
+
+      final result = await service.verifyAndMarkBackfilled(
+        hostId: aliceHostId,
+        counter: 5,
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(result, false);
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+
+    test('returns false when entry does not exist', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-to-verify';
+
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => null);
+
+      final result = await service.verifyAndMarkBackfilled(
+        hostId: aliceHostId,
+        counter: 5,
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(result, false);
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+
+    test('returns false when entry already received', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-to-verify';
+
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.received, // Already received
+        ),
+      );
+
+      final result = await service.verifyAndMarkBackfilled(
+        hostId: aliceHostId,
+        counter: 5,
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(result, false);
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+
+    test('returns false when entry already backfilled', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-to-verify';
+
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.backfilled, // Already backfilled
+        ),
+      );
+
+      final result = await service.verifyAndMarkBackfilled(
+        hostId: aliceHostId,
+        counter: 5,
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(result, false);
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+
+    test('marks missing entry as backfilled', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-to-verify';
+
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.missing, // Missing, not requested
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final result = await service.verifyAndMarkBackfilled(
+        hostId: aliceHostId,
+        counter: 5,
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(result, true);
+      verify(() => mockDb.recordSequenceEntry(any())).called(1);
+    });
+  });
+
+  group('resolvePendingHints', () {
+    test('resolves pending entries when entry arrives', () async {
+      const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
+      const entryId = 'arrived-entry';
+
+      // Two pending entries that can be resolved by this entry
+      final pendingEntries = [
+        _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.requested,
+          entryId: entryId,
+        ),
+        _createLogItem(
+          bobHostId,
+          3,
+          status: SyncSequenceStatus.requested,
+          entryId: entryId,
+        ),
+      ];
+
+      when(() => mockDb.getPendingEntriesByEntryId(entryId))
+          .thenAnswer((_) async => pendingEntries);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => pendingEntries[0],
+      );
+      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3)).thenAnswer(
+        (_) async => pendingEntries[1],
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final resolved = await service.resolvePendingHints(
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(resolved, 2);
+      verify(() => mockDb.recordSequenceEntry(any())).called(2);
+    });
+
+    test('returns zero when no pending entries', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'arrived-entry';
+
+      when(() => mockDb.getPendingEntriesByEntryId(entryId))
+          .thenAnswer((_) async => []);
+
+      final resolved = await service.resolvePendingHints(
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      expect(resolved, 0);
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+
+    test('only resolves entries covered by VC', () async {
+      const vectorClock = VectorClock({aliceHostId: 5}); // Only alice:5
+      const entryId = 'arrived-entry';
+
+      // Two pending entries, but only one is covered by VC
+      final pendingEntries = [
+        _createLogItem(
+          aliceHostId,
+          5, // Covered
+          status: SyncSequenceStatus.requested,
+          entryId: entryId,
+        ),
+        _createLogItem(
+          bobHostId,
+          10, // Not covered (bob not in VC)
+          status: SyncSequenceStatus.requested,
+          entryId: entryId,
+        ),
+      ];
+
+      when(() => mockDb.getPendingEntriesByEntryId(entryId))
+          .thenAnswer((_) async => pendingEntries);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => pendingEntries[0],
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final resolved = await service.resolvePendingHints(
+        entryId: entryId,
+        entryVectorClock: vectorClock,
+      );
+
+      // Only alice:5 should be resolved
+      expect(resolved, 1);
+      verify(() => mockDb.recordSequenceEntry(any())).called(1);
+    });
+  });
+
   group('getMissingEntriesWithLimits', () {
     test('delegates to database with default parameters', () async {
       when(
