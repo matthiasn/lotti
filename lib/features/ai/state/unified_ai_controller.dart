@@ -51,7 +51,9 @@ class UnifiedAiState {
 }
 
 /// Controller for running unified AI inference with configurable prompts
-@riverpod
+/// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
+/// ensuring error state persists until the widget can read it.
+@Riverpod(keepAlive: true)
 class UnifiedAiController extends _$UnifiedAiController {
   Future<void>? _activeInferenceFuture;
   String? _activeLinkedEntityId;
@@ -287,11 +289,29 @@ class UnifiedAiController extends _$UnifiedAiController {
       final inferenceError =
           AiErrorUtils.categorizeError(e, stackTrace: stackTrace);
 
+      developer.log(
+        'Controller caught exception: ${e.runtimeType}, isException: ${e is Exception}',
+        name: 'UnifiedAiController',
+      );
+
       // Set the error message and preserve the original exception
       // Store the original caught exception 'e' directly, not inferenceError.originalError
-      state = UnifiedAiState(
+      final newState = UnifiedAiState(
         message: inferenceError.message,
         error: e is Exception ? e : null,
+      );
+
+      developer.log(
+        'Setting state with error: ${newState.error?.runtimeType}',
+        name: 'UnifiedAiController',
+      );
+
+      state = newState;
+
+      developer.log(
+        'State after assignment: error=${state.error?.runtimeType}, '
+        'entityId=$entityId, promptId=$promptId',
+        name: 'UnifiedAiController',
       );
 
       // Try to set error status if we have prompt config
