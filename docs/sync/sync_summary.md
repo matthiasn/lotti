@@ -416,3 +416,33 @@ Benefits
 - Windows
   - Catch‑up `preContextCount = 80`, `maxLookback = 1000`
   - Live‑scan steady tail = 30; audit tails = 50/80/100 (by offline delta)
+
+### Self-Healing Backfill Improvements (Dec 2025)
+
+**Non-originator VC entry updates:**
+- When receiving an entry with VC `{alice:5, bob:3}` where alice is the
+  originator, we now also update `(bob:3)` if it was missing/requested
+- Previously only the originator's counter was updated; non-originator entries
+  could get stuck as "missing" forever
+
+**Two-phase backfill verification:**
+- BackfillResponse now acts as a "hint" storing `(hostId, counter) → entryId`
+- Status is only updated to "backfilled" after verifying:
+  1. The entry exists locally in the journal
+  2. The entry's VC covers the requested counter: `VC[hostId] >= counter`
+- This prevents marking entries as backfilled when the sync message fails
+
+**Pending hint resolution:**
+- Handles race condition where BackfillResponse arrives before the sync message
+- When an entry arrives via sync, `resolvePendingHints` checks for sequence log
+  entries with matching entryId that are still pending
+- Verifies VC coverage before marking as backfilled
+
+**Re-request functionality:**
+- UI button to reset request counts for stuck "requested" entries
+- Allows manual retry when automatic backfill has given up
+
+**Key log messages:**
+- `handleBackfillResponse: stored hint hostId=... counter=... entryId=...`
+- `verifyAndMarkBackfilled: confirmed hostId=... counter=... entryId=...`
+- `resolvePendingHints: resolved N pending entries for entryId=...`

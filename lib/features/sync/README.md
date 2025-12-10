@@ -135,16 +135,42 @@ requested via broadcast. Any device with the entry can respond.
   status (received, missing, requested, backfilled, deleted)
 - `HostActivity` table — tracks when each peer was last seen online
 - `SyncSequenceLogService` — records received/sent entries, detects gaps,
-  manages sequence status
+  manages sequence status, resolves pending backfill hints
 - `BackfillRequestService` — periodically scans for missing entries and sends
   batched `SyncBackfillRequest` messages (up to 100 entries per message)
-- `BackfillResponseHandler` — handles incoming requests (re-sends entries or
-  responds with "deleted" if purged) and processes responses
+- `BackfillResponseHandler` — handles incoming requests (re-sends entries +
+  sends BackfillResponse with entryId hint) and verifies responses
 
 **Gap Detection:**
 - Examines ALL hosts in incoming vector clocks (not just the originator)
 - For each host, compares the counter against the last seen counter
 - Any counter jumps > 1 trigger gap entries marked as `missing`
+- When an entry arrives, ALL (hostId, counter) pairs in its VC are updated to
+  received/backfilled status (not just the originator's counter)
+
+**Two-Phase Backfill Verification:**
+When responding to a backfill request, the responder sends BOTH the entry via
+normal sync AND a `BackfillResponse` with the entryId. This enables safe
+resolution even when the entry's vector clock has evolved since the original
+counter was recorded:
+
+1. **Phase 1 - Store Hint:** When receiving a BackfillResponse, store the
+   `entryId` as a hint on the sequence log entry but don't change status yet
+2. **Phase 2 - Verify:** Only mark as backfilled when we can verify:
+   - The entry exists locally in the journal
+   - The entry's vector clock "covers" the requested counter (VC[hostId] >= counter)
+
+This handles the edge case where entry E1 was at `(alice:5)` but has since been
+modified to `(alice:7, bob:3)`. The BackfillResponse provides the mapping
+`(alice:5) → E1`, and when E1 arrives with its evolved VC, we verify E1's
+`VC[alice]=7 >= 5` before marking `(alice:5)` as backfilled.
+
+**Pending Hint Resolution:**
+If the BackfillResponse arrives before the sync message (race condition):
+- The hint is stored on the sequence log entry
+- When the entry arrives via normal sync, `resolvePendingHints` checks for
+  entries with matching entryId that are still missing/requested
+- For each, it verifies the VC covers the counter and marks as backfilled
 
 **Smart Retry with Exponential Backoff:**
 - Base interval: 5 minutes between backfill request cycles
@@ -152,21 +178,31 @@ requested via broadcast. Any device with the entry can respond.
 - Host activity filtering: only request entries from hosts that have been
   online since the last request for that entry
 - Maximum 10 retry attempts before giving up
+- Re-request button in UI to reset stuck entries for manual retry
 
 **Message Flow:**
 1. Device A detects missing entry (host=X, counter=5)
 2. Device A broadcasts `SyncBackfillRequest` with entries list
 3. Device B receives request, looks up entry in its sequence log
-4. If found: Device B re-sends the journal entity via normal sync
+4. If found: Device B re-sends the journal entity via normal sync AND sends
+   `SyncBackfillResponse` with `deleted=false, entryId=<id>`
 5. If deleted/purged: Device B sends `SyncBackfillResponse` with `deleted=true`
-6. Device A receives the entry via normal sync and updates sequence log to `backfilled`
-7. For deleted entries: Device A receives the response and marks entry as `deleted`
+6. Device A receives the BackfillResponse:
+   - Stores the entryId hint on the sequence log entry
+   - If entry already exists locally and VC covers the counter → mark backfilled
+   - Otherwise, wait for entry to arrive via sync
+7. Device A receives the entry via normal sync:
+   - Updates all (hostId, counter) pairs in the VC to received/backfilled
+   - Resolves any pending hints with this entryId
+8. For deleted entries: Device A marks entry as `deleted`
 
 **Logging:** Key domains include `SYNC_SEQUENCE` (gap detection, status changes)
 and `SYNC_BACKFILL` (request/response handling). Look for:
 - `gapDetected hostId=... counter=... (last seen: ..., observed: ...)`
 - `handleBackfillRequest: N entries from=...`
-- `handleBackfillResponse hostId=... counter=... deleted=...`
+- `handleBackfillResponse: stored hint hostId=... counter=... entryId=...`
+- `verifyAndMarkBackfilled: confirmed hostId=... counter=... entryId=...`
+- `resolvePendingHints: resolved N pending entries for entryId=...`
 
 **Configuration:** Tuning constants in `tuning.dart`:
 - `backfillRequestInterval`: 5 minutes between processing cycles
