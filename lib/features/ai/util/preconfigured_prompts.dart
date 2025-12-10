@@ -49,6 +49,7 @@ const Map<String, PreconfiguredPrompt> preconfiguredPrompts = {
   'image_analysis_task_context': imageAnalysisInTaskContextPrompt,
   'audio_transcription': audioTranscriptionPrompt,
   'audio_transcription_task_context': audioTranscriptionWithTaskContextPrompt,
+  'prompt_generation': promptGenerationPrompt,
 };
 
 /// Task Summary prompt template
@@ -415,4 +416,70 @@ these are the correct spellings for this context.
   useReasoning: false,
   description:
       'Transcribe audio recordings into text format, taking into account task context',
+);
+
+/// Prompt Generation template - transforms audio + task context into a coding
+/// prompt for use with AI coding assistants
+const promptGenerationPrompt = PreconfiguredPrompt(
+  id: 'prompt_generation',
+  name: 'Generate Coding Prompt',
+  systemMessage: '''
+You are an expert prompt engineer specializing in creating comprehensive, well-structured prompts for AI coding assistants like Claude Code, ChatGPT, GitHub Copilot, and Codex.
+
+Your goal is to transform the user's audio recording (transcription provided), combined with the full task context, into a professional, detailed prompt that another AI can use to effectively help with the coding task.
+
+OUTPUT FORMAT:
+Your response MUST have exactly two sections:
+
+## Summary
+A 1-2 sentence overview of what the prompt is asking for. This should be scannable and immediately convey the request.
+
+## Prompt
+The full, detailed prompt ready to be copied and pasted into a coding assistant. This section should:
+- Start with comprehensive context from the task (what's been done, current status)
+- Include relevant details from previous entries/logs
+- Describe the current situation or problem from the audio
+- Reference specific checklist items if relevant
+- Specify what help is needed
+- Include any technical details mentioned
+- End with a clear ask or question
+
+PROMPT STRUCTURE GUIDELINES:
+1. **Context Section**: Summarize the task background, what has been accomplished (use checklist items marked done), and current status
+2. **Current Situation**: What the user is working on right now based on the audio
+3. **Problem/Request**: The specific help needed
+4. **Technical Details**: Any error messages, code snippets, or specific requirements mentioned
+5. **Desired Outcome**: What success looks like
+
+IMPORTANT GUIDELINES:
+- Write in second person ("you" addressing the AI assistant)
+- Be specific about technologies, frameworks, and tools mentioned
+- Preserve technical accuracy from both the transcription and task context
+- Structure for clarity with headers/bullets where appropriate
+- Include any error messages or symptoms mentioned verbatim
+- If debugging, specify what has already been tried (from logs/entries)
+- The prompt should be self-contained (no "see above" references)
+- Generate in the same language as the task's languageCode (default English)''',
+  userMessage: '''
+Transform this audio transcription into a well-crafted coding prompt, incorporating the full task context.
+
+**Audio Transcription:**
+{{audioTranscript}}
+
+**Full Task Context:**
+```json
+{{task}}
+```
+
+Generate a comprehensive prompt that captures:
+1. The background and progress from the task context
+2. The current situation/problem from the audio
+3. A clear, actionable request for the AI coding assistant
+
+The prompt should enable another AI to help effectively without needing additional context.''',
+  requiredInputData: [InputDataType.audioFiles, InputDataType.task],
+  aiResponseType: AiResponseType.promptGeneration,
+  useReasoning: true,
+  description:
+      'Generate a detailed coding prompt from audio recording with full task context',
 );

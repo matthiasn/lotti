@@ -7,6 +7,7 @@ const taskSummaryConst = 'TaskSummary';
 const imageAnalysisConst = 'ImageAnalysis';
 const audioTranscriptionConst = 'AudioTranscription';
 const checklistUpdatesConst = 'ChecklistUpdates';
+const promptGenerationConst = 'PromptGeneration';
 
 // Ollama API constants
 const ollamaChatEndpoint = '/api/chat';
@@ -43,6 +44,8 @@ enum AiResponseType {
   audioTranscription,
   @JsonValue(checklistUpdatesConst)
   checklistUpdates,
+  @JsonValue(promptGenerationConst)
+  promptGeneration,
 }
 
 extension AiResponseTypeDisplay on AiResponseType {
@@ -60,6 +63,8 @@ extension AiResponseTypeDisplay on AiResponseType {
         return l10n.aiResponseTypeAudioTranscription;
       case AiResponseType.checklistUpdates:
         return l10n.aiResponseTypeChecklistUpdates;
+      case AiResponseType.promptGeneration:
+        return l10n.aiResponseTypePromptGeneration;
     }
   }
 
@@ -77,6 +82,8 @@ extension AiResponseTypeDisplay on AiResponseType {
         return Icons.mic_outlined;
       case AiResponseType.checklistUpdates:
         return Icons.checklist_rtl_outlined;
+      case AiResponseType.promptGeneration:
+        return Icons.auto_fix_high_outlined;
     }
   }
 }

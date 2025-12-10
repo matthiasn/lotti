@@ -413,5 +413,11 @@
       "max": { "type": "int" }
     }
   },
-  "correctionExampleCaptured": "Korrektur für KI-Lernen gespeichert"
+  "correctionExampleCaptured": "Korrektur für KI-Lernen gespeichert",
+  "aiResponseTypePromptGeneration": "Generierter Prompt",
+  "promptGenerationCardTitle": "KI-Coding-Prompt",
+  "promptGenerationCopyTooltip": "Prompt in Zwischenablage kopieren",
+  "promptGenerationCopiedSnackbar": "Prompt in Zwischenablage kopiert",
+  "promptGenerationExpandTooltip": "Vollständigen Prompt anzeigen",
+  "promptGenerationFullPromptLabel": "Vollständiger Prompt:"
 }
