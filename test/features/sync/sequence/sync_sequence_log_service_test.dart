@@ -780,6 +780,91 @@ void main() {
     });
   });
 
+  group('getRequestedEntries', () {
+    test('delegates to database with default limit', () async {
+      when(
+        () => mockDb.getRequestedEntries(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => []);
+
+      await service.getRequestedEntries();
+
+      verify(
+        () => mockDb.getRequestedEntries(limit: 50),
+      ).called(1);
+    });
+
+    test('passes custom limit', () async {
+      when(
+        () => mockDb.getRequestedEntries(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => []);
+
+      await service.getRequestedEntries(limit: 25);
+
+      verify(
+        () => mockDb.getRequestedEntries(limit: 25),
+      ).called(1);
+    });
+
+    test('returns requested entries from database', () async {
+      final entries = [
+        _createLogItem(aliceHostId, 1, status: SyncSequenceStatus.requested),
+        _createLogItem(aliceHostId, 2, status: SyncSequenceStatus.requested),
+      ];
+
+      when(
+        () => mockDb.getRequestedEntries(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => entries);
+
+      final result = await service.getRequestedEntries();
+
+      expect(result, entries);
+      expect(result.length, 2);
+    });
+  });
+
+  group('resetRequestCounts', () {
+    test('delegates to database', () async {
+      when(() => mockDb.resetRequestCounts(any())).thenAnswer((_) async {});
+
+      final entries = [
+        (hostId: aliceHostId, counter: 1),
+        (hostId: aliceHostId, counter: 2),
+        (hostId: bobHostId, counter: 3),
+      ];
+
+      await service.resetRequestCounts(entries);
+
+      verify(() => mockDb.resetRequestCounts(entries)).called(1);
+    });
+
+    test('handles empty list', () async {
+      when(() => mockDb.resetRequestCounts(any())).thenAnswer((_) async {});
+
+      await service.resetRequestCounts([]);
+
+      verify(() => mockDb.resetRequestCounts([])).called(1);
+    });
+
+    test('logs the reset operation', () async {
+      when(() => mockDb.resetRequestCounts(any())).thenAnswer((_) async {});
+
+      final entries = [
+        (hostId: aliceHostId, counter: 1),
+        (hostId: aliceHostId, counter: 2),
+      ];
+
+      await service.resetRequestCounts(entries);
+
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('reset 2 entries')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'reRequest',
+        ),
+      ).called(1);
+    });
+  });
+
   group('getMissingEntriesWithLimits', () {
     test('delegates to database with default parameters', () async {
       when(

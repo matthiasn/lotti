@@ -233,6 +233,142 @@ void main() {
       // Should only have been called once
       verify(() => mockBackfillService.processFullBackfill()).called(1);
     });
+
+    test('triggerReRequest calls service and refreshes stats', () async {
+      when(() => mockSequenceService.getBackfillStats())
+          .thenAnswer((_) async => testStats);
+      when(() => mockBackfillService.processReRequest())
+          .thenAnswer((_) async => 15);
+
+      container = ProviderContainer();
+      await waitForStats(container);
+
+      // Reset verify counts after initial load
+      clearInteractions(mockSequenceService);
+
+      final controller =
+          container.read(backfillStatsControllerProvider.notifier);
+      await controller.triggerReRequest();
+
+      verify(() => mockBackfillService.processReRequest()).called(1);
+      // Should call getBackfillStats once on refresh after re-request
+      verify(() => mockSequenceService.getBackfillStats()).called(1);
+
+      final state = container.read(backfillStatsControllerProvider);
+      expect(state.isReRequesting, isFalse);
+      expect(state.lastReRequestedCount, 15);
+    });
+
+    test('triggerReRequest sets isReRequesting during operation', () async {
+      when(() => mockSequenceService.getBackfillStats())
+          .thenAnswer((_) async => testStats);
+
+      var reRequestStarted = false;
+      when(() => mockBackfillService.processReRequest()).thenAnswer(
+        (_) async {
+          reRequestStarted = true;
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          return 8;
+        },
+      );
+
+      container = ProviderContainer();
+      await waitForStats(container);
+
+      final controller =
+          container.read(backfillStatsControllerProvider.notifier);
+      final future = controller.triggerReRequest();
+
+      // Wait for re-request to start
+      while (!reRequestStarted) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+
+      var state = container.read(backfillStatsControllerProvider);
+      expect(state.isReRequesting, isTrue);
+
+      await future;
+
+      state = container.read(backfillStatsControllerProvider);
+      expect(state.isReRequesting, isFalse);
+    });
+
+    test('triggerReRequest handles errors', () async {
+      when(() => mockSequenceService.getBackfillStats())
+          .thenAnswer((_) async => testStats);
+      when(() => mockBackfillService.processReRequest())
+          .thenAnswer((_) async => throw Exception('Re-request failed'));
+
+      container = ProviderContainer();
+      await waitForStats(container);
+
+      final controller =
+          container.read(backfillStatsControllerProvider.notifier);
+      await controller.triggerReRequest();
+
+      final state = container.read(backfillStatsControllerProvider);
+      expect(state.isReRequesting, isFalse);
+      expect(state.error, contains('Re-request failed'));
+    });
+
+    test('triggerReRequest does nothing if already re-requesting', () async {
+      when(() => mockSequenceService.getBackfillStats())
+          .thenAnswer((_) async => testStats);
+      when(() => mockBackfillService.processReRequest()).thenAnswer(
+        (_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          return 5;
+        },
+      );
+
+      container = ProviderContainer();
+      await waitForStats(container);
+
+      final controller =
+          container.read(backfillStatsControllerProvider.notifier);
+
+      // Start first trigger
+      final future1 = controller.triggerReRequest();
+
+      // Wait a bit then try to trigger again
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await controller.triggerReRequest();
+
+      await future1;
+
+      // Should only have been called once
+      verify(() => mockBackfillService.processReRequest()).called(1);
+    });
+
+    test('triggerReRequest does nothing if already processing backfill',
+        () async {
+      when(() => mockSequenceService.getBackfillStats())
+          .thenAnswer((_) async => testStats);
+      when(() => mockBackfillService.processFullBackfill()).thenAnswer(
+        (_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          return 5;
+        },
+      );
+
+      container = ProviderContainer();
+      await waitForStats(container);
+
+      final controller =
+          container.read(backfillStatsControllerProvider.notifier);
+
+      // Start full backfill first
+      final future1 = controller.triggerFullBackfill();
+
+      // Wait a bit then try to trigger re-request
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await controller.triggerReRequest();
+
+      await future1;
+
+      // processReRequest should not have been called
+      verifyNever(() => mockBackfillService.processReRequest());
+    });
   });
 
   group('BackfillStatsState', () {
@@ -283,6 +419,38 @@ void main() {
       final copied = state.copyWith(clearLastProcessed: true);
 
       expect(copied.lastProcessedCount, isNull);
+    });
+
+    test('copyWith clearLastReRequested removes lastReRequestedCount', () {
+      const state = BackfillStatsState(lastReRequestedCount: 25);
+
+      final copied = state.copyWith(clearLastReRequested: true);
+
+      expect(copied.lastReRequestedCount, isNull);
+    });
+
+    test('copyWith preserves isReRequesting when not overridden', () {
+      const state = BackfillStatsState(isReRequesting: true);
+
+      final copied = state.copyWith();
+
+      expect(copied.isReRequesting, isTrue);
+    });
+
+    test('copyWith overrides isReRequesting', () {
+      const state = BackfillStatsState();
+
+      final copied = state.copyWith(isReRequesting: true);
+
+      expect(copied.isReRequesting, isTrue);
+    });
+
+    test('copyWith overrides lastReRequestedCount', () {
+      const state = BackfillStatsState();
+
+      final copied = state.copyWith(lastReRequestedCount: 42);
+
+      expect(copied.lastReRequestedCount, 42);
     });
   });
 }

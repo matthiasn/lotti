@@ -640,6 +640,325 @@ void main() {
         service.dispose();
       });
     });
+
+    group('processReRequest', () {
+      test('sends backfill requests for entries in requested status', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 5),
+            maxBatchSize: 50,
+          );
+
+          final requestedEntries = [
+            _createRequestedLogItem(aliceHostId, 10),
+            _createRequestedLogItem(aliceHostId, 11),
+          ];
+
+          when(() => mockSequenceService.getRequestedEntries(limit: 50))
+              .thenAnswer((_) async => requestedEntries);
+
+          // Second call returns empty to stop pagination
+          var callCount = 0;
+          when(() => mockSequenceService.getRequestedEntries(limit: 50))
+              .thenAnswer((_) async {
+            callCount++;
+            return callCount == 1 ? requestedEntries : [];
+          });
+
+          when(() => mockSequenceService.resetRequestCounts(any()))
+              .thenAnswer((_) async {});
+          when(() => mockOutboxService.enqueueMessage(any()))
+              .thenAnswer((_) async {});
+          when(() => mockSequenceService.markAsRequested(any()))
+              .thenAnswer((_) async {});
+
+          service.processReRequest();
+          async.flushMicrotasks();
+
+          // Should have reset request counts
+          verify(() => mockSequenceService.resetRequestCounts(any())).called(1);
+
+          // Should have sent backfill request
+          final captured = verify(
+            () => mockOutboxService.enqueueMessage(captureAny()),
+          ).captured;
+          expect(captured.length, 1);
+          final request = captured[0] as SyncBackfillRequest;
+          expect(request.entries.length, 2);
+          expect(request.requesterId, myHostId);
+
+          // Should have marked as requested again
+          verify(() => mockSequenceService.markAsRequested(any())).called(1);
+
+          service.dispose();
+        });
+      });
+
+      test('returns zero when no requested entries', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 5),
+          );
+
+          when(() => mockSequenceService.getRequestedEntries(
+                limit: any(named: 'limit'),
+              )).thenAnswer((_) async => []);
+
+          int? result;
+          service.processReRequest().then((r) => result = r);
+          async.flushMicrotasks();
+
+          expect(result, 0);
+          verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+          service.dispose();
+        });
+      });
+
+      test('skips entries already queued in outbox', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 5),
+            maxBatchSize: 50,
+          );
+
+          final requestedEntries = [
+            _createRequestedLogItem(aliceHostId, 10),
+            _createRequestedLogItem(aliceHostId, 11),
+            _createRequestedLogItem(aliceHostId, 12),
+          ];
+
+          var callCount = 0;
+          when(() => mockSequenceService.getRequestedEntries(limit: 50))
+              .thenAnswer((_) async {
+            callCount++;
+            return callCount == 1 ? requestedEntries : [];
+          });
+
+          // Entry 11 is already queued
+          when(() => mockSyncDatabase.getPendingBackfillEntries()).thenAnswer(
+            (_) async => {(hostId: aliceHostId, counter: 11)},
+          );
+
+          when(() => mockSequenceService.resetRequestCounts(any()))
+              .thenAnswer((_) async {});
+          when(() => mockOutboxService.enqueueMessage(any()))
+              .thenAnswer((_) async {});
+          when(() => mockSequenceService.markAsRequested(any()))
+              .thenAnswer((_) async {});
+
+          service.processReRequest();
+          async.flushMicrotasks();
+
+          // Should only request entries 10 and 12 (entry 11 filtered out)
+          final captured = verify(
+            () => mockOutboxService.enqueueMessage(captureAny()),
+          ).captured;
+          expect(captured.length, 1);
+          final request = captured[0] as SyncBackfillRequest;
+          expect(request.entries.length, 2);
+          expect(request.entries.map((e) => e.counter), containsAll([10, 12]));
+          expect(request.entries.map((e) => e.counter), isNot(contains(11)));
+
+          service.dispose();
+        });
+      });
+
+      test('returns zero when no host ID available', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 5),
+          );
+
+          when(() => mockVcService.getHost()).thenAnswer((_) async => null);
+
+          int? result;
+          service.processReRequest().then((r) => result = r);
+          async.flushMicrotasks();
+
+          expect(result, 0);
+          verifyNever(() => mockSequenceService.getRequestedEntries(
+                limit: any(named: 'limit'),
+              ));
+
+          service.dispose();
+        });
+      });
+
+      test('handles errors gracefully and returns partial count', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 5),
+            maxBatchSize: 50,
+          );
+
+          when(() => mockSequenceService.getRequestedEntries(limit: 50))
+              .thenThrow(Exception('Database error'));
+
+          int? result;
+          service.processReRequest().then((r) => result = r);
+          async.flushMicrotasks();
+
+          expect(result, 0);
+
+          // Should log the exception
+          verify(
+            () => mockLogging.captureException(
+              any<Object>(),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+
+          service.dispose();
+        });
+      });
+
+      test('does not process if already processing', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(seconds: 5),
+            maxBatchSize: 50,
+          );
+
+          var getRequestedCallCount = 0;
+          when(() => mockSequenceService.getRequestedEntries(limit: 50))
+              .thenAnswer((_) async {
+            getRequestedCallCount++;
+            // Simulate slow processing
+            await Future<void>.delayed(const Duration(seconds: 2));
+            return [];
+          });
+
+          // Start first processReRequest
+          service.processReRequest();
+          async.flushMicrotasks();
+
+          expect(service.isProcessing, isTrue);
+
+          // Try to start another - should be ignored
+          int? result;
+          service.processReRequest().then((r) => result = r);
+          async.flushMicrotasks();
+
+          expect(result, 0);
+
+          // Complete the first processing
+          async.elapse(const Duration(seconds: 2));
+          async.flushMicrotasks();
+
+          // Only one call to getRequestedEntries
+          expect(getRequestedCallCount, 1);
+
+          service.dispose();
+        });
+      });
+
+      test('does not run after dispose', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 5),
+          );
+
+          service.dispose();
+
+          int? result;
+          service.processReRequest().then((r) => result = r);
+          async.flushMicrotasks();
+
+          expect(result, 0);
+          verifyNever(() => mockVcService.getHost());
+
+          // Already disposed, no need to call dispose again
+        });
+      });
+
+      test('paginates through all requested entries', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 5),
+            maxBatchSize: 2, // Small batch size to test pagination
+          );
+
+          final batch1 = [
+            _createRequestedLogItem(aliceHostId, 1),
+            _createRequestedLogItem(aliceHostId, 2),
+          ];
+          final batch2 = [
+            _createRequestedLogItem(aliceHostId, 3),
+          ];
+
+          var callCount = 0;
+          when(() => mockSequenceService.getRequestedEntries(limit: 2))
+              .thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) return batch1;
+            if (callCount == 2) return batch2;
+            return [];
+          });
+
+          when(() => mockSequenceService.resetRequestCounts(any()))
+              .thenAnswer((_) async {});
+          when(() => mockOutboxService.enqueueMessage(any()))
+              .thenAnswer((_) async {});
+          when(() => mockSequenceService.markAsRequested(any()))
+              .thenAnswer((_) async {});
+
+          int? result;
+          service.processReRequest().then((r) => result = r);
+          async.flushMicrotasks();
+
+          // Should have processed 3 entries total (2 batches)
+          expect(result, 3);
+
+          // Should have sent 2 backfill requests
+          verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+
+          service.dispose();
+        });
+      });
+    });
   });
 }
 
@@ -655,5 +974,20 @@ SyncSequenceLogItem _createMissingLogItem(
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     requestCount: 0,
+  );
+}
+
+SyncSequenceLogItem _createRequestedLogItem(
+  String hostId,
+  int counter,
+) {
+  return SyncSequenceLogItem(
+    hostId: hostId,
+    counter: counter,
+    originatingHostId: null,
+    status: SyncSequenceStatus.requested.index,
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    requestCount: 10, // Hit max retries
   );
 }

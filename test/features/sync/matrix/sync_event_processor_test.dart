@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -54,6 +55,9 @@ class MockMatrixDatabase extends Mock implements DatabaseApi {}
 
 class MockBackfillResponseHandler extends Mock
     implements BackfillResponseHandler {}
+
+class MockSyncSequenceLogService extends Mock
+    implements SyncSequenceLogService {}
 
 //
 
@@ -2768,4 +2772,8 @@ void main() {
       verify(() => mockHandler.handleBackfillResponse(message)).called(1);
     });
   });
+
+  // Note: Sequence log integration tests for the sync processor are covered
+  // by sync_sequence_log_service_test.dart which tests recordReceivedEntry
+  // behavior including gap detection and status transitions.
 }
