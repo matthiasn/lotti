@@ -561,6 +561,8 @@ Now that you've mastered voice-to-checklist, explore these advanced features:
 | **Weekly Reviews** | Generate summaries of your accomplishments | Journal section |
 | **Categories** | Organize tasks by project or area | **Settings** → **Categories** |
 
+← Back to [Main README](README.md) | [Getting Started with AI](GETTING_STARTED.md)
+
 ---
 
 *This guide covers Lotti version 0.9.751 and later. UI may vary slightly between versions.*
