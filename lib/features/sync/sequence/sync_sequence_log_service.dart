@@ -305,8 +305,9 @@ class SyncSequenceLogService {
         await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
 
     if (existing == null) {
-      // Entry doesn't exist in our log - insert with entryId hint but keep
-      // as "missing" status until we verify we have the entry locally.
+      // Entry doesn't exist in our log - insert with entryId hint and mark
+      // as "requested" since we're receiving a response to a backfill request.
+      // The actual backfilled status is set when we verify the entry exists.
       final now = DateTime.now();
       await _syncDatabase.recordSequenceEntry(
         SyncSequenceLogCompanion(
