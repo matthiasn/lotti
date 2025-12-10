@@ -59,6 +59,10 @@ void main() {
     when(() => mockDb.updateHostActivity(any(), any()))
         .thenAnswer((_) async => 1);
 
+    // Stub getPendingEntriesByEntryId for resolvePendingHints (default: no pending)
+    when(() => mockDb.getPendingEntriesByEntryId(any()))
+        .thenAnswer((_) async => []);
+
     service = SyncSequenceLogService(
       syncDatabase: mockDb,
       vectorClockService: mockVcService,
@@ -175,8 +179,9 @@ void main() {
       verify(() => mockDb.recordSequenceEntry(any())).called(3);
     });
 
-    test('only originator gets entryId, others get null', () async {
-      // Multi-host VC: only alice (originator) gets the entryId
+    test('ALL hosts in VC get entryId (enables backfill responses)', () async {
+      // Multi-host VC: ALL hosts get the entryId so we can respond to
+      // backfill requests for any (host, counter) in the entry's VC
       const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
       const entryId = 'entry-alice';
 
@@ -200,7 +205,7 @@ void main() {
         () => mockDb.recordSequenceEntry(captureAny()),
       ).captured;
 
-      // Should have 2 records: alice with entryId, bob without
+      // Should have 2 records: both alice and bob with entryId
       expect(captured.length, 2);
 
       final aliceRecord = captured.firstWhere(
@@ -210,8 +215,9 @@ void main() {
         (c) => (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
       ) as SyncSequenceLogCompanion;
 
+      // Both hosts should have the entryId set
       expect(aliceRecord.entryId.value, entryId);
-      expect(bobRecord.entryId.present, isFalse);
+      expect(bobRecord.entryId.value, entryId);
     });
 
     test('does not duplicate missing entries', () async {
@@ -362,6 +368,133 @@ void main() {
       // Verify host activity was updated for the originating host
       verify(() => mockDb.updateHostActivity(aliceHostId, any())).called(1);
     });
+
+    test('updates non-originator missing entry to received', () async {
+      // This is the key bug fix: if we had (bob:3) marked as missing,
+      // and we receive an entry with VC {alice:5, bob:3} where alice
+      // is the originator, the (bob:3) should be updated to received.
+      const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
+      const entryId = 'entry-modified';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 4);
+      when(() => mockDb.getLastCounterForHost(bobHostId))
+          .thenAnswer((_) async => 2);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => null);
+      // Bob:3 was previously marked as missing
+      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          bobHostId,
+          3,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Find bob's record
+      final bobRecord = captured.firstWhere(
+        (c) => (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
+      ) as SyncSequenceLogCompanion;
+
+      // Bob's missing entry should now be received with the entryId
+      expect(bobRecord.status.value, SyncSequenceStatus.received.index);
+      expect(bobRecord.entryId.value, entryId);
+    });
+
+    test('updates non-originator requested entry to backfilled', () async {
+      // If we had (bob:3) marked as requested (we asked for backfill),
+      // and we receive an entry with VC {alice:5, bob:3}, the (bob:3)
+      // should be updated to backfilled (our request was fulfilled).
+      const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
+      const entryId = 'entry-modified';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 4);
+      when(() => mockDb.getLastCounterForHost(bobHostId))
+          .thenAnswer((_) async => 2);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => null);
+      // Bob:3 was previously marked as requested
+      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          bobHostId,
+          3,
+          status: SyncSequenceStatus.requested,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Find bob's record
+      final bobRecord = captured.firstWhere(
+        (c) => (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
+      ) as SyncSequenceLogCompanion;
+
+      // Bob's requested entry should now be backfilled with the entryId
+      expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
+      expect(bobRecord.entryId.value, entryId);
+    });
+
+    test('does not downgrade non-originator backfilled entry', () async {
+      // If (bob:3) is already backfilled, receiving another entry
+      // with bob:3 in the VC should NOT downgrade it
+      const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
+      const entryId = 'entry-modified';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 4);
+      when(() => mockDb.getLastCounterForHost(bobHostId))
+          .thenAnswer((_) async => 2);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => null);
+      // Bob:3 was already backfilled
+      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          bobHostId,
+          3,
+          status: SyncSequenceStatus.backfilled,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Find bob's record
+      final bobRecord = captured.firstWhere(
+        (c) => (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
+      ) as SyncSequenceLogCompanion;
+
+      // Bob's entry should stay backfilled (not downgraded to received)
+      expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
+    });
   });
 
   group('recordSentEntry', () {
@@ -421,9 +554,20 @@ void main() {
       ).called(1);
     });
 
-    test('ignores non-deleted response (backwards compat)', () async {
-      // Non-deleted responses are no longer sent - entries arrive via normal
-      // sync and recordReceivedEntry handles the status update.
+    test('stores entryId hint on missing entry but does not change status',
+        () async {
+      // Non-deleted responses now just store the hint (entryId) without
+      // changing status. The actual backfill confirmation happens in
+      // verifyAndMarkBackfilled after the entry is verified to exist locally.
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
       await service.handleBackfillResponse(
         hostId: aliceHostId,
         counter: 3,
@@ -431,9 +575,101 @@ void main() {
         entryId: 'backfilled-entry',
       );
 
-      // Should not call any database methods
+      // Should store the entryId hint but keep status as missing
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      final companion = captured[0] as SyncSequenceLogCompanion;
+      expect(companion.hostId.value, aliceHostId);
+      expect(companion.counter.value, 3);
+      expect(companion.entryId.value, 'backfilled-entry');
+      // Status stays as missing - will be updated when entry is verified
+      expect(companion.status.value, SyncSequenceStatus.missing.index);
+    });
+
+    test('inserts new entry with hint as requested when not found', () async {
+      // If the entry doesn't exist in our log, insert it with the hint
+      // but as "requested" status until we verify we have the entry locally
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.handleBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        entryId: 'backfilled-entry',
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      final companion = captured[0] as SyncSequenceLogCompanion;
+      // Should be "requested" not "backfilled" until verified
+      expect(companion.status.value, SyncSequenceStatus.requested.index);
+      expect(companion.entryId.value, 'backfilled-entry');
+    });
+
+    test('does not overwrite already received entry', () async {
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.received,
+        ),
+      );
+
+      await service.handleBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        entryId: 'backfilled-entry',
+      );
+
+      // Should not update - already received
       verifyNever(() => mockDb.recordSequenceEntry(any()));
-      verifyNever(() => mockDb.updateSequenceStatus(any(), any(), any()));
+    });
+
+    test('does not overwrite already backfilled entry', () async {
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.backfilled,
+        ),
+      );
+
+      await service.handleBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        entryId: 'other-entry',
+      );
+
+      // Should not update - already backfilled
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
+    });
+
+    test('does not overwrite deleted entry', () async {
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.deleted,
+        ),
+      );
+
+      await service.handleBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        entryId: 'backfilled-entry',
+      );
+
+      // Should not update - entry is deleted (cannot be restored)
+      verifyNever(() => mockDb.recordSequenceEntry(any()));
     });
   });
 

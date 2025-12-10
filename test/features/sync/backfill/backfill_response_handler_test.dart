@@ -207,18 +207,28 @@ void main() {
 
       await handler.handleBackfillRequest(request);
 
-      // Should send only the journal entity (no confirmation response needed)
+      // Should send both the journal entity AND a BackfillResponse with entryId
+      // The BackfillResponse is needed for the case where the entry's VC has
+      // evolved and no longer contains the original (hostId, counter)
       final captured = verify(
         () => mockOutboxService.enqueueMessage(captureAny()),
       ).captured;
 
-      expect(captured.length, 1);
+      expect(captured.length, 2);
 
-      // Should be the journal entity
+      // First should be the journal entity
       expect(captured[0], isA<SyncJournalEntity>());
       final syncEntity = captured[0] as SyncJournalEntity;
       expect(syncEntity.id, entryId);
       expect(syncEntity.status, SyncEntryStatus.update);
+
+      // Second should be the BackfillResponse with entryId
+      expect(captured[1], isA<SyncBackfillResponse>());
+      final response = captured[1] as SyncBackfillResponse;
+      expect(response.hostId, aliceHostId);
+      expect(response.counter, 3);
+      expect(response.deleted, false);
+      expect(response.entryId, entryId);
     });
 
     test('handles errors gracefully', () async {

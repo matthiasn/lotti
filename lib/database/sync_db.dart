@@ -294,6 +294,19 @@ class SyncDatabase extends _$SyncDatabase {
         .getSingleOrNull();
   }
 
+  /// Get all pending (missing/requested) sequence log entries for a given entryId.
+  /// Used to resolve pending backfill hints when an entry arrives via sync.
+  Future<List<SyncSequenceLogItem>> getPendingEntriesByEntryId(String entryId) {
+    return (select(syncSequenceLog)
+          ..where(
+            (t) =>
+                t.entryId.equals(entryId) &
+                (t.status.equals(SyncSequenceStatus.missing.index) |
+                    t.status.equals(SyncSequenceStatus.requested.index)),
+          ))
+        .get();
+  }
+
   /// Watch the count of missing entries for UI display.
   Stream<int> watchMissingCount() {
     return (select(syncSequenceLog)

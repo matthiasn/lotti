@@ -165,20 +165,49 @@ class SyncSequenceLogService {
           );
         }
       } else {
-        // For other hosts, just record we've observed this counter (no entryId)
-        // This helps with gap detection on future messages
+        // For other hosts in the VC, also record with entryId.
+        // This is crucial because:
+        // 1. It allows us to respond to backfill requests for any counter in the VC
+        // 2. It updates missing/requested entries when we receive a newer version
+        //    of an entry that includes this (host, counter) in its VC
         final existing =
             await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
-        if (existing == null) {
-          await _syncDatabase.recordSequenceEntry(
-            SyncSequenceLogCompanion(
-              hostId: Value(hostId),
-              counter: Value(counter),
-              originatingHostId: Value(originatingHostId),
-              status: Value(SyncSequenceStatus.received.index),
-              createdAt: Value(now),
-              updatedAt: Value(now),
-            ),
+
+        // Determine the new status (same logic as for originator)
+        final SyncSequenceStatus status;
+        if (existing != null &&
+            (existing.status == SyncSequenceStatus.received.index ||
+                existing.status == SyncSequenceStatus.backfilled.index)) {
+          // Already received or backfilled - keep the existing status
+          status = SyncSequenceStatus.values[existing.status];
+        } else if (existing != null &&
+            existing.status == SyncSequenceStatus.requested.index) {
+          // Explicitly requested - mark as backfilled
+          status = SyncSequenceStatus.backfilled;
+        } else {
+          // New entry or was missing - mark as received
+          status = SyncSequenceStatus.received;
+        }
+
+        // Always upsert (insert or update) with entryId
+        await _syncDatabase.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: Value(hostId),
+            counter: Value(counter),
+            entryId: Value(entryId),
+            originatingHostId: Value(originatingHostId),
+            status: Value(status.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+
+        if (status == SyncSequenceStatus.backfilled &&
+            existing?.status == SyncSequenceStatus.requested.index) {
+          _loggingService.captureEvent(
+            'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'backfillArrived',
           );
         }
       }
@@ -191,6 +220,15 @@ class SyncSequenceLogService {
         subDomain: 'recordReceived',
       );
     }
+
+    // After processing the VC, check for any pending backfill hints.
+    // This handles the case where a BackfillResponse arrived before the
+    // actual entry. The hint contains the entryId, and now that we have
+    // the entry, we can verify and mark it as backfilled.
+    await resolvePendingHints(
+      entryId: entryId,
+      entryVectorClock: vectorClock,
+    );
 
     return gaps;
   }
@@ -229,39 +267,186 @@ class SyncSequenceLogService {
     }
   }
 
-  /// Handle a backfill response indicating the entry was deleted/purged.
-  /// For successful backfills, the entry arrives via normal sync and
-  /// [recordReceivedEntry] handles updating the status to backfilled.
+  /// Handle a backfill response from another device.
+  ///
+  /// For deleted responses: marks the entry as deleted (cannot be backfilled).
+  ///
+  /// For non-deleted responses: stores the entryId as a "hint" mapping
+  /// (hostId, counter) → entryId. The actual status update to "backfilled"
+  /// happens only when we verify the entry exists locally - either via
+  /// [verifyAndMarkBackfilled] or when the entry arrives via normal sync.
+  ///
+  /// This two-phase approach ensures we don't mark entries as backfilled
+  /// until we actually have the data locally.
   Future<void> handleBackfillResponse({
     required String hostId,
     required int counter,
     required bool deleted,
     String? entryId,
   }) async {
-    if (!deleted) {
-      // Non-deleted responses are no longer sent - the entry arrives via
-      // normal sync and recordReceivedEntry handles the status update.
-      // This path is kept for backwards compatibility with older clients.
+    if (deleted) {
+      // Mark as deleted - the entry was purged and cannot be backfilled
+      await _syncDatabase.updateSequenceStatus(
+        hostId,
+        counter,
+        SyncSequenceStatus.deleted,
+      );
+
       _loggingService.captureEvent(
-        'handleBackfillResponse: ignoring non-deleted response hostId=$hostId counter=$counter',
+        'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'backfillResponse',
       );
       return;
     }
 
-    // Mark as deleted - the entry was purged and cannot be backfilled
-    await _syncDatabase.updateSequenceStatus(
-      hostId,
-      counter,
-      SyncSequenceStatus.deleted,
+    // Non-deleted response: store the entryId hint without changing status.
+    // The actual backfill confirmation happens when we verify the entry exists.
+    final existing =
+        await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
+
+    if (existing == null) {
+      // Entry doesn't exist in our log - insert with entryId hint but keep
+      // as "missing" status until we verify we have the entry locally.
+      final now = DateTime.now();
+      await _syncDatabase.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: Value(hostId),
+          counter: Value(counter),
+          entryId: Value(entryId),
+          status: Value(SyncSequenceStatus.requested.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      _loggingService.captureEvent(
+        'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (new entry)',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'backfillHint',
+      );
+      return;
+    }
+
+    // Don't overwrite already received/backfilled/deleted entries
+    if (existing.status == SyncSequenceStatus.received.index ||
+        existing.status == SyncSequenceStatus.backfilled.index ||
+        existing.status == SyncSequenceStatus.deleted.index) {
+      _loggingService.captureEvent(
+        'handleBackfillResponse: entry already has status=${SyncSequenceStatus.values[existing.status]} hostId=$hostId counter=$counter',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'backfillResponse',
+      );
+      return;
+    }
+
+    // Store the entryId hint on the existing missing/requested entry.
+    // Don't change status yet - that happens when we verify the entry exists.
+    final now = DateTime.now();
+    await _syncDatabase.recordSequenceEntry(
+      SyncSequenceLogCompanion(
+        hostId: Value(hostId),
+        counter: Value(counter),
+        entryId: Value(entryId),
+        // Keep existing status - don't mark as backfilled yet
+        status: Value(existing.status),
+        createdAt: Value(now),
+        updatedAt: Value(now),
+      ),
     );
 
     _loggingService.captureEvent(
-      'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
+      'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[existing.status]})',
       domain: 'SYNC_SEQUENCE',
-      subDomain: 'backfillResponse',
+      subDomain: 'backfillHint',
     );
+  }
+
+  /// Verify that we have an entry locally and its VC covers the requested
+  /// (hostId, counter), then mark as backfilled.
+  ///
+  /// Returns true if verified and marked as backfilled.
+  Future<bool> verifyAndMarkBackfilled({
+    required String hostId,
+    required int counter,
+    required String entryId,
+    required VectorClock entryVectorClock,
+  }) async {
+    // Verify the entry's VC covers the requested (hostId, counter)
+    final vcCounter = entryVectorClock.vclock[hostId];
+    if (vcCounter == null || vcCounter < counter) {
+      _loggingService.captureEvent(
+        'verifyAndMarkBackfilled: entry $entryId VC does not cover $hostId:$counter (vc[$hostId]=$vcCounter)',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'backfillVerify',
+      );
+      return false;
+    }
+
+    // Look up the sequence log entry
+    final existing =
+        await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
+
+    if (existing == null ||
+        (existing.status != SyncSequenceStatus.missing.index &&
+            existing.status != SyncSequenceStatus.requested.index)) {
+      // Already processed or doesn't exist
+      return false;
+    }
+
+    // Mark as backfilled
+    final now = DateTime.now();
+    await _syncDatabase.recordSequenceEntry(
+      SyncSequenceLogCompanion(
+        hostId: Value(hostId),
+        counter: Value(counter),
+        entryId: Value(entryId),
+        status: Value(SyncSequenceStatus.backfilled.index),
+        createdAt: Value(now),
+        updatedAt: Value(now),
+      ),
+    );
+
+    _loggingService.captureEvent(
+      'verifyAndMarkBackfilled: confirmed hostId=$hostId counter=$counter entryId=$entryId',
+      domain: 'SYNC_SEQUENCE',
+      subDomain: 'backfillVerified',
+    );
+    return true;
+  }
+
+  /// Resolve any pending backfill hints for the given entryId.
+  /// Called after receiving an entry via sync to check if it resolves
+  /// any pending (hostId, counter) requests.
+  Future<int> resolvePendingHints({
+    required String entryId,
+    required VectorClock entryVectorClock,
+  }) async {
+    final pendingEntries =
+        await _syncDatabase.getPendingEntriesByEntryId(entryId);
+
+    var resolved = 0;
+    for (final pending in pendingEntries) {
+      final verified = await verifyAndMarkBackfilled(
+        hostId: pending.hostId,
+        counter: pending.counter,
+        entryId: entryId,
+        entryVectorClock: entryVectorClock,
+      );
+      if (verified) {
+        resolved++;
+      }
+    }
+
+    if (resolved > 0) {
+      _loggingService.captureEvent(
+        'resolvePendingHints: resolved $resolved pending entries for entryId=$entryId',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'backfillResolved',
+      );
+    }
+
+    return resolved;
   }
 
   /// Update status to backfilled when an entry arrives that was previously
