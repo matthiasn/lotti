@@ -231,6 +231,10 @@ Now that AI is set up, explore these features:
 - **Smart Checklists:** Dictate tasks and let AI organize them
 - **Weekly Reviews:** Generate AI summaries of your accomplishments
 
+**Ready to start using voice-to-checklist?** Follow the [Basic Task Management Guide](docs/BASIC_TASK_MANAGEMENT.md) for a step-by-step walkthrough.
+
+← Back to [Main README](README.md)
+
 ---
 
 *This guide covers Lotti version 0.9.751 and later. UI may vary slightly between versions.*

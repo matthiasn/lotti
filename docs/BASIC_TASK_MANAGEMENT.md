@@ -9,7 +9,7 @@ This guide walks you through using voice recordings to create and manage tasks i
 | **Smart Checklists** | AI extracts action items from your words |
 | **Task Tracking** | Monitor progress and complete items |
 
-> **Prerequisite:** Before starting this guide, make sure you've completed the [Getting Started Guide](GETTING_STARTED.md) to set up your AI provider (Gemini or Ollama).
+> **Prerequisite:** Before starting this guide, make sure you've completed the [Getting Started Guide](../GETTING_STARTED.md) to set up your AI provider (Gemini or Ollama).
 
 ---
 
@@ -17,7 +17,7 @@ This guide walks you through using voice recordings to create and manage tasks i
 
 Before diving in, here's how voice-to-checklist works in Lotti:
 
-```
+```text
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │  You speak      │ ──▶ │  AI transcribes │ ──▶ │  AI finds       │ ──▶ │  Checklist      │
 │  your thoughts  │     │  to text        │     │  action items   │     │  is created     │
@@ -235,7 +235,7 @@ From our example, the AI might create these items:
 
 Each checklist in Lotti has these elements:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │  📋 Checklist Header                                    │
 │  ┌─────────────────────────────────────────────────┐   │
@@ -508,7 +508,7 @@ If you need to remove a checklist entirely:
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
-| No transcription appears | AI not configured | Complete the [Getting Started Guide](GETTING_STARTED.md) |
+| No transcription appears | AI not configured | Complete the [Getting Started Guide](../GETTING_STARTED.md) |
 | Transcription inaccurate | Background noise / fast speech | Re-record in quieter environment, speak slower |
 | Wrong language detected | Auto-detection error | Set language manually before recording |
 
@@ -560,6 +560,8 @@ Now that you've mastered voice-to-checklist, explore these advanced features:
 | **Image Analysis** | Add photos for AI-powered insights | **+** → **Import Image** |
 | **Weekly Reviews** | Generate summaries of your accomplishments | Journal section |
 | **Categories** | Organize tasks by project or area | **Settings** → **Categories** |
+
+← Back to [Main README](../README.md) | [Getting Started with AI](../GETTING_STARTED.md)
 
 ---
 

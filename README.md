@@ -87,7 +87,7 @@ Most AI-powered tools require you to upload and store your personal data on thei
 - **Selective AI Usage**: Configure AI providers per category—keep sensitive data completely local with Ollama but use state‑of‑the‑art (frontier) cloud models when appropriate
 - **Your API Keys**: When you choose cloud AI, data is shared only for that specific inference call. Please review the respective provider's terms and privacy policy to understand how they handle your data
 - **GDPR-Compliant Options**: European-hosted AI providers with no data retention policies available for enhanced privacy
-- **Built for on‑device**: Designed for the era when local AI inference becomes standard 
+- **Built for on‑device**: Designed for the era when local AI inference becomes standard
 
 ## AI Provider Configuration
 
@@ -137,6 +137,11 @@ See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed development setup.
 
 ## Documentation
 
+### Getting Started Guides
+- [Getting Started with AI](GETTING_STARTED.md) - Set up Gemini or Ollama for AI features
+- [Basic Task Management](docs/BASIC_TASK_MANAGEMENT.md) - Voice-to-checklist workflow guide
+
+### Reference
 - [Manual](docs/MANUAL.md) - How to use Lotti
 - [Background Story](docs/BACKGROUND.md) - The inspiration and evolution of Lotti
 - [Architecture](docs/ARCHITECTURE.md) - Technical design and AI integration
