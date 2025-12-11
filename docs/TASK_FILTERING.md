@@ -354,13 +354,20 @@ In addition to filters, you can search tasks by text content.
 | Missing category | Not marked as favorite | Tap "..." to see all categories |
 | Filters reset unexpectedly | App update or data migration | Re-apply your preferred filters |
 
-### Resetting Filters
+### Clearing and Resetting Filters
 
-To reset all filters to defaults:
+To modify your view, you can either clear all filters to see every task, or reset to the default view of just active tasks.
 
-1. Open the filter panel
-2. Tap **"All"** on each filter section
-3. Or select only: Open, Groomed, In Progress statuses
+**To clear all filters (shows all tasks):**
+
+1. Open the filter panel.
+2. Tap **"All"** in each filter section.
+
+**To reset to the default view (shows active tasks):**
+
+1. Open the filter panel.
+2. In the **Status** section, select only `Open`, `Groomed`, and `In Progress`.
+3. For all other filter types, tap **"All"** to clear their selections.
 
 ---
 
