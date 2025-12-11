@@ -374,12 +374,14 @@ To modify your view, you can either clear all filters to see every task, or rese
 ## Quick Reference Card
 
 ### Filter Panel Access
+
 | Action | Steps |
 |--------|-------|
 | Open filters | Tap filter icon (funnel) in top-right |
 | Close filters | Tap outside the panel or swipe down |
 
 ### Status Filter
+
 | Action | Steps |
 |--------|-------|
 | Toggle status | Tap the status chip |
@@ -387,12 +389,14 @@ To modify your view, you can either clear all filters to see every task, or rese
 | Select all | Tap "All" chip |
 
 ### Priority Filter
+
 | Action | Steps |
 |--------|-------|
 | Toggle priority | Tap the priority chip |
 | Clear filter | Tap "All" chip |
 
 ### Category Filter
+
 | Action | Steps |
 |--------|-------|
 | Toggle category | Tap the category chip |
@@ -400,6 +404,7 @@ To modify your view, you can either clear all filters to see every task, or rese
 | Clear filter | Tap "All" chip |
 
 ### Label Filter
+
 | Action | Steps |
 |--------|-------|
 | Toggle label | Tap the label chip |
