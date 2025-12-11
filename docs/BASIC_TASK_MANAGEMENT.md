@@ -9,7 +9,7 @@ This guide walks you through using voice recordings to create and manage tasks i
 | **Smart Checklists** | AI extracts action items from your words |
 | **Task Tracking** | Monitor progress and complete items |
 
-> **Prerequisite:** Before starting this guide, make sure you've completed the [Getting Started Guide](GETTING_STARTED.md) to set up your AI provider (Gemini or Ollama).
+> **Prerequisite:** Before starting this guide, make sure you've completed the [Getting Started Guide](../GETTING_STARTED.md) to set up your AI provider (Gemini or Ollama).
 
 ---
 
@@ -508,7 +508,7 @@ If you need to remove a checklist entirely:
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
-| No transcription appears | AI not configured | Complete the [Getting Started Guide](GETTING_STARTED.md) |
+| No transcription appears | AI not configured | Complete the [Getting Started Guide](../GETTING_STARTED.md) |
 | Transcription inaccurate | Background noise / fast speech | Re-record in quieter environment, speak slower |
 | Wrong language detected | Auto-detection error | Set language manually before recording |
 
@@ -561,7 +561,7 @@ Now that you've mastered voice-to-checklist, explore these advanced features:
 | **Weekly Reviews** | Generate summaries of your accomplishments | Journal section |
 | **Categories** | Organize tasks by project or area | **Settings** → **Categories** |
 
-← Back to [Main README](README.md) | [Getting Started with AI](GETTING_STARTED.md)
+← Back to [Main README](../README.md) | [Getting Started with AI](../GETTING_STARTED.md)
 
 ---
 

@@ -139,7 +139,7 @@ See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed development setup.
 
 ### Getting Started Guides
 - [Getting Started with AI](GETTING_STARTED.md) - Set up Gemini or Ollama for AI features
-- [Basic Task Management](BASIC_TASK_MANAGEMENT.md) - Voice-to-checklist workflow guide
+- [Basic Task Management](docs/BASIC_TASK_MANAGEMENT.md) - Voice-to-checklist workflow guide
 
 ### Reference
 - [Manual](docs/MANUAL.md) - How to use Lotti
