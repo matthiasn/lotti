@@ -3051,6 +3051,12 @@ abstract class AppLocalizations {
   /// **'Copy prompt to clipboard'**
   String get promptGenerationCopyTooltip;
 
+  /// No description provided for @promptGenerationCopyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Prompt'**
+  String get promptGenerationCopyButton;
+
   /// No description provided for @promptGenerationCopiedSnackbar.
   ///
   /// In en, this message translates to:

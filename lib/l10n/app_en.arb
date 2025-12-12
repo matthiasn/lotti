@@ -615,6 +615,7 @@
   "promptUserPromptLabel": "User Prompt",
   "promptGenerationCardTitle": "AI Coding Prompt",
   "promptGenerationCopyTooltip": "Copy prompt to clipboard",
+  "promptGenerationCopyButton": "Copy Prompt",
   "promptGenerationCopiedSnackbar": "Prompt copied to clipboard",
   "promptGenerationExpandTooltip": "Show full prompt",
   "promptGenerationFullPromptLabel": "Full Prompt:",

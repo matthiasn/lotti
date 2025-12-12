@@ -1642,6 +1642,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptGenerationCopyTooltip => 'Prompt in Zwischenablage kopieren';
 
   @override
+  String get promptGenerationCopyButton => 'Prompt kopieren';
+
+  @override
   String get promptGenerationCopiedSnackbar =>
       'Prompt in Zwischenablage kopiert';
 

@@ -477,7 +477,10 @@ Generate a comprehensive prompt that captures:
 3. A clear, actionable request for the AI coding assistant
 
 The prompt should enable another AI to help effectively without needing additional context.''',
-  requiredInputData: [InputDataType.audioFiles, InputDataType.task],
+  // Note: We use InputDataType.task only (not audioFiles) because we extract
+  // the transcript via {{audioTranscript}} placeholder, not by uploading the audio file.
+  // This allows prompt generation even when audio files are deleted/unavailable.
+  requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.promptGeneration,
   useReasoning: true,
   description:

@@ -1636,6 +1636,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptGenerationCopyTooltip => 'Copy prompt to clipboard';
 
   @override
+  String get promptGenerationCopyButton => 'Copy Prompt';
+
+  @override
   String get promptGenerationCopiedSnackbar => 'Prompt copied to clipboard';
 
   @override

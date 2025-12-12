@@ -170,11 +170,13 @@ The image shows a beautiful landscape with mountains.''';
 
     testWidgets('uses GeneratedPromptCard for prompt generation responses',
         (tester) async {
-      const promptResponse = '''## Summary
+      const promptResponse = '''
+## Summary
 A well-crafted prompt for implementing OAuth authentication.
 
 ## Prompt
-Help me implement OAuth 2.0 authentication in my Flutter app.''';
+Help me implement OAuth 2.0 authentication in my Flutter app.
+''';
 
       final aiResponse = testAiResponseEntry.copyWith(
         data: testAiResponseEntry.data.copyWith(
