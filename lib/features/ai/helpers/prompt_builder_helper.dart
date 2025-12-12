@@ -750,23 +750,10 @@ class PromptBuilderHelper {
       return '[Audio entry expected but received ${entity.runtimeType}]';
     }
 
-    // First, try user-edited text (takes precedence)
-    final editedText = entity.entryText?.plainText.trim();
-    if (editedText != null && editedText.isNotEmpty) {
-      return editedText;
-    }
-
-    // Fall back to original transcript
-    final transcripts = entity.data.transcripts;
-    if (transcripts != null && transcripts.isNotEmpty) {
-      final latestTranscript = transcripts.reduce(
-        (current, candidate) =>
-            candidate.created.isAfter(current.created) ? candidate : current,
-      );
-      final transcriptText = latestTranscript.transcript.trim();
-      if (transcriptText.isNotEmpty) {
-        return transcriptText;
-      }
+    // Reuse existing text resolution logic
+    final text = _resolveEntryText(entity);
+    if (text.isNotEmpty) {
+      return text;
     }
 
     return '[No transcription available]';

@@ -27,7 +27,8 @@ void main() {
         systemMessage: 'System message',
         prompt: 'User prompt',
         thoughts: '',
-        response: '''## Summary
+        response: '''
+## Summary
 This prompt helps implement a new authentication feature with OAuth integration.
 
 ## Prompt
@@ -38,7 +39,8 @@ Requirements:
 - Implement secure token storage
 - Handle refresh tokens properly
 
-Please provide step-by-step guidance.''',
+Please provide step-by-step guidance.
+''',
         type: AiResponseType.promptGeneration,
       ),
     );
@@ -264,12 +266,14 @@ Please provide step-by-step guidance.''',
     });
 
     testWidgets('parses Summary and Prompt sections correctly', (tester) async {
-      const responseWithSections = '''## Summary
+      const responseWithSections = '''
+## Summary
 Brief summary here.
 
 ## Prompt
 Full detailed prompt here with multiple lines.
-And more content.''';
+And more content.
+''';
 
       final aiResponse = testAiResponseEntry.copyWith(
         data: testAiResponseEntry.data.copyWith(
