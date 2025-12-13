@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 
+import '../../../test_helper.dart';
+
 void main() {
   group('AiResponseType', () {
     test('should have all expected enum values', () {
@@ -68,6 +70,49 @@ void main() {
       expect(checklistUpdatesConst, equals('ChecklistUpdates'));
       expect(promptGenerationConst, equals('PromptGeneration'));
       expect(actionItemSuggestionsConst, equals('ActionItemSuggestions'));
+    });
+
+    testWidgets('localizedName returns correct strings with BuildContext',
+        (tester) async {
+      late BuildContext capturedContext;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+
+      // Test all enum values with actual BuildContext
+      expect(
+        AiResponseType.taskSummary.localizedName(capturedContext),
+        equals('Task Summary'),
+      );
+      expect(
+        AiResponseType.imageAnalysis.localizedName(capturedContext),
+        equals('Image Analysis'),
+      );
+      expect(
+        AiResponseType.audioTranscription.localizedName(capturedContext),
+        equals('Audio Transcription'),
+      );
+      expect(
+        AiResponseType.checklistUpdates.localizedName(capturedContext),
+        equals('Checklist Updates'),
+      );
+      expect(
+        AiResponseType.promptGeneration.localizedName(capturedContext),
+        equals('Generated Prompt'),
+      );
+      expect(
+        // ignore: deprecated_member_use_from_same_package
+        AiResponseType.actionItemSuggestions.localizedName(capturedContext),
+        equals('Action Item Suggestions'),
+      );
     });
   });
 }
