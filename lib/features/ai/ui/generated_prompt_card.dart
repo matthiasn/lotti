@@ -78,6 +78,15 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(GeneratedPromptCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.aiResponse.meta.id != widget.aiResponse.meta.id ||
+        oldWidget.aiResponse.data.response != widget.aiResponse.data.response) {
+      _parseContent();
+    }
+  }
+
   void _parseContent() {
     final response = widget.aiResponse.data.response;
 
