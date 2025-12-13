@@ -25,12 +25,13 @@ class GeneratedPromptCard extends StatefulWidget {
   final AiResponseEntry aiResponse;
   final String? linkedFromId;
 
-  // Static regex patterns compiled once for performance
-  static final _summaryRegex = RegExp(
+  // Static regex patterns compiled once for performance.
+  // Public so they can be reused by other widgets (e.g., UnifiedAiProgressView).
+  static final summarySectionRegex = RegExp(
     r'##\s*Summary\s*\n+([\s\S]*?)(?=##\s*Prompt|$)',
     caseSensitive: false,
   );
-  static final _promptRegex = RegExp(
+  static final promptSectionRegex = RegExp(
     r'##\s*Prompt\s*\n+([\s\S]*)',
     caseSensitive: false,
   );
@@ -98,9 +99,14 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     // ## Prompt
     // <full prompt>
 
-    final summaryMatch = GeneratedPromptCard._summaryRegex.firstMatch(response);
-    final promptMatch = GeneratedPromptCard._promptRegex.firstMatch(response);
+    final summaryMatch =
+        GeneratedPromptCard.summarySectionRegex.firstMatch(response);
+    final promptMatch =
+        GeneratedPromptCard.promptSectionRegex.firstMatch(response);
 
+    // Fallback: if no Summary section found, use first line as summary.
+    // If no Prompt section found, use entire response as the prompt.
+    // This handles malformed or non-standard AI responses gracefully.
     _summary =
         summaryMatch?.group(1)?.trim() ?? response.split('\n').first.trim();
     _fullPrompt = promptMatch?.group(1)?.trim() ?? response;

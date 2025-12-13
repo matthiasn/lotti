@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/gemma_model_install_dialog.dart';
+import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -403,11 +404,9 @@ class _UnifiedAiProgressContentState
             promptConfig.aiResponseType == AiResponseType.promptGeneration;
         String? extractedPrompt;
         if (isPromptGeneration && state.isNotEmpty) {
-          final promptRegex = RegExp(
-            r'##\s*Prompt\s*\n+([\s\S]*)',
-            caseSensitive: false,
-          );
-          final match = promptRegex.firstMatch(state);
+          // Reuse static regex from GeneratedPromptCard to avoid duplication
+          final match =
+              GeneratedPromptCard.promptSectionRegex.firstMatch(state);
           extractedPrompt = match?.group(1)?.trim() ?? state;
         }
 
