@@ -616,6 +616,8 @@ extension AiResponseTypeTestDisplay on AiResponseType {
         return l10nParam.aiResponseTypeAudioTranscription;
       case AiResponseType.checklistUpdates:
         return l10nParam.aiResponseTypeChecklistUpdates;
+      case AiResponseType.promptGeneration:
+        return l10nParam.aiResponseTypePromptGeneration;
     }
   }
 }

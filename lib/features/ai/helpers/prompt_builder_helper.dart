@@ -261,6 +261,23 @@ class PromptBuilderHelper {
       prompt = prompt.replaceAll('{{speech_dictionary}}', dictionaryText);
     }
 
+    // Inject audio transcript if requested (for prompt generation)
+    if (prompt.contains('{{audioTranscript}}')) {
+      String transcriptText;
+      try {
+        transcriptText = _resolveAudioTranscript(entity);
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'audioTranscript',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        transcriptText = '[No transcription available]';
+      }
+      prompt = prompt.replaceAll('{{audioTranscript}}', transcriptText);
+    }
+
     // Inject correction examples if requested (checklist updates + audio transcription)
     if (prompt.contains('{{correction_examples}}') &&
         (promptConfig.aiResponseType == AiResponseType.checklistUpdates ||
@@ -723,6 +740,23 @@ class PromptBuilderHelper {
     }
 
     return '';
+  }
+
+  /// Resolve audio transcript from a JournalAudio entity.
+  /// Prioritizes user-edited text over original transcript.
+  /// Returns a fallback message if no transcript is available.
+  String _resolveAudioTranscript(JournalEntity entity) {
+    if (entity is! JournalAudio) {
+      return '[Audio entry expected but received ${entity.runtimeType}]';
+    }
+
+    // Reuse existing text resolution logic
+    final text = _resolveEntryText(entity);
+    if (text.isNotEmpty) {
+      return text;
+    }
+
+    return '[No transcription available]';
   }
 
   void _logPlaceholderFailure({
