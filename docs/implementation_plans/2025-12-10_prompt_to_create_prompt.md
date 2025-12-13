@@ -1,6 +1,6 @@
 # Prompt to Create Prompt: AI-Generated Coding Prompts from Audio Recordings
 
-**Status**: Planning
+**Status**: Implemented
 
 ## Overview
 
@@ -129,7 +129,7 @@ extension AiResponseTypeDisplay on AiResponseType {
     switch (this) {
       // ... existing cases ...
       case AiResponseType.promptGeneration:
-        return Icons.auto_fix_high; // or Icons.psychology, Icons.code
+        return Icons.auto_fix_high_outlined;
     }
   }
 }
@@ -144,7 +144,8 @@ extension AiResponseTypeDisplay on AiResponseType {
 "promptGenerationCardTitle": "AI Coding Prompt",
 "promptGenerationCopyTooltip": "Copy prompt to clipboard",
 "promptGenerationCopiedSnackbar": "Prompt copied to clipboard",
-"promptGenerationExpandTooltip": "Show full prompt"
+"promptGenerationExpandTooltip": "Show full prompt",
+"promptGenerationFullPromptLabel": "Full Prompt:"
 ```
 
 **File**: `lib/l10n/app_de.arb`
@@ -154,7 +155,8 @@ extension AiResponseTypeDisplay on AiResponseType {
 "promptGenerationCardTitle": "KI-Coding-Prompt",
 "promptGenerationCopyTooltip": "Prompt in Zwischenablage kopieren",
 "promptGenerationCopiedSnackbar": "Prompt in Zwischenablage kopiert",
-"promptGenerationExpandTooltip": "Vollständigen Prompt anzeigen"
+"promptGenerationExpandTooltip": "Vollständigen Prompt anzeigen",
+"promptGenerationFullPromptLabel": "Vollständiger Prompt:"
 ```
 
 ### Phase 2: Preconfigured Prompt Template
@@ -245,19 +247,43 @@ The prompt should enable another AI to help effectively without needing addition
 Add handling for `{{audioTranscript}}` placeholder:
 
 ```dart
-// In the placeholder replacement logic, add:
-if (userMessage.contains('{{audioTranscript}}')) {
-  final audioEntry = entity;
-  if (audioEntry is JournalAudio) {
-    // Use edited text if available, otherwise use original transcript
-    final transcript = audioEntry.entryText?.plainText ??
-        audioEntry.data.transcript ??
-        '[No transcription available]';
-    userMessage = userMessage.replaceAll('{{audioTranscript}}', transcript);
-  } else {
-    userMessage = userMessage.replaceAll('{{audioTranscript}}',
-        '[Audio entry expected but not found]');
+// Helper method to resolve entry text, prioritizing user-edited text
+String _resolveEntryText(JournalEntity entry) {
+  final editedText = entry.entryText?.plainText.trim();
+  if (editedText != null && editedText.isNotEmpty) {
+    return editedText;
   }
+
+  if (entry is JournalAudio) {
+    final transcripts = entry.data.transcripts;
+    if (transcripts != null && transcripts.isNotEmpty) {
+      // Find the latest transcript by creation date
+      final latestTranscript = transcripts.reduce(
+        (current, candidate) =>
+            candidate.created.isAfter(current.created) ? candidate : current,
+      );
+      final transcriptText = latestTranscript.transcript.trim();
+      if (transcriptText.isNotEmpty) {
+        return transcriptText;
+      }
+    }
+  }
+
+  return '';
+}
+
+// Resolve audio transcript with proper fallback
+String _resolveAudioTranscript(JournalEntity entity) {
+  if (entity is! JournalAudio) {
+    return '[Audio entry expected but received ${entity.runtimeType}]';
+  }
+
+  final text = _resolveEntryText(entity);
+  if (text.isNotEmpty) {
+    return text;
+  }
+
+  return '[No transcription available]';
 }
 ```
 
@@ -481,7 +507,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                 const Divider(),
                 const SizedBox(height: 8),
                 Text(
-                  'Full Prompt:',
+                  context.messages.promptGenerationFullPromptLabel,
                   style: context.textTheme.labelMedium?.copyWith(
                     color: context.colorScheme.onSurfaceVariant,
                   ),
