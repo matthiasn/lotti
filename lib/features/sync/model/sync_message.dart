@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'sync_message.freezed.dart';
@@ -52,6 +53,10 @@ sealed class SyncMessage with _$SyncMessage {
   const factory SyncMessage.entryLink({
     required EntryLink entryLink,
     required SyncEntryStatus status,
+
+    /// The host UUID that created/modified this entry link version.
+    /// Used for sequence tracking to detect gaps in sync.
+    String? originatingHostId,
   }) = SyncEntryLink;
 
   const factory SyncMessage.aiConfig({
@@ -95,8 +100,18 @@ sealed class SyncMessage with _$SyncMessage {
     /// True if the entry was deleted/purged and cannot be backfilled
     required bool deleted,
 
-    /// The entry ID if found (null if deleted)
+    /// Legacy: The journal entry ID if found (null if deleted).
+    ///
+    /// For newer clients, prefer `payloadType` + `payloadId`.
     String? entryId,
+
+    /// Identifies what kind of payload this backfill response refers to.
+    /// If omitted, defaults to `SyncSequencePayloadType.journalEntity`.
+    SyncSequencePayloadType? payloadType,
+
+    /// The payload ID if found (null if deleted). For journal entities this is
+    /// the journal entry ID, for entry links it's the link ID.
+    String? payloadId,
   }) = SyncBackfillResponse;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>

@@ -25,6 +25,10 @@ class SequenceLogPopulateModal {
             final isRunning = state.isRunning;
             final error = state.error;
             final populatedCount = state.populatedCount;
+            final populatedLinksCount = state.populatedLinksCount;
+            final phase = state.phase;
+            final totalPopulated =
+                (populatedCount ?? 0) + (populatedLinksCount ?? 0);
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -47,7 +51,7 @@ class SequenceLogPopulateModal {
                       const SizedBox(height: 8),
                       Text(
                         context.messages.maintenancePopulateSequenceLogComplete(
-                          populatedCount ?? 0,
+                          totalPopulated,
                         ),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
@@ -61,32 +65,50 @@ class SequenceLogPopulateModal {
                     ],
                   )
                 else
-                  Row(
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 5,
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
+                      if (isRunning)
+                        Text(
+                          phase == SequenceLogPopulatePhase.populatingJournal
+                              ? 'Processing journal entries...'
+                              : 'Processing entry links...',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 5,
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${(progress * 100).round()}%',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontFeatures: const [
-                            FontFeature.tabularFigures(),
-                          ],
-                        ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${(progress * 100).round()}%',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

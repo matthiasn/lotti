@@ -2,6 +2,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -100,55 +101,96 @@ class BackfillResponseHandler {
       return false;
     }
 
-    // Check if entry exists in journal
-    final journalEntry = await _journalDb.journalEntityById(logEntry.entryId!);
+    final payloadId = logEntry.entryId!;
+    final payloadType =
+        SyncSequencePayloadType.values.elementAt(logEntry.payloadType);
 
-    if (journalEntry == null) {
-      // Entry was deleted/purged - respond with deleted status
-      await _outboxService.enqueueMessage(
-        SyncMessage.backfillResponse(
-          hostId: hostId,
-          counter: counter,
-          deleted: true,
-        ),
-      );
-      return true;
-    }
-
-    // Entry exists - re-send it via normal sync mechanism
-    // The sequence log will be updated when the recipient receives the entry
-    final jsonPath = relativeEntityPath(journalEntry);
-
-    // Use the originatingHostId from the sequence log entry, or derive from
-    // vector clock (the host with the highest counter is typically the originator)
+    // Use the originatingHostId from the sequence log entry, or fall back to
+    // the requested hostId.
     final originatingHostId = logEntry.originatingHostId ?? hostId;
 
-    await _outboxService.enqueueMessage(
-      SyncMessage.journalEntity(
-        id: journalEntry.meta.id,
-        jsonPath: jsonPath,
-        vectorClock: journalEntry.meta.vectorClock,
-        status: SyncEntryStatus.update,
-        originatingHostId: originatingHostId,
-      ),
-    );
+    switch (payloadType) {
+      case SyncSequencePayloadType.journalEntity:
+        // Check if entry exists in journal
+        final journalEntry = await _journalDb.journalEntityById(payloadId);
 
-    // Send a BackfillResponse with the entryId so the requester can update
-    // their sequence log entry for (hostId, counter) → entryId.
-    // This is crucial because the entry's current vector clock may no longer
-    // contain the original (hostId, counter) if the entry was modified since.
-    // Without this explicit mapping, the requester's (hostId, counter) record
-    // would stay stuck as "requested" forever.
-    await _outboxService.enqueueMessage(
-      SyncMessage.backfillResponse(
-        hostId: hostId,
-        counter: counter,
-        deleted: false,
-        entryId: logEntry.entryId,
-      ),
-    );
+        if (journalEntry == null) {
+          // Entry was deleted/purged - respond with deleted status
+          await _outboxService.enqueueMessage(
+            SyncMessage.backfillResponse(
+              hostId: hostId,
+              counter: counter,
+              deleted: true,
+              payloadType: payloadType,
+            ),
+          );
+          return true;
+        }
 
-    return true;
+        // Entry exists - re-send it via normal sync mechanism.
+        // The sequence log will be updated when the recipient receives the entry.
+        final jsonPath = relativeEntityPath(journalEntry);
+
+        await _outboxService.enqueueMessage(
+          SyncMessage.journalEntity(
+            id: journalEntry.meta.id,
+            jsonPath: jsonPath,
+            vectorClock: journalEntry.meta.vectorClock,
+            status: SyncEntryStatus.update,
+            originatingHostId: originatingHostId,
+          ),
+        );
+
+        // Send a BackfillResponse mapping (hostId, counter) → payloadId.
+        // This is crucial because the payload's current vector clock may no
+        // longer contain the original (hostId, counter) if it was modified since.
+        await _outboxService.enqueueMessage(
+          SyncMessage.backfillResponse(
+            hostId: hostId,
+            counter: counter,
+            deleted: false,
+            entryId: payloadId, // legacy compatibility (journal only)
+            payloadType: payloadType,
+            payloadId: payloadId,
+          ),
+        );
+
+        return true;
+      case SyncSequencePayloadType.entryLink:
+        final link = await _journalDb.entryLinkById(payloadId);
+
+        if (link == null) {
+          await _outboxService.enqueueMessage(
+            SyncMessage.backfillResponse(
+              hostId: hostId,
+              counter: counter,
+              deleted: true,
+              payloadType: payloadType,
+            ),
+          );
+          return true;
+        }
+
+        await _outboxService.enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: link,
+            status: SyncEntryStatus.update,
+            originatingHostId: originatingHostId,
+          ),
+        );
+
+        await _outboxService.enqueueMessage(
+          SyncMessage.backfillResponse(
+            hostId: hostId,
+            counter: counter,
+            deleted: false,
+            payloadType: payloadType,
+            payloadId: payloadId,
+          ),
+        );
+
+        return true;
+    }
   }
 
   /// Handle an incoming backfill response from another device.
@@ -161,8 +203,12 @@ class BackfillResponseHandler {
   /// backfilled until we actually have the data.
   Future<void> handleBackfillResponse(SyncBackfillResponse response) async {
     try {
+      final payloadType =
+          response.payloadType ?? SyncSequencePayloadType.journalEntity;
+      final payloadId = response.payloadId ?? response.entryId;
+
       _loggingService.captureEvent(
-        'handleBackfillResponse hostId=${response.hostId} counter=${response.counter} deleted=${response.deleted} entryId=${response.entryId}',
+        'handleBackfillResponse hostId=${response.hostId} counter=${response.counter} deleted=${response.deleted} payloadType=$payloadType payloadId=$payloadId entryId=${response.entryId}',
         domain: 'SYNC_BACKFILL',
         subDomain: 'handleResponse',
       );
@@ -172,31 +218,56 @@ class BackfillResponseHandler {
         hostId: response.hostId,
         counter: response.counter,
         deleted: response.deleted,
-        entryId: response.entryId,
+        entryId: payloadId,
+        payloadType: payloadType,
       );
 
       // For non-deleted responses, verify the entry exists locally
       // before marking as backfilled
-      if (!response.deleted && response.entryId != null) {
-        final journalEntry =
-            await _journalDb.journalEntityById(response.entryId!);
+      if (!response.deleted && payloadId != null) {
+        switch (payloadType) {
+          case SyncSequencePayloadType.journalEntity:
+            final journalEntry = await _journalDb.journalEntityById(payloadId);
 
-        if (journalEntry != null) {
-          final vc = journalEntry.meta.vectorClock;
-          if (vc != null) {
-            await _sequenceLogService.verifyAndMarkBackfilled(
-              hostId: response.hostId,
-              counter: response.counter,
-              entryId: response.entryId!,
-              entryVectorClock: vc,
-            );
-          }
-        } else {
-          _loggingService.captureEvent(
-            'handleBackfillResponse: entry ${response.entryId} not found locally, hint stored for when entry arrives',
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'handleResponse',
-          );
+            if (journalEntry != null) {
+              final vc = journalEntry.meta.vectorClock;
+              if (vc != null) {
+                await _sequenceLogService.verifyAndMarkBackfilled(
+                  hostId: response.hostId,
+                  counter: response.counter,
+                  entryId: payloadId,
+                  entryVectorClock: vc,
+                  payloadType: payloadType,
+                );
+              }
+            } else {
+              _loggingService.captureEvent(
+                'handleBackfillResponse: journal entry $payloadId not found locally, hint stored for when payload arrives',
+                domain: 'SYNC_BACKFILL',
+                subDomain: 'handleResponse',
+              );
+            }
+          case SyncSequencePayloadType.entryLink:
+            final link = await _journalDb.entryLinkById(payloadId);
+
+            if (link != null) {
+              final vc = link.vectorClock;
+              if (vc != null) {
+                await _sequenceLogService.verifyAndMarkBackfilled(
+                  hostId: response.hostId,
+                  counter: response.counter,
+                  entryId: payloadId,
+                  entryVectorClock: vc,
+                  payloadType: payloadType,
+                );
+              }
+            } else {
+              _loggingService.captureEvent(
+                'handleBackfillResponse: entryLink $payloadId not found locally, hint stored for when payload arrives',
+                domain: 'SYNC_BACKFILL',
+                subDomain: 'handleResponse',
+              );
+            }
         }
       }
     } catch (e, st) {

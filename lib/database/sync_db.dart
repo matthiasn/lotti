@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 
 part 'sync_db.g.dart';
@@ -57,8 +58,14 @@ class SyncSequenceLog extends Table {
   /// The monotonic counter for that host
   IntColumn get counter => integer()();
 
-  /// The journal entry ID (null if entry is missing/unknown)
+  /// The payload ID (journal entry ID or entry link ID).
+  /// Null if the payload is missing/unknown.
   TextColumn get entryId => text().named('entry_id').nullable()();
+
+  /// What kind of payload [entryId] refers to.
+  IntColumn get payloadType => integer()
+      .named('payload_type')
+      .withDefault(Constant(SyncSequencePayloadType.journalEntity.index))();
 
   /// The host UUID that sent the message which informed us about this record.
   /// For received entries, this is the sender. For gaps detected from VCs,
@@ -327,10 +334,23 @@ class SyncDatabase extends _$SyncDatabase {
   /// Get all pending (missing/requested) sequence log entries for a given entryId.
   /// Used to resolve pending backfill hints when an entry arrives via sync.
   Future<List<SyncSequenceLogItem>> getPendingEntriesByEntryId(String entryId) {
+    return getPendingEntriesByPayloadId(
+      payloadType: SyncSequencePayloadType.journalEntity,
+      payloadId: entryId,
+    );
+  }
+
+  /// Get all pending (missing/requested) sequence log entries for a given payload.
+  /// Used to resolve pending backfill hints when a payload arrives via sync.
+  Future<List<SyncSequenceLogItem>> getPendingEntriesByPayloadId({
+    required SyncSequencePayloadType payloadType,
+    required String payloadId,
+  }) {
     return (select(syncSequenceLog)
           ..where(
             (t) =>
-                t.entryId.equals(entryId) &
+                t.entryId.equals(payloadId) &
+                t.payloadType.equals(payloadType.index) &
                 (t.status.equals(SyncSequenceStatus.missing.index) |
                     t.status.equals(SyncSequenceStatus.requested.index)),
           ))
@@ -578,7 +598,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -590,6 +610,8 @@ class SyncDatabase extends _$SyncDatabase {
         if (from < 2) {
           await m.createTable(syncSequenceLog);
           await m.createTable(hostActivity);
+        } else if (from < 3) {
+          await m.addColumn(syncSequenceLog, syncSequenceLog.payloadType);
         }
       },
     );

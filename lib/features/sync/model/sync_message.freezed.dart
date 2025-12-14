@@ -562,7 +562,9 @@ extension SyncMessagePatterns on SyncMessage {
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
-    TResult Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult Function(EntryLink entryLink, SyncEntryStatus status,
+            String? originatingHostId)?
+        entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     TResult Function(String id)? aiConfigDelete,
     TResult Function(String lightThemeName, String darkThemeName,
@@ -570,7 +572,8 @@ extension SyncMessagePatterns on SyncMessage {
         themingSelection,
     TResult Function(List<BackfillRequestEntry> entries, String requesterId)?
         backfillRequest,
-    TResult Function(String hostId, int counter, bool deleted, String? entryId)?
+    TResult Function(String hostId, int counter, bool deleted, String? entryId,
+            SyncSequencePayloadType? payloadType, String? payloadId)?
         backfillResponse,
     required TResult orElse(),
   }) {
@@ -584,7 +587,8 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncTagEntity() when tagEntity != null:
         return tagEntity(_that.tagEntity, _that.status);
       case SyncEntryLink() when entryLink != null:
-        return entryLink(_that.entryLink, _that.status);
+        return entryLink(
+            _that.entryLink, _that.status, _that.originatingHostId);
       case SyncAiConfig() when aiConfig != null:
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete() when aiConfigDelete != null:
@@ -595,8 +599,8 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest() when backfillRequest != null:
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(
-            _that.hostId, _that.counter, _that.deleted, _that.entryId);
+        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
+            _that.entryId, _that.payloadType, _that.payloadId);
       case _:
         return orElse();
     }
@@ -630,7 +634,8 @@ extension SyncMessagePatterns on SyncMessage {
         entityDefinition,
     required TResult Function(TagEntity tagEntity, SyncEntryStatus status)
         tagEntity,
-    required TResult Function(EntryLink entryLink, SyncEntryStatus status)
+    required TResult Function(EntryLink entryLink, SyncEntryStatus status,
+            String? originatingHostId)
         entryLink,
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
@@ -642,7 +647,12 @@ extension SyncMessagePatterns on SyncMessage {
             List<BackfillRequestEntry> entries, String requesterId)
         backfillRequest,
     required TResult Function(
-            String hostId, int counter, bool deleted, String? entryId)
+            String hostId,
+            int counter,
+            bool deleted,
+            String? entryId,
+            SyncSequencePayloadType? payloadType,
+            String? payloadId)
         backfillResponse,
   }) {
     final _that = this;
@@ -655,7 +665,8 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncTagEntity():
         return tagEntity(_that.tagEntity, _that.status);
       case SyncEntryLink():
-        return entryLink(_that.entryLink, _that.status);
+        return entryLink(
+            _that.entryLink, _that.status, _that.originatingHostId);
       case SyncAiConfig():
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete():
@@ -666,8 +677,8 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest():
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse():
-        return backfillResponse(
-            _that.hostId, _that.counter, _that.deleted, _that.entryId);
+        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
+            _that.entryId, _that.payloadType, _that.payloadId);
     }
   }
 
@@ -697,7 +708,9 @@ extension SyncMessagePatterns on SyncMessage {
             EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
-    TResult? Function(EntryLink entryLink, SyncEntryStatus status)? entryLink,
+    TResult? Function(EntryLink entryLink, SyncEntryStatus status,
+            String? originatingHostId)?
+        entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     TResult? Function(String id)? aiConfigDelete,
     TResult? Function(String lightThemeName, String darkThemeName,
@@ -705,8 +718,8 @@ extension SyncMessagePatterns on SyncMessage {
         themingSelection,
     TResult? Function(List<BackfillRequestEntry> entries, String requesterId)?
         backfillRequest,
-    TResult? Function(
-            String hostId, int counter, bool deleted, String? entryId)?
+    TResult? Function(String hostId, int counter, bool deleted, String? entryId,
+            SyncSequencePayloadType? payloadType, String? payloadId)?
         backfillResponse,
   }) {
     final _that = this;
@@ -719,7 +732,8 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncTagEntity() when tagEntity != null:
         return tagEntity(_that.tagEntity, _that.status);
       case SyncEntryLink() when entryLink != null:
-        return entryLink(_that.entryLink, _that.status);
+        return entryLink(
+            _that.entryLink, _that.status, _that.originatingHostId);
       case SyncAiConfig() when aiConfig != null:
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete() when aiConfigDelete != null:
@@ -730,8 +744,8 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest() when backfillRequest != null:
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(
-            _that.hostId, _that.counter, _that.deleted, _that.entryId);
+        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
+            _that.entryId, _that.payloadType, _that.payloadId);
       case _:
         return null;
     }
@@ -1091,13 +1105,20 @@ class _$SyncTagEntityCopyWithImpl<$Res>
 @JsonSerializable()
 class SyncEntryLink implements SyncMessage {
   const SyncEntryLink(
-      {required this.entryLink, required this.status, final String? $type})
+      {required this.entryLink,
+      required this.status,
+      this.originatingHostId,
+      final String? $type})
       : $type = $type ?? 'entryLink';
   factory SyncEntryLink.fromJson(Map<String, dynamic> json) =>
       _$SyncEntryLinkFromJson(json);
 
   final EntryLink entryLink;
   final SyncEntryStatus status;
+
+  /// The host UUID that created/modified this entry link version.
+  /// Used for sequence tracking to detect gaps in sync.
+  final String? originatingHostId;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -1123,16 +1144,19 @@ class SyncEntryLink implements SyncMessage {
             other is SyncEntryLink &&
             (identical(other.entryLink, entryLink) ||
                 other.entryLink == entryLink) &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.originatingHostId, originatingHostId) ||
+                other.originatingHostId == originatingHostId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, entryLink, status);
+  int get hashCode =>
+      Object.hash(runtimeType, entryLink, status, originatingHostId);
 
   @override
   String toString() {
-    return 'SyncMessage.entryLink(entryLink: $entryLink, status: $status)';
+    return 'SyncMessage.entryLink(entryLink: $entryLink, status: $status, originatingHostId: $originatingHostId)';
   }
 }
 
@@ -1143,7 +1167,8 @@ abstract mixin class $SyncEntryLinkCopyWith<$Res>
           SyncEntryLink value, $Res Function(SyncEntryLink) _then) =
       _$SyncEntryLinkCopyWithImpl;
   @useResult
-  $Res call({EntryLink entryLink, SyncEntryStatus status});
+  $Res call(
+      {EntryLink entryLink, SyncEntryStatus status, String? originatingHostId});
 
   $EntryLinkCopyWith<$Res> get entryLink;
 }
@@ -1162,6 +1187,7 @@ class _$SyncEntryLinkCopyWithImpl<$Res>
   $Res call({
     Object? entryLink = null,
     Object? status = null,
+    Object? originatingHostId = freezed,
   }) {
     return _then(SyncEntryLink(
       entryLink: null == entryLink
@@ -1172,6 +1198,10 @@ class _$SyncEntryLinkCopyWithImpl<$Res>
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as SyncEntryStatus,
+      originatingHostId: freezed == originatingHostId
+          ? _self.originatingHostId
+          : originatingHostId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 
@@ -1594,6 +1624,8 @@ class SyncBackfillResponse implements SyncMessage {
       required this.counter,
       required this.deleted,
       this.entryId,
+      this.payloadType,
+      this.payloadId,
       final String? $type})
       : $type = $type ?? 'backfillResponse';
   factory SyncBackfillResponse.fromJson(Map<String, dynamic> json) =>
@@ -1608,8 +1640,18 @@ class SyncBackfillResponse implements SyncMessage {
   /// True if the entry was deleted/purged and cannot be backfilled
   final bool deleted;
 
-  /// The entry ID if found (null if deleted)
+  /// Legacy: The journal entry ID if found (null if deleted).
+  ///
+  /// For newer clients, prefer [payloadType] + [payloadId].
   final String? entryId;
+
+  /// Identifies what kind of payload this backfill response refers to.
+  /// If omitted, defaults to [SyncSequencePayloadType.journalEntity].
+  final SyncSequencePayloadType? payloadType;
+
+  /// The payload ID if found (null if deleted). For journal entities this is
+  /// the journal entry ID, for entry links it's the link ID.
+  final String? payloadId;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -1637,17 +1679,21 @@ class SyncBackfillResponse implements SyncMessage {
             (identical(other.hostId, hostId) || other.hostId == hostId) &&
             (identical(other.counter, counter) || other.counter == counter) &&
             (identical(other.deleted, deleted) || other.deleted == deleted) &&
-            (identical(other.entryId, entryId) || other.entryId == entryId));
+            (identical(other.entryId, entryId) || other.entryId == entryId) &&
+            (identical(other.payloadType, payloadType) ||
+                other.payloadType == payloadType) &&
+            (identical(other.payloadId, payloadId) ||
+                other.payloadId == payloadId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, hostId, counter, deleted, entryId);
+  int get hashCode => Object.hash(
+      runtimeType, hostId, counter, deleted, entryId, payloadType, payloadId);
 
   @override
   String toString() {
-    return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, entryId: $entryId)';
+    return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, entryId: $entryId, payloadType: $payloadType, payloadId: $payloadId)';
   }
 }
 
@@ -1658,7 +1704,13 @@ abstract mixin class $SyncBackfillResponseCopyWith<$Res>
           $Res Function(SyncBackfillResponse) _then) =
       _$SyncBackfillResponseCopyWithImpl;
   @useResult
-  $Res call({String hostId, int counter, bool deleted, String? entryId});
+  $Res call(
+      {String hostId,
+      int counter,
+      bool deleted,
+      String? entryId,
+      SyncSequencePayloadType? payloadType,
+      String? payloadId});
 }
 
 /// @nodoc
@@ -1677,6 +1729,8 @@ class _$SyncBackfillResponseCopyWithImpl<$Res>
     Object? counter = null,
     Object? deleted = null,
     Object? entryId = freezed,
+    Object? payloadType = freezed,
+    Object? payloadId = freezed,
   }) {
     return _then(SyncBackfillResponse(
       hostId: null == hostId
@@ -1694,6 +1748,14 @@ class _$SyncBackfillResponseCopyWithImpl<$Res>
       entryId: freezed == entryId
           ? _self.entryId
           : entryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      payloadType: freezed == payloadType
+          ? _self.payloadType
+          : payloadType // ignore: cast_nullable_to_non_nullable
+              as SyncSequencePayloadType?,
+      payloadId: freezed == payloadId
+          ? _self.payloadId
+          : payloadId // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }

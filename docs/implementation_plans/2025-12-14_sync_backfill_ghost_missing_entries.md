@@ -1,9 +1,33 @@
 # Sync Backfill: Ghost Missing Entries from EntryLink Counters
 
-**Date:** 2025-12-14  
-**Status:** Draft (for review)  
+**Date:** 2025-12-14
+**Status:** Implementation Complete (Steps A-E, Tests done; Step F optional)
 **Scope:** Debugging/refinement of self-healing sync backfill based on vector clocks (host UUID +
 monotonic counter).
+
+## Implementation Status (Updated 2025-12-15)
+
+| Step | Description | Status |
+|------|-------------|--------|
+| A | Schema migration: `payload_type` column | ✅ Done |
+| B | Record EntryLink counters on send/receive | ✅ Done |
+| C | Backfill responder supports EntryLinks | ✅ Done |
+| D | Type-aware hint storage and verification | ✅ Done |
+| E | Populate/reconcile from local EntryLinks | ✅ Done |
+| F | Safety valve: "Unmappable counter" response | ❌ Not implemented (optional) |
+| Tests | Add tests for EntryLink backfill scenarios | ✅ Done |
+
+### Files Modified
+- `lib/database/sync_db.dart` - Schema v3 with `payload_type` column
+- `lib/database/sync_db.g.dart` - Generated code
+- `lib/features/sync/sequence/sync_sequence_payload_type.dart` - New enum
+- `lib/features/sync/sequence/sync_sequence_log_service.dart` - Link-aware methods
+- `lib/features/sync/matrix/sync_event_processor.dart` - Records received EntryLink counters
+- `lib/features/sync/outbox/outbox_service.dart` - Records sent EntryLink counters
+- `lib/features/sync/backfill/backfill_response_handler.dart` - Multi-payload backfill
+- `lib/features/sync/model/sync_message.dart` - Extended with `payloadType`/`payloadId`
+- `lib/features/sync/state/sequence_log_populate_controller.dart` - Two-phase populate
+- `lib/features/sync/ui/sequence_log_populate_modal.dart` - UI updates for links
 
 ## Summary
 
@@ -156,17 +180,17 @@ This guarantees that every “missing” item refers to a concrete sync message 
 
 ## Implementation Steps
 
-1. Schema migration in `lib/database/sync_db.dart` (version bump) adding `payload_type/payload_id`
+1. ✅ Schema migration in `lib/database/sync_db.dart` (version bump) adding `payload_type/payload_id`
    and required queries.
-2. Extend `SyncSequenceLogService` with link-aware record/verify helpers.
-3. Extend `SyncEventProcessor` to record received `SyncEntryLink` counters.
-4. Extend `BackfillResponseHandler` to backfill EntryLinks (and extend `SyncBackfillResponse` with
+2. ✅ Extend `SyncSequenceLogService` with link-aware record/verify helpers.
+3. ✅ Extend `SyncEventProcessor` to record received `SyncEntryLink` counters.
+4. ✅ Extend `BackfillResponseHandler` to backfill EntryLinks (and extend `SyncBackfillResponse` with
    `payloadType`).
-5. Extend population/maintenance to include EntryLinks.
-6. Add tests covering:
+5. ✅ Extend population/maintenance to include EntryLinks.
+6. ✅ Add tests covering:
   - receiving an EntryLink counter resolves a previously-created `missing` row
   - interleaved link/journal ops do not create permanent missing gaps
-  - requester stops re-requesting unmappable counters (if safety valve is implemented)
+  - populateFromEntryLinks functionality (stream processing, skip existing, multi-host VCs)
 
 ## Validation Checklist (manual)
 

@@ -456,10 +456,43 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  /// Stream entry links with their vector clocks for populating the sequence log.
+  /// Yields batches of records with link ID and vector clock map.
+  /// Uses lightweight JSON extraction to avoid full deserialization.
+  Stream<List<({String id, Map<String, int>? vectorClock})>>
+      streamEntryLinksWithVectorClock({int batchSize = 1000}) async* {
+    var offset = 0;
+
+    while (true) {
+      final batch =
+          await (select(linkedEntries)..limit(batchSize, offset: offset))
+              .map(
+                (row) => (
+                  id: row.id,
+                  vectorClock: _extractEntryLinkVectorClock(row.serialized),
+                ),
+              )
+              .get();
+
+      if (batch.isEmpty) break;
+
+      yield batch;
+      offset += batchSize;
+    }
+  }
+
   /// Count total entries for progress reporting (includes deleted).
   Future<int> countAllJournalEntries() async {
     final count = journal.id.count();
     final query = selectOnly(journal)..addColumns([count]);
+    final result = await query.getSingle();
+    return result.read(count) ?? 0;
+  }
+
+  /// Count total entry links for progress reporting.
+  Future<int> countAllEntryLinks() async {
+    final count = linkedEntries.id.count();
+    final query = selectOnly(linkedEntries)..addColumns([count]);
     final result = await query.getSingle();
     return result.read(count) ?? 0;
   }
@@ -473,6 +506,19 @@ class JournalDb extends _$JournalDb {
       if (meta == null) return null;
 
       final vc = meta['vectorClock'] as Map<String, dynamic>?;
+      if (vc == null) return null;
+
+      return vc.map((k, v) => MapEntry(k, (v as num).toInt()));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Lightweight extraction of vector clock from serialized EntryLink JSON.
+  static Map<String, int>? _extractEntryLinkVectorClock(String serialized) {
+    try {
+      final json = jsonDecode(serialized) as Map<String, dynamic>;
+      final vc = json['vectorClock'] as Map<String, dynamic>?;
       if (vc == null) return null;
 
       return vc.map((k, v) => MapEntry(k, (v as num).toInt()));
@@ -1145,6 +1191,13 @@ class JournalDb extends _$JournalDb {
   Future<List<EntryLink>> linksForEntryIds(Set<String> ids) async {
     final entryLinks = await linksForIds(ids.toList()).get();
     return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
+  }
+
+  Future<EntryLink?> entryLinkById(String id) async {
+    final res = await (select(linkedEntries)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (res == null) return null;
+    return entryLinkFromLinkedDbEntry(res);
   }
 
   Future<int> upsertEntryLink(EntryLink link) async {

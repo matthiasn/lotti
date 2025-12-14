@@ -969,6 +969,7 @@ SyncSequenceLogItem _createMissingLogItem(
   return SyncSequenceLogItem(
     hostId: hostId,
     counter: counter,
+    payloadType: 0, // SyncSequencePayloadType.journalEntity.index
     originatingHostId: null,
     status: SyncSequenceStatus.missing.index,
     createdAt: DateTime(2024),
@@ -984,6 +985,7 @@ SyncSequenceLogItem _createRequestedLogItem(
   return SyncSequenceLogItem(
     hostId: hostId,
     counter: counter,
+    payloadType: 0, // SyncSequencePayloadType.journalEntity.index
     originatingHostId: null,
     status: SyncSequenceStatus.requested.index,
     createdAt: DateTime(2024),

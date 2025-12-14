@@ -493,6 +493,7 @@ SyncSequenceLogItem _createLogItem(
     hostId: hostId,
     counter: counter,
     entryId: entryId,
+    payloadType: 0, // SyncSequencePayloadType.journalEntity.index
     originatingHostId: originatingHostId,
     status: status.index,
     createdAt: DateTime(2024),

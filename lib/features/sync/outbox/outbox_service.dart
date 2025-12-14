@@ -277,6 +277,14 @@ class OutboxService {
 
           return journalMsg;
         }
+
+        if (syncMessage is SyncEntryLink) {
+          var linkMsg = syncMessage;
+          if (linkMsg.originatingHostId == null && host != null) {
+            linkMsg = linkMsg.copyWith(originatingHostId: host);
+          }
+          return linkMsg;
+        }
         return syncMessage;
       }();
 
@@ -389,15 +397,39 @@ class OutboxService {
         );
       }
 
-      if (syncMessage is SyncEntryLink) {
+      if (messageToEnqueue is SyncEntryLink) {
+        final localCounter =
+            messageToEnqueue.entryLink.vectorClock?.vclock[host];
+        final subject = localCounter == null
+            ? '$hostHash:link'
+            : '$hostHash:link:$localCounter';
+
         await _syncDatabase.addOutboxItem(
-          commonFields.copyWith(subject: Value('$hostHash:link')),
+          commonFields.copyWith(subject: Value(subject)),
         );
         _loggingService.captureEvent(
-          'enqueue type=SyncEntryLink subject=${'$hostHash:link'} from=${syncMessage.entryLink.fromId} to=${syncMessage.entryLink.toId}',
+          'enqueue type=SyncEntryLink subject=$subject from=${messageToEnqueue.entryLink.fromId} to=${messageToEnqueue.entryLink.toId}',
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         );
+
+        // Record in sequence log for backfill support (self-healing sync)
+        if (_sequenceLogService != null &&
+            messageToEnqueue.entryLink.vectorClock != null) {
+          try {
+            await _sequenceLogService!.recordSentEntryLink(
+              linkId: messageToEnqueue.entryLink.id,
+              vectorClock: messageToEnqueue.entryLink.vectorClock!,
+            );
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'recordSent',
+              stackTrace: st,
+            );
+          }
+        }
       }
 
       if (syncMessage is SyncAiConfig) {

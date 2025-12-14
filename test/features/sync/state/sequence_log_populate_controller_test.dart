@@ -163,6 +163,15 @@ void main() {
       when(() => mockJournalDb.countAllJournalEntries())
           .thenAnswer((_) async => 1);
 
+      when(() => mockJournalDb.streamEntryLinksWithVectorClock()).thenAnswer(
+        (_) => Stream.fromIterable([
+          [
+            (id: 'link-1', vectorClock: {'host-1': 2}),
+          ],
+        ]),
+      );
+      when(() => mockJournalDb.countAllEntryLinks()).thenAnswer((_) async => 1);
+
       when(
         () => mockSequenceLogService.populateFromJournal(
           entryStream: any(named: 'entryStream'),
@@ -174,6 +183,19 @@ void main() {
             invocation.namedArguments[#onProgress] as void Function(double)?;
         onProgress?.call(1);
         return 10;
+      });
+
+      when(
+        () => mockSequenceLogService.populateFromEntryLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as void Function(double)?;
+        onProgress?.call(1);
+        return 5;
       });
 
       // Listen for completion
@@ -201,6 +223,7 @@ void main() {
       expect(finalState.isRunning, false);
       expect(finalState.progress, 1.0);
       expect(finalState.populatedCount, 10);
+      expect(finalState.populatedLinksCount, 5);
       expect(finalState.error, isNull);
     });
 
