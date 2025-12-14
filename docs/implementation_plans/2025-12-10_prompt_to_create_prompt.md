@@ -230,7 +230,11 @@ Generate a comprehensive prompt that captures:
 3. A clear, actionable request for the AI coding assistant
 
 The prompt should enable another AI to help effectively without needing additional context.''',
-  requiredInputData: [InputDataType.audioFiles, InputDataType.task],
+  // Note: We use InputDataType.task only (not audioFiles) because we extract
+  // the transcript via {{audioTranscript}} placeholder, not by uploading the audio file.
+  // The prompt appears on audio entries via a special case in _isPromptActiveForEntity
+  // that allows promptGeneration to show on audio entries linked to tasks.
+  requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.promptGeneration,
   useReasoning: true,
   description:
@@ -239,6 +243,8 @@ The prompt should enable another AI to help effectively without needing addition
 ```
 
 **Note**: This prompt **requires task context** - it only appears in the AI menu for audio entries that are linked to a task. The whole value proposition is combining the audio with the rich task history.
+
+**Implementation Detail**: The `requiredInputData` is set to `[InputDataType.task]` only (not `audioFiles`) because we extract the transcript via the `{{audioTranscript}}` placeholder rather than uploading the actual audio file. The prompt appears on audio entries through a special case in `_isPromptActiveForEntity` (in `unified_ai_inference_repository.dart`) that allows `promptGeneration` to show on audio entries linked to tasks, similar to how `checklistUpdates` works. The prompt is explicitly excluded from task-level menus because it requires a specific audio entry's transcript as input.
 
 #### 2.2 Add audioTranscript Placeholder Support
 

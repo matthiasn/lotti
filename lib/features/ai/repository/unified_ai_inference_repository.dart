@@ -173,6 +173,11 @@ class UnifiedAiInferenceRepository {
     // For prompts that require task context
     if (hasTask) {
       if (entity is Task) {
+        // promptGeneration requires an audio entry as input (for the transcript)
+        // so it should not appear on task-level menus.
+        if (prompt.aiResponseType == AiResponseType.promptGeneration) {
+          return false;
+        }
         // Direct task entity - always valid as long as additional modality
         // requirements are satisfied.
         return !hasImages && !hasAudio;
@@ -190,10 +195,13 @@ class UnifiedAiInferenceRepository {
         return linkedEntities.any((e) => e is Task);
       }
 
-      // Special case: Checklist Updates prompt may be triggered from an
-      // audio entry popup even though it only requires task context.
+      // Special case: Certain prompts may be triggered from an audio entry
+      // popup even though they only require task context (not audio file upload).
+      // - checklistUpdates: extracts action items from transcript
+      // - promptGeneration: uses {{audioTranscript}} placeholder for transcript
       if (entity is JournalAudio &&
-          prompt.aiResponseType == AiResponseType.checklistUpdates) {
+          (prompt.aiResponseType == AiResponseType.checklistUpdates ||
+              prompt.aiResponseType == AiResponseType.promptGeneration)) {
         final linkedEntities = await ref
             .read(journalRepositoryProvider)
             .getLinkedToEntities(linkedTo: entity.id);

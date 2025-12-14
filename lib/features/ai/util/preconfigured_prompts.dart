@@ -479,7 +479,8 @@ Generate a comprehensive prompt that captures:
 The prompt should enable another AI to help effectively without needing additional context.''',
   // Note: We use InputDataType.task only (not audioFiles) because we extract
   // the transcript via {{audioTranscript}} placeholder, not by uploading the audio file.
-  // This allows prompt generation even when audio files are deleted/unavailable.
+  // The prompt appears on audio entries via a special case in _isPromptActiveForEntity
+  // that allows promptGeneration to show on audio entries linked to tasks.
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.promptGeneration,
   useReasoning: true,
