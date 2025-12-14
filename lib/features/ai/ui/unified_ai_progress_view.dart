@@ -2,17 +2,20 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/gemma_model_install_dialog.dart';
+import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -395,6 +398,18 @@ class _UnifiedAiProgressContentState
           fontSize: fontSizeSmall,
           fontWeight: FontWeight.w300,
         );
+
+        // For prompt generation, extract the prompt and add a copy button
+        final isPromptGeneration =
+            promptConfig.aiResponseType == AiResponseType.promptGeneration;
+        String? extractedPrompt;
+        if (isPromptGeneration && state.isNotEmpty) {
+          // Reuse static regex from GeneratedPromptCard to avoid duplication
+          final match =
+              GeneratedPromptCard.promptSectionRegex.firstMatch(state);
+          extractedPrompt = match?.group(1)?.trim() ?? state;
+        }
+
         return Padding(
           padding: const EdgeInsets.only(
             top: 10,
@@ -405,9 +420,44 @@ class _UnifiedAiProgressContentState
           child: Container(
             constraints: const BoxConstraints(minWidth: 600),
             padding: const EdgeInsets.only(top: 20),
-            child: Text(
-              state,
-              style: textStyle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isPromptGeneration && extractedPrompt != null) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: extractedPrompt!),
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(context
+                                    .messages.promptGenerationCopiedSnackbar),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.copy_rounded, size: 18),
+                        label:
+                            Text(context.messages.promptGenerationCopyButton),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                SelectionArea(
+                  child: Text(
+                    state,
+                    style: textStyle,
+                  ),
+                ),
+              ],
             ),
           ),
         );

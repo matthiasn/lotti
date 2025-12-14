@@ -867,6 +867,12 @@ abstract class AppLocalizations {
   /// **'Image Analysis'**
   String get aiResponseTypeImageAnalysis;
 
+  /// No description provided for @aiResponseTypePromptGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated Prompt'**
+  String get aiResponseTypePromptGeneration;
+
   /// No description provided for @aiResponseTypeTaskSummary.
   ///
   /// In en, this message translates to:
@@ -3032,6 +3038,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User Prompt'**
   String get promptUserPromptLabel;
+
+  /// No description provided for @promptGenerationCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Coding Prompt'**
+  String get promptGenerationCardTitle;
+
+  /// No description provided for @promptGenerationCopyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy prompt to clipboard'**
+  String get promptGenerationCopyTooltip;
+
+  /// No description provided for @promptGenerationCopyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Prompt'**
+  String get promptGenerationCopyButton;
+
+  /// No description provided for @promptGenerationCopiedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt copied to clipboard'**
+  String get promptGenerationCopiedSnackbar;
+
+  /// No description provided for @promptGenerationExpandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show full prompt'**
+  String get promptGenerationExpandTooltip;
+
+  /// No description provided for @promptGenerationFullPromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Prompt:'**
+  String get promptGenerationFullPromptLabel;
 
   /// No description provided for @saveButtonLabel.
   ///

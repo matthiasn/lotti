@@ -181,6 +181,8 @@ class _ResponseTypeSelectionModalState
         return Icons.transcribe_rounded;
       case AiResponseType.checklistUpdates:
         return Icons.checklist_rtl_rounded;
+      case AiResponseType.promptGeneration:
+        return Icons.auto_fix_high_outlined;
     }
   }
 }

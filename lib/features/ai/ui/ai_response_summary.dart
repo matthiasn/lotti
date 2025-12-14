@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/features/ai/ui/expandable_ai_response_summary.dart';
+import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -24,6 +25,14 @@ class AiResponseSummary extends StatelessWidget {
     // Use expandable summary for task summaries
     if (aiResponse.data.type == AiResponseType.taskSummary) {
       return ExpandableAiResponseSummary(
+        aiResponse,
+        linkedFromId: linkedFromId,
+      );
+    }
+
+    // Use specialized card for generated prompts
+    if (aiResponse.data.type == AiResponseType.promptGeneration) {
+      return GeneratedPromptCard(
         aiResponse,
         linkedFromId: linkedFromId,
       );

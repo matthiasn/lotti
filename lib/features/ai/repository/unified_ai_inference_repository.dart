@@ -624,6 +624,12 @@ class UnifiedAiInferenceRepository {
     AiConfigPrompt promptConfig,
     JournalEntity entity,
   ) async {
+    // Skip audio preparation entirely for prompt generation - it uses
+    // transcript text via {{audioTranscript}} placeholder, not audio files
+    if (promptConfig.aiResponseType == AiResponseType.promptGeneration) {
+      return null;
+    }
+
     if (!promptConfig.requiredInputData.contains(InputDataType.audioFiles)) {
       return null;
     }
@@ -631,7 +637,8 @@ class UnifiedAiInferenceRepository {
     if (entity is! JournalAudio) return null;
 
     final fullPath = await AudioUtils.getFullAudioPath(entity);
-    final bytes = await File(fullPath).readAsBytes();
+    final file = File(fullPath);
+    final bytes = await file.readAsBytes();
     return base64Encode(bytes);
   }
 
@@ -849,10 +856,15 @@ class UnifiedAiInferenceRepository {
     );
 
     // Save the AI response entry (except for checklist updates which are function-only)
+    // Also save for prompt generation even when triggered from audio entries
     AiResponseEntry? aiResponseEntry;
-    if (entity is! JournalAudio &&
-        entity is! JournalImage &&
-        promptConfig.aiResponseType != AiResponseType.checklistUpdates) {
+    final shouldSaveEntry =
+        promptConfig.aiResponseType == AiResponseType.promptGeneration ||
+            (entity is! JournalAudio &&
+                entity is! JournalImage &&
+                promptConfig.aiResponseType != AiResponseType.checklistUpdates);
+
+    if (shouldSaveEntry) {
       try {
         aiResponseEntry =
             await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
@@ -1086,6 +1098,13 @@ class UnifiedAiInferenceRepository {
       case AiResponseType.actionItemSuggestions:
         developer.log(
           'Processing actionItemSuggestions is no longer supported',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      case AiResponseType.promptGeneration:
+        // Prompt generation has no special post-processing - the response
+        // is saved as an AiResponseEntry which is handled by the caller
+        developer.log(
+          'Prompt generation completed for entity ${entity.id}',
           name: 'UnifiedAiInferenceRepository',
         );
     }
