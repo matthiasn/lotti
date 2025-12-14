@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.753" date="2025-12-14">
+      <description>
+        <p>Add prompt type for creating prompts, for example for feeding into Claude Code, Codex and
+            similar tools, or ChatGPT, Gemini, Claude in research mode.</p>
+      </description>
+    </release>
     <release version="0.9.752" date="2025-12-06">
       <description>
         <p>Sync Backfill: Request missing journal entries from connected devices during sync to ensure complete synchronization across all your devices.</p>
