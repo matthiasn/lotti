@@ -104,6 +104,11 @@ class SyncTuning {
   static const Duration backfillRequestInterval = Duration(minutes: 5);
   static const int backfillMaxRequestCount = 10;
 
+  // Maximum gap size for gap detection - prevents explosion of missing entries
+  // when sequence log is corrupted or entries are deleted.
+  // Gaps larger than this are logged but only the most recent N entries are created.
+  static const int maxGapSize = 100;
+
   // Maximum entries to fetch from DB per backfill request message
   static const int backfillBatchSize = 100;
 

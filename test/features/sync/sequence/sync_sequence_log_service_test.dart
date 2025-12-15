@@ -519,6 +519,68 @@ void main() {
       // Bob's entry should stay backfilled (not downgraded to received)
       expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
     });
+
+    test('limits gap detection to maxGapSize entries', () async {
+      // Large gap: lastSeen=10, counter=500 would normally create 489 missing entries
+      // With maxGapSize=100, should only create entries for counters 400-499
+      const vectorClock = VectorClock({aliceHostId: 500});
+      const entryId = 'entry-500';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 10);
+      // Stub all potential getEntryByHostAndCounter calls to return null
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, any()))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      // Should detect gaps but limited to maxGapSize (100)
+      expect(gaps.length, SyncTuning.maxGapSize);
+      // Gaps should be for the most recent counters (400-499)
+      expect(gaps.first.counter, 500 - SyncTuning.maxGapSize);
+      expect(gaps.last.counter, 499);
+
+      // Verify large gap was logged
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('largeGapDetected')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'largeGap',
+        ),
+      ).called(1);
+    });
+
+    test('does not log largeGap when gap is within limits', () async {
+      // Gap of 2 is well within maxGapSize
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-5';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 2);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, any()))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      // Should NOT log largeGapDetected
+      verifyNever(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('largeGapDetected')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'largeGap',
+        ),
+      );
+    });
   });
 
   group('recordSentEntry', () {

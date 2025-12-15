@@ -111,8 +111,26 @@ class SyncSequenceLogService {
       final lastSeen = await _syncDatabase.getLastCounterForHost(hostId);
 
       if (lastSeen != null && counter > lastSeen + 1) {
-        // Gap detected! Mark all missing counters for this host
-        for (var i = lastSeen + 1; i < counter; i++) {
+        // Gap detected! Mark missing counters for this host
+        final gapSize = counter - lastSeen - 1;
+
+        // Limit gap size to prevent explosion of missing entries
+        // when sequence log is corrupted or entries are deleted
+        if (gapSize > SyncTuning.maxGapSize) {
+          _loggingService.captureEvent(
+            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$lastSeen, counter=$counter) - limiting to ${SyncTuning.maxGapSize} entries',
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'largeGap',
+          );
+        }
+
+        // Only create missing entries for the most recent portion of the gap
+        // This prioritizes recent entries which are more likely to be resolvable
+        final startCounter = gapSize > SyncTuning.maxGapSize
+            ? counter - SyncTuning.maxGapSize
+            : lastSeen + 1;
+
+        for (var i = startCounter; i < counter; i++) {
           gaps.add((hostId: hostId, counter: i));
 
           // Check if we already have this entry
