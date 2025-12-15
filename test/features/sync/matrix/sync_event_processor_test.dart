@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_redundant_argument_values
+// ignore_for_file: avoid_redundant_argument_values, cascade_invocations
 
 import 'dart:convert';
 import 'dart:io';
@@ -2769,6 +2769,114 @@ void main() {
       await processor.process(event: event, journalDb: journalDb);
 
       verify(() => mockHandler.handleBackfillResponse(message)).called(1);
+    });
+
+    test('skips old SyncBackfillRequest when startupTimestamp is set',
+        () async {
+      const message = SyncBackfillRequest(
+        entries: [BackfillRequestEntry(hostId: 'host-1', counter: 5)],
+        requesterId: 'requester-1',
+      );
+
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockHandler.handleBackfillRequest(any()))
+          .thenAnswer((_) async {});
+
+      // Create processor with startupTimestamp set
+      final processorWithStartup = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+      );
+      processorWithStartup.backfillResponseHandler = mockHandler;
+      // Set startup timestamp to a point in the future relative to the event
+      processorWithStartup.startupTimestamp = 2000000000000; // Far future
+
+      // Event timestamp is in the past (before startup)
+      when(() => event.originServerTs).thenReturn(DateTime(2024));
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => event.eventId).thenReturn('old-backfill-event');
+
+      await processorWithStartup.process(event: event, journalDb: journalDb);
+
+      // Handler should NOT be called - event is older than startup
+      verifyNever(() => mockHandler.handleBackfillRequest(any()));
+
+      // Should log the skip
+      verify(
+        () => loggingService.captureEvent(
+          any<String>(that: contains('skipping old backfill')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'skipOld',
+        ),
+      ).called(1);
+    });
+
+    test('skips old SyncBackfillResponse when startupTimestamp is set',
+        () async {
+      const message = SyncBackfillResponse(
+        hostId: 'host-1',
+        counter: 5,
+        deleted: false,
+      );
+
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockHandler.handleBackfillResponse(any()))
+          .thenAnswer((_) async {});
+
+      final processorWithStartup = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+      );
+      processorWithStartup.backfillResponseHandler = mockHandler;
+      processorWithStartup.startupTimestamp = 2000000000000;
+
+      when(() => event.originServerTs).thenReturn(DateTime(2024));
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => event.eventId).thenReturn('old-response-event');
+
+      await processorWithStartup.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => mockHandler.handleBackfillResponse(any()));
+    });
+
+    test('processes SyncBackfillRequest when newer than startupTimestamp',
+        () async {
+      const message = SyncBackfillRequest(
+        entries: [BackfillRequestEntry(hostId: 'host-1', counter: 5)],
+        requesterId: 'requester-1',
+      );
+
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockHandler.handleBackfillRequest(any()))
+          .thenAnswer((_) async {});
+
+      final processorWithStartup = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+      );
+      processorWithStartup.backfillResponseHandler = mockHandler;
+      // Startup was in the past
+      processorWithStartup.startupTimestamp = 1000000000000;
+
+      // Event is newer than startup
+      when(() => event.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1500000000000));
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => event.eventId).thenReturn('new-backfill-event');
+
+      await processorWithStartup.process(event: event, journalDb: journalDb);
+
+      // Handler SHOULD be called - event is newer than startup
+      verify(() => mockHandler.handleBackfillRequest(message)).called(1);
     });
   });
 

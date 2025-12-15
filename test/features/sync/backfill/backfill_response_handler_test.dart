@@ -137,6 +137,41 @@ void main() {
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
 
+    test('truncates large requests to maxBackfillResponseBatchSize', () async {
+      // Create a request with more entries than maxBackfillResponseBatchSize
+      final manyEntries = List.generate(
+        100, // More than maxBackfillResponseBatchSize (50)
+        (i) => BackfillRequestEntry(hostId: bobHostId, counter: i + 1),
+      );
+      final request = SyncBackfillRequest(
+        entries: manyEntries,
+        requesterId: requesterId,
+      );
+
+      // All entries are for bob (not our host), so they'll be skipped
+      // but the truncation logic should still apply
+      when(() => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()))
+          .thenAnswer((_) async => null);
+
+      await handler.handleBackfillRequest(request);
+
+      // Should only process maxBackfillResponseBatchSize entries (50), not all 100
+      // Since these are bob's counters (not ours), we skip them silently
+      // Verify it was called exactly 50 times (truncated), not 100
+      verify(
+        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
+      ).called(50);
+
+      // Verify truncation was logged
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('(truncated)')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'handleRequest',
+        ),
+      ).called(1);
+    });
+
     test('ignores request when entry not in sequence log and not our host',
         () async {
       // Request for Bob's counter - we don't have it, skip silently
