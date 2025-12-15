@@ -4,6 +4,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -124,8 +125,19 @@ class BackfillResponseHandler {
         return;
       }
 
+      // Limit entries to process to prevent outbox flooding
+      final entriesToProcess =
+          request.entries.length > SyncTuning.maxBackfillResponseBatchSize
+              ? request.entries
+                  .take(SyncTuning.maxBackfillResponseBatchSize)
+                  .toList()
+              : request.entries;
+
+      final truncated =
+          request.entries.length > SyncTuning.maxBackfillResponseBatchSize;
+
       _loggingService.captureEvent(
-        'handleBackfillRequest: ${request.entries.length} entries from=${request.requesterId}',
+        'handleBackfillRequest: processing ${entriesToProcess.length} of ${request.entries.length} entries from=${request.requesterId}${truncated ? ' (truncated)' : ''}',
         domain: 'SYNC_BACKFILL',
         subDomain: 'handleRequest',
       );
@@ -136,7 +148,7 @@ class BackfillResponseHandler {
       // entry multiple times when multiple counters map to the same payload.
       final sentPayloads = <String>{};
 
-      for (final entry in request.entries) {
+      for (final entry in entriesToProcess) {
         final result = await _processBackfillEntry(
           hostId: entry.hostId,
           counter: entry.counter,
