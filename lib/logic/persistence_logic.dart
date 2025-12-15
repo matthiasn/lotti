@@ -40,6 +40,10 @@ class PersistenceLogic {
   final uuid = const Uuid();
   DeviceLocation? location;
 
+  /// Tracks entity IDs currently having geolocation added to prevent
+  /// concurrent additions which could cause race conditions.
+  final Set<String> _pendingGeolocationAdds = {};
+
   Future<void> init() async {
     if (!Platform.isWindows) {
       location = DeviceLocation();
@@ -677,6 +681,14 @@ class PersistenceLogic {
   }
 
   FutureOr<Geolocation?> addGeolocationAsync(String journalEntityId) async {
+    // Prevent concurrent geolocation additions for the same entity.
+    // This avoids race conditions where multiple async calls could
+    // both see geolocation == null and then both try to update.
+    if (_pendingGeolocationAdds.contains(journalEntityId)) {
+      return null;
+    }
+    _pendingGeolocationAdds.add(journalEntityId);
+
     try {
       Geolocation? geolocation;
       try {
@@ -694,16 +706,19 @@ class PersistenceLogic {
       }
 
       final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-      if (journalEntity != null) {
+      // Only add geolocation if the entry doesn't already have one.
+      // Geolocation should be set once at creation and never overwritten.
+      if (journalEntity != null && journalEntity.geolocation == null) {
         await updateDbEntity(
           journalEntity.copyWith(
             meta: await updateMetadata(journalEntity.meta),
             geolocation: geolocation,
           ),
         );
+        return geolocation;
       }
 
-      return geolocation;
+      return journalEntity?.geolocation;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -712,6 +727,8 @@ class PersistenceLogic {
         stackTrace: stackTrace,
       );
       return null;
+    } finally {
+      _pendingGeolocationAdds.remove(journalEntityId);
     }
   }
 

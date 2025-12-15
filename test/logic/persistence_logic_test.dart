@@ -795,19 +795,27 @@ void main() {
     });
 
     test('add geolocation to entry', () async {
-      final now = DateTime.now();
-      // Create a text entry
-      final entry = await JournalRepository.createTextEntry(
-        const EntryText(plainText: 'Entry with geolocation'),
-        id: uuid.v1(),
-        started: now,
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      // Create entry WITHOUT auto-geolocation so we can test addGeolocationAsync
+      final entry = JournalEntity.journalEntry(
+        entryText: const EntryText(plainText: 'Entry with geolocation'),
+        meta: await persistenceLogic.createMetadata(
+          dateFrom: DateTime.now(),
+        ),
+      );
+      await persistenceLogic.createDbEntity(
+        entry,
+        shouldAddGeolocation: false,
       );
 
-      // Reset the mock call count after entry creation
-      clearInteractions(mockDeviceLocation);
+      // Verify entry has no geolocation initially
+      final beforeEntry =
+          await getIt<JournalDb>().journalEntityById(entry.meta.id);
+      expect(beforeEntry?.geolocation, isNull);
 
       // Add geolocation to the entry
-      await getIt<PersistenceLogic>().addGeolocationAsync(entry!.meta.id);
+      await persistenceLogic.addGeolocationAsync(entry.meta.id);
 
       // Retrieve the entry with geolocation
       final retrievedEntry =
@@ -818,7 +826,7 @@ void main() {
       expect(retrievedEntry?.geolocation?.longitude, -122.4194);
       expect(retrievedEntry?.geolocation?.accuracy, 10.0);
 
-      // Verify getCurrentGeoLocation was called at least once
+      // Verify getCurrentGeoLocation was called
       verify(mockDeviceLocation.getCurrentGeoLocation).called(1);
     });
 

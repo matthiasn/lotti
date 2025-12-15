@@ -329,6 +329,9 @@ Future<void> registerSingletons() async {
 
   // Check and run maintenance task to remove deprecated action item suggestions
   unawaited(_checkAndRemoveActionItemSuggestions());
+
+  // Automatically populate sequence log if empty (one-time migration)
+  unawaited(_checkAndPopulateSequenceLog());
 }
 
 Future<void> _checkAndRemoveActionItemSuggestions() async {
@@ -367,3 +370,92 @@ Future<void> _checkAndRemoveActionItemSuggestions() async {
 @visibleForTesting
 Future<void> checkAndRemoveActionItemSuggestionsForTesting() =>
     _checkAndRemoveActionItemSuggestions();
+
+/// Automatically populate the sequence log if it's empty and the journal has
+/// entries. This is a one-time migration for existing installations that
+/// predates the sequence log feature.
+///
+/// This enables proper backfill responses - without the sequence log populated,
+/// a device can't respond to backfill requests from other devices for historical
+/// entries.
+Future<void> _checkAndPopulateSequenceLog() async {
+  const settingsKey = 'maintenance_sequenceLogPopulated';
+  final settingsDb = getIt<SettingsDb>();
+  final loggingService = getIt<LoggingService>();
+
+  try {
+    // Check if we've already run this migration
+    final hasRun = await settingsDb.itemByKey(settingsKey);
+    if (hasRun == 'true') {
+      return;
+    }
+
+    final syncDatabase = getIt<SyncDatabase>();
+    final journalDb = getIt<JournalDb>();
+
+    // Check current sequence log count
+    final sequenceLogCount = await syncDatabase.getSequenceLogCount();
+
+    // If already has significant entries, mark as done
+    if (sequenceLogCount > 100) {
+      await settingsDb.saveSettingsItem(settingsKey, 'true');
+      loggingService.captureEvent(
+        'Sequence log already has $sequenceLogCount entries, skipping population',
+        domain: 'MAINTENANCE',
+        subDomain: 'sequenceLogPopulation',
+      );
+      return;
+    }
+
+    // Check if journal has entries that need populating
+    final journalCount = await journalDb.countAllJournalEntries();
+    final linksCount = await journalDb.countAllEntryLinks();
+
+    if (journalCount == 0 && linksCount == 0) {
+      // Empty database, nothing to populate
+      await settingsDb.saveSettingsItem(settingsKey, 'true');
+      return;
+    }
+
+    loggingService.captureEvent(
+      'Starting automatic sequence log population: journal=$journalCount links=$linksCount sequenceLog=$sequenceLogCount',
+      domain: 'MAINTENANCE',
+      subDomain: 'sequenceLogPopulation',
+    );
+
+    final sequenceLogService = getIt<SyncSequenceLogService>();
+
+    // Populate from journal entries
+    final populatedJournal = await sequenceLogService.populateFromJournal(
+      entryStream: journalDb.streamEntriesWithVectorClock(),
+      getTotalCount: journalDb.countAllJournalEntries,
+    );
+
+    // Populate from entry links
+    final populatedLinks = await sequenceLogService.populateFromEntryLinks(
+      linkStream: journalDb.streamEntryLinksWithVectorClock(),
+      getTotalCount: journalDb.countAllEntryLinks,
+    );
+
+    // Mark as completed
+    await settingsDb.saveSettingsItem(settingsKey, 'true');
+
+    loggingService.captureEvent(
+      'Automatic sequence log population completed: journal=$populatedJournal links=$populatedLinks',
+      domain: 'MAINTENANCE',
+      subDomain: 'sequenceLogPopulation',
+    );
+  } catch (e, stackTrace) {
+    loggingService.captureException(
+      e,
+      domain: 'MAINTENANCE',
+      subDomain: 'sequenceLogPopulation',
+      stackTrace: stackTrace,
+    );
+    // Don't mark as completed on error - will retry on next startup
+  }
+}
+
+@visibleForTesting
+Future<void> checkAndPopulateSequenceLogForTesting() =>
+    _checkAndPopulateSequenceLog();

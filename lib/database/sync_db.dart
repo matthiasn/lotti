@@ -369,6 +369,14 @@ class SyncDatabase extends _$SyncDatabase {
         .map((res) => res.length);
   }
 
+  /// Get the total count of entries in the sequence log.
+  Future<int> getSequenceLogCount() async {
+    final countQuery = selectOnly(syncSequenceLog)
+      ..addColumns([syncSequenceLog.hostId.count()]);
+    final countResult = await countQuery.getSingle();
+    return countResult.read(syncSequenceLog.hostId.count()) ?? 0;
+  }
+
   // ============ Host Activity Methods ============
 
   /// Update or insert host activity (last seen timestamp).

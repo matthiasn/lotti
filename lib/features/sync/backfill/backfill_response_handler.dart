@@ -106,11 +106,15 @@ class BackfillResponseHandler {
 
       var responded = 0;
       var skipped = 0;
+      // Track payloads already sent in this batch to avoid sending the same
+      // entry multiple times when multiple counters map to the same payload.
+      final sentPayloads = <String>{};
 
       for (final entry in request.entries) {
         final result = await _processBackfillEntry(
           hostId: entry.hostId,
           counter: entry.counter,
+          sentPayloads: sentPayloads,
         );
         if (result) {
           responded++;
@@ -120,7 +124,7 @@ class BackfillResponseHandler {
       }
 
       _loggingService.captureEvent(
-        'handleBackfillRequest: responded=$responded skipped=$skipped of ${request.entries.length}',
+        'handleBackfillRequest: responded=$responded skipped=$skipped of ${request.entries.length} dedupedPayloads=${sentPayloads.length}',
         domain: 'SYNC_BACKFILL',
         subDomain: 'handleRequest',
       );
@@ -136,9 +140,14 @@ class BackfillResponseHandler {
 
   /// Process a single backfill entry request.
   /// Returns true if we responded, false if skipped.
+  ///
+  /// [sentPayloads] tracks payloads already sent in this batch to avoid
+  /// sending the same entry multiple times when multiple counters map to
+  /// the same payload.
   Future<bool> _processBackfillEntry({
     required String hostId,
     required int counter,
+    required Set<String> sentPayloads,
   }) async {
     // Look up in our sequence log
     final logEntry = await _sequenceLogService.getEntryByHostAndCounter(
@@ -174,33 +183,48 @@ class BackfillResponseHandler {
           return true;
         }
 
-        // Entry exists - re-send it via normal sync mechanism.
-        // The sequence log will be updated when the recipient receives the entry.
-        final jsonPath = relativeEntityPath(journalEntry);
+        // Only send the entry if not already sent in this batch.
+        // This avoids sending the same entry multiple times when multiple
+        // requested counters map to the same payload.
+        if (!sentPayloads.contains(payloadId)) {
+          sentPayloads.add(payloadId);
+          final jsonPath = relativeEntityPath(journalEntry);
 
-        await _outboxService.enqueueMessage(
-          SyncMessage.journalEntity(
-            id: journalEntry.meta.id,
-            jsonPath: jsonPath,
-            vectorClock: journalEntry.meta.vectorClock,
-            status: SyncEntryStatus.update,
-            originatingHostId: originatingHostId,
-          ),
-        );
+          await _outboxService.enqueueMessage(
+            SyncMessage.journalEntity(
+              id: journalEntry.meta.id,
+              jsonPath: jsonPath,
+              vectorClock: journalEntry.meta.vectorClock,
+              status: SyncEntryStatus.update,
+              originatingHostId: originatingHostId,
+            ),
+          );
+        }
 
-        // Send a BackfillResponse mapping (hostId, counter) → payloadId.
-        // This is crucial because the payload's current vector clock may no
-        // longer contain the original (hostId, counter) if it was modified since.
-        await _outboxService.enqueueMessage(
-          SyncMessage.backfillResponse(
-            hostId: hostId,
-            counter: counter,
-            deleted: false,
-            entryId: payloadId, // legacy compatibility (journal only)
-            payloadType: payloadType,
-            payloadId: payloadId,
-          ),
-        );
+        // Check if the entry's current VC contains the exact requested counter.
+        // If yes, the entry arrival will automatically resolve this counter
+        // via recordReceivedEntry, so we don't need to send a BackfillResponse.
+        // Note: We check for exact match (==) not >= because recordReceivedEntry
+        // only records counters that ARE in the VC, not historical counters.
+        // This optimization significantly reduces redundant network traffic.
+        final vcCounter = journalEntry.meta.vectorClock?.vclock[hostId];
+        final vcContainsCounter = vcCounter != null && vcCounter == counter;
+
+        if (!vcContainsCounter) {
+          // VC doesn't contain the counter - entry was modified since this
+          // counter was created. Send BackfillResponse hint so the receiver
+          // can map (hostId, counter) → entryId.
+          await _outboxService.enqueueMessage(
+            SyncMessage.backfillResponse(
+              hostId: hostId,
+              counter: counter,
+              deleted: false,
+              entryId: payloadId, // legacy compatibility (journal only)
+              payloadType: payloadType,
+              payloadId: payloadId,
+            ),
+          );
+        }
 
         return true;
       case SyncSequencePayloadType.entryLink:
@@ -215,23 +239,35 @@ class BackfillResponseHandler {
           return true;
         }
 
-        await _outboxService.enqueueMessage(
-          SyncMessage.entryLink(
-            entryLink: link,
-            status: SyncEntryStatus.update,
-            originatingHostId: originatingHostId,
-          ),
-        );
+        // Only send the link if not already sent in this batch.
+        if (!sentPayloads.contains(payloadId)) {
+          sentPayloads.add(payloadId);
 
-        await _outboxService.enqueueMessage(
-          SyncMessage.backfillResponse(
-            hostId: hostId,
-            counter: counter,
-            deleted: false,
-            payloadType: payloadType,
-            payloadId: payloadId,
-          ),
-        );
+          await _outboxService.enqueueMessage(
+            SyncMessage.entryLink(
+              entryLink: link,
+              status: SyncEntryStatus.update,
+              originatingHostId: originatingHostId,
+            ),
+          );
+        }
+
+        // Check if the link's current VC contains the exact requested counter.
+        // If yes, skip the BackfillResponse as entry arrival handles it.
+        final vcCounter = link.vectorClock?.vclock[hostId];
+        final vcContainsCounter = vcCounter != null && vcCounter == counter;
+
+        if (!vcContainsCounter) {
+          await _outboxService.enqueueMessage(
+            SyncMessage.backfillResponse(
+              hostId: hostId,
+              counter: counter,
+              deleted: false,
+              payloadType: payloadType,
+              payloadId: payloadId,
+            ),
+          );
+        }
 
         return true;
     }

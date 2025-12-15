@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -274,27 +275,21 @@ void main() {
       // === STEP 5: Alice receives and handles the backfill request ===
       await aliceResponseHandler.handleBackfillRequest(backfillRequest);
 
-      // Verify Alice enqueued both the journal entity AND a BackfillResponse
-      // The BackfillResponse is crucial for cases where the entry's VC has evolved
+      // Verify Alice enqueued only the journal entity.
+      // Since the entry's VC covers the requested counter (VC[alice]=2 >= counter=2),
+      // the BackfillResponse hint is skipped as an optimization - the entry arrival
+      // will automatically resolve the counter via recordReceivedEntry.
       final capturedMessages = verify(
         () => aliceOutbox.enqueueMessage(captureAny()),
       ).captured;
 
-      expect(capturedMessages, hasLength(2));
+      expect(capturedMessages, hasLength(1));
 
-      // First should be the journal entity
+      // Should be the journal entity only
       expect(capturedMessages[0], isA<SyncJournalEntity>());
       final journalEntity = capturedMessages[0] as SyncJournalEntity;
       expect(journalEntity.id, entryId2);
       expect(journalEntity.status, SyncEntryStatus.update);
-
-      // Second should be the BackfillResponse with entryId
-      expect(capturedMessages[1], isA<SyncBackfillResponse>());
-      final backfillResponse = capturedMessages[1] as SyncBackfillResponse;
-      expect(backfillResponse.hostId, aliceHostId);
-      expect(backfillResponse.counter, 2);
-      expect(backfillResponse.deleted, false);
-      expect(backfillResponse.entryId, entryId2);
 
       // === STEP 6: Bob receives the entry via normal sync ===
       // When the entry arrives, recordReceivedEntry updates the status to backfilled
@@ -487,6 +482,79 @@ void main() {
         maxRequestCount: 10,
       );
       expect(missingHighLimit, hasLength(1));
+    });
+
+    test('backfill sends hint when VC does not cover requested counter',
+        () async {
+      // Scenario: Entry was created at counter 2, then modified at counter 5.
+      // The current entry has VC={alice:5} but someone requests counter 2.
+      // In this case, we MUST send the BackfillResponse hint because
+      // recordReceivedEntry won't automatically resolve counter 2 (it's not in the VC).
+
+      // Alice records the entry with its CURRENT VC (after modification)
+      const modifiedEntryId = 'modified-entry-id';
+      await aliceSequenceService.recordSentEntry(
+        entryId: modifiedEntryId,
+        vectorClock: const VectorClock({aliceHostId: 5}),
+      );
+
+      // Also record the ORIGINAL counter 2 that pointed to this entry
+      // (simulating sequence log having both historical and current counters)
+      final now = DateTime.now();
+      await aliceSyncDb.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(aliceHostId),
+          counter: const Value(2),
+          entryId: const Value(modifiedEntryId),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // Create the journal entry in Alice's DB with VC={alice:5}
+      final modifiedEntry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: modifiedEntryId,
+          createdAt: DateTime(2024, 1, 1, 10),
+          updatedAt: DateTime(2024, 1, 1, 11),
+          dateFrom: DateTime(2024, 1, 1, 10),
+          dateTo: DateTime(2024, 1, 1, 10),
+          vectorClock: const VectorClock({aliceHostId: 5}),
+        ),
+        entryText: const EntryText(plainText: 'Modified entry'),
+      );
+      await aliceJournalDb.upsertJournalDbEntity(toDbEntity(modifiedEntry));
+
+      // Bob requests counter 2 (the original counter before modification)
+      const request = SyncBackfillRequest(
+        entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 2)],
+        requesterId: bobHostId,
+      );
+
+      // Alice handles the request
+      await aliceResponseHandler.handleBackfillRequest(request);
+
+      // Verify Alice sent BOTH the entry AND the BackfillResponse hint
+      // because VC[alice]=5 but requested counter=2, so VC doesn't cover it
+      final capturedMessages = verify(
+        () => aliceOutbox.enqueueMessage(captureAny()),
+      ).captured;
+
+      expect(capturedMessages, hasLength(2));
+
+      // First should be the journal entity
+      expect(capturedMessages[0], isA<SyncJournalEntity>());
+      final journalEntity = capturedMessages[0] as SyncJournalEntity;
+      expect(journalEntity.id, modifiedEntryId);
+
+      // Second should be the BackfillResponse hint
+      expect(capturedMessages[1], isA<SyncBackfillResponse>());
+      final backfillResponse = capturedMessages[1] as SyncBackfillResponse;
+      expect(backfillResponse.hostId, aliceHostId);
+      expect(backfillResponse.counter, 2);
+      expect(backfillResponse.deleted, false);
+      expect(backfillResponse.entryId, modifiedEntryId);
     });
   });
 }
