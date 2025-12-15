@@ -703,7 +703,10 @@ class SyncEventProcessor {
           // Returning null keeps the event in the retry queue until a fresh descriptor arrives.
           return null;
         }
-      case SyncEntryLink(entryLink: final entryLink):
+      case SyncEntryLink(
+          entryLink: final entryLink,
+          originatingHostId: final originatingHostId,
+        ):
         final rows = await journalDb.upsertEntryLink(entryLink);
         try {
           if (rows > 0) {
@@ -738,6 +741,39 @@ class SyncEventProcessor {
           {entryLink.fromId, entryLink.toId},
           fromSync: true,
         );
+
+        // Record in sequence log for gap detection (self-healing sync)
+        // Similar to journal entities: update even on no-op upsert when the
+        // link already exists locally, so requested → backfilled can resolve.
+        if (_sequenceLogService != null &&
+            entryLink.vectorClock != null &&
+            originatingHostId != null) {
+          final linkExists =
+              rows > 0 || await journalDb.entryLinkById(entryLink.id) != null;
+          if (linkExists) {
+            try {
+              final gaps = await _sequenceLogService!.recordReceivedEntryLink(
+                linkId: entryLink.id,
+                vectorClock: entryLink.vectorClock!,
+                originatingHostId: originatingHostId,
+              );
+              if (gaps.isNotEmpty) {
+                _loggingService.captureEvent(
+                  'apply.entryLink.gapsDetected count=${gaps.length} for link=${entryLink.id}',
+                  domain: 'SYNC_SEQUENCE',
+                  subDomain: 'gapDetection',
+                );
+              }
+            } catch (e, st) {
+              _loggingService.captureException(
+                e,
+                domain: 'SYNC_SEQUENCE',
+                subDomain: 'recordReceived',
+                stackTrace: st,
+              );
+            }
+          }
+        }
         return null;
       case SyncEntityDefinition(entityDefinition: final entityDefinition):
         await journalDb.upsertEntityDefinition(entityDefinition);

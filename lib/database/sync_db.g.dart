@@ -432,6 +432,14 @@ class $SyncSequenceLogTable extends SyncSequenceLog
   late final GeneratedColumn<String> entryId = GeneratedColumn<String>(
       'entry_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _payloadTypeMeta =
+      const VerificationMeta('payloadType');
+  @override
+  late final GeneratedColumn<int> payloadType = GeneratedColumn<int>(
+      'payload_type', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: Constant(SyncSequencePayloadType.journalEntity.index));
   static const VerificationMeta _originatingHostIdMeta =
       const VerificationMeta('originatingHostId');
   @override
@@ -476,6 +484,7 @@ class $SyncSequenceLogTable extends SyncSequenceLog
         hostId,
         counter,
         entryId,
+        payloadType,
         originatingHostId,
         status,
         createdAt,
@@ -509,6 +518,12 @@ class $SyncSequenceLogTable extends SyncSequenceLog
     if (data.containsKey('entry_id')) {
       context.handle(_entryIdMeta,
           entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta));
+    }
+    if (data.containsKey('payload_type')) {
+      context.handle(
+          _payloadTypeMeta,
+          payloadType.isAcceptableOrUnknown(
+              data['payload_type']!, _payloadTypeMeta));
     }
     if (data.containsKey('originating_host_id')) {
       context.handle(
@@ -559,6 +574,8 @@ class $SyncSequenceLogTable extends SyncSequenceLog
           .read(DriftSqlType.int, data['${effectivePrefix}counter'])!,
       entryId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}entry_id']),
+      payloadType: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}payload_type'])!,
       originatingHostId: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}originating_host_id']),
       status: attachedDatabase.typeMapping
@@ -588,8 +605,12 @@ class SyncSequenceLogItem extends DataClass
   /// The monotonic counter for that host
   final int counter;
 
-  /// The journal entry ID (null if entry is missing/unknown)
+  /// The payload ID (journal entry ID or entry link ID).
+  /// Null if the payload is missing/unknown.
   final String? entryId;
+
+  /// What kind of payload [entryId] refers to.
+  final int payloadType;
 
   /// The host UUID that sent the message which informed us about this record.
   /// For received entries, this is the sender. For gaps detected from VCs,
@@ -614,6 +635,7 @@ class SyncSequenceLogItem extends DataClass
       {required this.hostId,
       required this.counter,
       this.entryId,
+      required this.payloadType,
       this.originatingHostId,
       required this.status,
       required this.createdAt,
@@ -628,6 +650,7 @@ class SyncSequenceLogItem extends DataClass
     if (!nullToAbsent || entryId != null) {
       map['entry_id'] = Variable<String>(entryId);
     }
+    map['payload_type'] = Variable<int>(payloadType);
     if (!nullToAbsent || originatingHostId != null) {
       map['originating_host_id'] = Variable<String>(originatingHostId);
     }
@@ -648,6 +671,7 @@ class SyncSequenceLogItem extends DataClass
       entryId: entryId == null && nullToAbsent
           ? const Value.absent()
           : Value(entryId),
+      payloadType: Value(payloadType),
       originatingHostId: originatingHostId == null && nullToAbsent
           ? const Value.absent()
           : Value(originatingHostId),
@@ -668,6 +692,7 @@ class SyncSequenceLogItem extends DataClass
       hostId: serializer.fromJson<String>(json['hostId']),
       counter: serializer.fromJson<int>(json['counter']),
       entryId: serializer.fromJson<String?>(json['entryId']),
+      payloadType: serializer.fromJson<int>(json['payloadType']),
       originatingHostId:
           serializer.fromJson<String?>(json['originatingHostId']),
       status: serializer.fromJson<int>(json['status']),
@@ -684,6 +709,7 @@ class SyncSequenceLogItem extends DataClass
       'hostId': serializer.toJson<String>(hostId),
       'counter': serializer.toJson<int>(counter),
       'entryId': serializer.toJson<String?>(entryId),
+      'payloadType': serializer.toJson<int>(payloadType),
       'originatingHostId': serializer.toJson<String?>(originatingHostId),
       'status': serializer.toJson<int>(status),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -697,6 +723,7 @@ class SyncSequenceLogItem extends DataClass
           {String? hostId,
           int? counter,
           Value<String?> entryId = const Value.absent(),
+          int? payloadType,
           Value<String?> originatingHostId = const Value.absent(),
           int? status,
           DateTime? createdAt,
@@ -707,6 +734,7 @@ class SyncSequenceLogItem extends DataClass
         hostId: hostId ?? this.hostId,
         counter: counter ?? this.counter,
         entryId: entryId.present ? entryId.value : this.entryId,
+        payloadType: payloadType ?? this.payloadType,
         originatingHostId: originatingHostId.present
             ? originatingHostId.value
             : this.originatingHostId,
@@ -723,6 +751,8 @@ class SyncSequenceLogItem extends DataClass
       hostId: data.hostId.present ? data.hostId.value : this.hostId,
       counter: data.counter.present ? data.counter.value : this.counter,
       entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      payloadType:
+          data.payloadType.present ? data.payloadType.value : this.payloadType,
       originatingHostId: data.originatingHostId.present
           ? data.originatingHostId.value
           : this.originatingHostId,
@@ -744,6 +774,7 @@ class SyncSequenceLogItem extends DataClass
           ..write('hostId: $hostId, ')
           ..write('counter: $counter, ')
           ..write('entryId: $entryId, ')
+          ..write('payloadType: $payloadType, ')
           ..write('originatingHostId: $originatingHostId, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
@@ -755,8 +786,17 @@ class SyncSequenceLogItem extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(hostId, counter, entryId, originatingHostId,
-      status, createdAt, updatedAt, requestCount, lastRequestedAt);
+  int get hashCode => Object.hash(
+      hostId,
+      counter,
+      entryId,
+      payloadType,
+      originatingHostId,
+      status,
+      createdAt,
+      updatedAt,
+      requestCount,
+      lastRequestedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -764,6 +804,7 @@ class SyncSequenceLogItem extends DataClass
           other.hostId == this.hostId &&
           other.counter == this.counter &&
           other.entryId == this.entryId &&
+          other.payloadType == this.payloadType &&
           other.originatingHostId == this.originatingHostId &&
           other.status == this.status &&
           other.createdAt == this.createdAt &&
@@ -776,6 +817,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
   final Value<String> hostId;
   final Value<int> counter;
   final Value<String?> entryId;
+  final Value<int> payloadType;
   final Value<String?> originatingHostId;
   final Value<int> status;
   final Value<DateTime> createdAt;
@@ -787,6 +829,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     this.hostId = const Value.absent(),
     this.counter = const Value.absent(),
     this.entryId = const Value.absent(),
+    this.payloadType = const Value.absent(),
     this.originatingHostId = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -799,6 +842,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     required String hostId,
     required int counter,
     this.entryId = const Value.absent(),
+    this.payloadType = const Value.absent(),
     this.originatingHostId = const Value.absent(),
     this.status = const Value.absent(),
     required DateTime createdAt,
@@ -814,6 +858,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     Expression<String>? hostId,
     Expression<int>? counter,
     Expression<String>? entryId,
+    Expression<int>? payloadType,
     Expression<String>? originatingHostId,
     Expression<int>? status,
     Expression<DateTime>? createdAt,
@@ -826,6 +871,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
       if (hostId != null) 'host_id': hostId,
       if (counter != null) 'counter': counter,
       if (entryId != null) 'entry_id': entryId,
+      if (payloadType != null) 'payload_type': payloadType,
       if (originatingHostId != null) 'originating_host_id': originatingHostId,
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
@@ -840,6 +886,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
       {Value<String>? hostId,
       Value<int>? counter,
       Value<String?>? entryId,
+      Value<int>? payloadType,
       Value<String?>? originatingHostId,
       Value<int>? status,
       Value<DateTime>? createdAt,
@@ -851,6 +898,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
       hostId: hostId ?? this.hostId,
       counter: counter ?? this.counter,
       entryId: entryId ?? this.entryId,
+      payloadType: payloadType ?? this.payloadType,
       originatingHostId: originatingHostId ?? this.originatingHostId,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
@@ -872,6 +920,9 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     }
     if (entryId.present) {
       map['entry_id'] = Variable<String>(entryId.value);
+    }
+    if (payloadType.present) {
+      map['payload_type'] = Variable<int>(payloadType.value);
     }
     if (originatingHostId.present) {
       map['originating_host_id'] = Variable<String>(originatingHostId.value);
@@ -903,6 +954,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
           ..write('hostId: $hostId, ')
           ..write('counter: $counter, ')
           ..write('entryId: $entryId, ')
+          ..write('payloadType: $payloadType, ')
           ..write('originatingHostId: $originatingHostId, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
@@ -1339,6 +1391,7 @@ typedef $$SyncSequenceLogTableCreateCompanionBuilder = SyncSequenceLogCompanion
   required String hostId,
   required int counter,
   Value<String?> entryId,
+  Value<int> payloadType,
   Value<String?> originatingHostId,
   Value<int> status,
   required DateTime createdAt,
@@ -1352,6 +1405,7 @@ typedef $$SyncSequenceLogTableUpdateCompanionBuilder = SyncSequenceLogCompanion
   Value<String> hostId,
   Value<int> counter,
   Value<String?> entryId,
+  Value<int> payloadType,
   Value<String?> originatingHostId,
   Value<int> status,
   Value<DateTime> createdAt,
@@ -1378,6 +1432,9 @@ class $$SyncSequenceLogTableFilterComposer
 
   ColumnFilters<String> get entryId => $composableBuilder(
       column: $table.entryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get payloadType => $composableBuilder(
+      column: $table.payloadType, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get originatingHostId => $composableBuilder(
       column: $table.originatingHostId,
@@ -1418,6 +1475,9 @@ class $$SyncSequenceLogTableOrderingComposer
   ColumnOrderings<String> get entryId => $composableBuilder(
       column: $table.entryId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get payloadType => $composableBuilder(
+      column: $table.payloadType, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get originatingHostId => $composableBuilder(
       column: $table.originatingHostId,
       builder: (column) => ColumnOrderings(column));
@@ -1457,6 +1517,9 @@ class $$SyncSequenceLogTableAnnotationComposer
 
   GeneratedColumn<String> get entryId =>
       $composableBuilder(column: $table.entryId, builder: (column) => column);
+
+  GeneratedColumn<int> get payloadType => $composableBuilder(
+      column: $table.payloadType, builder: (column) => column);
 
   GeneratedColumn<String> get originatingHostId => $composableBuilder(
       column: $table.originatingHostId, builder: (column) => column);
@@ -1507,6 +1570,7 @@ class $$SyncSequenceLogTableTableManager extends RootTableManager<
             Value<String> hostId = const Value.absent(),
             Value<int> counter = const Value.absent(),
             Value<String?> entryId = const Value.absent(),
+            Value<int> payloadType = const Value.absent(),
             Value<String?> originatingHostId = const Value.absent(),
             Value<int> status = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -1519,6 +1583,7 @@ class $$SyncSequenceLogTableTableManager extends RootTableManager<
             hostId: hostId,
             counter: counter,
             entryId: entryId,
+            payloadType: payloadType,
             originatingHostId: originatingHostId,
             status: status,
             createdAt: createdAt,
@@ -1531,6 +1596,7 @@ class $$SyncSequenceLogTableTableManager extends RootTableManager<
             required String hostId,
             required int counter,
             Value<String?> entryId = const Value.absent(),
+            Value<int> payloadType = const Value.absent(),
             Value<String?> originatingHostId = const Value.absent(),
             Value<int> status = const Value.absent(),
             required DateTime createdAt,
@@ -1543,6 +1609,7 @@ class $$SyncSequenceLogTableTableManager extends RootTableManager<
             hostId: hostId,
             counter: counter,
             entryId: entryId,
+            payloadType: payloadType,
             originatingHostId: originatingHostId,
             status: status,
             createdAt: createdAt,

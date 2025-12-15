@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -39,6 +40,7 @@ void main() {
       ),
     );
     registerFallbackValue(SyncSequenceStatus.received);
+    registerFallbackValue(SyncSequencePayloadType.journalEntity);
   });
 
   setUp(() {
@@ -59,9 +61,13 @@ void main() {
     when(() => mockDb.updateHostActivity(any(), any()))
         .thenAnswer((_) async => 1);
 
-    // Stub getPendingEntriesByEntryId for resolvePendingHints (default: no pending)
-    when(() => mockDb.getPendingEntriesByEntryId(any()))
-        .thenAnswer((_) async => []);
+    // Stub getPendingEntriesByPayloadId for resolvePendingHints (default: no pending)
+    when(
+      () => mockDb.getPendingEntriesByPayloadId(
+        payloadType: any(named: 'payloadType'),
+        payloadId: any(named: 'payloadId'),
+      ),
+    ).thenAnswer((_) async => []);
 
     service = SyncSequenceLogService(
       syncDatabase: mockDb,
@@ -314,6 +320,15 @@ void main() {
       expect(captured.length, 1);
       final companion = captured[0] as SyncSequenceLogCompanion;
       expect(companion.status.value, SyncSequenceStatus.backfilled.index);
+
+      // Verify backfill arrival was logged
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('backfilled hostId=$aliceHostId')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'backfillArrived',
+        ),
+      ).called(1);
     });
 
     test('does not downgrade backfilled entry to received', () async {
@@ -453,6 +468,15 @@ void main() {
       // Bob's requested entry should now be backfilled with the entryId
       expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
       expect(bobRecord.entryId.value, entryId);
+
+      // Verify non-originator backfill arrival was logged
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('backfilled (non-originator)')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'backfillArrived',
+        ),
+      ).called(1);
     });
 
     test('does not downgrade non-originator backfilled entry', () async {
@@ -1275,8 +1299,12 @@ void main() {
         ),
       ];
 
-      when(() => mockDb.getPendingEntriesByEntryId(entryId))
-          .thenAnswer((_) async => pendingEntries);
+      when(
+        () => mockDb.getPendingEntriesByPayloadId(
+          payloadType: SyncSequencePayloadType.journalEntity,
+          payloadId: entryId,
+        ),
+      ).thenAnswer((_) async => pendingEntries);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
         (_) async => pendingEntries[0],
       );
@@ -1286,8 +1314,9 @@ void main() {
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final resolved = await service.resolvePendingHints(
-        entryId: entryId,
-        entryVectorClock: vectorClock,
+        payloadType: SyncSequencePayloadType.journalEntity,
+        payloadId: entryId,
+        payloadVectorClock: vectorClock,
       );
 
       expect(resolved, 2);
@@ -1298,12 +1327,17 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5});
       const entryId = 'arrived-entry';
 
-      when(() => mockDb.getPendingEntriesByEntryId(entryId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockDb.getPendingEntriesByPayloadId(
+          payloadType: SyncSequencePayloadType.journalEntity,
+          payloadId: entryId,
+        ),
+      ).thenAnswer((_) async => []);
 
       final resolved = await service.resolvePendingHints(
-        entryId: entryId,
-        entryVectorClock: vectorClock,
+        payloadType: SyncSequencePayloadType.journalEntity,
+        payloadId: entryId,
+        payloadVectorClock: vectorClock,
       );
 
       expect(resolved, 0);
@@ -1330,16 +1364,21 @@ void main() {
         ),
       ];
 
-      when(() => mockDb.getPendingEntriesByEntryId(entryId))
-          .thenAnswer((_) async => pendingEntries);
+      when(
+        () => mockDb.getPendingEntriesByPayloadId(
+          payloadType: SyncSequencePayloadType.journalEntity,
+          payloadId: entryId,
+        ),
+      ).thenAnswer((_) async => pendingEntries);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
         (_) async => pendingEntries[0],
       );
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final resolved = await service.resolvePendingHints(
-        entryId: entryId,
-        entryVectorClock: vectorClock,
+        payloadType: SyncSequencePayloadType.journalEntity,
+        payloadId: entryId,
+        payloadVectorClock: vectorClock,
       );
 
       // Only alice:5 should be resolved
@@ -1419,6 +1458,419 @@ void main() {
       expect(result.length, 2);
     });
   });
+
+  group('recordReceivedEntryLink', () {
+    test('records entry link with correct payload type', () async {
+      const vectorClock = VectorClock({aliceHostId: 1});
+      const linkId = 'link-1';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 1))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntryLink(
+        linkId: linkId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(gaps, isEmpty);
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      expect(captured.length, 1);
+      final record = captured[0] as SyncSequenceLogCompanion;
+      expect(record.entryId.value, linkId);
+      expect(
+        record.payloadType.value,
+        SyncSequencePayloadType.entryLink.index,
+      );
+    });
+
+    test('detects gaps when link counter jumps', () async {
+      // Alice counter was 2, now we get link counter 5 - missing 3 and 4
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const linkId = 'link-5';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 2);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 4))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntryLink(
+        linkId: linkId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(gaps.length, 2);
+      expect(gaps[0], (hostId: aliceHostId, counter: 3));
+      expect(gaps[1], (hostId: aliceHostId, counter: 4));
+
+      // Should record: missing 3, missing 4, received link 5
+      verify(() => mockDb.recordSequenceEntry(any())).called(3);
+    });
+  });
+
+  group('EntryLink resolves ghost missing rows', () {
+    test('receiving entry link resolves previously missing journal counter',
+        () async {
+      // Scenario: A journal entry created a gap at counter 3, but counter 3
+      // was actually an entry link operation. When the link arrives, it should
+      // resolve the "ghost missing" row.
+
+      const vectorClock = VectorClock({aliceHostId: 3});
+      const linkId = 'link-3';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 2);
+      // Counter 3 already exists as missing (created by journal gap detection)
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntryLink(
+        linkId: linkId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(gaps, isEmpty);
+
+      // The missing row should be updated to received with the link ID
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      expect(captured.length, 1);
+      final record = captured[0] as SyncSequenceLogCompanion;
+      expect(record.entryId.value, linkId);
+      expect(record.status.value, SyncSequenceStatus.received.index);
+      expect(
+        record.payloadType.value,
+        SyncSequencePayloadType.entryLink.index,
+      );
+    });
+
+    test('receiving journal entry resolves missing row created by link gap',
+        () async {
+      // Scenario: An entry link operation created a gap at counter 5, but
+      // counter 5 was actually a journal entry. When the journal entry arrives,
+      // it should resolve the "ghost missing" row.
+
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-5';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 4);
+      // Counter 5 already exists as missing (created by link gap detection)
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(gaps, isEmpty);
+
+      // The missing row should be updated to received with journal entry ID
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      expect(captured.length, 1);
+      final record = captured[0] as SyncSequenceLogCompanion;
+      expect(record.entryId.value, entryId);
+      expect(record.status.value, SyncSequenceStatus.received.index);
+      expect(
+        record.payloadType.value,
+        SyncSequencePayloadType.journalEntity.index,
+      );
+    });
+  });
+
+  group('Interleaved link/journal operations', () {
+    test('interleaved operations do not create permanent missing gaps',
+        () async {
+      // Scenario: Operations happen in order journal:1, link:2, journal:3
+      // We receive them in order 1, 3, then 2 - no permanent gaps should remain
+
+      // Step 1: Receive journal entry at counter 1
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 1))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      var gaps = await service.recordReceivedEntry(
+        entryId: 'journal-1',
+        vectorClock: const VectorClock({aliceHostId: 1}),
+        originatingHostId: aliceHostId,
+      );
+      expect(gaps, isEmpty);
+
+      // Step 2: Receive journal entry at counter 3 (creates gap at 2)
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 1);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 2))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
+          .thenAnswer((_) async => null);
+
+      gaps = await service.recordReceivedEntry(
+        entryId: 'journal-3',
+        vectorClock: const VectorClock({aliceHostId: 3}),
+        originatingHostId: aliceHostId,
+      );
+      expect(gaps.length, 1);
+      expect(gaps[0], (hostId: aliceHostId, counter: 2));
+
+      // Step 3: Receive entry link at counter 2 (resolves the gap)
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 3);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 2)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          2,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+
+      gaps = await service.recordReceivedEntryLink(
+        linkId: 'link-2',
+        vectorClock: const VectorClock({aliceHostId: 2}),
+        originatingHostId: aliceHostId,
+      );
+      expect(gaps, isEmpty);
+
+      // Verify the link was recorded with correct type
+      final lastCaptured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured.last as SyncSequenceLogCompanion;
+      expect(lastCaptured.entryId.value, 'link-2');
+      expect(
+        lastCaptured.payloadType.value,
+        SyncSequencePayloadType.entryLink.index,
+      );
+      expect(lastCaptured.status.value, SyncSequenceStatus.received.index);
+    });
+
+    test('multi-host VC with mixed payload types tracks all counters',
+        () async {
+      // Scenario: Entry with VC {alice:5, bob:3} where alice's counter was
+      // from a journal edit and bob's was from a link creation
+      const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
+      const entryId = 'journal-entry';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 4);
+      when(() => mockDb.getLastCounterForHost(bobHostId))
+          .thenAnswer((_) async => 2);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(gaps, isEmpty);
+
+      // Both hosts should be recorded with the same entryId
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+      expect(captured.length, 2);
+
+      for (final record in captured.cast<SyncSequenceLogCompanion>()) {
+        expect(record.entryId.value, entryId);
+        // Default payload type for recordReceivedEntry is journalEntity
+        expect(
+          record.payloadType.value,
+          SyncSequencePayloadType.journalEntity.index,
+        );
+      }
+    });
+  });
+
+  group('populateFromEntryLinks', () {
+    test('populates sequence log from entry links stream', () async {
+      final linkStream = Stream.fromIterable([
+        [
+          (id: 'link-1', vectorClock: <String, int>{aliceHostId: 1}),
+          (id: 'link-2', vectorClock: <String, int>{aliceHostId: 2}),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      var progressCalled = false;
+      final populated = await service.populateFromEntryLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 2,
+        onProgress: (progress) {
+          progressCalled = true;
+        },
+      );
+
+      expect(populated, 2);
+      expect(progressCalled, true);
+
+      final captured = verify(
+        () => mockDb.batchInsertSequenceEntries(captureAny()),
+      ).captured;
+
+      expect(captured.length, 1);
+      final entries = captured[0] as List<SyncSequenceLogCompanion>;
+      expect(entries.length, 2);
+
+      // All entries should have entryLink payload type
+      for (final entry in entries) {
+        expect(
+          entry.payloadType.value,
+          SyncSequencePayloadType.entryLink.index,
+        );
+      }
+    });
+
+    test('skips existing counters', () async {
+      final linkStream = Stream.fromIterable([
+        [
+          (id: 'link-1', vectorClock: <String, int>{aliceHostId: 1}),
+          (id: 'link-2', vectorClock: <String, int>{aliceHostId: 2}),
+        ],
+      ]);
+
+      // Counter 1 already exists
+      when(() => mockDb.getCountersForHost(aliceHostId))
+          .thenAnswer((_) async => {1});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final populated = await service.populateFromEntryLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 2,
+      );
+
+      // Only counter 2 should be inserted
+      expect(populated, 1);
+
+      final captured = verify(
+        () => mockDb.batchInsertSequenceEntries(captureAny()),
+      ).captured;
+
+      final entries = captured[0] as List<SyncSequenceLogCompanion>;
+      expect(entries.length, 1);
+      expect(entries[0].counter.value, 2);
+    });
+
+    test('handles multi-host vector clocks', () async {
+      final linkStream = Stream.fromIterable([
+        [
+          (
+            id: 'link-1',
+            vectorClock: <String, int>{aliceHostId: 5, bobHostId: 3}
+          ),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final populated = await service.populateFromEntryLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 1,
+      );
+
+      // Should insert 2 entries (one for each host in the VC)
+      expect(populated, 2);
+
+      final captured = verify(
+        () => mockDb.batchInsertSequenceEntries(captureAny()),
+      ).captured;
+
+      final entries = captured[0] as List<SyncSequenceLogCompanion>;
+      expect(entries.length, 2);
+
+      final aliceEntry = entries.firstWhere(
+        (e) => e.hostId.value == aliceHostId,
+      );
+      final bobEntry = entries.firstWhere(
+        (e) => e.hostId.value == bobHostId,
+      );
+
+      expect(aliceEntry.counter.value, 5);
+      expect(bobEntry.counter.value, 3);
+      expect(aliceEntry.entryId.value, 'link-1');
+      expect(bobEntry.entryId.value, 'link-1');
+    });
+
+    test('returns zero when stream is empty', () async {
+      const linkStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+
+      final populated = await service.populateFromEntryLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 0,
+      );
+
+      expect(populated, 0);
+      verifyNever(() => mockDb.batchInsertSequenceEntries(any()));
+    });
+
+    test('skips links with null vector clock', () async {
+      final linkStream = Stream.fromIterable([
+        [
+          (id: 'link-1', vectorClock: null),
+          (id: 'link-2', vectorClock: <String, int>{aliceHostId: 2}),
+        ],
+      ]);
+
+      when(() => mockDb.getCountersForHost(any()))
+          .thenAnswer((_) async => <int>{});
+      when(() => mockDb.batchInsertSequenceEntries(any()))
+          .thenAnswer((_) async {});
+
+      final populated = await service.populateFromEntryLinks(
+        linkStream: linkStream,
+        getTotalCount: () async => 2,
+      );
+
+      // Only link-2 should be inserted
+      expect(populated, 1);
+    });
+  });
 }
 
 SyncSequenceLogItem _createLogItem(
@@ -1432,6 +1884,7 @@ SyncSequenceLogItem _createLogItem(
     hostId: hostId,
     counter: counter,
     entryId: entryId,
+    payloadType: 0, // SyncSequencePayloadType.journalEntity.index
     originatingHostId: originatingHostId,
     status: status.index,
     createdAt: DateTime(2024),

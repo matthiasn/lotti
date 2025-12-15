@@ -1911,6 +1911,285 @@ void main() {
       });
     });
 
+    group('Vector clock streaming for sequence log population -', () {
+      test('streamEntriesWithVectorClock returns entries with vector clocks',
+          () async {
+        // Create entries with vector clocks
+        const vc1 = VectorClock({'host1': 1, 'host2': 2});
+        const vc2 = VectorClock({'host1': 3});
+        final entry1 = createJournalEntryWithVclock(vc1);
+        final entry2 = createJournalEntryWithVclock(vc2);
+
+        await db!.updateJournalEntity(entry1);
+        await db!.updateJournalEntity(entry2);
+
+        // Stream and collect all batches
+        final results = await db!
+            .streamEntriesWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        // Verify we got the entries with their vector clocks
+        expect(results.length, greaterThanOrEqualTo(2));
+
+        final result1 = results.firstWhere((r) => r.id == entry1.meta.id);
+        expect(result1.vectorClock, {'host1': 1, 'host2': 2});
+
+        final result2 = results.firstWhere((r) => r.id == entry2.meta.id);
+        expect(result2.vectorClock, {'host1': 3});
+      });
+
+      test('streamEntriesWithVectorClock handles entries without vector clock',
+          () async {
+        final entryNoVc = createJournalEntry('no vector clock');
+        await db!.updateJournalEntity(entryNoVc);
+
+        final results = await db!
+            .streamEntriesWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        final found = results.firstWhere((r) => r.id == entryNoVc.meta.id);
+        expect(found.vectorClock, isNull);
+      });
+
+      test('streamEntryLinksWithVectorClock returns links with vector clocks',
+          () async {
+        const vc = VectorClock({'host1': 5});
+        final link = EntryLink.basic(
+          id: 'link-with-vc',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: vc,
+        );
+
+        await db!.upsertEntryLink(link);
+
+        final results = await db!
+            .streamEntryLinksWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        expect(results, isNotEmpty);
+        final found = results.firstWhere((r) => r.id == 'link-with-vc');
+        expect(found.vectorClock, {'host1': 5});
+      });
+
+      test('streamEntryLinksWithVectorClock handles links without vector clock',
+          () async {
+        final link = EntryLink.basic(
+          id: 'link-no-vc',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: null,
+        );
+
+        await db!.upsertEntryLink(link);
+
+        final results = await db!
+            .streamEntryLinksWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        final found = results.firstWhere((r) => r.id == 'link-no-vc');
+        expect(found.vectorClock, isNull);
+      });
+
+      test('countAllJournalEntries returns correct count', () async {
+        final initialCount = await db!.countAllJournalEntries();
+
+        await db!.updateJournalEntity(createJournalEntry('entry 1'));
+        await db!.updateJournalEntity(createJournalEntry('entry 2'));
+
+        final newCount = await db!.countAllJournalEntries();
+        expect(newCount, initialCount + 2);
+      });
+
+      test('countAllEntryLinks returns correct count', () async {
+        final initialCount = await db!.countAllEntryLinks();
+
+        await db!.upsertEntryLink(EntryLink.basic(
+          id: 'count-link-1',
+          fromId: 'from',
+          toId: 'to1',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: null,
+        ));
+        await db!.upsertEntryLink(EntryLink.basic(
+          id: 'count-link-2',
+          fromId: 'from',
+          toId: 'to2',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: null,
+        ));
+
+        final newCount = await db!.countAllEntryLinks();
+        expect(newCount, initialCount + 2);
+      });
+
+      test('streamEntriesWithVectorClock respects batch size', () async {
+        // Create several entries
+        for (var i = 0; i < 5; i++) {
+          await db!.updateJournalEntity(createJournalEntry('batch test $i'));
+        }
+
+        // Stream with small batch size
+        var batchCount = 0;
+        await for (final batch
+            in db!.streamEntriesWithVectorClock(batchSize: 2)) {
+          batchCount++;
+          expect(batch.length, lessThanOrEqualTo(2));
+        }
+
+        // Should have multiple batches
+        expect(batchCount, greaterThanOrEqualTo(1));
+      });
+
+      test('streamEntriesWithVectorClock handles malformed serialized data',
+          () async {
+        // Create a valid entry first
+        final validEntry = createJournalEntryWithVclock(
+          const VectorClock({'host': 42}),
+          id: 'valid-entry',
+        );
+        await db!.updateJournalEntity(validEntry);
+
+        // Insert a malformed entry via raw SQL with non-numeric vectorClock
+        // This bypasses normal serialization to test DB layer parsing
+        final malformedSerialized = jsonEncode({
+          'meta': {
+            'id': 'malformed-entry',
+            'createdAt': '2024-01-01T00:00:00.000',
+            'updatedAt': '2024-01-01T00:00:00.000',
+            'dateFrom': '2024-01-01T00:00:00.000',
+            'dateTo': '2024-01-01T00:00:00.000',
+            'starred': false,
+            'private': false,
+            'vectorClock': {'host': 'not-a-number'},
+          },
+          'entryText': {'plainText': 'malformed entry'},
+        });
+
+        final timestamp = DateTime(2024, 1, 1).millisecondsSinceEpoch;
+        await db!.customStatement(
+          'INSERT INTO journal '
+          '(id, created_at, updated_at, date_from, date_to, deleted, starred, '
+          'private, task, flag, type, serialized, schema_version, category) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            'malformed-entry',
+            timestamp,
+            timestamp,
+            timestamp,
+            timestamp,
+            0, // deleted
+            0, // starred
+            0, // private
+            0, // task
+            0, // flag
+            'JournalEntry',
+            malformedSerialized,
+            0, // schema_version
+            '', // category
+          ],
+        );
+
+        // The streaming method should handle entries gracefully
+        // even if vector clock extraction fails (returns null)
+        final results = await db!
+            .streamEntriesWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        expect(results.length, greaterThanOrEqualTo(2));
+
+        // Valid entry should have its vectorClock intact
+        final validFound = results.firstWhere((r) => r.id == 'valid-entry');
+        expect(validFound.vectorClock, {'host': 42});
+
+        // Malformed entry should have vectorClock == null (graceful handling)
+        final malformedFound =
+            results.firstWhere((r) => r.id == 'malformed-entry');
+        expect(
+          malformedFound.vectorClock,
+          isNull,
+          reason: 'Non-numeric vectorClock values should result in null',
+        );
+      });
+
+      test(
+          'streamEntryLinksWithVectorClock handles links with non-numeric vectorClock values gracefully',
+          () async {
+        // Create a valid link first
+        final validLink = EntryLink.basic(
+          id: 'link-valid',
+          fromId: 'from-valid',
+          toId: 'to-valid',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: const VectorClock({'host': 1}),
+        );
+        await db!.upsertEntryLink(validLink);
+
+        // Insert a malformed link via raw SQL with non-numeric vectorClock values
+        // This bypasses normal serialization to test DB layer parsing
+        final malformedSerialized = jsonEncode({
+          'id': 'link-malformed',
+          'fromId': 'from-malformed',
+          'toId': 'to-malformed',
+          'linkType': 'basic',
+          'createdAt': '2024-01-01T00:00:00.000',
+          'updatedAt': '2024-01-01T00:00:00.000',
+          'vectorClock': {'host': 'not-a-number', 'other': 'also-invalid'},
+        });
+
+        // Use Unix timestamp in milliseconds for created_at/updated_at
+        final timestamp = DateTime(2024, 1, 1).millisecondsSinceEpoch;
+        await db!.customStatement(
+          'INSERT INTO linked_entries '
+          '(id, from_id, to_id, type, serialized, hidden, created_at, updated_at) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            'link-malformed',
+            'from-malformed',
+            'to-malformed',
+            'basic',
+            malformedSerialized,
+            0,
+            timestamp,
+            timestamp,
+          ],
+        );
+
+        // Streaming should NOT throw and should handle both entries
+        final results = await db!
+            .streamEntryLinksWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        expect(results.length, greaterThanOrEqualTo(2));
+
+        // Valid link should have its vectorClock intact
+        final validFound = results.firstWhere((r) => r.id == 'link-valid');
+        expect(validFound.vectorClock, {'host': 1});
+
+        // Malformed link should have vectorClock == null (graceful handling)
+        final malformedFound =
+            results.firstWhere((r) => r.id == 'link-malformed');
+        expect(
+          malformedFound.vectorClock,
+          isNull,
+          reason: 'Non-numeric vectorClock values should result in null',
+        );
+      });
+    });
+
     tearDownAll(() async {
       await getIt.reset();
     });

@@ -86,6 +86,7 @@ SyncEntryLink _$SyncEntryLinkFromJson(Map<String, dynamic> json) =>
     SyncEntryLink(
       entryLink: EntryLink.fromJson(json['entryLink'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      originatingHostId: json['originatingHostId'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -93,6 +94,7 @@ Map<String, dynamic> _$SyncEntryLinkToJson(SyncEntryLink instance) =>
     <String, dynamic>{
       'entryLink': instance.entryLink,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'originatingHostId': instance.originatingHostId,
       'runtimeType': instance.$type,
     };
 
@@ -167,6 +169,9 @@ SyncBackfillResponse _$SyncBackfillResponseFromJson(
       counter: (json['counter'] as num).toInt(),
       deleted: json['deleted'] as bool,
       entryId: json['entryId'] as String?,
+      payloadType: $enumDecodeNullable(
+          _$SyncSequencePayloadTypeEnumMap, json['payloadType']),
+      payloadId: json['payloadId'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -177,5 +182,12 @@ Map<String, dynamic> _$SyncBackfillResponseToJson(
       'counter': instance.counter,
       'deleted': instance.deleted,
       'entryId': instance.entryId,
+      'payloadType': _$SyncSequencePayloadTypeEnumMap[instance.payloadType],
+      'payloadId': instance.payloadId,
       'runtimeType': instance.$type,
     };
+
+const _$SyncSequencePayloadTypeEnumMap = {
+  SyncSequencePayloadType.journalEntity: 'journalEntity',
+  SyncSequencePayloadType.entryLink: 'entryLink',
+};

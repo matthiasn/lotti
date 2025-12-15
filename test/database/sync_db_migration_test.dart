@@ -90,7 +90,7 @@ void main() {
       // Verify the migration occurred by checking schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 2);
+      expect(db.schemaVersion, 3);
 
       // Verify sync_sequence_log table exists and has correct schema
       final seqLogResult = await db
@@ -105,6 +105,7 @@ void main() {
       expect(seqLogSql, contains('entry_id'));
       expect(seqLogSql, contains('status'));
       expect(seqLogSql, contains('request_count'));
+      expect(seqLogSql, contains('payload_type')); // Added in v3
 
       // Verify host_activity table exists
       final hostActivityResult = await db
@@ -132,7 +133,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 2);
+      expect(versionResult.first.read<int>('user_version'), 3);
 
       // Verify all tables exist
       final tablesResult = await db

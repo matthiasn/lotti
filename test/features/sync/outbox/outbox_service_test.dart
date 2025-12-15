@@ -23,6 +23,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -61,6 +62,9 @@ class MockMatrixClient extends Mock implements Client {}
 
 class MockCachedLoginController extends Mock
     implements matrix_utils.CachedStreamController<LoginState> {}
+
+class MockSyncSequenceLogService extends Mock
+    implements SyncSequenceLogService {}
 
 class TestableOutboxService extends OutboxService {
   TestableOutboxService({
@@ -2279,6 +2283,184 @@ void main() {
               contains('type=SyncJournalEntity'),
               contains('embeddedLinks=0'),
             ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+  });
+
+  group('EntryLink sequence log recording -', () {
+    late MockSyncSequenceLogService sequenceLogService;
+    late OutboxService serviceWithSequenceLog;
+
+    setUp(() {
+      sequenceLogService = MockSyncSequenceLogService();
+      registerFallbackValue(const VectorClock({'fallback': 1}));
+    });
+
+    tearDown(() async {
+      await serviceWithSequenceLog.dispose();
+    });
+
+    test('records entry link in sequence log when vectorClock present',
+        () async {
+      const vc = VectorClock({'host-A': 10});
+      final link = SyncMessage.entryLink(
+        entryLink: EntryLink.basic(
+          id: 'link-seq-1',
+          fromId: 'A',
+          toId: 'B',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: vc,
+        ),
+        status: SyncEntryStatus.initial,
+      );
+
+      when(() => sequenceLogService.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+          )).thenAnswer((_) async {});
+
+      serviceWithSequenceLog = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        sequenceLogService: sequenceLogService,
+      );
+
+      await serviceWithSequenceLog.enqueueMessage(link);
+
+      verify(() => sequenceLogService.recordSentEntryLink(
+            linkId: 'link-seq-1',
+            vectorClock: vc,
+          )).called(1);
+    });
+
+    test('skips sequence log recording when vectorClock is null', () async {
+      final link = SyncMessage.entryLink(
+        entryLink: EntryLink.basic(
+          id: 'link-no-vc',
+          fromId: 'X',
+          toId: 'Y',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: null,
+        ),
+        status: SyncEntryStatus.initial,
+      );
+
+      serviceWithSequenceLog = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        sequenceLogService: sequenceLogService,
+      );
+
+      await serviceWithSequenceLog.enqueueMessage(link);
+
+      // Should NOT call recordSentEntryLink
+      verifyNever(() => sequenceLogService.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+          ));
+    });
+
+    test('handles recordSentEntryLink errors gracefully', () async {
+      const vc = VectorClock({'host-B': 5});
+      final link = SyncMessage.entryLink(
+        entryLink: EntryLink.basic(
+          id: 'link-error',
+          fromId: 'P',
+          toId: 'Q',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: vc,
+        ),
+        status: SyncEntryStatus.initial,
+      );
+
+      when(() => sequenceLogService.recordSentEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+          )).thenThrow(Exception('sequence log error'));
+
+      serviceWithSequenceLog = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        sequenceLogService: sequenceLogService,
+      );
+
+      // Should not throw
+      await serviceWithSequenceLog.enqueueMessage(link);
+
+      // Verify exception was logged
+      verify(() => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordSent',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).called(1);
+    });
+
+    test('skips recording when sequenceLogService is null', () async {
+      const vc = VectorClock({'host-C': 7});
+      final link = SyncMessage.entryLink(
+        entryLink: EntryLink.basic(
+          id: 'link-no-service',
+          fromId: 'M',
+          toId: 'N',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: vc,
+        ),
+        status: SyncEntryStatus.initial,
+      );
+
+      // Service without sequenceLogService
+      serviceWithSequenceLog = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        // No sequenceLogService
+      );
+
+      // Should not throw and not attempt to record
+      await serviceWithSequenceLog.enqueueMessage(link);
+
+      // sequenceLogService is null so this is effectively a no-op test
+      // Verify the message was still enqueued (logging event)
+      verify(() => loggingService.captureEvent(
+            contains('type=SyncEntryLink'),
             domain: 'OUTBOX',
             subDomain: 'enqueueMessage',
           )).called(1);

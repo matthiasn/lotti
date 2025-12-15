@@ -467,7 +467,8 @@ void main() {
       });
     });
 
-    test('processFullBackfill uses getMissingEntriesForActiveHosts', () {
+    test('processFullBackfill uses getMissingEntries without host filtering',
+        () {
       fakeAsync((async) {
         final service = BackfillRequestService(
           sequenceLogService: mockSequenceService,
@@ -483,7 +484,8 @@ void main() {
           _createMissingLogItem(aliceHostId, 2),
         ];
 
-        when(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        // Full backfill should use getMissingEntries (no host activity filter)
+        when(() => mockSequenceService.getMissingEntries(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
             )).thenAnswer((_) async => missingEntries);
@@ -497,18 +499,24 @@ void main() {
         service.processFullBackfill();
         async.flushMicrotasks();
 
-        // Should use getMissingEntriesForActiveHosts (no limits)
-        verify(() => mockSequenceService.getMissingEntriesForActiveHosts(
+        // Should use getMissingEntries (no host activity filter)
+        verify(() => mockSequenceService.getMissingEntries(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
             )).called(1);
 
-        // Should NOT use getMissingEntriesWithLimits
+        // Should NOT use getMissingEntriesWithLimits (that's for automatic backfill)
         verifyNever(() => mockSequenceService.getMissingEntriesWithLimits(
               limit: any(named: 'limit'),
               maxRequestCount: any(named: 'maxRequestCount'),
               maxAge: any(named: 'maxAge'),
               maxPerHost: any(named: 'maxPerHost'),
+            ));
+
+        // Should NOT use getMissingEntriesForActiveHosts (that filters by activity)
+        verifyNever(() => mockSequenceService.getMissingEntriesForActiveHosts(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
             ));
 
         service.dispose();
@@ -969,6 +977,7 @@ SyncSequenceLogItem _createMissingLogItem(
   return SyncSequenceLogItem(
     hostId: hostId,
     counter: counter,
+    payloadType: 0, // SyncSequencePayloadType.journalEntity.index
     originatingHostId: null,
     status: SyncSequenceStatus.missing.index,
     createdAt: DateTime(2024),
@@ -984,6 +993,7 @@ SyncSequenceLogItem _createRequestedLogItem(
   return SyncSequenceLogItem(
     hostId: hostId,
     counter: counter,
+    payloadType: 0, // SyncSequencePayloadType.journalEntity.index
     originatingHostId: null,
     status: SyncSequenceStatus.requested.index,
     createdAt: DateTime(2024),

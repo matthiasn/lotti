@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -25,6 +26,7 @@ class SyncSequenceLogService {
   Future<void> recordSentEntry({
     required String entryId,
     required VectorClock vectorClock,
+    SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
     final myHost = await _vectorClockService.getHost();
 
@@ -41,6 +43,7 @@ class SyncSequenceLogService {
           hostId: Value(hostId),
           counter: Value(counter),
           entryId: Value(entryId),
+          payloadType: Value(payloadType.index),
           originatingHostId: Value(myHost),
           status: Value(SyncSequenceStatus.received.index),
           createdAt: Value(now),
@@ -49,11 +52,22 @@ class SyncSequenceLogService {
       );
 
       _loggingService.captureEvent(
-        'recordSentEntry hostId=$hostId counter=$counter entryId=$entryId',
+        'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'recordSent',
       );
     }
+  }
+
+  Future<void> recordSentEntryLink({
+    required String linkId,
+    required VectorClock vectorClock,
+  }) async {
+    await recordSentEntry(
+      entryId: linkId,
+      vectorClock: vectorClock,
+      payloadType: SyncSequencePayloadType.entryLink,
+    );
   }
 
   /// Record a received entry and detect gaps in the sequence.
@@ -72,6 +86,7 @@ class SyncSequenceLogService {
     required String entryId,
     required VectorClock vectorClock,
     required String originatingHostId,
+    SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
     final gaps = <({String hostId, int counter})>[];
     final myHost = await _vectorClockService.getHost();
@@ -149,6 +164,7 @@ class SyncSequenceLogService {
             hostId: Value(hostId),
             counter: Value(counter),
             entryId: Value(entryId),
+            payloadType: Value(payloadType.index),
             originatingHostId: Value(originatingHostId),
             status: Value(status.index),
             createdAt: Value(now),
@@ -195,6 +211,7 @@ class SyncSequenceLogService {
             hostId: Value(hostId),
             counter: Value(counter),
             entryId: Value(entryId),
+            payloadType: Value(payloadType.index),
             originatingHostId: Value(originatingHostId),
             status: Value(status.index),
             createdAt: Value(now),
@@ -215,7 +232,7 @@ class SyncSequenceLogService {
 
     if (gaps.isNotEmpty) {
       _loggingService.captureEvent(
-        'recordReceivedEntry entryId=$entryId detected ${gaps.length} gaps',
+        'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.length} gaps',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'recordReceived',
       );
@@ -226,11 +243,25 @@ class SyncSequenceLogService {
     // actual entry. The hint contains the entryId, and now that we have
     // the entry, we can verify and mark it as backfilled.
     await resolvePendingHints(
-      entryId: entryId,
-      entryVectorClock: vectorClock,
+      payloadType: payloadType,
+      payloadId: entryId,
+      payloadVectorClock: vectorClock,
     );
 
     return gaps;
+  }
+
+  Future<List<({String hostId, int counter})>> recordReceivedEntryLink({
+    required String linkId,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+  }) {
+    return recordReceivedEntry(
+      entryId: linkId,
+      vectorClock: vectorClock,
+      originatingHostId: originatingHostId,
+      payloadType: SyncSequencePayloadType.entryLink,
+    );
   }
 
   /// Get entries marked as missing or requested that haven't exceeded
@@ -282,6 +313,7 @@ class SyncSequenceLogService {
     required int counter,
     required bool deleted,
     String? entryId,
+    SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
     if (deleted) {
       // Mark as deleted - the entry was purged and cannot be backfilled
@@ -314,6 +346,7 @@ class SyncSequenceLogService {
           hostId: Value(hostId),
           counter: Value(counter),
           entryId: Value(entryId),
+          payloadType: Value(payloadType.index),
           status: Value(SyncSequenceStatus.requested.index),
           createdAt: Value(now),
           updatedAt: Value(now),
@@ -348,6 +381,7 @@ class SyncSequenceLogService {
         hostId: Value(hostId),
         counter: Value(counter),
         entryId: Value(entryId),
+        payloadType: Value(payloadType.index),
         // Keep existing status - don't mark as backfilled yet
         status: Value(existing.status),
         createdAt: Value(now),
@@ -371,6 +405,7 @@ class SyncSequenceLogService {
     required int counter,
     required String entryId,
     required VectorClock entryVectorClock,
+    SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
     // Verify the entry's VC covers the requested (hostId, counter)
     final vcCounter = entryVectorClock.vclock[hostId];
@@ -401,6 +436,7 @@ class SyncSequenceLogService {
         hostId: Value(hostId),
         counter: Value(counter),
         entryId: Value(entryId),
+        payloadType: Value(payloadType.index),
         status: Value(SyncSequenceStatus.backfilled.index),
         createdAt: Value(now),
         updatedAt: Value(now),
@@ -419,19 +455,23 @@ class SyncSequenceLogService {
   /// Called after receiving an entry via sync to check if it resolves
   /// any pending (hostId, counter) requests.
   Future<int> resolvePendingHints({
-    required String entryId,
-    required VectorClock entryVectorClock,
+    required SyncSequencePayloadType payloadType,
+    required String payloadId,
+    required VectorClock payloadVectorClock,
   }) async {
-    final pendingEntries =
-        await _syncDatabase.getPendingEntriesByEntryId(entryId);
+    final pendingEntries = await _syncDatabase.getPendingEntriesByPayloadId(
+      payloadType: payloadType,
+      payloadId: payloadId,
+    );
 
     var resolved = 0;
     for (final pending in pendingEntries) {
       final verified = await verifyAndMarkBackfilled(
         hostId: pending.hostId,
         counter: pending.counter,
-        entryId: entryId,
-        entryVectorClock: entryVectorClock,
+        entryId: payloadId,
+        entryVectorClock: payloadVectorClock,
+        payloadType: payloadType,
       );
       if (verified) {
         resolved++;
@@ -440,7 +480,7 @@ class SyncSequenceLogService {
 
     if (resolved > 0) {
       _loggingService.captureEvent(
-        'resolvePendingHints: resolved $resolved pending entries for entryId=$entryId',
+        'resolvePendingHints: resolved $resolved pending entries for type=$payloadType id=$payloadId',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'backfillResolved',
       );
@@ -456,6 +496,7 @@ class SyncSequenceLogService {
     required String hostId,
     required int counter,
     required String entryId,
+    SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
     final existing =
         await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
@@ -470,6 +511,7 @@ class SyncSequenceLogService {
           hostId: Value(hostId),
           counter: Value(counter),
           entryId: Value(entryId),
+          payloadType: Value(payloadType.index),
           status: Value(SyncSequenceStatus.backfilled.index),
           createdAt: Value(now),
           updatedAt: Value(now),
@@ -634,6 +676,116 @@ class SyncSequenceLogService {
     if (populated > 0) {
       _loggingService.captureEvent(
         'populateFromJournal: added $populated sequence log entries',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'populate',
+      );
+    }
+
+    return populated;
+  }
+
+  /// Populate the sequence log from existing entry links.
+  /// This is used to backfill the sequence log for entry links that were
+  /// created before the sequence log feature was added, or to resolve
+  /// "ghost missing" counters that correspond to EntryLink operations.
+  ///
+  /// This method streams entry links in batches and records their vector
+  /// clocks in the sequence log with [SyncSequencePayloadType.entryLink].
+  /// Records entries for ALL hosts in each link's vector clock so any device
+  /// with the link can respond to backfill requests.
+  ///
+  /// [onProgress] is called with progress from 0.0 to 1.0 as links are
+  /// processed.
+  ///
+  /// Returns the number of entries populated.
+  Future<int> populateFromEntryLinks({
+    required Stream<List<({String id, Map<String, int>? vectorClock})>>
+        linkStream,
+    required Future<int> Function() getTotalCount,
+    void Function(double progress)? onProgress,
+  }) async {
+    final total = await getTotalCount();
+    var processed = 0;
+    var populated = 0;
+    final now = DateTime.now();
+
+    // Cache of existing (hostId, counter) pairs to avoid duplicates
+    // We'll populate this lazily per-host as we encounter them
+    final existingByHost = <String, Set<int>>{};
+
+    await for (final batch in linkStream) {
+      final toInsert = <SyncSequenceLogCompanion>[];
+
+      for (final link in batch) {
+        processed++;
+
+        final vc = link.vectorClock;
+        if (vc == null || vc.isEmpty) continue;
+
+        // Find the originating host (the one with the highest counter,
+        // which is typically the creator of this specific link version).
+        // Sort entries by host ID first to ensure deterministic tie-breaking
+        // when multiple hosts have the same max counter.
+        String? originatingHost;
+        var maxCounter = -1;
+        final sortedEntries = vc.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+        for (final e in sortedEntries) {
+          if (e.value > maxCounter) {
+            maxCounter = e.value;
+            originatingHost = e.key;
+          }
+        }
+
+        // Record entry for each host in the vector clock
+        for (final vcEntry in vc.entries) {
+          final hostId = vcEntry.key;
+          final counter = vcEntry.value;
+
+          // Lazily load existing counters for this host
+          if (!existingByHost.containsKey(hostId)) {
+            existingByHost[hostId] =
+                await _syncDatabase.getCountersForHost(hostId);
+          }
+
+          final existing = existingByHost[hostId]!;
+
+          // Skip if already exists
+          if (existing.contains(counter)) continue;
+
+          // Mark as existing to avoid duplicates within this run
+          existing.add(counter);
+
+          toInsert.add(
+            SyncSequenceLogCompanion(
+              hostId: Value(hostId),
+              counter: Value(counter),
+              entryId: Value(link.id),
+              payloadType: Value(SyncSequencePayloadType.entryLink.index),
+              originatingHostId: Value(originatingHost ?? hostId),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+        }
+      }
+
+      // Batch insert
+      if (toInsert.isNotEmpty) {
+        await _syncDatabase.batchInsertSequenceEntries(toInsert);
+        populated += toInsert.length;
+      }
+
+      // Report progress after each batch
+      if (onProgress != null && total > 0) {
+        onProgress(processed / total);
+      }
+    }
+
+    if (populated > 0) {
+      _loggingService.captureEvent(
+        'populateFromEntryLinks: added $populated sequence log entries',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'populate',
       );

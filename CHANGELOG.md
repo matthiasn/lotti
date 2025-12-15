@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.754] - 2025-12-15
+### Added
+- Sync Backfill Improvements: EntryLink support and ghost entry resolution
+  - EntryLink messages now tracked in sequence log alongside journal entities
+  - New `SyncSequencePayloadType` enum distinguishes `journalEntity` vs `entryLink`
+  - Ghost missing entry resolution: when different payload types share the same
+    sequence counter, receiving one resolves the other (e.g., EntryLink at `(alice:5)`
+    resolves a missing JournalEntity counter)
+  - `populateFromEntryLinks` method populates sequence log from existing entry links
+  - Extracted `SequenceLogPopulateProgress` widget for testable progress UI
+  - Comprehensive test coverage for backfill response handler, sync event processor,
+    sync database, and outbox service
+
 ## [0.9.752] - 2025-12-06
 ### Added
 - Sync Backfill: Request missing journal entries from connected devices during sync
