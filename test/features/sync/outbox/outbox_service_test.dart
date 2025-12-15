@@ -80,6 +80,7 @@ class TestableOutboxService extends OutboxService {
     super.activityGate,
     super.ownsActivityGate,
     super.saveJsonHandler,
+    super.sequenceLogService,
   });
 
   int enqueueCalls = 0;
@@ -119,6 +120,7 @@ void main() {
     // Mocktail fallback for any<OutboxCompanion>() matchers
     registerFallbackValue(OutboxCompanion.insert(message: 'm', subject: 's'));
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(const VectorClock({'fallback': 1}));
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel,
             (MethodCall call) async {
@@ -616,6 +618,559 @@ void main() {
       // Ensure scheduling happens after enqueue
       expect(testService.enqueueCalls, 1);
       expect(testService.lastDelay, const Duration(seconds: 1));
+    });
+
+    test(
+        'merges consecutive updates to same journal entry with coveredVectorClocks',
+        () async {
+      final sampleDate = DateTime.utc(2024);
+      const oldVc = VectorClock({'hostA': 5});
+      const newVc = VectorClock({'hostA': 7});
+
+      // Create the "old" message that's already in the outbox
+      const oldMessage = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entries/test.json',
+        vectorClock: oldVc,
+        status: SyncEntryStatus.update,
+      );
+
+      // Existing pending outbox item
+      final existingItem = OutboxItem(
+        id: 1,
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        message: jsonEncode(oldMessage.toJson()),
+        subject: 'hhash:5',
+        filePath: null,
+        outboxEntryId: 'entry-id',
+      );
+
+      // Return existing item for this entry
+      when(() => syncDatabase.findPendingByEntryId('entry-id'))
+          .thenAnswer((_) async => existingItem);
+
+      // Capture the update call
+      String? capturedMessage;
+      String? capturedSubject;
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedMessage = invocation.namedArguments[#newMessage] as String?;
+        capturedSubject = invocation.namedArguments[#newSubject] as String?;
+        return 1;
+      });
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      final metadata = Metadata(
+        id: 'entry-id',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: newVc,
+      );
+      final journalEntity = JournalEntity.journalEntry(
+        meta: metadata,
+        entryText: const EntryText(plainText: 'Updated text'),
+      );
+
+      const jsonPath = '/entries/test.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      await testService.enqueueMessage(
+        const SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: jsonPath,
+          vectorClock: newVc,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      // Verify updateOutboxMessage was called instead of addOutboxItem
+      verify(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: 1,
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      ).called(1);
+      verifyNever(() => syncDatabase.addOutboxItem(any()));
+
+      // Verify the merged message contains coveredVectorClocks
+      expect(capturedMessage, isNotNull);
+      final decodedMessage = SyncMessage.fromJson(
+        jsonDecode(capturedMessage!) as Map<String, dynamic>,
+      );
+      expect(decodedMessage, isA<SyncJournalEntity>());
+      final journalMsg = decodedMessage as SyncJournalEntity;
+      expect(journalMsg.coveredVectorClocks, isNotNull);
+      expect(journalMsg.coveredVectorClocks, hasLength(1));
+      expect(journalMsg.coveredVectorClocks!.first.vclock, {'hostA': 5});
+      expect(capturedSubject, 'hhash:7');
+    });
+
+    test('accumulates multiple covered clocks across successive merges',
+        () async {
+      final sampleDate = DateTime.utc(2024);
+      const vc5 = VectorClock({'hostA': 5});
+      const vc6 = VectorClock({'hostA': 6});
+      const vc7 = VectorClock({'hostA': 7});
+
+      // Existing item already has one covered clock from previous merge
+      const oldMessage = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entries/test.json',
+        vectorClock: vc6,
+        status: SyncEntryStatus.update,
+        coveredVectorClocks: [vc5], // Already covered VC5
+      );
+
+      final existingItem = OutboxItem(
+        id: 1,
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        message: jsonEncode(oldMessage.toJson()),
+        subject: 'hhash:6',
+        filePath: null,
+        outboxEntryId: 'entry-id',
+      );
+
+      when(() => syncDatabase.findPendingByEntryId('entry-id'))
+          .thenAnswer((_) async => existingItem);
+
+      String? capturedMessage;
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedMessage = invocation.namedArguments[#newMessage] as String?;
+        return 1;
+      });
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      final metadata = Metadata(
+        id: 'entry-id',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: vc7,
+      );
+      final journalEntity = JournalEntity.journalEntry(
+        meta: metadata,
+        entryText: const EntryText(plainText: 'Third update'),
+      );
+
+      const jsonPath = '/entries/test.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      await testService.enqueueMessage(
+        const SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: jsonPath,
+          vectorClock: vc7,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      // Verify coveredVectorClocks accumulated both VC5 and VC6
+      expect(capturedMessage, isNotNull);
+      final decodedMessage = SyncMessage.fromJson(
+        jsonDecode(capturedMessage!) as Map<String, dynamic>,
+      );
+      final journalMsg = decodedMessage as SyncJournalEntity;
+      expect(journalMsg.coveredVectorClocks, hasLength(2));
+      expect(
+        journalMsg.coveredVectorClocks!.map((vc) => vc.vclock['hostA']),
+        containsAll([5, 6]),
+      );
+    });
+
+    test('merges entry link updates with coveredVectorClocks', () async {
+      final sampleDate = DateTime.utc(2024);
+      const oldVc = VectorClock({'hostA': 3});
+      const newVc = VectorClock({'hostA': 5});
+
+      final oldLink = EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from-entry',
+        toId: 'to-entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        vectorClock: oldVc,
+      );
+
+      final oldMessage = SyncMessage.entryLink(
+        entryLink: oldLink,
+        status: SyncEntryStatus.update,
+      );
+
+      final existingItem = OutboxItem(
+        id: 1,
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        message: jsonEncode(oldMessage.toJson()),
+        subject: 'hhash:link:3',
+        filePath: null,
+        outboxEntryId: 'link-id',
+      );
+
+      when(() => syncDatabase.findPendingByEntryId('link-id'))
+          .thenAnswer((_) async => existingItem);
+
+      String? capturedMessage;
+      String? capturedSubject;
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedMessage = invocation.namedArguments[#newMessage] as String?;
+        capturedSubject = invocation.namedArguments[#newSubject] as String?;
+        return 1;
+      });
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      final newLink = EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from-entry',
+        toId: 'to-entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        vectorClock: newVc,
+      );
+
+      await testService.enqueueMessage(
+        SyncMessage.entryLink(
+          entryLink: newLink,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      // Verify updateOutboxMessage was called instead of addOutboxItem
+      verify(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: 1,
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      ).called(1);
+      verifyNever(() => syncDatabase.addOutboxItem(any()));
+
+      // Verify the merged message contains coveredVectorClocks
+      expect(capturedMessage, isNotNull);
+      final decodedMessage = SyncMessage.fromJson(
+        jsonDecode(capturedMessage!) as Map<String, dynamic>,
+      );
+      expect(decodedMessage, isA<SyncEntryLink>());
+      final linkMsg = decodedMessage as SyncEntryLink;
+      expect(linkMsg.coveredVectorClocks, isNotNull);
+      expect(linkMsg.coveredVectorClocks, hasLength(1));
+      expect(linkMsg.coveredVectorClocks!.first.vclock, {'hostA': 3});
+      expect(capturedSubject, 'hhash:link:5');
+    });
+
+    test('records sequence log entry during journal entity merge', () async {
+      final sampleDate = DateTime.utc(2024);
+      const oldVc = VectorClock({'hostA': 5});
+      const newVc = VectorClock({'hostA': 7});
+
+      const oldMessage = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entries/test.json',
+        vectorClock: oldVc,
+        status: SyncEntryStatus.update,
+      );
+
+      final existingItem = OutboxItem(
+        id: 1,
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        message: jsonEncode(oldMessage.toJson()),
+        subject: 'hhash:5',
+        filePath: null,
+        outboxEntryId: 'entry-id',
+      );
+
+      when(() => syncDatabase.findPendingByEntryId('entry-id'))
+          .thenAnswer((_) async => existingItem);
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      ).thenAnswer((_) async => 1);
+
+      final mockSequenceService = MockSyncSequenceLogService();
+      when(
+        () => mockSequenceService.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        sequenceLogService: mockSequenceService,
+      );
+
+      final metadata = Metadata(
+        id: 'entry-id',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: newVc,
+      );
+      final journalEntity = JournalEntity.journalEntry(
+        meta: metadata,
+        entryText: const EntryText(plainText: 'Updated text'),
+      );
+
+      const jsonPath = '/entries/test.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      await testService.enqueueMessage(
+        const SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: jsonPath,
+          vectorClock: newVc,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      // Verify sequence log was recorded during merge
+      verify(
+        () => mockSequenceService.recordSentEntry(
+          entryId: 'entry-id',
+          vectorClock: newVc,
+        ),
+      ).called(1);
+    });
+
+    test('records sequence log entry during entry link merge', () async {
+      final sampleDate = DateTime.utc(2024);
+      const oldVc = VectorClock({'hostA': 3});
+      const newVc = VectorClock({'hostA': 5});
+
+      final oldLink = EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from-entry',
+        toId: 'to-entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        vectorClock: oldVc,
+      );
+
+      final oldMessage = SyncMessage.entryLink(
+        entryLink: oldLink,
+        status: SyncEntryStatus.update,
+      );
+
+      final existingItem = OutboxItem(
+        id: 1,
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        message: jsonEncode(oldMessage.toJson()),
+        subject: 'hhash:link:3',
+        filePath: null,
+        outboxEntryId: 'link-id',
+      );
+
+      when(() => syncDatabase.findPendingByEntryId('link-id'))
+          .thenAnswer((_) async => existingItem);
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      ).thenAnswer((_) async => 1);
+
+      final mockSequenceService = MockSyncSequenceLogService();
+      when(
+        () => mockSequenceService.recordSentEntryLink(
+          linkId: any(named: 'linkId'),
+          vectorClock: any(named: 'vectorClock'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        sequenceLogService: mockSequenceService,
+      );
+
+      final newLink = EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from-entry',
+        toId: 'to-entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        vectorClock: newVc,
+      );
+
+      await testService.enqueueMessage(
+        SyncMessage.entryLink(
+          entryLink: newLink,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      // Verify sequence log was recorded during merge
+      verify(
+        () => mockSequenceService.recordSentEntryLink(
+          linkId: 'link-id',
+          vectorClock: newVc,
+        ),
+      ).called(1);
+    });
+
+    test('falls through to create new item when merge message decode fails',
+        () async {
+      final sampleDate = DateTime.utc(2024);
+      const newVc = VectorClock({'hostA': 7});
+
+      // Existing item with invalid JSON message
+      final existingItem = OutboxItem(
+        id: 1,
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        message: 'invalid-json{{{',
+        subject: 'hhash:5',
+        filePath: null,
+        outboxEntryId: 'entry-id',
+      );
+
+      when(() => syncDatabase.findPendingByEntryId('entry-id'))
+          .thenAnswer((_) async => existingItem);
+      when(() => syncDatabase.addOutboxItem(any())).thenAnswer((_) async => 2);
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      final metadata = Metadata(
+        id: 'entry-id',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: newVc,
+      );
+      final journalEntity = JournalEntity.journalEntry(
+        meta: metadata,
+        entryText: const EntryText(plainText: 'New text'),
+      );
+
+      const jsonPath = '/entries/test.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      await testService.enqueueMessage(
+        const SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: jsonPath,
+          vectorClock: newVc,
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      // Should fall through to create new item since merge decode failed
+      verify(() => syncDatabase.addOutboxItem(any())).called(1);
+      verifyNever(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      );
     });
   });
 

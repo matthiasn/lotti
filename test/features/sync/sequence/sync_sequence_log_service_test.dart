@@ -578,6 +578,31 @@ void main() {
       ).called(1);
     });
 
+    test('marks entry as unresolvable when unresolvable=true', () async {
+      when(
+        () => mockDb.updateSequenceStatus(
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenAnswer((_) async => 1);
+
+      await service.handleBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        unresolvable: true,
+      );
+
+      verify(
+        () => mockDb.updateSequenceStatus(
+          aliceHostId,
+          3,
+          SyncSequenceStatus.unresolvable,
+        ),
+      ).called(1);
+    });
+
     test('stores entryId hint on missing entry but does not change status',
         () async {
       // Non-deleted responses now just store the hint (entryId) without
