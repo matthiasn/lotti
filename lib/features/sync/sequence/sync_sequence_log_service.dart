@@ -723,10 +723,14 @@ class SyncSequenceLogService {
         if (vc == null || vc.isEmpty) continue;
 
         // Find the originating host (the one with the highest counter,
-        // which is typically the creator of this specific link version)
+        // which is typically the creator of this specific link version).
+        // Sort entries by host ID first to ensure deterministic tie-breaking
+        // when multiple hosts have the same max counter.
         String? originatingHost;
-        var maxCounter = 0;
-        for (final e in vc.entries) {
+        var maxCounter = -1;
+        final sortedEntries = vc.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+        for (final e in sortedEntries) {
           if (e.value > maxCounter) {
             maxCounter = e.value;
             originatingHost = e.key;

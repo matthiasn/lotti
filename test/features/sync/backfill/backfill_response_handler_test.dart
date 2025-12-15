@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -56,7 +58,21 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
     );
+    registerFallbackValue(
+      SyncMessage.entryLink(
+        entryLink: EntryLink.basic(
+          id: '',
+          fromId: '',
+          toId: '',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        ),
+        status: SyncEntryStatus.initial,
+      ),
+    );
     registerFallbackValue(const VectorClock({}));
+    registerFallbackValue(SyncSequencePayloadType.journalEntity);
   });
 
   setUp(() {
@@ -480,6 +496,229 @@ void main() {
       ).called(1);
     });
   });
+
+  group('handleBackfillRequest - EntryLink', () {
+    test('sends deleted response when entry link was deleted', () async {
+      final logItem = _createEntryLinkLogItem(
+        aliceHostId,
+        10,
+        entryId: 'deleted-link-id',
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 10),
+      ).thenAnswer((_) async => logItem);
+
+      when(() => mockJournalDb.entryLinkById('deleted-link-id'))
+          .thenAnswer((_) async => null);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      const request = SyncBackfillRequest(
+        entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 10)],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any(
+            that: isA<SyncBackfillResponse>()
+                .having((r) => r.hostId, 'hostId', aliceHostId)
+                .having((r) => r.counter, 'counter', 10)
+                .having((r) => r.deleted, 'deleted', true)
+                .having((r) => r.payloadType, 'payloadType',
+                    SyncSequencePayloadType.entryLink),
+          ),
+        ),
+      ).called(1);
+    });
+
+    test('re-sends entry link when it exists', () async {
+      final logItem = _createEntryLinkLogItem(
+        aliceHostId,
+        20,
+        entryId: 'existing-link-id',
+        originatingHostId: aliceHostId,
+      );
+
+      final link = _createEntryLink('existing-link-id');
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
+      ).thenAnswer((_) async => logItem);
+
+      when(() => mockJournalDb.entryLinkById('existing-link-id'))
+          .thenAnswer((_) async => link);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      const request = SyncBackfillRequest(
+        entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      // Should send the entry link
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any(that: isA<SyncEntryLink>()),
+        ),
+      ).called(1);
+
+      // Should send backfill response with payloadType
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any(
+            that: isA<SyncBackfillResponse>()
+                .having((r) => r.deleted, 'deleted', false)
+                .having((r) => r.payloadType, 'payloadType',
+                    SyncSequencePayloadType.entryLink)
+                .having((r) => r.payloadId, 'payloadId', 'existing-link-id'),
+          ),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('handleBackfillResponse - EntryLink', () {
+    test('verifies entry link and marks backfilled when link exists locally',
+        () async {
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 30,
+        deleted: false,
+        payloadType: SyncSequencePayloadType.entryLink,
+        payloadId: 'local-link-id',
+      );
+
+      final link = _createEntryLink('local-link-id');
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(() => mockJournalDb.entryLinkById('local-link-id'))
+          .thenAnswer((_) async => link);
+
+      when(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await handler.handleBackfillResponse(response);
+
+      verify(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: aliceHostId,
+          counter: 30,
+          entryId: 'local-link-id',
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: SyncSequencePayloadType.entryLink,
+        ),
+      ).called(1);
+    });
+
+    test('stores hint when entry link not found locally', () async {
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 40,
+        deleted: false,
+        payloadType: SyncSequencePayloadType.entryLink,
+        payloadId: 'missing-link-id',
+      );
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(() => mockJournalDb.entryLinkById('missing-link-id'))
+          .thenAnswer((_) async => null);
+
+      await handler.handleBackfillResponse(response);
+
+      // Should store the hint
+      verify(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 40,
+          deleted: false,
+          entryId: 'missing-link-id',
+          payloadType: SyncSequencePayloadType.entryLink,
+        ),
+      ).called(1);
+
+      // Should NOT call verifyAndMarkBackfilled since link not found
+      verifyNever(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    });
+
+    test('skips verification when entry link has null vectorClock', () async {
+      const response = SyncBackfillResponse(
+        hostId: aliceHostId,
+        counter: 50,
+        deleted: false,
+        payloadType: SyncSequencePayloadType.entryLink,
+        payloadId: 'link-no-vc',
+      );
+
+      final link = _createEntryLinkWithoutVC('link-no-vc');
+
+      when(
+        () => mockSequenceService.handleBackfillResponse(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          deleted: any(named: 'deleted'),
+          entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(() => mockJournalDb.entryLinkById('link-no-vc'))
+          .thenAnswer((_) async => link);
+
+      await handler.handleBackfillResponse(response);
+
+      // Should NOT call verifyAndMarkBackfilled since VC is null
+      verifyNever(
+        () => mockSequenceService.verifyAndMarkBackfilled(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          entryId: any(named: 'entryId'),
+          entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+    });
+  });
 }
 
 SyncSequenceLogItem _createLogItem(
@@ -527,5 +766,47 @@ JournalEntity _createJournalEntryWithoutVC(String id) {
       // vectorClock is null
     ),
     entryText: const EntryText(plainText: 'Test entry'),
+  );
+}
+
+SyncSequenceLogItem _createEntryLinkLogItem(
+  String hostId,
+  int counter, {
+  String? entryId,
+  String? originatingHostId,
+  SyncSequenceStatus status = SyncSequenceStatus.received,
+}) {
+  return SyncSequenceLogItem(
+    hostId: hostId,
+    counter: counter,
+    entryId: entryId,
+    payloadType: SyncSequencePayloadType.entryLink.index,
+    originatingHostId: originatingHostId,
+    status: status.index,
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    requestCount: 0,
+  );
+}
+
+EntryLink _createEntryLink(String id) {
+  return EntryLink.basic(
+    id: id,
+    fromId: 'from-entry',
+    toId: 'to-entry',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    vectorClock: const VectorClock({'test-host': 1}),
+  );
+}
+
+EntryLink _createEntryLinkWithoutVC(String id) {
+  return EntryLink.basic(
+    id: id,
+    fromId: 'from-entry',
+    toId: 'to-entry',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    vectorClock: null,
   );
 }

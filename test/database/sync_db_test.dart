@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 
 OutboxCompanion _buildOutbox({
   required OutboxStatus status,
@@ -2050,6 +2051,239 @@ void main() {
       expect(entry!.updatedAt.isAfter(originalDate), isTrue);
       expect(entry.lastRequestedAt, isNotNull);
       expect(entry.lastRequestedAt!.isAfter(originalDate), isTrue);
+    });
+  });
+
+  group('getPendingEntriesByPayloadId Tests', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('returns empty list when no entries exist', () async {
+      final database = db!;
+      final entries = await database.getPendingEntriesByPayloadId(
+        payloadType: SyncSequencePayloadType.journalEntity,
+        payloadId: 'non-existent',
+      );
+      expect(entries, isEmpty);
+    });
+
+    test('returns pending entries matching payloadType and payloadId',
+        () async {
+      final database = db!;
+      const entryId = 'test-entry';
+      final now = DateTime(2024, 1, 1);
+
+      // Add pending entry with matching payload
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(1),
+          entryId: const Value(entryId),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.requested.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      final entries = await database.getPendingEntriesByPayloadId(
+        payloadType: SyncSequencePayloadType.journalEntity,
+        payloadId: entryId,
+      );
+      expect(entries, hasLength(1));
+      expect(entries.first.entryId, entryId);
+    });
+
+    test('filters by payloadType - journalEntity vs entryLink', () async {
+      final database = db!;
+      const payloadId = 'shared-id';
+      final now = DateTime(2024, 1, 1);
+
+      // Add journalEntity entry
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(1),
+          entryId: const Value(payloadId),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // Add entryLink entry with same payloadId
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-2'),
+          counter: const Value(1),
+          entryId: const Value(payloadId),
+          payloadType: Value(SyncSequencePayloadType.entryLink.index),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // Query for journalEntity
+      final journalEntries = await database.getPendingEntriesByPayloadId(
+        payloadType: SyncSequencePayloadType.journalEntity,
+        payloadId: payloadId,
+      );
+      expect(journalEntries, hasLength(1));
+      expect(journalEntries.first.hostId, 'host-1');
+
+      // Query for entryLink
+      final linkEntries = await database.getPendingEntriesByPayloadId(
+        payloadType: SyncSequencePayloadType.entryLink,
+        payloadId: payloadId,
+      );
+      expect(linkEntries, hasLength(1));
+      expect(linkEntries.first.hostId, 'host-2');
+    });
+
+    test('returns only missing or requested status entries', () async {
+      final database = db!;
+      const payloadId = 'test-entry';
+      final now = DateTime(2024, 1, 1);
+
+      // Add received entry (should not be returned)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(1),
+          entryId: const Value(payloadId),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // Add missing entry (should be returned)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-2'),
+          counter: const Value(1),
+          entryId: const Value(payloadId),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // Add requested entry (should be returned)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-3'),
+          counter: const Value(1),
+          entryId: const Value(payloadId),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.requested.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // Add backfilled entry (should not be returned)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-4'),
+          counter: const Value(1),
+          entryId: const Value(payloadId),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.backfilled.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // Add deleted entry (should not be returned)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-5'),
+          counter: const Value(1),
+          entryId: const Value(payloadId),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.deleted.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      final entries = await database.getPendingEntriesByPayloadId(
+        payloadType: SyncSequencePayloadType.journalEntity,
+        payloadId: payloadId,
+      );
+      expect(entries, hasLength(2));
+      expect(
+        entries.map((e) => e.hostId).toSet(),
+        {'host-2', 'host-3'},
+      );
+    });
+
+    test('getPendingEntriesByEntryId delegates to getPendingEntriesByPayloadId',
+        () async {
+      final database = db!;
+      const entryId = 'journal-entry-1';
+      final now = DateTime(2024, 1, 1);
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(5),
+          entryId: const Value(entryId),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.requested.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      // getPendingEntriesByEntryId should find the entry
+      final entries = await database.getPendingEntriesByEntryId(entryId);
+      expect(entries, hasLength(1));
+      expect(entries.first.entryId, entryId);
+      expect(
+        entries.first.payloadType,
+        SyncSequencePayloadType.journalEntity.index,
+      );
+    });
+
+    test('returns multiple entries across different hosts', () async {
+      final database = db!;
+      const payloadId = 'link-id';
+      final now = DateTime(2024, 1, 1);
+
+      // Add entries from multiple hosts for the same payload
+      for (var i = 1; i <= 3; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: Value('host-$i'),
+            counter: Value(i * 10),
+            entryId: const Value(payloadId),
+            payloadType: Value(SyncSequencePayloadType.entryLink.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+
+      final entries = await database.getPendingEntriesByPayloadId(
+        payloadType: SyncSequencePayloadType.entryLink,
+        payloadId: payloadId,
+      );
+      expect(entries, hasLength(3));
+      expect(
+        entries.map((e) => e.hostId).toSet(),
+        {'host-1', 'host-2', 'host-3'},
+      );
     });
   });
 }

@@ -4,6 +4,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -25,6 +26,56 @@ class BackfillResponseHandler {
   final SyncSequenceLogService _sequenceLogService;
   final OutboxService _outboxService;
   final LoggingService _loggingService;
+
+  /// Send a "deleted" backfill response indicating the payload no longer exists.
+  Future<void> _sendDeletedResponse({
+    required String hostId,
+    required int counter,
+    required SyncSequencePayloadType payloadType,
+  }) async {
+    await _outboxService.enqueueMessage(
+      SyncMessage.backfillResponse(
+        hostId: hostId,
+        counter: counter,
+        deleted: true,
+        payloadType: payloadType,
+      ),
+    );
+  }
+
+  /// Attempt to verify a payload exists locally and mark as backfilled.
+  /// Loads the payload using [loadPayload], extracts its vector clock using
+  /// [getVectorClock], and verifies/marks backfilled if found.
+  Future<void> _tryVerifyAndMarkBackfilled<T>({
+    required String hostId,
+    required int counter,
+    required String payloadId,
+    required SyncSequencePayloadType payloadType,
+    required Future<T?> Function() loadPayload,
+    required VectorClock? Function(T) getVectorClock,
+    required String payloadTypeName,
+  }) async {
+    final payload = await loadPayload();
+
+    if (payload != null) {
+      final vc = getVectorClock(payload);
+      if (vc != null) {
+        await _sequenceLogService.verifyAndMarkBackfilled(
+          hostId: hostId,
+          counter: counter,
+          entryId: payloadId,
+          entryVectorClock: vc,
+          payloadType: payloadType,
+        );
+      }
+    } else {
+      _loggingService.captureEvent(
+        'handleBackfillResponse: $payloadTypeName $payloadId not found locally, hint stored for when payload arrives',
+        domain: 'SYNC_BACKFILL',
+        subDomain: 'handleResponse',
+      );
+    }
+  }
 
   /// Handle an incoming batched backfill request from another device.
   /// Iterates over all requested entries and for each:
@@ -115,14 +166,10 @@ class BackfillResponseHandler {
         final journalEntry = await _journalDb.journalEntityById(payloadId);
 
         if (journalEntry == null) {
-          // Entry was deleted/purged - respond with deleted status
-          await _outboxService.enqueueMessage(
-            SyncMessage.backfillResponse(
-              hostId: hostId,
-              counter: counter,
-              deleted: true,
-              payloadType: payloadType,
-            ),
+          await _sendDeletedResponse(
+            hostId: hostId,
+            counter: counter,
+            payloadType: payloadType,
           );
           return true;
         }
@@ -160,13 +207,10 @@ class BackfillResponseHandler {
         final link = await _journalDb.entryLinkById(payloadId);
 
         if (link == null) {
-          await _outboxService.enqueueMessage(
-            SyncMessage.backfillResponse(
-              hostId: hostId,
-              counter: counter,
-              deleted: true,
-              payloadType: payloadType,
-            ),
+          await _sendDeletedResponse(
+            hostId: hostId,
+            counter: counter,
+            payloadType: payloadType,
           );
           return true;
         }
@@ -227,47 +271,25 @@ class BackfillResponseHandler {
       if (!response.deleted && payloadId != null) {
         switch (payloadType) {
           case SyncSequencePayloadType.journalEntity:
-            final journalEntry = await _journalDb.journalEntityById(payloadId);
-
-            if (journalEntry != null) {
-              final vc = journalEntry.meta.vectorClock;
-              if (vc != null) {
-                await _sequenceLogService.verifyAndMarkBackfilled(
-                  hostId: response.hostId,
-                  counter: response.counter,
-                  entryId: payloadId,
-                  entryVectorClock: vc,
-                  payloadType: payloadType,
-                );
-              }
-            } else {
-              _loggingService.captureEvent(
-                'handleBackfillResponse: journal entry $payloadId not found locally, hint stored for when payload arrives',
-                domain: 'SYNC_BACKFILL',
-                subDomain: 'handleResponse',
-              );
-            }
+            await _tryVerifyAndMarkBackfilled(
+              hostId: response.hostId,
+              counter: response.counter,
+              payloadId: payloadId,
+              payloadType: payloadType,
+              loadPayload: () => _journalDb.journalEntityById(payloadId),
+              getVectorClock: (entry) => entry.meta.vectorClock,
+              payloadTypeName: 'journal entry',
+            );
           case SyncSequencePayloadType.entryLink:
-            final link = await _journalDb.entryLinkById(payloadId);
-
-            if (link != null) {
-              final vc = link.vectorClock;
-              if (vc != null) {
-                await _sequenceLogService.verifyAndMarkBackfilled(
-                  hostId: response.hostId,
-                  counter: response.counter,
-                  entryId: payloadId,
-                  entryVectorClock: vc,
-                  payloadType: payloadType,
-                );
-              }
-            } else {
-              _loggingService.captureEvent(
-                'handleBackfillResponse: entryLink $payloadId not found locally, hint stored for when payload arrives',
-                domain: 'SYNC_BACKFILL',
-                subDomain: 'handleResponse',
-              );
-            }
+            await _tryVerifyAndMarkBackfilled(
+              hostId: response.hostId,
+              counter: response.counter,
+              payloadId: payloadId,
+              payloadType: payloadType,
+              loadPayload: () => _journalDb.entryLinkById(payloadId),
+              getVectorClock: (link) => link.vectorClock,
+              payloadTypeName: 'entryLink',
+            );
         }
       }
     } catch (e, st) {

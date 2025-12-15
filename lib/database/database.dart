@@ -521,8 +521,13 @@ class JournalDb extends _$JournalDb {
       final vc = json['vectorClock'] as Map<String, dynamic>?;
       if (vc == null) return null;
 
+      // Validate all values are numeric before converting
+      for (final v in vc.values) {
+        if (v is! num) return null;
+      }
       return vc.map((k, v) => MapEntry(k, (v as num).toInt()));
-    } catch (_) {
+    } on FormatException catch (_) {
+      // Invalid JSON format
       return null;
     }
   }

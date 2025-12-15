@@ -1911,6 +1911,147 @@ void main() {
       });
     });
 
+    group('Vector clock streaming for sequence log population -', () {
+      test('streamEntriesWithVectorClock returns entries with vector clocks',
+          () async {
+        // Create entries with vector clocks
+        const vc1 = VectorClock({'host1': 1, 'host2': 2});
+        const vc2 = VectorClock({'host1': 3});
+        final entry1 = createJournalEntryWithVclock(vc1);
+        final entry2 = createJournalEntryWithVclock(vc2);
+
+        await db!.updateJournalEntity(entry1);
+        await db!.updateJournalEntity(entry2);
+
+        // Stream and collect all batches
+        final results = await db!
+            .streamEntriesWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        // Verify we got the entries with their vector clocks
+        expect(results.length, greaterThanOrEqualTo(2));
+
+        final result1 = results.firstWhere((r) => r.id == entry1.meta.id);
+        expect(result1.vectorClock, {'host1': 1, 'host2': 2});
+
+        final result2 = results.firstWhere((r) => r.id == entry2.meta.id);
+        expect(result2.vectorClock, {'host1': 3});
+      });
+
+      test('streamEntriesWithVectorClock handles entries without vector clock',
+          () async {
+        final entryNoVc = createJournalEntry('no vector clock');
+        await db!.updateJournalEntity(entryNoVc);
+
+        final results = await db!
+            .streamEntriesWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        final found = results.firstWhere((r) => r.id == entryNoVc.meta.id);
+        expect(found.vectorClock, isNull);
+      });
+
+      test('streamEntryLinksWithVectorClock returns links with vector clocks',
+          () async {
+        const vc = VectorClock({'host1': 5});
+        final link = EntryLink.basic(
+          id: 'link-with-vc',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: vc,
+        );
+
+        await db!.upsertEntryLink(link);
+
+        final results = await db!
+            .streamEntryLinksWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        expect(results, isNotEmpty);
+        final found = results.firstWhere((r) => r.id == 'link-with-vc');
+        expect(found.vectorClock, {'host1': 5});
+      });
+
+      test('streamEntryLinksWithVectorClock handles links without vector clock',
+          () async {
+        final link = EntryLink.basic(
+          id: 'link-no-vc',
+          fromId: 'from-entry',
+          toId: 'to-entry',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: null,
+        );
+
+        await db!.upsertEntryLink(link);
+
+        final results = await db!
+            .streamEntryLinksWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        final found = results.firstWhere((r) => r.id == 'link-no-vc');
+        expect(found.vectorClock, isNull);
+      });
+
+      test('countAllJournalEntries returns correct count', () async {
+        final initialCount = await db!.countAllJournalEntries();
+
+        await db!.updateJournalEntity(createJournalEntry('entry 1'));
+        await db!.updateJournalEntity(createJournalEntry('entry 2'));
+
+        final newCount = await db!.countAllJournalEntries();
+        expect(newCount, initialCount + 2);
+      });
+
+      test('countAllEntryLinks returns correct count', () async {
+        final initialCount = await db!.countAllEntryLinks();
+
+        await db!.upsertEntryLink(EntryLink.basic(
+          id: 'count-link-1',
+          fromId: 'from',
+          toId: 'to1',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: null,
+        ));
+        await db!.upsertEntryLink(EntryLink.basic(
+          id: 'count-link-2',
+          fromId: 'from',
+          toId: 'to2',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: null,
+        ));
+
+        final newCount = await db!.countAllEntryLinks();
+        expect(newCount, initialCount + 2);
+      });
+
+      test('streamEntriesWithVectorClock respects batch size', () async {
+        // Create several entries
+        for (var i = 0; i < 5; i++) {
+          await db!.updateJournalEntity(createJournalEntry('batch test $i'));
+        }
+
+        // Stream with small batch size
+        var batchCount = 0;
+        await for (final batch
+            in db!.streamEntriesWithVectorClock(batchSize: 2)) {
+          batchCount++;
+          expect(batch.length, lessThanOrEqualTo(2));
+        }
+
+        // Should have multiple batches
+        expect(batchCount, greaterThanOrEqualTo(1));
+      });
+    });
+
     tearDownAll(() async {
       await getIt.reset();
     });

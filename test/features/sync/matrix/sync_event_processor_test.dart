@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -55,6 +56,9 @@ class MockMatrixDatabase extends Mock implements DatabaseApi {}
 class MockBackfillResponseHandler extends Mock
     implements BackfillResponseHandler {}
 
+class MockSyncSequenceLogService extends Mock
+    implements SyncSequenceLogService {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -79,6 +83,7 @@ void main() {
     registerFallbackValue(
       const SyncBackfillResponse(hostId: '', counter: 0, deleted: false),
     );
+    registerFallbackValue(const VectorClock({'fallback': 1}));
   });
   // Helper to normalize leading separators across platforms so that
   // path.join(docDir, rel) never treats rel as absolute.
@@ -2764,6 +2769,318 @@ void main() {
       await processor.process(event: event, journalDb: journalDb);
 
       verify(() => mockHandler.handleBackfillResponse(message)).called(1);
+    });
+  });
+
+  group('EntryLink sequence log recording -', () {
+    late MockSyncSequenceLogService mockSequenceService;
+
+    setUp(() {
+      mockSequenceService = MockSyncSequenceLogService();
+    });
+
+    test(
+        'records entry link in sequence log when vectorClock and originatingHostId present',
+        () async {
+      const vc = VectorClock({'host-A': 5});
+      final link = EntryLink.basic(
+        id: 'seq-link-1',
+        fromId: 'from-1',
+        toId: 'to-1',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: vc,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        originatingHostId: 'host-A',
+      );
+
+      when(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+          )).thenAnswer((_) async => []);
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceService,
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      verify(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: 'seq-link-1',
+            vectorClock: vc,
+            originatingHostId: 'host-A',
+          )).called(1);
+    });
+
+    test('logs gap detection when recordReceivedEntryLink returns gaps',
+        () async {
+      const vc = VectorClock({'host-B': 10});
+      final link = EntryLink.basic(
+        id: 'seq-link-gaps',
+        fromId: 'from-gap',
+        toId: 'to-gap',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: vc,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        originatingHostId: 'host-B',
+      );
+
+      when(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+          )).thenAnswer((_) async => [
+            (hostId: 'host-B', counter: 8),
+            (hostId: 'host-B', counter: 9),
+          ]);
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceService,
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      verify(() => loggingService.captureEvent(
+            contains('apply.entryLink.gapsDetected count=2'),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'gapDetection',
+          )).called(1);
+    });
+
+    test('handles recordReceivedEntryLink exceptions gracefully', () async {
+      const vc = VectorClock({'host-C': 3});
+      final link = EntryLink.basic(
+        id: 'seq-link-error',
+        fromId: 'from-err',
+        toId: 'to-err',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: vc,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        originatingHostId: 'host-C',
+      );
+
+      when(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+          )).thenThrow(Exception('sequence log error'));
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceService,
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+
+      // Should not throw - errors are caught and logged
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      // Verify exception was logged
+      verify(() => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).called(1);
+    });
+
+    test('skips sequence log when vectorClock is null', () async {
+      final link = EntryLink.basic(
+        id: 'seq-link-no-vc',
+        fromId: 'from-novc',
+        toId: 'to-novc',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        originatingHostId: 'host-D',
+      );
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceService,
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      // Sequence log should NOT be called
+      verifyNever(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+          ));
+    });
+
+    test('skips sequence log when originatingHostId is null', () async {
+      const vc = VectorClock({'host-E': 1});
+      final link = EntryLink.basic(
+        id: 'seq-link-no-origin',
+        fromId: 'from-noorig',
+        toId: 'to-noorig',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: vc,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        // No originatingHostId
+      );
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceService,
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      // Sequence log should NOT be called
+      verifyNever(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+          ));
+    });
+
+    test('records when rows=0 but link exists locally', () async {
+      const vc = VectorClock({'host-F': 7});
+      final link = EntryLink.basic(
+        id: 'seq-link-exists',
+        fromId: 'from-exists',
+        toId: 'to-exists',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: vc,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        originatingHostId: 'host-F',
+      );
+
+      when(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+          )).thenAnswer((_) async => []);
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceService,
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+      // rows=0 (no-op upsert)
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
+      // But link exists locally
+      when(() => journalDb.entryLinkById('seq-link-exists'))
+          .thenAnswer((_) async => link);
+
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      // Sequence log SHOULD be called because link exists
+      verify(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: 'seq-link-exists',
+            vectorClock: vc,
+            originatingHostId: 'host-F',
+          )).called(1);
+    });
+
+    test('skips recording when rows=0 and link does not exist locally',
+        () async {
+      const vc = VectorClock({'host-G': 2});
+      final link = EntryLink.basic(
+        id: 'seq-link-missing',
+        fromId: 'from-missing',
+        toId: 'to-missing',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: vc,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        originatingHostId: 'host-G',
+      );
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceService,
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+      // rows=0 (no-op upsert)
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
+      // Link does NOT exist locally
+      when(() => journalDb.entryLinkById('seq-link-missing'))
+          .thenAnswer((_) async => null);
+
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      // Sequence log should NOT be called
+      verifyNever(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+          ));
     });
   });
 
