@@ -1669,6 +1669,19 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get aiResponseDeleteTitle => 'KI-Antwort löschen';
+
+  @override
+  String get aiResponseDeleteWarning =>
+      'Möchten Sie diese KI-Antwort wirklich löschen? Dies kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get aiResponseDeleteCancel => 'Abbrechen';
+
+  @override
+  String get aiResponseDeleteConfirm => 'Löschen';
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override

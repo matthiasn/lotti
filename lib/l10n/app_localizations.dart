@@ -3087,6 +3087,30 @@ abstract class AppLocalizations {
   /// **'{count} AI response{count, plural, =1{} other{s}}'**
   String nestedAiResponsesTitle(int count);
 
+  /// No description provided for @aiResponseDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete AI Response'**
+  String get aiResponseDeleteTitle;
+
+  /// No description provided for @aiResponseDeleteWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this AI response? This cannot be undone.'**
+  String get aiResponseDeleteWarning;
+
+  /// No description provided for @aiResponseDeleteCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get aiResponseDeleteCancel;
+
+  /// No description provided for @aiResponseDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get aiResponseDeleteConfirm;
+
   /// No description provided for @saveButtonLabel.
   ///
   /// In en, this message translates to:

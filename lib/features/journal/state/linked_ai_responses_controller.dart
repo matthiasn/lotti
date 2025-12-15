@@ -55,7 +55,6 @@ class LinkedAiResponsesController extends _$LinkedAiResponsesController {
       ..cacheFor(entryCacheDuration);
 
     final results = await _fetch();
-    _watchedIds.add(entryId);
     _listen();
     return results;
   }
@@ -66,6 +65,11 @@ class LinkedAiResponsesController extends _$LinkedAiResponsesController {
     // Get all links FROM this entry (audio links TO ai responses)
     // Link structure: fromId=audio, toId=aiResponse
     final links = await journalRepository.getLinksFromId(entryId);
+
+    // Clear and rebuild watched IDs to avoid stale references
+    _watchedIds
+      ..clear()
+      ..add(entryId);
 
     // Fetch each linked entity and filter for AI responses
     final aiResponses = <AiResponseEntry>[];

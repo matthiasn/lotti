@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Displays AI responses linked to an entry (e.g., audio) in a collapsible
 /// nested tree view.
@@ -122,7 +124,7 @@ class _NestedAiResponsesWidgetState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Vertical connector line
-              _buildConnectorLine(context, aiResponses.length),
+              _buildConnectorLine(context),
               const SizedBox(width: AppTheme.spacingSmall),
               // Content area
               Expanded(
@@ -160,7 +162,7 @@ class _NestedAiResponsesWidgetState
     );
   }
 
-  Widget _buildConnectorLine(BuildContext context, int responseCount) {
+  Widget _buildConnectorLine(BuildContext context) {
     final colorScheme = context.colorScheme;
 
     return SizedBox(
@@ -236,10 +238,66 @@ class _NestedAiResponsesWidgetState
   }
 
   Widget _buildAiResponseCard(BuildContext context, AiResponseEntry response) {
-    return AiResponseSummary(
-      response,
-      linkedFromId: widget.linkedFromEntity.meta.id,
-      fadeOut: false,
+    final colorScheme = context.colorScheme;
+
+    return Dismissible(
+      key: Key(response.meta.id),
+      dismissThresholds: const {DismissDirection.endToStart: 0.25},
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirmDelete(context),
+      onDismissed: (_) => _deleteAiResponse(response.meta.id),
+      background: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ColoredBox(
+            color: colorScheme.error,
+            child: const Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: Icon(
+                  Icons.delete,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      child: AiResponseSummary(
+        response,
+        linkedFromId: widget.linkedFromEntity.meta.id,
+        fadeOut: false,
+      ),
     );
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(context.messages.aiResponseDeleteTitle),
+          content: Text(context.messages.aiResponseDeleteWarning),
+          actions: [
+            LottiTertiaryButton(
+              label: context.messages.aiResponseDeleteCancel,
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            LottiTertiaryButton(
+              label: context.messages.aiResponseDeleteConfirm,
+              onPressed: () => Navigator.of(context).pop(true),
+              isDestructive: true,
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  Future<void> _deleteAiResponse(String responseId) async {
+    await ref.read(journalRepositoryProvider).deleteJournalEntity(responseId);
   }
 }

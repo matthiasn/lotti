@@ -1661,11 +1661,24 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 's',
+      other: 'uri',
       one: '',
     );
-    return '$count AI response$_temp0';
+    return '$count răspuns$_temp0 IA';
   }
+
+  @override
+  String get aiResponseDeleteTitle => 'Șterge răspunsul IA';
+
+  @override
+  String get aiResponseDeleteWarning =>
+      'Sigur doriți să ștergeți acest răspuns IA? Această acțiune nu poate fi anulată.';
+
+  @override
+  String get aiResponseDeleteCancel => 'Anulează';
+
+  @override
+  String get aiResponseDeleteConfirm => 'Șterge';
 
   @override
   String get saveButtonLabel => 'Save';

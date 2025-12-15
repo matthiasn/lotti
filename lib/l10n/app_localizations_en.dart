@@ -1662,6 +1662,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiResponseDeleteTitle => 'Delete AI Response';
+
+  @override
+  String get aiResponseDeleteWarning =>
+      'Are you sure you want to delete this AI response? This cannot be undone.';
+
+  @override
+  String get aiResponseDeleteCancel => 'Cancel';
+
+  @override
+  String get aiResponseDeleteConfirm => 'Delete';
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override

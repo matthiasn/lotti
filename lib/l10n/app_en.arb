@@ -628,6 +628,10 @@
       }
     }
   },
+  "aiResponseDeleteTitle": "Delete AI Response",
+  "aiResponseDeleteWarning": "Are you sure you want to delete this AI response? This cannot be undone.",
+  "aiResponseDeleteCancel": "Cancel",
+  "aiResponseDeleteConfirm": "Delete",
   "saveButtonLabel": "Save",
   "saveLabel": "Save",
   "searchHint": "Search...",
