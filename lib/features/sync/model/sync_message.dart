@@ -38,6 +38,11 @@ sealed class SyncMessage with _$SyncMessage {
     /// The host UUID that created/modified this entry version.
     /// Used for sequence tracking to detect gaps in sync.
     String? originatingHostId,
+
+    /// Vector clocks from superseded outbox entries that were merged into this
+    /// message. Receivers should mark these counters as covered/received to
+    /// prevent false gap detection for rapidly-updated entries.
+    List<VectorClock>? coveredVectorClocks,
   }) = SyncJournalEntity;
 
   const factory SyncMessage.entityDefinition({
@@ -57,6 +62,11 @@ sealed class SyncMessage with _$SyncMessage {
     /// The host UUID that created/modified this entry link version.
     /// Used for sequence tracking to detect gaps in sync.
     String? originatingHostId,
+
+    /// Vector clocks from superseded outbox entries that were merged into this
+    /// message. Receivers should mark these counters as covered/received to
+    /// prevent false gap detection for rapidly-updated entries.
+    List<VectorClock>? coveredVectorClocks,
   }) = SyncEntryLink;
 
   const factory SyncMessage.aiConfig({

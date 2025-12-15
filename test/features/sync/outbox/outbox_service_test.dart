@@ -189,6 +189,9 @@ void main() {
     // Avoid null stream issues from db-driven nudge subscription in service ctor
     when(() => syncDatabase.watchOutboxCount())
         .thenAnswer((_) => const Stream<int>.empty());
+    // Default stub for findPendingByEntryId - no existing pending item
+    when(() => syncDatabase.findPendingByEntryId(any()))
+        .thenAnswer((_) async => null);
     // Ensure activity gate can construct if needed
     when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
     when(() => userActivityService.activityStream)

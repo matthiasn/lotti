@@ -673,6 +673,7 @@ class SyncEventProcessor {
                   entryId: journalEntity.meta.id,
                   vectorClock: syncMessage.vectorClock!,
                   originatingHostId: syncMessage.originatingHostId!,
+                  coveredVectorClocks: syncMessage.coveredVectorClocks,
                 );
                 if (gaps.isNotEmpty) {
                   _loggingService.captureEvent(
@@ -706,6 +707,7 @@ class SyncEventProcessor {
       case SyncEntryLink(
           entryLink: final entryLink,
           originatingHostId: final originatingHostId,
+          coveredVectorClocks: final coveredVectorClocks,
         ):
         final rows = await journalDb.upsertEntryLink(entryLink);
         try {
@@ -756,6 +758,7 @@ class SyncEventProcessor {
                 linkId: entryLink.id,
                 vectorClock: entryLink.vectorClock!,
                 originatingHostId: originatingHostId,
+                coveredVectorClocks: coveredVectorClocks,
               );
               if (gaps.isNotEmpty) {
                 _loggingService.captureEvent(

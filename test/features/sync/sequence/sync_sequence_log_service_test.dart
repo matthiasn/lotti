@@ -1871,6 +1871,340 @@ void main() {
       expect(populated, 1);
     });
   });
+
+  group('coveredVectorClocks processing', () {
+    test('marks covered counters as received', () async {
+      // Scenario: Entry arrives with coveredVectorClocks containing VC5 and VC6
+      // where counters 5 and 6 were previously marked as missing.
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const entryId = 'entry-7';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 5}),
+        const VectorClock({aliceHostId: 6}),
+      ];
+
+      // Setup: entry 5 and 6 are missing
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 6)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          6,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      // Verify the missing counters 5 and 6 were marked as received
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Should have 3 records: entry 7, and covered counters 5, 6
+      expect(captured.length, 3);
+
+      final counter5Record = captured.firstWhere(
+        (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
+      ) as SyncSequenceLogCompanion;
+      final counter6Record = captured.firstWhere(
+        (c) => (c as SyncSequenceLogCompanion).counter.value == 6,
+      ) as SyncSequenceLogCompanion;
+
+      expect(counter5Record.status.value, SyncSequenceStatus.received.index);
+      expect(counter6Record.status.value, SyncSequenceStatus.received.index);
+    });
+
+    test('marks covered requested counters as received', () async {
+      // Scenario: Entry arrives with coveredVectorClocks containing VC5
+      // where counter 5 was previously marked as requested.
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const entryId = 'entry-7';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 5}),
+      ];
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.requested,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      final counter5Record = captured.firstWhere(
+        (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
+      ) as SyncSequenceLogCompanion;
+
+      expect(counter5Record.status.value, SyncSequenceStatus.received.index);
+    });
+
+    test('does not downgrade backfilled status from covered clocks', () async {
+      // Scenario: Entry arrives with coveredVectorClocks containing VC5
+      // where counter 5 was already backfilled - should NOT be downgraded
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const entryId = 'entry-7';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 5}),
+      ];
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.backfilled, // Already backfilled
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Should only record entry 7, not update counter 5 (already backfilled)
+      expect(captured.length, 1);
+      final record = captured[0] as SyncSequenceLogCompanion;
+      expect(record.counter.value, 7);
+    });
+
+    test('does not modify received status from covered clocks', () async {
+      // Scenario: Entry arrives with coveredVectorClocks containing VC5
+      // where counter 5 was already received - should not be modified
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const entryId = 'entry-7';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 5}),
+      ];
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.received, // Already received
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Should only record entry 7, not update counter 5
+      expect(captured.length, 1);
+      final record = captured[0] as SyncSequenceLogCompanion;
+      expect(record.counter.value, 7);
+    });
+
+    test('skips own host in covered clocks', () async {
+      // Covered clocks should skip our own host (myHostId)
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const entryId = 'entry-7';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 5, myHostId: 10}), // Includes our host
+      ];
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      // Should NOT try to look up myHostId:10
+      verifyNever(() => mockDb.getEntryByHostAndCounter(myHostId, 10));
+    });
+
+    test('handles null coveredVectorClocks gracefully', () async {
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const entryId = 'entry-7';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      // Should not throw when coveredVectorClocks is null
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: null,
+      );
+
+      // Should only record the entry itself
+      verify(() => mockDb.recordSequenceEntry(any())).called(1);
+    });
+
+    test('handles empty coveredVectorClocks list gracefully', () async {
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const entryId = 'entry-7';
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      // Should not throw when coveredVectorClocks is empty
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: [],
+      );
+
+      // Should only record the entry itself
+      verify(() => mockDb.recordSequenceEntry(any())).called(1);
+    });
+
+    test('logs when marking covered counters', () async {
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const entryId = 'entry-7';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 5}),
+      ];
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('markCoveredCountersAsReceived')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'coveredClocks',
+        ),
+      ).called(1);
+    });
+
+    test('recordReceivedEntryLink passes coveredVectorClocks', () async {
+      const vectorClock = VectorClock({aliceHostId: 7});
+      const linkId = 'link-7';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 5}),
+      ];
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          5,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntryLink(
+        linkId: linkId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Should have 2 records: link 7, and covered counter 5
+      expect(captured.length, 2);
+
+      final counter5Record = captured.firstWhere(
+        (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
+      ) as SyncSequenceLogCompanion;
+
+      expect(counter5Record.status.value, SyncSequenceStatus.received.index);
+      expect(
+        counter5Record.payloadType.value,
+        SyncSequencePayloadType.entryLink.index,
+      );
+    });
+  });
 }
 
 SyncSequenceLogItem _createLogItem(

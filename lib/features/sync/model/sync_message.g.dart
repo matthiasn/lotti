@@ -32,6 +32,9 @@ SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
           ?.map((e) => EntryLink.fromJson(e as Map<String, dynamic>))
           .toList(),
       originatingHostId: json['originatingHostId'] as String?,
+      coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
+          ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
+          .toList(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -43,6 +46,7 @@ Map<String, dynamic> _$SyncJournalEntityToJson(SyncJournalEntity instance) =>
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'entryLinks': instance.entryLinks,
       'originatingHostId': instance.originatingHostId,
+      'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
     };
 
@@ -87,6 +91,9 @@ SyncEntryLink _$SyncEntryLinkFromJson(Map<String, dynamic> json) =>
       entryLink: EntryLink.fromJson(json['entryLink'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
       originatingHostId: json['originatingHostId'] as String?,
+      coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
+          ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
+          .toList(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -95,6 +102,7 @@ Map<String, dynamic> _$SyncEntryLinkToJson(SyncEntryLink instance) =>
       'entryLink': instance.entryLink,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'originatingHostId': instance.originatingHostId,
+      'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
     };
 

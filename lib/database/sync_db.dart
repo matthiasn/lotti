@@ -46,6 +46,11 @@ class Outbox extends Table {
   TextColumn get message => text()();
   TextColumn get subject => text()();
   TextColumn get filePath => text().named('file_path').nullable()();
+
+  /// The journal entry or link ID for deduplication.
+  /// When a pending item exists for the same entry, new updates can be merged
+  /// to avoid sending redundant messages for rapidly-updated entries.
+  TextColumn get outboxEntryId => text().named('outbox_entry_id').nullable()();
 }
 
 /// Tracks sync sequence entries by (hostId, counter) to detect gaps
@@ -605,8 +610,37 @@ class SyncDatabase extends _$SyncDatabase {
     return entries.take(limit).toList();
   }
 
+  // ============ Outbox Deduplication Methods ============
+
+  /// Find a pending outbox item for a specific entry ID.
+  /// Returns the most recent pending item for this entry, or null.
+  Future<OutboxItem?> findPendingByEntryId(String entryId) {
+    return (select(outbox)
+          ..where((t) => t.status.equals(OutboxStatus.pending.index))
+          ..where((t) => t.outboxEntryId.equals(entryId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Update an existing outbox item's message and subject.
+  /// Used when merging superseded entries into an existing pending item.
+  Future<int> updateOutboxMessage({
+    required int itemId,
+    required String newMessage,
+    required String newSubject,
+  }) {
+    return (update(outbox)..where((t) => t.id.equals(itemId))).write(
+      OutboxCompanion(
+        message: Value(newMessage),
+        subject: Value(newSubject),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -618,8 +652,13 @@ class SyncDatabase extends _$SyncDatabase {
         if (from < 2) {
           await m.createTable(syncSequenceLog);
           await m.createTable(hostActivity);
-        } else if (from < 3) {
+        }
+        if (from < 3) {
           await m.addColumn(syncSequenceLog, syncSequenceLog.payloadType);
+        }
+        if (from < 4) {
+          // Add outboxEntryId column for outbox deduplication
+          await m.addColumn(outbox, outbox.outboxEntryId);
         }
       },
     );
