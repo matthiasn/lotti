@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -348,12 +349,85 @@ class OutboxService {
 
         final fileLength = attachment?.lengthSync() ?? 0;
         final embeddedLinksCount = journalEntityMsg.entryLinks?.length ?? 0;
+
+        // Check for existing pending outbox item for this entry (merge logic)
+        final existingItem =
+            await _syncDatabase.findPendingByEntryId(journalEntityMsg.id);
+
+        if (existingItem != null) {
+          // Merge: extract old VC and add to coveredVectorClocks
+          try {
+            final oldMessage = SyncMessage.fromJson(
+              json.decode(existingItem.message) as Map<String, dynamic>,
+            );
+
+            if (oldMessage is SyncJournalEntity) {
+              final coveredClocks = <VectorClock>[
+                ...?oldMessage.coveredVectorClocks,
+                if (oldMessage.vectorClock != null) oldMessage.vectorClock!,
+              ];
+
+              // Create merged message with updated VC and covered clocks
+              final mergedMessage = journalEntityMsg.copyWith(
+                vectorClock: journalEntity.meta.vectorClock,
+                coveredVectorClocks:
+                    coveredClocks.isEmpty ? null : coveredClocks,
+              );
+
+              await _syncDatabase.updateOutboxMessage(
+                itemId: existingItem.id,
+                newMessage: json.encode(mergedMessage.toJson()),
+                newSubject: '$hostHash:$localCounter',
+              );
+
+              _loggingService.captureEvent(
+                'enqueue MERGED type=SyncJournalEntity id=${journalEntityMsg.id} coveredClocks=${coveredClocks.length}',
+                domain: 'OUTBOX',
+                subDomain: 'enqueueMessage',
+              );
+
+              // Still record in sequence log for the new counter
+              if (_sequenceLogService != null &&
+                  journalEntity.meta.vectorClock != null) {
+                try {
+                  await _sequenceLogService!.recordSentEntry(
+                    entryId: journalEntity.meta.id,
+                    vectorClock: journalEntity.meta.vectorClock!,
+                  );
+                } catch (e, st) {
+                  _loggingService.captureException(
+                    e,
+                    domain: 'SYNC_SEQUENCE',
+                    subDomain: 'recordSent',
+                    stackTrace: st,
+                  );
+                }
+              }
+
+              unawaited(
+                enqueueNextSendRequest(delay: const Duration(seconds: 1)),
+              );
+              return; // Don't create new outbox item
+            }
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'OUTBOX',
+              subDomain: 'enqueueMessage.merge',
+              stackTrace: st,
+            );
+            // Fall through to create new item on merge error
+          }
+        }
+
+        // No existing item or merge failed - create new outbox item with entryId
         await _syncDatabase.addOutboxItem(
           commonFields.copyWith(
             filePath: Value(
               (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null,
             ),
             subject: Value('$hostHash:$localCounter'),
+            outboxEntryId: Value(journalEntityMsg.id),
           ),
         );
         _loggingService.captureEvent(
@@ -398,28 +472,102 @@ class OutboxService {
       }
 
       if (messageToEnqueue is SyncEntryLink) {
-        final localCounter =
-            messageToEnqueue.entryLink.vectorClock?.vclock[host];
+        final entryLinkMsg = messageToEnqueue;
+        final linkId = entryLinkMsg.entryLink.id;
+        final localCounter = entryLinkMsg.entryLink.vectorClock?.vclock[host];
         final subject = localCounter == null
             ? '$hostHash:link'
             : '$hostHash:link:$localCounter';
 
+        // Check for existing pending outbox item for this entry link (merge logic)
+        final existingItem = await _syncDatabase.findPendingByEntryId(linkId);
+
+        if (existingItem != null) {
+          // Merge: extract old VC and add to coveredVectorClocks
+          try {
+            final oldMessage = SyncMessage.fromJson(
+              json.decode(existingItem.message) as Map<String, dynamic>,
+            );
+
+            if (oldMessage is SyncEntryLink) {
+              final coveredClocks = <VectorClock>[
+                ...?oldMessage.coveredVectorClocks,
+                if (oldMessage.entryLink.vectorClock != null)
+                  oldMessage.entryLink.vectorClock!,
+              ];
+
+              // Create merged message with covered clocks
+              final mergedMessage = entryLinkMsg.copyWith(
+                coveredVectorClocks:
+                    coveredClocks.isEmpty ? null : coveredClocks,
+              );
+
+              await _syncDatabase.updateOutboxMessage(
+                itemId: existingItem.id,
+                newMessage: json.encode(mergedMessage.toJson()),
+                newSubject: subject,
+              );
+
+              _loggingService.captureEvent(
+                'enqueue MERGED type=SyncEntryLink id=$linkId coveredClocks=${coveredClocks.length}',
+                domain: 'OUTBOX',
+                subDomain: 'enqueueMessage',
+              );
+
+              // Still record in sequence log for the new counter
+              if (_sequenceLogService != null &&
+                  entryLinkMsg.entryLink.vectorClock != null) {
+                try {
+                  await _sequenceLogService!.recordSentEntryLink(
+                    linkId: linkId,
+                    vectorClock: entryLinkMsg.entryLink.vectorClock!,
+                  );
+                } catch (e, st) {
+                  _loggingService.captureException(
+                    e,
+                    domain: 'SYNC_SEQUENCE',
+                    subDomain: 'recordSent',
+                    stackTrace: st,
+                  );
+                }
+              }
+
+              unawaited(
+                enqueueNextSendRequest(delay: const Duration(seconds: 1)),
+              );
+              return; // Don't create new outbox item
+            }
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'OUTBOX',
+              subDomain: 'enqueueMessage.merge',
+              stackTrace: st,
+            );
+            // Fall through to create new item on merge error
+          }
+        }
+
+        // No existing item or merge failed - create new outbox item with entryId
         await _syncDatabase.addOutboxItem(
-          commonFields.copyWith(subject: Value(subject)),
+          commonFields.copyWith(
+            subject: Value(subject),
+            outboxEntryId: Value(linkId),
+          ),
         );
         _loggingService.captureEvent(
-          'enqueue type=SyncEntryLink subject=$subject from=${messageToEnqueue.entryLink.fromId} to=${messageToEnqueue.entryLink.toId}',
+          'enqueue type=SyncEntryLink subject=$subject from=${entryLinkMsg.entryLink.fromId} to=${entryLinkMsg.entryLink.toId}',
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage',
         );
 
         // Record in sequence log for backfill support (self-healing sync)
         if (_sequenceLogService != null &&
-            messageToEnqueue.entryLink.vectorClock != null) {
+            entryLinkMsg.entryLink.vectorClock != null) {
           try {
             await _sequenceLogService!.recordSentEntryLink(
-              linkId: messageToEnqueue.entryLink.id,
-              vectorClock: messageToEnqueue.entryLink.vectorClock!,
+              linkId: linkId,
+              vectorClock: entryLinkMsg.entryLink.vectorClock!,
             );
           } catch (e, st) {
             _loggingService.captureException(

@@ -11,10 +11,11 @@ void main() {
         requestedCount: 3,
         backfilledCount: 7,
         deletedCount: 2,
-        latestCounter: 27,
+        unresolvableCount: 1,
+        latestCounter: 28,
       );
 
-      expect(stats.totalCount, 27);
+      expect(stats.totalCount, 28);
     });
 
     test('pendingCount returns sum of missing and requested', () {
@@ -25,6 +26,7 @@ void main() {
         requestedCount: 3,
         backfilledCount: 7,
         deletedCount: 2,
+        unresolvableCount: 0,
         latestCounter: 27,
       );
 
@@ -39,6 +41,7 @@ void main() {
         requestedCount: 0,
         backfilledCount: 0,
         deletedCount: 0,
+        unresolvableCount: 0,
         latestCounter: 1,
       );
 
@@ -54,6 +57,7 @@ void main() {
         requestedCount: 0,
         backfilledCount: 0,
         deletedCount: 0,
+        unresolvableCount: 0,
         latestCounter: 1,
         lastSeenAt: lastSeen,
       );
@@ -72,7 +76,8 @@ void main() {
           requestedCount: 1,
           backfilledCount: 3,
           deletedCount: 0,
-          latestCounter: 16,
+          unresolvableCount: 1,
+          latestCounter: 17,
         ),
         BackfillHostStats(
           hostId: 'host-2',
@@ -81,6 +86,7 @@ void main() {
           requestedCount: 0,
           backfilledCount: 2,
           deletedCount: 1,
+          unresolvableCount: 0,
           latestCounter: 9,
         ),
       ];
@@ -92,6 +98,7 @@ void main() {
       expect(stats.totalRequested, 1);
       expect(stats.totalBackfilled, 5);
       expect(stats.totalDeleted, 1);
+      expect(stats.totalUnresolvable, 1);
       expect(stats.hostStats, hostStats);
     });
 
@@ -104,6 +111,7 @@ void main() {
           requestedCount: 3,
           backfilledCount: 0,
           deletedCount: 0,
+          unresolvableCount: 0,
           latestCounter: 18,
         ),
       ]);
@@ -120,11 +128,12 @@ void main() {
           requestedCount: 3,
           backfilledCount: 7,
           deletedCount: 2,
-          latestCounter: 27,
+          unresolvableCount: 1,
+          latestCounter: 28,
         ),
       ]);
 
-      expect(stats.totalEntries, 27);
+      expect(stats.totalEntries, 28);
     });
 
     test('fromHostStats works with empty list', () {
@@ -135,6 +144,7 @@ void main() {
       expect(stats.totalRequested, 0);
       expect(stats.totalBackfilled, 0);
       expect(stats.totalDeleted, 0);
+      expect(stats.totalUnresolvable, 0);
       expect(stats.hostStats, isEmpty);
       expect(stats.totalPending, 0);
       expect(stats.totalEntries, 0);

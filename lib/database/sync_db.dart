@@ -27,6 +27,11 @@ enum SyncSequenceStatus {
 
   /// Responder confirmed the entry was purged/deleted
   deleted,
+
+  /// Originating host confirmed it cannot resolve its own counter.
+  /// This happens when a counter was superseded before being recorded
+  /// (e.g., rapid edits where intermediate versions were never persisted).
+  unresolvable,
 }
 
 @DataClassName('OutboxItem')
@@ -46,6 +51,11 @@ class Outbox extends Table {
   TextColumn get message => text()();
   TextColumn get subject => text()();
   TextColumn get filePath => text().named('file_path').nullable()();
+
+  /// The journal entry or link ID for deduplication.
+  /// When a pending item exists for the same entry, new updates can be merged
+  /// to avoid sending redundant messages for rapidly-updated entries.
+  TextColumn get outboxEntryId => text().named('outbox_entry_id').nullable()();
 }
 
 /// Tracks sync sequence entries by (hostId, counter) to detect gaps
@@ -487,6 +497,7 @@ class SyncDatabase extends _$SyncDatabase {
     final requested = SyncSequenceStatus.requested.index;
     final backfilled = SyncSequenceStatus.backfilled.index;
     final deleted = SyncSequenceStatus.deleted.index;
+    final unresolvable = SyncSequenceStatus.unresolvable.index;
 
     // Get all unique hosts with their status counts
     final query = customSelect(
@@ -499,6 +510,7 @@ class SyncDatabase extends _$SyncDatabase {
         SUM(CASE WHEN ssl.status = $requested THEN 1 ELSE 0 END) as requested_count,
         SUM(CASE WHEN ssl.status = $backfilled THEN 1 ELSE 0 END) as backfilled_count,
         SUM(CASE WHEN ssl.status = $deleted THEN 1 ELSE 0 END) as deleted_count,
+        SUM(CASE WHEN ssl.status = $unresolvable THEN 1 ELSE 0 END) as unresolvable_count,
         ha.last_seen_at
       FROM sync_sequence_log ssl
       LEFT JOIN host_activity ha ON ssl.host_id = ha.host_id
@@ -518,6 +530,7 @@ class SyncDatabase extends _$SyncDatabase {
         requestedCount: row.read<int>('requested_count'),
         backfilledCount: row.read<int>('backfilled_count'),
         deletedCount: row.read<int>('deleted_count'),
+        unresolvableCount: row.read<int>('unresolvable_count'),
         lastSeenAt: row.readNullable<DateTime>('last_seen_at'),
       );
     }).toList();
@@ -605,8 +618,37 @@ class SyncDatabase extends _$SyncDatabase {
     return entries.take(limit).toList();
   }
 
+  // ============ Outbox Deduplication Methods ============
+
+  /// Find a pending outbox item for a specific entry ID.
+  /// Returns the most recent pending item for this entry, or null.
+  Future<OutboxItem?> findPendingByEntryId(String entryId) {
+    return (select(outbox)
+          ..where((t) => t.status.equals(OutboxStatus.pending.index))
+          ..where((t) => t.outboxEntryId.equals(entryId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Update an existing outbox item's message and subject.
+  /// Used when merging superseded entries into an existing pending item.
+  Future<int> updateOutboxMessage({
+    required int itemId,
+    required String newMessage,
+    required String newSubject,
+  }) {
+    return (update(outbox)..where((t) => t.id.equals(itemId))).write(
+      OutboxCompanion(
+        message: Value(newMessage),
+        subject: Value(newSubject),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -616,10 +658,16 @@ class SyncDatabase extends _$SyncDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
+          // Creates tables with all current columns (including payload_type)
           await m.createTable(syncSequenceLog);
           await m.createTable(hostActivity);
         } else if (from < 3) {
+          // Only add payload_type if table existed from v2 (without this column)
           await m.addColumn(syncSequenceLog, syncSequenceLog.payloadType);
+        }
+        if (from < 4) {
+          // Add outboxEntryId column for outbox deduplication
+          await m.addColumn(outbox, outbox.outboxEntryId);
         }
       },
     );

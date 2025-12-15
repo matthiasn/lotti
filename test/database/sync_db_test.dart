@@ -1061,6 +1061,58 @@ void main() {
 
       expect(stats.hostStats.first.lastSeenAt, lastSeen);
     });
+
+    test('counts unresolvable entries correctly', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      // Add entries with different statuses including unresolvable
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.unresolvable.index),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(3),
+          status: Value(SyncSequenceStatus.unresolvable.index),
+          createdAt: Value(DateTime(2024, 1, 3)),
+          updatedAt: Value(DateTime(2024, 1, 3)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(4),
+          status: Value(SyncSequenceStatus.deleted.index),
+          createdAt: Value(DateTime(2024, 1, 4)),
+          updatedAt: Value(DateTime(2024, 1, 4)),
+        ),
+      );
+
+      final stats = await database.getBackfillStats();
+
+      expect(stats.hostStats, hasLength(1));
+      expect(stats.hostStats.first.receivedCount, 1);
+      expect(stats.hostStats.first.unresolvableCount, 2);
+      expect(stats.hostStats.first.deletedCount, 1);
+      expect(stats.totalUnresolvable, 2);
+      expect(stats.totalDeleted, 1);
+    });
   });
 
   group('getMissingEntriesWithLimits Tests', () {
@@ -2325,6 +2377,158 @@ void main() {
         entries.map((e) => e.hostId).toSet(),
         {'host-1', 'host-2', 'host-3'},
       );
+    });
+  });
+
+  group('Outbox Deduplication Methods', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('findPendingByEntryId returns pending item for entry', () async {
+      final database = db!;
+      final now = DateTime(2024, 1, 1);
+
+      // Add a pending item with entryId
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          message: const Value('{"test": true}'),
+          subject: const Value('test-subject'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          outboxEntryId: const Value('entry-123'),
+        ),
+      );
+
+      final result = await database.findPendingByEntryId('entry-123');
+      expect(result, isNotNull);
+      expect(result!.outboxEntryId, 'entry-123');
+      expect(result.message, '{"test": true}');
+    });
+
+    test('findPendingByEntryId returns null when no matching entry', () async {
+      final database = db!;
+      final now = DateTime(2024, 1, 1);
+
+      // Add a pending item with different entryId
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          message: const Value('{"test": true}'),
+          subject: const Value('test-subject'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          outboxEntryId: const Value('entry-456'),
+        ),
+      );
+
+      final result = await database.findPendingByEntryId('entry-123');
+      expect(result, isNull);
+    });
+
+    test('findPendingByEntryId returns null when entry is not pending',
+        () async {
+      final database = db!;
+      final now = DateTime(2024, 1, 1);
+
+      // Add a sent (non-pending) item with entryId
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          message: const Value('{"test": true}'),
+          subject: const Value('test-subject'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          outboxEntryId: const Value('entry-123'),
+        ),
+      );
+
+      final result = await database.findPendingByEntryId('entry-123');
+      expect(result, isNull);
+    });
+
+    test('findPendingByEntryId returns most recent when multiple exist',
+        () async {
+      final database = db!;
+
+      // Add older item
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          message: const Value('{"version": 1}'),
+          subject: const Value('test-subject-old'),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+          outboxEntryId: const Value('entry-123'),
+        ),
+      );
+
+      // Add newer item
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          message: const Value('{"version": 2}'),
+          subject: const Value('test-subject-new'),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+          outboxEntryId: const Value('entry-123'),
+        ),
+      );
+
+      final result = await database.findPendingByEntryId('entry-123');
+      expect(result, isNotNull);
+      expect(result!.message, '{"version": 2}');
+      expect(result.subject, 'test-subject-new');
+    });
+
+    test('updateOutboxMessage updates message and subject', () async {
+      final database = db!;
+      final now = DateTime(2024, 1, 1);
+
+      // Add an item
+      final id = await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          message: const Value('{"original": true}'),
+          subject: const Value('original-subject'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          outboxEntryId: const Value('entry-123'),
+        ),
+      );
+
+      // Update the item
+      final rowsAffected = await database.updateOutboxMessage(
+        itemId: id,
+        newMessage: '{"updated": true}',
+        newSubject: 'updated-subject',
+      );
+
+      expect(rowsAffected, 1);
+
+      // Verify the update
+      final items = await database.allOutboxItems;
+      expect(items, hasLength(1));
+      expect(items.first.message, '{"updated": true}');
+      expect(items.first.subject, 'updated-subject');
+      // updatedAt should be changed
+      expect(items.first.updatedAt.isAfter(now), isTrue);
+    });
+
+    test('updateOutboxMessage returns 0 when item not found', () async {
+      final database = db!;
+
+      final rowsAffected = await database.updateOutboxMessage(
+        itemId: 999,
+        newMessage: '{"new": true}',
+        newSubject: 'new-subject',
+      );
+
+      expect(rowsAffected, 0);
     });
   });
 }

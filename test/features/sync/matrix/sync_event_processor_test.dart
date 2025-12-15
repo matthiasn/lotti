@@ -3082,6 +3082,54 @@ void main() {
             originatingHostId: any(named: 'originatingHostId'),
           ));
     });
+
+    test('passes coveredVectorClocks to recordReceivedEntryLink', () async {
+      const vc = VectorClock({'host-A': 5});
+      const coveredClock1 = VectorClock({'host-A': 3});
+      const coveredClock2 = VectorClock({'host-A': 4});
+      final link = EntryLink.basic(
+        id: 'seq-link-covered',
+        fromId: 'from-covered',
+        toId: 'to-covered',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: vc,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        originatingHostId: 'host-A',
+        coveredVectorClocks: [coveredClock1, coveredClock2],
+      );
+
+      when(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+          )).thenAnswer((_) async => []);
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceService,
+      );
+
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      verify(() => mockSequenceService.recordReceivedEntryLink(
+            linkId: 'seq-link-covered',
+            vectorClock: vc,
+            originatingHostId: 'host-A',
+            coveredVectorClocks: [coveredClock1, coveredClock2],
+          )).called(1);
+    });
   });
 
   // Note: Sequence log integration tests for the sync processor are covered

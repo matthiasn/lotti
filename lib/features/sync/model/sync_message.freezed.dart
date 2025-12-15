@@ -557,13 +557,14 @@ extension SyncMessagePatterns on SyncMessage {
             VectorClock? vectorClock,
             SyncEntryStatus status,
             List<EntryLink>? entryLinks,
-            String? originatingHostId)?
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)?
         journalEntity,
     TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
     TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult Function(EntryLink entryLink, SyncEntryStatus status,
-            String? originatingHostId)?
+            String? originatingHostId, List<VectorClock>? coveredVectorClocks)?
         entryLink,
     TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     TResult Function(String id)? aiConfigDelete,
@@ -572,23 +573,35 @@ extension SyncMessagePatterns on SyncMessage {
         themingSelection,
     TResult Function(List<BackfillRequestEntry> entries, String requesterId)?
         backfillRequest,
-    TResult Function(String hostId, int counter, bool deleted, String? entryId,
-            SyncSequencePayloadType? payloadType, String? payloadId)?
+    TResult Function(
+            String hostId,
+            int counter,
+            bool deleted,
+            bool? unresolvable,
+            String? entryId,
+            SyncSequencePayloadType? payloadType,
+            String? payloadId)?
         backfillResponse,
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity() when journalEntity != null:
-        return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
-            _that.status, _that.entryLinks, _that.originatingHostId);
+        return journalEntity(
+            _that.id,
+            _that.jsonPath,
+            _that.vectorClock,
+            _that.status,
+            _that.entryLinks,
+            _that.originatingHostId,
+            _that.coveredVectorClocks);
       case SyncEntityDefinition() when entityDefinition != null:
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity() when tagEntity != null:
         return tagEntity(_that.tagEntity, _that.status);
       case SyncEntryLink() when entryLink != null:
-        return entryLink(
-            _that.entryLink, _that.status, _that.originatingHostId);
+        return entryLink(_that.entryLink, _that.status, _that.originatingHostId,
+            _that.coveredVectorClocks);
       case SyncAiConfig() when aiConfig != null:
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete() when aiConfigDelete != null:
@@ -599,8 +612,14 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest() when backfillRequest != null:
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
-            _that.entryId, _that.payloadType, _that.payloadId);
+        return backfillResponse(
+            _that.hostId,
+            _that.counter,
+            _that.deleted,
+            _that.unresolvable,
+            _that.entryId,
+            _that.payloadType,
+            _that.payloadId);
       case _:
         return orElse();
     }
@@ -627,7 +646,8 @@ extension SyncMessagePatterns on SyncMessage {
             VectorClock? vectorClock,
             SyncEntryStatus status,
             List<EntryLink>? entryLinks,
-            String? originatingHostId)
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)
         journalEntity,
     required TResult Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)
@@ -635,7 +655,7 @@ extension SyncMessagePatterns on SyncMessage {
     required TResult Function(TagEntity tagEntity, SyncEntryStatus status)
         tagEntity,
     required TResult Function(EntryLink entryLink, SyncEntryStatus status,
-            String? originatingHostId)
+            String? originatingHostId, List<VectorClock>? coveredVectorClocks)
         entryLink,
     required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
         aiConfig,
@@ -650,6 +670,7 @@ extension SyncMessagePatterns on SyncMessage {
             String hostId,
             int counter,
             bool deleted,
+            bool? unresolvable,
             String? entryId,
             SyncSequencePayloadType? payloadType,
             String? payloadId)
@@ -658,15 +679,21 @@ extension SyncMessagePatterns on SyncMessage {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity():
-        return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
-            _that.status, _that.entryLinks, _that.originatingHostId);
+        return journalEntity(
+            _that.id,
+            _that.jsonPath,
+            _that.vectorClock,
+            _that.status,
+            _that.entryLinks,
+            _that.originatingHostId,
+            _that.coveredVectorClocks);
       case SyncEntityDefinition():
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity():
         return tagEntity(_that.tagEntity, _that.status);
       case SyncEntryLink():
-        return entryLink(
-            _that.entryLink, _that.status, _that.originatingHostId);
+        return entryLink(_that.entryLink, _that.status, _that.originatingHostId,
+            _that.coveredVectorClocks);
       case SyncAiConfig():
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete():
@@ -677,8 +704,14 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest():
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse():
-        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
-            _that.entryId, _that.payloadType, _that.payloadId);
+        return backfillResponse(
+            _that.hostId,
+            _that.counter,
+            _that.deleted,
+            _that.unresolvable,
+            _that.entryId,
+            _that.payloadType,
+            _that.payloadId);
     }
   }
 
@@ -702,14 +735,15 @@ extension SyncMessagePatterns on SyncMessage {
             VectorClock? vectorClock,
             SyncEntryStatus status,
             List<EntryLink>? entryLinks,
-            String? originatingHostId)?
+            String? originatingHostId,
+            List<VectorClock>? coveredVectorClocks)?
         journalEntity,
     TResult? Function(
             EntityDefinition entityDefinition, SyncEntryStatus status)?
         entityDefinition,
     TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
     TResult? Function(EntryLink entryLink, SyncEntryStatus status,
-            String? originatingHostId)?
+            String? originatingHostId, List<VectorClock>? coveredVectorClocks)?
         entryLink,
     TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
     TResult? Function(String id)? aiConfigDelete,
@@ -718,22 +752,34 @@ extension SyncMessagePatterns on SyncMessage {
         themingSelection,
     TResult? Function(List<BackfillRequestEntry> entries, String requesterId)?
         backfillRequest,
-    TResult? Function(String hostId, int counter, bool deleted, String? entryId,
-            SyncSequencePayloadType? payloadType, String? payloadId)?
+    TResult? Function(
+            String hostId,
+            int counter,
+            bool deleted,
+            bool? unresolvable,
+            String? entryId,
+            SyncSequencePayloadType? payloadType,
+            String? payloadId)?
         backfillResponse,
   }) {
     final _that = this;
     switch (_that) {
       case SyncJournalEntity() when journalEntity != null:
-        return journalEntity(_that.id, _that.jsonPath, _that.vectorClock,
-            _that.status, _that.entryLinks, _that.originatingHostId);
+        return journalEntity(
+            _that.id,
+            _that.jsonPath,
+            _that.vectorClock,
+            _that.status,
+            _that.entryLinks,
+            _that.originatingHostId,
+            _that.coveredVectorClocks);
       case SyncEntityDefinition() when entityDefinition != null:
         return entityDefinition(_that.entityDefinition, _that.status);
       case SyncTagEntity() when tagEntity != null:
         return tagEntity(_that.tagEntity, _that.status);
       case SyncEntryLink() when entryLink != null:
-        return entryLink(
-            _that.entryLink, _that.status, _that.originatingHostId);
+        return entryLink(_that.entryLink, _that.status, _that.originatingHostId,
+            _that.coveredVectorClocks);
       case SyncAiConfig() when aiConfig != null:
         return aiConfig(_that.aiConfig, _that.status);
       case SyncAiConfigDelete() when aiConfigDelete != null:
@@ -744,8 +790,14 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest() when backfillRequest != null:
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
-            _that.entryId, _that.payloadType, _that.payloadId);
+        return backfillResponse(
+            _that.hostId,
+            _that.counter,
+            _that.deleted,
+            _that.unresolvable,
+            _that.entryId,
+            _that.payloadType,
+            _that.payloadId);
       case _:
         return null;
     }
@@ -762,8 +814,10 @@ class SyncJournalEntity implements SyncMessage {
       required this.status,
       final List<EntryLink>? entryLinks,
       this.originatingHostId,
+      final List<VectorClock>? coveredVectorClocks,
       final String? $type})
       : _entryLinks = entryLinks,
+        _coveredVectorClocks = coveredVectorClocks,
         $type = $type ?? 'journalEntity';
   factory SyncJournalEntity.fromJson(Map<String, dynamic> json) =>
       _$SyncJournalEntityFromJson(json);
@@ -784,6 +838,23 @@ class SyncJournalEntity implements SyncMessage {
   /// The host UUID that created/modified this entry version.
   /// Used for sequence tracking to detect gaps in sync.
   final String? originatingHostId;
+
+  /// Vector clocks from superseded outbox entries that were merged into this
+  /// message. Receivers should mark these counters as covered/received to
+  /// prevent false gap detection for rapidly-updated entries.
+  final List<VectorClock>? _coveredVectorClocks;
+
+  /// Vector clocks from superseded outbox entries that were merged into this
+  /// message. Receivers should mark these counters as covered/received to
+  /// prevent false gap detection for rapidly-updated entries.
+  List<VectorClock>? get coveredVectorClocks {
+    final value = _coveredVectorClocks;
+    if (value == null) return null;
+    if (_coveredVectorClocks is EqualUnmodifiableListView)
+      return _coveredVectorClocks;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -816,7 +887,9 @@ class SyncJournalEntity implements SyncMessage {
             const DeepCollectionEquality()
                 .equals(other._entryLinks, _entryLinks) &&
             (identical(other.originatingHostId, originatingHostId) ||
-                other.originatingHostId == originatingHostId));
+                other.originatingHostId == originatingHostId) &&
+            const DeepCollectionEquality()
+                .equals(other._coveredVectorClocks, _coveredVectorClocks));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -828,11 +901,12 @@ class SyncJournalEntity implements SyncMessage {
       vectorClock,
       status,
       const DeepCollectionEquality().hash(_entryLinks),
-      originatingHostId);
+      originatingHostId,
+      const DeepCollectionEquality().hash(_coveredVectorClocks));
 
   @override
   String toString() {
-    return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, entryLinks: $entryLinks, originatingHostId: $originatingHostId)';
+    return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, entryLinks: $entryLinks, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
   }
 }
 
@@ -849,7 +923,8 @@ abstract mixin class $SyncJournalEntityCopyWith<$Res>
       VectorClock? vectorClock,
       SyncEntryStatus status,
       List<EntryLink>? entryLinks,
-      String? originatingHostId});
+      String? originatingHostId,
+      List<VectorClock>? coveredVectorClocks});
 }
 
 /// @nodoc
@@ -870,6 +945,7 @@ class _$SyncJournalEntityCopyWithImpl<$Res>
     Object? status = null,
     Object? entryLinks = freezed,
     Object? originatingHostId = freezed,
+    Object? coveredVectorClocks = freezed,
   }) {
     return _then(SyncJournalEntity(
       id: null == id
@@ -896,6 +972,10 @@ class _$SyncJournalEntityCopyWithImpl<$Res>
           ? _self.originatingHostId
           : originatingHostId // ignore: cast_nullable_to_non_nullable
               as String?,
+      coveredVectorClocks: freezed == coveredVectorClocks
+          ? _self._coveredVectorClocks
+          : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+              as List<VectorClock>?,
     ));
   }
 }
@@ -1108,8 +1188,10 @@ class SyncEntryLink implements SyncMessage {
       {required this.entryLink,
       required this.status,
       this.originatingHostId,
+      final List<VectorClock>? coveredVectorClocks,
       final String? $type})
-      : $type = $type ?? 'entryLink';
+      : _coveredVectorClocks = coveredVectorClocks,
+        $type = $type ?? 'entryLink';
   factory SyncEntryLink.fromJson(Map<String, dynamic> json) =>
       _$SyncEntryLinkFromJson(json);
 
@@ -1119,6 +1201,23 @@ class SyncEntryLink implements SyncMessage {
   /// The host UUID that created/modified this entry link version.
   /// Used for sequence tracking to detect gaps in sync.
   final String? originatingHostId;
+
+  /// Vector clocks from superseded outbox entries that were merged into this
+  /// message. Receivers should mark these counters as covered/received to
+  /// prevent false gap detection for rapidly-updated entries.
+  final List<VectorClock>? _coveredVectorClocks;
+
+  /// Vector clocks from superseded outbox entries that were merged into this
+  /// message. Receivers should mark these counters as covered/received to
+  /// prevent false gap detection for rapidly-updated entries.
+  List<VectorClock>? get coveredVectorClocks {
+    final value = _coveredVectorClocks;
+    if (value == null) return null;
+    if (_coveredVectorClocks is EqualUnmodifiableListView)
+      return _coveredVectorClocks;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -1146,17 +1245,23 @@ class SyncEntryLink implements SyncMessage {
                 other.entryLink == entryLink) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.originatingHostId, originatingHostId) ||
-                other.originatingHostId == originatingHostId));
+                other.originatingHostId == originatingHostId) &&
+            const DeepCollectionEquality()
+                .equals(other._coveredVectorClocks, _coveredVectorClocks));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, entryLink, status, originatingHostId);
+  int get hashCode => Object.hash(
+      runtimeType,
+      entryLink,
+      status,
+      originatingHostId,
+      const DeepCollectionEquality().hash(_coveredVectorClocks));
 
   @override
   String toString() {
-    return 'SyncMessage.entryLink(entryLink: $entryLink, status: $status, originatingHostId: $originatingHostId)';
+    return 'SyncMessage.entryLink(entryLink: $entryLink, status: $status, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
   }
 }
 
@@ -1168,7 +1273,10 @@ abstract mixin class $SyncEntryLinkCopyWith<$Res>
       _$SyncEntryLinkCopyWithImpl;
   @useResult
   $Res call(
-      {EntryLink entryLink, SyncEntryStatus status, String? originatingHostId});
+      {EntryLink entryLink,
+      SyncEntryStatus status,
+      String? originatingHostId,
+      List<VectorClock>? coveredVectorClocks});
 
   $EntryLinkCopyWith<$Res> get entryLink;
 }
@@ -1188,6 +1296,7 @@ class _$SyncEntryLinkCopyWithImpl<$Res>
     Object? entryLink = null,
     Object? status = null,
     Object? originatingHostId = freezed,
+    Object? coveredVectorClocks = freezed,
   }) {
     return _then(SyncEntryLink(
       entryLink: null == entryLink
@@ -1202,6 +1311,10 @@ class _$SyncEntryLinkCopyWithImpl<$Res>
           ? _self.originatingHostId
           : originatingHostId // ignore: cast_nullable_to_non_nullable
               as String?,
+      coveredVectorClocks: freezed == coveredVectorClocks
+          ? _self._coveredVectorClocks
+          : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+              as List<VectorClock>?,
     ));
   }
 
@@ -1623,6 +1736,7 @@ class SyncBackfillResponse implements SyncMessage {
       {required this.hostId,
       required this.counter,
       required this.deleted,
+      this.unresolvable,
       this.entryId,
       this.payloadType,
       this.payloadId,
@@ -1640,13 +1754,19 @@ class SyncBackfillResponse implements SyncMessage {
   /// True if the entry was deleted/purged and cannot be backfilled
   final bool deleted;
 
+  /// True if the originating host cannot resolve its own counter.
+  /// This happens when a counter was superseded before being recorded
+  /// (e.g., rapid edits where intermediate versions were never persisted).
+  /// Receivers should mark this counter as permanently unresolvable.
+  final bool? unresolvable;
+
   /// Legacy: The journal entry ID if found (null if deleted).
   ///
-  /// For newer clients, prefer [payloadType] + [payloadId].
+  /// For newer clients, prefer `payloadType` + `payloadId`.
   final String? entryId;
 
   /// Identifies what kind of payload this backfill response refers to.
-  /// If omitted, defaults to [SyncSequencePayloadType.journalEntity].
+  /// If omitted, defaults to `SyncSequencePayloadType.journalEntity`.
   final SyncSequencePayloadType? payloadType;
 
   /// The payload ID if found (null if deleted). For journal entities this is
@@ -1679,6 +1799,8 @@ class SyncBackfillResponse implements SyncMessage {
             (identical(other.hostId, hostId) || other.hostId == hostId) &&
             (identical(other.counter, counter) || other.counter == counter) &&
             (identical(other.deleted, deleted) || other.deleted == deleted) &&
+            (identical(other.unresolvable, unresolvable) ||
+                other.unresolvable == unresolvable) &&
             (identical(other.entryId, entryId) || other.entryId == entryId) &&
             (identical(other.payloadType, payloadType) ||
                 other.payloadType == payloadType) &&
@@ -1688,12 +1810,12 @@ class SyncBackfillResponse implements SyncMessage {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, hostId, counter, deleted, entryId, payloadType, payloadId);
+  int get hashCode => Object.hash(runtimeType, hostId, counter, deleted,
+      unresolvable, entryId, payloadType, payloadId);
 
   @override
   String toString() {
-    return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, entryId: $entryId, payloadType: $payloadType, payloadId: $payloadId)';
+    return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, unresolvable: $unresolvable, entryId: $entryId, payloadType: $payloadType, payloadId: $payloadId)';
   }
 }
 
@@ -1708,6 +1830,7 @@ abstract mixin class $SyncBackfillResponseCopyWith<$Res>
       {String hostId,
       int counter,
       bool deleted,
+      bool? unresolvable,
       String? entryId,
       SyncSequencePayloadType? payloadType,
       String? payloadId});
@@ -1728,6 +1851,7 @@ class _$SyncBackfillResponseCopyWithImpl<$Res>
     Object? hostId = null,
     Object? counter = null,
     Object? deleted = null,
+    Object? unresolvable = freezed,
     Object? entryId = freezed,
     Object? payloadType = freezed,
     Object? payloadId = freezed,
@@ -1745,6 +1869,10 @@ class _$SyncBackfillResponseCopyWithImpl<$Res>
           ? _self.deleted
           : deleted // ignore: cast_nullable_to_non_nullable
               as bool,
+      unresolvable: freezed == unresolvable
+          ? _self.unresolvable
+          : unresolvable // ignore: cast_nullable_to_non_nullable
+              as bool?,
       entryId: freezed == entryId
           ? _self.entryId
           : entryId // ignore: cast_nullable_to_non_nullable

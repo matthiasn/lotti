@@ -38,6 +38,11 @@ sealed class SyncMessage with _$SyncMessage {
     /// The host UUID that created/modified this entry version.
     /// Used for sequence tracking to detect gaps in sync.
     String? originatingHostId,
+
+    /// Vector clocks from superseded outbox entries that were merged into this
+    /// message. Receivers should mark these counters as covered/received to
+    /// prevent false gap detection for rapidly-updated entries.
+    List<VectorClock>? coveredVectorClocks,
   }) = SyncJournalEntity;
 
   const factory SyncMessage.entityDefinition({
@@ -57,6 +62,11 @@ sealed class SyncMessage with _$SyncMessage {
     /// The host UUID that created/modified this entry link version.
     /// Used for sequence tracking to detect gaps in sync.
     String? originatingHostId,
+
+    /// Vector clocks from superseded outbox entries that were merged into this
+    /// message. Receivers should mark these counters as covered/received to
+    /// prevent false gap detection for rapidly-updated entries.
+    List<VectorClock>? coveredVectorClocks,
   }) = SyncEntryLink;
 
   const factory SyncMessage.aiConfig({
@@ -89,6 +99,8 @@ sealed class SyncMessage with _$SyncMessage {
 
   /// Response to a backfill request.
   /// If deleted is true, the entry was purged and no longer exists.
+  /// If unresolvable is true, the originating host cannot resolve its own
+  /// counter (e.g., it was superseded before being recorded).
   /// Otherwise, the actual entry will be sent via a separate SyncJournalEntity.
   const factory SyncMessage.backfillResponse({
     /// The host UUID that originated the entry
@@ -99,6 +111,12 @@ sealed class SyncMessage with _$SyncMessage {
 
     /// True if the entry was deleted/purged and cannot be backfilled
     required bool deleted,
+
+    /// True if the originating host cannot resolve its own counter.
+    /// This happens when a counter was superseded before being recorded
+    /// (e.g., rapid edits where intermediate versions were never persisted).
+    /// Receivers should mark this counter as permanently unresolvable.
+    bool? unresolvable,
 
     /// Legacy: The journal entry ID if found (null if deleted).
     ///

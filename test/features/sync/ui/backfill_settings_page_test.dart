@@ -38,6 +38,7 @@ void main() {
       requestedCount: 2,
       backfilledCount: 10,
       deletedCount: 1,
+      unresolvableCount: 0,
       latestCounter: 118,
     ),
   ]);
@@ -428,6 +429,7 @@ void main() {
             requestedCount: 0, // No requested entries
             backfilledCount: 10,
             deletedCount: 1,
+            unresolvableCount: 0,
             latestCounter: 116,
           ),
         ]),
@@ -539,6 +541,43 @@ void main() {
       // an orange color. Find the replay icon.
       final replayIconFinder = find.byIcon(Icons.replay);
       expect(replayIconFinder, findsWidgets);
+    });
+
+    testWidgets('displays unresolvable count when present', (tester) async {
+      // Setup stats with unresolvable count > 0
+      when(() => mockSequenceService.getBackfillStats()).thenAnswer(
+        (_) async => BackfillStats.fromHostStats([
+          const BackfillHostStats(
+            hostId: 'host-1',
+            receivedCount: 100,
+            missingCount: 5,
+            requestedCount: 2,
+            backfilledCount: 10,
+            deletedCount: 1,
+            unresolvableCount: 3,
+            latestCounter: 121,
+          ),
+        ]),
+      );
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Find and scroll to the stats section
+      final statsCard = find.ancestor(
+        of: find.byIcon(Icons.bar_chart),
+        matching: find.byType(Card),
+      );
+      expect(statsCard, findsOneWidget);
+
+      // Ensure the card is visible
+      await tester.ensureVisible(statsCard);
+      await tester.pumpAndSettle();
+
+      // Should display the unresolvable count of 3
+      expect(find.text('3'), findsWidgets);
     });
   });
 }

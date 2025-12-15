@@ -82,10 +82,15 @@ class SyncSequenceLogService {
   ///
   /// Only the originating host's counter is recorded with the entryId.
   /// Other hosts' counters are tracked for gap detection only.
+  ///
+  /// [coveredVectorClocks] contains vector clocks from superseded outbox entries
+  /// that were merged into this message. Counters in these VCs are marked as
+  /// received to prevent false gap detection for rapidly-updated entries.
   Future<List<({String hostId, int counter})>> recordReceivedEntry({
     required String entryId,
     required VectorClock vectorClock,
     required String originatingHostId,
+    List<VectorClock>? coveredVectorClocks,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
     final gaps = <({String hostId, int counter})>[];
@@ -106,8 +111,26 @@ class SyncSequenceLogService {
       final lastSeen = await _syncDatabase.getLastCounterForHost(hostId);
 
       if (lastSeen != null && counter > lastSeen + 1) {
-        // Gap detected! Mark all missing counters for this host
-        for (var i = lastSeen + 1; i < counter; i++) {
+        // Gap detected! Mark missing counters for this host
+        final gapSize = counter - lastSeen - 1;
+
+        // Limit gap size to prevent explosion of missing entries
+        // when sequence log is corrupted or entries are deleted
+        if (gapSize > SyncTuning.maxGapSize) {
+          _loggingService.captureEvent(
+            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$lastSeen, counter=$counter) - limiting to ${SyncTuning.maxGapSize} entries',
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'largeGap',
+          );
+        }
+
+        // Only create missing entries for the most recent portion of the gap
+        // This prioritizes recent entries which are more likely to be resolvable
+        final startCounter = gapSize > SyncTuning.maxGapSize
+            ? counter - SyncTuning.maxGapSize
+            : lastSeen + 1;
+
+        for (var i = startCounter; i < counter; i++) {
           gaps.add((hostId: hostId, counter: i));
 
           // Check if we already have this entry
@@ -248,6 +271,19 @@ class SyncSequenceLogService {
       payloadVectorClock: vectorClock,
     );
 
+    // Process covered vector clocks - mark counters from superseded entries
+    // as received to prevent false gap detection.
+    if (coveredVectorClocks != null &&
+        coveredVectorClocks.isNotEmpty &&
+        myHost != null) {
+      await _markCoveredCountersAsReceived(
+        coveredVectorClocks: coveredVectorClocks,
+        entryId: entryId,
+        payloadType: payloadType,
+        myHost: myHost,
+      );
+    }
+
     return gaps;
   }
 
@@ -255,13 +291,67 @@ class SyncSequenceLogService {
     required String linkId,
     required VectorClock vectorClock,
     required String originatingHostId,
+    List<VectorClock>? coveredVectorClocks,
   }) {
     return recordReceivedEntry(
       entryId: linkId,
       vectorClock: vectorClock,
       originatingHostId: originatingHostId,
+      coveredVectorClocks: coveredVectorClocks,
       payloadType: SyncSequencePayloadType.entryLink,
     );
+  }
+
+  /// Mark counters from covered vector clocks as received.
+  /// These are counters that were "spent" on superseded versions of the entry
+  /// before the final version was sent.
+  Future<void> _markCoveredCountersAsReceived({
+    required List<VectorClock> coveredVectorClocks,
+    required String entryId,
+    required SyncSequencePayloadType payloadType,
+    required String myHost,
+  }) async {
+    final now = DateTime.now();
+    var markedCount = 0;
+
+    for (final coveredClock in coveredVectorClocks) {
+      for (final entry in coveredClock.vclock.entries) {
+        final hostId = entry.key;
+        final counter = entry.value;
+
+        // Skip our own host
+        if (hostId == myHost) continue;
+
+        // Check if this counter is marked as missing or requested
+        final existing =
+            await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
+
+        if (existing != null &&
+            (existing.status == SyncSequenceStatus.missing.index ||
+                existing.status == SyncSequenceStatus.requested.index)) {
+          // Mark as received - it's covered by the entry we just received
+          await _syncDatabase.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: Value(hostId),
+              counter: Value(counter),
+              entryId: Value(entryId),
+              payloadType: Value(payloadType.index),
+              status: Value(SyncSequenceStatus.received.index),
+              updatedAt: Value(now),
+            ),
+          );
+          markedCount++;
+        }
+      }
+    }
+
+    if (markedCount > 0) {
+      _loggingService.captureEvent(
+        'markCoveredCountersAsReceived: marked $markedCount counters as received for entry=$entryId',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'coveredClocks',
+      );
+    }
   }
 
   /// Get entries marked as missing or requested that haven't exceeded
@@ -301,6 +391,10 @@ class SyncSequenceLogService {
   ///
   /// For deleted responses: marks the entry as deleted (cannot be backfilled).
   ///
+  /// For unresolvable responses: marks the entry as unresolvable - the
+  /// originating host confirmed it cannot resolve its own counter (e.g., it
+  /// was superseded before being recorded).
+  ///
   /// For non-deleted responses: stores the entryId as a "hint" mapping
   /// (hostId, counter) → entryId. The actual status update to "backfilled"
   /// happens only when we verify the entry exists locally - either via
@@ -312,6 +406,7 @@ class SyncSequenceLogService {
     required String hostId,
     required int counter,
     required bool deleted,
+    bool unresolvable = false,
     String? entryId,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
@@ -325,6 +420,23 @@ class SyncSequenceLogService {
 
       _loggingService.captureEvent(
         'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'backfillResponse',
+      );
+      return;
+    }
+
+    if (unresolvable) {
+      // Mark as unresolvable - the originating host cannot resolve its own
+      // counter. This is permanent; the entry will never be backfilled.
+      await _syncDatabase.updateSequenceStatus(
+        hostId,
+        counter,
+        SyncSequenceStatus.unresolvable,
+      );
+
+      _loggingService.captureEvent(
+        'handleBackfillResponse hostId=$hostId counter=$counter unresolvable=true',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'backfillResponse',
       );
