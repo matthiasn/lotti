@@ -1657,6 +1657,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptGenerationFullPromptLabel => 'Full Prompt:';
 
   @override
+  String nestedAiResponsesTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count AI response$_temp0';
+  }
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override

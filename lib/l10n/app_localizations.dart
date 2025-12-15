@@ -3081,6 +3081,12 @@ abstract class AppLocalizations {
   /// **'Full Prompt:'**
   String get promptGenerationFullPromptLabel;
 
+  /// No description provided for @nestedAiResponsesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} AI response{count, plural, =1{} other{s}}'**
+  String nestedAiResponsesTitle(int count);
+
   /// No description provided for @saveButtonLabel.
   ///
   /// In en, this message translates to:

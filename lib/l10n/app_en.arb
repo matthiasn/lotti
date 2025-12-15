@@ -620,6 +620,14 @@
   "promptGenerationCopiedSnackbar": "Prompt copied to clipboard",
   "promptGenerationExpandTooltip": "Show full prompt",
   "promptGenerationFullPromptLabel": "Full Prompt:",
+  "nestedAiResponsesTitle": "{count} AI response{count, plural, =1{} other{s}}",
+  "@nestedAiResponsesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "saveButtonLabel": "Save",
   "saveLabel": "Save",
   "searchHint": "Search...",

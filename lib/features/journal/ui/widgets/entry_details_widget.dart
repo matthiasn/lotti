@@ -17,6 +17,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.d
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
@@ -441,6 +442,12 @@ class EntryDetailsContent extends ConsumerWidget {
         if (item is JournalImage) EntryImageWidget(item),
         if (!shouldHideEditor) EditorWidget(entryId: itemId),
         if (detailSection != null) detailSection,
+        // Show nested AI responses for audio entries (e.g., generated prompts)
+        if (item is JournalAudio)
+          NestedAiResponsesWidget(
+            parentEntryId: itemId,
+            linkedFromEntity: item,
+          ),
         EntryDetailFooter(
           entryId: itemId,
           linkedFrom: linkedFrom,

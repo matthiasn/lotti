@@ -420,5 +420,6 @@
   "promptGenerationCopyButton": "Prompt kopieren",
   "promptGenerationCopiedSnackbar": "Prompt in Zwischenablage kopiert",
   "promptGenerationExpandTooltip": "Vollständigen Prompt anzeigen",
-  "promptGenerationFullPromptLabel": "Vollständiger Prompt:"
+  "promptGenerationFullPromptLabel": "Vollständiger Prompt:",
+  "nestedAiResponsesTitle": "{count} KI-Antwort{count, plural, =1{} other{en}}"
 }
