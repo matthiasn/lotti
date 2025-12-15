@@ -320,6 +320,15 @@ void main() {
       expect(captured.length, 1);
       final companion = captured[0] as SyncSequenceLogCompanion;
       expect(companion.status.value, SyncSequenceStatus.backfilled.index);
+
+      // Verify backfill arrival was logged
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('backfilled hostId=$aliceHostId')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'backfillArrived',
+        ),
+      ).called(1);
     });
 
     test('does not downgrade backfilled entry to received', () async {
@@ -459,6 +468,15 @@ void main() {
       // Bob's requested entry should now be backfilled with the entryId
       expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
       expect(bobRecord.entryId.value, entryId);
+
+      // Verify non-originator backfill arrival was logged
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('backfilled (non-originator)')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'backfillArrived',
+        ),
+      ).called(1);
     });
 
     test('does not downgrade non-originator backfilled entry', () async {

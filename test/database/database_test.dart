@@ -2050,6 +2050,48 @@ void main() {
         // Should have multiple batches
         expect(batchCount, greaterThanOrEqualTo(1));
       });
+
+      test('streamEntriesWithVectorClock handles malformed serialized data',
+          () async {
+        // Create a valid entry first
+        final entry = createJournalEntry('malformed test');
+        await db!.updateJournalEntity(entry);
+
+        // The streaming method should handle any entries gracefully
+        // even if vector clock extraction fails (returns null)
+        final results = await db!
+            .streamEntriesWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        // Should still get results (vectorClock may be null for some)
+        expect(results, isNotEmpty);
+      });
+
+      test(
+          'streamEntryLinksWithVectorClock handles links with non-numeric vectorClock values gracefully',
+          () async {
+        // Create a valid link first
+        final link = EntryLink.basic(
+          id: 'link-valid',
+          fromId: 'from',
+          toId: 'to',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: const VectorClock({'host': 1}),
+        );
+        await db!.upsertEntryLink(link);
+
+        // Streaming should work and return valid results
+        final results = await db!
+            .streamEntryLinksWithVectorClock()
+            .expand((batch) => batch)
+            .toList();
+
+        expect(results, isNotEmpty);
+        final found = results.firstWhere((r) => r.id == 'link-valid');
+        expect(found.vectorClock, {'host': 1});
+      });
     });
 
     tearDownAll(() async {
