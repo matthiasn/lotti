@@ -446,3 +446,32 @@ Benefits
 - `handleBackfillResponse: stored hint hostId=... counter=... entryId=...`
 - `verifyAndMarkBackfilled: confirmed hostId=... counter=... entryId=...`
 - `resolvePendingHints: resolved N pending entries for entryId=...`
+
+### EntryLink Backfill Support (Dec 2025)
+
+**SyncSequencePayloadType enum:**
+- New enum distinguishes between `journalEntity` and `entryLink` payload types
+- Sequence log now stores payload type alongside hostId, counter, and entryId
+- Enables tracking of all sync message types for complete gap detection
+
+**Ghost missing entry resolution:**
+- Different payload types can share the same sequence counter
+- When one type arrives, it resolves ("ghosts") missing entries of other types
+  at that counter position
+- Example: EntryLink at `(alice:5)` resolves missing JournalEntity at `(alice:5)`
+- Implemented via `resolvePendingForAnyType` in `SyncSequenceLogService`
+
+**populateFromEntryLinks:**
+- New method populates sequence log from existing entry links
+- Called during "Populate Sequence Log" maintenance operation
+- Records all entry links with their vector clocks as `payloadType=entryLink`
+
+**SequenceLogPopulateProgress widget:**
+- Extracted from modal for testability
+- Displays current phase (journal entries vs entry links)
+- Shows progress percentage and completion counts
+- Comprehensive widget tests cover all UI states
+
+**Key log messages:**
+- `backfilled hostId=$hostId counter=$counter (via $payloadType)`
+- `Processing entry links...` (phase indicator in UI)

@@ -125,10 +125,15 @@ automatically requests missing entries from peer devices.
 catch-up runs. The user observes data missing on one device but present on
 another.
 
-**Solution:** A sequence log tracks `(hostId, counter, entryId)` tuples. When a
-message arrives with counter N but the last seen counter for that host was N-2,
-the system detects counter N-1 is missing. Periodically, missing entries are
-requested via broadcast. Any device with the entry can respond.
+**Solution:** A sequence log tracks `(hostId, counter, entryId, payloadType)`
+tuples. When a message arrives with counter N but the last seen counter for that
+host was N-2, the system detects counter N-1 is missing. Periodically, missing
+entries are requested via broadcast. Any device with the entry can respond.
+
+**Payload Types:** The `SyncSequencePayloadType` enum distinguishes between
+message types: `journalEntity` for journal entries and `entryLink` for entry
+links. Both types are tracked independently in the sequence log, enabling
+complete reconstruction of sync state.
 
 **Components:**
 - `SyncSequenceLog` table in `sync_db.dart` — stores sequence entries with
@@ -147,6 +152,18 @@ requested via broadcast. Any device with the entry can respond.
 - Any counter jumps > 1 trigger gap entries marked as `missing`
 - When an entry arrives, ALL (hostId, counter) pairs in its VC are updated to
   received/backfilled status (not just the originator's counter)
+
+**Ghost Entry Resolution:**
+Different payload types can share the same sequence counter. When one type
+arrives, it "ghosts" (resolves) any missing entries of other types at that
+counter. For example:
+- Device sends JournalEntity at `(alice:5)` — sequence log records it
+- Same device sends EntryLink at `(alice:5)` — same counter, different type
+- If the JournalEntity was missing but EntryLink arrives, the EntryLink
+  resolves the missing counter because `VC[alice]=5 >= 5`
+
+This prevents entries from being stuck as "missing" when the actual content
+was delivered via a different payload type at the same vector clock position.
 
 **Two-Phase Backfill Verification:**
 When responding to a backfill request, the responder sends BOTH the entry via
@@ -209,6 +226,16 @@ and `SYNC_BACKFILL` (request/response handling). Look for:
 - `backfillBatchSize`: 100 entries max per request message
 - `backfillMaxRequestCount`: 10 retries before giving up
 - `backfillBaseBackoff` / `backfillMaxBackoff`: exponential backoff bounds
+
+**Sequence Log Population:**
+The maintenance UI provides a "Populate Sequence Log" operation that rebuilds
+the sequence log from existing journal data. This is useful after migrations or
+when the sequence log has become inconsistent. The operation runs in two phases:
+1. `populateFromJournal`: Records all journal entities with their vector clocks
+2. `populateFromEntryLinks`: Records all entry links with their vector clocks
+
+Progress is displayed via `SequenceLogPopulateProgress`, an extracted widget
+that shows phase indicators, progress percentage, and completion counts.
 
 ### Documentation & Artefacts
 

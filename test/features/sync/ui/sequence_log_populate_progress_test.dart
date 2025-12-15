@@ -93,9 +93,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          const SequenceLogPopulateState(
-            
-          ),
+          const SequenceLogPopulateState(),
         ),
       );
       await tester.pumpAndSettle();
