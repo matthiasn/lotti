@@ -90,7 +90,7 @@ void main() {
       // Verify the migration occurred by checking schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 3);
+      expect(db.schemaVersion, 4);
 
       // Verify sync_sequence_log table exists and has correct schema
       final seqLogResult = await db
@@ -133,7 +133,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 3);
+      expect(versionResult.first.read<int>('user_version'), 4);
 
       // Verify all tables exist
       final tablesResult = await db

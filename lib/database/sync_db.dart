@@ -658,10 +658,11 @@ class SyncDatabase extends _$SyncDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
+          // Creates tables with all current columns (including payload_type)
           await m.createTable(syncSequenceLog);
           await m.createTable(hostActivity);
-        }
-        if (from < 3) {
+        } else if (from < 3) {
+          // Only add payload_type if table existed from v2 (without this column)
           await m.addColumn(syncSequenceLog, syncSequenceLog.payloadType);
         }
         if (from < 4) {
