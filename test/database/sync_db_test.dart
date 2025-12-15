@@ -714,6 +714,47 @@ void main() {
       // After adding one requested entry (both missing and requested count)
       expect(await database.watchMissingCount().first, 2);
     });
+
+    test('getSequenceLogCount returns total count of entries', () async {
+      final database = db!;
+
+      // Initial count should be 0
+      expect(await database.getSequenceLogCount(), 0);
+
+      // Add entries with various statuses
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      expect(await database.getSequenceLogCount(), 1);
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+      expect(await database.getSequenceLogCount(), 2);
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-2'),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.backfilled.index),
+          createdAt: Value(DateTime(2024, 1, 3)),
+          updatedAt: Value(DateTime(2024, 1, 3)),
+        ),
+      );
+      expect(await database.getSequenceLogCount(), 3);
+    });
   });
 
   group('HostActivity Tests', () {
