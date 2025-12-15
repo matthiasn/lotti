@@ -24,6 +24,12 @@ class _MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
 
 void main() {
+  setUpAll(() {
+    // Register fallback values for complex types used with any()
+    registerFallbackValue(const Stream<
+        List<({String id, Map<String, int>? vectorClock})>>.empty());
+    registerFallbackValue(() async => 0);
+  });
   setUp(() async {
     // Use a dedicated scope per test to avoid cross-file contamination
     getIt.pushNewScope();
@@ -402,6 +408,59 @@ void main() {
       await checkAndPopulateSequenceLogForTesting();
 
       verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
+    });
+
+    test('populates from journal and links when needed', () async {
+      when(() => settingsDb.itemByKey('maintenance_sequenceLogPopulated'))
+          .thenAnswer((_) async => null);
+      when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
+      when(() => journalDb.countAllJournalEntries())
+          .thenAnswer((_) async => 100);
+      when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 50);
+      when(() => journalDb.streamEntriesWithVectorClock())
+          .thenAnswer((_) => const Stream.empty());
+      when(() => journalDb.streamEntryLinksWithVectorClock())
+          .thenAnswer((_) => const Stream.empty());
+      // Use specific callback matching instead of any() for complex types
+      when(() => sequenceLogService.populateFromJournal(
+            entryStream:
+                any<Stream<List<({String id, Map<String, int>? vectorClock})>>>(
+                    named: 'entryStream'),
+            getTotalCount: any<Future<int> Function()>(named: 'getTotalCount'),
+          )).thenAnswer((_) async => 100);
+      when(() => sequenceLogService.populateFromEntryLinks(
+            linkStream:
+                any<Stream<List<({String id, Map<String, int>? vectorClock})>>>(
+                    named: 'linkStream'),
+            getTotalCount: any<Future<int> Function()>(named: 'getTotalCount'),
+          )).thenAnswer((_) async => 50);
+      when(() => settingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 1);
+
+      await checkAndPopulateSequenceLogForTesting();
+
+      // Verify settings saved (which means population completed)
+      verify(
+        () => settingsDb.saveSettingsItem(
+          'maintenance_sequenceLogPopulated',
+          'true',
+        ),
+      ).called(1);
+      // Verify logging events
+      verify(
+        () => loggingService.captureEvent(
+          any<String>(that: contains('Starting automatic sequence log')),
+          domain: 'MAINTENANCE',
+          subDomain: 'sequenceLogPopulation',
+        ),
+      ).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          any<String>(that: contains('population completed')),
+          domain: 'MAINTENANCE',
+          subDomain: 'sequenceLogPopulation',
+        ),
+      ).called(1);
     });
   });
 }
