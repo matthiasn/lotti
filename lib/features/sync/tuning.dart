@@ -109,6 +109,10 @@ class SyncTuning {
   // Gaps larger than this are logged but only the most recent N entries are created.
   static const int maxGapSize = 100;
 
+  // Maximum entries to process from an incoming backfill request.
+  // Prevents a single large request from flooding the outbox.
+  static const int maxBackfillResponseBatchSize = 50;
+
   // Maximum entries to fetch from DB per backfill request message
   static const int backfillBatchSize = 100;
 

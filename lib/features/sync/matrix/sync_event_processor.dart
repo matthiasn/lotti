@@ -513,6 +513,11 @@ class SyncEventProcessor {
   void Function(SyncApplyDiagnostics diag)? applyObserver;
   void Function()? _cachePurgeListener;
 
+  /// Startup timestamp - events with backfill requests older than this
+  /// are skipped to prevent re-processing on every restart.
+  /// Set this to the read marker timestamp at app startup.
+  num? startupTimestamp;
+
   void Function()? get cachePurgeListener => _cachePurgeListener;
 
   set cachePurgeListener(void Function()? listener) {
@@ -532,6 +537,23 @@ class SyncEventProcessor {
       final decoded = utf8.decode(base64.decode(raw));
       final messageJson = json.decode(decoded) as Map<String, dynamic>;
       final syncMessage = SyncMessage.fromJson(messageJson);
+
+      // Skip backfill requests that are older than the startup timestamp.
+      // These were already processed in a previous session but get replayed
+      // during catch-up because the in-memory dedup cache was cleared on restart.
+      if (syncMessage is SyncBackfillRequest ||
+          syncMessage is SyncBackfillResponse) {
+        final eventTs = event.originServerTs;
+        final startupTs = startupTimestamp;
+        if (startupTs != null && eventTs.millisecondsSinceEpoch < startupTs) {
+          _loggingService.captureEvent(
+            'skipping old backfill ${syncMessage.runtimeType} eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=${event.eventId}',
+            domain: 'SYNC_BACKFILL',
+            subDomain: 'skipOld',
+          );
+          return;
+        }
+      }
 
       _loggingService.captureEvent(
         'processing ${event.originServerTs} ${event.eventId}',

@@ -426,6 +426,9 @@ class MatrixStreamConsumer implements SyncPipeline {
     // Capture startup marker for attach-time anchoring and log it for visibility.
     _startupLastProcessedEventId = _lastProcessedEventId;
     _startupLastProcessedTs = _lastProcessedTs;
+    // Pass startup timestamp to event processor to skip old backfill requests
+    // that would otherwise be re-processed on every restart due to catch-up.
+    _eventProcessor.startupTimestamp = _startupLastProcessedTs;
     _loggingService.captureEvent(
       'startup.marker id=${_startupLastProcessedEventId ?? 'null'} ts=${_startupLastProcessedTs?.toInt() ?? 'null'}',
       domain: syncLoggingDomain,
