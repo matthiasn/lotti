@@ -100,9 +100,8 @@ class SyncTuning {
   // Maximum entries to fetch from DB per backfill request message
   static const int backfillBatchSize = 100;
 
-  // Maximum entries to process per processing cycle (smaller to avoid
-  // overwhelming the network on each timer tick)
-  static const int backfillProcessingBatchSize = 20;
+  // Maximum entries to process per processing cycle
+  static const int backfillProcessingBatchSize = 50;
 
   // Default limits for automatic backfill (prevents unbounded historical sync)
   // Only request entries from the last day OR 250 entries per host, whichever

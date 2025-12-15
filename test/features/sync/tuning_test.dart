@@ -215,7 +215,7 @@ void main() {
         );
         expect(SyncTuning.backfillMaxRequestCount, 10);
         expect(SyncTuning.backfillBatchSize, 100);
-        expect(SyncTuning.backfillProcessingBatchSize, 20);
+        expect(SyncTuning.backfillProcessingBatchSize, 50);
       });
 
       test('default backfill limits have expected values', () {

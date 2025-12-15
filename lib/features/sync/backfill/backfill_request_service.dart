@@ -222,6 +222,8 @@ class BackfillRequestService {
 
     try {
       // Get missing entries - either with limits (automatic) or without (manual)
+      // For manual full backfill, use getMissingEntries which doesn't filter
+      // by host activity, allowing backfill from hosts not recently seen.
       var missing = useLimits
           ? await _sequenceLogService.getMissingEntriesWithLimits(
               limit: _maxBatchSize,
@@ -229,7 +231,7 @@ class BackfillRequestService {
               maxAge: _maxAge,
               maxPerHost: _maxPerHost,
             )
-          : await _sequenceLogService.getMissingEntriesForActiveHosts(
+          : await _sequenceLogService.getMissingEntries(
               limit: _maxBatchSize,
               maxRequestCount: _maxRequestCount,
             );

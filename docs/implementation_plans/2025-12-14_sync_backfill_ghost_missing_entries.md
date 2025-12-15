@@ -1,7 +1,7 @@
 # Sync Backfill: Ghost Missing Entries from EntryLink Counters
 
 **Date:** 2025-12-14
-**Status:** Implementation Complete (Steps A-E, Tests done; Step F optional)
+**Status:** Implementation Complete (Steps A-E, Tests done; Bug fix applied; Step F optional)
 **Scope:** Debugging/refinement of self-healing sync backfill based on vector clocks (host UUID +
 monotonic counter).
 
@@ -25,9 +25,23 @@ monotonic counter).
 - `lib/features/sync/matrix/sync_event_processor.dart` - Records received EntryLink counters
 - `lib/features/sync/outbox/outbox_service.dart` - Records sent EntryLink counters
 - `lib/features/sync/backfill/backfill_response_handler.dart` - Multi-payload backfill
+- `lib/features/sync/backfill/backfill_request_service.dart` - Bug fix: full backfill query
 - `lib/features/sync/model/sync_message.dart` - Extended with `payloadType`/`payloadId`
 - `lib/features/sync/state/sequence_log_populate_controller.dart` - Two-phase populate
 - `lib/features/sync/ui/sequence_log_populate_modal.dart` - UI updates for links
+
+### Bug Fix (2025-12-15): Full Backfill Using Wrong Query
+
+**Issue:** `processFullBackfill()` was using `getMissingEntriesForActiveHosts()` which filters entries
+based on host activity. This meant manual "full backfill" would often return zero results for entries
+from hosts that hadn't been recently active.
+
+**Root cause:** In `_processBackfillRequests()`, when `useLimits: false` (for full backfill), the code
+incorrectly called `getMissingEntriesForActiveHosts()` instead of `getMissingEntries()`.
+
+**Fix:** Changed the `useLimits: false` branch to use `getMissingEntries()` which returns all missing
+entries regardless of host activity status. This allows manual full backfill to request entries from
+any host, even if that host hasn't been online recently.
 
 ## Summary
 
