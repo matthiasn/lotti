@@ -469,6 +469,7 @@
   "backfillStatsRequested": "Requested",
   "backfillStatsBackfilled": "Backfilled",
   "backfillStatsDeleted": "Deleted",
+  "backfillStatsUnresolvable": "Unresolvable",
   "backfillStatsHostsTitle": "{count} connected device{count, plural, =1{} other{s}}",
   "@backfillStatsHostsTitle": {
     "placeholders": {

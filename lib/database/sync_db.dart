@@ -27,6 +27,11 @@ enum SyncSequenceStatus {
 
   /// Responder confirmed the entry was purged/deleted
   deleted,
+
+  /// Originating host confirmed it cannot resolve its own counter.
+  /// This happens when a counter was superseded before being recorded
+  /// (e.g., rapid edits where intermediate versions were never persisted).
+  unresolvable,
 }
 
 @DataClassName('OutboxItem')
@@ -492,6 +497,7 @@ class SyncDatabase extends _$SyncDatabase {
     final requested = SyncSequenceStatus.requested.index;
     final backfilled = SyncSequenceStatus.backfilled.index;
     final deleted = SyncSequenceStatus.deleted.index;
+    final unresolvable = SyncSequenceStatus.unresolvable.index;
 
     // Get all unique hosts with their status counts
     final query = customSelect(
@@ -504,6 +510,7 @@ class SyncDatabase extends _$SyncDatabase {
         SUM(CASE WHEN ssl.status = $requested THEN 1 ELSE 0 END) as requested_count,
         SUM(CASE WHEN ssl.status = $backfilled THEN 1 ELSE 0 END) as backfilled_count,
         SUM(CASE WHEN ssl.status = $deleted THEN 1 ELSE 0 END) as deleted_count,
+        SUM(CASE WHEN ssl.status = $unresolvable THEN 1 ELSE 0 END) as unresolvable_count,
         ha.last_seen_at
       FROM sync_sequence_log ssl
       LEFT JOIN host_activity ha ON ssl.host_id = ha.host_id
@@ -523,6 +530,7 @@ class SyncDatabase extends _$SyncDatabase {
         requestedCount: row.read<int>('requested_count'),
         backfilledCount: row.read<int>('backfilled_count'),
         deletedCount: row.read<int>('deleted_count'),
+        unresolvableCount: row.read<int>('unresolvable_count'),
         lastSeenAt: row.readNullable<DateTime>('last_seen_at'),
       );
     }).toList();

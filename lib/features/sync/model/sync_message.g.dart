@@ -176,6 +176,7 @@ SyncBackfillResponse _$SyncBackfillResponseFromJson(
       hostId: json['hostId'] as String,
       counter: (json['counter'] as num).toInt(),
       deleted: json['deleted'] as bool,
+      unresolvable: json['unresolvable'] as bool?,
       entryId: json['entryId'] as String?,
       payloadType: $enumDecodeNullable(
           _$SyncSequencePayloadTypeEnumMap, json['payloadType']),
@@ -189,6 +190,7 @@ Map<String, dynamic> _$SyncBackfillResponseToJson(
       'hostId': instance.hostId,
       'counter': instance.counter,
       'deleted': instance.deleted,
+      'unresolvable': instance.unresolvable,
       'entryId': instance.entryId,
       'payloadType': _$SyncSequencePayloadTypeEnumMap[instance.payloadType],
       'payloadId': instance.payloadId,

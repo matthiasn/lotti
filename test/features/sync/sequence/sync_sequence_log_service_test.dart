@@ -1029,6 +1029,7 @@ void main() {
           requestedCount: 1,
           backfilledCount: 3,
           deletedCount: 0,
+          unresolvableCount: 0,
           latestCounter: 15,
         ),
       ]);

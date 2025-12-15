@@ -573,8 +573,14 @@ extension SyncMessagePatterns on SyncMessage {
         themingSelection,
     TResult Function(List<BackfillRequestEntry> entries, String requesterId)?
         backfillRequest,
-    TResult Function(String hostId, int counter, bool deleted, String? entryId,
-            SyncSequencePayloadType? payloadType, String? payloadId)?
+    TResult Function(
+            String hostId,
+            int counter,
+            bool deleted,
+            bool? unresolvable,
+            String? entryId,
+            SyncSequencePayloadType? payloadType,
+            String? payloadId)?
         backfillResponse,
     required TResult orElse(),
   }) {
@@ -606,8 +612,14 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest() when backfillRequest != null:
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
-            _that.entryId, _that.payloadType, _that.payloadId);
+        return backfillResponse(
+            _that.hostId,
+            _that.counter,
+            _that.deleted,
+            _that.unresolvable,
+            _that.entryId,
+            _that.payloadType,
+            _that.payloadId);
       case _:
         return orElse();
     }
@@ -658,6 +670,7 @@ extension SyncMessagePatterns on SyncMessage {
             String hostId,
             int counter,
             bool deleted,
+            bool? unresolvable,
             String? entryId,
             SyncSequencePayloadType? payloadType,
             String? payloadId)
@@ -691,8 +704,14 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest():
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse():
-        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
-            _that.entryId, _that.payloadType, _that.payloadId);
+        return backfillResponse(
+            _that.hostId,
+            _that.counter,
+            _that.deleted,
+            _that.unresolvable,
+            _that.entryId,
+            _that.payloadType,
+            _that.payloadId);
     }
   }
 
@@ -733,8 +752,14 @@ extension SyncMessagePatterns on SyncMessage {
         themingSelection,
     TResult? Function(List<BackfillRequestEntry> entries, String requesterId)?
         backfillRequest,
-    TResult? Function(String hostId, int counter, bool deleted, String? entryId,
-            SyncSequencePayloadType? payloadType, String? payloadId)?
+    TResult? Function(
+            String hostId,
+            int counter,
+            bool deleted,
+            bool? unresolvable,
+            String? entryId,
+            SyncSequencePayloadType? payloadType,
+            String? payloadId)?
         backfillResponse,
   }) {
     final _that = this;
@@ -765,8 +790,14 @@ extension SyncMessagePatterns on SyncMessage {
       case SyncBackfillRequest() when backfillRequest != null:
         return backfillRequest(_that.entries, _that.requesterId);
       case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(_that.hostId, _that.counter, _that.deleted,
-            _that.entryId, _that.payloadType, _that.payloadId);
+        return backfillResponse(
+            _that.hostId,
+            _that.counter,
+            _that.deleted,
+            _that.unresolvable,
+            _that.entryId,
+            _that.payloadType,
+            _that.payloadId);
       case _:
         return null;
     }
@@ -1705,6 +1736,7 @@ class SyncBackfillResponse implements SyncMessage {
       {required this.hostId,
       required this.counter,
       required this.deleted,
+      this.unresolvable,
       this.entryId,
       this.payloadType,
       this.payloadId,
@@ -1721,6 +1753,12 @@ class SyncBackfillResponse implements SyncMessage {
 
   /// True if the entry was deleted/purged and cannot be backfilled
   final bool deleted;
+
+  /// True if the originating host cannot resolve its own counter.
+  /// This happens when a counter was superseded before being recorded
+  /// (e.g., rapid edits where intermediate versions were never persisted).
+  /// Receivers should mark this counter as permanently unresolvable.
+  final bool? unresolvable;
 
   /// Legacy: The journal entry ID if found (null if deleted).
   ///
@@ -1761,6 +1799,8 @@ class SyncBackfillResponse implements SyncMessage {
             (identical(other.hostId, hostId) || other.hostId == hostId) &&
             (identical(other.counter, counter) || other.counter == counter) &&
             (identical(other.deleted, deleted) || other.deleted == deleted) &&
+            (identical(other.unresolvable, unresolvable) ||
+                other.unresolvable == unresolvable) &&
             (identical(other.entryId, entryId) || other.entryId == entryId) &&
             (identical(other.payloadType, payloadType) ||
                 other.payloadType == payloadType) &&
@@ -1770,12 +1810,12 @@ class SyncBackfillResponse implements SyncMessage {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, hostId, counter, deleted, entryId, payloadType, payloadId);
+  int get hashCode => Object.hash(runtimeType, hostId, counter, deleted,
+      unresolvable, entryId, payloadType, payloadId);
 
   @override
   String toString() {
-    return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, entryId: $entryId, payloadType: $payloadType, payloadId: $payloadId)';
+    return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, unresolvable: $unresolvable, entryId: $entryId, payloadType: $payloadType, payloadId: $payloadId)';
   }
 }
 
@@ -1790,6 +1830,7 @@ abstract mixin class $SyncBackfillResponseCopyWith<$Res>
       {String hostId,
       int counter,
       bool deleted,
+      bool? unresolvable,
       String? entryId,
       SyncSequencePayloadType? payloadType,
       String? payloadId});
@@ -1810,6 +1851,7 @@ class _$SyncBackfillResponseCopyWithImpl<$Res>
     Object? hostId = null,
     Object? counter = null,
     Object? deleted = null,
+    Object? unresolvable = freezed,
     Object? entryId = freezed,
     Object? payloadType = freezed,
     Object? payloadId = freezed,
@@ -1827,6 +1869,10 @@ class _$SyncBackfillResponseCopyWithImpl<$Res>
           ? _self.deleted
           : deleted // ignore: cast_nullable_to_non_nullable
               as bool,
+      unresolvable: freezed == unresolvable
+          ? _self.unresolvable
+          : unresolvable // ignore: cast_nullable_to_non_nullable
+              as bool?,
       entryId: freezed == entryId
           ? _self.entryId
           : entryId // ignore: cast_nullable_to_non_nullable

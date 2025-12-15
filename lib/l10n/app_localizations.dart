@@ -2403,6 +2403,12 @@ abstract class AppLocalizations {
   /// **'Deleted'**
   String get backfillStatsDeleted;
 
+  /// No description provided for @backfillStatsUnresolvable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unresolvable'**
+  String get backfillStatsUnresolvable;
+
   /// No description provided for @backfillStatsHostsTitle.
   ///
   /// In en, this message translates to:

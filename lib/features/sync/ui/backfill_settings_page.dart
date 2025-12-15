@@ -244,6 +244,13 @@ class _StatsSection extends StatelessWidget {
                 label: context.messages.backfillStatsDeleted,
                 value: '${stats!.totalDeleted}',
               ),
+              _StatRow(
+                label: context.messages.backfillStatsUnresolvable,
+                value: '${stats!.totalUnresolvable}',
+                color: stats!.totalUnresolvable > 0
+                    ? theme.colorScheme.outline
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
               if (stats!.hostStats.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(

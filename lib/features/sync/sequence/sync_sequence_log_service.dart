@@ -373,6 +373,10 @@ class SyncSequenceLogService {
   ///
   /// For deleted responses: marks the entry as deleted (cannot be backfilled).
   ///
+  /// For unresolvable responses: marks the entry as unresolvable - the
+  /// originating host confirmed it cannot resolve its own counter (e.g., it
+  /// was superseded before being recorded).
+  ///
   /// For non-deleted responses: stores the entryId as a "hint" mapping
   /// (hostId, counter) → entryId. The actual status update to "backfilled"
   /// happens only when we verify the entry exists locally - either via
@@ -384,6 +388,7 @@ class SyncSequenceLogService {
     required String hostId,
     required int counter,
     required bool deleted,
+    bool unresolvable = false,
     String? entryId,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
@@ -397,6 +402,23 @@ class SyncSequenceLogService {
 
       _loggingService.captureEvent(
         'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'backfillResponse',
+      );
+      return;
+    }
+
+    if (unresolvable) {
+      // Mark as unresolvable - the originating host cannot resolve its own
+      // counter. This is permanent; the entry will never be backfilled.
+      await _syncDatabase.updateSequenceStatus(
+        hostId,
+        counter,
+        SyncSequenceStatus.unresolvable,
+      );
+
+      _loggingService.captureEvent(
+        'handleBackfillResponse hostId=$hostId counter=$counter unresolvable=true',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'backfillResponse',
       );

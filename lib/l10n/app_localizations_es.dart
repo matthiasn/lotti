@@ -1283,6 +1283,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillStatsDeleted => 'Deleted';
 
   @override
+  String get backfillStatsUnresolvable => 'Unresolvable';
+
+  @override
   String backfillStatsHostsTitle(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

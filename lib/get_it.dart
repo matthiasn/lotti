@@ -256,6 +256,7 @@ Future<void> registerSingletons() async {
     sequenceLogService: syncSequenceLogService,
     outboxService: outboxService,
     loggingService: loggingService,
+    vectorClockService: vectorClockService,
   );
   final backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,

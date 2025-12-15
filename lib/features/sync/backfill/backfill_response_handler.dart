@@ -6,6 +6,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// Handler for incoming backfill requests and responses.
@@ -17,15 +18,18 @@ class BackfillResponseHandler {
     required SyncSequenceLogService sequenceLogService,
     required OutboxService outboxService,
     required LoggingService loggingService,
+    required VectorClockService vectorClockService,
   })  : _journalDb = journalDb,
         _sequenceLogService = sequenceLogService,
         _outboxService = outboxService,
-        _loggingService = loggingService;
+        _loggingService = loggingService,
+        _vectorClockService = vectorClockService;
 
   final JournalDb _journalDb;
   final SyncSequenceLogService _sequenceLogService;
   final OutboxService _outboxService;
   final LoggingService _loggingService;
+  final VectorClockService _vectorClockService;
 
   /// Send a "deleted" backfill response indicating the payload no longer exists.
   Future<void> _sendDeletedResponse({
@@ -40,6 +44,28 @@ class BackfillResponseHandler {
         deleted: true,
         payloadType: payloadType,
       ),
+    );
+  }
+
+  /// Send an "unresolvable" backfill response indicating the originating host
+  /// cannot resolve its own counter (e.g., it was superseded before being recorded).
+  Future<void> _sendUnresolvableResponse({
+    required String hostId,
+    required int counter,
+  }) async {
+    await _outboxService.enqueueMessage(
+      SyncMessage.backfillResponse(
+        hostId: hostId,
+        counter: counter,
+        deleted: false,
+        unresolvable: true,
+      ),
+    );
+
+    _loggingService.captureEvent(
+      'sendUnresolvableResponse hostId=$hostId counter=$counter',
+      domain: 'SYNC_BACKFILL',
+      subDomain: 'unresolvable',
     );
   }
 
@@ -156,8 +182,15 @@ class BackfillResponseHandler {
     );
 
     if (logEntry == null || logEntry.entryId == null) {
-      // We don't have this entry in our log - ignore
-      // Another device might have it and can respond
+      // We don't have this entry in our log
+      // Check if we're the originator - if so, respond with unresolvable
+      // since no one else can answer for our own counters
+      final myHost = await _vectorClockService.getHost();
+      if (myHost != null && hostId == myHost) {
+        await _sendUnresolvableResponse(hostId: hostId, counter: counter);
+        return true;
+      }
+      // Not our counter - ignore, another device might have it
       return false;
     }
 
@@ -288,23 +321,26 @@ class BackfillResponseHandler {
       final payloadId = response.payloadId ?? response.entryId;
 
       _loggingService.captureEvent(
-        'handleBackfillResponse hostId=${response.hostId} counter=${response.counter} deleted=${response.deleted} payloadType=$payloadType payloadId=$payloadId entryId=${response.entryId}',
+        'handleBackfillResponse hostId=${response.hostId} counter=${response.counter} deleted=${response.deleted} unresolvable=${response.unresolvable} payloadType=$payloadType payloadId=$payloadId entryId=${response.entryId}',
         domain: 'SYNC_BACKFILL',
         subDomain: 'handleResponse',
       );
 
-      // First, store the hint (or mark as deleted for deleted responses)
+      // First, store the hint (or mark as deleted/unresolvable for those responses)
       await _sequenceLogService.handleBackfillResponse(
         hostId: response.hostId,
         counter: response.counter,
         deleted: response.deleted,
+        unresolvable: response.unresolvable ?? false,
         entryId: payloadId,
         payloadType: payloadType,
       );
 
-      // For non-deleted responses, verify the entry exists locally
-      // before marking as backfilled
-      if (!response.deleted && payloadId != null) {
+      // For non-deleted, non-unresolvable responses, verify the entry exists
+      // locally before marking as backfilled
+      if (!response.deleted &&
+          !(response.unresolvable ?? false) &&
+          payloadId != null) {
         switch (payloadType) {
           case SyncSequencePayloadType.journalEntity:
             await _tryVerifyAndMarkBackfilled(

@@ -7,6 +7,7 @@ class BackfillHostStats {
     required this.requestedCount,
     required this.backfilledCount,
     required this.deletedCount,
+    required this.unresolvableCount,
     required this.latestCounter,
     this.lastSeenAt,
   });
@@ -17,6 +18,7 @@ class BackfillHostStats {
   final int requestedCount;
   final int backfilledCount;
   final int deletedCount;
+  final int unresolvableCount;
   final int latestCounter;
   final DateTime? lastSeenAt;
 
@@ -25,7 +27,8 @@ class BackfillHostStats {
       missingCount +
       requestedCount +
       backfilledCount +
-      deletedCount;
+      deletedCount +
+      unresolvableCount;
 
   int get pendingCount => missingCount + requestedCount;
 }
@@ -39,6 +42,7 @@ class BackfillStats {
     required this.totalRequested,
     required this.totalBackfilled,
     required this.totalDeleted,
+    required this.totalUnresolvable,
   });
 
   factory BackfillStats.fromHostStats(List<BackfillHostStats> stats) {
@@ -49,6 +53,7 @@ class BackfillStats {
       totalRequested: stats.fold(0, (sum, s) => sum + s.requestedCount),
       totalBackfilled: stats.fold(0, (sum, s) => sum + s.backfilledCount),
       totalDeleted: stats.fold(0, (sum, s) => sum + s.deletedCount),
+      totalUnresolvable: stats.fold(0, (sum, s) => sum + s.unresolvableCount),
     );
   }
 
@@ -58,6 +63,7 @@ class BackfillStats {
   final int totalRequested;
   final int totalBackfilled;
   final int totalDeleted;
+  final int totalUnresolvable;
 
   int get totalPending => totalMissing + totalRequested;
   int get totalEntries =>
@@ -65,7 +71,8 @@ class BackfillStats {
       totalMissing +
       totalRequested +
       totalBackfilled +
-      totalDeleted;
+      totalDeleted +
+      totalUnresolvable;
 }
 
 /// Sync and Outbox tuning constants, centralized for easy documentation and

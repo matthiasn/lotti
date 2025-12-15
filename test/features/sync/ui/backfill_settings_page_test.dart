@@ -38,6 +38,7 @@ void main() {
       requestedCount: 2,
       backfilledCount: 10,
       deletedCount: 1,
+      unresolvableCount: 0,
       latestCounter: 118,
     ),
   ]);
@@ -428,6 +429,7 @@ void main() {
             requestedCount: 0, // No requested entries
             backfilledCount: 10,
             deletedCount: 1,
+            unresolvableCount: 0,
             latestCounter: 116,
           ),
         ]),

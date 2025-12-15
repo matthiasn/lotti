@@ -137,6 +137,7 @@ void main() {
       sequenceLogService: aliceSequenceService,
       outboxService: aliceOutbox,
       loggingService: aliceLogging,
+      vectorClockService: aliceVcService,
     );
   });
 

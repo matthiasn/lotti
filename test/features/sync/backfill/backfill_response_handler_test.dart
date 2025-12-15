@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,6 +24,8 @@ class MockOutboxService extends Mock implements OutboxService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockVectorClockService extends Mock implements VectorClockService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -30,9 +33,11 @@ void main() {
   late MockSyncSequenceLogService mockSequenceService;
   late MockOutboxService mockOutboxService;
   late MockLoggingService mockLogging;
+  late MockVectorClockService mockVcService;
   late BackfillResponseHandler handler;
 
   const aliceHostId = 'alice-host-uuid';
+  const bobHostId = 'bob-host-uuid';
   const requesterId = 'requester-uuid';
   const entryId = 'test-entry-id';
 
@@ -83,6 +88,7 @@ void main() {
     mockSequenceService = MockSyncSequenceLogService();
     mockOutboxService = MockOutboxService();
     mockLogging = MockLoggingService();
+    mockVcService = MockVectorClockService();
 
     when(
       () => mockLogging.captureEvent(
@@ -99,12 +105,14 @@ void main() {
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
     ).thenReturn(null);
+    when(() => mockVcService.getHost()).thenAnswer((_) async => aliceHostId);
 
     handler = BackfillResponseHandler(
       journalDb: mockJournalDb,
       sequenceLogService: mockSequenceService,
       outboxService: mockOutboxService,
       loggingService: mockLogging,
+      vectorClockService: mockVcService,
     );
   });
 
@@ -129,7 +137,29 @@ void main() {
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
 
-    test('ignores request when entry not in sequence log', () async {
+    test('ignores request when entry not in sequence log and not our host',
+        () async {
+      // Request for Bob's counter - we don't have it, skip silently
+      // (another device might have it)
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: bobHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      when(() => mockSequenceService.getEntryByHostAndCounter(bobHostId, 3))
+          .thenAnswer((_) async => null);
+
+      await handler.handleBackfillRequest(request);
+
+      // Should not enqueue any messages - we don't own this counter
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+
+    test('sends unresolvable when own counter not in sequence log', () async {
+      // Request for Alice's counter (our own) - we can't find it
+      // Only we can answer for our own counters, so send unresolvable
       const request = SyncBackfillRequest(
         entries: [
           BackfillRequestEntry(hostId: aliceHostId, counter: 3),
@@ -139,14 +169,49 @@ void main() {
 
       when(() => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3))
           .thenAnswer((_) async => null);
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
 
       await handler.handleBackfillRequest(request);
 
-      // Should not enqueue any messages
+      // Should send unresolvable response for our own counter
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          const SyncMessage.backfillResponse(
+            hostId: aliceHostId,
+            counter: 3,
+            deleted: false,
+            unresolvable: true,
+          ),
+        ),
+      ).called(1);
+    });
+
+    test(
+        'ignores request when entry in log but has no entryId and not our host',
+        () async {
+      // Request for Bob's counter - entry exists but no entryId
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: bobHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      when(() => mockSequenceService.getEntryByHostAndCounter(bobHostId, 3))
+          .thenAnswer(
+        (_) async => _createLogItem(bobHostId, 3),
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      // Should not enqueue any messages - not our counter
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
 
-    test('ignores request when entry in log but has no entryId', () async {
+    test('sends unresolvable when own counter in log but has no entryId',
+        () async {
+      // Request for Alice's counter (our own) - entry exists but no entryId
       const request = SyncBackfillRequest(
         entries: [
           BackfillRequestEntry(hostId: aliceHostId, counter: 3),
@@ -158,11 +223,22 @@ void main() {
           .thenAnswer(
         (_) async => _createLogItem(aliceHostId, 3),
       );
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
 
       await handler.handleBackfillRequest(request);
 
-      // Should not enqueue any messages
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      // Should send unresolvable response for our own counter
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          const SyncMessage.backfillResponse(
+            hostId: aliceHostId,
+            counter: 3,
+            deleted: false,
+            unresolvable: true,
+          ),
+        ),
+      ).called(1);
     });
 
     test('sends deleted response when journal entry was deleted', () async {
