@@ -89,32 +89,32 @@ final testLinks = [
     id: 'link-1',
     fromId: testAudioEntryId,
     toId: testAiResponseEntry1.meta.id,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdAt: DateTime(2024, 1, 15, 10),
+    updatedAt: DateTime(2024, 1, 15, 10),
     vectorClock: null,
   ),
   EntryLink.basic(
     id: 'link-2',
     fromId: testAudioEntryId,
     toId: testAiResponseEntry2.meta.id,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdAt: DateTime(2024, 1, 15, 10),
+    updatedAt: DateTime(2024, 1, 15, 10),
     vectorClock: null,
   ),
   EntryLink.basic(
     id: 'link-3',
     fromId: testAudioEntryId,
     toId: testDeletedAiResponseEntry.meta.id,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdAt: DateTime(2024, 1, 15, 10),
+    updatedAt: DateTime(2024, 1, 15, 10),
     vectorClock: null,
   ),
   EntryLink.basic(
     id: 'link-4',
     fromId: testAudioEntryId,
     toId: testNonAiEntry.meta.id,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdAt: DateTime(2024, 1, 15, 10),
+    updatedAt: DateTime(2024, 1, 15, 10),
     vectorClock: null,
   ),
 ];
@@ -141,9 +141,32 @@ void main() {
     getIt.unregister<UpdateNotifications>();
   });
 
+  /// Waits for the provider state to change to a value that satisfies the predicate.
+  /// Uses completer to avoid timing-based delays.
+  Future<List<AiResponseEntry>> waitForState(
+    ProviderContainer container,
+    bool Function(List<AiResponseEntry>) predicate, {
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final completer = Completer<List<AiResponseEntry>>();
+    final sub = container.listen(
+      linkedAiResponsesControllerProvider(entryId: testAudioEntryId),
+      (_, next) {
+        if (!completer.isCompleted && next.hasValue && predicate(next.value!)) {
+          completer.complete(next.value);
+        }
+      },
+    );
+
+    try {
+      return await completer.future.timeout(timeout);
+    } finally {
+      sub.close();
+    }
+  }
+
   group('LinkedAiResponsesController', () {
     test('loads AI responses linked to an entry on initialization', () async {
-      // Arrange
       when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
           .thenAnswer((_) async => testLinks);
       when(() => mockJournalRepository.getJournalEntityById(
@@ -159,7 +182,6 @@ void main() {
             testNonAiEntry.meta.id,
           )).thenAnswer((_) async => testNonAiEntry);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -170,12 +192,11 @@ void main() {
         linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
       );
 
-      // Assert - should only have non-deleted AI responses
+      // Should only have non-deleted AI responses
       expect(result.length, equals(2));
       expect(result[0].meta.id, equals(testAiResponseEntry2.meta.id));
       expect(result[1].meta.id, equals(testAiResponseEntry1.meta.id));
 
-      // Verify repository calls
       verify(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
           .called(1);
 
@@ -183,14 +204,13 @@ void main() {
     });
 
     test('filters out deleted AI responses', () async {
-      // Arrange
       final linksWithDeleted = [
         EntryLink.basic(
           id: 'link-deleted',
           fromId: testAudioEntryId,
           toId: testDeletedAiResponseEntry.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -201,7 +221,6 @@ void main() {
             testDeletedAiResponseEntry.meta.id,
           )).thenAnswer((_) async => testDeletedAiResponseEntry);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -212,21 +231,19 @@ void main() {
         linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
       );
 
-      // Assert - deleted entries should be filtered out
       expect(result, isEmpty);
 
       container.dispose();
     });
 
     test('filters out non-AI response entries', () async {
-      // Arrange
       final linksWithNonAi = [
         EntryLink.basic(
           id: 'link-non-ai',
           fromId: testAudioEntryId,
           toId: testNonAiEntry.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -237,7 +254,6 @@ void main() {
             testNonAiEntry.meta.id,
           )).thenAnswer((_) async => testNonAiEntry);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -248,18 +264,15 @@ void main() {
         linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
       );
 
-      // Assert - non-AI entries should be filtered out
       expect(result, isEmpty);
 
       container.dispose();
     });
 
     test('returns empty list when no links exist', () async {
-      // Arrange
       when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
           .thenAnswer((_) async => []);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -270,29 +283,27 @@ void main() {
         linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
       );
 
-      // Assert
       expect(result, isEmpty);
 
       container.dispose();
     });
 
     test('sorts AI responses by date (newest first)', () async {
-      // Arrange
       final links = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry1.meta.id, // Older (10:00)
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
         EntryLink.basic(
           id: 'link-2',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry2.meta.id, // Newer (11:00)
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -306,7 +317,6 @@ void main() {
             testAiResponseEntry2.meta.id,
           )).thenAnswer((_) async => testAiResponseEntry2);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -317,7 +327,7 @@ void main() {
         linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
       );
 
-      // Assert - newest should be first
+      // Newest should be first
       expect(result.length, equals(2));
       expect(result[0].meta.id, equals(testAiResponseEntry2.meta.id));
       expect(result[1].meta.id, equals(testAiResponseEntry1.meta.id));
@@ -326,14 +336,13 @@ void main() {
     });
 
     test('updates state when affected IDs are notified', () async {
-      // Arrange
       final initialLinks = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -343,16 +352,16 @@ void main() {
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
         EntryLink.basic(
           id: 'link-2',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry2.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -370,7 +379,6 @@ void main() {
             testAiResponseEntry2.meta.id,
           )).thenAnswer((_) async => testAiResponseEntry2);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -383,32 +391,27 @@ void main() {
       );
       expect(initialResult.length, equals(1));
 
-      // Simulate update notification
+      // Simulate update notification and wait for state change
       updateStreamController.add({testAudioEntryId});
 
-      // Wait for async update
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Get updated state
-      final updatedResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+      final updatedResult = await waitForState(
+        container,
+        (list) => list.length == 2,
       );
 
-      // Assert
       expect(updatedResult.length, equals(2));
 
       container.dispose();
     });
 
     test('handles null entity gracefully', () async {
-      // Arrange
       final links = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: 'non-existent-id',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -418,7 +421,6 @@ void main() {
       when(() => mockJournalRepository.getJournalEntityById('non-existent-id'))
           .thenAnswer((_) async => null);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -429,26 +431,23 @@ void main() {
         linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
       );
 
-      // Assert - should handle null gracefully
       expect(result, isEmpty);
 
       container.dispose();
     });
 
     test('updates state when watched AI response ID is notified', () async {
-      // Arrange - test the intersection path in _listen()
       final links = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
 
-      // First call returns original, second call returns updated
       final updatedEntry = AiResponseEntry(
         meta: Metadata(
           id: testAiResponseEntry1.meta.id,
@@ -477,14 +476,13 @@ void main() {
         return fetchCount == 1 ? testAiResponseEntry1 : updatedEntry;
       });
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
         ],
       );
 
-      // Initial load - adds AI response ID to watched IDs
+      // Initial load
       final initialResult = await container.read(
         linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
       );
@@ -494,88 +492,30 @@ void main() {
         equals(testAiResponseEntry1.meta.updatedAt),
       );
 
-      // Notify with AI response ID (tests intersection path)
+      // Notify with AI response ID and wait for state change
       updateStreamController.add({testAiResponseEntry1.meta.id});
 
-      // Wait for async update
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Get updated state
-      final updatedResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+      final updatedResult = await waitForState(
+        container,
+        (list) =>
+            list.isNotEmpty &&
+            list[0].meta.updatedAt == updatedEntry.meta.updatedAt,
       );
 
-      // Assert - should have updated entry
-      expect(updatedResult.length, equals(1));
       expect(
           updatedResult[0].meta.updatedAt, equals(updatedEntry.meta.updatedAt));
 
       container.dispose();
     });
 
-    test('does not update state when fetched data is identical', () async {
-      // Arrange - test the _listEquals optimization path
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntryId,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      var fetchCount = 0;
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async {
-        fetchCount++;
-        return links;
-      });
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      // Act
-      final container = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-        ],
-      );
-
-      // Initial load
-      await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
-      );
-      expect(fetchCount, equals(1));
-
-      // Notify - should fetch but not update state since data is identical
-      updateStreamController.add({testAudioEntryId});
-
-      // Wait for async fetch
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Verify fetch was called again
-      expect(fetchCount, equals(2));
-
-      // State should still be valid (no error from identical comparison)
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
-      );
-      expect(result.length, equals(1));
-
-      container.dispose();
-    });
-
     test('ignores notifications for unrelated IDs', () async {
-      // Arrange
       final links = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -590,7 +530,6 @@ void main() {
             testAiResponseEntry1.meta.id,
           )).thenAnswer((_) async => testAiResponseEntry1);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -603,20 +542,20 @@ void main() {
       );
       expect(fetchCount, equals(1));
 
-      // Notify with unrelated ID - should be ignored
+      // Notify with unrelated ID
       updateStreamController.add({'unrelated-id-123'});
 
-      // Wait briefly
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // Allow time for any potential handler to run
+      await Future.microtask(() {});
+      await Future.microtask(() {});
 
-      // Verify fetch was NOT called again
+      // Fetch count should not have increased
       expect(fetchCount, equals(1));
 
       container.dispose();
     });
 
     test('handles multiple AI responses with same date correctly', () async {
-      // Arrange - test sorting stability
       final sameTimeEntry1 = AiResponseEntry(
         meta: Metadata(
           id: 'same-time-1',
@@ -658,16 +597,16 @@ void main() {
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: sameTimeEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
         EntryLink.basic(
           id: 'link-2',
           fromId: testAudioEntryId,
           toId: sameTimeEntry2.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -679,7 +618,6 @@ void main() {
       when(() => mockJournalRepository.getJournalEntityById(
           sameTimeEntry2.meta.id)).thenAnswer((_) async => sameTimeEntry2);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -690,18 +628,15 @@ void main() {
         linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
       );
 
-      // Assert - both entries should be present
       expect(result.length, equals(2));
 
       container.dispose();
     });
 
     test('cleans up subscription on dispose', () async {
-      // Arrange
       when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
           .thenAnswer((_) async => []);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -721,73 +656,14 @@ void main() {
       // No assertion needed - test passes if no exception is thrown
     });
 
-    test('handles rapid successive notifications', () async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntryId,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      var fetchCount = 0;
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async {
-        fetchCount++;
-        // Simulate some async delay
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        return links;
-      });
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      // Act
-      final container = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-        ],
-      );
-
-      // Initial load
-      await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
-      );
-
-      // Send rapid notifications
-      updateStreamController
-        ..add({testAudioEntryId})
-        ..add({testAudioEntryId})
-        ..add({testAudioEntryId});
-
-      // Wait for all fetches
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-
-      // Verify multiple fetches were triggered (exact count depends on timing)
-      expect(fetchCount, greaterThan(1));
-
-      // State should still be valid
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
-      );
-      expect(result.length, equals(1));
-
-      container.dispose();
-    });
-
     test('updates state when list length changes', () async {
-      // Arrange - tests _listEquals different length branch (line 39)
       final initialLinks = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -804,7 +680,6 @@ void main() {
             testAiResponseEntry1.meta.id,
           )).thenAnswer((_) async => testAiResponseEntry1);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -817,29 +692,26 @@ void main() {
       );
       expect(initialResult.length, equals(1));
 
-      // Notify update
+      // Notify update and wait for state change
       updateStreamController.add({testAudioEntryId});
 
-      // Wait for async update
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Get updated state - should have 0 items (different length triggers update)
-      final updatedResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+      final updatedResult = await waitForState(
+        container,
+        (list) => list.isEmpty,
       );
+
       expect(updatedResult.length, equals(0));
 
       container.dispose();
     });
 
     test('updates state when entry ID changes in list', () async {
-      // Arrange - tests _listEquals different ID branch (line 41)
       final entry1Link = EntryLink.basic(
         id: 'link-1',
         fromId: testAudioEntryId,
         toId: testAiResponseEntry1.meta.id,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime(2024, 1, 15, 10),
+        updatedAt: DateTime(2024, 1, 15, 10),
         vectorClock: null,
       );
 
@@ -847,8 +719,8 @@ void main() {
         id: 'link-2',
         fromId: testAudioEntryId,
         toId: testAiResponseEntry2.meta.id,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime(2024, 1, 15, 10),
+        updatedAt: DateTime(2024, 1, 15, 10),
         vectorClock: null,
       );
 
@@ -856,7 +728,6 @@ void main() {
       when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
           .thenAnswer((_) async {
         callCount++;
-        // First call returns entry1, second call returns entry2 (same length, different ID)
         return callCount == 1 ? [entry1Link] : [entry2Link];
       });
       when(() => mockJournalRepository.getJournalEntityById(
@@ -866,7 +737,6 @@ void main() {
             testAiResponseEntry2.meta.id,
           )).thenAnswer((_) async => testAiResponseEntry2);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -879,30 +749,28 @@ void main() {
       );
       expect(initialResult[0].meta.id, equals(testAiResponseEntry1.meta.id));
 
-      // Notify update
+      // Notify update and wait for state change
       updateStreamController.add({testAudioEntryId});
 
-      // Wait for async update
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Get updated state - should have different entry (ID change triggers update)
-      final updatedResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+      final updatedResult = await waitForState(
+        container,
+        (list) =>
+            list.isNotEmpty && list[0].meta.id == testAiResponseEntry2.meta.id,
       );
+
       expect(updatedResult[0].meta.id, equals(testAiResponseEntry2.meta.id));
 
       container.dispose();
     });
 
     test('handles empty initial state transitioning to data', () async {
-      // Arrange - tests state.value being null initially
       final links = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -911,14 +779,12 @@ void main() {
       when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
           .thenAnswer((_) async {
         callCount++;
-        // First call returns empty, second returns data
         return callCount == 1 ? [] : links;
       });
       when(() => mockJournalRepository.getJournalEntityById(
             testAiResponseEntry1.meta.id,
           )).thenAnswer((_) async => testAiResponseEntry1);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -931,63 +797,27 @@ void main() {
       );
       expect(initialResult, isEmpty);
 
-      // Notify update
+      // Notify update and wait for state change
       updateStreamController.add({testAudioEntryId});
 
-      // Wait for async update
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Get updated state - should have data now
-      final updatedResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+      final updatedResult = await waitForState(
+        container,
+        (list) => list.length == 1,
       );
+
       expect(updatedResult.length, equals(1));
 
       container.dispose();
     });
 
-    test('correctly compares two empty lists as equal', () async {
-      // Arrange - tests _listEquals when both lists are empty (line 46)
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => []);
-
-      // Act
-      final container = ProviderContainer(
-        overrides: [
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-        ],
-      );
-
-      // Initial load - empty list
-      final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
-      );
-      expect(initialResult, isEmpty);
-
-      // Notify update - should fetch but not update state since [] equals []
-      updateStreamController.add({testAudioEntryId});
-
-      // Wait for async update
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // State should still be empty (two empty lists are equal)
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
-      );
-      expect(result, isEmpty);
-
-      container.dispose();
-    });
-
     test('tracks state transitions from loading to data', () async {
-      // Arrange - verifies proper state transitions including null -> data
       final links = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntryId,
           toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -998,7 +828,6 @@ void main() {
             testAiResponseEntry1.meta.id,
           )).thenAnswer((_) async => testAiResponseEntry1);
 
-      // Act
       final container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),

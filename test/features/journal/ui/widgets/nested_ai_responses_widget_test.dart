@@ -1,3 +1,5 @@
+// ignore_for_file: cascade_invocations
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -18,6 +21,8 @@ import '../../../../widget_test_utils.dart';
 class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
+class MockLoggingService extends Mock implements LoggingService {}
 
 // Test data
 final testAudioEntry = JournalAudio(
@@ -77,11 +82,13 @@ final testAiResponseEntry2 = AiResponseEntry(
 void main() {
   late MockJournalRepository mockJournalRepository;
   late MockUpdateNotifications mockUpdateNotifications;
+  late MockLoggingService mockLoggingService;
   late StreamController<Set<String>> updateStreamController;
 
   setUp(() {
     mockJournalRepository = MockJournalRepository();
     mockUpdateNotifications = MockUpdateNotifications();
+    mockLoggingService = MockLoggingService();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     when(() => mockUpdateNotifications.updateStream)
@@ -89,53 +96,58 @@ void main() {
 
     getIt.allowReassignment = true;
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
   });
 
   tearDown(() {
     updateStreamController.close();
     getIt.unregister<UpdateNotifications>();
+    getIt.unregister<LoggingService>();
   });
 
-  group('NestedAiResponsesWidget', () {
-    test('widget can be instantiated with required parameters', () {
-      final widget = NestedAiResponsesWidget(
-        parentEntryId: testAudioEntry.meta.id,
-        linkedFromEntity: testAudioEntry,
-      );
+  /// Helper to set up common test data and mocks for a single AI response
+  void setupSingleAiResponse() {
+    final links = [
+      EntryLink.basic(
+        id: 'link-1',
+        fromId: testAudioEntry.meta.id,
+        toId: testAiResponseEntry1.meta.id,
+        createdAt: DateTime(2024, 1, 15, 10),
+        updatedAt: DateTime(2024, 1, 15, 10),
+        vectorClock: null,
+      ),
+    ];
 
-      expect(widget.parentEntryId, equals(testAudioEntry.meta.id));
-      expect(widget.linkedFromEntity, equals(testAudioEntry));
-    });
+    when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
+        .thenAnswer((_) async => links);
+    when(() => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        )).thenAnswer((_) async => testAiResponseEntry1);
+  }
 
-    test('widget accepts JournalAudio as linkedFromEntity', () {
-      final widget = NestedAiResponsesWidget(
-        parentEntryId: 'test-id',
-        linkedFromEntity: testAudioEntry,
-      );
+  /// Helper to pump the widget under test
+  Future<void> pumpWidget(WidgetTester tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        NestedAiResponsesWidget(
+          parentEntryId: testAudioEntry.meta.id,
+          linkedFromEntity: testAudioEntry,
+        ),
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
-      expect(widget.linkedFromEntity, isA<JournalAudio>());
-    });
-
-    test('parentEntryId matches the audio entry id', () {
-      final widget = NestedAiResponsesWidget(
-        parentEntryId: testAudioEntry.meta.id,
-        linkedFromEntity: testAudioEntry,
-      );
-
-      expect(widget.parentEntryId, equals('audio-entry-123'));
-    });
-  });
-
-  group('NestedAiResponsesWidget Widget Tests', () {
+  group('NestedAiResponsesWidget Rendering', () {
     testWidgets('shows nothing while loading', (tester) async {
       // Arrange - use a completer to keep the provider in loading state
-      final completer = Completer<List<AiResponseEntry>>();
+      final completer = Completer<List<EntryLink>>();
 
       when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async {
-        await completer.future; // Never completes
-        return [];
-      });
+          .thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -149,120 +161,73 @@ void main() {
         ),
       );
 
-      // Should show SizedBox.shrink during loading
-      expect(find.byType(SizedBox), findsWidgets);
-      // Should not show any AI response content
-      expect(find.byIcon(Icons.auto_fix_high_outlined), findsNothing);
+      // Should not show header during loading
+      expect(
+        find.byKey(NestedAiResponsesWidget.headerKey),
+        findsNothing,
+      );
     });
 
     testWidgets('shows nothing when AI responses list is empty',
         (tester) async {
-      // Arrange
       when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
           .thenAnswer((_) async => []);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
+      await pumpWidget(tester);
+
+      expect(
+        find.byKey(NestedAiResponsesWidget.headerKey),
+        findsNothing,
       );
-
-      await tester.pumpAndSettle();
-
-      // Should show SizedBox.shrink for empty list
-      expect(find.byType(SizedBox), findsWidgets);
-      // Should not show any AI response header
-      expect(find.byIcon(Icons.auto_fix_high_outlined), findsNothing);
     });
 
-    testWidgets('shows nothing on error state', (tester) async {
-      // Arrange - simulate an error in the provider
+    testWidgets('shows nothing on initial error state', (tester) async {
       when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
           .thenThrow(Exception('Database error'));
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
+      await pumpWidget(tester);
+
+      expect(
+        find.byKey(NestedAiResponsesWidget.headerKey),
+        findsNothing,
       );
-
-      await tester.pumpAndSettle();
-
-      // Should show SizedBox.shrink on error
-      expect(find.byType(SizedBox), findsWidgets);
-      // Should not show any AI response header
-      expect(find.byIcon(Icons.auto_fix_high_outlined), findsNothing);
     });
 
-    testWidgets('renders AI responses when data is available', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
+    testWidgets('renders header and AI responses when data is available',
+        (tester) async {
+      setupSingleAiResponse();
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
+      await pumpWidget(tester);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
+      // Should show header with key
+      expect(
+        find.byKey(NestedAiResponsesWidget.headerKey),
+        findsOneWidget,
       );
-
-      await tester.pumpAndSettle();
-
-      // Should show the AI icon in header (may be multiple from nested components)
+      // Should show the AI icon in header
       expect(
           find.byIcon(Icons.auto_fix_high_outlined), findsAtLeastNWidgets(1));
-      // Should show the expand icon
-      expect(find.byIcon(Icons.expand_more), findsAtLeastNWidgets(1));
+      // Should have Dismissible for the AI response
+      expect(find.byType(Dismissible), findsOneWidget);
     });
 
-    testWidgets('renders multiple AI responses', (tester) async {
-      // Arrange
+    testWidgets('renders multiple AI responses with correct count',
+        (tester) async {
       final links = [
         EntryLink.basic(
           id: 'link-1',
           fromId: testAudioEntry.meta.id,
           toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
         EntryLink.basic(
           id: 'link-2',
           fromId: testAudioEntry.meta.id,
           toId: testAiResponseEntry2.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 1, 15, 10),
+          updatedAt: DateTime(2024, 1, 15, 10),
           vectorClock: null,
         ),
       ];
@@ -276,67 +241,26 @@ void main() {
             testAiResponseEntry2.meta.id,
           )).thenAnswer((_) async => testAiResponseEntry2);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
+      await pumpWidget(tester);
 
-      await tester.pumpAndSettle();
-
-      // Should show the AI icon in header
-      expect(
-          find.byIcon(Icons.auto_fix_high_outlined), findsAtLeastNWidgets(1));
       // Should have Dismissible widgets for each AI response
-      expect(find.byType(Dismissible), findsAtLeastNWidgets(2));
+      expect(find.byType(Dismissible), findsNWidgets(2));
     });
+  });
 
-    testWidgets('collapses when header is tapped', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+  group('Expand/Collapse Behavior', () {
+    testWidgets('starts expanded and collapses when header is tapped',
+        (tester) async {
+      setupSingleAiResponse();
+      await pumpWidget(tester);
 
       // Verify initially expanded (SizeTransition should have value 1.0)
       final sizeTransition =
           tester.widget<SizeTransition>(find.byType(SizeTransition));
       expect(sizeTransition.sizeFactor.value, equals(1.0));
 
-      // Tap the header to collapse
-      await tester.tap(find.byType(InkWell).first);
+      // Tap the header to collapse using the key
+      await tester.tap(find.byKey(NestedAiResponsesWidget.headerKey));
       await tester.pumpAndSettle();
 
       // Verify collapsed (SizeTransition should have value 0.0)
@@ -346,40 +270,13 @@ void main() {
     });
 
     testWidgets('expands when header is tapped after collapse', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
+      setupSingleAiResponse();
+      await pumpWidget(tester);
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      final headerFinder = find.byKey(NestedAiResponsesWidget.headerKey);
 
       // Collapse first
-      await tester.tap(find.byType(InkWell).first);
+      await tester.tap(headerFinder);
       await tester.pumpAndSettle();
 
       // Verify collapsed
@@ -388,7 +285,7 @@ void main() {
       expect(sizeTransition.sizeFactor.value, equals(0.0));
 
       // Expand again
-      await tester.tap(find.byType(InkWell).first);
+      await tester.tap(headerFinder);
       await tester.pumpAndSettle();
 
       // Verify expanded
@@ -398,43 +295,12 @@ void main() {
     });
 
     testWidgets('shows rotation animation on expand icon', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
+      setupSingleAiResponse();
+      await pumpWidget(tester);
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Find the RotationTransition that contains the expand_more icon
-      // by finding the InkWell header first and looking for RotationTransition inside
-      final inkWell = find.byType(InkWell).first;
+      final headerFinder = find.byKey(NestedAiResponsesWidget.headerKey);
       final rotationTransition = find.descendant(
-        of: inkWell,
+        of: headerFinder,
         matching: find.byType(RotationTransition),
       );
       expect(rotationTransition, findsOneWidget);
@@ -445,7 +311,7 @@ void main() {
       expect(initialRotation.turns.value, equals(0.5));
 
       // Collapse
-      await tester.tap(inkWell);
+      await tester.tap(headerFinder);
       await tester.pumpAndSettle();
 
       // Verify rotation changed - when collapsed, value is 0.0
@@ -453,437 +319,30 @@ void main() {
           tester.widget<RotationTransition>(rotationTransition);
       expect(collapsedRotation.turns.value, equals(0.0));
     });
-
-    testWidgets('renders connector line decoration', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Should have a Container with BoxDecoration for the connector line
-      // Find containers with width 16 (connector line width)
-      final containers = find.byWidgetPredicate(
-        (widget) =>
-            widget is SizedBox && widget.width == 16 && widget.height == null,
-      );
-      expect(containers, findsOneWidget);
-    });
   });
 
-  group('Swipe-to-Delete Functionality', () {
-    testWidgets('has Dismissible widget for swipe-to-delete', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Find Dismissible widgets - there should be at least one
-      expect(find.byType(Dismissible), findsAtLeastNWidgets(1));
-
-      // Verify the Dismissible has the correct key
-      final dismissible = tester.widget<Dismissible>(
-        find.byType(Dismissible).first,
-      );
-      expect(dismissible.key, equals(Key(testAiResponseEntry1.meta.id)));
-    });
-
-    testWidgets('Dismissible has correct direction and threshold',
-        (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify the Dismissible has correct configuration
-      final dismissible = tester.widget<Dismissible>(
-        find.byType(Dismissible).first,
-      );
-
-      // Should only allow endToStart direction (swipe left)
-      expect(dismissible.direction, equals(DismissDirection.endToStart));
-
-      // Should have dismiss threshold
-      expect(dismissible.dismissThresholds, isNotEmpty);
-    });
-
-    testWidgets('Dismissible has delete background', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify the Dismissible has a background widget configured
-      final dismissible = tester.widget<Dismissible>(
-        find.byType(Dismissible).first,
-      );
-
-      expect(dismissible.background, isNotNull);
-    });
-
-    testWidgets('Dismissible has confirmDismiss callback', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify the Dismissible has confirmDismiss callback
-      final dismissible = tester.widget<Dismissible>(
-        find.byType(Dismissible).first,
-      );
-
-      expect(dismissible.confirmDismiss, isNotNull);
-    });
-
-    testWidgets('Dismissible has onDismissed callback', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify the Dismissible has onDismissed callback
-      final dismissible = tester.widget<Dismissible>(
-        find.byType(Dismissible).first,
-      );
-
-      expect(dismissible.onDismissed, isNotNull);
-    });
-
-    testWidgets('AiResponseSummary is rendered inside Dismissible',
-        (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify AiResponseSummary is a child of Dismissible
-      final dismissible = find.byType(Dismissible).first;
-      final aiResponseSummary = find.descendant(
-        of: dismissible,
-        matching: find.byType(AiResponseSummary),
-      );
-
-      expect(aiResponseSummary, findsOneWidget);
-    });
-  });
-
-  group('Delete Dialog Interaction', () {
-    testWidgets('shows AlertDialog with title and content on swipe',
-        (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+  group('Delete Flow', () {
+    testWidgets('shows confirmation dialog on swipe', (tester) async {
+      setupSingleAiResponse();
+      await pumpWidget(tester);
 
       // Swipe to trigger confirmation dialog
-      final dismissible = find.byType(Dismissible).first;
-      await tester.drag(dismissible, const Offset(-300, 0));
+      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
       await tester.pumpAndSettle();
 
-      // Verify AlertDialog is shown
+      // Verify AlertDialog is shown with title and content
       expect(find.byType(AlertDialog), findsOneWidget);
-
-      // Verify dialog has title (Text widget inside AlertDialog)
-      final alertDialog = tester.widget<AlertDialog>(find.byType(AlertDialog));
-      expect(alertDialog.title, isNotNull);
-      expect(alertDialog.content, isNotNull);
-    });
-
-    testWidgets('dialog has Cancel and Delete action buttons', (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Swipe to trigger confirmation dialog
-      final dismissible = find.byType(Dismissible).first;
-      await tester.drag(dismissible, const Offset(-300, 0));
-      await tester.pumpAndSettle();
-
-      // Verify both action buttons exist
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
     });
 
-    testWidgets('Cancel button dismisses dialog without calling delete',
+    testWidgets('cancel button dismisses dialog without deleting',
         (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      setupSingleAiResponse();
+      await pumpWidget(tester);
 
       // Swipe to trigger confirmation dialog
-      final dismissible = find.byType(Dismissible).first;
-      await tester.drag(dismissible, const Offset(-300, 0));
+      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
       await tester.pumpAndSettle();
 
       // Tap Cancel button
@@ -895,47 +354,21 @@ void main() {
 
       // Delete should NOT have been called
       verifyNever(() => mockJournalRepository.deleteJournalEntity(any()));
+
+      // Dismissible should still exist
+      expect(find.byType(Dismissible), findsOneWidget);
     });
 
-    testWidgets('Delete button triggers repository delete call',
+    testWidgets('delete button calls repository and dismisses on success',
         (tester) async {
-      // Arrange
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
-
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
+      setupSingleAiResponse();
       when(() => mockJournalRepository.deleteJournalEntity(any()))
           .thenAnswer((_) async => true);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      await pumpWidget(tester);
 
       // Swipe to trigger confirmation dialog
-      final dismissible = find.byType(Dismissible).first;
-      await tester.drag(dismissible, const Offset(-300, 0));
+      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
       await tester.pumpAndSettle();
 
       // Tap Delete button
@@ -946,45 +379,74 @@ void main() {
       verify(() => mockJournalRepository.deleteJournalEntity(
             testAiResponseEntry1.meta.id,
           )).called(1);
+
+      // Dialog should be dismissed
+      expect(find.byType(AlertDialog), findsNothing);
     });
 
-    testWidgets('dialog dismissed by tapping outside returns false',
-        (tester) async {
-      // Arrange - tests result ?? false path (line 296)
-      final links = [
-        EntryLink.basic(
-          id: 'link-1',
-          fromId: testAudioEntry.meta.id,
-          toId: testAiResponseEntry1.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-        ),
-      ];
+    testWidgets('shows error snackbar when delete fails', (tester) async {
+      setupSingleAiResponse();
+      when(() => mockJournalRepository.deleteJournalEntity(any()))
+          .thenAnswer((_) async => false);
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
+      await pumpWidget(tester);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          NestedAiResponsesWidget(
-            parentEntryId: testAudioEntry.meta.id,
-            linkedFromEntity: testAudioEntry,
-          ),
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      // Find the specific Dismissible by key (not SnackBar's Dismissible)
+      final dismissibleFinder = find.byKey(Key(testAiResponseEntry1.meta.id));
 
       // Swipe to trigger confirmation dialog
-      final dismissible = find.byType(Dismissible).first;
-      await tester.drag(dismissible, const Offset(-300, 0));
+      await tester.drag(dismissibleFinder, const Offset(-300, 0));
+      await tester.pumpAndSettle();
+
+      // Tap Delete button
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      // Verify delete was called
+      verify(() => mockJournalRepository.deleteJournalEntity(
+            testAiResponseEntry1.meta.id,
+          )).called(1);
+
+      // Error snackbar should be shown
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      // Our AI response Dismissible should still exist (not dismissed on failure)
+      expect(dismissibleFinder, findsOneWidget);
+    });
+
+    testWidgets('shows error snackbar when delete throws exception',
+        (tester) async {
+      setupSingleAiResponse();
+      when(() => mockJournalRepository.deleteJournalEntity(any()))
+          .thenThrow(Exception('Network error'));
+
+      await pumpWidget(tester);
+
+      // Find the specific Dismissible by key (not SnackBar's Dismissible)
+      final dismissibleFinder = find.byKey(Key(testAiResponseEntry1.meta.id));
+
+      // Swipe to trigger confirmation dialog
+      await tester.drag(dismissibleFinder, const Offset(-300, 0));
+      await tester.pumpAndSettle();
+
+      // Tap Delete button
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      // Error snackbar should be shown
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      // Our AI response Dismissible should still exist (not dismissed on failure)
+      expect(dismissibleFinder, findsOneWidget);
+    });
+
+    testWidgets('dialog dismissed by tapping outside does not delete',
+        (tester) async {
+      setupSingleAiResponse();
+      await pumpWidget(tester);
+
+      // Swipe to trigger confirmation dialog
+      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
       await tester.pumpAndSettle();
 
       // Verify dialog is shown
@@ -997,7 +459,7 @@ void main() {
       // Dialog should be dismissed
       expect(find.byType(AlertDialog), findsNothing);
 
-      // Delete should NOT have been called (result ?? false returns false)
+      // Delete should NOT have been called
       verifyNever(() => mockJournalRepository.deleteJournalEntity(any()));
 
       // Dismissible should still exist (not dismissed)
@@ -1005,116 +467,38 @@ void main() {
     });
   });
 
-  group('AI Response Test Data', () {
-    test('testAiResponseEntry1 has promptGeneration type', () {
-      expect(
-        testAiResponseEntry1.data.type,
-        equals(AiResponseType.promptGeneration),
-      );
-    });
+  group('Dismissible Configuration', () {
+    testWidgets('Dismissible has correct direction and threshold',
+        (tester) async {
+      setupSingleAiResponse();
+      await pumpWidget(tester);
 
-    test('testAiResponseEntry2 has audioTranscription type', () {
-      expect(
-        testAiResponseEntry2.data.type,
-        equals(AiResponseType.audioTranscription),
-      );
-    });
-
-    test('AI responses have different IDs', () {
-      expect(
-        testAiResponseEntry1.meta.id,
-        isNot(equals(testAiResponseEntry2.meta.id)),
-      );
-    });
-
-    test('AI responses have valid metadata', () {
-      expect(testAiResponseEntry1.meta.id, isNotEmpty);
-      expect(testAiResponseEntry1.meta.createdAt, isNotNull);
-      expect(testAiResponseEntry1.meta.dateFrom, isNotNull);
-      expect(testAiResponseEntry1.meta.dateTo, isNotNull);
-    });
-
-    test('testAiResponseEntry2 is newer than testAiResponseEntry1', () {
-      expect(
-        testAiResponseEntry2.meta.dateFrom
-            .isAfter(testAiResponseEntry1.meta.dateFrom),
-        isTrue,
-      );
-    });
-  });
-
-  group('Audio Entry Test Data', () {
-    test('testAudioEntry has valid audio data', () {
-      expect(testAudioEntry.data.audioFile, equals('test.aac'));
-      expect(testAudioEntry.data.audioDirectory, equals('/test/'));
-      expect(testAudioEntry.data.duration, equals(const Duration(minutes: 5)));
-    });
-
-    test('testAudioEntry has valid metadata', () {
-      expect(testAudioEntry.meta.id, equals('audio-entry-123'));
-      expect(testAudioEntry.meta.createdAt, isNotNull);
-    });
-  });
-
-  group('Delete Confirmation Dialog', () {
-    test(
-        'JournalRepository.deleteJournalEntity can be called with AI response ID',
-        () async {
-      // Arrange
-      when(() => mockJournalRepository.deleteJournalEntity(any()))
-          .thenAnswer((_) async => true);
-
-      // Act
-      final result = await mockJournalRepository.deleteJournalEntity(
-        testAiResponseEntry1.meta.id,
+      final dismissible = tester.widget<Dismissible>(
+        find.byType(Dismissible),
       );
 
-      // Assert
-      expect(result, isTrue);
-      verify(() => mockJournalRepository.deleteJournalEntity(
-            testAiResponseEntry1.meta.id,
-          )).called(1);
+      // Should only allow endToStart direction (swipe left)
+      expect(dismissible.direction, equals(DismissDirection.endToStart));
+      // Should have dismiss threshold
+      expect(dismissible.dismissThresholds, isNotEmpty);
+      // Should have background
+      expect(dismissible.background, isNotNull);
+      // Should have confirmDismiss callback
+      expect(dismissible.confirmDismiss, isNotNull);
     });
 
-    test('deleteJournalEntity is called with correct AI response ID', () async {
-      // Arrange
-      when(() => mockJournalRepository.deleteJournalEntity(any()))
-          .thenAnswer((_) async => true);
+    testWidgets('AiResponseSummary is rendered inside Dismissible',
+        (tester) async {
+      setupSingleAiResponse();
+      await pumpWidget(tester);
 
-      // Act
-      await mockJournalRepository.deleteJournalEntity('ai-response-1');
-
-      // Assert
-      verify(() => mockJournalRepository.deleteJournalEntity('ai-response-1'))
-          .called(1);
-    });
-
-    test('delete returns false when deletion fails', () async {
-      // Arrange
-      when(() => mockJournalRepository.deleteJournalEntity(any()))
-          .thenAnswer((_) async => false);
-
-      // Act
-      final result = await mockJournalRepository.deleteJournalEntity(
-        testAiResponseEntry1.meta.id,
+      final dismissible = find.byType(Dismissible);
+      final aiResponseSummary = find.descendant(
+        of: dismissible,
+        matching: find.byType(AiResponseSummary),
       );
 
-      // Assert
-      expect(result, isFalse);
-    });
-
-    test('AI response entry has valid ID for deletion', () {
-      // Test that our test data has the required ID field
-      expect(testAiResponseEntry1.meta.id, isNotEmpty);
-      expect(testAiResponseEntry1.meta.id, equals('ai-response-1'));
-    });
-
-    test('AI response entry ID is unique and suitable for Dismissible key', () {
-      // Dismissible requires unique keys - test that IDs are suitable
-      final key1 = Key(testAiResponseEntry1.meta.id);
-      final key2 = Key(testAiResponseEntry2.meta.id);
-
-      expect(key1, isNot(equals(key2)));
+      expect(aiResponseSummary, findsOneWidget);
     });
   });
 }

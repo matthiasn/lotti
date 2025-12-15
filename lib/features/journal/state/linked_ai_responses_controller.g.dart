@@ -7,7 +7,7 @@ part of 'linked_ai_responses_controller.dart';
 // **************************************************************************
 
 String _$linkedAiResponsesControllerHash() =>
-    r'f4ff90e775ac629293bfbcb9b861a36028a5b334';
+    r'4bc977940f5749fe98de0df87faecceb55651e16';
 
 /// Copied from Dart SDK
 class _SystemHash {

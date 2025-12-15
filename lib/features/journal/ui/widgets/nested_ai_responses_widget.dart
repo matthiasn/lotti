@@ -26,6 +26,9 @@ class NestedAiResponsesWidget extends ConsumerStatefulWidget {
     super.key,
   });
 
+  /// Key for the header widget - used for testing
+  static const headerKey = Key('nested_ai_responses_header');
+
   /// The ID of the parent entry (e.g., audio entry) to fetch linked AI responses for.
   final String parentEntryId;
 
@@ -43,7 +46,11 @@ class _NestedAiResponsesWidgetState
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
   late Animation<double> _rotationAnimation;
-  bool _isExpanded = true; // Default to expanded so users see the responses
+
+  /// Whether the section is expanded - derived from animation controller.
+  bool get _isExpanded =>
+      _animationController.status == AnimationStatus.completed ||
+      _animationController.status == AnimationStatus.forward;
 
   @override
   void initState() {
@@ -77,14 +84,11 @@ class _NestedAiResponsesWidgetState
   }
 
   void _toggleExpanded() {
-    setState(() {
-      _isExpanded = !_isExpanded;
-      if (_isExpanded) {
-        _animationController.forward();
-      } else {
-        _animationController.reverse();
-      }
-    });
+    if (_isExpanded) {
+      _animationController.reverse();
+    } else {
+      _animationController.forward();
+    }
   }
 
   @override
@@ -199,6 +203,7 @@ class _NestedAiResponsesWidgetState
     final textTheme = context.textTheme;
 
     return InkWell(
+      key: NestedAiResponsesWidget.headerKey,
       onTap: _toggleExpanded,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
@@ -244,8 +249,7 @@ class _NestedAiResponsesWidgetState
       key: Key(response.meta.id),
       dismissThresholds: const {DismissDirection.endToStart: 0.25},
       direction: DismissDirection.endToStart,
-      confirmDismiss: (_) => _confirmDelete(context),
-      onDismissed: (_) => _deleteAiResponse(response.meta.id),
+      confirmDismiss: (_) => _confirmAndDelete(context, response.meta.id),
       background: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -273,31 +277,67 @@ class _NestedAiResponsesWidgetState
     );
   }
 
-  Future<bool> _confirmDelete(BuildContext context) async {
-    final result = await showDialog<bool>(
+  /// Confirms deletion with the user and performs the delete operation.
+  /// Returns true only if the user confirmed AND the delete succeeded.
+  Future<bool> _confirmAndDelete(
+    BuildContext context,
+    String responseId,
+  ) async {
+    // Capture context values before async gap
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final errorMessage = context.messages.aiResponseDeleteError;
+    final errorColor = context.colorScheme.error;
+
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
-          title: Text(context.messages.aiResponseDeleteTitle),
-          content: Text(context.messages.aiResponseDeleteWarning),
+          title: Text(dialogContext.messages.aiResponseDeleteTitle),
+          content: Text(dialogContext.messages.aiResponseDeleteWarning),
           actions: [
             LottiTertiaryButton(
-              label: context.messages.aiResponseDeleteCancel,
-              onPressed: () => Navigator.of(context).pop(false),
+              label: dialogContext.messages.aiResponseDeleteCancel,
+              onPressed: () => Navigator.of(dialogContext).pop(false),
             ),
             LottiTertiaryButton(
-              label: context.messages.aiResponseDeleteConfirm,
-              onPressed: () => Navigator.of(context).pop(true),
+              label: dialogContext.messages.aiResponseDeleteConfirm,
+              onPressed: () => Navigator.of(dialogContext).pop(true),
               isDestructive: true,
             ),
           ],
         );
       },
     );
-    return result ?? false;
-  }
 
-  Future<void> _deleteAiResponse(String responseId) async {
-    await ref.read(journalRepositoryProvider).deleteJournalEntity(responseId);
+    if (confirmed != true) {
+      return false;
+    }
+
+    // Perform the delete and only dismiss if successful
+    try {
+      final success = await ref
+          .read(journalRepositoryProvider)
+          .deleteJournalEntity(responseId);
+
+      if (!success && mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: errorColor,
+          ),
+        );
+      }
+      return success;
+    } catch (e) {
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: errorColor,
+          ),
+        );
+      }
+      return false;
+    }
   }
 }

@@ -1673,21 +1673,25 @@ class AppLocalizationsFr extends AppLocalizations {
       other: 's',
       one: '',
     );
-    return '$count réponse$_temp0 IA';
+    return '$count AI response$_temp0';
   }
 
   @override
-  String get aiResponseDeleteTitle => 'Supprimer la réponse IA';
+  String get aiResponseDeleteTitle => 'Delete AI Response';
 
   @override
   String get aiResponseDeleteWarning =>
-      'Êtes-vous sûr de vouloir supprimer cette réponse IA ? Cette action est irréversible.';
+      'Are you sure you want to delete this AI response? This cannot be undone.';
 
   @override
-  String get aiResponseDeleteCancel => 'Annuler';
+  String get aiResponseDeleteCancel => 'Cancel';
 
   @override
-  String get aiResponseDeleteConfirm => 'Supprimer';
+  String get aiResponseDeleteConfirm => 'Delete';
+
+  @override
+  String get aiResponseDeleteError =>
+      'Failed to delete AI response. Please try again.';
 
   @override
   String get saveButtonLabel => 'Save';

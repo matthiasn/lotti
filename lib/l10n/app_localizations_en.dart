@@ -1675,6 +1675,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiResponseDeleteConfirm => 'Delete';
 
   @override
+  String get aiResponseDeleteError =>
+      'Failed to delete AI response. Please try again.';
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override

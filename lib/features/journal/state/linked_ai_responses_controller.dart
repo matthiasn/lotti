@@ -18,17 +18,23 @@ class LinkedAiResponsesController extends _$LinkedAiResponsesController {
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   final _watchedIds = <String>{};
+  bool _isDisposed = false;
 
   void _listen() {
     _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) {
+        _updateNotifications.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(entryId) ||
           affectedIds.intersection(_watchedIds).isNotEmpty) {
-        _fetch().then((latest) {
+        try {
+          final latest = await _fetch();
+          // Guard against updates after disposal
+          if (_isDisposed) return;
           if (!_listEquals(latest, state.value)) {
             state = AsyncData(latest);
           }
-        });
+        } catch (e) {
+          // Keep previous state on error rather than transitioning to error state
+        }
       }
     });
   }
@@ -51,10 +57,14 @@ class LinkedAiResponsesController extends _$LinkedAiResponsesController {
     required String entryId,
   }) async {
     ref
-      ..onDispose(() => _updateSubscription?.cancel())
+      ..onDispose(() {
+        _isDisposed = true;
+        _updateSubscription?.cancel();
+      })
       ..cacheFor(entryCacheDuration);
 
     final results = await _fetch();
+    _watchedIds.add(entryId);
     _listen();
     return results;
   }
@@ -66,15 +76,14 @@ class LinkedAiResponsesController extends _$LinkedAiResponsesController {
     // Link structure: fromId=audio, toId=aiResponse
     final links = await journalRepository.getLinksFromId(entryId);
 
-    // Clear and rebuild watched IDs to avoid stale references
-    _watchedIds
-      ..clear()
-      ..add(entryId);
+    // Fetch all linked entities in parallel for better performance
+    final entities = await Future.wait(
+      links.map((link) => journalRepository.getJournalEntityById(link.toId)),
+    );
 
-    // Fetch each linked entity and filter for AI responses
+    // Filter for non-deleted AI responses and track their IDs
     final aiResponses = <AiResponseEntry>[];
-    for (final link in links) {
-      final entity = await journalRepository.getJournalEntityById(link.toId);
+    for (final entity in entities) {
       if (entity is AiResponseEntry && entity.meta.deletedAt == null) {
         aiResponses.add(entity);
         _watchedIds.add(entity.meta.id);

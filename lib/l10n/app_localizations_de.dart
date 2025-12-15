@@ -1682,6 +1682,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiResponseDeleteConfirm => 'Löschen';
 
   @override
+  String get aiResponseDeleteError =>
+      'KI-Antwort konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.';
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override

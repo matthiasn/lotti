@@ -443,6 +443,9 @@ class EntryDetailsContent extends ConsumerWidget {
         if (!shouldHideEditor) EditorWidget(entryId: itemId),
         if (detailSection != null) detailSection,
         // Show nested AI responses for audio entries (e.g., generated prompts)
+        // Note: This intentionally bypasses showAiEntry because nested AI responses
+        // are contextually relevant to the audio entry they were generated from,
+        // unlike standalone AI entries in the journal list.
         if (item is JournalAudio)
           NestedAiResponsesWidget(
             parentEntryId: itemId,

@@ -1661,24 +1661,28 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'uri',
+      other: 's',
       one: '',
     );
-    return '$count răspuns$_temp0 IA';
+    return '$count AI response$_temp0';
   }
 
   @override
-  String get aiResponseDeleteTitle => 'Șterge răspunsul IA';
+  String get aiResponseDeleteTitle => 'Delete AI Response';
 
   @override
   String get aiResponseDeleteWarning =>
-      'Sigur doriți să ștergeți acest răspuns IA? Această acțiune nu poate fi anulată.';
+      'Are you sure you want to delete this AI response? This cannot be undone.';
 
   @override
-  String get aiResponseDeleteCancel => 'Anulează';
+  String get aiResponseDeleteCancel => 'Cancel';
 
   @override
-  String get aiResponseDeleteConfirm => 'Șterge';
+  String get aiResponseDeleteConfirm => 'Delete';
+
+  @override
+  String get aiResponseDeleteError =>
+      'Failed to delete AI response. Please try again.';
 
   @override
   String get saveButtonLabel => 'Save';

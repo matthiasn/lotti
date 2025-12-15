@@ -3111,6 +3111,12 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get aiResponseDeleteConfirm;
 
+  /// No description provided for @aiResponseDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete AI response. Please try again.'**
+  String get aiResponseDeleteError;
+
   /// No description provided for @saveButtonLabel.
   ///
   /// In en, this message translates to:
