@@ -55,6 +55,10 @@ import 'package:meta/meta.dart';
 
 final GetIt getIt = GetIt.instance;
 
+/// Minimum number of sequence log entries that indicate the log is already
+/// sufficiently populated, making the one-time migration unnecessary.
+const int kSequenceLogPopulationThreshold = 100;
+
 /// Helper function to lazily register services that might fail in sandboxed environments
 /// Services are only created on first access, with safe error handling
 void _registerLazyServiceSafely<T extends Object>(
@@ -397,7 +401,7 @@ Future<void> _checkAndPopulateSequenceLog() async {
     final sequenceLogCount = await syncDatabase.getSequenceLogCount();
 
     // If already has significant entries, mark as done
-    if (sequenceLogCount > 100) {
+    if (sequenceLogCount > kSequenceLogPopulationThreshold) {
       await settingsDb.saveSettingsItem(settingsKey, 'true');
       loggingService.captureEvent(
         'Sequence log already has $sequenceLogCount entries, skipping population',
