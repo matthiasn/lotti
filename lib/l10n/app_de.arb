@@ -420,5 +420,11 @@
   "promptGenerationCopyButton": "Prompt kopieren",
   "promptGenerationCopiedSnackbar": "Prompt in Zwischenablage kopiert",
   "promptGenerationExpandTooltip": "Vollständigen Prompt anzeigen",
-  "promptGenerationFullPromptLabel": "Vollständiger Prompt:"
+  "promptGenerationFullPromptLabel": "Vollständiger Prompt:",
+  "nestedAiResponsesTitle": "{count} KI-Antwort{count, plural, =1{} other{en}}",
+  "aiResponseDeleteTitle": "KI-Antwort löschen",
+  "aiResponseDeleteWarning": "Möchten Sie diese KI-Antwort wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
+  "aiResponseDeleteCancel": "Abbrechen",
+  "aiResponseDeleteConfirm": "Löschen",
+  "aiResponseDeleteError": "KI-Antwort konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
 }

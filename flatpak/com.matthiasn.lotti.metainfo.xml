@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.757" date="2025-12-16">
+      <description>
+        <p>Nested AI Responses: Generated prompts from audio entries now display directly beneath them in an expandable section. Includes smooth collapse/expand animation and swipe-to-delete with confirmation.</p>
+      </description>
+    </release>
     <release version="0.9.754" date="2025-12-15">
       <description>
         <p>Sync Backfill Improvements: EntryLink support ensures all sync message types are tracked and can be recovered. Ghost missing entry resolution handles cases where different message types share the same sequence counter.</p>

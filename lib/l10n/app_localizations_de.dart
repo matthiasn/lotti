@@ -1658,6 +1658,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptGenerationFullPromptLabel => 'Vollständiger Prompt:';
 
   @override
+  String nestedAiResponsesTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'en',
+      one: '',
+    );
+    return '$count KI-Antwort$_temp0';
+  }
+
+  @override
+  String get aiResponseDeleteTitle => 'KI-Antwort löschen';
+
+  @override
+  String get aiResponseDeleteWarning =>
+      'Möchten Sie diese KI-Antwort wirklich löschen? Dies kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get aiResponseDeleteCancel => 'Abbrechen';
+
+  @override
+  String get aiResponseDeleteConfirm => 'Löschen';
+
+  @override
+  String get aiResponseDeleteError =>
+      'KI-Antwort konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.';
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override

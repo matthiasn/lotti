@@ -1662,6 +1662,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get promptGenerationFullPromptLabel => 'Full Prompt:';
 
   @override
+  String nestedAiResponsesTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 's',
+      one: '',
+    );
+    return '$count AI response$_temp0';
+  }
+
+  @override
+  String get aiResponseDeleteTitle => 'Delete AI Response';
+
+  @override
+  String get aiResponseDeleteWarning =>
+      'Are you sure you want to delete this AI response? This cannot be undone.';
+
+  @override
+  String get aiResponseDeleteCancel => 'Cancel';
+
+  @override
+  String get aiResponseDeleteConfirm => 'Delete';
+
+  @override
+  String get aiResponseDeleteError =>
+      'Failed to delete AI response. Please try again.';
+
+  @override
   String get saveButtonLabel => 'Save';
 
   @override
