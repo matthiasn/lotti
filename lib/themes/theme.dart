@@ -60,6 +60,10 @@ class AppTheme {
   static const double alphaSurfaceVariantChevron = 0.7;
   static const double alphaDestructive = 0.25;
 
+  // Slider alpha values
+  static const int alphaSliderInactiveTrack = 150;
+  static const int alphaSliderOverlay = 100;
+
   // Animation constants - Smoother animations
   static const int animationDuration = 300; // Slightly longer
   static const Curve animationCurve =
@@ -454,10 +458,12 @@ ThemeData withOverrides(ThemeData themeData) {
       ),
       sliderTheme: themeData.sliderTheme.copyWith(
         activeTrackColor: themeData.colorScheme.secondary,
-        inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(150),
+        inactiveTrackColor: themeData.colorScheme.secondary
+            .withAlpha(AppTheme.alphaSliderInactiveTrack),
         thumbColor: themeData.colorScheme.secondary,
         thumbShape: const RoundSliderThumbShape(),
-        overlayColor: themeData.colorScheme.secondary.withAlpha(100),
+        overlayColor:
+            themeData.colorScheme.secondary.withAlpha(AppTheme.alphaSliderOverlay),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         clipBehavior: Clip.hardEdge,
