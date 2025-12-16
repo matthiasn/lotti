@@ -75,7 +75,7 @@ class ModernIconContainer extends StatelessWidget {
         ),
         border: Border.all(
           color: effectiveBorderColor,
-          width: 0.5,
+          width: AppTheme.iconContainerBorderWidth,
         ),
       ),
       child: Center(

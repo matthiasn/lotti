@@ -75,6 +75,7 @@ class AppTheme {
   static const double alphaIconContainerGradientEndLight = 0.1;
   static const double alphaIconContainerBorderDark = 0.2;
   static const double alphaIconContainerBorderLight = 0.08;
+  static const double iconContainerBorderWidth = 0.5;
 
   // Animation constants - Smoother animations
   static const int animationDuration = 300; // Slightly longer
@@ -474,8 +475,8 @@ ThemeData withOverrides(ThemeData themeData) {
             .withAlpha(AppTheme.alphaSliderInactiveTrack),
         thumbColor: themeData.colorScheme.secondary,
         thumbShape: const RoundSliderThumbShape(),
-        overlayColor:
-            themeData.colorScheme.secondary.withAlpha(AppTheme.alphaSliderOverlay),
+        overlayColor: themeData.colorScheme.secondary
+            .withAlpha(AppTheme.alphaSliderOverlay),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         clipBehavior: Clip.hardEdge,
