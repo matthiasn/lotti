@@ -2136,6 +2136,90 @@ void main() {
       expect(record.counter.value, 7);
     });
 
+    test('inserts covered counters that do not exist in sequence log',
+        () async {
+      // Scenario: Entry arrives with coveredVectorClocks containing counters
+      // from a DIFFERENT host (bob) that don't exist in our sequence log yet.
+      // This tests the case where an entry was created and updated rapidly on
+      // sender before being sent, resulting in superseded counters that we've
+      // never seen. The fix ensures we INSERT them as received to pre-empt gap
+      // detection from marking them as missing.
+      //
+      // Using bob's counters in covered VCs ensures gap detection for alice
+      // doesn't create them first, allowing us to test the true "doesn't exist"
+      // code path.
+      const vectorClock = VectorClock({aliceHostId: 7, bobHostId: 10});
+      const entryId = 'entry-7';
+      final coveredClocks = [
+        // Bob's counters 8 and 9 were superseded before sending
+        const VectorClock({bobHostId: 8}),
+        const VectorClock({bobHostId: 9}),
+      ];
+
+      // Setup for alice (the originator)
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 6); // No gap for alice
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
+          .thenAnswer((_) async => null);
+
+      // Setup for bob (another host in the VC)
+      // Set lastSeen to 9 so there's no gap detection when we receive bob:10
+      // This ensures bob:8 and bob:9 truly don't exist when covered VCs are processed
+      when(() => mockDb.getLastCounterForHost(bobHostId))
+          .thenAnswer((_) async => 9); // No gap (10-9=1)
+      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 10))
+          .thenAnswer((_) async => null);
+      // Bob's counters 8 and 9 do NOT exist yet - this is what we're testing
+      // (they were superseded on bob before being sent, so we never saw them)
+      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 8))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 9))
+          .thenAnswer((_) async => null);
+
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Should have 4 records:
+      // - entry for alice:7 (originator)
+      // - entry for bob:10 (other host in VC)
+      // - INSERTED covered counter bob:8
+      // - INSERTED covered counter bob:9
+      expect(captured.length, 4);
+
+      final bobCounter8Record = captured.firstWhere(
+        (c) =>
+            (c as SyncSequenceLogCompanion).hostId.value == bobHostId &&
+            c.counter.value == 8,
+      ) as SyncSequenceLogCompanion;
+      final bobCounter9Record = captured.firstWhere(
+        (c) =>
+            (c as SyncSequenceLogCompanion).hostId.value == bobHostId &&
+            c.counter.value == 9,
+      ) as SyncSequenceLogCompanion;
+
+      // Covered counters should be INSERTED as received (not updated)
+      expect(bobCounter8Record.status.value, SyncSequenceStatus.received.index);
+      expect(bobCounter8Record.hostId.value, bobHostId);
+      expect(bobCounter8Record.entryId.value, entryId);
+      expect(bobCounter8Record.createdAt.value,
+          isNotNull); // New record has createdAt
+
+      expect(bobCounter9Record.status.value, SyncSequenceStatus.received.index);
+      expect(bobCounter9Record.hostId.value, bobHostId);
+      expect(bobCounter9Record.entryId.value, entryId);
+      expect(bobCounter9Record.createdAt.value, isNotNull);
+    });
+
     test('skips own host in covered clocks', () async {
       // Covered clocks should skip our own host (myHostId)
       const vectorClock = VectorClock({aliceHostId: 7});

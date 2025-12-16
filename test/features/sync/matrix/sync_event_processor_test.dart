@@ -2484,7 +2484,8 @@ void main() {
           )).called(1);
     });
 
-    test('does not process embedded links when update is skipped', () async {
+    test('processes embedded links even when entity update is skipped',
+        () async {
       final link = EntryLink.basic(
         id: 'link-1',
         fromId: 'entry-id',
@@ -2526,17 +2527,35 @@ void main() {
           .thenAnswer((_) async => JournalUpdateResult.skipped(
                 reason: JournalUpdateSkipReason.olderOrEqual,
               ));
+      when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 1);
 
       await processor.process(event: event, journalDb: journalDb);
 
-      // Verify link was NOT upserted because update was skipped
-      verifyNever(() => journalDb.upsertEntryLink(any()));
+      // Verify link WAS upserted even though entity update was skipped.
+      // EntryLinks have their own vector clock for conflict resolution,
+      // so they should be processed regardless of journal entity status.
+      // This prevents gray calendar entries that rely on links for color lookup.
+      verify(() => journalDb.upsertEntryLink(link)).called(1);
 
-      // Verify summary shows 0 embedded links processed
+      // Verify logging for embedded link processing
       verify(() => loggingService.captureEvent(
-            contains('embeddedLinks=0/1'),
+            contains(
+                'apply entryLink.embedded from=${link.fromId} to=${link.toId}'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply.entryLink.embedded',
+          )).called(1);
+
+      // Verify summary shows 1 embedded link processed
+      verify(() => loggingService.captureEvent(
+            contains('embeddedLinks=1/1'),
             domain: 'MATRIX_SERVICE',
             subDomain: 'apply',
+          )).called(1);
+
+      // Verify notification sent for affected IDs from link
+      verify(() => updateNotifications.notify(
+            {link.fromId, link.toId},
+            fromSync: true,
           )).called(1);
     });
 

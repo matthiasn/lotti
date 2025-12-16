@@ -622,11 +622,13 @@ class SyncEventProcessor {
               await journalDb.updateJournalEntity(journalEntity);
           final rows = updateResult.rowsWritten ?? 0;
 
-          // Process embedded entry links AFTER successful journal entity persistence
+          // Process embedded entry links regardless of journal entity application
+          // status. EntryLinks have their own vector clock for conflict resolution
+          // via upsertEntryLink(). This ensures links are established even when the
+          // entity itself is skipped (e.g., local version is newer), preventing
+          // gray calendar entries that rely on links for category color lookup.
           var processedLinksCount = 0;
-          if (updateResult.applied &&
-              entryLinks != null &&
-              entryLinks.isNotEmpty) {
+          if (entryLinks != null && entryLinks.isNotEmpty) {
             final affectedIds = <String>{};
             for (final link in entryLinks) {
               try {
