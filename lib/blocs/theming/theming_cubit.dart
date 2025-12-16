@@ -178,58 +178,57 @@ class ThemingCubit extends Cubit<ThemingState> {
     emitState();
   }
 
-  void _initLightTheme(String? themeName) {
+  ThemeData _buildTheme(String? themeName, {required bool isDark}) {
     final ThemeData baseTheme;
+    final fontFamily = GoogleFonts.inclusiveSans().fontFamily;
+    final fontFallback = _getEmojiFontFallback();
 
-    // Handle custom Polished theme
     if (themeName == polishedThemeName) {
-      baseTheme = FlexThemeData.light(
-        colors: PolishedThemeColors.light,
-        surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-        blendLevel: 7,
-        subThemesData: PolishedSubThemes.create(isDark: false),
-        visualDensity: FlexColorScheme.comfortablePlatformDensity,
-        fontFamily: GoogleFonts.inclusiveSans().fontFamily,
-        fontFamilyFallback: _getEmojiFontFallback(),
-      );
+      // Custom Polished theme
+      baseTheme = isDark
+          ? FlexThemeData.dark(
+              colors: PolishedThemeColors.dark,
+              surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
+              blendLevel: 13,
+              subThemesData: PolishedSubThemes.create(isDark: true),
+              visualDensity: FlexColorScheme.comfortablePlatformDensity,
+              fontFamily: fontFamily,
+              fontFamilyFallback: fontFallback,
+            )
+          : FlexThemeData.light(
+              colors: PolishedThemeColors.light,
+              surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
+              blendLevel: 7,
+              subThemesData: PolishedSubThemes.create(isDark: false),
+              visualDensity: FlexColorScheme.comfortablePlatformDensity,
+              fontFamily: fontFamily,
+              fontFamilyFallback: fontFallback,
+            );
     } else {
       // Standard FlexScheme themes
       final scheme = themes[themeName] ?? FlexScheme.greyLaw;
-      baseTheme = FlexThemeData.light(
-        scheme: scheme,
-        fontFamily: GoogleFonts.inclusiveSans().fontFamily,
-        fontFamilyFallback: _getEmojiFontFallback(),
-      );
+      baseTheme = isDark
+          ? FlexThemeData.dark(
+              scheme: scheme,
+              fontFamily: fontFamily,
+              fontFamilyFallback: fontFallback,
+            )
+          : FlexThemeData.light(
+              scheme: scheme,
+              fontFamily: fontFamily,
+              fontFamilyFallback: fontFallback,
+            );
     }
 
-    _lightTheme = withOverrides(baseTheme);
+    return withOverrides(baseTheme);
+  }
+
+  void _initLightTheme(String? themeName) {
+    _lightTheme = _buildTheme(themeName, isDark: false);
   }
 
   void _initDarkTheme(String? themeName) {
-    final ThemeData baseTheme;
-
-    // Handle custom Polished theme
-    if (themeName == polishedThemeName) {
-      baseTheme = FlexThemeData.dark(
-        colors: PolishedThemeColors.dark,
-        surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-        blendLevel: 13,
-        subThemesData: PolishedSubThemes.create(isDark: true),
-        visualDensity: FlexColorScheme.comfortablePlatformDensity,
-        fontFamily: GoogleFonts.inclusiveSans().fontFamily,
-        fontFamilyFallback: _getEmojiFontFallback(),
-      );
-    } else {
-      // Standard FlexScheme themes
-      final scheme = themes[themeName] ?? FlexScheme.greyLaw;
-      baseTheme = FlexThemeData.dark(
-        scheme: scheme,
-        fontFamily: GoogleFonts.inclusiveSans().fontFamily,
-        fontFamilyFallback: _getEmojiFontFallback(),
-      );
-    }
-
-    _darkTheme = withOverrides(baseTheme);
+    _darkTheme = _buildTheme(themeName, isDark: true);
   }
 
   String? _darkThemeName = polishedThemeName;
