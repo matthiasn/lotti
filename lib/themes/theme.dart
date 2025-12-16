@@ -64,6 +64,10 @@ class AppTheme {
   static const int alphaSliderInactiveTrack = 150;
   static const int alphaSliderOverlay = 100;
 
+  // Card border alpha values
+  static const double alphaCardBorderDark = 0.3;
+  static const double alphaCardBorderLight = 0.06;
+
   // Animation constants - Smoother animations
   static const int animationDuration = 300; // Slightly longer
   static const Curve animationCurve =

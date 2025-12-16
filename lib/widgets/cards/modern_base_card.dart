@@ -47,8 +47,10 @@ class ModernBaseCard extends StatelessWidget {
     // Determine border color - very subtle in light mode, slightly visible in dark mode
     final effectiveBorderColor = borderColor ??
         (isDark
-            ? context.colorScheme.outlineVariant.withValues(alpha: 0.3)
-            : context.colorScheme.outline.withValues(alpha: 0.06));
+            ? context.colorScheme.outlineVariant
+                .withValues(alpha: AppTheme.alphaCardBorderDark)
+            : context.colorScheme.outline
+                .withValues(alpha: AppTheme.alphaCardBorderLight));
 
     return Container(
       margin: margin,
