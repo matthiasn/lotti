@@ -363,7 +363,9 @@ class OutboxService {
 
             if (oldMessage is SyncJournalEntity) {
               final latestVc = journalEntity.meta.vectorClock;
-              final coveredClocks = <VectorClock>[
+              // Use Set to deduplicate vector clocks and avoid redundant
+              // processing on the receiving end.
+              final coveredClocksSet = <VectorClock>{
                 ...?oldMessage.coveredVectorClocks,
                 if (oldMessage.vectorClock != null) oldMessage.vectorClock!,
                 // Also capture the current enqueue call's VC if it differs from
@@ -373,7 +375,8 @@ class OutboxService {
                 if (journalEntityMsg.vectorClock != null &&
                     journalEntityMsg.vectorClock != latestVc)
                   journalEntityMsg.vectorClock!,
-              ];
+              };
+              final coveredClocks = coveredClocksSet.toList();
 
               // Create merged message with updated VC and covered clocks
               final mergedMessage = journalEntityMsg.copyWith(
@@ -498,11 +501,14 @@ class OutboxService {
             );
 
             if (oldMessage is SyncEntryLink) {
-              final coveredClocks = <VectorClock>[
+              // Use Set to deduplicate vector clocks and avoid redundant
+              // processing on the receiving end.
+              final coveredClocksSet = <VectorClock>{
                 ...?oldMessage.coveredVectorClocks,
                 if (oldMessage.entryLink.vectorClock != null)
                   oldMessage.entryLink.vectorClock!,
-              ];
+              };
+              final coveredClocks = coveredClocksSet.toList();
 
               // Create merged message with covered clocks
               // Note: Unlike journal entities, entry links don't refresh from DB,
