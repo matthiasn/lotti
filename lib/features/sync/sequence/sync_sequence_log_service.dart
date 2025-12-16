@@ -305,6 +305,11 @@ class SyncSequenceLogService {
   /// Mark counters from covered vector clocks as received.
   /// These are counters that were "spent" on superseded versions of the entry
   /// before the final version was sent.
+  ///
+  /// This method inserts records for covered counters even if they don't exist
+  /// yet in the sequence log. This pre-emptively marks them as received before
+  /// gap detection can mark them as missing, preventing unnecessary backfill
+  /// requests for counters that were superseded before being sent.
   Future<void> _markCoveredCountersAsReceived({
     required List<VectorClock> coveredVectorClocks,
     required String entryId,
@@ -322,14 +327,31 @@ class SyncSequenceLogService {
         // Skip our own host
         if (hostId == myHost) continue;
 
-        // Check if this counter is marked as missing or requested
+        // Check if this counter already exists in the sequence log
         final existing =
             await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
 
-        if (existing != null &&
-            (existing.status == SyncSequenceStatus.missing.index ||
-                existing.status == SyncSequenceStatus.requested.index)) {
-          // Mark as received - it's covered by the entry we just received
+        // Insert or update record for covered counter:
+        // - If doesn't exist: insert as received (pre-empt gap detection)
+        // - If exists with missing/requested: update to received
+        // - If exists with received/backfilled: skip (don't downgrade)
+        if (existing == null) {
+          // Counter doesn't exist - insert as received to pre-empt gap detection
+          await _syncDatabase.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: Value(hostId),
+              counter: Value(counter),
+              entryId: Value(entryId),
+              payloadType: Value(payloadType.index),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+          markedCount++;
+        } else if (existing.status == SyncSequenceStatus.missing.index ||
+            existing.status == SyncSequenceStatus.requested.index) {
+          // Existing record with missing/requested - update to received
           await _syncDatabase.recordSequenceEntry(
             SyncSequenceLogCompanion(
               hostId: Value(hostId),
@@ -342,6 +364,7 @@ class SyncSequenceLogService {
           );
           markedCount++;
         }
+        // If already received/backfilled, skip - don't downgrade status
       }
     }
 
