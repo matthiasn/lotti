@@ -154,7 +154,7 @@ class SelectTheme extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        ...themes.keys.map(
+                        ...allThemeNames.map(
                           (key) => SettingsCard(
                             onTap: () {
                               setTheme(key);

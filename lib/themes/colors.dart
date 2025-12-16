@@ -98,30 +98,26 @@ class ModernGradientThemes {
     );
   }
 
-  /// Creates a modern card gradient with enhanced sophistication
+  /// Creates a modern card gradient with clean, polished appearance
   static LinearGradient cardGradient(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (!isDark) {
+      // Light mode: pure white to very subtle warm tint - no grey!
       return LinearGradient(
         colors: [
           context.colorScheme.surface,
-          context.colorScheme.surfaceContainer.withValues(alpha: 0.4),
+          context.colorScheme.surface,
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       );
     }
 
+    // Dark mode: subtle gradient for depth without being heavy
     return LinearGradient(
       colors: [
-        Color.lerp(
-            context.colorScheme.surfaceContainer,
-            context.colorScheme.surfaceContainerHigh,
-            GradientConstants.darkCardBlendFactor)!,
-        Color.lerp(
-            context.colorScheme.surface,
-            context.colorScheme.surfaceContainer,
-            GradientConstants.darkCardEndBlendFactor)!,
+        context.colorScheme.surfaceContainerHigh,
+        context.colorScheme.surfaceContainer,
       ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,

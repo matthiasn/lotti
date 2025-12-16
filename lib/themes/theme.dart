@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -10,12 +11,14 @@ const fontSizeLarge = 25.0;
 
 class AppTheme {
   // Modern card layout constants
-  static const double cardBorderRadius = 20; // Increased for more modern look
+  static const double cardBorderRadius = 16; // Clean, modern radius
   static const double cardPadding = 16; // Increased padding
   static const double cardPaddingHalf = cardPadding / 2;
   static const double cardPaddingCompact = 14;
-  static const double cardElevationLight = 8; // Enhanced shadows
-  static const double cardElevationDark = 12;
+  static const double cardElevationLight =
+      2; // Subtle shadows for polished look
+  static const double cardElevationDark =
+      4; // Slightly more visible in dark mode
   static const double cardSpacing = 10; // Increased spacing between cards
 
   // Icon container constants
@@ -44,11 +47,11 @@ class AppTheme {
   static const double letterSpacingSubtitle = 0.05;
   static const double lineHeightSubtitle = 1.5; // Better line height
 
-  // Enhanced alpha values for colors
-  static const double alphaOutline = 0.25; // Reduced for subtlety
-  static const double alphaPrimaryContainer = 0.12; // More subtle
-  static const double alphaShadowLight = 0.12; // Enhanced shadows
-  static const double alphaShadowDark = 0.25;
+  // Enhanced alpha values for colors - tuned for polished look
+  static const double alphaOutline = 0.08; // Very subtle borders in light mode
+  static const double alphaPrimaryContainer = 0.08; // Subtle container tints
+  static const double alphaShadowLight = 0.04; // Minimal shadows for clean look
+  static const double alphaShadowDark = 0.15; // Subtle shadows in dark mode
   static const double alphaPrimary = 0.08; // More subtle
   static const double alphaPrimaryHighlight = 0.04;
   static const double alphaPrimaryBorder = 0.12;
@@ -67,8 +70,9 @@ class AppTheme {
   static const double spacingBetweenTitleAndSubtitleCompact = 4;
   static const double spacingBetweenElements = 8; // Increased
 
-  // Enhanced shadow offset
-  static const Offset shadowOffset = Offset(0, 3); // More pronounced
+  // Clean shadow offset - subtle and modern
+  static const Offset shadowOffset =
+      Offset(0, 1); // Minimal offset for clean look
 
   // Status indicator constants
   static const double statusIndicatorPaddingHorizontal = 8; // Increased
@@ -120,24 +124,24 @@ class AppTheme {
   static const double errorModalSpacingButtonSecondary = 12;
 }
 
-// Gradient and shadow constants
+// Gradient and shadow constants - tuned for polished, modern look
 class GradientConstants {
   // Color blending factors for gradients
-  static const double darkCardBlendFactor = 0.3;
-  static const double darkCardEndBlendFactor = 0.5;
+  static const double darkCardBlendFactor = 0.2;
+  static const double darkCardEndBlendFactor = 0.3;
 
-  // Shadow alpha values for enhanced cards
-  static const double enhancedShadowLightAlpha = 0.15;
-  static const double enhancedShadowSecondaryLightAlpha = 0.1;
-  static const double enhancedShadowSecondaryDarkAlpha = 0.2;
+  // Shadow alpha values for enhanced cards - much more subtle
+  static const double enhancedShadowLightAlpha = 0.06;
+  static const double enhancedShadowSecondaryLightAlpha = 0.03;
+  static const double enhancedShadowSecondaryDarkAlpha = 0.12;
 
-  // Shadow blur and spread values
-  static const double enhancedShadowBlurLight = 15;
-  static const double enhancedShadowSecondaryBlurLight = 30;
-  static const double enhancedShadowSecondaryBlurDark = 40;
-  static const double enhancedShadowSecondarySpread = 4;
-  static const double enhancedShadowOffsetY = 8;
-  static const double enhancedShadowSecondaryOffsetY = 16;
+  // Shadow blur and spread values - reduced for cleaner look
+  static const double enhancedShadowBlurLight = 8;
+  static const double enhancedShadowSecondaryBlurLight = 16;
+  static const double enhancedShadowSecondaryBlurDark = 20;
+  static const double enhancedShadowSecondarySpread = 0;
+  static const double enhancedShadowOffsetY = 2;
+  static const double enhancedShadowSecondaryOffsetY = 4;
 }
 
 // Input and form styling constants
@@ -411,46 +415,63 @@ TextStyle searchLabelStyle() => TextStyle(
     );
 
 ThemeData withOverrides(ThemeData themeData) {
-  // Use a slightly lighter, scheme-derived background in dark mode.
-  // This keeps the background darker than cards (which use surfaceContainer*)
-  // while avoiding a pure-black canvas. It also aligns the app bar and
-  // bottom navigation bar tones via canvasColor.
   final isDark = themeData.brightness == Brightness.dark;
-  final darkScaffold =
-      isDark ? themeData.colorScheme.surface : null; // leave light theme as-is
+
+  // LIGHT MODE: Force clean white backgrounds instead of grey
+  // DARK MODE: Use scheme-derived surface for consistency
+  final scaffoldColor =
+      isDark ? themeData.colorScheme.surface : LightModeSurfaces.surface;
+
+  // Update colorScheme for light mode to use white surfaces
+  final updatedColorScheme = isDark
+      ? themeData.colorScheme
+      : themeData.colorScheme.copyWith(
+          surface: LightModeSurfaces.surface,
+          surfaceContainerLowest: LightModeSurfaces.surfaceContainerLowest,
+          surfaceContainerLow: LightModeSurfaces.surfaceContainerLow,
+          surfaceContainer: LightModeSurfaces.surfaceContainer,
+          surfaceContainerHigh: LightModeSurfaces.surfaceContainerHigh,
+          surfaceContainerHighest: LightModeSurfaces.surfaceContainerHighest,
+        );
 
   return themeData.copyWith(
-      scaffoldBackgroundColor:
-          darkScaffold ?? themeData.scaffoldBackgroundColor,
-      // Align Material canvas (used by bottom bars) with the scaffold.
-      canvasColor: darkScaffold ?? themeData.canvasColor,
+      colorScheme: updatedColorScheme,
+      scaffoldBackgroundColor: scaffoldColor,
+      canvasColor: scaffoldColor,
       cardTheme: themeData.cardTheme.copyWith(
         clipBehavior: Clip.hardEdge,
+        elevation: isDark ? 2 : 0,
+        color: isDark ? null : LightModeSurfaces.surface,
+        shadowColor: isDark ? null : Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         ),
       ),
       appBarTheme: themeData.appBarTheme.copyWith(
-        backgroundColor: darkScaffold ?? themeData.scaffoldBackgroundColor,
-        elevation: 10,
+        backgroundColor: scaffoldColor,
+        elevation: 0,
         shadowColor: Colors.transparent,
       ),
       sliderTheme: themeData.sliderTheme.copyWith(
         activeTrackColor: themeData.colorScheme.secondary,
-        inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(
-          150, // Slightly more visible
-        ),
+        inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(150),
         thumbColor: themeData.colorScheme.secondary,
         thumbShape: const RoundSliderThumbShape(),
-        overlayColor: themeData.colorScheme.secondary.withAlpha(
-          100, // More subtle overlay
-        ),
+        overlayColor: themeData.colorScheme.secondary.withAlpha(100),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
+      bottomSheetTheme: BottomSheetThemeData(
         clipBehavior: Clip.hardEdge,
         elevation: 0,
-        shape: RoundedRectangleBorder(
+        backgroundColor: isDark ? null : LightModeSurfaces.surface,
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: isDark ? null : LightModeSurfaces.surface,
+        elevation: isDark ? 8 : 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
       textTheme: themeData.textTheme.copyWith(

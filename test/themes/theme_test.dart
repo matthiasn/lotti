@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/themes/theme.dart';
 
 void main() {
@@ -82,15 +83,79 @@ void main() {
       );
     });
 
-    test('preserves light scaffold background in light mode', () {
+    test('applies white scaffold background in light mode', () {
       final baseTheme = ThemeData.light();
       final themedData = withOverrides(baseTheme);
 
-      // In light mode, scaffold should keep original background
+      // In light mode, scaffold should be forced to pure white
       expect(
         themedData.scaffoldBackgroundColor,
-        equals(baseTheme.scaffoldBackgroundColor),
+        equals(LightModeSurfaces.surface),
       );
+      expect(
+        themedData.canvasColor,
+        equals(LightModeSurfaces.surface),
+      );
+    });
+
+    test('applies white colorScheme surfaces in light mode', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+
+      // Light mode colorScheme surfaces should be white/near-white
+      expect(
+        themedData.colorScheme.surface,
+        equals(LightModeSurfaces.surface),
+      );
+      expect(
+        themedData.colorScheme.surfaceContainerLowest,
+        equals(LightModeSurfaces.surfaceContainerLowest),
+      );
+      expect(
+        themedData.colorScheme.surfaceContainerLow,
+        equals(LightModeSurfaces.surfaceContainerLow),
+      );
+    });
+
+    test('applies white card theme in light mode', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+
+      // Light mode cards should have no elevation and white color
+      expect(themedData.cardTheme.elevation, equals(0));
+      expect(themedData.cardTheme.color, equals(LightModeSurfaces.surface));
+      expect(themedData.cardTheme.shadowColor, equals(Colors.transparent));
+    });
+
+    test('applies white bottom sheet background in light mode', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+
+      expect(
+        themedData.bottomSheetTheme.backgroundColor,
+        equals(LightModeSurfaces.surface),
+      );
+    });
+
+    test('applies white dialog background in light mode', () {
+      final baseTheme = ThemeData.light();
+      final themedData = withOverrides(baseTheme);
+
+      expect(
+        themedData.dialogTheme.backgroundColor,
+        equals(LightModeSurfaces.surface),
+      );
+      expect(themedData.dialogTheme.elevation, equals(0));
+    });
+
+    test('dark mode card theme has elevation', () {
+      final baseTheme = ThemeData.dark();
+      final themedData = withOverrides(baseTheme);
+
+      // Dark mode cards should have elevation
+      expect(themedData.cardTheme.elevation, equals(2));
+      // Color should be null (use default)
+      expect(themedData.cardTheme.color, isNull);
     });
 
     test('applies custom slider theme', () {
