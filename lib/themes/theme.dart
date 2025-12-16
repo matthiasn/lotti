@@ -68,6 +68,14 @@ class AppTheme {
   static const double alphaCardBorderDark = 0.3;
   static const double alphaCardBorderLight = 0.06;
 
+  // Icon container alpha values
+  static const double alphaIconContainerGradientStartDark = 0.3;
+  static const double alphaIconContainerGradientStartLight = 0.15;
+  static const double alphaIconContainerGradientEndDark = 0.2;
+  static const double alphaIconContainerGradientEndLight = 0.1;
+  static const double alphaIconContainerBorderDark = 0.2;
+  static const double alphaIconContainerBorderLight = 0.08;
+
   // Animation constants - Smoother animations
   static const int animationDuration = 300; // Slightly longer
   static const Curve animationCurve =

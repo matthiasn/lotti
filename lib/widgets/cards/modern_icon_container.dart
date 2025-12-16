@@ -39,10 +39,16 @@ class ModernIconContainer extends StatelessWidget {
     final effectiveGradient = gradient ??
         LinearGradient(
           colors: [
-            context.colorScheme.primaryContainer
-                .withValues(alpha: isDark ? 0.3 : 0.15),
-            context.colorScheme.primaryContainer
-                .withValues(alpha: isDark ? 0.2 : 0.1),
+            context.colorScheme.primaryContainer.withValues(
+              alpha: isDark
+                  ? AppTheme.alphaIconContainerGradientStartDark
+                  : AppTheme.alphaIconContainerGradientStartLight,
+            ),
+            context.colorScheme.primaryContainer.withValues(
+              alpha: isDark
+                  ? AppTheme.alphaIconContainerGradientEndDark
+                  : AppTheme.alphaIconContainerGradientEndLight,
+            ),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -50,7 +56,11 @@ class ModernIconContainer extends StatelessWidget {
 
     // Very subtle border - almost invisible in light mode
     final effectiveBorderColor = borderColor ??
-        context.colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.08);
+        context.colorScheme.primary.withValues(
+          alpha: isDark
+              ? AppTheme.alphaIconContainerBorderDark
+              : AppTheme.alphaIconContainerBorderLight,
+        );
 
     // Vibrant icon color
     final effectiveIconColor = iconColor ?? context.colorScheme.primary;
