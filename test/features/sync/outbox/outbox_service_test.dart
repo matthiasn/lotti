@@ -824,6 +824,120 @@ void main() {
       );
     });
 
+    test('captures intermediate VC when DB has newer version than enqueue call',
+        () async {
+      // This tests the race condition scenario:
+      // 1. Entry created with VC {A:5}, enqueue#1 called
+      // 2. Entry updated to VC {A:6}, enqueue#2 called
+      // 3. Entry updated to VC {A:7} (before enqueue#2 runs)
+      // 4. enqueue#1 runs: creates outbox item with VC {A:5}
+      // 5. enqueue#2 runs: journalEntityMsg.VC={A:6}, DB has VC={A:7}
+      //    -> coveredClocks should be [{A:5}, {A:6}], final VC is {A:7}
+      final sampleDate = DateTime.utc(2024);
+      const oldVc = VectorClock({'hostA': 5}); // VC in existing outbox item
+      const intermediateVc = VectorClock({'hostA': 6}); // VC from enqueue call
+      const latestVc = VectorClock({'hostA': 7}); // VC now in DB
+
+      // Existing item has VC 5 (from enqueue#1)
+      const oldMessage = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entries/test.json',
+        vectorClock: oldVc,
+        status: SyncEntryStatus.update,
+      );
+
+      final existingItem = OutboxItem(
+        id: 1,
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        message: jsonEncode(oldMessage.toJson()),
+        subject: 'hhash:5',
+        filePath: null,
+        outboxEntryId: 'entry-id',
+      );
+
+      when(() => syncDatabase.findPendingByEntryId('entry-id'))
+          .thenAnswer((_) async => existingItem);
+
+      String? capturedMessage;
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedMessage = invocation.namedArguments[#newMessage] as String?;
+        return 1;
+      });
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      // Setup: DB returns entry with latest VC (7)
+      final metadata = Metadata(
+        id: 'entry-id',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: latestVc,
+      );
+      final journalEntity = JournalEntity.journalEntry(
+        meta: metadata,
+        entryText: const EntryText(plainText: 'Updated'),
+      );
+
+      when(() => journalDb.journalEntityById('entry-id'))
+          .thenAnswer((_) async => journalEntity);
+
+      final jsonPath = '${documentsDirectory.path}/entries/test.json';
+      File(jsonPath)
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      // Call enqueue with INTERMEDIATE VC (6) - simulating a call that was
+      // delayed and the DB was updated in the meantime
+      await testService.enqueueMessage(
+        const SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: '/entries/test.json',
+          vectorClock: intermediateVc, // VC from when enqueue was called
+          status: SyncEntryStatus.update,
+        ),
+      );
+
+      // Verify the merge captured both the old VC and the intermediate VC
+      expect(capturedMessage, isNotNull);
+      final decodedMessage = SyncMessage.fromJson(
+        jsonDecode(capturedMessage!) as Map<String, dynamic>,
+      );
+      expect(decodedMessage, isA<SyncJournalEntity>());
+      final journalMsg = decodedMessage as SyncJournalEntity;
+
+      // Final VC should be from DB (latest)
+      expect(journalMsg.vectorClock?.vclock['hostA'], 7);
+
+      // coveredVectorClocks should contain BOTH old VC (5) AND intermediate (6)
+      expect(journalMsg.coveredVectorClocks, isNotNull);
+      expect(journalMsg.coveredVectorClocks, hasLength(2));
+      expect(
+        journalMsg.coveredVectorClocks!.map((vc) => vc.vclock['hostA']),
+        containsAll([5, 6]),
+      );
+    });
+
     test('merges entry link updates with coveredVectorClocks', () async {
       final sampleDate = DateTime.utc(2024);
       const oldVc = VectorClock({'hostA': 3});
