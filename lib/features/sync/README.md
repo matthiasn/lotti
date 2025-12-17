@@ -152,6 +152,14 @@ complete reconstruction of sync state.
 - Any counter jumps > 1 trigger gap entries marked as `missing`
 - When an entry arrives, ALL (hostId, counter) pairs in its VC are updated to
   received/backfilled status (not just the originator's counter)
+- **Online Host Guard:** Gap detection is only performed for hosts that have been
+  seen "online" (i.e., have sent us a message directly via the `HostActivity`
+  table). This prevents false positive gaps for hosts we've never communicated
+  with — we may see their counters in vector clocks from other hosts, but we
+  can't know if entries are actually missing without having established
+  communication with them. The originating host is always considered online
+  since they just sent us the current message. Sequence entries are still
+  recorded for offline hosts to enable backfill responses later.
 
 **Ghost Entry Resolution:**
 Different payload types can share the same sequence counter. When one type
@@ -216,6 +224,7 @@ If the BackfillResponse arrives before the sync message (race condition):
 **Logging:** Key domains include `SYNC_SEQUENCE` (gap detection, status changes)
 and `SYNC_BACKFILL` (request/response handling). Look for:
 - `gapDetected hostId=... counter=... (last seen: ..., observed: ...)`
+- `skipGapDetection hostId=... counter=... - host never seen online`
 - `handleBackfillRequest: N entries from=...`
 - `handleBackfillResponse: stored hint hostId=... counter=... entryId=...`
 - `verifyAndMarkBackfilled: confirmed hostId=... counter=... entryId=...`

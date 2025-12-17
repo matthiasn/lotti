@@ -108,9 +108,32 @@ class SyncSequenceLogService {
       // Skip our own host
       if (hostId == myHost) continue;
 
+      // Only detect gaps for hosts that have been seen "online" (i.e., have
+      // sent us a message directly). This prevents false positive gaps for
+      // hosts we've never communicated with - we may see their counters in
+      // vector clocks from other hosts, but we can't know if entries are
+      // actually missing without having established communication with them.
+      // The originating host is always considered online (we just updated
+      // their activity above).
+      //
+      // Note: We still record the sequence entry for offline hosts (below),
+      // just skip gap detection. This allows us to respond to backfill
+      // requests later if the host comes online.
+      final hostLastOnline = await _syncDatabase.getHostLastSeen(hostId);
+      final shouldDetectGaps =
+          hostLastOnline != null || hostId == originatingHostId;
+
+      if (!shouldDetectGaps) {
+        _loggingService.captureEvent(
+          'skipGapDetection hostId=$hostId counter=$counter - host never seen online',
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'skipGap',
+        );
+      }
+
       final lastSeen = await _syncDatabase.getLastCounterForHost(hostId);
 
-      if (lastSeen != null && counter > lastSeen + 1) {
+      if (shouldDetectGaps && lastSeen != null && counter > lastSeen + 1) {
         // Gap detected! Mark missing counters for this host
         final gapSize = counter - lastSeen - 1;
 
