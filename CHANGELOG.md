@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.758] - 2025-12-18
+### Fixed
+- Sync Gap Detection: Prevent false positives during reconnection
+  - Covered vector clocks now processed BEFORE gap detection, preventing
+    intermediate counters from being incorrectly marked as missing
+  - Live scan signals are deferred while catch-up is processing older events,
+    ensuring in-order ingest and preventing newer events from triggering
+    false gaps before older events are recorded
+
 ## [0.9.755] - 2025-12-16
 ### Added
 - Nested AI Responses: Display generated prompts directly under audio entries
