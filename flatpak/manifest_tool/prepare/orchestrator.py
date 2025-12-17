@@ -777,19 +777,26 @@ def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter
 
 
 def _normalize_sqlite_patch(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
-    patch_path = context.work_dir / "sqlite3_flutter_libs" / "0.5.34-CMakeLists.txt.patch"
-    if not patch_path.is_file():
+    patch_dir = context.work_dir / "sqlite3_flutter_libs"
+    if not patch_dir.is_dir():
         return
-    content = patch_path.read_text(encoding="utf-8")
-    new_content = re.sub(r"sqlite-autoconf-350[0-9]{4}", _SQLITE_AUTOCONF_VERSION, content)
-    new_content = re.sub(
-        r"SHA256=[0-9a-f]{64}",
-        f"SHA256={_SQLITE_AUTOCONF_SHA256}",
-        new_content,
-    )
-    if new_content != content:
-        patch_path.write_text(new_content, encoding="utf-8")
-        printer.info("Normalized sqlite3 patch to target version " f"{_SQLITE_AUTOCONF_VERSION}")
+    # Process all versioned CMakeLists.txt patches
+    for patch_path in patch_dir.glob("*-CMakeLists.txt.patch"):
+        if not patch_path.is_file():
+            continue
+        content = patch_path.read_text(encoding="utf-8")
+        new_content = re.sub(r"sqlite-autoconf-350[0-9]{4}", _SQLITE_AUTOCONF_VERSION, content)
+        new_content = re.sub(
+            r"SHA256=[0-9a-f]{64}",
+            f"SHA256={_SQLITE_AUTOCONF_SHA256}",
+            new_content,
+        )
+        # Ensure trailing newline (required for patch files)
+        if new_content and not new_content.endswith("\n"):
+            new_content += "\n"
+        if new_content != content:
+            patch_path.write_text(new_content, encoding="utf-8")
+            printer.info(f"Normalized {patch_path.name} to target version {_SQLITE_AUTOCONF_VERSION}")
 
 
 def _assert_commit_pinned(manifest_path: Path, label: str) -> None:
