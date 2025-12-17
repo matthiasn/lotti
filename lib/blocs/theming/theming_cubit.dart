@@ -53,7 +53,7 @@ class ThemingCubit extends Cubit<ThemingState> {
       );
       // Fallback is already set above, so we can continue
       getIt<LoggingService>().captureException(
-        Exception('Using default theme (Polished) due to initialization error'),
+        Exception('Using default theme (Grey Law) due to initialization error'),
         domain: 'THEMING_CUBIT',
         subDomain: 'fallback',
       );
@@ -140,8 +140,8 @@ class ThemingCubit extends Cubit<ThemingState> {
         try {
           await getIt<OutboxService>().enqueueMessage(
             SyncMessage.themingSelection(
-              lightThemeName: _lightThemeName ?? polishedThemeName,
-              darkThemeName: _darkThemeName ?? polishedThemeName,
+              lightThemeName: _lightThemeName ?? 'Grey Law',
+              darkThemeName: _darkThemeName ?? 'Grey Law',
               themeMode: _themeMode.name,
               updatedAt: DateTime.now().millisecondsSinceEpoch,
               status: SyncEntryStatus.update,
@@ -178,61 +178,30 @@ class ThemingCubit extends Cubit<ThemingState> {
     emitState();
   }
 
-  ThemeData _buildTheme(String? themeName, {required bool isDark}) {
-    final ThemeData baseTheme;
-    final fontFamily = GoogleFonts.inclusiveSans().fontFamily;
-    final fontFallback = _getEmojiFontFallback();
-
-    if (themeName == polishedThemeName) {
-      // Custom Polished theme
-      baseTheme = isDark
-          ? FlexThemeData.dark(
-              colors: PolishedThemeColors.dark,
-              surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-              blendLevel: 13,
-              subThemesData: PolishedSubThemes.create(isDark: true),
-              visualDensity: FlexColorScheme.comfortablePlatformDensity,
-              fontFamily: fontFamily,
-              fontFamilyFallback: fontFallback,
-            )
-          : FlexThemeData.light(
-              colors: PolishedThemeColors.light,
-              surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-              blendLevel: 7,
-              subThemesData: PolishedSubThemes.create(isDark: false),
-              visualDensity: FlexColorScheme.comfortablePlatformDensity,
-              fontFamily: fontFamily,
-              fontFamilyFallback: fontFallback,
-            );
-    } else {
-      // Standard FlexScheme themes
-      final scheme = themes[themeName] ?? FlexScheme.greyLaw;
-      baseTheme = isDark
-          ? FlexThemeData.dark(
-              scheme: scheme,
-              fontFamily: fontFamily,
-              fontFamilyFallback: fontFallback,
-            )
-          : FlexThemeData.light(
-              scheme: scheme,
-              fontFamily: fontFamily,
-              fontFamilyFallback: fontFallback,
-            );
-    }
-
-    return withOverrides(baseTheme);
-  }
-
   void _initLightTheme(String? themeName) {
-    _lightTheme = _buildTheme(themeName, isDark: false);
+    final scheme = themes[themeName] ?? FlexScheme.greyLaw;
+    _lightTheme = withOverrides(
+      FlexThemeData.light(
+        scheme: scheme,
+        fontFamily: GoogleFonts.inclusiveSans().fontFamily,
+        fontFamilyFallback: _getEmojiFontFallback(),
+      ),
+    );
   }
 
   void _initDarkTheme(String? themeName) {
-    _darkTheme = _buildTheme(themeName, isDark: true);
+    final scheme = themes[themeName] ?? FlexScheme.greyLaw;
+    _darkTheme = withOverrides(
+      FlexThemeData.dark(
+        scheme: scheme,
+        fontFamily: GoogleFonts.inclusiveSans().fontFamily,
+        fontFamilyFallback: _getEmojiFontFallback(),
+      ),
+    );
   }
 
-  String? _darkThemeName = polishedThemeName;
-  String? _lightThemeName = polishedThemeName;
+  String? _darkThemeName = 'Grey Law';
+  String? _lightThemeName = 'Grey Law';
   ThemeData? _darkTheme;
   ThemeData? _lightTheme;
   ThemeMode _themeMode = ThemeMode.system;
@@ -251,8 +220,8 @@ class ThemingCubit extends Cubit<ThemingState> {
   }
 
   void setLightTheme(String themeName) {
-    // Accept custom Polished theme or standard FlexScheme themes
-    if (themeName == polishedThemeName || themes.containsKey(themeName)) {
+    final theme = themes[themeName];
+    if (theme != null) {
       _initLightTheme(themeName);
       _lightThemeName = themeName;
 
@@ -278,8 +247,8 @@ class ThemingCubit extends Cubit<ThemingState> {
   }
 
   void setDarkTheme(String themeName) {
-    // Accept custom Polished theme or standard FlexScheme themes
-    if (themeName == polishedThemeName || themes.containsKey(themeName)) {
+    final theme = themes[themeName];
+    if (theme != null) {
       _initDarkTheme(themeName);
       _darkThemeName = themeName;
 

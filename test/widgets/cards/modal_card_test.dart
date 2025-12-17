@@ -67,7 +67,7 @@ void main() {
       expect(container.padding, equals(customPadding));
     });
 
-    testWidgets('uses default elevation of 2', (tester) async {
+    testWidgets('uses default elevation of 0', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
           child: const Text('Test'),
@@ -75,7 +75,7 @@ void main() {
       );
 
       final card = tester.widget<Card>(find.byType(Card));
-      expect(card.elevation, equals(2));
+      expect(card.elevation, equals(0));
     });
 
     testWidgets('applies custom background color', (tester) async {
@@ -269,7 +269,7 @@ void main() {
       expect(
           card.elevation,
           equals(
-              2)); // Note: elevation parameter is not used in current implementation
+              0)); // Note: elevation parameter is not used in current implementation
       expect(container.padding, equals(testPadding));
     });
 

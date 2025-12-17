@@ -45,7 +45,7 @@ class ModalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
+      elevation: 0,
       surfaceTintColor: context.colorScheme.surfaceTint,
       color: backgroundColor,
       clipBehavior: Clip.hardEdge,

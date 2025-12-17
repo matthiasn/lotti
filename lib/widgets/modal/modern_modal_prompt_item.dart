@@ -54,8 +54,8 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
           gradient: widget.isDefault
               ? LinearGradient(
                   colors: [
-                    goldColor.withValues(alpha: 0.3),
-                    goldColor.withValues(alpha: 0.2),
+                    goldColor.withValues(alpha: 0.45),
+                    goldColor.withValues(alpha: 0.35),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -135,9 +135,11 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
           vertical: AppTheme.cardPadding / 2,
         ),
         backgroundColor: widget.isDefault
-            ? goldColor.withValues(alpha: 0.12)
+            ? goldColor.withValues(alpha: 0.18)
             : context.colorScheme.surfaceContainerHighest,
-        borderColor: widget.isDefault ? goldColor.withValues(alpha: 0.6) : null,
+        borderColor: widget.isDefault
+            ? goldColor.withValues(alpha: 0.85)
+            : context.colorScheme.outline.withValues(alpha: 0.15),
         onTap: widget.onTap,
         isDisabled: widget.isDisabled,
         animationController: controller,
