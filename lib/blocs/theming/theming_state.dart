@@ -4,6 +4,19 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'theming_state.freezed.dart';
 
+/// Light mode surface overrides - forces white backgrounds instead of grey
+class LightModeSurfaces {
+  LightModeSurfaces._();
+
+  static const Color surface = Color(0xFFFFFFFF); // Pure white
+  static const Color surfaceContainerLowest = Color(0xFFFFFFFF);
+  static const Color surfaceContainerLow = Color(0xFFFAFAFA);
+  static const Color surfaceContainer = Color(0xFFF5F5F5);
+  static const Color surfaceContainerHigh = Color(0xFFEFEFEF);
+  static const Color surfaceContainerHighest = Color(0xFFE8E8E8);
+}
+
+/// Standard FlexScheme themes
 final Map<String, FlexScheme> themes = {
   'Material': FlexScheme.material,
   'Material High Contrast': FlexScheme.materialHc,

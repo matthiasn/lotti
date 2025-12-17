@@ -15,6 +15,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -287,8 +288,8 @@ void main() {
       expect(
         clipRRect.borderRadius,
         const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          bottomLeft: Radius.circular(20),
+          topLeft: Radius.circular(AppTheme.cardBorderRadius),
+          bottomLeft: Radius.circular(AppTheme.cardBorderRadius),
         ),
       );
     });

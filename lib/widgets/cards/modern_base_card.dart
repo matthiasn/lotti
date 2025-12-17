@@ -44,13 +44,13 @@ class ModernBaseCard extends StatelessWidget {
     final effectiveBackgroundColor = backgroundColor ??
         (effectiveGradient == null ? context.colorScheme.surface : null);
 
-    // Determine border color
+    // Determine border color - very subtle in light mode, slightly visible in dark mode
     final effectiveBorderColor = borderColor ??
         (isDark
-            ? context.colorScheme.primaryContainer
-                .withValues(alpha: AppTheme.alphaPrimaryContainer)
+            ? context.colorScheme.outlineVariant
+                .withValues(alpha: AppTheme.alphaCardBorderDark)
             : context.colorScheme.outline
-                .withValues(alpha: AppTheme.alphaOutline));
+                .withValues(alpha: AppTheme.alphaCardBorderLight));
 
     return Container(
       margin: margin,
@@ -82,8 +82,6 @@ class ModernBaseCard extends StatelessWidget {
                           : GradientConstants.enhancedShadowSecondaryBlurLight,
                       offset: const Offset(
                           0, GradientConstants.enhancedShadowSecondaryOffsetY),
-                      spreadRadius:
-                          GradientConstants.enhancedShadowSecondarySpread,
                     ),
                   ]
                 : [

@@ -28,22 +28,42 @@ class ModernIconContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = isCompact
         ? AppTheme.iconContainerSizeCompact
         : AppTheme.iconContainerSize;
 
     final iconSize = isCompact ? AppTheme.iconSizeCompact : AppTheme.iconSize;
 
-    final effectiveGradient =
-        gradient ?? GradientThemes.iconContainerGradient(context);
+    // Use a clean, subtle background - primary container tint
+    final effectiveGradient = gradient ??
+        LinearGradient(
+          colors: [
+            context.colorScheme.primaryContainer.withValues(
+              alpha: isDark
+                  ? AppTheme.alphaIconContainerGradientStartDark
+                  : AppTheme.alphaIconContainerGradientStartLight,
+            ),
+            context.colorScheme.primaryContainer.withValues(
+              alpha: isDark
+                  ? AppTheme.alphaIconContainerGradientEndDark
+                  : AppTheme.alphaIconContainerGradientEndLight,
+            ),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
 
+    // Very subtle border - almost invisible in light mode
     final effectiveBorderColor = borderColor ??
-        context.colorScheme.primaryContainer
-            .withValues(alpha: AppTheme.alphaPrimaryBorder);
+        context.colorScheme.primary.withValues(
+          alpha: isDark
+              ? AppTheme.alphaIconContainerBorderDark
+              : AppTheme.alphaIconContainerBorderLight,
+        );
 
-    final effectiveIconColor = iconColor ??
-        context.colorScheme.primary
-            .withValues(alpha: AppTheme.alphaPrimaryIcon);
+    // Vibrant icon color
+    final effectiveIconColor = iconColor ?? context.colorScheme.primary;
 
     return Container(
       width: size,
@@ -55,6 +75,7 @@ class ModernIconContainer extends StatelessWidget {
         ),
         border: Border.all(
           color: effectiveBorderColor,
+          width: AppTheme.iconContainerBorderWidth,
         ),
       ),
       child: Center(
