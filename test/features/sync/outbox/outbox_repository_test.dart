@@ -107,5 +107,104 @@ void main() {
         ),
       ).called(1);
     });
+
+    group('refreshItem', () {
+      test('returns item when found and still pending', () async {
+        final item = OutboxItem(
+          id: 10,
+          message: '{"updated": true}',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          subject: 'subject',
+        );
+
+        when(() => database.getOutboxItemById(10))
+            .thenAnswer((_) async => item);
+
+        final result = await repository.refreshItem(item);
+
+        expect(result, equals(item));
+        verify(() => database.getOutboxItemById(10)).called(1);
+      });
+
+      test('returns null when item not found', () async {
+        final item = OutboxItem(
+          id: 11,
+          message: '{}',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          subject: 'subject',
+        );
+
+        when(() => database.getOutboxItemById(11))
+            .thenAnswer((_) async => null);
+
+        final result = await repository.refreshItem(item);
+
+        expect(result, equals(null));
+      });
+
+      test('returns null when item status is sent', () async {
+        final originalItem = OutboxItem(
+          id: 12,
+          message: '{}',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          subject: 'subject',
+        );
+
+        final sentItem = OutboxItem(
+          id: 12,
+          message: '{}',
+          status: OutboxStatus.sent.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          subject: 'subject',
+        );
+
+        when(() => database.getOutboxItemById(12))
+            .thenAnswer((_) async => sentItem);
+
+        final result = await repository.refreshItem(originalItem);
+
+        expect(result, equals(null));
+      });
+
+      test('returns null when item status is error', () async {
+        final originalItem = OutboxItem(
+          id: 13,
+          message: '{}',
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          subject: 'subject',
+        );
+
+        final errorItem = OutboxItem(
+          id: 13,
+          message: '{}',
+          status: OutboxStatus.error.index,
+          retries: 5,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          subject: 'subject',
+        );
+
+        when(() => database.getOutboxItemById(13))
+            .thenAnswer((_) async => errorItem);
+
+        final result = await repository.refreshItem(originalItem);
+
+        expect(result, equals(null));
+      });
+    });
   });
 }

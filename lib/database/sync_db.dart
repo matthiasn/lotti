@@ -146,6 +146,13 @@ class SyncDatabase extends _$SyncDatabase {
 
   Future<List<OutboxItem>> get allOutboxItems => select(outbox).get();
 
+  /// Get a single outbox item by its ID.
+  /// Used to re-read an item before sending to ensure we have the latest
+  /// message after potential merges.
+  Future<OutboxItem?> getOutboxItemById(int id) {
+    return (select(outbox)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
   Future<List<OutboxItem>> oldestOutboxItems(int limit) {
     return (select(outbox)
           ..where((t) => t.status.equals(OutboxStatus.pending.index))

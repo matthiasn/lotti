@@ -391,8 +391,14 @@ class OutboxService {
                 newSubject: '$hostHash:$localCounter',
               );
 
+              // Log covered clocks for debugging - show all counters per vector clock
+              final coveredVcStrings = coveredClocks
+                  .map((vc) => vc.vclock.values.join(','))
+                  .toList();
               _loggingService.captureEvent(
-                'enqueue MERGED type=SyncJournalEntity id=${journalEntityMsg.id} coveredClocks=${coveredClocks.length}',
+                'enqueue MERGED type=SyncJournalEntity id=${journalEntityMsg.id} '
+                'coveredClocks=${coveredClocks.length} covered=$coveredVcStrings '
+                'latest=${latestVc?.vclock.values.join(',')}',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage',
               );
@@ -525,8 +531,16 @@ class OutboxService {
                 newSubject: subject,
               );
 
+              // Log covered clocks for debugging - show all counters per vector clock
+              final coveredVcStrings = coveredClocks
+                  .map((vc) => vc.vclock.values.join(','))
+                  .toList();
+              final latestVcStr =
+                  entryLinkMsg.entryLink.vectorClock?.vclock.values.join(',');
               _loggingService.captureEvent(
-                'enqueue MERGED type=SyncEntryLink id=$linkId coveredClocks=${coveredClocks.length}',
+                'enqueue MERGED type=SyncEntryLink id=$linkId '
+                'coveredClocks=${coveredClocks.length} covered=$coveredVcStrings '
+                'latest=$latestVcStr',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage',
               );

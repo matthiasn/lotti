@@ -55,6 +55,8 @@ void main() {
       );
       when(() => repo.fetchPending(limit: any<int>(named: 'limit')))
           .thenAnswer((_) async => [pending]);
+      when(() => repo.refreshItem(any<OutboxItem>()))
+          .thenAnswer((_) async => pending);
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       // Sender never completes; processQueue relies on the timeout
       when(() => sender.send(any()))
@@ -109,6 +111,8 @@ void main() {
 
         when(() => repo.fetchPending(limit: any(named: 'limit')))
             .thenAnswer((_) async => [pending]);
+        when(() => repo.refreshItem(any<OutboxItem>()))
+            .thenAnswer((_) async => pending);
         when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
         when(() => sender.send(any())).thenAnswer((_) async => false);
         final events = <String>[];
@@ -165,6 +169,8 @@ void main() {
 
         when(() => repo.fetchPending(limit: any(named: 'limit')))
             .thenAnswer((_) async => [pending]);
+        when(() => repo.refreshItem(any<OutboxItem>()))
+            .thenAnswer((_) async => pending);
         when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
         when(() => sender.send(any())).thenThrow(Exception('boom'));
         final events = <String>[];
@@ -239,6 +245,11 @@ void main() {
         call++;
         return call == 1 ? [a] : [b];
       });
+      var refreshCall = 0;
+      when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
+        refreshCall++;
+        return refreshCall == 1 ? a : b;
+      });
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
       var sendCalls = 0;
@@ -286,6 +297,8 @@ void main() {
         );
         when(() => repo.fetchPending(limit: any(named: 'limit')))
             .thenAnswer((_) async => [pending]);
+        when(() => repo.refreshItem(any<OutboxItem>()))
+            .thenAnswer((_) async => pending);
         when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
         when(() => sender.send(any())).thenAnswer((_) => Future<bool>.delayed(
             const Duration(milliseconds: 100), () => true));
@@ -332,6 +345,8 @@ void main() {
       );
       when(() => repo.fetchPending(limit: any(named: 'limit')))
           .thenAnswer((_) async => [pending]);
+      when(() => repo.refreshItem(any<OutboxItem>()))
+          .thenAnswer((_) async => pending);
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       when(() => sender.send(any())).thenAnswer((_) async => false);
 
@@ -374,6 +389,8 @@ void main() {
       );
       when(() => repo.fetchPending(limit: any(named: 'limit')))
           .thenAnswer((_) async => [pending]);
+      when(() => repo.refreshItem(any<OutboxItem>()))
+          .thenAnswer((_) async => pending);
       when(() => repo.markRetry(any())).thenAnswer((_) async {});
       when(() => repo.markSent(any())).thenAnswer((_) async {});
       // Complete exactly at timeout boundary (50ms)
@@ -422,6 +439,8 @@ void main() {
     );
     when(() => repo.fetchPending(limit: any(named: 'limit')))
         .thenAnswer((_) async => [item]);
+    when(() => repo.refreshItem(any<OutboxItem>()))
+        .thenAnswer((_) async => item);
     when(() => repo.markRetry(any())).thenAnswer((_) async {});
     when(() => sender.send(any())).thenAnswer((_) async => false);
 
@@ -482,6 +501,15 @@ void main() {
             : call == 2
                 ? [item1]
                 : [item2];
+      });
+      var refreshCall = 0;
+      when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
+        refreshCall++;
+        return refreshCall == 1
+            ? item0
+            : refreshCall == 2
+                ? item1
+                : item2;
       });
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       when(() => sender.send(any())).thenAnswer((_) async => false);
@@ -548,6 +576,15 @@ void main() {
                 ? [a1]
                 : [b0];
       });
+      var refreshCall = 0;
+      when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
+        refreshCall++;
+        return refreshCall == 1
+            ? a0
+            : refreshCall == 2
+                ? a1
+                : b0;
+      });
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       when(() => sender.send(any())).thenAnswer((_) async => false);
 
@@ -601,6 +638,17 @@ void main() {
                 ? [s1]
                 : [s2];
       });
+      var refreshCall = 0;
+      when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
+        refreshCall++;
+        return refreshCall == 1
+            ? s0
+            : refreshCall == 2
+                ? s1
+                : refreshCall == 3
+                    ? s2
+                    : s0; // 4th call after reset
+      });
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
       when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
       // First two tries fail, third succeeds
@@ -639,6 +687,181 @@ void main() {
               orElse: () => '')
           .contains('repeats=1');
       expect(hadRepeats2 && hadRepeats1AfterSuccess, isTrue);
+    });
+  });
+
+  group('refresh before send', () {
+    test('sends refreshed message when item updated between fetch and send',
+        () async {
+      final repo = MockOutboxRepository();
+      final sender = MockMessageSender();
+      final log = MockLogging();
+
+      // Initial fetch returns item with old message
+      final oldItem = OutboxItem(
+        id: 100,
+        message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'old-version').toJson()),
+        subject: 'host:refresh-test',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+      );
+
+      // Refreshed item has updated message (simulating merge that happened)
+      final refreshedItem = OutboxItem(
+        id: 100,
+        message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'new-version').toJson()),
+        subject: 'host:refresh-test',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024, 1, 2),
+      );
+
+      when(() => repo.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [oldItem]);
+      when(() => repo.refreshItem(any<OutboxItem>()))
+          .thenAnswer((_) async => refreshedItem);
+      when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+
+      // Capture what message was actually sent
+      SyncMessage? sentMessage;
+      when(() => sender.send(any())).thenAnswer((inv) async {
+        sentMessage = inv.positionalArguments.first as SyncMessage;
+        return true;
+      });
+      when(() => log.captureEvent(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+
+      final proc = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+      );
+
+      await proc.processQueue();
+
+      // Verify the NEW message was sent, not the old one
+      expect(sentMessage, isNotNull);
+      expect(
+        sentMessage,
+        isA<SyncAiConfigDelete>()
+            .having((m) => m.id, 'id', equals('new-version')),
+      );
+      verify(() => repo.markSent(refreshedItem)).called(1);
+    });
+
+    test('skips item when refreshItem returns null (item no longer pending)',
+        () async {
+      final repo = MockOutboxRepository();
+      final sender = MockMessageSender();
+      final log = MockLogging();
+
+      final item = OutboxItem(
+        id: 101,
+        message:
+            jsonEncode(const SyncMessage.aiConfigDelete(id: 'skip').toJson()),
+        subject: 'host:skip-test',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+      );
+
+      when(() => repo.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [item]);
+      // refreshItem returns null - item was sent/deleted by another process
+      when(() => repo.refreshItem(any<OutboxItem>()))
+          .thenAnswer((_) async => null);
+
+      final events = <String>[];
+      when(() => log.captureEvent(captureAny<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
+        events.add(inv.positionalArguments.first.toString());
+      });
+
+      final proc = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+      );
+
+      final result = await proc.processQueue();
+
+      // Verify send was never called
+      verifyNever(() => sender.send(any()));
+      // Verify skip was logged
+      expect(events.any((e) => e.contains('item no longer pending')), isTrue);
+      // Result should indicate no more work (was only item)
+      expect(result.shouldSchedule, isFalse);
+    });
+
+    test('continues to next item when current item becomes non-pending',
+        () async {
+      final repo = MockOutboxRepository();
+      final sender = MockMessageSender();
+      final log = MockLogging();
+
+      final item1 = OutboxItem(
+        id: 102,
+        message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'first-skip').toJson()),
+        subject: 'host:first',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+      );
+      final item2 = OutboxItem(
+        id: 103,
+        message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'second-send').toJson()),
+        subject: 'host:second',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+      );
+
+      // First fetch returns both items
+      when(() => repo.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [item1, item2]);
+      // First refresh returns null (item1 no longer pending), second returns item2
+      var refreshCall = 0;
+      when(() => repo.refreshItem(any<OutboxItem>())).thenAnswer((_) async {
+        refreshCall++;
+        return refreshCall == 1 ? null : item2;
+      });
+      when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+      when(() => sender.send(any())).thenAnswer((_) async => true);
+      when(() => log.captureEvent(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenAnswer((_) {});
+
+      final proc = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+      );
+
+      // First call: item1 skipped because refresh returns null
+      final result1 = await proc.processQueue();
+      // Should schedule immediately (hasMore=true, item was skipped)
+      expect(result1.shouldSchedule, isTrue);
+      expect(result1.nextDelay, Duration.zero);
+
+      // Second call would process item2 (new fetch)
+      when(() => repo.fetchPending(limit: any(named: 'limit')))
+          .thenAnswer((_) async => [item2]);
+      final result2 = await proc.processQueue();
+      // item2 sent successfully, no more items
+      expect(result2.shouldSchedule, isFalse);
+      verify(() => sender.send(any())).called(1);
     });
   });
 }
