@@ -902,6 +902,22 @@ class MatrixStreamConsumer implements SyncPipeline {
     // Test seam: allow tests to inject behavior/failures to exercise
     // scheduling error handling paths.
     _scheduleLiveScanTestHook?.call();
+    // Ensure in-order ingest: defer live scan signals while catch-up is
+    // processing older events. This prevents newer events from being recorded
+    // before older ones, which would cause false positive gap detection.
+    // Note: Direct calls to _scanLiveTimeline() (e.g., from forceRescan()) are
+    // not affected by this guard, allowing the post-catch-up scan to proceed.
+    if (_catchUpInFlight) {
+      if (!_liveScanDeferred) {
+        _liveScanDeferred = true;
+        _loggingService.captureEvent(
+          'signal.liveScan.deferred.catchUpInFlight',
+          domain: syncLoggingDomain,
+          subDomain: 'signal',
+        );
+      }
+      return;
+    }
     // Debounced scheduler for live scans. It's valid for _liveTimeline to be
     // null during early startup (hydration/catch-up still in progress). We
     // record the signal and log for observability either way.

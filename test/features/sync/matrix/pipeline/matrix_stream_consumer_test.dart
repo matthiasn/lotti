@@ -3806,6 +3806,130 @@ void main() {
         expect(scanCalls, greaterThan(scanAfterStart)); // Scan was called
       });
     });
+
+    test('live scan deferred during catch-up ensures in-order ingest',
+        () async {
+      // This test verifies that live scan signals are deferred while catch-up is
+      // processing older events, ensuring events are ingested in chronological
+      // order and preventing false positive gap detection.
+      //
+      // Scenario: Device wakes from standby (>30s gap), triggering wake catch-up.
+      // While that catch-up is running, another signal triggers _scheduleLiveScan.
+      // The live scan should be deferred until catch-up completes.
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'marker1');
+
+      final streamEvent = MockEvent();
+      when(() => streamEvent.eventId).thenReturn('stream3');
+      when(() => streamEvent.roomId).thenReturn('!room:server');
+      when(() => streamEvent.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(3000));
+      when(() => streamEvent.senderId).thenReturn('@other:server');
+      when(() => streamEvent.content)
+          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(() => streamEvent.attachmentMimetype).thenReturn('');
+
+      when(() => timeline.events).thenReturn(<Event>[streamEvent]);
+
+      // Track captured log messages
+      final capturedMessages = <String>[];
+      when(
+        () => logger.captureEvent(
+          any<String>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedMessages.add(invocation.positionalArguments[0] as String);
+      });
+
+      // Completer to control when wake catch-up finishes
+      final catchupCompleter = Completer<void>();
+      var catchupCallCount = 0;
+
+      // Stub for snapshot-only overload (used by catch-up)
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async {
+        catchupCallCount++;
+        if (catchupCallCount > 1) {
+          // Second catch-up (from wake detection) - wait for completer
+          await catchupCompleter.future;
+        }
+        return timeline;
+      });
+      // Stub for callbacks-only overload (used by live timeline attachment)
+      when(
+        () => room.getTimeline(
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        ),
+      ).thenAnswer((_) async => timeline);
+
+      final consumer = MatrixStreamConsumer(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      fakeAsync((async) {
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+
+        // Let initial catch-up complete and first live scan run
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        // Clear captured messages to isolate the test
+        capturedMessages.clear();
+
+        // Simulate wake from standby by advancing time beyond the 30s threshold
+        // This will trigger wake catch-up on the next _scheduleLiveScan call
+        async.elapse(const Duration(seconds: 35));
+
+        // First signal after wake: triggers wake detection and catch-up
+        streamController.add(streamEvent);
+        async.flushMicrotasks();
+
+        // Verify wake was detected
+        expect(
+          capturedMessages.any((m) => m.contains('wake.detected')),
+          isTrue,
+          reason: 'Wake from standby should be detected',
+        );
+
+        // Second signal while wake catch-up is still running
+        // This should be deferred
+        capturedMessages.clear();
+        streamController.add(streamEvent);
+        async.flushMicrotasks();
+
+        // Verify the deferred log message was emitted
+        expect(
+          capturedMessages,
+          contains('signal.liveScan.deferred.catchUpInFlight'),
+          reason:
+              'Live scan should be deferred while catch-up is processing older events',
+        );
+
+        // Complete the catch-up to clean up
+        catchupCompleter.complete();
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+      });
+    });
   });
 
   test('retry backoff blocks until due, retryNow forces scan', () async {

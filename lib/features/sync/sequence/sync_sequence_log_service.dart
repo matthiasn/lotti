@@ -100,6 +100,21 @@ class SyncSequenceLogService {
     // Update host activity for the originating host - they're online!
     await _syncDatabase.updateHostActivity(originatingHostId, now);
 
+    // IMPORTANT: Process covered vector clocks BEFORE gap detection.
+    // This prevents false positives: covered counters are pre-emptively marked
+    // as received, so gap detection (which checks `existing == null`) will
+    // skip them instead of incorrectly marking them as missing.
+    if (coveredVectorClocks != null &&
+        coveredVectorClocks.isNotEmpty &&
+        myHost != null) {
+      await _markCoveredCountersAsReceived(
+        coveredVectorClocks: coveredVectorClocks,
+        entryId: entryId,
+        payloadType: payloadType,
+        myHost: myHost,
+      );
+    }
+
     // Check gaps for ALL hosts in the VC (except ourselves)
     for (final entry in vectorClock.vclock.entries) {
       final hostId = entry.key;
@@ -294,18 +309,8 @@ class SyncSequenceLogService {
       payloadVectorClock: vectorClock,
     );
 
-    // Process covered vector clocks - mark counters from superseded entries
-    // as received to prevent false gap detection.
-    if (coveredVectorClocks != null &&
-        coveredVectorClocks.isNotEmpty &&
-        myHost != null) {
-      await _markCoveredCountersAsReceived(
-        coveredVectorClocks: coveredVectorClocks,
-        entryId: entryId,
-        payloadType: payloadType,
-        myHost: myHost,
-      );
-    }
+    // Note: Covered vector clocks are processed at the START of this method,
+    // BEFORE gap detection, to prevent false positives.
 
     return gaps;
   }

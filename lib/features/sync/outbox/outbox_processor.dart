@@ -81,11 +81,31 @@ class OutboxProcessor {
     );
 
     try {
-      final syncMessage = _decodeMessage(nextItem);
+      // Re-read item to get the latest message after any merges that may
+      // have occurred since fetchPending(). This ensures coveredVectorClocks
+      // accumulated during the processing delay are included.
+      final refreshedItem = await _repository.refreshItem(nextItem);
+      if (refreshedItem == null) {
+        // Item was deleted or status changed during processing
+        try {
+          _loggingService.captureEvent(
+            'skip ${nextItem.subject} - item no longer pending',
+            domain: 'OUTBOX',
+            subDomain: 'sendNext()',
+          );
+        } catch (_) {}
+        // Continue to next item immediately
+        final hasMore = pendingItems.length > 1;
+        return hasMore
+            ? OutboxProcessingResult.schedule(Duration.zero)
+            : OutboxProcessingResult.none;
+      }
+
+      final syncMessage = _decodeMessage(refreshedItem);
       // Log the decoded message type to improve visibility, especially for links
       try {
         _loggingService.captureEvent(
-          'sending type=${syncMessage.runtimeType} subject=${nextItem.subject}',
+          'sending type=${syncMessage.runtimeType} subject=${refreshedItem.subject}',
           domain: 'OUTBOX',
           subDomain: 'sendNext()',
         );
@@ -101,18 +121,18 @@ class OutboxProcessor {
       });
 
       if (!success) {
-        final nextAttempts = nextItem.retries + 1;
-        await _repository.markRetry(nextItem);
+        final nextAttempts = refreshedItem.retries + 1;
+        await _repository.markRetry(refreshedItem);
         // Track repeated failures for quick visibility on head-of-queue pins.
-        if (_lastFailedSubject == nextItem.subject) {
+        if (_lastFailedSubject == refreshedItem.subject) {
           _lastFailedRepeats++;
         } else {
-          _lastFailedSubject = nextItem.subject;
+          _lastFailedSubject = refreshedItem.subject;
           _lastFailedRepeats = 1;
         }
         try {
           _loggingService.captureEvent(
-            'sendFailed subject=${nextItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
+            'sendFailed subject=${refreshedItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
             domain: 'OUTBOX',
             subDomain: 'retry',
           );
@@ -120,7 +140,7 @@ class OutboxProcessor {
         if (nextAttempts >= maxRetriesForDiagnostics) {
           try {
             _loggingService.captureEvent(
-              'retryCapReached subject=${nextItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
+              'retryCapReached subject=${refreshedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
               domain: 'OUTBOX',
               subDomain: 'retry.cap',
             );
@@ -131,14 +151,14 @@ class OutboxProcessor {
         return OutboxProcessingResult.schedule(retryDelay);
       }
 
-      await _repository.markSent(nextItem);
+      await _repository.markSent(refreshedItem);
       _loggingService.captureEvent(
-        '${nextItem.subject} done',
+        '${refreshedItem.subject} done',
         domain: 'OUTBOX',
         subDomain: 'sendNext()',
       );
       // Reset repeat tracker on success for this subject.
-      if (_lastFailedSubject == nextItem.subject) {
+      if (_lastFailedSubject == refreshedItem.subject) {
         _lastFailedSubject = null;
         _lastFailedRepeats = 0;
       }

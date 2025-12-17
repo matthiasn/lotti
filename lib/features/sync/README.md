@@ -160,6 +160,15 @@ complete reconstruction of sync state.
   communication with them. The originating host is always considered online
   since they just sent us the current message. Sequence entries are still
   recorded for offline hosts to enable backfill responses later.
+- **Covered Vector Clocks:** When an entry is updated multiple times before being
+  sent (e.g., counter 10→12→15→20), the final message includes `coveredVectorClocks`
+  with the intermediate counters. These are processed BEFORE gap detection to
+  prevent false positives — covered counters are pre-emptively marked as received
+  so gap detection skips them.
+- **In-Order Ingest:** Live scan signals are deferred while catch-up is processing
+  older events (`_catchUpInFlight` guard in `_scheduleLiveScan()`). This ensures
+  events are ingested in chronological order, preventing false positive gap
+  detection that would occur if newer events were recorded before older ones.
 
 **Ghost Entry Resolution:**
 Different payload types can share the same sequence counter. When one type

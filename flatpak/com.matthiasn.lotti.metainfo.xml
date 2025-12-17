@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.758" date="2025-12-18">
+      <description>
+        <p>Sync Gap Detection Fix: Prevents false positive gap detection during reconnection. Covered vector clocks are now processed before gap detection, and live scan signals are deferred during catch-up to ensure in-order event processing.</p>
+      </description>
+    </release>
     <release version="0.9.757" date="2025-12-16">
       <description>
         <p>Nested AI Responses: Generated prompts from audio entries now display directly beneath them in an expandable section. Includes smooth collapse/expand animation and swipe-to-delete with confirmation.</p>

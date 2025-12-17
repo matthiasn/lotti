@@ -5,6 +5,10 @@ import 'package:lotti/database/sync_db.dart';
 abstract class OutboxRepository {
   Future<List<OutboxItem>> fetchPending({int limit = 10});
 
+  /// Re-fetch an item by ID to get the latest message after potential merges.
+  /// Returns null if the item was deleted or status changed.
+  Future<OutboxItem?> refreshItem(OutboxItem item);
+
   Future<void> markSent(OutboxItem item);
 
   Future<void> markRetry(OutboxItem item);
@@ -22,6 +26,16 @@ class DatabaseOutboxRepository implements OutboxRepository {
   @override
   Future<List<OutboxItem>> fetchPending({int limit = 10}) {
     return _database.oldestOutboxItems(limit);
+  }
+
+  @override
+  Future<OutboxItem?> refreshItem(OutboxItem item) async {
+    final refreshed = await _database.getOutboxItemById(item.id);
+    // Only return if still pending (hasn't been sent/errored by another process)
+    if (refreshed != null && refreshed.status == OutboxStatus.pending.index) {
+      return refreshed;
+    }
+    return null;
   }
 
   @override

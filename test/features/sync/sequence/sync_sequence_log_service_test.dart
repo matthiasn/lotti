@@ -2596,6 +2596,101 @@ void main() {
         SyncSequencePayloadType.entryLink.index,
       );
     });
+
+    test(
+        'covered clocks processed BEFORE gap detection prevents false positives',
+        () async {
+      // This test verifies the fix for the race condition where gap detection
+      // would mark covered counters as missing before they were processed.
+      //
+      // Scenario: Entry rapidly updated on sender (counters 10→12→15→20)
+      // Only ONE message sent with counter 20 and coveredVectorClocks=[10, 12, 15]
+      // Without the fix: gap detection sees lastSeen=5, marks 6-19 as missing
+      // With the fix: covered clocks (10, 12, 15) are inserted first,
+      //              then gap detection skips them (existing != null)
+      const vectorClock = VectorClock({aliceHostId: 20});
+      const entryId = 'rapidly-updated-entry';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 10}),
+        const VectorClock({aliceHostId: 12}),
+        const VectorClock({aliceHostId: 15}),
+      ];
+
+      // Setup: lastSeen is 5, so gap detection would normally mark 6-19 as missing
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 5);
+
+      // Track all recordSequenceEntry calls in order
+      final insertedRecords = <SyncSequenceLogCompanion>[];
+
+      // Mock getEntryByHostAndCounter to check if the counter was already inserted
+      // in THIS test run (simulating the database state)
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, any()))
+          .thenAnswer((invocation) async {
+        final counter = invocation.positionalArguments[1] as int;
+        // Check if this counter was already inserted
+        final existingRecord = insertedRecords.where(
+          (r) => r.counter.value == counter,
+        );
+        if (existingRecord.isNotEmpty) {
+          return _createLogItem(aliceHostId, counter,
+              status: SyncSequenceStatus.received);
+        }
+        return null;
+      });
+
+      // When recordSequenceEntry is called, track the record
+      when(() => mockDb.recordSequenceEntry(any()))
+          .thenAnswer((invocation) async {
+        final companion =
+            invocation.positionalArguments[0] as SyncSequenceLogCompanion;
+        insertedRecords.add(companion);
+        return 1;
+      });
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      // Analyze the insertion order and statuses
+      final missingCounters = <int>[];
+      final receivedCounters = <int>[];
+
+      for (final record in insertedRecords) {
+        if (record.status.value == SyncSequenceStatus.missing.index) {
+          missingCounters.add(record.counter.value);
+        } else if (record.status.value == SyncSequenceStatus.received.index) {
+          receivedCounters.add(record.counter.value);
+        }
+      }
+
+      // KEY ASSERTION: The FIRST 3 records should be the covered counters (10, 12, 15)
+      // because covered clocks are processed BEFORE gap detection
+      expect(insertedRecords.length, greaterThanOrEqualTo(3));
+      final firstThreeCounters =
+          insertedRecords.take(3).map((r) => r.counter.value).toSet();
+      expect(firstThreeCounters, containsAll([10, 12, 15]),
+          reason:
+              'Covered counters should be inserted FIRST before gap detection');
+
+      // Covered counters should be marked as received, not missing
+      expect(receivedCounters, containsAll([10, 12, 15]),
+          reason: 'Covered counters should be marked as received');
+      expect(missingCounters, isNot(contains(10)),
+          reason: 'Counter 10 is covered, should not be marked as missing');
+      expect(missingCounters, isNot(contains(12)),
+          reason: 'Counter 12 is covered, should not be marked as missing');
+      expect(missingCounters, isNot(contains(15)),
+          reason: 'Counter 15 is covered, should not be marked as missing');
+
+      // Non-covered gaps should be marked as missing
+      expect(missingCounters,
+          containsAll([6, 7, 8, 9, 11, 13, 14, 16, 17, 18, 19]),
+          reason: 'Non-covered gaps should be marked as missing');
+    });
   });
 }
 
