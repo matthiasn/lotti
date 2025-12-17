@@ -61,6 +61,13 @@ void main() {
     when(() => mockDb.updateHostActivity(any(), any()))
         .thenAnswer((_) async => 1);
 
+    // Stub getHostLastSeen for all tests - by default alice and bob are "online"
+    // (have been seen before). Tests for offline hosts will override this.
+    when(() => mockDb.getHostLastSeen(aliceHostId))
+        .thenAnswer((_) async => DateTime(2025, 1, 1));
+    when(() => mockDb.getHostLastSeen(bobHostId))
+        .thenAnswer((_) async => DateTime(2025, 1, 1));
+
     // Stub getPendingEntriesByPayloadId for resolvePendingHints (default: no pending)
     when(
       () => mockDb.getPendingEntriesByPayloadId(
@@ -580,6 +587,219 @@ void main() {
           subDomain: 'largeGap',
         ),
       );
+    });
+  });
+
+  group('gap detection for offline hosts', () {
+    test('skips gap detection for host that has never been online', () async {
+      // Scenario: We receive an entry from alice with a VC containing charlie's
+      // counter. Charlie has never sent us a message directly (never been
+      // "online"), so we should NOT detect gaps for charlie.
+      const charlieHostId = 'charlie-host-uuid';
+      const vectorClock = VectorClock({aliceHostId: 5, charlieHostId: 10});
+      const entryId = 'entry-alice';
+
+      // Alice is online (has been seen before)
+      when(() => mockDb.getHostLastSeen(aliceHostId))
+          .thenAnswer((_) async => DateTime(2025, 1, 1));
+      // Charlie has NEVER been online (never sent us a message)
+      when(() => mockDb.getHostLastSeen(charlieHostId))
+          .thenAnswer((_) async => null);
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 4); // No gap for alice
+      when(() => mockDb.getLastCounterForHost(charlieHostId)).thenAnswer(
+          (_) async => 5); // Would be a gap (5 -> 10) if we detected it
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(charlieHostId, 10))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      // Should NOT detect any gaps - charlie is offline so we skip gap detection
+      expect(gaps, isEmpty);
+
+      // Should log that we skipped gap detection for charlie
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('skipGapDetection')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'skipGap',
+        ),
+      ).called(1);
+
+      // Should NOT check for missing entries for charlie (counters 6-9)
+      verifyNever(() => mockDb.getEntryByHostAndCounter(charlieHostId, 6));
+      verifyNever(() => mockDb.getEntryByHostAndCounter(charlieHostId, 7));
+      verifyNever(() => mockDb.getEntryByHostAndCounter(charlieHostId, 8));
+      verifyNever(() => mockDb.getEntryByHostAndCounter(charlieHostId, 9));
+    });
+
+    test('detects gaps for originating host even if not previously online',
+        () async {
+      // Edge case: The originating host might not have been in our hostActivity
+      // table yet (first message from them). But since they just sent us a
+      // message, we update their activity BEFORE gap detection, so they're
+      // "online" now.
+      const newHostId = 'new-host-uuid';
+      const vectorClock = VectorClock({newHostId: 10});
+      const entryId = 'entry-new';
+
+      // New host - first time we've seen them, but they ARE the originator
+      // The implementation updates host activity BEFORE gap detection
+      when(() => mockDb.getHostLastSeen(newHostId))
+          .thenAnswer((_) async => null);
+
+      when(() => mockDb.getLastCounterForHost(newHostId))
+          .thenAnswer((_) async => 5); // Gap: 6, 7, 8, 9
+      when(() => mockDb.getEntryByHostAndCounter(newHostId, any()))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: newHostId,
+      );
+
+      // SHOULD detect gaps for the originating host even though they weren't
+      // previously in our hostActivity (they're online NOW - they just sent us
+      // a message)
+      expect(gaps.length, 4);
+      expect(gaps.map((g) => g.counter).toList(), [6, 7, 8, 9]);
+    });
+
+    test('detects gaps for known online hosts in multi-host VC', () async {
+      // Scenario: Both alice and bob are known online hosts. We should detect
+      // gaps for both of them.
+      const vectorClock = VectorClock({aliceHostId: 10, bobHostId: 8});
+      const entryId = 'entry-alice';
+
+      // Both hosts are online
+      when(() => mockDb.getHostLastSeen(aliceHostId))
+          .thenAnswer((_) async => DateTime(2025, 1, 1));
+      when(() => mockDb.getHostLastSeen(bobHostId))
+          .thenAnswer((_) async => DateTime(2025, 1, 1));
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 7); // Gap: 8, 9
+      when(() => mockDb.getLastCounterForHost(bobHostId))
+          .thenAnswer((_) async => 5); // Gap: 6, 7
+      when(() => mockDb.getEntryByHostAndCounter(any(), any()))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      // Should detect gaps for BOTH hosts
+      expect(gaps.length, 4);
+      final aliceGaps = gaps.where((g) => g.hostId == aliceHostId).toList();
+      final bobGaps = gaps.where((g) => g.hostId == bobHostId).toList();
+      expect(aliceGaps.length, 2);
+      expect(bobGaps.length, 2);
+    });
+
+    test('mixed online/offline hosts in VC - only detect gaps for online',
+        () async {
+      // Scenario: VC contains alice (online), bob (online), and charlie
+      // (offline). Should only detect gaps for alice and bob.
+      const charlieHostId = 'charlie-host-uuid';
+      const vectorClock =
+          VectorClock({aliceHostId: 10, bobHostId: 8, charlieHostId: 15});
+      const entryId = 'entry-alice';
+
+      // Alice and bob are online, charlie is not
+      when(() => mockDb.getHostLastSeen(aliceHostId))
+          .thenAnswer((_) async => DateTime(2025, 1, 1));
+      when(() => mockDb.getHostLastSeen(bobHostId))
+          .thenAnswer((_) async => DateTime(2025, 1, 1));
+      when(() => mockDb.getHostLastSeen(charlieHostId))
+          .thenAnswer((_) async => null);
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 8); // Gap: 9
+      when(() => mockDb.getLastCounterForHost(bobHostId))
+          .thenAnswer((_) async => 6); // Gap: 7
+      when(() => mockDb.getLastCounterForHost(charlieHostId))
+          .thenAnswer((_) async => 10); // Would be gap: 11-14 if online
+      when(() => mockDb.getEntryByHostAndCounter(any(), any()))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      // Should only detect gaps for alice and bob, NOT charlie
+      expect(gaps.length, 2);
+      final hostIds = gaps.map((g) => g.hostId).toSet();
+      expect(hostIds, containsAll([aliceHostId, bobHostId]));
+      expect(hostIds, isNot(contains(charlieHostId)));
+
+      // Should log skipGapDetection for charlie
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('skipGapDetection')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'skipGap',
+        ),
+      ).called(1);
+    });
+
+    test('still records sequence entries for offline hosts (no gap detection)',
+        () async {
+      // Even though we skip gap detection for offline hosts, we should still
+      // record the sequence entry for their counter (to enable backfill
+      // responses later).
+      const charlieHostId = 'charlie-host-uuid';
+      const vectorClock = VectorClock({aliceHostId: 5, charlieHostId: 10});
+      const entryId = 'entry-alice';
+
+      when(() => mockDb.getHostLastSeen(aliceHostId))
+          .thenAnswer((_) async => DateTime(2025, 1, 1));
+      when(() => mockDb.getHostLastSeen(charlieHostId))
+          .thenAnswer((_) async => null);
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async => 4);
+      when(() => mockDb.getLastCounterForHost(charlieHostId))
+          .thenAnswer((_) async => 5); // Would be gap if online
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.getEntryByHostAndCounter(charlieHostId, 10))
+          .thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      final captured = verify(
+        () => mockDb.recordSequenceEntry(captureAny()),
+      ).captured;
+
+      // Should have 2 records: alice:5 and charlie:10 (but no missing entries
+      // for charlie:6-9)
+      expect(captured.length, 2);
+
+      final hostIds = captured
+          .map((c) => (c as SyncSequenceLogCompanion).hostId.value)
+          .toSet();
+      expect(hostIds, containsAll([aliceHostId, charlieHostId]));
     });
   });
 
