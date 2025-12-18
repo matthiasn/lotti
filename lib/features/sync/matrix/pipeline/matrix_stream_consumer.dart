@@ -816,8 +816,9 @@ class MatrixStreamConsumer implements SyncPipeline {
     _pendingSyncSubscription?.cancel();
 
     final client = _sessionManager.client;
-    _pendingSyncSubscription = client.onSync.stream.listen((syncUpdate) {
-      _pendingSyncSubscription?.cancel();
+    // Use .first.asStream() to create a single-event stream that auto-cancels
+    _pendingSyncSubscription =
+        client.onSync.stream.first.asStream().listen((syncUpdate) {
       _pendingSyncSubscription = null;
       _loggingService.captureEvent(
         'pendingSyncListener.triggered, scheduling follow-up catch-up',

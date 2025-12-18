@@ -22,7 +22,7 @@ The catch-up strategy calls `room.getTimeline()` which returns events from the *
 
 ### Key Features
 
-1. **Sync wait before catch-up**: All catch-up paths wait for SDK sync to complete (up to 10s timeout)
+1. **Sync wait before catch-up**: All catch-up paths wait for SDK sync to complete (up to 30s timeout)
 2. **Follow-up listener for slow networks**: If timeout occurs, a one-time listener triggers another catch-up when sync eventually completes
 3. **Test seam**: `skipSyncWait` parameter allows tests to bypass sync waiting
 
