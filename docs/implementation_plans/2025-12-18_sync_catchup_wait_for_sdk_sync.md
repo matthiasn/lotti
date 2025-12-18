@@ -107,10 +107,18 @@ All paths now wait for sync:
 
 ## Test Results
 
-All 178 tests in `test/features/sync/matrix/pipeline/` pass:
-- 87 tests in `matrix_stream_consumer_test.dart`
+All 182 tests in `test/features/sync/matrix/pipeline/` pass:
+- 91 tests in `matrix_stream_consumer_test.dart` (including 4 new SDK sync wait tests)
 - 16 tests in `matrix_stream_consumer_signal_test.dart`
 - Additional tests in other pipeline test files
+
+### New Tests Added
+
+Group: "SDK sync wait before catch-up"
+1. **waits for sync completion before catch-up and logs synced=true** - Verifies sync completes within timeout
+2. **times out and sets up pending listener on slow sync** - Verifies timeout logs and synced=false
+3. **pending sync listener triggers follow-up catch-up after timeout** - Verifies follow-up mechanism
+4. **dispose completes without error when pending sync subscription exists** - Verifies clean disposal
 
 ## Rollback
 

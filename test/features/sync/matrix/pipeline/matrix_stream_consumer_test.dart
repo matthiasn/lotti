@@ -20,7 +20,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
-// No internal SDK imports in tests
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
@@ -8081,6 +8081,394 @@ void main() {
         );
 
         streamController.close();
+      });
+    });
+  });
+
+  group('SDK sync wait before catch-up', () {
+    test('waits for sync completion before catch-up and logs synced=true', () {
+      fakeAsync((async) {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        // Create a fake stream controller for onSync
+        final cachedController = CachedStreamController<SyncUpdate>();
+        addTearDown(cachedController.close);
+
+        final capturedLogs = <String>[];
+        when(() => logger.captureEvent(
+              captureAny<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+            )).thenAnswer((inv) {
+          capturedLogs.add(inv.positionalArguments.first.toString());
+        });
+        when(() => logger.captureException(
+              any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).thenReturn(null);
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => client.onSync).thenReturn(cachedController);
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenAnswer((_) async {});
+
+        // Use skipSyncWait: false to test the actual sync wait logic
+        final consumer = MatrixStreamConsumer(
+          skipSyncWait: false,
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          sentEventRegistry: SentEventRegistry(),
+        );
+
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+
+        // Emit a sync update to simulate SDK sync completion
+        cachedController.add(SyncUpdate(
+          nextBatch: 'batch1',
+          rooms: RoomsUpdate(),
+        ));
+        async.flushMicrotasks();
+
+        // Allow catch-up to proceed
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        // Verify log shows synced=true
+        expect(
+          capturedLogs
+              .any((l) => l.contains('catchup.waitForSync synced=true')),
+          isTrue,
+          reason: 'Should log synced=true when sync completes before timeout',
+        );
+
+        // Should NOT have timeout log
+        expect(
+          capturedLogs.any((l) => l.contains('waitForSync.timeout')),
+          isFalse,
+          reason: 'Should not timeout when sync completes quickly',
+        );
+
+        consumer.dispose();
+        async.flushMicrotasks();
+      });
+    });
+
+    test('times out and sets up pending listener on slow sync', () {
+      fakeAsync((async) {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        final cachedController = CachedStreamController<SyncUpdate>();
+        addTearDown(cachedController.close);
+
+        final capturedLogs = <String>[];
+        when(() => logger.captureEvent(
+              captureAny<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+            )).thenAnswer((inv) {
+          capturedLogs.add(inv.positionalArguments.first.toString());
+        });
+        when(() => logger.captureException(
+              any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).thenReturn(null);
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => client.onSync).thenReturn(cachedController);
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenAnswer((_) async {});
+
+        final consumer = MatrixStreamConsumer(
+          skipSyncWait: false,
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          sentEventRegistry: SentEventRegistry(),
+        );
+
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+
+        // Do NOT emit sync - let it timeout
+        // Elapse past the 30s timeout
+        async.elapse(const Duration(seconds: 35));
+        async.flushMicrotasks();
+
+        // Verify timeout log
+        expect(
+          capturedLogs.any((l) => l.contains('waitForSync.timeout')),
+          isTrue,
+          reason: 'Should log timeout when sync does not complete in time',
+        );
+
+        // Verify synced=false
+        expect(
+          capturedLogs
+              .any((l) => l.contains('catchup.waitForSync synced=false')),
+          isTrue,
+          reason: 'Should log synced=false on timeout',
+        );
+
+        consumer.dispose();
+        async.flushMicrotasks();
+      });
+    });
+
+    test('pending sync listener triggers follow-up catch-up after timeout', () {
+      fakeAsync((async) {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        final cachedController = CachedStreamController<SyncUpdate>();
+        addTearDown(cachedController.close);
+
+        final capturedLogs = <String>[];
+        when(() => logger.captureEvent(
+              captureAny<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+            )).thenAnswer((inv) {
+          capturedLogs.add(inv.positionalArguments.first.toString());
+        });
+        when(() => logger.captureException(
+              any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).thenReturn(null);
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => client.onSync).thenReturn(cachedController);
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenAnswer((_) async {});
+
+        final consumer = MatrixStreamConsumer(
+          skipSyncWait: false,
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          sentEventRegistry: SentEventRegistry(),
+        );
+
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+
+        // Let it timeout (30s)
+        async.elapse(const Duration(seconds: 35));
+        async.flushMicrotasks();
+
+        // Clear logs to isolate the follow-up catch-up
+        capturedLogs.clear();
+
+        // Now emit sync after timeout - this should trigger the pending listener
+        cachedController.add(SyncUpdate(
+          nextBatch: 'batch2',
+          rooms: RoomsUpdate(),
+        ));
+        async.flushMicrotasks();
+
+        // Allow follow-up catch-up to run
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
+
+        // Verify pending listener triggered
+        expect(
+          capturedLogs.any((l) => l.contains('pendingSyncListener.triggered')),
+          isTrue,
+          reason:
+              'Pending sync listener should trigger when sync completes after timeout',
+        );
+
+        consumer.dispose();
+        async.flushMicrotasks();
+      });
+    });
+
+    test(
+        'dispose completes without error when pending sync subscription exists',
+        () {
+      fakeAsync((async) {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        final cachedController = CachedStreamController<SyncUpdate>();
+        addTearDown(cachedController.close);
+
+        when(() => logger.captureEvent(
+              any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+            )).thenReturn(null);
+        when(() => logger.captureException(
+              any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).thenReturn(null);
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => client.onSync).thenReturn(cachedController);
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => room.getTimeline(limit: any(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenAnswer((_) async {});
+
+        final consumer = MatrixStreamConsumer(
+          skipSyncWait: false,
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          sentEventRegistry: SentEventRegistry(),
+        );
+
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+
+        // Let it timeout to set up pending listener
+        async.elapse(const Duration(seconds: 35));
+        async.flushMicrotasks();
+
+        // Dispose should complete without error even with pending subscription
+        expect(
+          () {
+            unawaited(consumer.dispose());
+            async.flushMicrotasks();
+            async.elapse(const Duration(milliseconds: 100));
+            async.flushMicrotasks();
+          },
+          returnsNormally,
+          reason: 'Dispose should complete without error',
+        );
       });
     });
   });
