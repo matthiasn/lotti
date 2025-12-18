@@ -3848,11 +3848,13 @@ void main() {
       var catchupCallCount = 0;
 
       // Stub for snapshot-only overload (used by catch-up)
+      // Initial catch-up (1st) and retry (2nd) should complete immediately.
+      // Wake catch-up (3rd+) waits for completer to simulate in-flight state.
       when(() => room.getTimeline(limit: any(named: 'limit')))
           .thenAnswer((_) async {
         catchupCallCount++;
-        if (catchupCallCount > 1) {
-          // Second catch-up (from wake detection) - wait for completer
+        if (catchupCallCount > 2) {
+          // Wake catch-up (from wake detection) - wait for completer
           await catchupCompleter.future;
         }
         return timeline;
@@ -3888,7 +3890,15 @@ void main() {
         unawaited(consumer.start());
         async.flushMicrotasks();
 
-        // Let initial catch-up complete and first live scan run
+        // Let initial catch-up complete
+        async.elapse(const Duration(milliseconds: 200));
+        async.flushMicrotasks();
+
+        // Trigger a live scan during steady state to set _lastLiveScanAt
+        // This is required for wake detection to work (it checks the gap since
+        // the last scan)
+        streamController.add(streamEvent);
+        async.flushMicrotasks();
         async.elapse(const Duration(milliseconds: 500));
         async.flushMicrotasks();
 
@@ -3901,6 +3911,9 @@ void main() {
 
         // First signal after wake: triggers wake detection and catch-up
         streamController.add(streamEvent);
+        async.flushMicrotasks();
+        // Elapse time to allow processing mutex waits if needed
+        async.elapse(const Duration(milliseconds: 200));
         async.flushMicrotasks();
 
         // Verify wake was detected
@@ -3927,7 +3940,7 @@ void main() {
         // Complete the catch-up to clean up
         catchupCompleter.complete();
         async.flushMicrotasks();
-        async.elapse(const Duration(milliseconds: 500));
+        async.elapse(const Duration(seconds: 1));
       });
     });
   });
@@ -7550,6 +7563,441 @@ void main() {
         expect(capturedEvents, isNotEmpty);
 
         await consumer.dispose();
+      });
+    });
+  });
+
+  group('guarded catch-up retry', () {
+    test('skips when catch-up already in flight', () async {
+      fakeAsync((async) async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+        final streamController = StreamController<Event>.broadcast();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => streamController.stream);
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenAnswer((_) async {});
+        when(() => processor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: journalDb,
+            )).thenAnswer((_) async {});
+
+        // Track captured log messages
+        final capturedMessages = <String>[];
+        when(
+          () => logger.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedMessages.add(invocation.positionalArguments[0] as String);
+        });
+        when(
+          () => logger.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenReturn(null);
+
+        // Return a stored marker to trigger the catch-up retry path
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => 'stored-marker');
+
+        // Create a completer to block the initial catch-up slice
+        final catchupCompleter = Completer<void>();
+        var catchupCallCount = 0;
+
+        when(() => room.getTimeline(limit: any<int>(named: 'limit')))
+            .thenAnswer((_) async {
+          catchupCallCount++;
+          if (catchupCallCount == 1) {
+            // First catch-up blocks to keep _catchUpInFlight true
+            await catchupCompleter.future;
+          }
+          return timeline;
+        });
+        when(
+          () => room.getTimeline(
+            onNewEvent: any<void Function()?>(named: 'onNewEvent'),
+            onInsert: any<void Function(int)?>(named: 'onInsert'),
+            onChange: any<void Function(int)?>(named: 'onChange'),
+            onRemove: any<void Function(int)?>(named: 'onRemove'),
+            onUpdate: any<void Function()?>(named: 'onUpdate'),
+          ),
+        ).thenAnswer((_) async => timeline);
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          liveScanIncludeLookBehind: false,
+          liveScanInitialAuditScans: 0,
+          liveScanSteadyTail: 0,
+          sentEventRegistry: SentEventRegistry(),
+        );
+
+        await consumer.initialize();
+        async.flushMicrotasks();
+
+        unawaited(consumer.start());
+        // Give async operations time to progress through start()
+        // start() awaits roomManager.initialize() then _attachCatchUp()
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 50));
+        async.flushMicrotasks();
+
+        // Let the 150ms delayed catch-up retry fire while first catch-up blocks
+        async.elapse(const Duration(milliseconds: 200));
+        async.flushMicrotasks();
+
+        // The guarded catch-up retry should be skipped because initial catch-up
+        // is still in flight. The message format is: 'source: skipped (catch-up already in flight)'
+        final skipMessage = capturedMessages
+            .where((m) =>
+                m.contains('skipped') &&
+                m.contains('catch-up already in flight'))
+            .toList();
+        expect(
+          skipMessage,
+          isNotEmpty,
+          reason:
+              'Guarded catch-up should skip when catch-up already in flight. '
+              'All messages: ${capturedMessages.take(20).toList()}',
+        );
+
+        // Complete the blocking catch-up to clean up
+        catchupCompleter.complete();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+
+        streamController.close();
+      });
+    });
+  });
+
+  group('processing serialization', () {
+    test('concurrent _processOrdered calls wait for previous batch', () async {
+      fakeAsync((async) {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+        final streamController = StreamController<Event>.broadcast();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => streamController.stream);
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenAnswer((_) async {});
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+
+        // Track captured log messages
+        final capturedMessages = <String>[];
+        when(
+          () => logger.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedMessages.add(invocation.positionalArguments[0] as String);
+        });
+        when(
+          () => logger.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenReturn(null);
+
+        // Create events to process
+        final event1 = MockEvent();
+        when(() => event1.eventId).thenReturn('E1');
+        when(() => event1.roomId).thenReturn('!room:server');
+        when(() => event1.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+        when(() => event1.senderId).thenReturn('@other:server');
+        when(() => event1.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => event1.attachmentMimetype).thenReturn('');
+
+        final event2 = MockEvent();
+        when(() => event2.eventId).thenReturn('E2');
+        when(() => event2.roomId).thenReturn('!room:server');
+        when(() => event2.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+        when(() => event2.senderId).thenReturn('@other:server');
+        when(() => event2.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => event2.attachmentMimetype).thenReturn('');
+
+        // First call to processor.process blocks, second completes immediately
+        final processorCompleter = Completer<void>();
+        var processCalls = 0;
+        when(() => processor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: journalDb,
+            )).thenAnswer((_) async {
+          processCalls++;
+          if (processCalls == 1) {
+            await processorCompleter.future;
+          }
+        });
+
+        // First getTimeline returns event1 (for initial catch-up)
+        // Second getTimeline returns event2 (for forced rescan)
+        var timelineCalls = 0;
+        when(() => room.getTimeline(limit: any<int>(named: 'limit')))
+            .thenAnswer((_) async {
+          timelineCalls++;
+          if (timelineCalls == 1) {
+            when(() => timeline.events).thenReturn(<Event>[event1]);
+          } else {
+            when(() => timeline.events).thenReturn(<Event>[event2]);
+          }
+          return timeline;
+        });
+        when(
+          () => room.getTimeline(
+            onNewEvent: any<void Function()?>(named: 'onNewEvent'),
+            onInsert: any<void Function(int)?>(named: 'onInsert'),
+            onChange: any<void Function(int)?>(named: 'onChange'),
+            onRemove: any<void Function(int)?>(named: 'onRemove'),
+            onUpdate: any<void Function()?>(named: 'onUpdate'),
+          ),
+        ).thenAnswer((_) async {
+          when(() => timeline.events).thenReturn(<Event>[]);
+          return timeline;
+        });
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          liveScanIncludeLookBehind: false,
+          liveScanInitialAuditScans: 0,
+          liveScanSteadyTail: 0,
+          sentEventRegistry: SentEventRegistry(),
+        );
+
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+
+        // Let initial catch-up start (will block on processor)
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+
+        // Trigger another rescan while first is still processing
+        capturedMessages.clear();
+        unawaited(consumer.forceRescan(includeCatchUp: true));
+        async.flushMicrotasks();
+
+        // Elapse some time but not enough to timeout (less than 5 seconds)
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+
+        // The second batch should log that it's waiting
+        expect(
+          capturedMessages.any((m) => m.contains('waiting for previous batch')),
+          isTrue,
+          reason: 'Second batch should wait for first batch to complete',
+        );
+
+        // Complete the first batch
+        processorCompleter.complete();
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        // Both events should eventually be processed
+        expect(processCalls, greaterThanOrEqualTo(1));
+
+        streamController.close();
+      });
+    });
+
+    test('throws TimeoutException when previous batch takes too long',
+        () async {
+      fakeAsync((async) {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+        final streamController = StreamController<Event>.broadcast();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => streamController.stream);
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => readMarker.updateReadMarker(
+              client: any<Client>(named: 'client'),
+              room: any<Room>(named: 'room'),
+              eventId: any<String>(named: 'eventId'),
+            )).thenAnswer((_) async {});
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+
+        // Track captured log messages
+        final capturedMessages = <String>[];
+        when(
+          () => logger.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedMessages.add(invocation.positionalArguments[0] as String);
+        });
+
+        // Track captured exceptions
+        final capturedExceptions = <Object>[];
+        when(
+          () => logger.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedExceptions.add(invocation.positionalArguments[0] as Object);
+        });
+
+        // Create event to process
+        final event1 = MockEvent();
+        when(() => event1.eventId).thenReturn('E1');
+        when(() => event1.roomId).thenReturn('!room:server');
+        when(() => event1.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+        when(() => event1.senderId).thenReturn('@other:server');
+        when(() => event1.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => event1.attachmentMimetype).thenReturn('');
+
+        // Processor never completes (simulates stuck processing)
+        when(() => processor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: journalDb,
+            )).thenAnswer((_) => Completer<void>().future);
+
+        when(() => timeline.events).thenReturn(<Event>[event1]);
+        when(() => room.getTimeline(limit: any<int>(named: 'limit')))
+            .thenAnswer((_) async => timeline);
+        when(
+          () => room.getTimeline(
+            onNewEvent: any<void Function()?>(named: 'onNewEvent'),
+            onInsert: any<void Function(int)?>(named: 'onInsert'),
+            onChange: any<void Function(int)?>(named: 'onChange'),
+            onRemove: any<void Function(int)?>(named: 'onRemove'),
+            onUpdate: any<void Function()?>(named: 'onUpdate'),
+          ),
+        ).thenAnswer((_) async => timeline);
+
+        final consumer = MatrixStreamConsumer(
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          liveScanIncludeLookBehind: false,
+          liveScanInitialAuditScans: 0,
+          liveScanSteadyTail: 0,
+          sentEventRegistry: SentEventRegistry(),
+        );
+
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start());
+        async.flushMicrotasks();
+
+        // Let initial catch-up start (will block forever on processor)
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+
+        // Trigger another rescan
+        capturedMessages.clear();
+        unawaited(consumer.forceRescan(includeCatchUp: true));
+        async.flushMicrotasks();
+
+        // Elapse enough time for timeout (100 waits * 50ms = 5 seconds)
+        async.elapse(const Duration(seconds: 6));
+        async.flushMicrotasks();
+
+        // The timeout log message should be emitted
+        expect(
+          capturedMessages.any((m) =>
+              m.contains('timeout waiting for previous batch, throwing')),
+          isTrue,
+          reason: 'Should log timeout message before throwing',
+        );
+
+        // The TimeoutException should be caught and logged
+        expect(
+          capturedExceptions.any((e) => e is TimeoutException),
+          isTrue,
+          reason: 'TimeoutException should be thrown and caught by caller',
+        );
+
+        streamController.close();
       });
     });
   });

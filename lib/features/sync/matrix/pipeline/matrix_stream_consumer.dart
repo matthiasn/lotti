@@ -214,6 +214,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       SyncTuning.trailingLiveScanDebounce;
   // Guard to prevent overlapping catch-ups triggered by signals.
   bool _catchUpInFlight = false;
+  // Guard to prevent concurrent event processing in _processOrdered.
+  bool _processingInFlight = false;
   // Explicitly request catch-up when nudging via signals, keeping semantics
   // independent of default parameter values.
   final bool _alwaysIncludeCatchUp = true;
@@ -607,7 +609,7 @@ class MatrixStreamConsumer implements SyncPipeline {
             subDomain: 'start.catchUpRetry',
           );
           unawaited(Future<void>.delayed(const Duration(milliseconds: 150))
-              .then((_) => _attachCatchUp()));
+              .then((_) => _runGuardedCatchUp('start.catchUpRetry')));
         }
       } catch (e, st) {
         _loggingService.captureException(
@@ -708,6 +710,30 @@ class MatrixStreamConsumer implements SyncPipeline {
   }
 
   // Client stream no longer enqueues per-event work.
+
+  /// Runs catch-up with proper in-flight guard to prevent concurrent live scans.
+  /// This ensures in-order event processing.
+  Future<void> _runGuardedCatchUp(String source) async {
+    if (_catchUpInFlight) {
+      _loggingService.captureEvent(
+        '$source: skipped (catch-up already in flight)',
+        domain: syncLoggingDomain,
+        subDomain: 'catchup.guarded',
+      );
+      return;
+    }
+    _catchUpInFlight = true;
+    _loggingService.captureEvent(
+      '$source: starting guarded catch-up',
+      domain: syncLoggingDomain,
+      subDomain: 'catchup.guarded',
+    );
+    try {
+      await _attachCatchUp();
+    } finally {
+      _catchUpInFlight = false;
+    }
+  }
 
   void _scheduleInitialCatchUpRetry() {
     _catchUpRetryTimer?.cancel();
@@ -1124,6 +1150,43 @@ class MatrixStreamConsumer implements SyncPipeline {
     final room = _roomManager.currentRoom;
     if (room == null || ordered.isEmpty) return;
 
+    // Serialize event processing to ensure in-order ingest across all paths.
+    // This prevents concurrent catch-up and live scan from processing events
+    // out of order, which would cause false positive gap detection.
+    if (_processingInFlight) {
+      _loggingService.captureEvent(
+        'processOrdered: waiting for previous batch to complete (${ordered.length} events)',
+        domain: syncLoggingDomain,
+        subDomain: 'processOrdered.serialize',
+      );
+      // Wait for the previous batch to complete before processing this one.
+      // Use a simple polling loop with short delays.
+      var waitCount = 0;
+      while (_processingInFlight && waitCount < 100) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        waitCount++;
+      }
+      if (_processingInFlight) {
+        _loggingService.captureEvent(
+          'processOrdered: timeout waiting for previous batch, throwing for ${ordered.length} events',
+          domain: syncLoggingDomain,
+          subDomain: 'processOrdered.serialize',
+        );
+        throw TimeoutException(
+          'Timed out waiting for previous event batch to process.',
+        );
+      }
+    }
+    _processingInFlight = true;
+
+    try {
+      await _processOrderedInternal(ordered, room);
+    } finally {
+      _processingInFlight = false;
+    }
+  }
+
+  Future<void> _processOrderedInternal(List<Event> ordered, Room room) async {
     _sentEventRegistry.prune();
     final suppressedIds = <String>{};
 
