@@ -794,34 +794,19 @@ class MatrixStreamConsumer implements SyncPipeline {
     final effectiveTimeout = timeout ?? SyncTuning.catchupSyncWaitTimeout;
     final client = _sessionManager.client;
 
-    final completer = Completer<bool>();
-    Timer? timeoutTimer;
-    StreamSubscription<SyncUpdate>? subscription;
-
-    timeoutTimer = Timer(effectiveTimeout, () {
-      if (!completer.isCompleted) {
-        subscription?.cancel();
-        _loggingService.captureEvent(
-          'waitForSync.timeout after ${effectiveTimeout.inMilliseconds}ms, setting up follow-up listener',
-          domain: syncLoggingDomain,
-          subDomain: 'catchup.sync',
-        );
-        // Set up a one-time listener to trigger catch-up when sync eventually completes
-        _setupPendingSyncListener();
-        completer.complete(false);
-      }
-    });
-
-    // Listen for the next sync completion
-    subscription = client.onSync.stream.listen((syncUpdate) {
-      if (!completer.isCompleted) {
-        timeoutTimer?.cancel();
-        subscription?.cancel();
-        completer.complete(true);
-      }
-    });
-
-    return completer.future;
+    try {
+      await client.onSync.stream.first.timeout(effectiveTimeout);
+      return true;
+    } on TimeoutException {
+      _loggingService.captureEvent(
+        'waitForSync.timeout after ${effectiveTimeout.inMilliseconds}ms, setting up follow-up listener',
+        domain: syncLoggingDomain,
+        subDomain: 'catchup.sync',
+      );
+      // Set up a one-time listener to trigger catch-up when sync eventually completes
+      _setupPendingSyncListener();
+      return false;
+    }
   }
 
   /// Sets up a one-time listener to trigger catch-up when sync completes.

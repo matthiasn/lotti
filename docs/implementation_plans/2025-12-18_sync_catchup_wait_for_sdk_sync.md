@@ -34,7 +34,7 @@ Added configurable timeout:
 // Sync wait timeout for catch-up.
 // Time to wait for Matrix SDK to sync with server before running catch-up.
 // Applies to all catch-up scenarios: initial startup, app resume, wake, reconnect.
-static const Duration catchupSyncWaitTimeout = Duration(seconds: 10);
+static const Duration catchupSyncWaitTimeout = Duration(seconds: 30);
 ```
 
 #### 2. `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart`
