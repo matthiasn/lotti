@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.762" date="2025-12-19">
+      <description>
+        <p>Sync Catch-Up Concurrency Fix: Prevents concurrent forceRescan execution when connectivity and startup handlers fire simultaneously. Serializes catch-up calls to avoid timeout failures in event processing.</p>
+      </description>
+    </release>
     <release version="0.9.761" date="2025-12-18">
       <description>
         <p>Sync Catch-Up Fix: All catch-up paths now wait for the Matrix SDK to complete server sync before processing. Fixes issue where catch-up after extended offline periods would miss entries. Includes automatic follow-up for slow networks.</p>

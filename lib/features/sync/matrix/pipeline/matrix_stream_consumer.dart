@@ -217,6 +217,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       SyncTuning.trailingLiveScanDebounce;
   // Guard to prevent overlapping catch-ups triggered by signals.
   bool _catchUpInFlight = false;
+  // Guard to prevent concurrent forceRescan calls (e.g., connectivity + startup).
+  bool _forceRescanInFlight = false;
   // Guard to prevent concurrent event processing in _processOrdered.
   bool _processingInFlight = false;
   // Explicitly request catch-up when nudging via signals, keeping semantics
@@ -1667,8 +1669,22 @@ class MatrixStreamConsumer implements SyncPipeline {
     return map;
   }
 
-  // Force a rescan and optional catch-up to recover from potential gaps
+  // Force a rescan and optional catch-up to recover from potential gaps.
+  // Guards against concurrent execution - multiple callers (e.g., connectivity
+  // + startup from MatrixService) can invoke this simultaneously, but only one
+  // runs at a time to avoid timeout failures in _processOrdered.
   Future<void> forceRescan({bool includeCatchUp = true}) async {
+    // Prevent concurrent forceRescan calls from external sources.
+    // This is separate from _catchUpInFlight which is managed by _startCatchupNow.
+    if (_forceRescanInFlight) {
+      _loggingService.captureEvent(
+        'forceRescan.skipped (already in flight)',
+        domain: syncLoggingDomain,
+        subDomain: 'forceRescan',
+      );
+      return;
+    }
+    _forceRescanInFlight = true;
     try {
       _loggingService.captureEvent(
         'forceRescan.start includeCatchUp=$includeCatchUp',
@@ -1691,6 +1707,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'forceRescan',
         stackTrace: st,
       );
+    } finally {
+      _forceRescanInFlight = false;
     }
   }
 
