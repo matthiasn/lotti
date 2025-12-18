@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.761" date="2025-12-18">
+      <description>
+        <p>Sync Catch-Up Fix: All catch-up paths now wait for the Matrix SDK to complete server sync before processing. Fixes issue where catch-up after extended offline periods would miss entries. Includes automatic follow-up for slow networks.</p>
+      </description>
+    </release>
     <release version="0.9.758" date="2025-12-18">
       <description>
         <p>Sync Gap Detection Fix: Prevents false positive gap detection during reconnection. Covered vector clocks are now processed before gap detection, and live scan signals are deferred during catch-up to ensure in-order event processing.</p>

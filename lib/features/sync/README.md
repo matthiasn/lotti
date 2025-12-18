@@ -80,6 +80,17 @@ that keeps the pipeline testable and observable.
     event via `SyncApplyDiagnostics`.
   - Optional typed metrics (`SyncMetrics`) power the Matrix Stats UI and tooling.
 
+- SDK sync wait before catch-up (2025-12):
+  - `_attachCatchUp()` waits for `client.onSync` before collecting events, ensuring
+    the SDK has fetched latest events from the server. This fixes catch-up failures
+    when the app comes online after extended offline periods.
+  - 30-second timeout allows for slow networks while preventing indefinite blocking.
+  - If timeout occurs, a one-time listener (`_pendingSyncSubscription`) triggers
+    a follow-up catch-up when sync eventually completes.
+  - Log: `catchup.waitForSync synced=<bool>`, `waitForSync.timeout`,
+    `pendingSyncListener.triggered`.
+  - Tuning: `SyncTuning.catchupSyncWaitTimeout` (default 30s).
+
 - Coalescing & throttling (2025-11):
   - Catch-up coalesces with a 1s minimum gap. If signals arrive while a
     catch-up is running, exactly one trailing catch-up is scheduled ~1s after

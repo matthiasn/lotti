@@ -99,6 +99,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     int? liveScanInitialAuditTail,
     int liveScanSteadyTail = 30,
     bool dropOldPayloadsInLiveScan = true,
+    // Test seam: skip sync wait in tests to avoid needing to mock client.onSync
+    bool skipSyncWait = false,
     Future<bool> Function({
       required Timeline timeline,
       required String? lastEventId,
@@ -107,7 +109,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       required LoggingService logging,
     })? backfill,
     Directory? documentsDirectory,
-  })  : _sessionManager = sessionManager,
+  })  : _skipSyncWait = skipSyncWait,
+        _sessionManager = sessionManager,
         _roomManager = roomManager,
         _loggingService = loggingService,
         _journalDb = journalDb,
@@ -693,6 +696,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     _catchUpRetryTimer = null;
     _wakeCatchUpRetryTimer?.cancel();
     _wakeCatchUpRetryTimer = null;
+    await _pendingSyncSubscription?.cancel();
+    _pendingSyncSubscription = null;
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
@@ -776,9 +781,68 @@ class MatrixStreamConsumer implements SyncPipeline {
     });
   }
 
+  final bool _skipSyncWait;
+  StreamSubscription<SyncUpdate>? _pendingSyncSubscription;
+
+  /// Waits for Matrix SDK to complete a sync with the server.
+  /// Returns true if sync completed within timeout, false otherwise.
+  /// If timeout occurs, sets up a listener to trigger another catch-up when
+  /// sync eventually completes (handles slow networks gracefully).
+  Future<bool> _waitForSyncCompletion({Duration? timeout}) async {
+    if (_skipSyncWait) return true;
+
+    final effectiveTimeout = timeout ?? SyncTuning.catchupSyncWaitTimeout;
+    final client = _sessionManager.client;
+
+    try {
+      await client.onSync.stream.first.timeout(effectiveTimeout);
+      return true;
+    } on TimeoutException {
+      _loggingService.captureEvent(
+        'waitForSync.timeout after ${effectiveTimeout.inMilliseconds}ms, setting up follow-up listener',
+        domain: syncLoggingDomain,
+        subDomain: 'catchup.sync',
+      );
+      // Set up a one-time listener to trigger catch-up when sync eventually completes
+      _setupPendingSyncListener();
+      return false;
+    }
+  }
+
+  /// Sets up a one-time listener to trigger catch-up when sync completes.
+  /// Used when the initial sync wait times out on slow networks.
+  void _setupPendingSyncListener() {
+    // Cancel any existing pending listener
+    _pendingSyncSubscription?.cancel();
+
+    final client = _sessionManager.client;
+    // Use .first.asStream() to create a single-event stream that auto-cancels
+    _pendingSyncSubscription =
+        client.onSync.stream.first.asStream().listen((syncUpdate) {
+      _pendingSyncSubscription = null;
+      _loggingService.captureEvent(
+        'pendingSyncListener.triggered, scheduling follow-up catch-up',
+        domain: syncLoggingDomain,
+        subDomain: 'catchup.sync',
+      );
+      // Trigger a follow-up catch-up now that sync has completed
+      unawaited(_runGuardedCatchUp('pendingSyncListener'));
+    });
+  }
+
   /// Runs catch-up and returns true on success, false on failure.
   Future<bool> _attachCatchUp() async {
     try {
+      // Wait for SDK sync to complete before catch-up.
+      // This ensures the SDK has fetched the latest events from the server.
+      // Applies to ALL catch-up scenarios: initial, resume, wake, reconnect.
+      final synced = await _waitForSyncCompletion();
+      _loggingService.captureEvent(
+        'catchup.waitForSync synced=$synced',
+        domain: syncLoggingDomain,
+        subDomain: 'catchup',
+      );
+
       final room = _roomManager.currentRoom;
       final roomId = _roomManager.currentRoomId;
       if (room == null || roomId == null) {

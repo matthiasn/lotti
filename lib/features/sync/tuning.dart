@@ -94,6 +94,13 @@ class SyncTuning {
   static const Duration minCatchupGap = Duration(seconds: 1);
   static const Duration trailingCatchupDelay = Duration(seconds: 1);
 
+  // Sync wait timeout for catch-up.
+  // Time to wait for Matrix SDK to sync with server before running catch-up.
+  // Applies to all catch-up scenarios: initial startup, app resume, wake, reconnect.
+  // 30s allows for slow networks; if timeout occurs, a follow-up catch-up triggers
+  // when sync eventually completes.
+  static const Duration catchupSyncWaitTimeout = Duration(seconds: 30);
+
   // Historical windows
   static const int catchupPreContextCount = 80;
   static const int catchupMaxLookback =

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.761] - 2025-12-18
+### Fixed
+- Sync Catch-Up: Wait for SDK sync completion before running catch-up
+  - All catch-up paths (startup, app resume, wake, reconnect) now wait up to
+    30 seconds for the Matrix SDK to complete its `/sync` with the server
+  - Fixes issue where catch-up after extended offline periods would only
+    retrieve a few entries instead of the full backlog
+  - If timeout occurs on slow networks, a follow-up catch-up automatically
+    triggers when sync eventually completes
+  - Tuning: `SyncTuning.catchupSyncWaitTimeout` (default 30s)
+
 ## [0.9.758] - 2025-12-18
 ### Fixed
 - Sync Gap Detection: Prevent false positives during reconnection
