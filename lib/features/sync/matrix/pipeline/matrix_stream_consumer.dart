@@ -1168,11 +1168,13 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       if (_processingInFlight) {
         _loggingService.captureEvent(
-          'processOrdered: timeout waiting for previous batch, skipping ${ordered.length} events',
+          'processOrdered: timeout waiting for previous batch, throwing for ${ordered.length} events',
           domain: syncLoggingDomain,
           subDomain: 'processOrdered.serialize',
         );
-        return;
+        throw TimeoutException(
+          'Timed out waiting for previous event batch to process.',
+        );
       }
     }
     _processingInFlight = true;
