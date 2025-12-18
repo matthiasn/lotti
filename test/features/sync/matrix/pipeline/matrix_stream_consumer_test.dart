@@ -103,6 +103,7 @@ void main() {
     ).thenAnswer((_) {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -182,6 +183,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -281,6 +283,7 @@ void main() {
     expect(pre.existsSync(), isTrue);
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -371,6 +374,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -424,6 +428,7 @@ void main() {
 
       // No live timeline needed for this diagnostics-only test
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -582,6 +587,7 @@ void main() {
       }
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -657,6 +663,7 @@ void main() {
         });
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -804,6 +811,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -936,6 +944,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -1068,6 +1077,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -1156,6 +1166,7 @@ void main() {
           .thenAnswer((_) async => 1);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1229,6 +1240,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1311,6 +1323,7 @@ void main() {
         subDomain: 'noAdvance.rescan')).thenReturn(null);
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -1396,6 +1409,7 @@ void main() {
           )).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1477,6 +1491,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1576,6 +1591,7 @@ void main() {
           )).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1657,6 +1673,7 @@ void main() {
           )).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1740,6 +1757,7 @@ void main() {
       when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1837,6 +1855,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1902,6 +1921,7 @@ void main() {
         .thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -1977,6 +1997,7 @@ void main() {
       });
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2105,6 +2126,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2183,6 +2205,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2264,6 +2287,7 @@ void main() {
           )).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2348,6 +2372,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2458,6 +2483,7 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2560,6 +2586,7 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2700,6 +2727,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2791,6 +2819,7 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2876,6 +2905,7 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'))).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -2953,6 +2983,7 @@ void main() {
           subDomain: any(named: 'subDomain'))).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -3049,6 +3080,7 @@ void main() {
       when(() => timeline.events).thenReturn(<Event>[att1, att2]);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -3125,6 +3157,7 @@ void main() {
           )).thenAnswer((inv) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -3212,6 +3245,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -3251,6 +3285,7 @@ void main() {
         .thenAnswer((_) async => null);
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -3370,6 +3405,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -3439,6 +3475,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -3487,6 +3524,7 @@ void main() {
 
     // Pre-populate lastIgnored via db-apply observer (older case)
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -3588,6 +3626,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -3698,6 +3737,7 @@ void main() {
       ).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -3765,6 +3805,7 @@ void main() {
       ).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -3871,6 +3912,7 @@ void main() {
       ).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -3992,6 +4034,7 @@ void main() {
       });
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -4053,6 +4096,7 @@ void main() {
         .thenAnswer((_) async => null);
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -4115,6 +4159,7 @@ void main() {
     when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -4201,6 +4246,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -4293,6 +4339,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -4395,6 +4442,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -4467,6 +4515,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -4578,6 +4627,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -4687,6 +4737,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -4761,6 +4812,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -4912,6 +4964,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -5009,6 +5062,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -5084,6 +5138,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -5193,6 +5248,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -5281,6 +5337,7 @@ void main() {
     ).thenThrow(Exception('no live timeline'));
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -5382,6 +5439,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -5474,6 +5532,7 @@ void main() {
       when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -5566,6 +5625,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -5670,6 +5730,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -5774,6 +5835,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -5875,6 +5937,7 @@ void main() {
             )).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -5972,6 +6035,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -6042,6 +6106,7 @@ void main() {
       when(() => timeline.cancelSubscriptions()).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -6138,6 +6203,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -6252,6 +6318,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -6338,6 +6405,7 @@ void main() {
         .thenThrow(Exception('fail'));
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -6422,6 +6490,7 @@ void main() {
     // Inject a controllable clock to make TTL deterministic.
     var now = DateTime(2025);
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -6504,6 +6573,7 @@ void main() {
         )).thenAnswer((_) async {});
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -6605,6 +6675,7 @@ void main() {
 
     // Enable look-behind with a deterministic initial tail size (7) for one scan.
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -6677,6 +6748,7 @@ void main() {
           )).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -6756,6 +6828,7 @@ void main() {
           )).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -6831,6 +6904,7 @@ void main() {
           )).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -6905,6 +6979,7 @@ void main() {
           )).thenAnswer((_) async => timeline);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -7134,6 +7209,7 @@ void main() {
       sentRegistry.register(r'$self-event');
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -7237,6 +7313,7 @@ void main() {
             )).thenAnswer((_) async => timeline);
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -7344,6 +7421,7 @@ void main() {
             journalDb: journalDb)).thenAnswer((_) async {});
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -7438,6 +7516,7 @@ void main() {
             )).thenAnswer((_) async => timeline);
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -7531,6 +7610,7 @@ void main() {
             )).thenAnswer((_) async => timeline);
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -7649,6 +7729,7 @@ void main() {
         ).thenAnswer((_) async => timeline);
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -7813,6 +7894,7 @@ void main() {
         });
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,
@@ -7951,6 +8033,7 @@ void main() {
         ).thenAnswer((_) async => timeline);
 
         final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
           sessionManager: session,
           roomManager: roomManager,
           loggingService: logger,

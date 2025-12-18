@@ -76,6 +76,7 @@ void main() {
           .thenAnswer((_) async => null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -168,6 +169,7 @@ void main() {
       });
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -247,6 +249,7 @@ void main() {
       });
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -357,6 +360,7 @@ void main() {
           )).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -437,6 +441,7 @@ void main() {
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -508,6 +513,7 @@ void main() {
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -586,6 +592,7 @@ void main() {
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -652,6 +659,7 @@ void main() {
         .thenAnswer((_) => const Stream<Event>.empty());
 
     final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
       sessionManager: session,
       roomManager: roomManager,
       loggingService: logger,
@@ -705,6 +713,7 @@ void main() {
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -791,6 +800,7 @@ void main() {
           .thenAnswer((_) async => null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -889,6 +899,7 @@ void main() {
       });
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -996,6 +1007,7 @@ void main() {
       });
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1079,6 +1091,7 @@ void main() {
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1191,6 +1204,7 @@ void main() {
           (_) async => Future<void>.delayed(const Duration(milliseconds: 200)));
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1294,6 +1308,7 @@ void main() {
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
@@ -1442,6 +1457,7 @@ void main() {
           (_) async => Future<void>.delayed(const Duration(milliseconds: 250)));
 
       final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
         sessionManager: session,
         roomManager: roomManager,
         loggingService: logger,
