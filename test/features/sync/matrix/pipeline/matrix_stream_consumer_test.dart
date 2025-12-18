@@ -3848,11 +3848,13 @@ void main() {
       var catchupCallCount = 0;
 
       // Stub for snapshot-only overload (used by catch-up)
+      // Initial catch-up (1st) and retry (2nd) should complete immediately.
+      // Wake catch-up (3rd+) waits for completer to simulate in-flight state.
       when(() => room.getTimeline(limit: any(named: 'limit')))
           .thenAnswer((_) async {
         catchupCallCount++;
-        if (catchupCallCount > 1) {
-          // Second catch-up (from wake detection) - wait for completer
+        if (catchupCallCount > 2) {
+          // Wake catch-up (from wake detection) - wait for completer
           await catchupCompleter.future;
         }
         return timeline;
@@ -3888,7 +3890,15 @@ void main() {
         unawaited(consumer.start());
         async.flushMicrotasks();
 
-        // Let initial catch-up complete and first live scan run
+        // Let initial catch-up complete
+        async.elapse(const Duration(milliseconds: 200));
+        async.flushMicrotasks();
+
+        // Trigger a live scan during steady state to set _lastLiveScanAt
+        // This is required for wake detection to work (it checks the gap since
+        // the last scan)
+        streamController.add(streamEvent);
+        async.flushMicrotasks();
         async.elapse(const Duration(milliseconds: 500));
         async.flushMicrotasks();
 
@@ -3901,6 +3911,9 @@ void main() {
 
         // First signal after wake: triggers wake detection and catch-up
         streamController.add(streamEvent);
+        async.flushMicrotasks();
+        // Elapse time to allow processing mutex waits if needed
+        async.elapse(const Duration(milliseconds: 200));
         async.flushMicrotasks();
 
         // Verify wake was detected
@@ -3927,7 +3940,7 @@ void main() {
         // Complete the catch-up to clean up
         catchupCompleter.complete();
         async.flushMicrotasks();
-        async.elapse(const Duration(milliseconds: 500));
+        async.elapse(const Duration(seconds: 1));
       });
     });
   });
