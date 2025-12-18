@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.762] - 2025-12-19
+### Fixed
+- Sync Catch-Up: Prevent concurrent forceRescan execution
+  - Added `_forceRescanInFlight` guard to serialize concurrent calls to `forceRescan()`
+  - Fixes issue where connectivity and startup handlers could trigger simultaneous
+    catch-ups, causing timeout failures in event processing
+  - Second concurrent call now skips with `forceRescan.skipped (already in flight)` log
+
 ## [0.9.761] - 2025-12-18
 ### Fixed
 - Sync Catch-Up: Wait for SDK sync completion before running catch-up

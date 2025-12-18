@@ -3655,6 +3655,126 @@ void main() {
     expect(catchupCalls, 2);
   });
 
+  test('forceRescan guards against concurrent execution', () {
+    fakeAsync((async) {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      final capturedLogs = <String>[];
+      when(() => logger.captureEvent(
+            captureAny<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          )).thenAnswer((inv) {
+        capturedLogs.add(inv.positionalArguments.first.toString());
+      });
+      when(() => logger.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          )).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => null);
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+
+      var catchupCalls = 0;
+      // Make getTimeline take some time to simulate slow catch-up
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async {
+        catchupCalls++;
+        // Simulate slow processing
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        return timeline;
+      });
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+          )).thenAnswer((_) async {});
+
+      final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      unawaited(consumer.initialize());
+      async.flushMicrotasks();
+      unawaited(consumer.start());
+      async.flushMicrotasks();
+
+      // Allow initial startup to complete
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+
+      // Clear logs and reset counter to isolate the concurrent test
+      capturedLogs.clear();
+      final catchupsBefore = catchupCalls;
+
+      // Start first forceRescan (will take 500ms due to delayed getTimeline)
+      unawaited(consumer.forceRescan());
+      async.flushMicrotasks();
+
+      // Immediately start second forceRescan while first is still in flight
+      unawaited(consumer.forceRescan());
+      async.flushMicrotasks();
+
+      // Allow both to complete
+      async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+
+      // Verify second call was skipped
+      expect(
+        capturedLogs.any((l) => l.contains('forceRescan.skipped')),
+        isTrue,
+        reason: 'Second concurrent forceRescan should be skipped',
+      );
+
+      // Verify only one catch-up was actually executed (the first one)
+      // Note: catchupCalls increases by 1, not 2
+      expect(
+        catchupCalls - catchupsBefore,
+        equals(1),
+        reason:
+            'Only one catch-up should run when forceRescan is called concurrently',
+      );
+
+      // Verify first call completed successfully
+      expect(
+        capturedLogs.any((l) => l.contains('forceRescan.done')),
+        isTrue,
+        reason: 'First forceRescan should complete successfully',
+      );
+    });
+  });
+
   group('stream event processing modes', () {
     late MockMatrixSessionManager session;
     late MockSyncRoomManager roomManager;

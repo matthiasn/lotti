@@ -120,6 +120,60 @@ Group: "SDK sync wait before catch-up"
 3. **pending sync listener triggers follow-up catch-up after timeout** - Verifies follow-up mechanism
 4. **dispose completes without error when pending sync subscription exists** - Verifies clean disposal
 
+## Follow-Up Fix: Concurrent forceRescan Guard (2025-12-19)
+
+### Problem Discovered
+
+During testing, the sync wait worked correctly (`synced=true`), but catch-up still missed entries. Analysis of logs revealed:
+
+```
+00:35:14.344 - forceRescan.start (connectivity)
+00:35:14.594 - forceRescan.start (startup)  <- concurrent!
+00:35:23.986 - processOrdered: timeout waiting for previous batch
+```
+
+**Root cause**: `MatrixService` triggers `forceRescan()` from both connectivity and startup handlers simultaneously. Both ran `_attachCatchUp()` concurrently, causing:
+1. Both retrieved 162 events from timeline
+2. First catch-up acquired `_processingInFlight` lock in `_processOrdered()`
+3. Second catch-up waited 5 seconds (100×50ms polling loop)
+4. Processing 162 events took >5 seconds
+5. Second catch-up threw `TimeoutException`, discarding its events
+
+### Fix Applied
+
+Added `_forceRescanInFlight` guard in `forceRescan()` to serialize concurrent calls:
+
+```dart
+bool _forceRescanInFlight = false;
+
+Future<void> forceRescan({bool includeCatchUp = true}) async {
+  if (_forceRescanInFlight) {
+    _loggingService.captureEvent('forceRescan.skipped (already in flight)', ...);
+    return;
+  }
+  _forceRescanInFlight = true;
+  try {
+    // ... catch-up and scan
+  } finally {
+    _forceRescanInFlight = false;
+  }
+}
+```
+
+This is separate from `_catchUpInFlight` (managed by `_startCatchupNow()`) to avoid conflicts with internal signal-driven catch-ups.
+
+### Why the 5-Second Timeout Exists
+
+The `_processOrdered()` method has a serialization loop:
+```dart
+while (_processingInFlight && waitCount < 100) {
+  await Future<void>.delayed(const Duration(milliseconds: 50));
+  waitCount++;
+}
+```
+
+This was designed as a safety net, not a primary concurrency mechanism. The real fix is preventing concurrent catch-ups from reaching this point.
+
 ## Rollback
 
 If issues arise:
@@ -127,5 +181,6 @@ If issues arise:
 2. Remove `_waitForSyncCompletion()` and `_setupPendingSyncListener()` methods
 3. Remove `_skipSyncWait` field and constructor parameter
 4. Remove `skipSyncWait: true` from all test instantiations
+5. Remove `_forceRescanInFlight` guard from `forceRescan()`
 
 The existing behavior resumes (catch-up runs immediately without waiting for sync).
