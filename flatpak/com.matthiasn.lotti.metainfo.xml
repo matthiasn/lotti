@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.762" date="2025-12-19">
       <description>
-        <p>Sync Catch-Up Concurrency Fix: Prevents concurrent forceRescan execution when connectivity and startup handlers fire simultaneously. Serializes catch-up calls to avoid timeout failures in event processing.</p>
+        <p>Sync Catch-Up Concurrency Fix: Prevents concurrent catch-up execution from multiple sources. External forceRescan calls now skip catch-up when an internal retry-driven catch-up is already in flight. Fixes timeout failures that occurred when connectivity triggers ran concurrently with scheduled catch-up retries.</p>
       </description>
     </release>
     <release version="0.9.761" date="2025-12-18">
