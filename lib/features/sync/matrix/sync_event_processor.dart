@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
@@ -583,6 +584,137 @@ class SyncEventProcessor {
     }
   }
 
+  bool _isStaleDescriptorError(FileSystemException error) {
+    final message = error.message;
+    return message.contains('stale attachment json');
+  }
+
+  Future<int> _processEmbeddedEntryLinks({
+    required List<EntryLink>? entryLinks,
+    required JournalDb journalDb,
+  }) async {
+    var processedLinksCount = 0;
+    if (entryLinks == null || entryLinks.isEmpty) {
+      return processedLinksCount;
+    }
+    final affectedIds = <String>{};
+    for (final link in entryLinks) {
+      try {
+        final linkRows = await journalDb.upsertEntryLink(link);
+        if (linkRows > 0) {
+          processedLinksCount++;
+          _loggingService.captureEvent(
+            'apply entryLink.embedded from=${link.fromId} to=${link.toId} rows=$linkRows',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply.entryLink.embedded',
+          );
+        }
+        affectedIds.addAll({link.fromId, link.toId});
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'apply.entryLink.embedded',
+          stackTrace: st,
+        );
+      }
+    }
+    if (affectedIds.isNotEmpty) {
+      _updateNotifications.notify(affectedIds, fromSync: true);
+    }
+    return processedLinksCount;
+  }
+
+  Future<SyncApplyDiagnostics?> _maybeSkipSupersededStaleDescriptor({
+    required Event event,
+    required SyncJournalEntity syncMessage,
+    required JournalDb journalDb,
+    required List<EntryLink>? entryLinks,
+  }) async {
+    final incomingVc = syncMessage.vectorClock;
+    if (incomingVc == null) {
+      return null;
+    }
+    JournalEntity? existing;
+    try {
+      existing = await journalDb.journalEntityById(syncMessage.id);
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'apply.staleDescriptor.lookup',
+        stackTrace: st,
+      );
+      return null;
+    }
+    final existingVc = existing?.meta.vectorClock;
+    if (existingVc == null) {
+      return null;
+    }
+    VclockStatus status;
+    try {
+      status = VectorClock.compare(existingVc, incomingVc);
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'apply.staleDescriptor.compare',
+        stackTrace: st,
+      );
+      return null;
+    }
+    if (status != VclockStatus.a_gt_b && status != VclockStatus.equal) {
+      return null;
+    }
+
+    final processedLinksCount = await _processEmbeddedEntryLinks(
+      entryLinks: entryLinks,
+      journalDb: journalDb,
+    );
+
+    final diag = SyncApplyDiagnostics(
+      eventId: event.eventId,
+      payloadType: 'journalEntity',
+      entityId: syncMessage.id,
+      vectorClock: incomingVc.toJson(),
+      conflictStatus: status.toString(),
+      applied: false,
+      skipReason: JournalUpdateSkipReason.olderOrEqual,
+    );
+    _loggingService.captureEvent(
+      'apply journalEntity skipped staleDescriptor eventId=${event.eventId} id=${syncMessage.id} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'apply',
+    );
+
+    if (_sequenceLogService != null && syncMessage.originatingHostId != null) {
+      try {
+        final gaps = await _sequenceLogService!.recordReceivedEntry(
+          entryId: syncMessage.id,
+          vectorClock: incomingVc,
+          originatingHostId: syncMessage.originatingHostId!,
+          coveredVectorClocks: syncMessage.coveredVectorClocks,
+        );
+        if (gaps.isNotEmpty) {
+          _loggingService.captureEvent(
+            'apply.gapsDetected count=${gaps.length} for entity=${syncMessage.id}',
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'gapDetection',
+          );
+        }
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'recordReceived',
+          stackTrace: st,
+        );
+      }
+    }
+
+    return diag;
+  }
+
   Future<SyncApplyDiagnostics?> _handleMessage({
     required Event event,
     required SyncMessage syncMessage,
@@ -629,34 +761,10 @@ class SyncEventProcessor {
           // via upsertEntryLink(). This ensures links are established even when the
           // entity itself is skipped (e.g., local version is newer), preventing
           // gray calendar entries that rely on links for category color lookup.
-          var processedLinksCount = 0;
-          if (entryLinks != null && entryLinks.isNotEmpty) {
-            final affectedIds = <String>{};
-            for (final link in entryLinks) {
-              try {
-                final linkRows = await journalDb.upsertEntryLink(link);
-                if (linkRows > 0) {
-                  processedLinksCount++;
-                  _loggingService.captureEvent(
-                    'apply entryLink.embedded from=${link.fromId} to=${link.toId} rows=$linkRows',
-                    domain: 'MATRIX_SERVICE',
-                    subDomain: 'apply.entryLink.embedded',
-                  );
-                }
-                affectedIds.addAll({link.fromId, link.toId});
-              } catch (e, st) {
-                _loggingService.captureException(
-                  e,
-                  domain: 'MATRIX_SERVICE',
-                  subDomain: 'apply.entryLink.embedded',
-                  stackTrace: st,
-                );
-              }
-            }
-            if (affectedIds.isNotEmpty) {
-              _updateNotifications.notify(affectedIds, fromSync: true);
-            }
-          }
+          final processedLinksCount = await _processEmbeddedEntryLinks(
+            entryLinks: entryLinks,
+            journalDb: journalDb,
+          );
 
           final diag = SyncApplyDiagnostics(
             eventId: event.eventId,
@@ -721,6 +829,17 @@ class SyncEventProcessor {
 
           return diag;
         } on FileSystemException catch (error, stackTrace) {
+          if (_isStaleDescriptorError(error)) {
+            final skipped = await _maybeSkipSupersededStaleDescriptor(
+              event: event,
+              syncMessage: syncMessage,
+              journalDb: journalDb,
+              entryLinks: entryLinks,
+            );
+            if (skipped != null) {
+              return skipped;
+            }
+          }
           _loggingService.captureException(
             error,
             domain: 'MATRIX_SERVICE',

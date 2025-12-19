@@ -2206,6 +2206,35 @@ void main() {
     verifyNever(() => journalDb.updateJournalEntity(any()));
   });
 
+  test('stale descriptor is skipped when local entry is newer', () async {
+    final entryId = fallbackJournalEntity.meta.id;
+    final message = SyncMessage.journalEntity(
+      id: entryId,
+      jsonPath: '/entity.json',
+      vectorClock: const VectorClock({'a': 10}),
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: any(named: 'incomingVectorClock'),
+        )).thenThrow(
+      const FileSystemException('stale attachment json after refresh'),
+    );
+    when(() => journalDb.journalEntityById(entryId))
+        .thenAnswer((_) async => fallbackJournalEntity);
+
+    SyncApplyDiagnostics? captured;
+    processor.applyObserver = (diag) => captured = diag;
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    expect(captured, isNotNull);
+    expect(captured!.skipReason, JournalUpdateSkipReason.olderOrEqual);
+    expect(captured!.conflictStatus, contains('a_gt_b'));
+    verifyNever(() => journalDb.updateJournalEntity(any()));
+  });
+
   group('SyncEventProcessor - SyncThemingSelection', () {
     String encodeThemingMessage(SyncMessage message) =>
         base64.encode(utf8.encode(json.encode(message.toJson())));

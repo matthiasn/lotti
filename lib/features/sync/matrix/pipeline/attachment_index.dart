@@ -16,26 +16,29 @@ class AttachmentIndex {
 
   /// Records an attachment event keyed by its relativePath. Later events
   /// overwrite earlier ones for the same path.
-  void record(Event e) {
+  ///
+  /// Returns true when the index changes (new event or updated eventId).
+  bool record(Event e) {
     try {
       final mimetype = e.attachmentMimetype;
       final rp = e.content['relativePath'];
       if (rp is String && rp.isNotEmpty) {
         final key = rp.startsWith('/') ? rp : '/$rp';
-        final existing = _byPath[key];
+        final noSlash = rp.startsWith('/') ? rp.substring(1) : rp;
+        final existing = _byPath[key] ?? _byPath[noSlash];
         if (existing != null && existing.eventId == e.eventId) {
-          return;
+          return false;
         }
         _byPath[key] = e;
         // For robustness, also record a variant without the leading slash in
         // case callers use that form.
-        final noSlash = rp.startsWith('/') ? rp.substring(1) : rp;
         _byPath[noSlash] = e;
         _logging?.captureEvent(
           'attachmentIndex.record path=$key mime=$mimetype id=${e.eventId}',
           domain: syncLoggingDomain,
           subDomain: 'attachmentIndex.record',
         );
+        return true;
       }
     } catch (err) {
       _logging?.captureEvent(
@@ -44,6 +47,7 @@ class AttachmentIndex {
         subDomain: 'attachmentIndex',
       );
     }
+    return false;
   }
 
   /// Returns the last-seen attachment event for [relativePath], or null.

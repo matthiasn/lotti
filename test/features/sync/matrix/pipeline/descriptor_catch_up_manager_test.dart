@@ -136,6 +136,48 @@ void main() {
     });
   });
 
+  test('does not rerun when pending is unchanged', () {
+    fakeAsync((async) {
+      final logging = MockLoggingService();
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      final index = AttachmentIndex(logging: logging);
+      final roomManager = MockSyncRoomManager();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => timeline);
+      when(() => roomManager.currentRoom).thenReturn(room);
+
+      final manager = DescriptorCatchUpManager(
+        logging: logging,
+        attachmentIndex: index,
+        roomManager: roomManager,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+        now: () =>
+            DateTime.fromMillisecondsSinceEpoch(async.elapsed.inMilliseconds),
+      )..addPending('p.json');
+
+      async.elapse(const Duration(seconds: 2));
+      expect(manager.runs, 1);
+
+      async.elapse(const Duration(seconds: 5));
+      expect(manager.runs, 1);
+
+      manager.addPending('q.json');
+      async.elapse(const Duration(seconds: 2));
+      expect(manager.runs, 2);
+    });
+  });
+
   test('no room: run is skipped and counters unchanged', () async {
     final logging = MockLoggingService();
     final index = AttachmentIndex(logging: logging);
@@ -181,6 +223,50 @@ void main() {
       retryNow: () async => retryNowCalls++,
       now: DateTime.now,
     )..addPending('x.json');
+    await manager.debugRunNow();
+    expect(manager.runs, 1);
+    expect(liveScanCalls, 0);
+    expect(retryNowCalls, 0);
+  });
+
+  test('pending hit with unchanged descriptor does not trigger callbacks',
+      () async {
+    final logging = MockLoggingService();
+    when(() => logging.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logging.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+    final index = AttachmentIndex(logging: logging);
+    final roomManager = MockSyncRoomManager();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+    final ev = MockEvent();
+    when(() => ev.eventId).thenReturn('E1');
+    when(() => ev.attachmentMimetype).thenReturn('application/json');
+    when(() => ev.content).thenReturn(<String, dynamic>{
+      'relativePath': '/p.json',
+    });
+    index.record(ev);
+
+    when(() => timeline.events).thenReturn(<Event>[ev]);
+    when(timeline.cancelSubscriptions).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+    when(() => roomManager.currentRoom).thenReturn(room);
+
+    var liveScanCalls = 0;
+    var retryNowCalls = 0;
+    final manager = DescriptorCatchUpManager(
+      logging: logging,
+      attachmentIndex: index,
+      roomManager: roomManager,
+      scheduleLiveScan: () => liveScanCalls++,
+      retryNow: () async => retryNowCalls++,
+      now: DateTime.now,
+    )..addPending('/p.json');
     await manager.debugRunNow();
     expect(manager.runs, 1);
     expect(liveScanCalls, 0);

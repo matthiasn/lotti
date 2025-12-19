@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - Sync: Treat missing attachment fetches as retryable failures so markers do not advance past incomplete entries, serialize `forceRescan` with a completer to avoid overlapping runs, and include Matrix stream consumer instance IDs in sync logs to track concurrent pipelines.
+- Sync: Avoid redundant descriptor catch-up retries by running catch-up only on pending changes, triggering retryNow only when new descriptors are discovered, and skipping stale descriptor errors when the local entry already supersedes the incoming vector clock.
 ### Added
 - Automatic Image Analysis: Images added to tasks are now analyzed automatically
   - When dropping, pasting, or importing images to a task with image analysis enabled, analysis runs in background
