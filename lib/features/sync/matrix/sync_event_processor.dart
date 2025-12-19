@@ -571,12 +571,14 @@ class SyncEventProcessor {
         applyObserver?.call(diag);
       }
     } catch (error, stackTrace) {
-      _loggingService.captureException(
-        error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor',
-        stackTrace: stackTrace,
-      );
+      if (error is! FileSystemException) {
+        _loggingService.captureException(
+          error,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SyncEventProcessor',
+          stackTrace: stackTrace,
+        );
+      }
       rethrow;
     }
   }
@@ -725,8 +727,8 @@ class SyncEventProcessor {
             subDomain: 'SyncEventProcessor.missingAttachment',
             stackTrace: stackTrace,
           );
-          // Returning null keeps the event in the retry queue until a fresh descriptor arrives.
-          return null;
+          // Propagate so the pipeline retries and does not advance the marker.
+          rethrow;
         }
       case SyncEntryLink(
           entryLink: final entryLink,

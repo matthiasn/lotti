@@ -3743,12 +3743,15 @@ void main() {
       async.flushMicrotasks();
 
       // Immediately start second forceRescan while first is still in flight
-      unawaited(consumer.forceRescan());
+      var secondDone = false;
+      unawaited(consumer.forceRescan().then((_) => secondDone = true));
       async.flushMicrotasks();
 
       // Allow both to complete
+      expect(secondDone, isFalse, reason: 'Second forceRescan should await');
       async.elapse(const Duration(seconds: 1));
       async.flushMicrotasks();
+      expect(secondDone, isTrue, reason: 'Second forceRescan should complete');
 
       // Verify second call was skipped
       expect(
@@ -4591,7 +4594,7 @@ void main() {
     verify(() => liveTimeline.cancelSubscriptions()).called(1);
     verify(
       () => logger.captureEvent(
-        'MatrixStreamConsumer disposed',
+        any<String>(that: contains('MatrixStreamConsumer disposed')),
         domain: any<String>(named: 'domain'),
         subDomain: 'dispose',
       ),
@@ -7005,7 +7008,7 @@ void main() {
     verify(() => logger.captureEvent(
           any<String>(
               that: allOf(contains('startup.marker'), contains('id=mk'),
-                  contains('ts=123'))),
+                  contains('ts=123'), contains('inst='))),
           domain: any<String>(named: 'domain'),
           subDomain: 'startup.marker',
         )).called(1);

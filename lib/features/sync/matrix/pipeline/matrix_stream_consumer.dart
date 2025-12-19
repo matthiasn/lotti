@@ -167,6 +167,11 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
   }
 
+  static int _instanceCounter = 0;
+  final int _instanceId = ++_instanceCounter;
+
+  String _withInstance(String message) => '$message inst=$_instanceId';
+
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
   final LoggingService _loggingService;
@@ -217,8 +222,9 @@ class MatrixStreamConsumer implements SyncPipeline {
       SyncTuning.trailingLiveScanDebounce;
   // Guard to prevent overlapping catch-ups triggered by signals.
   bool _catchUpInFlight = false;
-  // Guard to prevent concurrent forceRescan calls (e.g., connectivity + startup).
-  bool _forceRescanInFlight = false;
+  // Completer to serialize forceRescan calls (e.g., connectivity + startup).
+  // Later callers await the in-flight run instead of overlapping.
+  Completer<void>? _forceRescanCompleter;
   // Guard to prevent concurrent event processing in _processOrdered.
   bool _processingInFlight = false;
   // Explicitly request catch-up when nudging via signals, keeping semantics
@@ -437,7 +443,9 @@ class MatrixStreamConsumer implements SyncPipeline {
     // that would otherwise be re-processed on every restart due to catch-up.
     _eventProcessor.startupTimestamp = _startupLastProcessedTs;
     _loggingService.captureEvent(
-      'startup.marker id=${_startupLastProcessedEventId ?? 'null'} ts=${_startupLastProcessedTs?.toInt() ?? 'null'}',
+      _withInstance(
+        'startup.marker id=${_startupLastProcessedEventId ?? 'null'} ts=${_startupLastProcessedTs?.toInt() ?? 'null'}',
+      ),
       domain: syncLoggingDomain,
       subDomain: 'startup.marker',
     );
@@ -469,7 +477,9 @@ class MatrixStreamConsumer implements SyncPipeline {
       final hydrateElapsed =
           clock.now().difference(hydrateStart).inMilliseconds;
       _loggingService.captureEvent(
-        'start.hydrateRoom.ready=${_roomManager.currentRoom != null} after ${hydrateElapsed}ms',
+        _withInstance(
+          'start.hydrateRoom.ready=${_roomManager.currentRoom != null} after ${hydrateElapsed}ms',
+        ),
         domain: syncLoggingDomain,
         subDomain: 'start',
       );
@@ -595,7 +605,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         // Proactively scan once at startup, now that initial catch‑up has run
         // (or been attempted) to avoid skipping backlog.
         _loggingService.captureEvent(
-          'start: scheduling initial liveScan',
+          _withInstance('start: scheduling initial liveScan'),
           domain: syncLoggingDomain,
           subDomain: 'start.liveScan',
         );
@@ -609,7 +619,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         // catch-up attempt had no active room.
         if (_lastProcessedEventId != null) {
           _loggingService.captureEvent(
-            'start: scheduling catchUp retry',
+            _withInstance('start: scheduling catchUp retry'),
             domain: syncLoggingDomain,
             subDomain: 'start.catchUpRetry',
           );
@@ -626,7 +636,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
     }
     _loggingService.captureEvent(
-      'MatrixStreamConsumer started',
+      _withInstance('MatrixStreamConsumer started'),
       domain: syncLoggingDomain,
       subDomain: 'start',
     );
@@ -664,7 +674,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           _deferredCatchup = false;
           if (_collectMetrics) _metrics.incTrailingCatchups();
           _loggingService.captureEvent(
-            'trailing.catchup.scheduled',
+            _withInstance('trailing.catchup.scheduled'),
             domain: syncLoggingDomain,
             subDomain: 'signal',
           );
@@ -677,7 +687,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           // No trailing run scheduled: log 'done' once for this burst.
           if (!_catchupDoneLoggedThisBurst) {
             _loggingService.captureEvent(
-              'catchup.done events=$_lastCatchupEventsCount',
+              _withInstance('catchup.done events=$_lastCatchupEventsCount'),
               domain: syncLoggingDomain,
               subDomain: 'catchup',
             );
@@ -713,7 +723,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
     _liveTimeline = null;
     _loggingService.captureEvent(
-      'MatrixStreamConsumer disposed',
+      _withInstance('MatrixStreamConsumer disposed'),
       domain: syncLoggingDomain,
       subDomain: 'dispose',
     );
@@ -755,7 +765,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       _catchUpInFlight = true;
       _loggingService.captureEvent(
-        'catchup.retry.attempt',
+        _withInstance('catchup.retry.attempt'),
         domain: syncLoggingDomain,
         subDomain: 'catchup',
       );
@@ -766,7 +776,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         ..then((_) {
           if (!_initialCatchUpCompleted) {
             _loggingService.captureEvent(
-              'catchup.retry.reschedule (not completed)',
+              _withInstance('catchup.retry.reschedule (not completed)'),
               domain: syncLoggingDomain,
               subDomain: 'catchup',
             );
@@ -843,7 +853,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       // Applies to ALL catch-up scenarios: initial, resume, wake, reconnect.
       final synced = await _waitForSyncCompletion();
       _loggingService.captureEvent(
-        'catchup.waitForSync synced=$synced',
+        _withInstance('catchup.waitForSync synced=$synced'),
         domain: syncLoggingDomain,
         subDomain: 'catchup',
       );
@@ -853,7 +863,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       if (room == null || roomId == null) {
         if (_collectMetrics) {
           _loggingService.captureEvent(
-            'No active room for catch-up',
+            _withInstance('No active room for catch-up'),
             domain: syncLoggingDomain,
             subDomain: 'catchup',
           );
@@ -865,7 +875,9 @@ class MatrixStreamConsumer implements SyncPipeline {
             ? _startupLastProcessedEventId
             : _lastProcessedEventId;
         _loggingService.captureEvent(
-          'catchup.start lastEventId=${marker ?? 'null'} (${!_initialCatchUpCompleted ? 'startup' : 'current'})',
+          _withInstance(
+            'catchup.start lastEventId=${marker ?? 'null'} (${!_initialCatchUpCompleted ? 'startup' : 'current'})',
+          ),
           domain: syncLoggingDomain,
           subDomain: 'catchup',
         );
@@ -907,7 +919,9 @@ class MatrixStreamConsumer implements SyncPipeline {
           },
         );
         _loggingService.captureEvent(
-          'catchup.slice total=${slice.length} payloads=${counts.payloads} attachments=${counts.attachments} marker=$catchUpMarker',
+          _withInstance(
+            'catchup.slice total=${slice.length} payloads=${counts.payloads} attachments=${counts.attachments} marker=$catchUpMarker',
+          ),
           domain: syncLoggingDomain,
           subDomain: 'catchup',
         );
@@ -919,7 +933,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _catchUpRetryTimer?.cancel();
         _catchUpRetryTimer = null;
         _loggingService.captureEvent(
-          'catchup.initial.completed',
+          _withInstance('catchup.initial.completed'),
           domain: syncLoggingDomain,
           subDomain: 'catchup',
         );
@@ -1674,8 +1688,8 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   // Force a rescan and optional catch-up to recover from potential gaps.
   // Guards against concurrent execution at two levels:
-  // 1. _forceRescanInFlight: Prevents concurrent forceRescan calls (e.g.,
-  //    connectivity + startup from MatrixService)
+  // 1. _forceRescanCompleter: Serializes forceRescan calls (e.g., connectivity +
+  //    startup from MatrixService) so later callers await the in-flight run.
   // 2. _catchUpInFlight: Skips catch-up if one is already running from
   //    _runGuardedCatchUp (e.g., catchUpRetry signal), preventing concurrent
   //    _attachCatchUp calls that cause processOrdered timeout failures.
@@ -1688,18 +1702,21 @@ class MatrixStreamConsumer implements SyncPipeline {
   }) async {
     // Prevent concurrent forceRescan calls from external sources.
     // This is separate from _catchUpInFlight which is managed by _startCatchupNow.
-    if (_forceRescanInFlight) {
+    final pending = _forceRescanCompleter;
+    if (pending != null) {
       _loggingService.captureEvent(
-        'forceRescan.skipped (already in flight)',
+        _withInstance('forceRescan.skipped (already in flight)'),
         domain: syncLoggingDomain,
         subDomain: 'forceRescan',
       );
+      await pending.future;
       return;
     }
-    _forceRescanInFlight = true;
+    final completer = Completer<void>();
+    _forceRescanCompleter = completer;
     try {
       _loggingService.captureEvent(
-        'forceRescan.start includeCatchUp=$includeCatchUp',
+        _withInstance('forceRescan.start includeCatchUp=$includeCatchUp'),
         domain: syncLoggingDomain,
         subDomain: 'forceRescan',
       );
@@ -1710,7 +1727,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         // Bypass check when caller (e.g., _startCatchupNow) has already set the flag.
         if (!bypassCatchUpInFlightCheck && _catchUpInFlight) {
           _loggingService.captureEvent(
-            'forceRescan.skippedCatchUp (catchUpInFlight)',
+            _withInstance('forceRescan.skippedCatchUp (catchUpInFlight)'),
             domain: syncLoggingDomain,
             subDomain: 'forceRescan',
           );
@@ -1720,7 +1737,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
       await _scanLiveTimeline();
       _loggingService.captureEvent(
-        'forceRescan.done includeCatchUp=$includeCatchUp',
+        _withInstance('forceRescan.done includeCatchUp=$includeCatchUp'),
         domain: syncLoggingDomain,
         subDomain: 'forceRescan',
       );
@@ -1732,7 +1749,12 @@ class MatrixStreamConsumer implements SyncPipeline {
         stackTrace: st,
       );
     } finally {
-      _forceRescanInFlight = false;
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+      if (identical(_forceRescanCompleter, completer)) {
+        _forceRescanCompleter = null;
+      }
     }
   }
 

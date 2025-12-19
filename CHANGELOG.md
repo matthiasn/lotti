@@ -65,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integration tests verify backfill functionality
 
 ## [Unreleased]
+### Fixed
+- Sync: Treat missing attachment fetches as retryable failures so markers do not advance past incomplete entries, serialize `forceRescan` with a completer to avoid overlapping runs, and include Matrix stream consumer instance IDs in sync logs to track concurrent pipelines.
 ### Added
 - Automatic Image Analysis: Images added to tasks are now analyzed automatically
   - When dropping, pasting, or importing images to a task with image analysis enabled, analysis runs in background
