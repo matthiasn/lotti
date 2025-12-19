@@ -3775,6 +3775,300 @@ void main() {
     });
   });
 
+  test('forceRescan skips catchUp when _catchUpInFlight is true', () {
+    fakeAsync((async) {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      final capturedLogs = <String>[];
+      when(() => logger.captureEvent(
+            captureAny<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          )).thenAnswer((inv) {
+        capturedLogs.add(inv.positionalArguments.first.toString());
+      });
+      when(() => logger.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          )).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      // Return stored marker so _scheduleInitialCatchUpRetry is triggered
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'stored-marker');
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+
+      // Use completer to block catch-up calls
+      final catchUpCompleter = Completer<void>();
+      var getTimelineCalls = 0;
+
+      // Block the SECOND getTimeline call (from _scheduleInitialCatchUpRetry)
+      // which is the one that sets _catchUpInFlight = true
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async {
+        getTimelineCalls++;
+        if (getTimelineCalls == 2) {
+          // Second call is from retry timer - block to keep _catchUpInFlight true
+          await catchUpCompleter.future;
+        }
+        return timeline;
+      });
+      // Live timeline doesn't block
+      when(() => room.getTimeline(
+            onNewEvent: any<void Function()?>(named: 'onNewEvent'),
+            onInsert: any<void Function(int)?>(named: 'onInsert'),
+            onChange: any<void Function(int)?>(named: 'onChange'),
+            onRemove: any<void Function(int)?>(named: 'onRemove'),
+            onUpdate: any<void Function()?>(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+          )).thenAnswer((_) async {});
+
+      final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      unawaited(consumer.initialize());
+      async.flushMicrotasks();
+      // Let first catch-up (from initialize) complete
+      async.elapse(const Duration(milliseconds: 100));
+      async.flushMicrotasks();
+
+      unawaited(consumer.start());
+      async.flushMicrotasks();
+
+      // Elapse 500ms+ to trigger _scheduleInitialCatchUpRetry timer
+      // This sets _catchUpInFlight = true and starts second catch-up (blocked)
+      async.elapse(const Duration(milliseconds: 600));
+      async.flushMicrotasks();
+
+      // Clear logs to isolate the forceRescan call
+      capturedLogs.clear();
+      final callsBefore = getTimelineCalls;
+
+      // Now call forceRescan while retry catch-up is in flight
+      // It should skip catch-up because _catchUpInFlight is true
+      unawaited(consumer.forceRescan());
+      async.flushMicrotasks();
+      async.elapse(const Duration(milliseconds: 100));
+      async.flushMicrotasks();
+
+      // Verify forceRescan skipped catch-up because _catchUpInFlight was true
+      expect(
+        capturedLogs.any((l) => l.contains('forceRescan.skippedCatchUp')),
+        isTrue,
+        reason:
+            'forceRescan should skip catch-up when _catchUpInFlight is true',
+      );
+
+      // Verify forceRescan still completed (ran timeline scan)
+      expect(
+        capturedLogs.any((l) => l.contains('forceRescan.done')),
+        isTrue,
+        reason: 'forceRescan should still complete (ran timeline scan)',
+      );
+
+      // Only the blocked retry call should have happened, no new call from forceRescan
+      expect(
+        getTimelineCalls - callsBefore,
+        equals(0),
+        reason:
+            'forceRescan should not start new catch-up when one is in flight',
+      );
+
+      // Unblock the completer to clean up
+      catchUpCompleter.complete();
+      async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+    });
+  });
+
+  test(
+      'forceRescan with bypassCatchUpInFlightCheck=true runs catchUp even when _catchUpInFlight is true',
+      () {
+    fakeAsync((async) {
+      final session = MockMatrixSessionManager();
+      final roomManager = MockSyncRoomManager();
+      final logger = MockLoggingService();
+      final journalDb = MockJournalDb();
+      final settingsDb = MockSettingsDb();
+      final processor = MockSyncEventProcessor();
+      final readMarker = MockSyncReadMarkerService();
+      final client = MockClient();
+      final room = MockRoom();
+      final timeline = MockTimeline();
+
+      final capturedLogs = <String>[];
+      when(() => logger.captureEvent(
+            captureAny<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          )).thenAnswer((inv) {
+        capturedLogs.add(inv.positionalArguments.first.toString());
+      });
+      when(() => logger.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          )).thenReturn(null);
+
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(() => session.timelineEvents)
+          .thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      // Return stored marker so _scheduleInitialCatchUpRetry is triggered
+      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+          .thenAnswer((_) async => 'stored-marker');
+      when(() => timeline.events).thenReturn(<Event>[]);
+      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+
+      // Use completer to block the retry catch-up
+      final retryCompleter = Completer<void>();
+      // Use separate completer for bypass call to allow it to complete
+      final bypassCompleter = Completer<void>();
+      var getTimelineCalls = 0;
+
+      // Track which call is which:
+      // Call 1: initialize() catch-up
+      // Call 2: _scheduleInitialCatchUpRetry (blocked by retryCompleter)
+      // Call 3: forceRescan with bypass (completes via bypassCompleter)
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async {
+        getTimelineCalls++;
+        if (getTimelineCalls == 2) {
+          // Retry timer call - block to keep _catchUpInFlight true
+          await retryCompleter.future;
+        } else if (getTimelineCalls == 3) {
+          // Bypass call - let it complete quickly
+          bypassCompleter.complete();
+        }
+        return timeline;
+      });
+      // Live timeline doesn't block
+      when(() => room.getTimeline(
+            onNewEvent: any<void Function()?>(named: 'onNewEvent'),
+            onInsert: any<void Function(int)?>(named: 'onInsert'),
+            onChange: any<void Function(int)?>(named: 'onChange'),
+            onRemove: any<void Function(int)?>(named: 'onRemove'),
+            onUpdate: any<void Function()?>(named: 'onUpdate'),
+          )).thenAnswer((_) async => timeline);
+      when(() => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: any<String>(named: 'eventId'),
+          )).thenAnswer((_) async {});
+
+      final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        liveScanIncludeLookBehind: false,
+        liveScanInitialAuditScans: 0,
+        liveScanSteadyTail: 0,
+        sentEventRegistry: SentEventRegistry(),
+      );
+
+      unawaited(consumer.initialize());
+      async.flushMicrotasks();
+      // Let first catch-up (from initialize) complete
+      async.elapse(const Duration(milliseconds: 100));
+      async.flushMicrotasks();
+
+      unawaited(consumer.start());
+      async.flushMicrotasks();
+
+      // Elapse 500ms+ to trigger _scheduleInitialCatchUpRetry timer
+      // This sets _catchUpInFlight = true and starts second catch-up (blocked)
+      async.elapse(const Duration(milliseconds: 600));
+      async.flushMicrotasks();
+
+      // At this point:
+      // - getTimelineCalls == 2 (initialize + retry)
+      // - _catchUpInFlight == true (retry is blocked)
+      expect(getTimelineCalls, equals(2));
+
+      // Clear logs to isolate the bypass forceRescan call
+      capturedLogs.clear();
+      final callsBefore = getTimelineCalls;
+
+      // Call forceRescan with bypassCatchUpInFlightCheck=true
+      // This should run catch-up even though _catchUpInFlight is true
+      unawaited(consumer.forceRescan(bypassCatchUpInFlightCheck: true));
+      async.flushMicrotasks();
+      async.elapse(const Duration(milliseconds: 100));
+      async.flushMicrotasks();
+
+      // Verify catch-up WAS invoked (getTimelineCalls increased)
+      expect(
+        getTimelineCalls - callsBefore,
+        equals(1),
+        reason:
+            'forceRescan with bypassCatchUpInFlightCheck=true should run catch-up',
+      );
+
+      // Verify 'forceRescan.skippedCatchUp' was NOT logged
+      expect(
+        capturedLogs.any((l) => l.contains('forceRescan.skippedCatchUp')),
+        isFalse,
+        reason:
+            'forceRescan with bypassCatchUpInFlightCheck=true should not log skippedCatchUp',
+      );
+
+      // Verify forceRescan completed
+      expect(
+        capturedLogs.any((l) => l.contains('forceRescan.done')),
+        isTrue,
+        reason: 'forceRescan should complete successfully',
+      );
+
+      // Unblock the retry completer to clean up
+      retryCompleter.complete();
+      async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+    });
+  });
+
   group('stream event processing modes', () {
     late MockMatrixSessionManager session;
     late MockSyncRoomManager roomManager;

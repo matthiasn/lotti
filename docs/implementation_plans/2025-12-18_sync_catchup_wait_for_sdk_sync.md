@@ -162,6 +162,49 @@ Future<void> forceRescan({bool includeCatchUp = true}) async {
 
 This is separate from `_catchUpInFlight` (managed by `_startCatchupNow()`) to avoid conflicts with internal signal-driven catch-ups.
 
+## Follow-Up Fix #2: Skip Catch-Up When _catchUpInFlight (2025-12-19)
+
+### Problem Discovered
+
+After the first fix, logs still showed concurrent catch-ups causing timeouts:
+
+```
+01:26:56.039626 - catchUpRetry: starting guarded catch-up (sets _catchUpInFlight = true)
+01:26:56.422687 - synced=true (starts processing 86 events)
+... (processing takes ~75 seconds) ...
+01:28:07.371736 - forceRescan.start (connectivity) <- starts WHILE catchUpRetry still processing!
+01:28:09.555600 - synced=true (TWO concurrent catch-ups!)
+01:28:09.647914 - processOrdered: waiting for previous batch to complete
+```
+
+**Root cause**: `forceRescan()` was guarded by `_forceRescanInFlight` to prevent concurrent `forceRescan` calls, but it could still run concurrently with `_runGuardedCatchUp()` which uses a different flag (`_catchUpInFlight`).
+
+### Fix Applied
+
+Added `_catchUpInFlight` check in `forceRescan()` with a bypass parameter for internal callers:
+
+```dart
+Future<void> forceRescan({
+  bool includeCatchUp = true,
+  bool bypassCatchUpInFlightCheck = false,  // NEW
+}) async {
+  // ...
+  if (includeCatchUp) {
+    if (!bypassCatchUpInFlightCheck && _catchUpInFlight) {
+      // Skip - another catch-up is in flight from _runGuardedCatchUp
+      _loggingService.captureEvent('forceRescan.skippedCatchUp (catchUpInFlight)', ...);
+    } else {
+      await _attachCatchUp();
+    }
+  }
+  await _scanLiveTimeline();  // Always runs
+}
+```
+
+`_startCatchupNow()` passes `bypassCatchUpInFlightCheck: true` because it intentionally sets `_catchUpInFlight` before calling `forceRescan()`.
+
+External callers (MatrixService connectivity/startup handlers) use the default `bypassCatchUpInFlightCheck: false`, so they respect the existing catch-up-in-flight status.
+
 ### Why the 5-Second Timeout Exists
 
 The `_processOrdered()` method has a serialization loop:
@@ -182,5 +225,7 @@ If issues arise:
 3. Remove `_skipSyncWait` field and constructor parameter
 4. Remove `skipSyncWait: true` from all test instantiations
 5. Remove `_forceRescanInFlight` guard from `forceRescan()`
+6. Remove `bypassCatchUpInFlightCheck` parameter and `_catchUpInFlight` check from `forceRescan()`
+7. Remove `bypassCatchUpInFlightCheck: true` from `_startCatchupNow()`'s call to `forceRescan()`
 
 The existing behavior resumes (catch-up runs immediately without waiting for sync).

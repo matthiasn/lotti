@@ -654,7 +654,10 @@ class MatrixStreamConsumer implements SyncPipeline {
     _catchupLogStartPending = true;
     _catchupDoneLoggedThisBurst = false;
     unawaited(
-      forceRescan(includeCatchUp: _alwaysIncludeCatchUp).whenComplete(() {
+      forceRescan(
+        includeCatchUp: _alwaysIncludeCatchUp,
+        bypassCatchUpInFlightCheck: true,
+      ).whenComplete(() {
         _catchUpInFlight = false;
         _lastCatchupAt = clock.now();
         if (_deferredCatchup) {
@@ -1670,10 +1673,19 @@ class MatrixStreamConsumer implements SyncPipeline {
   }
 
   // Force a rescan and optional catch-up to recover from potential gaps.
-  // Guards against concurrent execution - multiple callers (e.g., connectivity
-  // + startup from MatrixService) can invoke this simultaneously, but only one
-  // runs at a time to avoid timeout failures in _processOrdered.
-  Future<void> forceRescan({bool includeCatchUp = true}) async {
+  // Guards against concurrent execution at two levels:
+  // 1. _forceRescanInFlight: Prevents concurrent forceRescan calls (e.g.,
+  //    connectivity + startup from MatrixService)
+  // 2. _catchUpInFlight: Skips catch-up if one is already running from
+  //    _runGuardedCatchUp (e.g., catchUpRetry signal), preventing concurrent
+  //    _attachCatchUp calls that cause processOrdered timeout failures.
+  //    Use bypassCatchUpInFlightCheck=true when the caller has already set
+  //    _catchUpInFlight (e.g., _startCatchupNow).
+  // The live timeline scan always runs regardless of catch-up status.
+  Future<void> forceRescan({
+    bool includeCatchUp = true,
+    bool bypassCatchUpInFlightCheck = false,
+  }) async {
     // Prevent concurrent forceRescan calls from external sources.
     // This is separate from _catchUpInFlight which is managed by _startCatchupNow.
     if (_forceRescanInFlight) {
@@ -1692,7 +1704,19 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'forceRescan',
       );
       if (includeCatchUp) {
-        await _attachCatchUp();
+        // Skip catch-up if one is already running from _runGuardedCatchUp.
+        // This prevents concurrent _attachCatchUp calls which cause
+        // processOrdered timeout failures.
+        // Bypass check when caller (e.g., _startCatchupNow) has already set the flag.
+        if (!bypassCatchUpInFlightCheck && _catchUpInFlight) {
+          _loggingService.captureEvent(
+            'forceRescan.skippedCatchUp (catchUpInFlight)',
+            domain: syncLoggingDomain,
+            subDomain: 'forceRescan',
+          );
+        } else {
+          await _attachCatchUp();
+        }
       }
       await _scanLiveTimeline();
       _loggingService.captureEvent(

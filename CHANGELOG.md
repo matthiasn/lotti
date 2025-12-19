@@ -6,11 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.762] - 2025-12-19
 ### Fixed
-- Sync Catch-Up: Prevent concurrent forceRescan execution
-  - Added `_forceRescanInFlight` guard to serialize concurrent calls to `forceRescan()`
-  - Fixes issue where connectivity and startup handlers could trigger simultaneous
-    catch-ups, causing timeout failures in event processing
-  - Second concurrent call now skips with `forceRescan.skipped (already in flight)` log
+- Sync Catch-Up: Prevent concurrent catch-up execution
+  - Added `_forceRescanInFlight` guard to serialize concurrent `forceRescan()` calls
+    (e.g., connectivity + startup handlers firing simultaneously)
+  - Added `_catchUpInFlight` check in `forceRescan()` to skip catch-up when another
+    is already running from `_runGuardedCatchUp()` or `_scheduleInitialCatchUpRetry()`
+  - Fixes issue where catch-up from external triggers could run concurrently with
+    internal retry-driven catch-ups, causing `processOrdered` timeout failures
+  - `bypassCatchUpInFlightCheck` parameter allows internal callers like `_startCatchupNow()`
+    to bypass the check when they've intentionally set the flag
 
 ## [0.9.761] - 2025-12-18
 ### Fixed
