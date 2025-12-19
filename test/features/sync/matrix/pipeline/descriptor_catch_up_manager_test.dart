@@ -273,6 +273,49 @@ void main() {
     expect(retryNowCalls, 0);
   });
 
+  test('pending hit with new descriptor triggers callbacks', () async {
+    final logging = MockLoggingService();
+    when(() => logging.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logging.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    final index = AttachmentIndex(logging: logging);
+    final roomManager = MockSyncRoomManager();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+    final ev = MockEvent();
+    when(() => ev.eventId).thenReturn('E1');
+    when(() => ev.attachmentMimetype).thenReturn('application/json');
+    when(() => ev.content).thenReturn(<String, dynamic>{
+      'relativePath': '/p.json',
+    });
+
+    when(() => timeline.events).thenReturn(<Event>[ev]);
+    when(timeline.cancelSubscriptions).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+    when(() => roomManager.currentRoom).thenReturn(room);
+
+    var liveScanCalls = 0;
+    var retryNowCalls = 0;
+    final manager = DescriptorCatchUpManager(
+      logging: logging,
+      attachmentIndex: index,
+      roomManager: roomManager,
+      scheduleLiveScan: () => liveScanCalls++,
+      retryNow: () async => retryNowCalls++,
+      now: DateTime.now,
+    )..addPending('/p.json');
+    await manager.debugRunNow();
+    expect(manager.runs, 1);
+    expect(liveScanCalls, 1);
+    expect(retryNowCalls, 1);
+  });
+
   test('cancelSubscriptions exception is logged and suppressed', () async {
     final logging = MockLoggingService();
     when(() => logging.captureException(any<Object>(),
