@@ -31,6 +31,7 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
@@ -213,6 +214,9 @@ class MatrixStreamConsumer implements SyncPipeline {
       0; // guards overlapping scans and trailing scheduling
   bool _liveScanDeferred = false;
   DateTime? _lastLiveScanAt;
+  bool _lookBehindTailEnabled = true;
+  DateTime? _lookBehindGraceUntil;
+  StreamSubscription<bool>? _lookBehindFlagSubscription;
   // Tracks wake-from-standby detection and forces catch-up before marker
   // advancement.
   bool _wakeCatchUpPending = false;
@@ -429,6 +433,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (_initialized) return;
     // Ensure room snapshot is hydrated similarly to V1.
     await _roomManager.initialize();
+    await _initLookBehindConfig();
     _lastProcessedEventId = await getLastReadMatrixEventId(_settingsDb);
     try {
       final ts = await getLastReadMatrixEventTs(_settingsDb);
@@ -713,6 +718,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     _wakeCatchUpRetryTimer = null;
     await _pendingSyncSubscription?.cancel();
     _pendingSyncSubscription = null;
+    await _lookBehindFlagSubscription?.cancel();
+    _lookBehindFlagSubscription = null;
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     _ingestor.dispose();
@@ -939,6 +946,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           subDomain: 'catchup',
         );
       }
+      _bumpLookBehindGrace();
       return true; // Success
     } catch (e, st) {
       _loggingService.captureException(
@@ -1113,7 +1121,9 @@ class MatrixStreamConsumer implements SyncPipeline {
         lastTimestamp: null,
       );
       List<Event> combined;
-      if (_liveScanIncludeLookBehind) {
+      final includeLookBehind =
+          _liveScanIncludeLookBehind && _shouldIncludeLookBehindTail();
+      if (includeLookBehind) {
         // Merge bounded look-behind tail for better attachment/descriptor pairing
         // during steady state while keeping ordering strict.
         var tail = _liveScanSteadyTail;
@@ -1213,6 +1223,44 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
     }
     return delay;
+  }
+
+  Future<void> _initLookBehindConfig() async {
+    try {
+      _lookBehindTailEnabled =
+          await _journalDb.getConfigFlag(enableMatrixLookBehindTailFlag);
+    } catch (_) {
+      // Default to enabled; mocks may not stub this flag in tests.
+      _lookBehindTailEnabled = true;
+    }
+
+    try {
+      _lookBehindFlagSubscription =
+          _journalDb.watchConfigFlag(enableMatrixLookBehindTailFlag).listen(
+        (value) {
+          _lookBehindTailEnabled = value;
+          if (!value) {
+            _lookBehindGraceUntil = null;
+          }
+        },
+      );
+    } catch (_) {
+      // Best-effort only; tests may not provide a watch stub.
+    }
+  }
+
+  void _bumpLookBehindGrace() {
+    if (!_lookBehindTailEnabled) return;
+    _lookBehindGraceUntil = clock.now().add(SyncTuning.lookBehindGraceDuration);
+  }
+
+  bool _shouldIncludeLookBehindTail() {
+    if (!_lookBehindTailEnabled) return false;
+    final pendingDescriptors = _descriptorCatchUp?.pendingLength ?? 0;
+    if (pendingDescriptors > 0) return true;
+    final until = _lookBehindGraceUntil;
+    if (until == null) return false;
+    return clock.now().isBefore(until);
   }
 
   int _computeAuditTailCountByDelta() {

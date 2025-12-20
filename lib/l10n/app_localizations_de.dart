@@ -742,6 +742,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get configFlagEnableMatrix => 'Matrix-Synchronisation aktivieren';
 
   @override
+  String get configFlagEnableMatrixLookBehindTail =>
+      'Enable Matrix look-behind tail';
+
+  @override
+  String get configFlagEnableMatrixLookBehindTailDescription =>
+      'When enabled, live scans include a short look-behind tail after catch-up or when descriptors are pending. Disable to skip look-behind entirely.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Seite Gewohnheiten aktivieren';
 
   @override

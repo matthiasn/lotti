@@ -1401,6 +1401,18 @@ abstract class AppLocalizations {
   /// **'Enable Matrix sync'**
   String get configFlagEnableMatrix;
 
+  /// No description provided for @configFlagEnableMatrixLookBehindTail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Matrix look-behind tail'**
+  String get configFlagEnableMatrixLookBehindTail;
+
+  /// No description provided for @configFlagEnableMatrixLookBehindTailDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, live scans include a short look-behind tail after catch-up or when descriptors are pending. Disable to skip look-behind entirely.'**
+  String get configFlagEnableMatrixLookBehindTailDescription;
+
   /// No description provided for @configFlagEnableHabitsPage.
   ///
   /// In en, this message translates to:
