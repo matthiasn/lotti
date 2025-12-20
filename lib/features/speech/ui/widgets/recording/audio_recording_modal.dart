@@ -162,10 +162,11 @@ class _AudioRecordingModalContentState
         width: 120,
         height: 48,
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
+            color: Colors.red,
+            width: 2,
           ),
         ),
         child: Center(
@@ -188,10 +189,10 @@ class _AudioRecordingModalContentState
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
+              const Text(
                 'STOP',
                 style: TextStyle(
-                  color: theme.colorScheme.onSurface,
+                  color: Colors.red,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
@@ -213,18 +214,17 @@ class _AudioRecordingModalContentState
         width: 120,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.transparent,
+          color: theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: Colors.red,
-            width: 2,
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             'RECORD',
             style: TextStyle(
-              color: Colors.red,
+              color: theme.colorScheme.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.w600,
               letterSpacing: 1,

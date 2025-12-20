@@ -13,24 +13,50 @@ class OutboxListItem extends StatelessWidget {
     required this.item,
     this.onRetry,
     this.showRetry = false,
+    this.onDelete,
+    this.showDelete = false,
     super.key,
   });
 
   final OutboxItem item;
   final Future<void> Function()? onRetry;
   final bool showRetry;
+  final Future<void> Function()? onDelete;
+  final bool showDelete;
 
   @override
   Widget build(BuildContext context) {
     final viewModel =
         OutboxListItemViewModel.fromItem(context: context, item: item);
 
-    final trailing = showRetry && onRetry != null
+    final retryButton = showRetry && onRetry != null
         ? FilledButton.icon(
             key: ValueKey('outboxRetry-${item.id}'),
             onPressed: () => unawaited(onRetry!.call()),
             icon: const Icon(Icons.replay_rounded),
             label: Text(viewModel.retryButtonLabel),
+          )
+        : null;
+
+    final deleteButton = showDelete && onDelete != null
+        ? IconButton(
+            key: ValueKey('outboxDelete-${item.id}'),
+            onPressed: () => unawaited(onDelete!.call()),
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            tooltip: context.messages.outboxMonitorDelete,
+          )
+        : null;
+
+    final trailing = retryButton != null || deleteButton != null
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (deleteButton != null) deleteButton,
+              if (retryButton != null) retryButton,
+            ],
           )
         : null;
 
