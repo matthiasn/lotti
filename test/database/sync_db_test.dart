@@ -471,6 +471,56 @@ void main() {
 
       expect(await database.allOutboxItems, isEmpty);
     });
+
+    test('deleteOutboxItemById removes specific item', () async {
+      final database = db!;
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 9, 1),
+          subject: 'item-1',
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.error,
+          createdAt: DateTime(2024, 9, 2),
+          subject: 'item-2',
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.sent,
+          createdAt: DateTime(2024, 9, 3),
+          subject: 'item-3',
+        ),
+      );
+
+      expect(await database.allOutboxItems, hasLength(3));
+
+      // Delete item with id 2
+      final deletedCount = await database.deleteOutboxItemById(2);
+      expect(deletedCount, 1);
+
+      final remaining = await database.allOutboxItems;
+      expect(remaining, hasLength(2));
+      expect(remaining.map((e) => e.subject).toSet(), {'item-1', 'item-3'});
+    });
+
+    test('deleteOutboxItemById returns 0 for non-existent id', () async {
+      final database = db!;
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: DateTime(2024, 9, 1),
+        ),
+      );
+
+      final deletedCount = await database.deleteOutboxItemById(999);
+      expect(deletedCount, 0);
+
+      expect(await database.allOutboxItems, hasLength(1));
+    });
   });
 
   group('SyncSequenceLog Tests', () {

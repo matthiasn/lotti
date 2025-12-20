@@ -165,7 +165,7 @@ class _AudioRecordingModalContentState
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: Colors.red,
+            color: theme.colorScheme.error,
             width: 2,
           ),
         ),
@@ -189,10 +189,10 @@ class _AudioRecordingModalContentState
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'STOP',
                 style: TextStyle(
-                  color: Colors.red,
+                  color: theme.colorScheme.error,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
