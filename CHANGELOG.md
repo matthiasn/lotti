@@ -72,6 +72,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync: Preserve sequence log `createdAt` when resolving covered counters to avoid upsert validation errors.
 - Sync: Wait for in-flight ordered processing to finish instead of timing out catch-up batches during long attachment downloads.
 - Sync: Queue attachment downloads asynchronously (bounded concurrency) so ordered processing does not block on large media.
+- Sync: Skip duplicate journal entity messages with the same vector clock to reduce redundant older-or-equal applies.
+- Outbox: Respect retry backoff across triggers to prevent rapid retry storms under flaky networks.
 ### Added
 - Automatic Image Analysis: Images added to tasks are now analyzed automatically
   - When dropping, pasting, or importing images to a task with image analysis enabled, analysis runs in background

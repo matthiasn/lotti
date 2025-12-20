@@ -526,6 +526,47 @@ void main() {
     ).called(1);
   });
 
+  test('skips duplicate journal entity with same vector clock', () async {
+    final entryId = fallbackJournalEntity.meta.id;
+    final vc = fallbackJournalEntity.meta.vectorClock!;
+    final message = SyncMessage.journalEntity(
+      id: entryId,
+      jsonPath: '/entity.json',
+      vectorClock: vc,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => event.eventId).thenReturn('event-id');
+    when(() => event.originServerTs).thenReturn(DateTime.now());
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: vc,
+        )).thenAnswer((_) async => fallbackJournalEntity);
+    when(() => journalDb.updateJournalEntity(fallbackJournalEntity))
+        .thenAnswer((_) async => JournalUpdateResult.applied());
+
+    final diags = <SyncApplyDiagnostics>[];
+    processor.applyObserver = diags.add;
+
+    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: vc,
+        )).called(1);
+    verify(() => journalDb.updateJournalEntity(fallbackJournalEntity))
+        .called(1);
+    verify(
+      () => updateNotifications.notify(
+        fallbackJournalEntity.affectedIds,
+        fromSync: true,
+      ),
+    ).called(1);
+    expect(diags.length, 2);
+    expect(diags.last.skipReason, JournalUpdateSkipReason.olderOrEqual);
+  });
+
   test(
       'invokes applyObserver with diagnostics and logs vclock prediction failure',
       () async {

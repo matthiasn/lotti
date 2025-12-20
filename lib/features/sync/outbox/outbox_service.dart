@@ -103,7 +103,7 @@ class OutboxService {
           subDomain: 'connectivity',
         );
         if (!_isDisposed) {
-          _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+          unawaited(enqueueNextSendRequest(delay: Duration.zero));
         }
         // If not logged in yet, add bounded extra nudges.
         final notLoggedIn =
@@ -176,6 +176,8 @@ class OutboxService {
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
   Timer? _watchdogTimer;
+  DateTime? _nextSendAllowedAt;
+  DateTime? _backoffScheduledAt;
 
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
@@ -221,7 +223,7 @@ class OutboxService {
             domain: 'OUTBOX',
             subDomain: 'watchdog',
           );
-          _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+          unawaited(enqueueNextSendRequest(delay: Duration.zero));
         }
       } catch (e, st) {
         _loggingService.captureException(
@@ -701,6 +703,46 @@ class OutboxService {
   static const int _maxDrainPasses = 20;
   static const Duration _postDrainSettle = Duration(milliseconds: 250);
 
+  void _recordBackoff(Duration delay) {
+    if (delay <= Duration.zero) return;
+    final now = DateTime.now();
+    final candidate = now.add(delay);
+    final current = _nextSendAllowedAt;
+    if (current == null || candidate.isAfter(current)) {
+      _nextSendAllowedAt = candidate;
+    }
+    _scheduleBackoffAt(_nextSendAllowedAt!);
+  }
+
+  void _scheduleBackoffAt(DateTime when) {
+    if (_isDisposed) return;
+    final scheduled = _backoffScheduledAt;
+    if (scheduled != null && !when.isAfter(scheduled)) {
+      return;
+    }
+    _backoffScheduledAt = when;
+    final delay = when.difference(DateTime.now());
+    unawaited(
+      enqueueNextSendRequest(
+        delay: delay.isNegative ? Duration.zero : delay,
+      ),
+    );
+  }
+
+  @visibleForTesting
+  Duration computeEnqueueDelay(Duration delay) {
+    final now = DateTime.now();
+    final nextAllowed = _nextSendAllowedAt;
+    var adjusted = delay;
+    if (adjusted < Duration.zero) {
+      adjusted = Duration.zero;
+    }
+    if (nextAllowed == null) return adjusted;
+    if (!nextAllowed.isAfter(now)) return adjusted;
+    final backoffDelay = nextAllowed.difference(now);
+    return backoffDelay > adjusted ? backoffDelay : adjusted;
+  }
+
   Future<bool> _drainOutbox() async {
     for (var pass = 0; pass < _maxDrainPasses; pass++) {
       if (!_activityGate.canProcess) {
@@ -709,7 +751,7 @@ class OutboxService {
           domain: 'OUTBOX',
           subDomain: 'activityGate',
         );
-        await enqueueNextSendRequest(delay: SyncTuning.outboxRetryDelay);
+        _recordBackoff(SyncTuning.outboxRetryDelay);
         return false;
       }
       final result = await _processor.processQueue();
@@ -723,7 +765,7 @@ class OutboxService {
         continue;
       }
       // Non-zero delay indicates retry/error backoff; schedule and exit.
-      await enqueueNextSendRequest(delay: delay);
+      _recordBackoff(delay);
       return false;
     }
 
@@ -795,6 +837,17 @@ class OutboxService {
         return;
       }
 
+      final nextAllowed = _nextSendAllowedAt;
+      final now = DateTime.now();
+      if (nextAllowed != null) {
+        if (now.isBefore(nextAllowed)) {
+          _scheduleBackoffAt(nextAllowed);
+          return;
+        }
+        _nextSendAllowedAt = null;
+        _backoffScheduledAt = null;
+      }
+
       // Drain the outbox in a single runner callback to avoid leaving the
       // latest item unsent (which can manifest as receivers being one behind).
       final firstDrained = await _drainOutbox();
@@ -808,7 +861,7 @@ class OutboxService {
           domain: 'OUTBOX',
           subDomain: 'activityGate',
         );
-        await enqueueNextSendRequest(delay: SyncTuning.outboxRetryDelay);
+        _recordBackoff(SyncTuning.outboxRetryDelay);
         return;
       }
       await _drainOutbox();
@@ -819,7 +872,7 @@ class OutboxService {
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
-      await enqueueNextSendRequest(delay: const Duration(seconds: 15));
+      _recordBackoff(const Duration(seconds: 15));
     }
   }
 
@@ -827,8 +880,9 @@ class OutboxService {
     Duration delay = const Duration(milliseconds: 1),
   }) async {
     if (_isDisposed) return;
+    final adjustedDelay = computeEnqueueDelay(delay);
     unawaited(
-      Future<void>.delayed(delay).then((_) {
+      Future<void>.delayed(adjustedDelay).then((_) {
         if (_isDisposed) return;
         _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
         _loggingService.captureEvent('enqueueRequest() done', domain: 'OUTBOX');

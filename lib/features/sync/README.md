@@ -123,6 +123,8 @@ that keeps the pipeline testable and observable.
   failures produce breadcrumbs, and pass-cap continuation proactively schedules
   a follow-up drain so the queue advances past pathological items.
 - ClientRunner guards callback errors so the queue cannot die silently.
+- Retry backoff gate coalesces send triggers while a retry delay is active,
+  preventing rapid-fire retries during spotty connectivity.
 - Logging DB writes are best-effort (exceptions captured, file breadcrumbs kept)
   so diagnostics never block outbox progress.
 

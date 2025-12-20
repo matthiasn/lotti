@@ -1,5 +1,6 @@
 // ignore_for_file: one_member_abstracts
 
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -508,6 +509,10 @@ class SyncEventProcessor {
   final SyncJournalEntityLoader _journalEntityLoader;
   final SyncSequenceLogService? _sequenceLogService;
 
+  static const int _recentJournalEntityLimit = 500;
+  final LinkedHashMap<String, String> _recentJournalEntityFingerprints =
+      LinkedHashMap<String, String>();
+
   /// Backfill response handler, injected after construction
   /// to resolve circular dependency in DI setup.
   BackfillResponseHandler? backfillResponseHandler;
@@ -587,6 +592,36 @@ class SyncEventProcessor {
   bool _isStaleDescriptorError(FileSystemException error) {
     final message = error.message;
     return message.contains('stale attachment json');
+  }
+
+  bool _isDuplicateJournalEntity(String entryId, VectorClock? vectorClock) {
+    if (vectorClock == null) return false;
+    final fingerprint = _vectorClockFingerprint(vectorClock);
+    final cached = _recentJournalEntityFingerprints[entryId];
+    if (cached == null || cached != fingerprint) {
+      return false;
+    }
+    _recentJournalEntityFingerprints.remove(entryId);
+    _recentJournalEntityFingerprints[entryId] = fingerprint;
+    return true;
+  }
+
+  void _markJournalEntityProcessed(String entryId, VectorClock? vectorClock) {
+    if (vectorClock == null) return;
+    final fingerprint = _vectorClockFingerprint(vectorClock);
+    _recentJournalEntityFingerprints.remove(entryId);
+    _recentJournalEntityFingerprints[entryId] = fingerprint;
+    if (_recentJournalEntityFingerprints.length > _recentJournalEntityLimit) {
+      _recentJournalEntityFingerprints.remove(
+        _recentJournalEntityFingerprints.keys.first,
+      );
+    }
+  }
+
+  String _vectorClockFingerprint(VectorClock vectorClock) {
+    final entries = vectorClock.vclock.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return entries.map((entry) => '${entry.key}:${entry.value}').join('|');
   }
 
   Future<int> _processEmbeddedEntryLinks({
@@ -712,6 +747,7 @@ class SyncEventProcessor {
       }
     }
 
+    _markJournalEntityProcessed(syncMessage.id, incomingVc);
     return diag;
   }
 
@@ -727,6 +763,24 @@ class SyncEventProcessor {
           entryLinks: final entryLinks,
         ):
         try {
+          if (_isDuplicateJournalEntity(
+              syncMessage.id, syncMessage.vectorClock)) {
+            final diag = SyncApplyDiagnostics(
+              eventId: event.eventId,
+              payloadType: 'journalEntity',
+              entityId: syncMessage.id,
+              vectorClock: syncMessage.vectorClock?.toJson(),
+              conflictStatus: VclockStatus.equal.toString(),
+              applied: false,
+              skipReason: JournalUpdateSkipReason.olderOrEqual,
+            );
+            _loggingService.captureEvent(
+              'apply journalEntity skipped duplicate eventId=${event.eventId} id=${syncMessage.id}',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'apply',
+            );
+            return diag;
+          }
           final journalEntity = await loader.load(
             jsonPath: jsonPath,
             incomingVectorClock: syncMessage.vectorClock,
@@ -779,6 +833,10 @@ class SyncEventProcessor {
             'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} rowsWritten=$rows applied=${updateResult.applied} skip=${updateResult.skipReason?.label ?? 'none'} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
             domain: 'MATRIX_SERVICE',
             subDomain: 'apply',
+          );
+          _markJournalEntityProcessed(
+            journalEntity.meta.id,
+            vcB ?? syncMessage.vectorClock,
           );
           _updateNotifications.notify(
             journalEntity.affectedIds,
