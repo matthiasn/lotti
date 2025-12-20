@@ -112,6 +112,68 @@ void main() {
           .toList();
       expect(errorItems, hasLength(1));
       expect(errorItems.first.showRetry, isTrue);
+      expect(errorItems.first.showDelete, isTrue);
+    });
+
+    testWidgets('delete button shows for error items and triggers confirmation',
+        (tester) async {
+      syncDatabaseMock = mockSyncDatabaseWithCount(1);
+
+      when(() => syncDatabaseMock.watchOutboxItems()).thenAnswer(
+        (_) => Stream<List<OutboxItem>>.fromIterable([
+          [
+            OutboxItem(
+              id: 1,
+              createdAt: testDateTime,
+              updatedAt: testDateTime,
+              status: 2, // error
+              retries: 5,
+              message: '{"runtimeType":"journalEntity","id":"test-id"}',
+              subject: 'error-subject',
+            ),
+          ]
+        ]),
+      );
+
+      when(() => syncDatabaseMock.deleteOutboxItemById(1))
+          .thenAnswer((_) async => 1);
+
+      getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
+
+      final outboxCubitMock = mockOutboxCubit(OutboxState.online());
+
+      await tester.pumpWidget(
+        BlocProvider<OutboxCubit>(
+          lazy: false,
+          create: (BuildContext context) => outboxCubitMock,
+          child: makeTestableWidget(
+            const SizedBox(
+              width: 500,
+              height: 1000,
+              child: OutboxMonitorPage(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Switch to Error tab
+      await tester.tap(find.text('Error'));
+      await tester.pumpAndSettle();
+
+      // Verify delete button is present
+      final deleteButtonFinder = find.byKey(const ValueKey('outboxDelete-1'));
+      expect(deleteButtonFinder, findsOneWidget);
+
+      // Tap delete button
+      await tester.tap(deleteButtonFinder);
+      await tester.pumpAndSettle();
+
+      // Verify confirmation dialog appears
+      expect(find.textContaining('delete this sync item'), findsOneWidget);
+      expect(find.text('DELETE'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
     });
 
     testWidgets('renders empty state when no outbox items', (tester) async {

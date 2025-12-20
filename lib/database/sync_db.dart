@@ -197,6 +197,11 @@ class SyncDatabase extends _$SyncDatabase {
     return delete(outbox).go();
   }
 
+  /// Delete a single outbox item by its ID.
+  Future<int> deleteOutboxItemById(int id) {
+    return (delete(outbox)..where((t) => t.id.equals(id))).go();
+  }
+
   /// Get (hostId, counter) pairs from pending backfill request messages in outbox.
   /// Used to avoid enqueuing duplicate backfill requests.
   Future<Set<({String hostId, int counter})>>

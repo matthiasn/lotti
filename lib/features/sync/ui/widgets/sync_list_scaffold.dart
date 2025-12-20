@@ -428,25 +428,31 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 5),
-        _FilterCard<F>(
-          filters: filters,
-          counts: counts,
-          selected: selected,
-          onChanged: onChanged,
-          locale: locale,
-        ),
-        const SizedBox(height: AppTheme.spacingSmall),
-        Text(
-          summaryText,
-          style: context.textTheme.titleSmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: padding.start,
+        end: padding.end,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 5),
+          _FilterCard<F>(
+            filters: filters,
+            counts: counts,
+            selected: selected,
+            onChanged: onChanged,
+            locale: locale,
           ),
-        ),
-      ],
+          const SizedBox(height: AppTheme.spacingSmall),
+          Text(
+            summaryText,
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

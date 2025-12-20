@@ -72,6 +72,42 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
     }
   }
 
+  Future<void> _deleteItem(BuildContext context, OutboxItem item) async {
+    final confirmed = await showConfirmationModal(
+      context: context,
+      message: context.messages.outboxMonitorDeleteConfirmMessage,
+      confirmLabel: context.messages.outboxMonitorDeleteConfirmLabel,
+      cancelLabel: context.messages.cancelButton,
+    );
+    if (!confirmed) return;
+
+    try {
+      await _db.deleteOutboxItemById(item.id);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.messages.outboxMonitorDeleteSuccess),
+        ),
+      );
+    } catch (error, stackTrace) {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'OUTBOX',
+        subDomain: 'delete_item',
+        stackTrace: stackTrace,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.messages.outboxMonitorDeleteFailed),
+        ),
+      );
+    }
+  }
+
   OutboxStatus? _statusFromIndex(int statusIndex) {
     if (statusIndex < 0 || statusIndex >= OutboxStatus.values.length) {
       return null;
@@ -128,11 +164,16 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
           ctx.messages.outboxMonitorEmptyDescription,
       countSummaryBuilder: (ctx, label, count) =>
           ctx.messages.syncListCountSummary(label, count),
-      itemBuilder: (ctx, OutboxItem item) => OutboxListItem(
-        item: item,
-        showRetry: _statusFromIndex(item.status) == OutboxStatus.error,
-        onRetry: () => _retryItem(ctx, item),
-      ),
+      itemBuilder: (ctx, OutboxItem item) {
+        final isError = _statusFromIndex(item.status) == OutboxStatus.error;
+        return OutboxListItem(
+          item: item,
+          showRetry: isError,
+          onRetry: () => _retryItem(ctx, item),
+          showDelete: isError,
+          onDelete: () => _deleteItem(ctx, item),
+        );
+      },
     );
   }
 }

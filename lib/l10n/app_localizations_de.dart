@@ -1442,6 +1442,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get outboxMonitorRetryFailed => 'Retry failed. Please try again.';
 
   @override
+  String get outboxMonitorDelete => 'delete';
+
+  @override
+  String get outboxMonitorDeleteConfirmMessage =>
+      'Are you sure you want to delete this sync item? This action cannot be undone.';
+
+  @override
+  String get outboxMonitorDeleteConfirmLabel => 'Delete';
+
+  @override
+  String get outboxMonitorDeleteSuccess => 'Item deleted';
+
+  @override
+  String get outboxMonitorDeleteFailed => 'Delete failed. Please try again.';
+
+  @override
   String get outboxMonitorEmptyTitle => 'Outbox is clear';
 
   @override

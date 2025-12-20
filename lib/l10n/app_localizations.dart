@@ -2685,6 +2685,36 @@ abstract class AppLocalizations {
   /// **'Retry failed. Please try again.'**
   String get outboxMonitorRetryFailed;
 
+  /// No description provided for @outboxMonitorDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'delete'**
+  String get outboxMonitorDelete;
+
+  /// No description provided for @outboxMonitorDeleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this sync item? This action cannot be undone.'**
+  String get outboxMonitorDeleteConfirmMessage;
+
+  /// No description provided for @outboxMonitorDeleteConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get outboxMonitorDeleteConfirmLabel;
+
+  /// No description provided for @outboxMonitorDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Item deleted'**
+  String get outboxMonitorDeleteSuccess;
+
+  /// No description provided for @outboxMonitorDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete failed. Please try again.'**
+  String get outboxMonitorDeleteFailed;
+
   /// No description provided for @outboxMonitorEmptyTitle.
   ///
   /// In en, this message translates to:
