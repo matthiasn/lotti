@@ -891,6 +891,10 @@ void main() {
           updatedAt: DateTime(2023),
           vectorClock: null,
         );
+        final updatedLink = testLink.copyWith(hidden: true);
+
+        when(() => mockJournalDb.entryLinkById(updatedLink.id))
+            .thenAnswer((_) async => testLink);
 
         // Mock VectorClockService
         when(() => mockVectorClockService.getNextVectorClock())
@@ -909,10 +913,11 @@ void main() {
             .thenAnswer((_) async {});
 
         // Act
-        final result = await repository.updateLink(testLink);
+        final result = await repository.updateLink(updatedLink);
 
         // Assert
         expect(result, isTrue);
+        verify(() => mockJournalDb.entryLinkById(updatedLink.id)).called(1);
         verify(() => mockVectorClockService.getNextVectorClock()).called(1);
         verify(() => mockJournalDb.upsertEntryLink(any())).called(1);
         verify(
@@ -920,6 +925,33 @@ void main() {
               mockUpdateNotifications.notify({testLink.fromId, testLink.toId}),
         ).called(1);
         verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+      });
+
+      test('skips update when the link is unchanged', () async {
+        // Arrange
+        final testLink = EntryLink.basic(
+          id: 'link-id',
+          fromId: 'from-id',
+          toId: 'to-id',
+          createdAt: DateTime(2023),
+          updatedAt: DateTime(2023),
+          vectorClock: null,
+        );
+        final existingLink = testLink.copyWith(hidden: false);
+
+        when(() => mockJournalDb.entryLinkById(testLink.id))
+            .thenAnswer((_) async => existingLink);
+
+        // Act
+        final result = await repository.updateLink(testLink);
+
+        // Assert
+        expect(result, isFalse);
+        verify(() => mockJournalDb.entryLinkById(testLink.id)).called(1);
+        verifyNever(() => mockVectorClockService.getNextVectorClock());
+        verifyNever(() => mockJournalDb.upsertEntryLink(any()));
+        verifyNever(() => mockUpdateNotifications.notify(any()));
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
       });
     });
 

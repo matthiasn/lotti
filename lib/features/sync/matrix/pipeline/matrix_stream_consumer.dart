@@ -226,7 +226,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Later callers await the in-flight run instead of overlapping.
   Completer<void>? _forceRescanCompleter;
   // Guard to prevent concurrent event processing in _processOrdered.
-  bool _processingInFlight = false;
+  Completer<void>? _processingCompleter;
   // Explicitly request catch-up when nudging via signals, keeping semantics
   // independent of default parameter values.
   final bool _alwaysIncludeCatchUp = true;
@@ -1236,36 +1236,29 @@ class MatrixStreamConsumer implements SyncPipeline {
     // Serialize event processing to ensure in-order ingest across all paths.
     // This prevents concurrent catch-up and live scan from processing events
     // out of order, which would cause false positive gap detection.
-    if (_processingInFlight) {
+    if (_processingCompleter != null) {
       _loggingService.captureEvent(
         'processOrdered: waiting for previous batch to complete (${ordered.length} events)',
         domain: syncLoggingDomain,
         subDomain: 'processOrdered.serialize',
       );
-      // Wait for the previous batch to complete before processing this one.
-      // Use a simple polling loop with short delays.
-      var waitCount = 0;
-      while (_processingInFlight && waitCount < 100) {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        waitCount++;
-      }
-      if (_processingInFlight) {
-        _loggingService.captureEvent(
-          'processOrdered: timeout waiting for previous batch, throwing for ${ordered.length} events',
-          domain: syncLoggingDomain,
-          subDomain: 'processOrdered.serialize',
-        );
-        throw TimeoutException(
-          'Timed out waiting for previous event batch to process.',
-        );
+      while (_processingCompleter != null) {
+        final inFlight = _processingCompleter!;
+        await inFlight.future;
       }
     }
-    _processingInFlight = true;
+    final completer = Completer<void>();
+    _processingCompleter = completer;
 
     try {
       await _processOrderedInternal(ordered, room);
     } finally {
-      _processingInFlight = false;
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+      if (identical(_processingCompleter, completer)) {
+        _processingCompleter = null;
+      }
     }
   }
 

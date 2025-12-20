@@ -2196,20 +2196,20 @@ void main() {
           .thenAnswer((_) async => 6);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
           .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
-        (_) async => _createLogItem(
-          aliceHostId,
-          5,
-          status: SyncSequenceStatus.missing,
-        ),
+      final missing5 = _createLogItem(
+        aliceHostId,
+        5,
+        status: SyncSequenceStatus.missing,
       );
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 6)).thenAnswer(
-        (_) async => _createLogItem(
-          aliceHostId,
-          6,
-          status: SyncSequenceStatus.missing,
-        ),
+      final missing6 = _createLogItem(
+        aliceHostId,
+        6,
+        status: SyncSequenceStatus.missing,
       );
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => missing5);
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 6))
+          .thenAnswer((_) async => missing6);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       await service.recordReceivedEntry(
@@ -2236,6 +2236,10 @@ void main() {
 
       expect(counter5Record.status.value, SyncSequenceStatus.received.index);
       expect(counter6Record.status.value, SyncSequenceStatus.received.index);
+      expect(counter5Record.createdAt.present, isTrue);
+      expect(counter5Record.createdAt.value, missing5.createdAt);
+      expect(counter6Record.createdAt.present, isTrue);
+      expect(counter6Record.createdAt.value, missing6.createdAt);
     });
 
     test('marks covered requested counters as received', () async {
@@ -2251,13 +2255,13 @@ void main() {
           .thenAnswer((_) async => 6);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
           .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
-        (_) async => _createLogItem(
-          aliceHostId,
-          5,
-          status: SyncSequenceStatus.requested,
-        ),
+      final requested5 = _createLogItem(
+        aliceHostId,
+        5,
+        status: SyncSequenceStatus.requested,
       );
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
+          .thenAnswer((_) async => requested5);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       await service.recordReceivedEntry(
@@ -2276,6 +2280,8 @@ void main() {
       ) as SyncSequenceLogCompanion;
 
       expect(counter5Record.status.value, SyncSequenceStatus.received.index);
+      expect(counter5Record.createdAt.present, isTrue);
+      expect(counter5Record.createdAt.value, requested5.createdAt);
     });
 
     test('does not downgrade backfilled status from covered clocks', () async {

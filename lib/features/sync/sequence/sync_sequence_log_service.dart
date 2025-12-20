@@ -387,6 +387,7 @@ class SyncSequenceLogService {
               entryId: Value(entryId),
               payloadType: Value(payloadType.index),
               status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(existing.createdAt),
               updatedAt: Value(now),
             ),
           );

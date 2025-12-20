@@ -171,6 +171,10 @@ Implementation details:
 - Pages use `LinkedEntriesWithTimer` to listen for timer changes and rebuild only the linked entries section.
 - Tunables: highlight duration, scroll duration, retry count, and retry delay can be overridden by the host State if needed.
 
+### Entry Link Updates
+
+- Link updates only emit sync events when link state changes (e.g., hidden or deleted), avoiding no-op vector clock churn.
+
 ### Editor Toolbar Behavior
 
 Recent improvement to editor toolbar visibility:

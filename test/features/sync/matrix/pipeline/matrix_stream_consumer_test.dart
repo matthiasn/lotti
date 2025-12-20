@@ -8363,7 +8363,7 @@ void main() {
       });
     });
 
-    test('throws TimeoutException when previous batch takes too long',
+    test('waits without timing out when previous batch takes too long',
         () async {
       fakeAsync((async) {
         final session = MockMatrixSessionManager();
@@ -8478,23 +8478,30 @@ void main() {
         unawaited(consumer.forceRescan(includeCatchUp: true));
         async.flushMicrotasks();
 
-        // Elapse enough time for timeout (100 waits * 50ms = 5 seconds)
+        // Elapse long enough to prove we do not time out while waiting.
         async.elapse(const Duration(seconds: 6));
         async.flushMicrotasks();
 
-        // The timeout log message should be emitted
+        // We should log that we're waiting, but never time out.
+        expect(
+          capturedMessages
+              .any((m) => m.contains('waiting for previous batch to complete')),
+          isTrue,
+          reason:
+              'Should log waiting message while previous batch is in flight',
+        );
         expect(
           capturedMessages.any((m) =>
               m.contains('timeout waiting for previous batch, throwing')),
-          isTrue,
-          reason: 'Should log timeout message before throwing',
+          isFalse,
+          reason: 'Should not time out while waiting for previous batch',
         );
 
-        // The TimeoutException should be caught and logged
+        // No TimeoutException should be thrown.
         expect(
           capturedExceptions.any((e) => e is TimeoutException),
-          isTrue,
-          reason: 'TimeoutException should be thrown and caught by caller',
+          isFalse,
+          reason: 'TimeoutException should not be thrown while waiting',
         );
 
         streamController.close();
