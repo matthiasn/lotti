@@ -70,8 +70,8 @@ that keeps the pipeline testable and observable.
     catch-up/live scans, never directly from the client stream.
 - Live streaming is micro-batched and ordered chronologically with
     de-duplication by event ID; attachment descriptors are observed and recorded before invoking
-    `SyncEventProcessor`. Media is not downloaded here; retrieval happens later via separate
-    download paths or on-demand processing.
+    `SyncEventProcessor`. Attachment downloads are queued asynchronously (bounded concurrency) so
+    ordered processing never waits; `SmartJournalEntityLoader` still fetches on-demand when needed.
   - Read markers advance monotonically using Matrix timestamps with event IDs as
     tie-breakers. The consumer persists the newest processed ID through
     `SyncReadMarkerService` so fresh sessions resume from the correct position.

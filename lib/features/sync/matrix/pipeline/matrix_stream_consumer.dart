@@ -715,6 +715,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     _pendingSyncSubscription = null;
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
+    _ingestor.dispose();
     // Cancel live timeline subscriptions to avoid leaks.
     try {
       _liveTimeline?.cancelSubscriptions();
@@ -1302,7 +1303,7 @@ class MatrixStreamConsumer implements SyncPipeline {
           continue;
         }
       }
-      // Centralize descriptor record and eager download logic.
+      // Centralize descriptor record and queued download logic.
       await _ingestor.process(
         event: e,
         logging: _loggingService,
@@ -1310,6 +1311,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         descriptorCatchUp: _descriptorCatchUp,
         scheduleLiveScan: _scheduleLiveScan,
         retryNow: retryNow,
+        scheduleDownload: true,
       );
 
       // (descriptor observe handled above)
