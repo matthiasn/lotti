@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.764] - 2025-12-21
+### Fixed
+- Checklist Deletion: Fix persistent empty card after checklist deletion
+  - When deleting a checklist, the checklist ID is now removed from the parent task's `checklistIds` list
+  - Added defensive UI filtering to handle existing stale checklist references
+  - Empty card containers no longer appear after checklist deletion
+
 ## [0.9.762] - 2025-12-19
 ### Fixed
 - Sync Catch-Up: Prevent concurrent catch-up execution

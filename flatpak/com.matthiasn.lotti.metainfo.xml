@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.764" date="2025-12-21">
+      <description>
+        <p>Checklist Deletion Fix: Empty card containers no longer appear after deleting a checklist. The checklist ID is now properly removed from the parent task, and defensive UI filtering handles any existing stale references.</p>
+      </description>
+    </release>
     <release version="0.9.762" date="2025-12-19">
       <description>
         <p>Sync Catch-Up Concurrency Fix: Prevents concurrent catch-up execution from multiple sources. External forceRescan calls now skip catch-up when an internal retry-driven catch-up is already in flight. Fixes timeout failures that occurred when connectivity triggers ran concurrently with scheduled catch-up retries.</p>

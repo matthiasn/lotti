@@ -6,6 +6,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -64,6 +65,22 @@ class ChecklistController extends _$ChecklistController {
     final res =
         await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
     state = const AsyncData(null);
+
+    // Also remove this checklist from the parent task's checklistIds
+    if (taskId != null) {
+      final taskEntry = await getIt<JournalDb>().journalEntityById(taskId!);
+      if (taskEntry is Task) {
+        final currentIds = taskEntry.data.checklistIds ?? [];
+        final updatedIds = currentIds.where((cid) => cid != id).toList();
+        if (updatedIds.length != currentIds.length) {
+          await getIt<PersistenceLogic>().updateTask(
+            journalEntityId: taskId!,
+            taskData: taskEntry.data.copyWith(checklistIds: updatedIds),
+          );
+        }
+      }
+    }
+
     return res;
   }
 
