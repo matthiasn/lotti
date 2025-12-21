@@ -53,6 +53,7 @@ class BackfillResponseHandler {
   Future<void> _sendUnresolvableResponse({
     required String hostId,
     required int counter,
+    SyncSequencePayloadType? payloadType,
   }) async {
     await _outboxService.enqueueMessage(
       SyncMessage.backfillResponse(
@@ -60,11 +61,12 @@ class BackfillResponseHandler {
         counter: counter,
         deleted: false,
         unresolvable: true,
+        payloadType: payloadType,
       ),
     );
 
     _loggingService.captureEvent(
-      'sendUnresolvableResponse hostId=$hostId counter=$counter',
+      'sendUnresolvableResponse hostId=$hostId counter=$counter payloadType=$payloadType',
       domain: 'SYNC_BACKFILL',
       subDomain: 'unresolvable',
     );
@@ -187,6 +189,7 @@ class BackfillResponseHandler {
     required int counter,
     required Set<String> sentPayloads,
   }) async {
+    final myHost = await _vectorClockService.getHost();
     // Look up in our sequence log
     final logEntry = await _sequenceLogService.getEntryByHostAndCounter(
       hostId,
@@ -197,7 +200,6 @@ class BackfillResponseHandler {
       // We don't have this entry in our log
       // Check if we're the originator - if so, respond with unresolvable
       // since no one else can answer for our own counters
-      final myHost = await _vectorClockService.getHost();
       if (myHost != null && hostId == myHost) {
         await _sendUnresolvableResponse(hostId: hostId, counter: counter);
         return true;
@@ -259,16 +261,24 @@ class BackfillResponseHandler {
           // VC doesn't contain the counter - entry was modified since this
           // counter was created. Send BackfillResponse hint so the receiver
           // can map (hostId, counter) → entryId.
-          await _outboxService.enqueueMessage(
-            SyncMessage.backfillResponse(
+          if (myHost != null && hostId == myHost) {
+            await _sendUnresolvableResponse(
               hostId: hostId,
               counter: counter,
-              deleted: false,
-              entryId: payloadId, // legacy compatibility (journal only)
               payloadType: payloadType,
-              payloadId: payloadId,
-            ),
-          );
+            );
+          } else {
+            await _outboxService.enqueueMessage(
+              SyncMessage.backfillResponse(
+                hostId: hostId,
+                counter: counter,
+                deleted: false,
+                entryId: payloadId, // legacy compatibility (journal only)
+                payloadType: payloadType,
+                payloadId: payloadId,
+              ),
+            );
+          }
         }
 
         return true;
@@ -303,15 +313,23 @@ class BackfillResponseHandler {
         final vcContainsCounter = vcCounter != null && vcCounter == counter;
 
         if (!vcContainsCounter) {
-          await _outboxService.enqueueMessage(
-            SyncMessage.backfillResponse(
+          if (myHost != null && hostId == myHost) {
+            await _sendUnresolvableResponse(
               hostId: hostId,
               counter: counter,
-              deleted: false,
               payloadType: payloadType,
-              payloadId: payloadId,
-            ),
-          );
+            );
+          } else {
+            await _outboxService.enqueueMessage(
+              SyncMessage.backfillResponse(
+                hostId: hostId,
+                counter: counter,
+                deleted: false,
+                payloadType: payloadType,
+                payloadId: payloadId,
+              ),
+            );
+          }
         }
 
         return true;

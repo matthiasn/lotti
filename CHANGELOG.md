@@ -75,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync: Skip duplicate journal entity messages with the same vector clock to reduce redundant older-or-equal applies.
 - Sync: Gate live-scan look-behind tails to descriptor backlog or post catch-up grace, with a config flag to disable look-behind entirely.
 - Sync: Send descriptor JSON from a single snapshot so the message vector clock matches uploaded bytes, avoiding stale vector-clock retries.
+- Sync: Mark superseded own counters as unresolvable during backfill so requested entries can clear.
 - Outbox: Respect retry backoff across triggers to prevent rapid retry storms under flaky networks.
 ### Added
 - Automatic Image Analysis: Images added to tasks are now analyzed automatically

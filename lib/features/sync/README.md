@@ -158,8 +158,9 @@ complete reconstruction of sync state.
   manages sequence status, resolves pending backfill hints
 - `BackfillRequestService` — periodically scans for missing entries and sends
   batched `SyncBackfillRequest` messages (up to 100 entries per message)
-- `BackfillResponseHandler` — handles incoming requests (re-sends entries +
-  sends BackfillResponse with entryId hint) and verifies responses
+- `BackfillResponseHandler` — handles incoming requests (re-sends entries,
+  sends BackfillResponse hints when needed, and marks superseded own counters
+  as unresolvable) and verifies responses
 
 **Gap Detection:**
 - Examines ALL hosts in incoming vector clocks (not just the originator)
@@ -198,8 +199,12 @@ This prevents entries from being stuck as "missing" when the actual content
 was delivered via a different payload type at the same vector clock position.
 
 **Two-Phase Backfill Verification:**
-When responding to a backfill request, the responder sends BOTH the entry via
-normal sync AND a `BackfillResponse` with the entryId. This enables safe
+When responding to a backfill request, the responder re-sends the entry via
+normal sync. If the requested counter is still present in the entry's vector
+clock (or the responder is not the originator), it also sends a
+`BackfillResponse` with the entryId. If the counter belongs to the responder
+but is no longer present in the entry's vector clock, it sends an unresolvable
+response instead to clear the request. This enables safe
 resolution even when the entry's vector clock has evolved since the original
 counter was recorded:
 
@@ -233,8 +238,11 @@ If the BackfillResponse arrives before the sync message (race condition):
 1. Device A detects missing entry (host=X, counter=5)
 2. Device A broadcasts `SyncBackfillRequest` with entries list
 3. Device B receives request, looks up entry in its sequence log
-4. If found: Device B re-sends the journal entity via normal sync AND sends
-   `SyncBackfillResponse` with `deleted=false, entryId=<id>`
+4. If found: Device B re-sends the journal entity via normal sync and:
+   - If the requested counter is still present in its VC (or the counter belongs
+     to another host), it sends `SyncBackfillResponse` with `deleted=false, entryId=<id>`
+   - If the requested counter belongs to Device B but is no longer present in its VC,
+     it sends `SyncBackfillResponse` with `deleted=false, unresolvable=true`
 5. If deleted/purged: Device B sends `SyncBackfillResponse` with `deleted=true`
 6. Device A receives the BackfillResponse:
    - Stores the entryId hint on the sequence log entry
