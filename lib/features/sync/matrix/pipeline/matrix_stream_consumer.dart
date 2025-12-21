@@ -31,7 +31,6 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
@@ -94,11 +93,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     Duration markerDebounce = const Duration(milliseconds: 300),
     int? maxRetriesPerEvent,
     Duration circuitCooldown = const Duration(seconds: 30),
-    // Live-scan look-behind tuning (test seams)
-    bool liveScanIncludeLookBehind = true,
-    int liveScanInitialAuditScans = 2,
-    int? liveScanInitialAuditTail,
-    int liveScanSteadyTail = 30,
     bool dropOldPayloadsInLiveScan = true,
     // Test seam: skip sync wait in tests to avoid needing to mock client.onSync
     bool skipSyncWait = false,
@@ -128,11 +122,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         _retryMaxEntries = 2000,
         _circuitFailureThreshold = 50,
         _circuitCooldown = circuitCooldown,
-        _liveScanIncludeLookBehind = liveScanIncludeLookBehind,
-        _liveScanSteadyTail = liveScanSteadyTail,
         _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
-        _overrideAuditTail = liveScanInitialAuditTail,
-        _liveScanAuditScansRemaining = liveScanInitialAuditScans,
         _sentEventRegistry = sentEventRegistry,
         _ingestor = AttachmentIngestor(documentsDirectory: documentsDirectory) {
     _retryTracker = rc.RetryTracker(
@@ -196,8 +186,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   bool _initialized = false;
   String? _lastProcessedEventId;
   num? _lastProcessedTs;
-  // Captured at initialize() for attach-time anchoring and sizing initial
-  // audit tails. These represent the persisted "last sync" marker when we
+  // Captured at initialize() for attach-time anchoring. These represent the
+  // persisted "last sync" marker when we
   // start this session, before we process any new events.
   String? _startupLastProcessedEventId;
   num? _startupLastProcessedTs;
@@ -214,9 +204,6 @@ class MatrixStreamConsumer implements SyncPipeline {
       0; // guards overlapping scans and trailing scheduling
   bool _liveScanDeferred = false;
   DateTime? _lastLiveScanAt;
-  bool _lookBehindTailEnabled = true;
-  DateTime? _lookBehindGraceUntil;
-  StreamSubscription<bool>? _lookBehindFlagSubscription;
   // Tracks wake-from-standby detection and forces catch-up before marker
   // advancement.
   bool _wakeCatchUpPending = false;
@@ -241,13 +228,6 @@ class MatrixStreamConsumer implements SyncPipeline {
   // Descriptor-focused catch-up helper (manages pending jsonPaths)
   DescriptorCatchUpManager? _descriptorCatchUp;
   static const int _liveScanTailLimit = 1000;
-  // Live-scan look-behind policy. Can be tuned via constructor (test seams).
-  final bool _liveScanIncludeLookBehind;
-  int _liveScanAuditScansRemaining;
-  int _liveScanAuditTail =
-      300; // sized later based on offline delta or override
-  final int _liveScanSteadyTail;
-  final int? _overrideAuditTail; // optional override for tests
   final bool _dropOldPayloadsInLiveScan;
 
   // Tracks the last time we received a signal (client stream or timeline)
@@ -433,7 +413,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     if (_initialized) return;
     // Ensure room snapshot is hydrated similarly to V1.
     await _roomManager.initialize();
-    await _initLookBehindConfig();
     _lastProcessedEventId = await getLastReadMatrixEventId(_settingsDb);
     try {
       final ts = await getLastReadMatrixEventTs(_settingsDb);
@@ -604,9 +583,6 @@ class MatrixStreamConsumer implements SyncPipeline {
           onUpdate: onTimelineSignal,
         );
         _liveTimeline = tl;
-        // Size the initial audit tail based on offline delta (or override).
-        _liveScanAuditTail =
-            _overrideAuditTail ?? _computeAuditTailCountByDelta();
         // Proactively scan once at startup, now that initial catch‑up has run
         // (or been attempted) to avoid skipping backlog.
         _loggingService.captureEvent(
@@ -718,8 +694,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     _wakeCatchUpRetryTimer = null;
     await _pendingSyncSubscription?.cancel();
     _pendingSyncSubscription = null;
-    await _lookBehindFlagSubscription?.cancel();
-    _lookBehindFlagSubscription = null;
     _readMarkerManager.dispose();
     _descriptorCatchUp?.dispose();
     _ingestor.dispose();
@@ -946,7 +920,6 @@ class MatrixStreamConsumer implements SyncPipeline {
           subDomain: 'catchup',
         );
       }
-      _bumpLookBehindGrace();
       return true; // Success
     } catch (e, st) {
       _loggingService.captureException(
@@ -1048,11 +1021,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       final gap = now.difference(lastScan);
       if (gap > _standbyThreshold) {
         _wakeCatchUpPending = true;
-        // Reset audit mode to scan a larger tail on wake.
-        _liveScanAuditScansRemaining = 3;
-        _liveScanAuditTail = _computeAuditTailCountByDelta();
         _loggingService.captureEvent(
-          'wake.detected gapMs=${gap.inMilliseconds} auditTail=$_liveScanAuditTail auditScans=$_liveScanAuditScansRemaining',
+          'wake.detected gapMs=${gap.inMilliseconds}',
           domain: syncLoggingDomain,
           subDomain: 'wake',
         );
@@ -1119,33 +1089,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         lastEventId: _lastProcessedEventId,
         tailLimit: _liveScanTailLimit,
         lastTimestamp: null,
-      );
-      List<Event> combined;
-      final includeLookBehind =
-          _liveScanIncludeLookBehind && _shouldIncludeLookBehindTail();
-      if (includeLookBehind) {
-        // Merge bounded look-behind tail for better attachment/descriptor pairing
-        // during steady state while keeping ordering strict.
-        var tail = _liveScanSteadyTail;
-        if (_liveScanAuditScansRemaining > 0) {
-          tail = _liveScanAuditTail;
-          _liveScanAuditScansRemaining--;
-        }
-        final tailSlice = msh.buildLiveScanSlice(
-          timelineEvents: tl.events,
-          lastEventId: null,
-          tailLimit: tail,
-          lastTimestamp: null,
-        );
-        if (_collectMetrics) {
-          _metrics.recordLookBehindMerge(tail);
-        }
-        combined = [...afterSlice, ...tailSlice]
-          ..sort(TimelineEventOrdering.compare);
-      } else {
-        combined = [...afterSlice]..sort(TimelineEventOrdering.compare);
-      }
-      final deduped = tu.dedupEventsByIdPreserveOrder(combined);
+      )..sort(TimelineEventOrdering.compare);
+      final deduped = tu.dedupEventsByIdPreserveOrder(afterSlice);
       if (deduped.isNotEmpty) {
         // Use helper to optionally drop older/equal payloads while keeping
         // attachments and retries.
@@ -1223,55 +1168,6 @@ class MatrixStreamConsumer implements SyncPipeline {
       }
     }
     return delay;
-  }
-
-  Future<void> _initLookBehindConfig() async {
-    try {
-      _lookBehindTailEnabled =
-          await _journalDb.getConfigFlag(enableMatrixLookBehindTailFlag);
-    } catch (_) {
-      // Default to enabled; mocks may not stub this flag in tests.
-      _lookBehindTailEnabled = true;
-    }
-
-    try {
-      _lookBehindFlagSubscription =
-          _journalDb.watchConfigFlag(enableMatrixLookBehindTailFlag).listen(
-        (value) {
-          _lookBehindTailEnabled = value;
-          if (!value) {
-            _lookBehindGraceUntil = null;
-          }
-        },
-      );
-    } catch (_) {
-      // Best-effort only; tests may not provide a watch stub.
-    }
-  }
-
-  void _bumpLookBehindGrace() {
-    if (!_lookBehindTailEnabled) return;
-    _lookBehindGraceUntil = clock.now().add(SyncTuning.lookBehindGraceDuration);
-  }
-
-  bool _shouldIncludeLookBehindTail() {
-    if (!_lookBehindTailEnabled) return false;
-    final pendingDescriptors = _descriptorCatchUp?.pendingLength ?? 0;
-    if (pendingDescriptors > 0) return true;
-    final until = _lookBehindGraceUntil;
-    if (until == null) return false;
-    return clock.now().isBefore(until);
-  }
-
-  int _computeAuditTailCountByDelta() {
-    final ts = _startupLastProcessedTs;
-    if (ts == null) return 50;
-    final nowMs = clock.now().millisecondsSinceEpoch;
-    final deltaMs = nowMs - ts.toInt();
-    final deltaH = deltaMs / (1000 * 60 * 60);
-    if (deltaH >= 48) return 100;
-    if (deltaH >= 12) return 80;
-    return 50;
   }
 
   // (helper removed; all call sites use utils)

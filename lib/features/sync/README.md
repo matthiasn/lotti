@@ -105,11 +105,8 @@ that keeps the pipeline testable and observable.
     delayed pass at +200ms. This reduces churn while still catching
     late-arriving text that pairs with attachments.
   - Historical windows tightened to reduce redundant work:
-    - Catch-up `preContextCount = 80`, `maxLookback = 1000`.
-    - Live-scan steady tail = 30; audit tails (first two scans) = 50/80/100
-      sized by the offline delta.
-    - Look-behind tail is now conditional: only runs during descriptor backlog
-      or briefly after catch-up. Toggle via `enable_matrix_lookbehind_tail`.
+    - Catch-up `preContextCount = 80`, `maxLookback = 10000`.
+    - Live-scan processes only events strictly after the last marker.
   - Log noise reduced under `collectMetrics`: `signal.*`, `noAdvance.rescan`,
     and `doubleScan.*` are gated; `marker.local` condensed to one line with
     id+ts.

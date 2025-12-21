@@ -105,8 +105,6 @@ class SyncTuning {
   static const int catchupPreContextCount = 80;
   static const int catchupMaxLookback =
       10000; // Increased from 1000 to handle larger backlogs
-  static const int liveScanSteadyTail = 30;
-  static const Duration lookBehindGraceDuration = Duration(seconds: 15);
 
   // Backfill tuning - self-healing sync for missing entries
   static const Duration backfillRequestInterval = Duration(minutes: 5);

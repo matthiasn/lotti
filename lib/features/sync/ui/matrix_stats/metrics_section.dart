@@ -61,8 +61,6 @@ class SyncMetricsSection extends StatelessWidget {
       'dbMissingBase': 'DB Missing Base',
       'dbEntryLinkNoop': 'EntryLink No-ops',
       'staleAttachmentPurges': 'Stale Attachment Purges',
-      'lookBehindMerges': 'Look-behind Merges',
-      'lastLookBehindTail': 'Last Look-behind Tail',
       // Signals (ingestion)
       'signalClientStream': 'Signals (client stream)',
       'signalTimelineCallbacks': 'Signals (timeline callbacks)',
@@ -100,10 +98,6 @@ class SyncMetricsSection extends StatelessWidget {
             k == 'dbEntryLinkNoop' ||
             k == 'staleAttachmentPurges' ||
             k.startsWith('droppedByType.'));
-    final lookBehind = _select(
-      v2,
-      (k) => k == 'lookBehindMerges' || k == 'lastLookBehindTail',
-    ).where((e) => e.value != 0).toList();
     final signals = _select(
       v2,
       (k) =>
@@ -119,9 +113,6 @@ class SyncMetricsSection extends StatelessWidget {
       'Reliability': reliability,
       'DB Apply': db,
     };
-    if (lookBehind.isNotEmpty) {
-      sections['Look-behind'] = lookBehind;
-    }
     if (signals.isNotEmpty) {
       sections['Signals'] = signals;
     }

@@ -21,9 +21,6 @@ class MetricsCounters {
   int skippedByRetryLimit = 0;
   int retriesScheduled = 0;
   int circuitOpens = 0;
-  // Live-scan look-behind observability
-  int lookBehindMerges = 0;
-  int lastLookBehindTail = 0;
 
   int dbApplied = 0;
   int dbIgnoredByVectorClock = 0;
@@ -148,12 +145,6 @@ class MetricsCounters {
     }
   }
 
-  void recordLookBehindMerge(int tail) {
-    if (!collect) return;
-    lookBehindMerges++;
-    lastLookBehindTail = tail;
-  }
-
   void incTrailingCatchups() {
     if (!collect) return;
     trailingCatchups++;
@@ -213,8 +204,6 @@ class MetricsCounters {
       ..putIfAbsent('dbEntryLinkNoop', () => dbEntryLinkNoop)
       ..putIfAbsent('staleAttachmentPurges', () => staleAttachmentPurges)
       ..putIfAbsent('selfEventsSuppressed', () => selfEventsSuppressed)
-      ..putIfAbsent('lookBehindMerges', () => lookBehindMerges)
-      ..putIfAbsent('lastLookBehindTail', () => lastLookBehindTail)
       // Signal ingestion metrics
       ..putIfAbsent('signalClientStream', () => signalClientStream)
       ..putIfAbsent('signalTimelineCallbacks', () => signalTimelineCallbacks)

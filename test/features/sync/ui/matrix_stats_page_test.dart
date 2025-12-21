@@ -605,8 +605,6 @@ void main() {
       'conflictsCreated': 0,
       'dbMissingBase': 0,
       'dbEntryLinkNoop': 0,
-      'lookBehindMerges': 0,
-      'lastLookBehindTail': 0,
     };
     for (var i = 0; i < 30; i++) {
       longMap['processed.type$i'] = i;
