@@ -137,8 +137,7 @@ List<Event> buildLiveScanSlice({
   required int tailLimit,
   required num? lastTimestamp,
 }) {
-  final events = List<Event>.from(timelineEvents)
-    ..sort(TimelineEventOrdering.compare);
+  final events = TimelineEventOrdering.sortStableByTimestamp(timelineEvents);
   final idx = tu.findLastIndexByEventId(events, lastEventId);
   final slice = idx >= 0
       ? events.sublist(idx + 1)

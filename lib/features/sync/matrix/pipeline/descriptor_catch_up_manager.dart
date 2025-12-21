@@ -5,7 +5,6 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 
 /// DescriptorCatchUpManager
@@ -158,8 +157,9 @@ class DescriptorCatchUpManager {
       var pendingHits = 0;
       var freshHits = 0;
       try {
-        final events = List<Event>.from(snapshot.events)
-          ..sort(TimelineEventOrdering.compare);
+        final events = TimelineEventOrdering.sortStableByTimestamp(
+          snapshot.events,
+        );
         for (final e in events) {
           final rp = e.content['relativePath'];
           if (rp is String && rp.isNotEmpty) {

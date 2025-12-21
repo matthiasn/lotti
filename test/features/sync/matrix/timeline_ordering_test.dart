@@ -58,6 +58,65 @@ void main() {
     });
   });
 
+  group('TimelineEventOrdering.sortStableByTimestamp', () {
+    test('preserves original order for equal timestamps', () {
+      final first = _MockEvent();
+      final second = _MockEvent();
+      final later = _MockEvent();
+
+      when(() => first.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(() => second.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(() => later.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+
+      when(() => first.eventId).thenReturn(r'$0002');
+      when(() => second.eventId).thenReturn(r'$0001');
+      when(() => later.eventId).thenReturn(r'$0003');
+
+      final ordered = TimelineEventOrdering.sortStableByTimestamp(
+        [first, second, later],
+      );
+
+      expect(ordered, [first, second, later]);
+    });
+  });
+
+  group('TimelineEventOrdering.timestampCollisionStats', () {
+    test('reports collisions with sample timestamps', () {
+      final a = _MockEvent();
+      final b = _MockEvent();
+      final c = _MockEvent();
+      final d = _MockEvent();
+
+      when(() => a.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(() => b.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+      when(() => c.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+      when(() => d.originServerTs)
+          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1000));
+
+      when(() => a.eventId).thenReturn(r'$a');
+      when(() => b.eventId).thenReturn(r'$b');
+      when(() => c.eventId).thenReturn(r'$c');
+      when(() => d.eventId).thenReturn(r'$d');
+
+      final stats = TimelineEventOrdering.timestampCollisionStats(
+        [a, b, c, d],
+        sampleLimit: 5,
+      );
+
+      expect(stats.groupCount, 1);
+      expect(stats.eventCount, 3);
+      expect(stats.sample.length, 1);
+      expect(stats.sample.first.ts, 1000);
+      expect(stats.sample.first.count, 3);
+    });
+  });
+
   group('TimelineEventOrdering.isNewer', () {
     test('returns true when no previous marker exists', () {
       expect(

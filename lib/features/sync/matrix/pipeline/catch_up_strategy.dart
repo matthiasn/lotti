@@ -47,8 +47,9 @@ class CatchUpStrategy {
         maxPages: 20,
         logging: logging,
       );
-      final events = List<Event>.from(snapshot.events)
-        ..sort(TimelineEventOrdering.compare);
+      final events = TimelineEventOrdering.sortStableByTimestamp(
+        snapshot.events,
+      );
       var idx = tu.findLastIndexByEventId(events, lastEventId);
 
       // Escalate snapshot size when:
@@ -86,8 +87,9 @@ class CatchUpStrategy {
         limit = doubled > maxLookback ? maxLookback : doubled;
         final next = await room.getTimeline(limit: limit);
         try {
-          final nextEvents = List<Event>.from(next.events)
-            ..sort(TimelineEventOrdering.compare);
+          final nextEvents = TimelineEventOrdering.sortStableByTimestamp(
+            next.events,
+          );
           events
             ..clear()
             ..addAll(nextEvents);
