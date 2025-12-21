@@ -65,6 +65,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integration tests verify backfill functionality
 
 ## [Unreleased]
+### Fixed
+- Sync: Treat missing attachment fetches as retryable failures so markers do not advance past incomplete entries, serialize `forceRescan` with a completer to avoid overlapping runs, and include Matrix stream consumer instance IDs in sync logs to track concurrent pipelines.
+- Sync: Avoid redundant descriptor catch-up retries by running catch-up only on pending changes, triggering retryNow only when new descriptors are discovered, and skipping stale descriptor errors when the local entry already supersedes the incoming vector clock.
+- Sync: Skip no-op entry link updates so vector clocks only advance when link state changes.
+- Sync: Preserve sequence log `createdAt` when resolving covered counters to avoid upsert validation errors.
+- Sync: Wait for in-flight ordered processing to finish instead of timing out catch-up batches during long attachment downloads.
+- Sync: Queue attachment downloads asynchronously (bounded concurrency) so ordered processing does not block on large media.
+- Sync: Skip duplicate journal entity messages with the same vector clock to reduce redundant older-or-equal applies.
+- Sync: Gate live-scan look-behind tails to descriptor backlog or post catch-up grace, with a config flag to disable look-behind entirely.
+- Sync: Send descriptor JSON from a single snapshot so the message vector clock matches uploaded bytes, avoiding stale vector-clock retries.
+- Sync: Mark superseded own counters as unresolvable during backfill so requested entries can clear.
+- Outbox: Respect retry backoff across triggers to prevent rapid retry storms under flaky networks.
 ### Added
 - Automatic Image Analysis: Images added to tasks are now analyzed automatically
   - When dropping, pasting, or importing images to a task with image analysis enabled, analysis runs in background

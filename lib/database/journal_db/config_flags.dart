@@ -57,6 +57,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableMatrixLookBehindTailFlag,
+      description: 'Enable Matrix look-behind tail',
+      status: true,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableNotificationsFlag,
       description: 'Enable notifications?',
       status: false,

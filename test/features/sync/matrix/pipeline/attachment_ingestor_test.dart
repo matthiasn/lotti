@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -51,7 +52,7 @@ void main() {
       when(() => desc.removeIfPresent('/p/a.bin')).thenReturn(true);
 
       // No documentsDirectory = descriptor-only mode
-      final result = await const AttachmentIngestor().process(
+      final result = await AttachmentIngestor().process(
         event: ev,
         logging: logging,
         attachmentIndex: index,
@@ -104,7 +105,7 @@ void main() {
       when(() => desc.removeIfPresent('/media/x.jpg')).thenReturn(true);
 
       // No documentsDirectory = descriptor-only mode
-      await const AttachmentIngestor().process(
+      await AttachmentIngestor().process(
         event: ev,
         logging: logging,
         attachmentIndex: index,
@@ -130,7 +131,7 @@ void main() {
       final desc = MockDescriptorCatchUpManager();
       when(() => desc.removeIfPresent('/p/b.bin')).thenReturn(false);
 
-      await const AttachmentIngestor().process(
+      await AttachmentIngestor().process(
         event: ev,
         logging: logging,
         attachmentIndex: index,
@@ -141,6 +142,61 @@ void main() {
 
       expect(liveScanCalls, 0);
       expect(retryNowCalls, 0);
+    });
+  });
+
+  group('queued download mode (scheduleDownload)', () {
+    test('queues attachment download and writes file asynchronously', () async {
+      final logging = MockLoggingService();
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      final tmp = Directory.systemTemp.createTempSync('ingestor_queue');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+
+      final matrixFile = MockMatrixFile();
+      when(() => matrixFile.bytes)
+          .thenReturn(Uint8List.fromList(utf8.encode('queued')));
+      final downloadCompleter = Completer<MatrixFile>();
+
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('e_queue');
+      when(() => ev.content).thenReturn(
+          {'relativePath': '/data/queued.json', 'msgtype': 'm.file'});
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.senderId).thenReturn('@other:u');
+      when(ev.downloadAndDecryptAttachment)
+          .thenAnswer((_) => downloadCompleter.future);
+
+      final index = AttachmentIndex(logging: logging);
+      final desc = MockDescriptorCatchUpManager();
+      when(() => desc.removeIfPresent('/data/queued.json')).thenReturn(false);
+
+      final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+      final result = await ingestor.process(
+        event: ev,
+        logging: logging,
+        attachmentIndex: index,
+        descriptorCatchUp: desc,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+        scheduleDownload: true,
+      );
+
+      expect(result, isFalse);
+      expect(File('${tmp.path}/data/queued.json').existsSync(), isFalse);
+
+      downloadCompleter.complete(matrixFile);
+      await ingestor.whenIdle();
+
+      final writtenFile = File('${tmp.path}/data/queued.json');
+      expect(writtenFile.existsSync(), isTrue);
+      expect(writtenFile.readAsStringSync(), 'queued');
     });
   });
 

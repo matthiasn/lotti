@@ -1,5 +1,7 @@
-// Records attachment descriptors and eagerly downloads attachments to disk.
+// Records attachment descriptors and queues attachment downloads to disk.
 
+import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -15,23 +17,38 @@ import 'package:path/path.dart' as p;
 /// Purpose
 /// - Encapsulates first-pass attachment handling for the sync pipeline:
 ///   - Record descriptors into AttachmentIndex and emit observability logs
-///   - Eagerly download and save attachments to disk
+///   - Download and save attachments (immediate or queued)
 ///   - Clear pending jsonPaths via [DescriptorCatchUpManager] and nudge scans
 ///
 /// This helper operates on provided arguments and the documents directory.
 class AttachmentIngestor {
-  const AttachmentIngestor({
+  AttachmentIngestor({
     this.documentsDirectory,
-  });
+    int maxConcurrentDownloads = _defaultMaxConcurrentDownloads,
+  }) : _maxConcurrentDownloads =
+            maxConcurrentDownloads < 0 ? 0 : maxConcurrentDownloads;
 
-  /// The documents directory for saving attachments. If null, eager download
-  /// is skipped (descriptor-only mode for testing or when fs access is not
+  static const int _defaultMaxConcurrentDownloads = 2;
+
+  /// The documents directory for saving attachments. If null, downloads are
+  /// skipped (descriptor-only mode for testing or when fs access is not
   /// available).
   final Directory? documentsDirectory;
+  final int _maxConcurrentDownloads;
+
+  final Queue<String> _downloadQueue = Queue<String>();
+  final Map<String, _DownloadRequest> _pendingDownloads =
+      <String, _DownloadRequest>{};
+  final Set<String> _queuedKeys = <String>{};
+  final Set<String> _inFlightKeys = <String>{};
+  int _inFlightCount = 0;
+  bool _disposed = false;
+  Completer<void>? _idleCompleter;
 
   /// Processes attachment-related behavior for an event.
   ///
-  /// Returns `true` if a new file was written to disk, `false` otherwise.
+  /// Returns `true` if a new file was written to disk immediately, `false`
+  /// otherwise.
   Future<bool> process({
     required Event event,
     required LoggingService logging,
@@ -39,6 +56,7 @@ class AttachmentIngestor {
     required DescriptorCatchUpManager? descriptorCatchUp,
     required void Function() scheduleLiveScan,
     required Future<void> Function() retryNow,
+    bool scheduleDownload = false,
   }) async {
     var fileWritten = false;
 
@@ -65,13 +83,21 @@ class AttachmentIngestor {
         // best-effort logging only
       }
 
-      // Eagerly download and save the attachment to disk.
+      // Download attachments either immediately or via the async queue.
       if (documentsDirectory != null) {
-        fileWritten = await _saveAttachment(
-          event: event,
-          relativePath: rpAny,
-          logging: logging,
-        );
+        if (scheduleDownload) {
+          _scheduleDownload(
+            event: event,
+            relativePath: rpAny,
+            logging: logging,
+          );
+        } else {
+          fileWritten = await _saveAttachment(
+            event: event,
+            relativePath: rpAny,
+            logging: logging,
+          );
+        }
       }
 
       if (descriptorCatchUp?.removeIfPresent(rpAny) ?? false) {
@@ -81,6 +107,100 @@ class AttachmentIngestor {
     }
 
     return fileWritten;
+  }
+
+  /// Waits for any queued downloads to finish (best-effort for tests).
+  Future<void> whenIdle() {
+    if (_downloadQueue.isEmpty && _inFlightCount == 0) {
+      return Future.value();
+    }
+    _idleCompleter ??= Completer<void>();
+    return _idleCompleter!.future;
+  }
+
+  void dispose() {
+    _disposed = true;
+    _downloadQueue.clear();
+    _pendingDownloads.clear();
+    _queuedKeys.clear();
+    _idleCompleter?.complete();
+    _idleCompleter = null;
+    _inFlightKeys.clear();
+    _inFlightCount = 0;
+  }
+
+  void _scheduleDownload({
+    required Event event,
+    required String relativePath,
+    required LoggingService logging,
+  }) {
+    if (_disposed ||
+        documentsDirectory == null ||
+        _maxConcurrentDownloads == 0) {
+      return;
+    }
+    final key = _normalizeKey(relativePath);
+    _pendingDownloads[key] = _DownloadRequest(
+      event: event,
+      relativePath: relativePath,
+      logging: logging,
+    );
+    if (_queuedKeys.contains(key) || _inFlightKeys.contains(key)) {
+      return;
+    }
+    _queuedKeys.add(key);
+    _downloadQueue.add(key);
+    _drainQueue();
+  }
+
+  void _drainQueue() {
+    if (_disposed) return;
+    while (
+        _inFlightCount < _maxConcurrentDownloads && _downloadQueue.isNotEmpty) {
+      final key = _downloadQueue.removeFirst();
+      _queuedKeys.remove(key);
+      final request = _pendingDownloads[key];
+      if (request == null) {
+        continue;
+      }
+      _inFlightCount++;
+      _inFlightKeys.add(key);
+      unawaited(_runDownload(key, request));
+    }
+    _maybeCompleteIdle();
+  }
+
+  Future<void> _runDownload(String key, _DownloadRequest request) async {
+    try {
+      await _saveAttachment(
+        event: request.event,
+        relativePath: request.relativePath,
+        logging: request.logging,
+      );
+    } finally {
+      _inFlightCount--;
+      _inFlightKeys.remove(key);
+      final latest = _pendingDownloads[key];
+      if (latest == null || latest.event.eventId == request.event.eventId) {
+        _pendingDownloads.remove(key);
+      } else if (!_queuedKeys.contains(key)) {
+        _queuedKeys.add(key);
+        _downloadQueue.add(key);
+      }
+      _drainQueue();
+    }
+  }
+
+  void _maybeCompleteIdle() {
+    if (_downloadQueue.isEmpty && _inFlightCount == 0) {
+      _idleCompleter?.complete();
+      _idleCompleter = null;
+    }
+  }
+
+  String _normalizeKey(String relativePath) {
+    final trimmed = relativePath.replaceFirst(RegExp(r'^[\\/]+'), '');
+    return '/${trimmed.replaceAll(r'\\', '/')}';
   }
 
   /// Downloads and saves an attachment if it isn't already present on disk.
@@ -176,4 +296,16 @@ class AttachmentIngestor {
       return false;
     }
   }
+}
+
+class _DownloadRequest {
+  const _DownloadRequest({
+    required this.event,
+    required this.relativePath,
+    required this.logging,
+  });
+
+  final Event event;
+  final String relativePath;
+  final LoggingService logging;
 }

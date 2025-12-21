@@ -235,11 +235,17 @@ class SyncSequenceLogService {
 
         if (status == SyncSequenceStatus.backfilled &&
             existing?.status == SyncSequenceStatus.requested.index) {
-          _loggingService.captureEvent(
-            'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'backfillArrived',
-          );
+          _loggingService
+            ..captureEvent(
+              'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'backfillArrived',
+            )
+            ..captureEvent(
+              'recordReceivedEntry: requestedResolved hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'requestedResolved',
+            );
         }
       } else {
         // For other hosts in the VC, also record with entryId.
@@ -282,11 +288,17 @@ class SyncSequenceLogService {
 
         if (status == SyncSequenceStatus.backfilled &&
             existing?.status == SyncSequenceStatus.requested.index) {
-          _loggingService.captureEvent(
-            'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'backfillArrived',
-          );
+          _loggingService
+            ..captureEvent(
+              'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'backfillArrived',
+            )
+            ..captureEvent(
+              'recordReceivedEntry: requestedResolved (non-originator) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'requestedResolved',
+            );
         }
       }
     }
@@ -387,10 +399,18 @@ class SyncSequenceLogService {
               entryId: Value(entryId),
               payloadType: Value(payloadType.index),
               status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(existing.createdAt),
               updatedAt: Value(now),
             ),
           );
           markedCount++;
+          if (existing.status == SyncSequenceStatus.requested.index) {
+            _loggingService.captureEvent(
+              'recordReceivedEntry: requestedResolved (covered) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'requestedResolved',
+            );
+          }
         }
         // If already received/backfilled, skip - don't downgrade status
       }

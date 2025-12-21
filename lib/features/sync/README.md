@@ -33,7 +33,7 @@ that keeps the pipeline testable and observable.
 | **SyncEngine** (`matrix/sync_engine.dart`) | Owns the high-level lifecycle via `SyncLifecycleCoordinator`, runs login/logout hooks, and surfaces diagnostic snapshots. |
 | **MatrixService** (`matrix/matrix_service.dart`) | Wraps the `MatrixSyncGateway`, coordinates verification flows, exposes stats/read markers, and delegates lifecycle work to the engine. |
 | **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
-| **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments, registers the Matrix event IDs it emits, increments send counters, and notifies `MatrixService`. |
+| **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments (descriptor JSON is sent from a single snapshot for vector-clock consistency), registers the Matrix event IDs it emits, increments send counters, and notifies `MatrixService`. |
 | **SentEventRegistry** (`matrix/sent_event_registry.dart`) | In-memory TTL cache of event IDs produced by this device so timeline ingestion can drop echo events without re-applying them. |
 | **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment descriptor observation, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
@@ -70,8 +70,8 @@ that keeps the pipeline testable and observable.
     catch-up/live scans, never directly from the client stream.
 - Live streaming is micro-batched and ordered chronologically with
     de-duplication by event ID; attachment descriptors are observed and recorded before invoking
-    `SyncEventProcessor`. Media is not downloaded here; retrieval happens later via separate
-    download paths or on-demand processing.
+    `SyncEventProcessor`. Attachment downloads are queued asynchronously (bounded concurrency) so
+    ordered processing never waits; `SmartJournalEntityLoader` still fetches on-demand when needed.
   - Read markers advance monotonically using Matrix timestamps with event IDs as
     tie-breakers. The consumer persists the newest processed ID through
     `SyncReadMarkerService` so fresh sessions resume from the correct position.
@@ -108,6 +108,8 @@ that keeps the pipeline testable and observable.
     - Catch-up `preContextCount = 80`, `maxLookback = 1000`.
     - Live-scan steady tail = 30; audit tails (first two scans) = 50/80/100
       sized by the offline delta.
+    - Look-behind tail is now conditional: only runs during descriptor backlog
+      or briefly after catch-up. Toggle via `enable_matrix_lookbehind_tail`.
   - Log noise reduced under `collectMetrics`: `signal.*`, `noAdvance.rescan`,
     and `doubleScan.*` are gated; `marker.local` condensed to one line with
     id+ts.
@@ -123,6 +125,8 @@ that keeps the pipeline testable and observable.
   failures produce breadcrumbs, and pass-cap continuation proactively schedules
   a follow-up drain so the queue advances past pathological items.
 - ClientRunner guards callback errors so the queue cannot die silently.
+- Retry backoff gate coalesces send triggers while a retry delay is active,
+  preventing rapid-fire retries during spotty connectivity.
 - Logging DB writes are best-effort (exceptions captured, file breadcrumbs kept)
   so diagnostics never block outbox progress.
 
@@ -154,8 +158,9 @@ complete reconstruction of sync state.
   manages sequence status, resolves pending backfill hints
 - `BackfillRequestService` — periodically scans for missing entries and sends
   batched `SyncBackfillRequest` messages (up to 100 entries per message)
-- `BackfillResponseHandler` — handles incoming requests (re-sends entries +
-  sends BackfillResponse with entryId hint) and verifies responses
+- `BackfillResponseHandler` — handles incoming requests (re-sends entries,
+  sends BackfillResponse hints when needed, and marks superseded own counters
+  as unresolvable) and verifies responses
 
 **Gap Detection:**
 - Examines ALL hosts in incoming vector clocks (not just the originator)
@@ -194,8 +199,12 @@ This prevents entries from being stuck as "missing" when the actual content
 was delivered via a different payload type at the same vector clock position.
 
 **Two-Phase Backfill Verification:**
-When responding to a backfill request, the responder sends BOTH the entry via
-normal sync AND a `BackfillResponse` with the entryId. This enables safe
+When responding to a backfill request, the responder re-sends the entry via
+normal sync. If the requested counter is still present in the entry's vector
+clock (or the responder is not the originator), it also sends a
+`BackfillResponse` with the entryId. If the counter belongs to the responder
+but is no longer present in the entry's vector clock, it sends an unresolvable
+response instead to clear the request. This enables safe
 resolution even when the entry's vector clock has evolved since the original
 counter was recorded:
 
@@ -229,8 +238,11 @@ If the BackfillResponse arrives before the sync message (race condition):
 1. Device A detects missing entry (host=X, counter=5)
 2. Device A broadcasts `SyncBackfillRequest` with entries list
 3. Device B receives request, looks up entry in its sequence log
-4. If found: Device B re-sends the journal entity via normal sync AND sends
-   `SyncBackfillResponse` with `deleted=false, entryId=<id>`
+4. If found: Device B re-sends the journal entity via normal sync and:
+   - If the requested counter is still present in its VC (or the counter belongs
+     to another host), it sends `SyncBackfillResponse` with `deleted=false, entryId=<id>`
+   - If the requested counter belongs to Device B but is no longer present in its VC,
+     it sends `SyncBackfillResponse` with `deleted=false, unresolvable=true`
 5. If deleted/purged: Device B sends `SyncBackfillResponse` with `deleted=true`
 6. Device A receives the BackfillResponse:
    - Stores the entryId hint on the sequence log entry

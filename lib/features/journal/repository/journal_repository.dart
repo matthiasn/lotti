@@ -258,12 +258,18 @@ class JournalRepository {
   }
 
   Future<bool> updateLink(EntryLink link) async {
+    final journalDb = getIt<JournalDb>();
+    final existing = await journalDb.entryLinkById(link.id);
+    if (existing != null && !_hasMeaningfulLinkChange(existing, link)) {
+      return false;
+    }
+
     final updated = link.copyWith(
       updatedAt: DateTime.now(),
       vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
     );
 
-    final res = await getIt<JournalDb>().upsertEntryLink(updated);
+    final res = await journalDb.upsertEntryLink(updated);
     getIt<UpdateNotifications>().notify({link.fromId, link.toId});
 
     await getIt<OutboxService>().enqueueMessage(
@@ -273,6 +279,17 @@ class JournalRepository {
       ),
     );
     return res != 0;
+  }
+
+  bool _hasMeaningfulLinkChange(EntryLink existing, EntryLink incoming) {
+    final existingHidden = existing.hidden ?? false;
+    final incomingHidden = incoming.hidden ?? false;
+
+    return existing.fromId != incoming.fromId ||
+        existing.toId != incoming.toId ||
+        existing.createdAt != incoming.createdAt ||
+        existing.deletedAt != incoming.deletedAt ||
+        existingHidden != incomingHidden;
   }
 
   Future<int> removeLink({

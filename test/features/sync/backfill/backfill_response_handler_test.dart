@@ -326,6 +326,44 @@ void main() {
         (_) async => _createLogItem(aliceHostId, 3, entryId: entryId),
       );
 
+      final journalEntry = _createJournalEntry(
+        entryId,
+        vectorClock: const VectorClock({aliceHostId: 3}),
+      );
+      when(() => mockJournalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntry);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await handler.handleBackfillRequest(request);
+
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
+
+      expect(captured.length, 1);
+
+      // Should send the journal entity
+      expect(captured[0], isA<SyncJournalEntity>());
+      final syncEntity = captured[0] as SyncJournalEntity;
+      expect(syncEntity.id, entryId);
+      expect(syncEntity.status, SyncEntryStatus.update);
+    });
+
+    test('sends unresolvable when own counter not in entry VC', () async {
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      when(() => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3))
+          .thenAnswer(
+        (_) async => _createLogItem(aliceHostId, 3, entryId: entryId),
+      );
+
       final journalEntry = _createJournalEntry(entryId);
       when(() => mockJournalDb.journalEntityById(entryId))
           .thenAnswer((_) async => journalEntry);
@@ -335,28 +373,22 @@ void main() {
 
       await handler.handleBackfillRequest(request);
 
-      // Should send both the journal entity AND a BackfillResponse with entryId
-      // The BackfillResponse is needed for the case where the entry's VC has
-      // evolved and no longer contains the original (hostId, counter)
       final captured = verify(
         () => mockOutboxService.enqueueMessage(captureAny()),
       ).captured;
 
       expect(captured.length, 2);
-
-      // First should be the journal entity
       expect(captured[0], isA<SyncJournalEntity>());
-      final syncEntity = captured[0] as SyncJournalEntity;
-      expect(syncEntity.id, entryId);
-      expect(syncEntity.status, SyncEntryStatus.update);
-
-      // Second should be the BackfillResponse with entryId
-      expect(captured[1], isA<SyncBackfillResponse>());
-      final response = captured[1] as SyncBackfillResponse;
-      expect(response.hostId, aliceHostId);
-      expect(response.counter, 3);
-      expect(response.deleted, false);
-      expect(response.entryId, entryId);
+      expect(
+        captured[1],
+        isA<SyncBackfillResponse>()
+            .having((r) => r.hostId, 'hostId', aliceHostId)
+            .having((r) => r.counter, 'counter', 3)
+            .having((r) => r.deleted, 'deleted', false)
+            .having((r) => r.unresolvable, 'unresolvable', true)
+            .having((r) => r.payloadType, 'payloadType',
+                SyncSequencePayloadType.journalEntity),
+      );
     });
 
     test('handles errors gracefully', () async {
@@ -655,6 +687,45 @@ void main() {
         originatingHostId: aliceHostId,
       );
 
+      final link = _createEntryLink(
+        'existing-link-id',
+        vectorClock: const VectorClock({aliceHostId: 20}),
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
+      ).thenAnswer((_) async => logItem);
+
+      when(() => mockJournalDb.entryLinkById('existing-link-id'))
+          .thenAnswer((_) async => link);
+
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      const request = SyncBackfillRequest(
+        entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
+        requesterId: requesterId,
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
+
+      expect(captured.length, 1);
+      expect(captured[0], isA<SyncEntryLink>());
+    });
+
+    test('sends unresolvable for entry link when own counter not in VC',
+        () async {
+      final logItem = _createEntryLinkLogItem(
+        aliceHostId,
+        20,
+        entryId: 'existing-link-id',
+        originatingHostId: aliceHostId,
+      );
+
       final link = _createEntryLink('existing-link-id');
 
       when(
@@ -674,25 +745,20 @@ void main() {
 
       await handler.handleBackfillRequest(request);
 
-      // Should send the entry link
-      verify(
-        () => mockOutboxService.enqueueMessage(
-          any(that: isA<SyncEntryLink>()),
-        ),
-      ).called(1);
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
 
-      // Should send backfill response with payloadType
-      verify(
-        () => mockOutboxService.enqueueMessage(
-          any(
-            that: isA<SyncBackfillResponse>()
-                .having((r) => r.deleted, 'deleted', false)
-                .having((r) => r.payloadType, 'payloadType',
-                    SyncSequencePayloadType.entryLink)
-                .having((r) => r.payloadId, 'payloadId', 'existing-link-id'),
-          ),
-        ),
-      ).called(1);
+      expect(captured.length, 2);
+      expect(captured[0], isA<SyncEntryLink>());
+      expect(
+        captured[1],
+        isA<SyncBackfillResponse>()
+            .having((r) => r.deleted, 'deleted', false)
+            .having((r) => r.unresolvable, 'unresolvable', true)
+            .having((r) => r.payloadType, 'payloadType',
+                SyncSequencePayloadType.entryLink),
+      );
     });
   });
 
@@ -852,7 +918,10 @@ SyncSequenceLogItem _createLogItem(
   );
 }
 
-JournalEntity _createJournalEntry(String id) {
+JournalEntity _createJournalEntry(
+  String id, {
+  VectorClock? vectorClock,
+}) {
   return JournalEntity.journalEntry(
     meta: Metadata(
       id: id,
@@ -860,7 +929,7 @@ JournalEntity _createJournalEntry(String id) {
       updatedAt: DateTime(2024),
       dateFrom: DateTime(2024),
       dateTo: DateTime(2024),
-      vectorClock: const VectorClock({'test-host': 1}),
+      vectorClock: vectorClock ?? const VectorClock({'test-host': 1}),
     ),
     entryText: const EntryText(plainText: 'Test entry'),
   );
@@ -900,14 +969,17 @@ SyncSequenceLogItem _createEntryLinkLogItem(
   );
 }
 
-EntryLink _createEntryLink(String id) {
+EntryLink _createEntryLink(
+  String id, {
+  VectorClock? vectorClock,
+}) {
   return EntryLink.basic(
     id: id,
     fromId: 'from-entry',
     toId: 'to-entry',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    vectorClock: const VectorClock({'test-host': 1}),
+    vectorClock: vectorClock ?? const VectorClock({'test-host': 1}),
   );
 }
 

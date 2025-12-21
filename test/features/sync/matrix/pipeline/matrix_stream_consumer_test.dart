@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -3743,12 +3744,15 @@ void main() {
       async.flushMicrotasks();
 
       // Immediately start second forceRescan while first is still in flight
-      unawaited(consumer.forceRescan());
+      var secondDone = false;
+      unawaited(consumer.forceRescan().then((_) => secondDone = true));
       async.flushMicrotasks();
 
       // Allow both to complete
+      expect(secondDone, isFalse, reason: 'Second forceRescan should await');
       async.elapse(const Duration(seconds: 1));
       async.flushMicrotasks();
+      expect(secondDone, isTrue, reason: 'Second forceRescan should complete');
 
       // Verify second call was skipped
       expect(
@@ -4591,7 +4595,7 @@ void main() {
     verify(() => liveTimeline.cancelSubscriptions()).called(1);
     verify(
       () => logger.captureEvent(
-        'MatrixStreamConsumer disposed',
+        any<String>(that: contains('MatrixStreamConsumer disposed')),
         domain: any<String>(named: 'domain'),
         subDomain: 'dispose',
       ),
@@ -7005,7 +7009,7 @@ void main() {
     verify(() => logger.captureEvent(
           any<String>(
               that: allOf(contains('startup.marker'), contains('id=mk'),
-                  contains('ts=123'))),
+                  contains('ts=123'), contains('inst='))),
           domain: any<String>(named: 'domain'),
           subDomain: 'startup.marker',
         )).called(1);
@@ -7114,6 +7118,101 @@ void main() {
     final m = consumer.metricsSnapshot();
     expect(m['lookBehindMerges'], 1);
     expect(m['lastLookBehindTail'], 7);
+  });
+
+  test('look-behind tail disabled when config flag is off', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final timeline = MockTimeline();
+
+    when(() => logger.captureEvent(any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+    when(() => logger.captureException(any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+    when(() => journalDb.getConfigFlag(enableMatrixLookBehindTailFlag))
+        .thenAnswer((_) async => false);
+    when(() => journalDb.watchConfigFlag(enableMatrixLookBehindTailFlag))
+        .thenAnswer((_) => Stream<bool>.value(false));
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(() => session.timelineEvents)
+        .thenAnswer((_) => const Stream<Event>.empty());
+    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+        .thenAnswer((_) async => 'mk');
+    when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
+        .thenAnswer((_) async => '123');
+
+    final evA = MockEvent();
+    when(() => evA.eventId).thenReturn('a');
+    when(() => evA.originServerTs)
+        .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+    when(() => evA.senderId).thenReturn('@other:server');
+    when(() => evA.attachmentMimetype).thenReturn('');
+    when(() => evA.content)
+        .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+    when(() => evA.roomId).thenReturn('!room:server');
+
+    when(() => timeline.events).thenReturn(<Event>[evA]);
+    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => room.getTimeline(limit: any(named: 'limit')))
+        .thenAnswer((_) async => timeline);
+    when(() => room.getTimeline(
+          limit: any(named: 'limit'),
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        )).thenAnswer((_) async => timeline);
+
+    when(() => processor.process(
+          event: any<Event>(named: 'event'),
+          journalDb: journalDb,
+        )).thenAnswer((_) async {});
+    when(() => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+        )).thenAnswer((_) async {});
+
+    final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      collectMetrics: true,
+      sentEventRegistry: SentEventRegistry(),
+    );
+
+    fakeAsync((async) {
+      unawaited(consumer.initialize());
+      async.flushMicrotasks();
+      unawaited(consumer.start());
+      async.elapse(const Duration(milliseconds: 250));
+      async.flushMicrotasks();
+    });
+
+    final m = consumer.metricsSnapshot();
+    expect(m['lookBehindMerges'], 0);
   });
 
   test('audit tail sized by offline delta: null ts returns 50', () async {
@@ -8360,7 +8459,7 @@ void main() {
       });
     });
 
-    test('throws TimeoutException when previous batch takes too long',
+    test('waits without timing out when previous batch takes too long',
         () async {
       fakeAsync((async) {
         final session = MockMatrixSessionManager();
@@ -8475,23 +8574,30 @@ void main() {
         unawaited(consumer.forceRescan(includeCatchUp: true));
         async.flushMicrotasks();
 
-        // Elapse enough time for timeout (100 waits * 50ms = 5 seconds)
+        // Elapse long enough to prove we do not time out while waiting.
         async.elapse(const Duration(seconds: 6));
         async.flushMicrotasks();
 
-        // The timeout log message should be emitted
+        // We should log that we're waiting, but never time out.
+        expect(
+          capturedMessages
+              .any((m) => m.contains('waiting for previous batch to complete')),
+          isTrue,
+          reason:
+              'Should log waiting message while previous batch is in flight',
+        );
         expect(
           capturedMessages.any((m) =>
               m.contains('timeout waiting for previous batch, throwing')),
-          isTrue,
-          reason: 'Should log timeout message before throwing',
+          isFalse,
+          reason: 'Should not time out while waiting for previous batch',
         );
 
-        // The TimeoutException should be caught and logged
+        // No TimeoutException should be thrown.
         expect(
           capturedExceptions.any((e) => e is TimeoutException),
-          isTrue,
-          reason: 'TimeoutException should be thrown and caught by caller',
+          isFalse,
+          reason: 'TimeoutException should not be thrown while waiting',
         );
 
         streamController.close();

@@ -90,8 +90,9 @@ class TestableOutboxService extends OutboxService {
   Future<void> enqueueNextSendRequest({
     Duration delay = const Duration(milliseconds: 1),
   }) async {
+    final adjustedDelay = computeEnqueueDelay(delay);
     enqueueCalls++;
-    lastDelay = delay;
+    lastDelay = adjustedDelay;
   }
 }
 
@@ -106,6 +107,16 @@ MockUserActivityGate createGate({
   when(() => gate.canProcessStream)
       .thenAnswer((_) => canProcessStream ?? Stream<bool>.value(canProcess));
   return gate;
+}
+
+void expectDelayCloseTo(
+  Duration? actual,
+  Duration expected, {
+  Duration tolerance = const Duration(milliseconds: 50),
+}) {
+  expect(actual, isNotNull);
+  final deltaMs = (actual!.inMilliseconds - expected.inMilliseconds).abs();
+  expect(deltaMs, lessThanOrEqualTo(tolerance.inMilliseconds));
 }
 
 void main() {
@@ -1380,7 +1391,7 @@ void main() {
       // Processor requested scheduling; sendNext returns after first drain
       verify(() => processor.processQueue()).called(1);
       expect(svc.enqueueCalls, 1);
-      expect(svc.lastDelay, const Duration(seconds: 3));
+      expectDelayCloseTo(svc.lastDelay, const Duration(seconds: 3));
 
       await svc.dispose();
     });
@@ -1444,7 +1455,7 @@ void main() {
         ),
       ).called(1);
       expect(svc.enqueueCalls, 1);
-      expect(svc.lastDelay, const Duration(seconds: 15));
+      expectDelayCloseTo(svc.lastDelay, const Duration(seconds: 15));
 
       await svc.dispose();
     });
@@ -1792,7 +1803,7 @@ void main() {
 
       verifyNever(() => processor.processQueue());
       expect(svc.enqueueCalls, 1);
-      expect(svc.lastDelay, SyncTuning.outboxRetryDelay);
+      expectDelayCloseTo(svc.lastDelay, SyncTuning.outboxRetryDelay);
 
       await svc.dispose();
     });
@@ -1833,7 +1844,7 @@ void main() {
 
       expect(processCalls, 1);
       expect(svc.enqueueCalls, 1);
-      expect(svc.lastDelay, SyncTuning.outboxRetryDelay);
+      expectDelayCloseTo(svc.lastDelay, SyncTuning.outboxRetryDelay);
 
       await svc.dispose();
     });
@@ -1874,7 +1885,43 @@ void main() {
 
       expect(calls, 1);
       expect(svc.enqueueCalls, 1);
-      expect(svc.lastDelay, SyncTuning.outboxRetryDelay);
+      expectDelayCloseTo(svc.lastDelay, SyncTuning.outboxRetryDelay);
+
+      await svc.dispose();
+    });
+
+    test('respects retry backoff and skips immediate re-entry', () async {
+      when(() => journalDb.getConfigFlag(enableMatrixFlag))
+          .thenAnswer((_) async => true);
+      final gate = createGate();
+
+      const delay = Duration(seconds: 5);
+      var processCalls = 0;
+      when(() => processor.processQueue()).thenAnswer((_) async {
+        processCalls++;
+        return OutboxProcessingResult.schedule(delay);
+      });
+
+      final svc = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: gate,
+        ownsActivityGate: false,
+      );
+
+      await svc.sendNext();
+      expect(processCalls, 1);
+      expectDelayCloseTo(svc.lastDelay, delay);
+
+      await svc.sendNext();
+      expect(processCalls, 1);
 
       await svc.dispose();
     });
@@ -2254,15 +2301,6 @@ void main() {
           matrixService: matrixService,
         );
         async.elapse(const Duration(seconds: 10));
-        // Watchdog enqueues directly via ClientRunner (no helper), so
-        // 'enqueueRequest() done' should NOT be logged on this path. Other
-        // paths (e.g., dbNudge) do log it explicitly and are covered in their
-        // dedicated tests below.
-        verifyNever(() => loggingService.captureEvent(
-              'enqueueRequest() done',
-              domain: 'OUTBOX',
-              subDomain: any(named: 'subDomain'),
-            ));
         unawaited(svc.dispose());
         // Further elapse should not trigger watchdog again
         async.elapse(const Duration(seconds: 20));

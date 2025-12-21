@@ -20,6 +20,7 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -84,6 +85,7 @@ void main() {
       const SyncBackfillResponse(hostId: '', counter: 0, deleted: false),
     );
     registerFallbackValue(const VectorClock({'fallback': 1}));
+    registerFallbackValue(SyncSequencePayloadType.journalEntity);
   });
   // Helper to normalize leading separators across platforms so that
   // path.join(docDir, rel) never treats rel as absolute.
@@ -522,6 +524,47 @@ void main() {
         fromSync: true,
       ),
     ).called(1);
+  });
+
+  test('skips duplicate journal entity with same vector clock', () async {
+    final entryId = fallbackJournalEntity.meta.id;
+    final vc = fallbackJournalEntity.meta.vectorClock!;
+    final message = SyncMessage.journalEntity(
+      id: entryId,
+      jsonPath: '/entity.json',
+      vectorClock: vc,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => event.eventId).thenReturn('event-id');
+    when(() => event.originServerTs).thenReturn(DateTime.now());
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: vc,
+        )).thenAnswer((_) async => fallbackJournalEntity);
+    when(() => journalDb.updateJournalEntity(fallbackJournalEntity))
+        .thenAnswer((_) async => JournalUpdateResult.applied());
+
+    final diags = <SyncApplyDiagnostics>[];
+    processor.applyObserver = diags.add;
+
+    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: vc,
+        )).called(1);
+    verify(() => journalDb.updateJournalEntity(fallbackJournalEntity))
+        .called(1);
+    verify(
+      () => updateNotifications.notify(
+        fallbackJournalEntity.affectedIds,
+        fromSync: true,
+      ),
+    ).called(1);
+    expect(diags.length, 2);
+    expect(diags.last.skipReason, JournalUpdateSkipReason.olderOrEqual);
   });
 
   test(
@@ -2191,7 +2234,10 @@ void main() {
     when(() => journalEntityLoader.load(jsonPath: '/entity.json'))
         .thenThrow(const FileSystemException('missing'));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await expectLater(
+      processor.process(event: event, journalDb: journalDb),
+      throwsA(isA<FileSystemException>()),
+    );
     verify(
       () => loggingService.captureException(
         any<Object>(),
@@ -2201,6 +2247,133 @@ void main() {
       ),
     ).called(1);
     verifyNever(() => journalDb.updateJournalEntity(any()));
+  });
+
+  test('stale descriptor is skipped when local entry is newer', () async {
+    final entryId = fallbackJournalEntity.meta.id;
+    final message = SyncMessage.journalEntity(
+      id: entryId,
+      jsonPath: '/entity.json',
+      vectorClock: const VectorClock({'a': 10}),
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: any(named: 'incomingVectorClock'),
+        )).thenThrow(
+      const FileSystemException('stale attachment json after refresh'),
+    );
+    when(() => journalDb.journalEntityById(entryId))
+        .thenAnswer((_) async => fallbackJournalEntity);
+
+    SyncApplyDiagnostics? captured;
+    processor.applyObserver = (diag) => captured = diag;
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    expect(captured, isNotNull);
+    expect(captured!.skipReason, JournalUpdateSkipReason.olderOrEqual);
+    expect(captured!.conflictStatus, contains('a_gt_b'));
+    verifyNever(() => journalDb.updateJournalEntity(any()));
+  });
+
+  test('stale descriptor skip records sequence log when local entry is equal',
+      () async {
+    final mockSequenceService = MockSyncSequenceLogService();
+    const vc = VectorClock({'a': 11});
+    final entryId = fallbackJournalEntity.meta.id;
+    final message = SyncMessage.journalEntity(
+      id: entryId,
+      jsonPath: '/entity.json',
+      vectorClock: vc,
+      status: SyncEntryStatus.initial,
+      originatingHostId: 'host-A',
+    );
+    final processorWithSeq = SyncEventProcessor(
+      loggingService: loggingService,
+      updateNotifications: updateNotifications,
+      aiConfigRepository: aiConfigRepository,
+      settingsDb: settingsDb,
+      journalEntityLoader: journalEntityLoader,
+      sequenceLogService: mockSequenceService,
+    );
+
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: any(named: 'incomingVectorClock'),
+        )).thenThrow(
+      const FileSystemException('stale attachment json after refresh'),
+    );
+    when(() => journalDb.journalEntityById(entryId))
+        .thenAnswer((_) async => fallbackJournalEntity);
+    when(() => mockSequenceService.recordReceivedEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          originatingHostId: any(named: 'originatingHostId'),
+          coveredVectorClocks: any(named: 'coveredVectorClocks'),
+          payloadType: any(named: 'payloadType'),
+        )).thenAnswer((_) async => [(hostId: 'host-A', counter: 10)]);
+
+    SyncApplyDiagnostics? captured;
+    processorWithSeq.applyObserver = (diag) => captured = diag;
+
+    await processorWithSeq.process(event: event, journalDb: journalDb);
+
+    expect(captured, isNotNull);
+    expect(captured!.skipReason, JournalUpdateSkipReason.olderOrEqual);
+    expect(captured!.conflictStatus, contains('equal'));
+    verify(() => mockSequenceService.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vc,
+          originatingHostId: 'host-A',
+          coveredVectorClocks: null,
+          payloadType: any(named: 'payloadType'),
+        )).called(1);
+    verify(() => loggingService.captureEvent(
+          contains('apply.gapsDetected count=1'),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'gapDetection',
+        )).called(1);
+    verifyNever(() => journalDb.updateJournalEntity(any()));
+  });
+
+  test('stale descriptor rethrows when incoming is newer than local', () async {
+    final entryId = fallbackJournalEntity.meta.id;
+    const incomingVc = VectorClock({'a': 20});
+    final message = SyncMessage.journalEntity(
+      id: entryId,
+      jsonPath: '/entity.json',
+      vectorClock: incomingVc,
+      status: SyncEntryStatus.initial,
+    );
+    final existing = fallbackJournalEntity as JournalEntry;
+    final olderEntry = JournalEntry(
+      meta: existing.meta.copyWith(vectorClock: const VectorClock({'a': 1})),
+      entryText: existing.entryText,
+      geolocation: existing.geolocation,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: any(named: 'incomingVectorClock'),
+        )).thenThrow(
+      const FileSystemException('stale attachment json after refresh'),
+    );
+    when(() => journalDb.journalEntityById(entryId))
+        .thenAnswer((_) async => olderEntry);
+
+    await expectLater(
+      processor.process(event: event, journalDb: journalDb),
+      throwsA(isA<FileSystemException>()),
+    );
+    verify(() => loggingService.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SyncEventProcessor.missingAttachment',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        )).called(1);
   });
 
   group('SyncEventProcessor - SyncThemingSelection', () {

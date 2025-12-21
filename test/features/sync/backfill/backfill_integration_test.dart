@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -485,12 +486,12 @@ void main() {
       expect(missingHighLimit, hasLength(1));
     });
 
-    test('backfill sends hint when VC does not cover requested counter',
+    test('backfill sends unresolvable when VC does not cover own counter',
         () async {
       // Scenario: Entry was created at counter 2, then modified at counter 5.
       // The current entry has VC={alice:5} but someone requests counter 2.
-      // In this case, we MUST send the BackfillResponse hint because
-      // recordReceivedEntry won't automatically resolve counter 2 (it's not in the VC).
+      // In this case, the originator must send an unresolvable response so the
+      // requester can clear the stuck counter (it's not in the VC anymore).
 
       // Alice records the entry with its CURRENT VC (after modification)
       const modifiedEntryId = 'modified-entry-id';
@@ -536,7 +537,7 @@ void main() {
       // Alice handles the request
       await aliceResponseHandler.handleBackfillRequest(request);
 
-      // Verify Alice sent BOTH the entry AND the BackfillResponse hint
+      // Verify Alice sent BOTH the entry AND an unresolvable response
       // because VC[alice]=5 but requested counter=2, so VC doesn't cover it
       final capturedMessages = verify(
         () => aliceOutbox.enqueueMessage(captureAny()),
@@ -549,13 +550,17 @@ void main() {
       final journalEntity = capturedMessages[0] as SyncJournalEntity;
       expect(journalEntity.id, modifiedEntryId);
 
-      // Second should be the BackfillResponse hint
+      // Second should be the unresolvable BackfillResponse
       expect(capturedMessages[1], isA<SyncBackfillResponse>());
       final backfillResponse = capturedMessages[1] as SyncBackfillResponse;
       expect(backfillResponse.hostId, aliceHostId);
       expect(backfillResponse.counter, 2);
       expect(backfillResponse.deleted, false);
-      expect(backfillResponse.entryId, modifiedEntryId);
+      expect(backfillResponse.unresolvable, true);
+      expect(
+        backfillResponse.payloadType,
+        SyncSequencePayloadType.journalEntity,
+      );
     });
   });
 }

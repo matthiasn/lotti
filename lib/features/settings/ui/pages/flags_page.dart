@@ -22,6 +22,7 @@ class _FlagsPageState extends State<FlagsPage> {
     enableAiStreamingFlag,
     enableLoggingFlag,
     enableMatrixFlag,
+    enableMatrixLookBehindTailFlag,
     resendAttachments,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
@@ -46,6 +47,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return Icons.bug_report_rounded;
       case enableMatrixFlag:
         return Icons.sync_rounded;
+      case enableMatrixLookBehindTailFlag:
+        return Icons.history_rounded;
       case resendAttachments:
         return Icons.refresh_rounded;
       case enableHabitsPageFlag:
@@ -78,6 +81,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return context.messages.configFlagEnableLoggingDescription;
       case enableMatrixFlag:
         return context.messages.configFlagEnableMatrixDescription;
+      case enableMatrixLookBehindTailFlag:
+        return context.messages.configFlagEnableMatrixLookBehindTailDescription;
       case resendAttachments:
         return context.messages.configFlagResendAttachmentsDescription;
       case enableHabitsPageFlag:
@@ -110,6 +115,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return context.messages.configFlagEnableLogging;
       case enableMatrixFlag:
         return context.messages.configFlagEnableMatrix;
+      case enableMatrixLookBehindTailFlag:
+        return context.messages.configFlagEnableMatrixLookBehindTail;
       case resendAttachments:
         return context.messages.configFlagResendAttachments;
       case enableHabitsPageFlag:

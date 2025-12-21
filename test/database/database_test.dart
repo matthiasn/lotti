@@ -42,6 +42,7 @@ Directory setupTestDirectory() {
 final Set<String> expectedActiveFlagNames = {
   privateFlag,
   enableTooltipFlag,
+  enableMatrixLookBehindTailFlag,
 };
 
 final expectedFlags = <ConfigFlag>{
@@ -80,6 +81,11 @@ final expectedFlags = <ConfigFlag>{
     name: enableLoggingFlag,
     description: 'Enable logging?',
     status: false,
+  ),
+  const ConfigFlag(
+    name: enableMatrixLookBehindTailFlag,
+    description: 'Enable Matrix look-behind tail',
+    status: true,
   ),
   const ConfigFlag(
     name: enableHabitsPageFlag,
