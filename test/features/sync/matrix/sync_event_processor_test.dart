@@ -13,6 +13,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -2875,6 +2876,21 @@ void main() {
   });
 
   group('SyncEventProcessor - Backfill Messages', () {
+    SyncSequenceLogItem buildSequenceLogItem(SyncSequenceStatus status) {
+      return SyncSequenceLogItem(
+        hostId: 'host-1',
+        counter: 5,
+        entryId: 'entry-1',
+        payloadType: SyncSequencePayloadType.journalEntity.index,
+        originatingHostId: 'host-1',
+        status: status.index,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        requestCount: 1,
+        lastRequestedAt: DateTime(2024),
+      );
+    }
+
     test('SyncBackfillRequest is ignored when no handler configured', () async {
       const message = SyncBackfillRequest(
         entries: [
@@ -3006,7 +3022,8 @@ void main() {
       ).called(1);
     });
 
-    test('skips old SyncBackfillResponse when startupTimestamp is set',
+    test(
+        'skips old SyncBackfillResponse when startupTimestamp is set and no sequence log service',
         () async {
       const message = SyncBackfillResponse(
         hostId: 'host-1',
@@ -3035,6 +3052,154 @@ void main() {
       await processorWithStartup.process(event: event, journalDb: journalDb);
 
       verifyNever(() => mockHandler.handleBackfillResponse(any()));
+
+      verify(
+        () => loggingService.captureEvent(
+          any<String>(that: contains('skipping old backfill response')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'skipOld',
+        ),
+      ).called(1);
+    });
+
+    test('processes old SyncBackfillResponse when entry is missing', () async {
+      const message = SyncBackfillResponse(
+        hostId: 'host-1',
+        counter: 5,
+        deleted: false,
+      );
+
+      final mockHandler = MockBackfillResponseHandler();
+      final mockSequenceLogService = MockSyncSequenceLogService();
+      when(() => mockHandler.handleBackfillResponse(any()))
+          .thenAnswer((_) async {});
+      when(
+        () => mockSequenceLogService.getEntryByHostAndCounter(
+          'host-1',
+          5,
+        ),
+      ).thenAnswer((_) async => buildSequenceLogItem(
+            SyncSequenceStatus.missing,
+          ));
+
+      final processorWithStartup = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceLogService,
+      );
+      processorWithStartup.backfillResponseHandler = mockHandler;
+      processorWithStartup.startupTimestamp = 2000000000000;
+
+      when(() => event.originServerTs).thenReturn(DateTime(2024));
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => event.eventId).thenReturn('old-response-event');
+
+      await processorWithStartup.process(event: event, journalDb: journalDb);
+
+      verify(() => mockHandler.handleBackfillResponse(message)).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          any<String>(that: contains('allowing old backfill response')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'skipOld',
+        ),
+      ).called(1);
+    });
+
+    test('skips old SyncBackfillResponse when entry already resolved',
+        () async {
+      const message = SyncBackfillResponse(
+        hostId: 'host-1',
+        counter: 5,
+        deleted: false,
+      );
+
+      final mockHandler = MockBackfillResponseHandler();
+      final mockSequenceLogService = MockSyncSequenceLogService();
+      when(() => mockHandler.handleBackfillResponse(any()))
+          .thenAnswer((_) async {});
+      when(
+        () => mockSequenceLogService.getEntryByHostAndCounter(
+          'host-1',
+          5,
+        ),
+      ).thenAnswer((_) async => buildSequenceLogItem(
+            SyncSequenceStatus.received,
+          ));
+
+      final processorWithStartup = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceLogService,
+      );
+      processorWithStartup.backfillResponseHandler = mockHandler;
+      processorWithStartup.startupTimestamp = 2000000000000;
+
+      when(() => event.originServerTs).thenReturn(DateTime(2024));
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => event.eventId).thenReturn('old-response-event');
+
+      await processorWithStartup.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => mockHandler.handleBackfillResponse(any()));
+      verify(
+        () => loggingService.captureEvent(
+          any<String>(that: contains('skipping old backfill response')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'skipOld',
+        ),
+      ).called(1);
+    });
+
+    test('skips old SyncBackfillResponse when entry is unknown', () async {
+      const message = SyncBackfillResponse(
+        hostId: 'host-1',
+        counter: 5,
+        deleted: false,
+      );
+
+      final mockHandler = MockBackfillResponseHandler();
+      final mockSequenceLogService = MockSyncSequenceLogService();
+      when(() => mockHandler.handleBackfillResponse(any()))
+          .thenAnswer((_) async {});
+      when(
+        () => mockSequenceLogService.getEntryByHostAndCounter(
+          'host-1',
+          5,
+        ),
+      ).thenAnswer((_) async => null);
+
+      final processorWithStartup = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSequenceLogService,
+      );
+      processorWithStartup.backfillResponseHandler = mockHandler;
+      processorWithStartup.startupTimestamp = 2000000000000;
+
+      when(() => event.originServerTs).thenReturn(DateTime(2024));
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => event.eventId).thenReturn('old-response-event');
+
+      await processorWithStartup.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => mockHandler.handleBackfillResponse(any()));
+      verify(
+        () => loggingService.captureEvent(
+          any<String>(that: contains('reason=noSequenceEntry')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'skipOld',
+        ),
+      ).called(1);
     });
 
     test('processes SyncBackfillRequest when newer than startupTimestamp',

@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -544,20 +545,32 @@ class SyncEventProcessor {
       final messageJson = json.decode(decoded) as Map<String, dynamic>;
       final syncMessage = SyncMessage.fromJson(messageJson);
 
-      // Skip backfill requests that are older than the startup timestamp.
-      // These were already processed in a previous session but get replayed
-      // during catch-up because the in-memory dedup cache was cleared on restart.
+      // Skip old backfill requests. For responses, only skip when the sequence
+      // log shows no outstanding missing/requested entry for that counter.
       if (syncMessage is SyncBackfillRequest ||
           syncMessage is SyncBackfillResponse) {
         final eventTs = event.originServerTs;
         final startupTs = startupTimestamp;
         if (startupTs != null && eventTs.millisecondsSinceEpoch < startupTs) {
-          _loggingService.captureEvent(
-            'skipping old backfill ${syncMessage.runtimeType} eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=${event.eventId}',
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'skipOld',
-          );
-          return;
+          if (syncMessage is SyncBackfillRequest) {
+            _loggingService.captureEvent(
+              'skipping old backfill request eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=${event.eventId}',
+              domain: 'SYNC_BACKFILL',
+              subDomain: 'skipOld',
+            );
+            return;
+          }
+          if (syncMessage is SyncBackfillResponse) {
+            final shouldSkip = await _shouldSkipOldBackfillResponse(
+              response: syncMessage,
+              eventTs: eventTs,
+              startupTs: startupTs,
+              eventId: event.eventId,
+            );
+            if (shouldSkip) {
+              return;
+            }
+          }
         }
       }
 
@@ -587,6 +600,50 @@ class SyncEventProcessor {
       }
       rethrow;
     }
+  }
+
+  Future<bool> _shouldSkipOldBackfillResponse({
+    required SyncBackfillResponse response,
+    required DateTime eventTs,
+    required num startupTs,
+    required String eventId,
+  }) async {
+    final sequenceLogService = _sequenceLogService;
+    if (sequenceLogService == null) {
+      _loggingService.captureEvent(
+        'skipping old backfill response hostId=${response.hostId} counter=${response.counter} eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=$eventId reason=noSequenceLog',
+        domain: 'SYNC_BACKFILL',
+        subDomain: 'skipOld',
+      );
+      return true;
+    }
+
+    final existing = await sequenceLogService.getEntryByHostAndCounter(
+      response.hostId,
+      response.counter,
+    );
+    if (existing == null) {
+      _loggingService.captureEvent(
+        'skipping old backfill response hostId=${response.hostId} counter=${response.counter} eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=$eventId reason=noSequenceEntry',
+        domain: 'SYNC_BACKFILL',
+        subDomain: 'skipOld',
+      );
+      return true;
+    }
+
+    final status = SyncSequenceStatus.values[existing.status];
+    final shouldProcess = status == SyncSequenceStatus.missing ||
+        status == SyncSequenceStatus.requested;
+    final action = shouldProcess ? 'allowing' : 'skipping';
+    final reason = shouldProcess ? 'pending' : 'resolved';
+
+    _loggingService.captureEvent(
+      '$action old backfill response hostId=${response.hostId} counter=${response.counter} status=$status eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=$eventId reason=$reason',
+      domain: 'SYNC_BACKFILL',
+      subDomain: 'skipOld',
+    );
+
+    return !shouldProcess;
   }
 
   bool _isStaleDescriptorError(FileSystemException error) {
