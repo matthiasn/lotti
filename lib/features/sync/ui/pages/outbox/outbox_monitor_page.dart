@@ -26,7 +26,8 @@ class OutboxMonitorPage extends StatefulWidget {
 class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   final SyncDatabase _db = getIt<SyncDatabase>();
 
-  late final Stream<List<OutboxItem>> _stream = _db.watchOutboxItems();
+  late final Stream<List<OutboxItem>> _stream =
+      _db.watchOutboxItems(limit: 2500);
 
   Future<void> _retryItem(BuildContext context, OutboxItem item) async {
     final confirmed = await showConfirmationModal(

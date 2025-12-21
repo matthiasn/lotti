@@ -215,7 +215,6 @@
   "settingsAboutJournalEntries": "Journal Entries",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsAdvancedMatrixSyncSubtitle": "Configure and manage Matrix synchronisation settings",
-  "settingsAdvancedOutboxSubtitle": "View and manage items waiting to be synchronised",
   "settingsAdvancedConflictsSubtitle": "Resolve synchronisation conflicts to ensure data consistency",
   "settingsAdvancedLogsSubtitle": "Access and review application logs for debugging",
   "settingsAdvancedHealthImportSubtitle": "Import health-related data from external sources",

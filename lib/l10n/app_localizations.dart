@@ -3258,7 +3258,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsAdvancedOutboxSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'View and manage items waiting to be synchronized'**
+  /// **'Manage sync items'**
   String get settingsAdvancedOutboxSubtitle;
 
   /// No description provided for @settingsAdvancedConflictsSubtitle.

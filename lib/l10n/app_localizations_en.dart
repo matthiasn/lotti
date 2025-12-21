@@ -1751,8 +1751,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure and manage Matrix synchronization settings';
 
   @override
-  String get settingsAdvancedOutboxSubtitle =>
-      'View and manage items waiting to be synchronized';
+  String get settingsAdvancedOutboxSubtitle => 'Manage sync items';
 
   @override
   String get settingsAdvancedConflictsSubtitle =>
@@ -3514,10 +3513,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get settingsAdvancedMatrixSyncSubtitle =>
       'Configure and manage Matrix synchronisation settings';
-
-  @override
-  String get settingsAdvancedOutboxSubtitle =>
-      'View and manage items waiting to be synchronised';
 
   @override
   String get settingsAdvancedConflictsSubtitle =>

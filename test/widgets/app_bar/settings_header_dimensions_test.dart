@@ -56,16 +56,16 @@ void main() {
           SettingsHeaderDimensions.titleFontSize(width: w, wide: wide);
 
       // Below all thresholds
-      expect(t(w: 360, wide: false), 26);
+      expect(t(w: 360, wide: false), 22);
       // Phone
-      expect(t(w: 420, wide: false), 28);
-      expect(t(w: 600, wide: false), 30);
+      expect(t(w: 420, wide: false), 24);
+      expect(t(w: 600, wide: false), 26);
       // Tablet/desktop mid-range
-      expect(t(w: 840, wide: true), 32);
-      expect(t(w: 992, wide: false), 34);
+      expect(t(w: 840, wide: true), 28);
+      expect(t(w: 992, wide: false), 30);
       // Large desktop
-      expect(t(w: 1200, wide: false), 36);
-      expect(t(w: 1600, wide: false), 40);
+      expect(t(w: 1200, wide: false), 32);
+      expect(t(w: 1600, wide: false), 36);
     });
   });
 }
