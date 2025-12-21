@@ -362,6 +362,89 @@ void main() {
     );
   });
 
+  test('uses descriptor snapshot when json changes during send', () async {
+    var capturedPayload = '';
+    MatrixFile? capturedFile;
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
+
+    final baseDate = DateTime(2025, 12, 21, 10, 0, 0);
+    final initialMeta = Metadata(
+      id: 'snapshot-entry',
+      createdAt: baseDate,
+      updatedAt: baseDate,
+      dateFrom: baseDate,
+      dateTo: baseDate,
+      vectorClock: const VectorClock({'hostA': 1}),
+    );
+    final updatedMeta = Metadata(
+      id: 'snapshot-entry',
+      createdAt: baseDate,
+      updatedAt: baseDate,
+      dateFrom: baseDate,
+      dateTo: baseDate,
+      vectorClock: const VectorClock({'hostA': 2}),
+    );
+    final entity = JournalEntity.journalEntry(
+      meta: initialMeta,
+      entryText: const EntryText(plainText: 'Initial'),
+    );
+    final updatedEntity = JournalEntity.journalEntry(
+      meta: updatedMeta,
+      entryText: const EntryText(plainText: 'Updated'),
+    );
+    final jsonPath = relativeEntityPath(entity);
+    final jsonFile = File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedFile = invocation.positionalArguments.first as MatrixFile;
+      jsonFile.writeAsStringSync(jsonEncode(updatedEntity.toJson()));
+      return 'file-id';
+    });
+
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.journalEntity(
+        id: entity.meta.id,
+        jsonPath: jsonPath,
+        vectorClock: const VectorClock({'hostA': 1}),
+        status: SyncEntryStatus.update,
+      ),
+      context: buildContext(),
+      onSent: (_, __) {},
+    );
+
+    expect(result, isTrue);
+    expect(capturedFile, isNotNull);
+    final decodedPayload = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(decodedPayload['vectorClock'], equals({'hostA': 1}));
+
+    final uploadedJson = json.decode(
+      utf8.decode(capturedFile!.bytes),
+    ) as Map<String, dynamic>;
+    expect(
+      (uploadedJson['meta'] as Map<String, dynamic>)['vectorClock'],
+      equals({'hostA': 1}),
+    );
+  });
+
   test('keeps message vector clock when descriptor lacks vector clock',
       () async {
     when(

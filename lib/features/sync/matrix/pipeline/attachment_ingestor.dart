@@ -125,6 +125,8 @@ class AttachmentIngestor {
     _queuedKeys.clear();
     _idleCompleter?.complete();
     _idleCompleter = null;
+    _inFlightKeys.clear();
+    _inFlightCount = 0;
   }
 
   void _scheduleDownload({

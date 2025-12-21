@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -163,6 +164,7 @@ class MatrixMessageSender {
     required Room room,
     required String fullPath,
     required String relativePath,
+    Uint8List? bytes,
   }) async {
     try {
       _loggingService.captureEvent(
@@ -171,10 +173,10 @@ class MatrixMessageSender {
         subDomain: 'sendMatrixMsg',
       );
 
-      final file = File(fullPath);
+      final fileBytes = bytes ?? await File(fullPath).readAsBytes();
       final eventId = await room.sendFileEvent(
         MatrixFile(
-          bytes: await file.readAsBytes(),
+          bytes: fileBytes,
           name: p.basename(fullPath),
         ),
         extraContent: {'relativePath': relativePath},
@@ -220,10 +222,24 @@ class MatrixMessageSender {
     );
     final jsonFullPath = p.join(_documentsDirectory.path, relativeJsonPath);
 
+    late final Uint8List jsonBytes;
+    try {
+      jsonBytes = await File(jsonFullPath).readAsBytes();
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
     final jsonSent = await _sendFile(
       room: room,
       fullPath: jsonFullPath,
       relativePath: message.jsonPath,
+      bytes: jsonBytes,
     );
 
     if (!jsonSent) {
@@ -232,7 +248,7 @@ class MatrixMessageSender {
 
     late final JournalEntity journalEntity;
     try {
-      final jsonString = await File(jsonFullPath).readAsString();
+      final jsonString = utf8.decode(jsonBytes);
       journalEntity = JournalEntity.fromJson(
         json.decode(jsonString) as Map<String, dynamic>,
       );
