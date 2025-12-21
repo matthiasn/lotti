@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -79,6 +78,9 @@ class SettingsHeaderDimensions {
   /// Line height multiplier for summary text.
   static const double filterSummaryLineHeight = 1.4;
 
+  /// Extra buffer for visual breathing room in the sync list header.
+  static const double filterHeaderBottomBuffer = 11;
+
   /// Calculates the height of a single filter chip row.
   static double get filterChipRowHeight {
     // labelMedium typically has line height ~1.33, use 1.5 for safety margin
@@ -98,6 +100,7 @@ class SettingsHeaderDimensions {
   /// [context] is needed to access theme for text styles.
   /// [labels] are the localized filter labels.
   /// [counts] maps each label index to its count (for badge width estimation).
+  /// [haveIcons] indicates which chips have icons (for accurate width calc).
   /// [availableWidth] is the width available for the chip layout.
   /// [horizontalPadding] is the total horizontal padding around the chip area.
   /// [summaryText] optional summary text to measure for potential wrapping.
@@ -105,6 +108,7 @@ class SettingsHeaderDimensions {
     required BuildContext context,
     required List<String> labels,
     required List<int> counts,
+    required List<bool> haveIcons,
     required double availableWidth,
     required double horizontalPadding,
     String? summaryText,
@@ -118,6 +122,7 @@ class SettingsHeaderDimensions {
     for (var i = 0; i < labels.length; i++) {
       final label = labels[i];
       final count = i < counts.length ? counts[i] : 0;
+      final hasIcon = i < haveIcons.length && haveIcons[i];
 
       // Measure label text width
       final textPainter = TextPainter(
@@ -129,8 +134,10 @@ class SettingsHeaderDimensions {
       // Calculate total chip width
       var chipWidth = filterChipHorizontalPadding * 2 + textPainter.width;
 
-      // Add icon width if present (assume all chips have icons)
-      chipWidth += filterChipIconSize + filterChipIconSpacing;
+      // Add icon width if present
+      if (hasIcon) {
+        chipWidth += filterChipIconSize + filterChipIconSpacing;
+      }
 
       // Add count badge width if count > 0
       if (count > 0) {
@@ -172,7 +179,7 @@ class SettingsHeaderDimensions {
     }
 
     // Calculate summary text height (may wrap on narrow screens)
-    var summaryLineCount = 1;
+    var summaryLineCount = 0;
     if (summaryText != null && summaryText.isNotEmpty) {
       final summaryStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
             fontSize: filterSummaryFontSize,
@@ -195,9 +202,9 @@ class SettingsHeaderDimensions {
         filterCardBorderWidth * 2 + // card border (top + bottom)
         chipRowsHeight;
     final totalHeight = cardHeight +
-        filterSummaryGap +
+        (summaryLineCount > 0 ? filterSummaryGap : 0) +
         summaryHeight +
-        11; // buffer for visual breathing room and rounding
+        filterHeaderBottomBuffer;
 
     return totalHeight;
   }

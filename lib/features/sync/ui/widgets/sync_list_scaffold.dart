@@ -233,7 +233,7 @@ class _SyncListScaffoldState<T, F extends Enum>
               filteredItems.length,
             );
 
-            // Build labels and counts lists for height calculation.
+            // Build labels, counts, and icon presence lists for height calculation.
             final filterEntries =
                 widget.filters.entries.toList(growable: false);
             final labels = filterEntries
@@ -244,6 +244,8 @@ class _SyncListScaffoldState<T, F extends Enum>
                 .toList();
             final countsList =
                 filterEntries.map((e) => counts[e.key] ?? 0).toList();
+            final haveIcons =
+                filterEntries.map((e) => e.value.icon != null).toList();
 
             // Calculate dynamic header height based on actual content.
             final headerHorizontalPadding =
@@ -253,6 +255,7 @@ class _SyncListScaffoldState<T, F extends Enum>
               context: context,
               labels: labels,
               counts: countsList,
+              haveIcons: haveIcons,
               availableWidth: constraints.maxWidth,
               horizontalPadding: headerHorizontalPadding,
               summaryText: summaryText,
