@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.765] - 2025-12-21
+### Fixed
+- Sync: Remove live-scan look-behind tail logic and the `enable_matrix_lookbehind_tail` flag so live scans always process strictly-after slices only.
+
 ## [0.9.764] - 2025-12-21
 ### Fixed
 - Checklist Deletion: Fix persistent empty card after checklist deletion
@@ -80,7 +84,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync: Wait for in-flight ordered processing to finish instead of timing out catch-up batches during long attachment downloads.
 - Sync: Queue attachment downloads asynchronously (bounded concurrency) so ordered processing does not block on large media.
 - Sync: Skip duplicate journal entity messages with the same vector clock to reduce redundant older-or-equal applies.
-- Sync: Gate live-scan look-behind tails to descriptor backlog or post catch-up grace, with a config flag to disable look-behind entirely.
 - Sync: Send descriptor JSON from a single snapshot so the message vector clock matches uploaded bytes, avoiding stale vector-clock retries.
 - Sync: Mark superseded own counters as unresolvable during backfill so requested entries can clear.
 - Outbox: Respect retry backoff across triggers to prevent rapid retry storms under flaky networks.

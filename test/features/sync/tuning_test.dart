@@ -286,7 +286,6 @@ void main() {
       test('historical window constants have expected values', () {
         expect(SyncTuning.catchupPreContextCount, 80);
         expect(SyncTuning.catchupMaxLookback, 10000);
-        expect(SyncTuning.liveScanSteadyTail, 30);
       });
     });
   });

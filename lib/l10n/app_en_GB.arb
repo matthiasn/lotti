@@ -71,8 +71,6 @@
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableLogging": "Enable logging",
   "configFlagEnableMatrix": "Enable Matrix sync",
-  "configFlagEnableMatrixLookBehindTail": "Enable Matrix look-behind tail",
-  "configFlagEnableMatrixLookBehindTailDescription": "When enabled, live scans include a short look-behind tail after catch-up or when descriptors are pending. Disable to skip look-behind entirely.",
   "configFlagEnableHabitsPage": "Enable Habits page",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",
   "configFlagEnableCalendarPage": "Enable Calendar page",

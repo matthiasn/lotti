@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.765" date="2025-12-21">
+      <description>
+        <p>Sync: Live scans now process strictly after the last marker. The Matrix look-behind tail and its flag have been removed to eliminate redundant work.</p>
+      </description>
+    </release>
     <release version="0.9.764" date="2025-12-21">
       <description>
         <p>Checklist Deletion Fix: Empty card containers no longer appear after deleting a checklist. The checklist ID is now properly removed from the parent task, and defensive UI filtering handles any existing stale references.</p>

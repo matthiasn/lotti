@@ -8,8 +8,6 @@ class SyncMetrics {
     required this.skippedByRetryLimit,
     required this.retriesScheduled,
     required this.circuitOpens,
-    this.lookBehindMerges = 0,
-    this.lastLookBehindTail = 0,
     this.processedByType = const <String, int>{},
     this.droppedByType = const <String, int>{},
     this.dbApplied = 0,
@@ -53,8 +51,6 @@ class SyncMetrics {
       skippedByRetryLimit: (map['skippedByRetryLimit'] ?? 0) as int,
       retriesScheduled: (map['retriesScheduled'] ?? 0) as int,
       circuitOpens: (map['circuitOpens'] ?? 0) as int,
-      lookBehindMerges: (map['lookBehindMerges'] ?? 0) as int,
-      lastLookBehindTail: (map['lastLookBehindTail'] ?? 0) as int,
       dbApplied: (map['dbApplied'] ?? 0) as int,
       dbIgnoredByVectorClock: (map['dbIgnoredByVectorClock'] ?? 0) as int,
       conflictsCreated: (map['conflictsCreated'] ?? 0) as int,
@@ -84,8 +80,6 @@ class SyncMetrics {
   final int skippedByRetryLimit;
   final int retriesScheduled;
   final int circuitOpens;
-  final int lookBehindMerges;
-  final int lastLookBehindTail;
   final Map<String, int> processedByType;
   final Map<String, int> droppedByType;
   final int dbApplied;
@@ -116,8 +110,6 @@ class SyncMetrics {
         'skippedByRetryLimit': skippedByRetryLimit,
         'retriesScheduled': retriesScheduled,
         'circuitOpens': circuitOpens,
-        'lookBehindMerges': lookBehindMerges,
-        'lastLookBehindTail': lastLookBehindTail,
       }
         ..addEntries(processedByType.entries.map(
           (e) => MapEntry('processed.${e.key}', e.value),
