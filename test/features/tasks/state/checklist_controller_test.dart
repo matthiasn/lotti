@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -21,11 +22,29 @@ class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
+class MockLoggingService extends Mock implements LoggingService {}
+
+// Helper to register a mock instance in getIt
+void registerMock<T extends Object>(T instance) {
+  if (getIt.isRegistered<T>()) {
+    getIt.unregister<T>();
+  }
+  getIt.registerSingleton<T>(instance);
+}
+
+// Helper to unregister a type from getIt
+void unregisterMock<T extends Object>() {
+  if (getIt.isRegistered<T>()) {
+    getIt.unregister<T>();
+  }
+}
+
 void main() {
   late MockJournalDb mockDb;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockJournalRepository mockJournalRepository;
   late MockPersistenceLogic mockPersistenceLogic;
+  late MockLoggingService mockLoggingService;
   late StreamController<Set<String>> updateStreamController;
 
   final testChecklist = Checklist(
@@ -74,23 +93,14 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     mockJournalRepository = MockJournalRepository();
     mockPersistenceLogic = MockPersistenceLogic();
+    mockLoggingService = MockLoggingService();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     // Register getIt dependencies
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    getIt.registerSingleton<JournalDb>(mockDb);
-
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
-    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
-    getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+    registerMock<JournalDb>(mockDb);
+    registerMock<UpdateNotifications>(mockUpdateNotifications);
+    registerMock<PersistenceLogic>(mockPersistenceLogic);
+    registerMock<LoggingService>(mockLoggingService);
 
     // Setup stubs
     when(() => mockDb.journalEntityById('checklist-1'))
@@ -112,15 +122,10 @@ void main() {
 
   tearDown(() async {
     await updateStreamController.close();
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
+    unregisterMock<JournalDb>();
+    unregisterMock<UpdateNotifications>();
+    unregisterMock<PersistenceLogic>();
+    unregisterMock<LoggingService>();
   });
 
   group('ChecklistController', () {
@@ -315,6 +320,48 @@ void main() {
         expect(result, isTrue);
 
         // Verify updateTask was NOT called (empty list, no change)
+        verifyNever(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            taskData: any(named: 'taskData'),
+            entryText: any(named: 'entryText'),
+          ),
+        );
+      });
+
+      test('returns false and does not update task when deletion fails',
+          () async {
+        // Make deleteJournalEntity return false
+        when(() => mockJournalRepository.deleteJournalEntity(any()))
+            .thenAnswer((_) async => false);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider(id: 'checklist-1', taskId: 'task-1')
+              .future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider(id: 'checklist-1', taskId: 'task-1')
+              .notifier,
+        );
+
+        // Delete the checklist - should fail
+        final result = await notifier.delete();
+
+        expect(result, isFalse);
+
+        // Verify deleteJournalEntity was called
+        verify(() => mockJournalRepository.deleteJournalEntity('checklist-1'))
+            .called(1);
+
+        // Verify updateTask was NOT called (deletion failed, early return)
         verifyNever(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
