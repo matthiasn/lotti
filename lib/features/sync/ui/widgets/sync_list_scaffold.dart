@@ -217,6 +217,7 @@ class _SyncListScaffoldState<T, F extends Enum>
             final listPadding = EdgeInsets.only(
               left: effectivePadding.start,
               right: effectivePadding.end,
+              top: AppTheme.spacingSmall,
               bottom: effectivePadding.bottom,
             );
 
@@ -238,12 +239,9 @@ class _SyncListScaffoldState<T, F extends Enum>
               onChanged: (value) => setState(() => _selectedFilter = value),
               locale: locale,
               summaryText: summaryText,
-              // Remove extra top padding so the segmented chips sit
-              // directly under the subtitle.
               padding: EdgeInsetsDirectional.only(
                 start: effectivePadding.start,
                 end: effectivePadding.end,
-                bottom: AppTheme.spacingMedium,
               ),
             );
 
@@ -359,11 +357,11 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
   Widget build(BuildContext context) {
     final entries = filters.entries.toList(growable: false);
     return ModernBaseCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: AppTheme.spacingSmall,
-        runSpacing: AppTheme.spacingSmall,
+        spacing: 6,
+        runSpacing: 6,
         children: entries.map((entry) {
           final rawLabel = entry.value.labelBuilder(context);
           final label = toBeginningOfSentenceCase(rawLabel, locale);
@@ -419,10 +417,10 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
     // Estimate height based on how many segments are likely to wrap.
     // One row (<=3) is compact; more rows need extra headroom.
     final height = filterCount <= 3
-        ? 100
+        ? 88
         : filterCount <= 6
-            ? 156
-            : 196;
+            ? 140
+            : 180;
     return Size.fromHeight(height.toDouble());
   }
 
@@ -436,7 +434,6 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 5),
           _FilterCard<F>(
             filters: filters,
             counts: counts,
@@ -444,11 +441,12 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
             onChanged: onChanged,
             locale: locale,
           ),
-          const SizedBox(height: AppTheme.spacingSmall),
+          const SizedBox(height: 4),
           Text(
             summaryText,
-            style: context.textTheme.titleSmall?.copyWith(
+            style: context.textTheme.bodySmall?.copyWith(
               color: context.colorScheme.onSurfaceVariant,
+              fontSize: 12,
             ),
           ),
         ],
@@ -529,7 +527,7 @@ class _SegmentChip extends StatelessWidget {
           child: AnimatedContainer(
             key: ValueKey('syncFilter-$filter'),
             duration: const Duration(milliseconds: AppTheme.animationDuration),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
               color: isSelected
                   ? selectedColor
@@ -550,7 +548,7 @@ class _SegmentChip extends StatelessWidget {
                 if (icon != null) ...[
                   Icon(
                     icon,
-                    size: AppTheme.iconSizeCompact,
+                    size: 14,
                     color: iconColor,
                   ),
                   const SizedBox(width: 4),
@@ -559,15 +557,16 @@ class _SegmentChip extends StatelessWidget {
                   label,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: textTheme.titleSmall?.copyWith(
+                  style: textTheme.labelMedium?.copyWith(
                     color: foregroundColor,
+                    fontSize: 12,
                   ),
                 ),
                 if (shouldShowCount) ...[
                   const SizedBox(width: 4),
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
                       color: countBackground,
                       borderRadius: BorderRadius.circular(999),
@@ -582,9 +581,10 @@ class _SegmentChip extends StatelessWidget {
                     ),
                     child: Text(
                       count.toString(),
-                      style: textTheme.bodySmall?.copyWith(
+                      style: textTheme.labelSmall?.copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                         fontWeight: FontWeight.w600,
+                        fontSize: 10,
                         color: countForeground,
                       ),
                     ),

@@ -29,7 +29,8 @@ void main() {
       const testCount = 999;
       syncDatabaseMock = mockSyncDatabaseWithCount(testCount);
 
-      when(() => syncDatabaseMock.watchOutboxItems()).thenAnswer(
+      when(() => syncDatabaseMock.watchOutboxItems(limit: any(named: 'limit')))
+          .thenAnswer(
         (_) => Stream<List<OutboxItem>>.fromIterable([
           [
             OutboxItem(
@@ -119,7 +120,8 @@ void main() {
         (tester) async {
       syncDatabaseMock = mockSyncDatabaseWithCount(1);
 
-      when(() => syncDatabaseMock.watchOutboxItems()).thenAnswer(
+      when(() => syncDatabaseMock.watchOutboxItems(limit: any(named: 'limit')))
+          .thenAnswer(
         (_) => Stream<List<OutboxItem>>.fromIterable([
           [
             OutboxItem(
@@ -178,7 +180,8 @@ void main() {
 
     testWidgets('renders empty state when no outbox items', (tester) async {
       syncDatabaseMock = mockSyncDatabaseWithCount(0);
-      when(() => syncDatabaseMock.watchOutboxItems()).thenAnswer(
+      when(() => syncDatabaseMock.watchOutboxItems(limit: any(named: 'limit')))
+          .thenAnswer(
         (_) => Stream<List<OutboxItem>>.fromIterable([
           <OutboxItem>[],
         ]),
@@ -212,7 +215,7 @@ void main() {
         (tester) async {
       syncDatabaseMock = mockSyncDatabaseWithCount(0);
       final controller = StreamController<List<OutboxItem>>();
-      when(() => syncDatabaseMock.watchOutboxItems())
+      when(() => syncDatabaseMock.watchOutboxItems(limit: any(named: 'limit')))
           .thenAnswer((_) => controller.stream);
 
       getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
