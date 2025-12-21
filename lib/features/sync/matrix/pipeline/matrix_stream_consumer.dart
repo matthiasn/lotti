@@ -907,6 +907,21 @@ class MatrixStreamConsumer implements SyncPipeline {
           domain: syncLoggingDomain,
           subDomain: 'catchup',
         );
+        final collisions = TimelineEventOrdering.timestampCollisionStats(
+          slice,
+        );
+        if (collisions.groupCount > 0) {
+          final sample = collisions.sample
+              .map((entry) => '${entry.ts}:${entry.count}')
+              .join(',');
+          _loggingService.captureEvent(
+            _withInstance(
+              'catchup.tsCollision groups=${collisions.groupCount} events=${collisions.eventCount} total=${slice.length} sample=$sample',
+            ),
+            domain: syncLoggingDomain,
+            subDomain: 'ordering',
+          );
+        }
         await _processOrdered(slice);
       }
       // Mark initial catch-up as completed and cancel retry timer.
@@ -1089,9 +1104,25 @@ class MatrixStreamConsumer implements SyncPipeline {
         lastEventId: _lastProcessedEventId,
         tailLimit: _liveScanTailLimit,
         lastTimestamp: null,
-      )..sort(TimelineEventOrdering.compare);
+      );
       final deduped = tu.dedupEventsByIdPreserveOrder(afterSlice);
       if (deduped.isNotEmpty) {
+        final collisions = TimelineEventOrdering.timestampCollisionStats(
+          deduped,
+          sampleLimit: 5,
+        );
+        if (collisions.groupCount > 0) {
+          final sample = collisions.sample
+              .map((entry) => '${entry.ts}:${entry.count}')
+              .join(',');
+          _loggingService.captureEvent(
+            _withInstance(
+              'liveScan.tsCollision groups=${collisions.groupCount} events=${collisions.eventCount} total=${deduped.length} sample=$sample',
+            ),
+            domain: syncLoggingDomain,
+            subDomain: 'ordering',
+          );
+        }
         // Use helper to optionally drop older/equal payloads while keeping
         // attachments and retries.
         final toProcess = msh.filterSyncPayloadsByMonotonic(

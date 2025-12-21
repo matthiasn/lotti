@@ -29,8 +29,9 @@ class SdkPaginationCompat {
       var pages = 0;
       var anyPaged = false;
       while (pages < maxPages) {
-        final events = List<Event>.from(timeline.events)
-          ..sort(TimelineEventOrdering.compare);
+        final events = TimelineEventOrdering.sortStableByTimestamp(
+          timeline.events,
+        );
         final contains = events.any((e) => e.eventId == lastEventId);
         if (contains) return true;
 
