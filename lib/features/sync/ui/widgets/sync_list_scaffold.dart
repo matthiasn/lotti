@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
@@ -232,6 +233,34 @@ class _SyncListScaffoldState<T, F extends Enum>
               filteredItems.length,
             );
 
+            // Build labels, counts, and icon presence lists for height calculation.
+            final filterEntries =
+                widget.filters.entries.toList(growable: false);
+            final labels = filterEntries
+                .map((e) => toBeginningOfSentenceCase(
+                      e.value.labelBuilder(context),
+                      locale,
+                    ))
+                .toList();
+            final countsList =
+                filterEntries.map((e) => counts[e.key] ?? 0).toList();
+            final haveIcons =
+                filterEntries.map((e) => e.value.icon != null).toList();
+
+            // Calculate dynamic header height based on actual content.
+            final headerHorizontalPadding =
+                effectivePadding.start + effectivePadding.end;
+            final headerHeight =
+                SettingsHeaderDimensions.calculateFilterHeaderHeight(
+              context: context,
+              labels: labels,
+              counts: countsList,
+              haveIcons: haveIcons,
+              availableWidth: constraints.maxWidth,
+              horizontalPadding: headerHorizontalPadding,
+              summaryText: summaryText,
+            );
+
             final headerBottom = _SyncHeaderBottom<T, F>(
               filters: widget.filters,
               counts: counts,
@@ -243,6 +272,7 @@ class _SyncListScaffoldState<T, F extends Enum>
                 start: effectivePadding.start,
                 end: effectivePadding.end,
               ),
+              preferredHeight: headerHeight,
             );
 
             return Scaffold(
@@ -357,11 +387,14 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
   Widget build(BuildContext context) {
     final entries = filters.entries.toList(growable: false);
     return ModernBaseCard(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: SettingsHeaderDimensions.filterCardPadding,
+        vertical: SettingsHeaderDimensions.filterCardVerticalPadding,
+      ),
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 6,
-        runSpacing: 6,
+        spacing: SettingsHeaderDimensions.filterChipSpacing,
+        runSpacing: SettingsHeaderDimensions.filterChipSpacing,
         children: entries.map((entry) {
           final rawLabel = entry.value.labelBuilder(context);
           final label = toBeginningOfSentenceCase(rawLabel, locale);
@@ -401,6 +434,7 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
     required this.locale,
     required this.summaryText,
     required this.padding,
+    required this.preferredHeight,
   });
 
   final Map<F, SyncFilterOption<T>> filters;
@@ -411,18 +445,11 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
   final String summaryText;
   final EdgeInsetsDirectional padding;
 
+  /// Pre-calculated height based on actual label widths and layout constraints.
+  final double preferredHeight;
+
   @override
-  Size get preferredSize {
-    final filterCount = filters.length;
-    // Estimate height based on how many segments are likely to wrap.
-    // One row (<=3) is compact; more rows need extra headroom.
-    final height = filterCount <= 3
-        ? 88
-        : filterCount <= 6
-            ? 140
-            : 180;
-    return Size.fromHeight(height.toDouble());
-  }
+  Size get preferredSize => Size.fromHeight(preferredHeight);
 
   @override
   Widget build(BuildContext context) {
@@ -441,12 +468,18 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
             onChanged: onChanged,
             locale: locale,
           ),
-          const SizedBox(height: 4),
-          Text(
-            summaryText,
-            style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-              fontSize: 12,
+          const SizedBox(height: SettingsHeaderDimensions.filterSummaryGap),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(
+              start: SettingsHeaderDimensions.filterCardPadding,
+            ),
+            child: Text(
+              summaryText,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+                fontSize: SettingsHeaderDimensions.filterSummaryFontSize,
+                height: SettingsHeaderDimensions.filterSummaryLineHeight,
+              ),
             ),
           ),
         ],
@@ -527,7 +560,10 @@ class _SegmentChip extends StatelessWidget {
           child: AnimatedContainer(
             key: ValueKey('syncFilter-$filter'),
             duration: const Duration(milliseconds: AppTheme.animationDuration),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(
+              horizontal: SettingsHeaderDimensions.filterChipHorizontalPadding,
+              vertical: SettingsHeaderDimensions.filterChipVerticalPadding,
+            ),
             decoration: BoxDecoration(
               color: isSelected
                   ? selectedColor
@@ -548,10 +584,12 @@ class _SegmentChip extends StatelessWidget {
                 if (icon != null) ...[
                   Icon(
                     icon,
-                    size: 14,
+                    size: SettingsHeaderDimensions.filterChipIconSize,
                     color: iconColor,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(
+                    width: SettingsHeaderDimensions.filterChipIconSpacing,
+                  ),
                 ],
                 Text(
                   label,
@@ -559,14 +597,19 @@ class _SegmentChip extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: textTheme.labelMedium?.copyWith(
                     color: foregroundColor,
-                    fontSize: 12,
+                    fontSize: SettingsHeaderDimensions.filterChipFontSize,
                   ),
                 ),
                 if (shouldShowCount) ...[
-                  const SizedBox(width: 4),
+                  const SizedBox(
+                    width: SettingsHeaderDimensions.filterChipIconSpacing,
+                  ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal:
+                          SettingsHeaderDimensions.filterChipCountPadding,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: countBackground,
                       borderRadius: BorderRadius.circular(999),
@@ -584,7 +627,8 @@ class _SegmentChip extends StatelessWidget {
                       style: textTheme.labelSmall?.copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                         fontWeight: FontWeight.w600,
-                        fontSize: 10,
+                        fontSize:
+                            SettingsHeaderDimensions.filterChipCountFontSize,
                         color: countForeground,
                       ),
                     ),
