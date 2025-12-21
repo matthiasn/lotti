@@ -1089,9 +1089,8 @@ class MatrixStreamConsumer implements SyncPipeline {
         lastEventId: _lastProcessedEventId,
         tailLimit: _liveScanTailLimit,
         lastTimestamp: null,
-      );
-      final combined = [...afterSlice]..sort(TimelineEventOrdering.compare);
-      final deduped = tu.dedupEventsByIdPreserveOrder(combined);
+      )..sort(TimelineEventOrdering.compare);
+      final deduped = tu.dedupEventsByIdPreserveOrder(afterSlice);
       if (deduped.isNotEmpty) {
         // Use helper to optionally drop older/equal payloads while keeping
         // attachments and retries.
