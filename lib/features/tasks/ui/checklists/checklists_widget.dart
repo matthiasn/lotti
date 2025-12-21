@@ -107,20 +107,37 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
             checklistIds.length,
             (int index) {
               final checklistId = checklistIds.elementAt(index);
-              return ModernBaseCard(
+              // Wrap in Consumer to filter out deleted/stale checklists
+              return Consumer(
                 key: Key('$checklistId${widget.entryId}$index'),
-                margin: const EdgeInsets.only(
-                  bottom: AppTheme.cardSpacing,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.cardPadding,
-                  vertical: AppTheme.cardPaddingHalf,
-                ),
-                child: ChecklistWrapper(
-                  entryId: checklistId,
-                  categoryId: item.categoryId,
-                  taskId: widget.task.id,
-                ),
+                builder: (context, ref, _) {
+                  final checklist = ref
+                      .watch(
+                        checklistControllerProvider(
+                          id: checklistId,
+                          taskId: widget.task.id,
+                        ),
+                      )
+                      .value;
+                  // Don't render card for deleted or stale checklists
+                  if (checklist == null) {
+                    return const SizedBox.shrink();
+                  }
+                  return ModernBaseCard(
+                    margin: const EdgeInsets.only(
+                      bottom: AppTheme.cardSpacing,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.cardPadding,
+                      vertical: AppTheme.cardPaddingHalf,
+                    ),
+                    child: ChecklistWrapper(
+                      entryId: checklistId,
+                      categoryId: item.categoryId,
+                      taskId: widget.task.id,
+                    ),
+                  );
+                },
               );
             },
           ),

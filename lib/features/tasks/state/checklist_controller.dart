@@ -6,7 +6,9 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -63,8 +65,43 @@ class ChecklistController extends _$ChecklistController {
   Future<bool> delete() async {
     final res =
         await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
+    if (!res) {
+      return false;
+    }
+
     state = const AsyncData(null);
-    return res;
+
+    // Also remove this checklist from the parent task's checklistIds
+    if (taskId != null) {
+      try {
+        final taskEntry = await getIt<JournalDb>().journalEntityById(taskId!);
+        if (taskEntry is Task) {
+          final currentIds = taskEntry.data.checklistIds ?? [];
+          final updatedIds = currentIds.where((cid) => cid != id).toList();
+          if (updatedIds.length != currentIds.length) {
+            await getIt<PersistenceLogic>().updateTask(
+              journalEntityId: taskId!,
+              taskData: taskEntry.data.copyWith(checklistIds: updatedIds),
+            );
+          }
+        }
+      } catch (exception, stackTrace) {
+        getIt<LoggingService>().captureException(
+          'Failed to remove checklist ID ($id) from task ($taskId): $exception',
+          domain: 'ChecklistController',
+          subDomain: 'delete',
+          stackTrace: stackTrace,
+        );
+        // Design decision: We log but don't fail/rollback for these reasons:
+        // 1. The checklist IS successfully deleted (soft-delete with deletedAt)
+        // 2. Rolling back would require "undeleting" which risks sync conflicts
+        // 3. The defensive UI filtering in ChecklistsWidget handles stale refs
+        // 4. True atomicity would require transaction support in PersistenceLogic
+        // The user experience is unaffected due to the UI-level filtering.
+      }
+    }
+
+    return true;
   }
 
   Future<void> updateTitle(String? title) => updateChecklist(
