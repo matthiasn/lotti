@@ -38,6 +38,18 @@ class MatrixMessageSender {
   final Directory _documentsDirectory;
   final SentEventRegistry _sentEventRegistry;
 
+  List<VectorClock>? _mergeCoveredVectorClocks(
+    List<VectorClock>? existing,
+    VectorClock? add,
+  ) {
+    if (existing == null && add == null) return null;
+    final merged = <VectorClock>{
+      ...?existing,
+      if (add != null) add,
+    };
+    return merged.isEmpty ? null : merged.toList();
+  }
+
   Directory get documentsDirectory => _documentsDirectory;
   SentEventRegistry get sentEventRegistry => _sentEventRegistry;
 
@@ -273,9 +285,19 @@ class MatrixMessageSender {
     if (messageVectorClock != null && jsonVectorClock != null) {
       final status = VectorClock.compare(jsonVectorClock, messageVectorClock);
       if (status != VclockStatus.equal) {
-        outbound = message.copyWith(vectorClock: jsonVectorClock);
+        final covered = _mergeCoveredVectorClocks(
+          message.coveredVectorClocks,
+          messageVectorClock,
+        );
+        outbound = message.copyWith(
+          vectorClock: jsonVectorClock,
+          coveredVectorClocks: covered,
+        );
+        final coveredLog = covered?.map((vc) => vc.vclock).toList() ?? const [];
         _loggingService.captureEvent(
-          'vectorClock mismatch; adopting json clock for ${message.jsonPath} json=${jsonVectorClock.vclock} message=${messageVectorClock.vclock} status=$status',
+          'vectorClock mismatch; adopting json clock for ${message.jsonPath} '
+          'json=${jsonVectorClock.vclock} message=${messageVectorClock.vclock} '
+          'status=$status coveredClocks=${covered?.length ?? 0} covered=$coveredLog',
           domain: 'MATRIX_SERVICE',
           subDomain: 'sendMatrixMsg.vclockAdjusted',
         );

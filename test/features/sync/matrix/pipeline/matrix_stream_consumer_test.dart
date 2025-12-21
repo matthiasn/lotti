@@ -4131,6 +4131,10 @@ void main() {
         readMarkerService: readMarker,
         sentEventRegistry: SentEventRegistry(),
       );
+      var scanCalls = 0;
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanCalls++;
+      };
 
       fakeAsync((async) {
         unawaited(consumer.initialize());
@@ -4147,6 +4151,7 @@ void main() {
 
         // The first stream event should trigger catch-up
         expect(catchupCalls, greaterThan(catchupAfterStart));
+        expect(scanCalls, equals(0));
       });
     });
 
@@ -4252,6 +4257,7 @@ void main() {
 
       // Track captured log messages
       final capturedMessages = <String>[];
+      var blockWakeCatchup = false;
       when(
         () => logger.captureEvent(
           any<String>(),
@@ -4259,20 +4265,22 @@ void main() {
           subDomain: any(named: 'subDomain'),
         ),
       ).thenAnswer((invocation) {
-        capturedMessages.add(invocation.positionalArguments[0] as String);
+        final message = invocation.positionalArguments[0] as String;
+        capturedMessages.add(message);
+        if (message.contains('wake.detected')) {
+          blockWakeCatchup = true;
+        }
       });
 
       // Completer to control when wake catch-up finishes
       final catchupCompleter = Completer<void>();
-      var catchupCallCount = 0;
 
       // Stub for snapshot-only overload (used by catch-up)
-      // Initial catch-up (1st) and retry (2nd) should complete immediately.
-      // Wake catch-up (3rd+) waits for completer to simulate in-flight state.
+      // Wake catch-up waits for completer once wake detection has fired.
       when(() => room.getTimeline(limit: any(named: 'limit')))
           .thenAnswer((_) async {
-        catchupCallCount++;
-        if (catchupCallCount > 2) {
+        if (blockWakeCatchup) {
+          blockWakeCatchup = false;
           // Wake catch-up (from wake detection) - wait for completer
           await catchupCompleter.future;
         }
@@ -4300,6 +4308,10 @@ void main() {
         readMarkerService: readMarker,
         sentEventRegistry: SentEventRegistry(),
       );
+      var scanCalls = 0;
+      consumer.scanLiveTimelineTestHook = (_) {
+        scanCalls++;
+      };
 
       fakeAsync((async) {
         unawaited(consumer.initialize());
@@ -4307,17 +4319,23 @@ void main() {
         unawaited(consumer.start());
         async.flushMicrotasks();
 
-        // Let initial catch-up complete
-        async.elapse(const Duration(milliseconds: 200));
+        // Let initial catch-up complete and settle before steady-state signals.
+        async.elapse(const Duration(seconds: 2));
         async.flushMicrotasks();
 
-        // Trigger a live scan during steady state to set _lastLiveScanAt
+        // Trigger a live scan during steady state to set _lastLiveScanAt.
         // This is required for wake detection to work (it checks the gap since
         // the last scan)
         streamController.add(streamEvent);
         async.flushMicrotasks();
-        async.elapse(const Duration(milliseconds: 500));
+        async.elapse(const Duration(seconds: 2));
         async.flushMicrotasks();
+        final scansAfterBaseline = scanCalls;
+        expect(
+          scansAfterBaseline,
+          greaterThan(0),
+          reason: 'Expected a live scan to establish the last scan timestamp',
+        );
 
         // Clear captured messages to isolate the test
         capturedMessages.clear();
@@ -4340,18 +4358,27 @@ void main() {
           reason: 'Wake from standby should be detected',
         );
 
+        // Verify wake catch-up started (this sets _catchUpInFlight = true)
+        expect(
+          capturedMessages.any((m) => m.contains('wake.catchup.start')),
+          isTrue,
+          reason: 'Wake catch-up should have started',
+        );
+
         // Second signal while wake catch-up is still running
-        // This should be deferred
+        // This should be deferred (client stream handler defers when catch-up is in-flight)
         capturedMessages.clear();
         streamController.add(streamEvent);
         async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
 
-        // Verify the deferred log message was emitted
+        // Verify no live scan runs while wake catch-up is still in-flight.
         expect(
-          capturedMessages,
-          contains('signal.liveScan.deferred.catchUpInFlight'),
+          scanCalls,
+          scansAfterBaseline,
           reason:
-              'Live scan should be deferred while catch-up is processing older events',
+              'Live scans should be deferred while another catch-up is processing',
         );
 
         // Complete the catch-up to clean up

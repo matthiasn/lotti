@@ -205,6 +205,8 @@ void main() {
     // Default stub for findPendingByEntryId - no existing pending item
     when(() => syncDatabase.findPendingByEntryId(any()))
         .thenAnswer((_) async => null);
+    when(() => journalDb.linksForEntryIdsBidirectional(any()))
+        .thenAnswer((_) async => <EntryLink>[]);
     // Ensure activity gate can construct if needed
     when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
     when(() => userActivityService.activityStream)
@@ -2811,15 +2813,15 @@ void main() {
       );
       final link2 = EntryLink.basic(
         id: 'link-2',
-        fromId: entryId,
-        toId: 'category-2',
+        fromId: 'category-2',
+        toId: entryId,
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
         vectorClock: null,
       );
 
-      // Mock journalDb to return links for this entry
-      when(() => journalDb.linksForEntryIds(const {entryId}))
+      // Mock journalDb to return links for this entry (both directions)
+      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
           .thenAnswer((_) async => [link1, link2]);
 
       final journalEntity = JournalEntity.journalEntry(
@@ -2853,11 +2855,14 @@ void main() {
       await service.enqueueMessage(message);
 
       // Verify links were fetched
-      verify(() => journalDb.linksForEntryIds(const {entryId})).called(1);
+      verify(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
+          .called(1);
 
       // Verify logging shows embedded links count
       verify(() => loggingService.captureEvent(
-            contains('enqueueMessage.attachedLinks id=$entryId count=2'),
+            contains(
+              'enqueueMessage.attachedLinks id=$entryId count=2 from=1 to=1',
+            ),
             domain: 'OUTBOX',
             subDomain: 'enqueueMessage.attachLinks',
           )).called(1);
@@ -2880,15 +2885,17 @@ void main() {
           json.decode(companion.message.value) as Map<String, dynamic>;
       expect(encodedMessage['entryLinks'], hasLength(2));
       final entryLinks = encodedMessage['entryLinks'] as List<dynamic>;
-      expect((entryLinks[0] as Map<String, dynamic>)['id'], link1.id);
-      expect((entryLinks[1] as Map<String, dynamic>)['id'], link2.id);
+      final entryLinkIds = entryLinks
+          .map((entry) => (entry as Map<String, dynamic>)['id'])
+          .toList();
+      expect(entryLinkIds, containsAll([link1.id, link2.id]));
     });
 
     test('continues without links when linksForEntryIds fails', () async {
       const entryId = 'entry-456';
 
-      // Mock journalDb.linksForEntryIds to throw an error
-      when(() => journalDb.linksForEntryIds(const {entryId}))
+      // Mock journalDb.linksForEntryIdsBidirectional to throw an error
+      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
           .thenThrow(Exception('Database error'));
 
       final journalEntity = JournalEntity.journalEntry(
@@ -2944,7 +2951,7 @@ void main() {
       const entryId = 'entry-789';
 
       // Mock journalDb to return empty list
-      when(() => journalDb.linksForEntryIds(const {entryId}))
+      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
           .thenAnswer((_) async => []);
 
       final journalEntity = JournalEntity.journalEntry(
@@ -2978,7 +2985,8 @@ void main() {
       await service.enqueueMessage(message);
 
       // Verify links were fetched
-      verify(() => journalDb.linksForEntryIds(const {entryId})).called(1);
+      verify(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
+          .called(1);
 
       // Verify attachedLinks log was NOT called (no links to attach)
       verifyNever(() => loggingService.captureEvent(
@@ -2986,6 +2994,13 @@ void main() {
             domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ));
+
+      // Verify no-links log was emitted
+      verify(() => loggingService.captureEvent(
+            contains('enqueueMessage.noLinks id=$entryId'),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage.attachLinks',
+          )).called(1);
 
       // Verify embeddedLinks=0 in the log
       verify(() => loggingService.captureEvent(

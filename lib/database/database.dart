@@ -253,6 +253,7 @@ class JournalDb extends _$JournalDb {
           journalId: id,
           tagEntityId: tagId,
         ),
+        mode: InsertMode.insertOrIgnore,
       );
     } catch (ex) {
       debugPrint(ex.toString());
@@ -1195,6 +1196,17 @@ class JournalDb extends _$JournalDb {
 
   Future<List<EntryLink>> linksForEntryIds(Set<String> ids) async {
     final entryLinks = await linksForIds(ids.toList()).get();
+    return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
+  }
+
+  Future<List<EntryLink>> linksForEntryIdsBidirectional(Set<String> ids) async {
+    if (ids.isEmpty) return <EntryLink>[];
+    final idList = ids.toList();
+    final entryLinks = await (select(linkedEntries)
+          ..where(
+            (t) => t.fromId.isIn(idList) | t.toId.isIn(idList),
+          ))
+        .get();
     return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
   }
 

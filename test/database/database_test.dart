@@ -1826,6 +1826,28 @@ void main() {
         expect(results.map((link) => link.id).toSet(), {'link-ab', 'link-ac'});
       });
 
+      test('linksForEntryIdsBidirectional returns links for from/to matches',
+          () async {
+        final linkAb = buildEntryLink(
+          id: 'link-ab',
+          fromId: 'a',
+          toId: 'b',
+          timestamp: DateTime(2024, 8, 1),
+        );
+        final linkCa = buildEntryLink(
+          id: 'link-ca',
+          fromId: 'c',
+          toId: 'a',
+          timestamp: DateTime(2024, 8, 2),
+        );
+
+        await db!.upsertEntryLink(linkAb);
+        await db!.upsertEntryLink(linkCa);
+
+        final results = await db!.linksForEntryIdsBidirectional({'a'});
+        expect(results.map((link) => link.id).toSet(), {'link-ab', 'link-ca'});
+      });
+
       test('upsertEntryLink rejects self-links', () async {
         final link = buildEntryLink(
           id: 'self-link',

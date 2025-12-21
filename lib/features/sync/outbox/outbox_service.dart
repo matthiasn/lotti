@@ -259,14 +259,26 @@ class OutboxService {
 
           // Attach entry links if available
           try {
-            final links = await _journalDb.linksForEntryIds({journalMsg.id});
+            final links =
+                await _journalDb.linksForEntryIdsBidirectional({journalMsg.id});
             if (links.isNotEmpty) {
+              final fromCount =
+                  links.where((link) => link.fromId == journalMsg.id).length;
+              final toCount =
+                  links.where((link) => link.toId == journalMsg.id).length;
               _loggingService.captureEvent(
-                'enqueueMessage.attachedLinks id=${journalMsg.id} count=${links.length}',
+                'enqueueMessage.attachedLinks id=${journalMsg.id} '
+                'count=${links.length} from=$fromCount to=$toCount',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage.attachLinks',
               );
               journalMsg = journalMsg.copyWith(entryLinks: links);
+            } else {
+              _loggingService.captureEvent(
+                'enqueueMessage.noLinks id=${journalMsg.id}',
+                domain: 'OUTBOX',
+                subDomain: 'enqueueMessage.attachLinks',
+              );
             }
           } catch (e, st) {
             _loggingService.captureException(
@@ -369,6 +381,7 @@ class OutboxService {
               // processing on the receiving end.
               final coveredClocksSet = <VectorClock>{
                 ...?oldMessage.coveredVectorClocks,
+                ...?journalEntityMsg.coveredVectorClocks,
                 if (oldMessage.vectorClock != null) oldMessage.vectorClock!,
                 // Also capture the current enqueue call's VC if it differs from
                 // the latest. This handles the race condition where multiple
@@ -394,13 +407,12 @@ class OutboxService {
               );
 
               // Log covered clocks for debugging - show all counters per vector clock
-              final coveredVcStrings = coveredClocks
-                  .map((vc) => vc.vclock.values.join(','))
-                  .toList();
+              final coveredVcStrings =
+                  coveredClocks.map((vc) => vc.vclock).toList();
               _loggingService.captureEvent(
                 'enqueue MERGED type=SyncJournalEntity id=${journalEntityMsg.id} '
                 'coveredClocks=${coveredClocks.length} covered=$coveredVcStrings '
-                'latest=${latestVc?.vclock.values.join(',')}',
+                'latest=${latestVc?.vclock}',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage',
               );
@@ -513,6 +525,7 @@ class OutboxService {
               // processing on the receiving end.
               final coveredClocksSet = <VectorClock>{
                 ...?oldMessage.coveredVectorClocks,
+                ...?entryLinkMsg.coveredVectorClocks,
                 if (oldMessage.entryLink.vectorClock != null)
                   oldMessage.entryLink.vectorClock!,
               };
@@ -534,11 +547,9 @@ class OutboxService {
               );
 
               // Log covered clocks for debugging - show all counters per vector clock
-              final coveredVcStrings = coveredClocks
-                  .map((vc) => vc.vclock.values.join(','))
-                  .toList();
-              final latestVcStr =
-                  entryLinkMsg.entryLink.vectorClock?.vclock.values.join(',');
+              final coveredVcStrings =
+                  coveredClocks.map((vc) => vc.vclock).toList();
+              final latestVcStr = entryLinkMsg.entryLink.vectorClock?.vclock;
               _loggingService.captureEvent(
                 'enqueue MERGED type=SyncEntryLink id=$linkId '
                 'coveredClocks=${coveredClocks.length} covered=$coveredVcStrings '

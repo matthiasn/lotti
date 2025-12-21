@@ -472,6 +472,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     // a retry loop that will keep trying until the room becomes available.
     if (_roomManager.currentRoom != null) {
       await _attachCatchUp();
+      _flushDeferredLiveScan('start');
     }
     // Ensure we eventually run initial catch‑up even if the room was not yet
     // ready — schedule a retry loop that cancels itself once catch‑up runs.
@@ -650,6 +651,7 @@ class MatrixStreamConsumer implements SyncPipeline {
         bypassCatchUpInFlightCheck: true,
       ).whenComplete(() {
         _catchUpInFlight = false;
+        _flushDeferredLiveScan('startCatchupNow');
         _lastCatchupAt = clock.now();
         if (_deferredCatchup) {
           _deferredCatchup = false;
@@ -734,6 +736,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       await _attachCatchUp();
     } finally {
       _catchUpInFlight = false;
+      _flushDeferredLiveScan('runGuardedCatchUp');
     }
   }
 
@@ -754,6 +757,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       _attachCatchUp()
         ..whenComplete(() {
           _catchUpInFlight = false;
+          _flushDeferredLiveScan('catchUpRetry');
         })
         ..then((_) {
           if (!_initialCatchUpCompleted) {
@@ -979,6 +983,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     unawaited(
       _attachCatchUp().then((success) {
         _catchUpInFlight = false;
+        _flushDeferredLiveScan('wakeCatchUp');
         if (success) {
           _wakeCatchUpPending = false;
           _loggingService.captureEvent(
@@ -1004,15 +1009,51 @@ class MatrixStreamConsumer implements SyncPipeline {
     );
   }
 
+  void _flushDeferredLiveScan(String source) {
+    if (!_liveScanDeferred) return;
+    if (!_initialCatchUpCompleted) return;
+    if (_catchUpInFlight || _scanInFlight) return;
+    _liveScanDeferred = false;
+    _loggingService.captureEvent(
+      _withInstance('liveScan.deferred.flush source=$source'),
+      domain: syncLoggingDomain,
+      subDomain: 'signal',
+    );
+    _scheduleLiveScan();
+  }
+
   void _scheduleLiveScan() {
     // Test seam: allow tests to inject behavior/failures to exercise
     // scheduling error handling paths.
-    _scheduleLiveScanTestHook?.call();
+    if (_scheduleLiveScanTestHook != null) {
+      try {
+        _scheduleLiveScanTestHook!.call();
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: syncLoggingDomain,
+          subDomain: 'signal.schedule',
+          stackTrace: st,
+        );
+      }
+    }
+    // Avoid live scans before the initial catch-up completes; defer until
+    // older events are processed so we don't create gaps from out-of-order
+    // arrival.
+    if (!_initialCatchUpCompleted) {
+      if (!_liveScanDeferred) {
+        _liveScanDeferred = true;
+        _loggingService.captureEvent(
+          'signal.liveScan.deferred.initialCatchUpIncomplete',
+          domain: syncLoggingDomain,
+          subDomain: 'signal',
+        );
+      }
+      return;
+    }
     // Ensure in-order ingest: defer live scan signals while catch-up is
     // processing older events. This prevents newer events from being recorded
     // before older ones, which would cause false positive gap detection.
-    // Note: Direct calls to _scanLiveTimeline() (e.g., from forceRescan()) are
-    // not affected by this guard, allowing the post-catch-up scan to proceed.
     if (_catchUpInFlight) {
       if (!_liveScanDeferred) {
         _liveScanDeferred = true;
@@ -1082,6 +1123,20 @@ class MatrixStreamConsumer implements SyncPipeline {
   }
 
   Future<void> _scanLiveTimeline() async {
+    if (!_initialCatchUpCompleted || _catchUpInFlight) {
+      if (!_liveScanDeferred) {
+        _liveScanDeferred = true;
+        final reason = !_initialCatchUpCompleted
+            ? 'initialCatchUpIncomplete'
+            : 'catchUpInFlight';
+        _loggingService.captureEvent(
+          _withInstance('liveScan.skipped $reason'),
+          domain: syncLoggingDomain,
+          subDomain: 'liveScan',
+        );
+      }
+      return;
+    }
     final tl = _liveTimeline;
     if (tl == null) return;
     try {
@@ -1665,7 +1720,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   //    _attachCatchUp calls that cause processOrdered timeout failures.
   //    Use bypassCatchUpInFlightCheck=true when the caller has already set
   //    _catchUpInFlight (e.g., _startCatchupNow).
-  // The live timeline scan always runs regardless of catch-up status.
+  // Live scans are deferred until the initial catch-up completes to avoid
+  // recording newer events before older ones are processed.
   Future<void> forceRescan({
     bool includeCatchUp = true,
     bool bypassCatchUpInFlightCheck = false,

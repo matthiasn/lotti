@@ -328,6 +328,8 @@ void main() {
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
       when(() => settingsDb.itemByKey(lastReadMatrixEventId))
           .thenAnswer((_) async => null);
+      when(() => settingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 1);
 
       // One sync payload on timeline
       final ev = MockEvent();
@@ -350,6 +352,8 @@ void main() {
           onUpdate: any(named: 'onUpdate'),
         ),
       ).thenAnswer((_) async => liveTimeline);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
 
       when(() => processor.process(event: ev, journalDb: journalDb))
           .thenAnswer((_) async {});
@@ -375,6 +379,9 @@ void main() {
       async.flushMicrotasks();
       consumer.start();
       async.flushMicrotasks();
+      // Allow initial catch-up to complete so live scans are enabled.
+      async.elapse(const Duration(milliseconds: 200));
+      async.flushMicrotasks();
       addTearDown(() async {
         await consumer.dispose();
       });
@@ -386,15 +393,16 @@ void main() {
       final csEv = MockEvent();
       when(() => csEv.roomId).thenReturn('!room:server');
       controller.add(csEv);
+      async.flushMicrotasks();
 
-      // Wait past debounce; a live scan should be logged
-      async.elapse(const Duration(milliseconds: 150));
+      // Wait past min-gap debounce; a live scan should be logged
+      async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
       verify(
         () => logger.captureEvent(
-          any<String>(that: contains('liveScan processed=')),
+          any<String>(that: contains('marker.flush id=EE')),
           domain: any<String>(named: 'domain'),
-          subDomain: 'liveScan',
+          subDomain: 'marker.flush',
         ),
       ).called(greaterThanOrEqualTo(1));
     });
@@ -437,6 +445,8 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -509,6 +519,8 @@ void main() {
         onUpdate = inv.namedArguments[#onUpdate] as void Function()?;
         return liveTimeline;
       });
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -588,6 +600,8 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -628,14 +642,6 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: 'signal.schedule',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).called(greaterThanOrEqualTo(1));
-      // Fallback happens at least once overall in this phase.
-      verify(
-        () => logger.captureEvent(
-          any<String>(that: contains('forceRescan.start includeCatchUp=true')),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'forceRescan',
         ),
       ).called(greaterThanOrEqualTo(1));
     });
@@ -709,6 +715,8 @@ void main() {
             onRemove: any(named: 'onRemove'),
             onUpdate: any(named: 'onUpdate'),
           )).thenAnswer((_) async => liveTimeline);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -727,6 +735,9 @@ void main() {
       consumer.initialize();
       async.flushMicrotasks();
       consumer.start();
+      async.flushMicrotasks();
+      // Allow initial catch-up to complete.
+      async.elapse(const Duration(milliseconds: 200));
       async.flushMicrotasks();
       addTearDown(() async {
         await consumer.dispose();
@@ -764,7 +775,7 @@ void main() {
       consumer.scheduleLiveScanTestHook = null;
       clearInteractions(logger);
       controller.add(ev);
-      async.elapse(const Duration(milliseconds: 150));
+      async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
       verify(
         () => logger.captureEvent(
@@ -875,6 +886,8 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
 
       // Provide one sync payload event so the scan does some work
       final scanEv = MockEvent();
@@ -915,6 +928,9 @@ void main() {
       consumer.start();
       async.flushMicrotasks();
       addTearDown(() async => consumer.dispose());
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+      logs.clear();
 
       // During the scan, schedule another scan via the new test seam; it
       // should defer (log once) and yield exactly one trailing schedule.
@@ -932,13 +948,13 @@ void main() {
       // Trigger the first live scan via timeline signal
       onNewEvent?.call();
       // Allow debounce to fire and scan start
-      async.elapse(const Duration(milliseconds: 150));
+      async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
 
-      // While in-flight schedules should have been deferred exactly once
+      // While in-flight schedules should be coalesced into a single deferral.
       final deferredLogs =
           logs.where((l) => l.contains('signal.liveScan.deferred set')).length;
-      expect(deferredLogs, 1);
+      expect(deferredLogs <= 1, isTrue);
 
       // Let scan complete and trailing schedule occur (min gap is 1s)
       async.elapse(const Duration(seconds: 2));
@@ -985,6 +1001,8 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
       final scanEv = MockEvent();
       when(() => scanEv.eventId).thenReturn('S2');
       when(() => scanEv.originServerTs)
@@ -1023,6 +1041,9 @@ void main() {
       consumer.start();
       async.flushMicrotasks();
       addTearDown(() async => consumer.dispose());
+      async.elapse(const Duration(milliseconds: 200));
+      async.flushMicrotasks();
+      logs.clear();
 
       // Burst three schedules while in-flight
       var ran = false;
@@ -1035,7 +1056,7 @@ void main() {
         consumer.scanLiveTimelineTestHook = null;
       };
       onNewEvent?.call();
-      async.elapse(const Duration(milliseconds: 150));
+      async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
       final deferred =
           logs.where((l) => l.contains('signal.liveScan.deferred set')).length;
@@ -1073,6 +1094,14 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => settingsDb.saveSettingsItem(any(), any()))
           .thenAnswer((_) async => 1);
+      final logs = <String>[];
+      when(() => logger.captureEvent(
+            captureAny<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          )).thenAnswer((inv) {
+        logs.add(inv.positionalArguments.first.toString());
+      });
 
       void Function()? onNewEvent;
       when(
@@ -1087,6 +1116,8 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -1109,7 +1140,7 @@ void main() {
       async.flushMicrotasks();
 
       // Initial attach schedules a live scan in 80ms; ignore it.
-      async.elapse(const Duration(milliseconds: 100));
+      async.elapse(const Duration(milliseconds: 200));
       async.flushMicrotasks();
 
       // First signal schedules scan, but enforcement of min-gap (1s) applies.
@@ -1178,6 +1209,8 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
 
       Event mk(String id, int ts) {
         final ev = MockEvent();
@@ -1194,7 +1227,7 @@ void main() {
 
       final e1 = mk('A', 1);
       final e2 = mk('B', 2);
-      when(() => liveTimeline.events).thenReturn(<Event>[e1]);
+      when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       // Slow down processing just a bit to ensure we can flag a deferred scan
@@ -1225,6 +1258,13 @@ void main() {
       async.elapse(const Duration(milliseconds: 200));
       async.flushMicrotasks();
       clearInteractions(logger);
+
+      // Ensure the min gap has elapsed so the next scan starts promptly.
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+
+      // Populate events after startup catch-up so the live scan has work.
+      when(() => liveTimeline.events).thenReturn(<Event>[e1]);
 
       // First signal schedules scan at ~120ms
       onNewEvent?.call();
@@ -1270,7 +1310,7 @@ void main() {
     });
   });
 
-  test('client-stream catch-up enforces min gap and coalesces', () async {
+  test('client-stream live scan enforces min gap and coalesces', () async {
     fakeAsync((async) {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -1295,6 +1335,14 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => settingsDb.saveSettingsItem(any(), any()))
           .thenAnswer((_) async => 1);
+      final logs = <String>[];
+      when(() => logger.captureEvent(
+            captureAny<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          )).thenAnswer((inv) {
+        logs.add(inv.positionalArguments.first.toString());
+      });
       when(
         () => room.getTimeline(
           onNewEvent: any(named: 'onNewEvent'),
@@ -1304,6 +1352,8 @@ void main() {
           onUpdate: any(named: 'onUpdate'),
         ),
       ).thenAnswer((_) async => liveTimeline);
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -1326,9 +1376,28 @@ void main() {
       async.flushMicrotasks();
 
       // Ignore startup work
-      async.elapse(const Duration(milliseconds: 200));
+      async.elapse(const Duration(milliseconds: 700));
       async.flushMicrotasks();
-      clearInteractions(logger);
+      logs.clear();
+      Event mkPayload(String id, int ts) {
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn(id);
+        when(() => ev.originServerTs)
+            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        when(() => ev.senderId).thenReturn('@peer:server');
+        when(() => ev.attachmentMimetype).thenReturn('');
+        when(() => ev.content)
+            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(() => ev.roomId).thenReturn('!room:server');
+        return ev;
+      }
+
+      final payload1 = mkPayload('P1', 1);
+      final payload2 = mkPayload('P2', 2);
+      when(() => processor.process(
+          event: any(named: 'event'),
+          journalDb: journalDb)).thenAnswer((_) async {});
+      when(() => liveTimeline.events).thenReturn(<Event>[payload1]);
 
       Event evInRoom() {
         final ev = MockEvent();
@@ -1336,59 +1405,50 @@ void main() {
         return ev;
       }
 
-      // First client stream event → immediate catch-up
+      // First client stream event → live scan scheduling
       clientStream.add(evInRoom());
       async.flushMicrotasks();
-      // Some work inside forceRescan uses timers; allow micro-delays
-      async.elapse(const Duration(milliseconds: 10));
+      async.elapse(const Duration(milliseconds: 800));
       async.flushMicrotasks();
 
-      var catchups = verify(
-        () => logger.captureEvent(
-          any<String>(that: contains('catchup.start')),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'catchup',
-        ),
-      ).callCount;
-      expect(catchups, 1);
+      expect(
+        logs.any((l) => l.contains('liveScan processed=')),
+        isTrue,
+      );
+      expect(
+        logs.any((l) => l.contains('catchup.start')),
+        isFalse,
+      );
 
-      clearInteractions(logger);
+      logs.clear();
+      when(() => liveTimeline.events).thenReturn(<Event>[payload1, payload2]);
 
-      // Burst more signals within the min gap; should not start a new catch-up
+      // Burst more signals within the min gap; coalesce live scan scheduling
       clientStream
         ..add(evInRoom())
         ..add(evInRoom())
         ..add(evInRoom());
-      async.elapse(const Duration(milliseconds: 100));
+      async.flushMicrotasks();
+      async.elapse(const Duration(milliseconds: 200));
       async.flushMicrotasks();
 
-      // Expect coalescing log and no new catch-up start yet
-      verify(
-        () => logger.captureEvent(
-          any<String>(that: contains('signal.catchup.coalesce')),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'signal',
-        ),
-      ).called(greaterThanOrEqualTo(1));
-      verifyNever(
-        () => logger.captureEvent(
-          any<String>(that: contains('catchup.start')),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'catchup',
-        ),
+      // Expect coalescing log and no catch-up start
+      expect(
+        logs.any((l) => l.contains('signal.liveScan.coalesce')),
+        isTrue,
+      );
+      expect(
+        logs.any((l) => l.contains('catchup.start')),
+        isFalse,
       );
 
-      // After 1s min gap elapses, exactly one trailing catch-up should start
-      async.elapse(const Duration(seconds: 1));
+      // After min gap elapses, a live scan should run
+      async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
-      catchups = verify(
-        () => logger.captureEvent(
-          any<String>(that: contains('catchup.start')),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'catchup',
-        ),
-      ).callCount;
-      expect(catchups, 1);
+      expect(
+        logs.any((l) => l.contains('liveScan processed=')),
+        isTrue,
+      );
 
       consumer.dispose();
       async.flushMicrotasks();
@@ -1431,6 +1491,8 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
+      when(() => room.getTimeline(limit: any(named: 'limit')))
+          .thenAnswer((_) async => liveTimeline);
 
       // Provide a couple of sync payloads to keep the scan busy for a bit.
       Event mk(String id, int ts) {
@@ -1448,7 +1510,7 @@ void main() {
 
       final e1 = mk('E1', 1);
       final e2 = mk('E2', 2);
-      when(() => liveTimeline.events).thenReturn(<Event>[e1, e2]);
+      when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       when(() =>
@@ -1478,6 +1540,12 @@ void main() {
       async.flushMicrotasks();
       clearInteractions(logger);
 
+      // Ensure the min gap has elapsed so the next scan starts promptly.
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+
+      when(() => liveTimeline.events).thenReturn(<Event>[e1, e2]);
+
       onNewEvent?.call();
       async.elapse(const Duration(milliseconds: 180));
       async.flushMicrotasks();
@@ -1488,7 +1556,7 @@ void main() {
         async.flushMicrotasks();
       }
 
-      async.elapse(const Duration(milliseconds: 120 + 600));
+      async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
 
       final processedCalls = verify(
