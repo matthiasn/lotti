@@ -78,8 +78,6 @@ class RoomInviteEvent {
   const RoomInviteEvent({
     required this.roomId,
     required this.senderId,
-    this.targetUserId,
-    this.event,
   });
 
   /// The invited room id
@@ -87,13 +85,6 @@ class RoomInviteEvent {
 
   /// The user who sent the invite
   final String senderId;
-
-  /// The user this invite targets (Matrix state_key). If present and not equal
-  /// to the current client user id, the client should ignore this invite.
-  final String? targetUserId;
-
-  /// Optional raw SDK event for debugging contexts.
-  final Event? event;
 }
 
 /// Wrapper around Matrix timeline events emitted for the sync room.

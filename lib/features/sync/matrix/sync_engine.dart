@@ -33,8 +33,6 @@ class SyncEngine {
   bool _initialized = false;
   Future<void>? _initialization;
 
-  MatrixSessionManager get sessionManager => _sessionManager;
-  SyncRoomManager get roomManager => _roomManager;
   SyncLifecycleCoordinator get lifecycleCoordinator => _lifecycleCoordinator;
 
   /// Initializes the engine and primes the lifecycle coordinator.

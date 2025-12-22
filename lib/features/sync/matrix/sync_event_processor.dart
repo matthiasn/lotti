@@ -1,4 +1,4 @@
-// ignore_for_file: one_member_abstracts
+// ignore_for_file: one_member_abstracts, avoid_setters_without_getters
 
 import 'dart:collection';
 import 'dart:convert';
@@ -252,19 +252,14 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       validator: _vectorClockValidator,
       onCachePurge: onCachePurge,
     );
-    _onCachePurge = onCachePurge;
   }
 
   final AttachmentIndex _attachmentIndex;
   final LoggingService _logging;
   late final VectorClockValidator _vectorClockValidator;
   late final DescriptorDownloader _descriptorDownloader;
-  void Function()? _onCachePurge;
-
-  void Function()? get onCachePurge => _onCachePurge;
 
   set onCachePurge(void Function()? listener) {
-    _onCachePurge = listener;
     _descriptorDownloader.onCachePurge = listener;
   }
 
@@ -518,17 +513,13 @@ class SyncEventProcessor {
   /// to resolve circular dependency in DI setup.
   BackfillResponseHandler? backfillResponseHandler;
   void Function(SyncApplyDiagnostics diag)? applyObserver;
-  void Function()? _cachePurgeListener;
 
   /// Startup timestamp - events with backfill requests older than this
   /// are skipped to prevent re-processing on every restart.
   /// Set this to the read marker timestamp at app startup.
   num? startupTimestamp;
 
-  void Function()? get cachePurgeListener => _cachePurgeListener;
-
   set cachePurgeListener(void Function()? listener) {
-    _cachePurgeListener = listener;
     final loader = _journalEntityLoader;
     if (loader is SmartJournalEntityLoader) {
       loader.onCachePurge = listener;

@@ -42,7 +42,6 @@ class MatrixMessageSender {
   final SentEventRegistry _sentEventRegistry;
   final VectorClockService? _vectorClockService;
 
-  Directory get documentsDirectory => _documentsDirectory;
   SentEventRegistry get sentEventRegistry => _sentEventRegistry;
 
   Future<SyncMessage> _ensureOriginatingHostId(

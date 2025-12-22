@@ -121,7 +121,6 @@ class MatrixSdkGateway implements MatrixSyncGateway {
           RoomInviteEvent(
             roomId: event.roomId,
             senderId: event.state.senderId,
-            targetUserId: target,
           ),
         );
       }

@@ -307,15 +307,6 @@ class MatrixService {
   Client get client => _sessionManager.client;
 
   MatrixConfig? get matrixConfig => _sessionManager.matrixConfig;
-  set matrixConfig(MatrixConfig? value) => _sessionManager.matrixConfig = value;
-
-  LoginResponse? get loginResponse => _sessionManager.loginResponse;
-  set loginResponse(LoginResponse? value) =>
-      _sessionManager.loginResponse = value;
-
-  String? get deviceDisplayName => _sessionManager.deviceDisplayName;
-  set deviceDisplayName(String? value) =>
-      _sessionManager.deviceDisplayName = value;
 
   String? get syncRoomId => _roomManager.currentRoomId;
   Room? get syncRoom => _roomManager.currentRoom;
@@ -559,9 +550,6 @@ class MatrixService {
     }
   }
 
-  String? get deviceId => client.deviceID;
-  String? get deviceName => client.deviceName;
-
   Stream<KeyVerification> getIncomingKeyVerificationStream() =>
       incomingKeyVerificationController.stream;
 
@@ -573,12 +561,6 @@ class MatrixService {
 
   Future<void> logout() async {
     await _syncEngine.logout();
-  }
-
-  Future<void> disposeClient() async {
-    if (client.isLogged()) {
-      await client.dispose();
-    }
   }
 
   Future<void> dispose() async {
