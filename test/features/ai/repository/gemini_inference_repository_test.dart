@@ -747,6 +747,69 @@ void main() {
       expect(client.fallbackCalls, 0);
     });
 
+    test('fallback emits usage from non-streaming response', () async {
+      // Streaming yields empty parts to trigger fallback
+      final streamLine = jsonEncode({
+        'candidates': [
+          {
+            'content': {'parts': <Object?>[]}
+          }
+        ]
+      });
+
+      // Fallback response includes usageMetadata
+      final fallback = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'Fallback response'},
+              ]
+            }
+          }
+        ],
+        'usageMetadata': {
+          'promptTokenCount': 50,
+          'candidatesTokenCount': 20,
+          'thoughtsTokenCount': 10,
+        }
+      });
+
+      final client = _RoutingFakeClient(
+        streamLines: [streamLine],
+        fallbackBody: fallback,
+      );
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-2.5-flash',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
+
+      // Should have: text event + usage event
+      expect(events.length, 2);
+      expect(events[0].choices!.first.delta!.content, 'Fallback response');
+
+      final usageEvent = events[1];
+      expect(usageEvent.usage, isNotNull);
+      expect(usageEvent.usage!.promptTokens, 50);
+      expect(usageEvent.usage!.completionTokens, 20);
+      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 10);
+    });
+
     test('parses usageMetadata and emits in final chunk', () async {
       final responseWithUsage = jsonEncode({
         'candidates': [

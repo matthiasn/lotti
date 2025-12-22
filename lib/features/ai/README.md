@@ -333,10 +333,12 @@ The system supports multiple inference providers through a modular architecture:
 ### Cloud Providers
 - **OpenAI**: GPT-3.5, GPT-4, and other models via official API
 - **Anthropic**: Claude models (Opus, Sonnet, Haiku) with streaming support
-- **Google Gemini**: Gemini Pro and flash models with native streaming adapter
+- **Google Gemini**: Gemini Pro and Flash models with native streaming adapter
   - Uses `gemini_inference_repository.dart` for REST calls and OpenAI-compatible streaming
-  - Thought visibility policy: flash models hide thoughts; non-flash can surface a consolidated `<thinking>` block
+  - All Gemini 2.5+ models (including Flash) support thinking with consolidated `<think>` blocks
   - Function calling maps to OpenAI-style tool calls with stable IDs and indices
+  - Usage statistics tracking (prompt tokens, completion tokens, thoughts tokens, cached tokens)
+  - Processing duration measurement for performance monitoring
 - **OpenRouter**: Access to multiple models through unified API
 - **Nebius AI Studio**: Enterprise AI platform support
 - **Generic OpenAI-Compatible**: Any service implementing OpenAI's API specification
@@ -641,6 +643,47 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
 - **Natural UX**: Users see the auto-created checklist plus minimal/empty suggestions
 - **No state tracking**: No need for complex `autoChecklistCreated` field management
 - **Consistent results**: Re-run uses the exact same prompt configuration, ensuring consistent behavior
+
+## Usage Statistics and Performance Tracking
+
+The AI system tracks usage statistics and performance metrics for monitoring API consumption and response times.
+
+### Tracked Metrics
+
+- **Input Tokens**: Number of tokens in the prompt/input
+- **Output Tokens**: Number of tokens in the response
+- **Thoughts Tokens**: Reasoning tokens used by thinking models (Gemini-specific)
+- **Cached Input Tokens**: Tokens served from provider cache
+- **Processing Duration**: Time from request start to stream completion (milliseconds)
+
+### Implementation
+
+Usage statistics are captured in `AiResponseData` with nullable fields for backward compatibility:
+```dart
+AiResponseData(
+  // ... existing fields
+  inputTokens: usage?.promptTokens,
+  outputTokens: usage?.completionTokens,
+  thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+  durationMs: stopwatch.elapsedMilliseconds,
+)
+```
+
+### UI Display
+
+Usage statistics are displayed in the AI Response Summary Modal when available:
+- Token breakdown (input, output, thoughts)
+- Processing duration in seconds
+- Total token count
+
+### Provider Support
+
+| Provider | Token Tracking | Thoughts Tokens | Duration |
+|----------|---------------|-----------------|----------|
+| Gemini   | ✅             | ✅               | ✅        |
+| OpenAI   | ✅             | ✅ (Thinking models) | ✅    |
+| Anthropic| ✅             | ❌               | ✅        |
+| Ollama   | ❌             | ❌               | ✅        |
 
 ## Response Types
 
@@ -1225,5 +1268,7 @@ InferenceRepositoryInterface createInferenceRepo(AiConfigInferenceProvider provi
 
 - Provider routing: `cloud_inference_repository.dart` selects `GeminiInferenceRepository` when `InferenceProviderType.gemini` is active. The repository streams OpenAI-compatible deltas.
 - Tool calls: the Gemini adapter emits tool calls with unique IDs (`tool_0`, `tool_1`, …) and indices. The conversation layer accumulates arguments across chunks using those identifiers and remains backward-compatible with "Gemini-style" complete tool-call batches.
-- Thinking blocks: for non-flash models the adapter optionally emits a single consolidated `<thinking>` block before visible content; for flash models thoughts are never emitted. The conversation manager simply appends the received content to the assistant message buffer.
+- Thinking blocks: all Gemini 2.5+ models (including Flash) support thinking. The adapter emits a single consolidated `<think>` block before visible content when thinking is enabled. The conversation manager simply appends the received content to the assistant message buffer.
 - Fallback behavior: if a Gemini stream yields no deltas at all, the adapter performs a single non-streaming call and emits at most three deltas (thinking, text, tools) so the UI never shows an empty bubble.
+- Usage statistics: the adapter parses `usageMetadata` from Gemini responses and emits usage information (prompt tokens, completion tokens, thoughts tokens) in the final stream chunk.
+- Thought signatures: for Gemini 3 models, thought signatures are captured from function calls for potential future multi-turn conversation support.

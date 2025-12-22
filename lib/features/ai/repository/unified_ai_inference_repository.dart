@@ -645,7 +645,7 @@ class UnifiedAiInferenceRepository {
     var thoughts = '';
     var cleanResponse = response;
 
-    // Extract thoughts if present (for reasoning models like Gemini and OpenAI o1)
+    // Extract thoughts if present (for reasoning models like Gemini and OpenAI Thinking)
     if (response.contains('</think>')) {
       final parts = response.split('</think>');
       if (parts.length == 2) {

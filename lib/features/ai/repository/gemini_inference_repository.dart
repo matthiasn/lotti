@@ -20,12 +20,15 @@ import 'package:openai_dart/openai_dart.dart';
 /// - Implements robust, allocation-friendly parsing of mixed streaming
 ///   formats (NDJSON, SSE `data:` lines, and JSON array framing) without
 ///   relying on line boundaries.
-/// - Handles "thinking" parts based on feature flags and model type:
-///   - Non-flash models: optionally surface a single consolidated
-///     `<thinking>` block before visible content when `includeThoughts=true`.
-///   - Flash models: thoughts are always hidden and never emitted.
+/// - Handles "thinking" parts: all Gemini 2.5+ models (including Flash)
+///   support thinking. When `includeThoughts=true`, emits a single
+///   consolidated `<think>` block before visible content.
 /// - Emits OpenAI-style tool-call chunks for Gemini `functionCall` parts and
 ///   ensures unique, stable IDs (`tool_#`) and indices for accumulation.
+/// - Captures thought signatures from Gemini 3 function calls for potential
+///   multi-turn conversation support.
+/// - Parses `usageMetadata` from responses and emits usage statistics
+///   (prompt tokens, completion tokens, thoughts tokens) in the final chunk.
 /// - Provides a non-streaming fallback (`:generateContent`) that runs only
 ///   if the streaming path produced no events; the fallback compacts all
 ///   thinking, visible text, and tool calls into at most three deltas
@@ -65,11 +68,11 @@ class GeminiInferenceRepository {
   /// - `maxCompletionTokens`: model-specific token cap.
   /// - `tools`: OpenAI-style function tools mapped to Gemini function declarations.
   ///
-  /// Returns a stream of OpenAI-compatible deltas. The stream may emit up to
-  /// three logical segments:
-  /// 1) a single `<thinking>` block (when enabled on non-flash models),
-  /// 2) visible text chunks, and
-  /// 3) tool-call chunks with unique IDs/indices for accumulation.
+  /// Returns a stream of OpenAI-compatible deltas. The stream may emit:
+  /// 1) a single `<think>` block (when `includeThoughts=true`),
+  /// 2) visible text chunks,
+  /// 3) tool-call chunks with unique IDs/indices for accumulation, and
+  /// 4) a final chunk with usage statistics (tokens consumed).
   ///
   /// If the streaming call completes without emitting anything, a
   /// non-streaming fallback is invoked to avoid an empty response bubble.

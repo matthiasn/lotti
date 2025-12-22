@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.768] - 2025-12-23
+### Added
+- Gemini Thinking Support: All Gemini 2.5+ models (including Flash) now support thinking/reasoning
+  - Thoughts are displayed in the AI Response Summary Modal's "Thoughts" tab
+  - Removed incorrect suppression of thinking for Flash models
+- Usage Statistics: Track and display AI inference metrics
+  - Input tokens, output tokens, and thoughts tokens from providers
+  - Processing duration measurement in milliseconds
+  - Statistics displayed in AI Response Summary Modal
+- Conversation Manager: Added thought signature storage for future multi-turn function calling support
+
+### Changed
+- Standardized thinking block format from `<thinking>` to `<think>` tags for consistency across providers
+
 ## [0.9.765] - 2025-12-21
 ### Fixed
 - Sync: Remove live-scan look-behind tail logic and the `enable_matrix_lookbehind_tail` flag so live scans always process strictly-after slices only.
