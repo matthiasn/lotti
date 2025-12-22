@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 class _FakeStreamClient extends http.BaseClient {
   _FakeStreamClient(this._statusCode, this._lines);
@@ -1020,4 +1021,537 @@ void main() {
       expect(secondToolCalls!.first.function!.name, 'function_two');
     });
   });
+
+  group('Rate limit backoff', () {
+    test('retries on 429 and succeeds on subsequent attempt', () async {
+      var attemptCount = 0;
+      final client = _RetryTestClient(
+        statusCodes: [429, 200],
+        responses: [
+          '{"error": "rate limited"}',
+          jsonEncode({
+            'candidates': [
+              {
+                'content': {
+                  'role': 'model',
+                  'parts': [
+                    {'text': 'Success after retry'},
+                  ],
+                }
+              }
+            ]
+          }),
+        ],
+        onRequest: () => attemptCount++,
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'test',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
+
+      expect(attemptCount, 2);
+      expect(events.length, 1);
+      expect(events.first.choices!.first.delta!.content, 'Success after retry');
+    });
+
+    test('retries on 503 service unavailable', () async {
+      var attemptCount = 0;
+      final client = _RetryTestClient(
+        statusCodes: [503, 200],
+        responses: [
+          '{"error": "service unavailable"}',
+          jsonEncode({
+            'candidates': [
+              {
+                'content': {
+                  'role': 'model',
+                  'parts': [
+                    {'text': 'Back online'},
+                  ],
+                }
+              }
+            ]
+          }),
+        ],
+        onRequest: () => attemptCount++,
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'test',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
+
+      expect(attemptCount, 2);
+      expect(events.first.choices!.first.delta!.content, 'Back online');
+    });
+
+    test('gives up after max retries and throws', () async {
+      var attemptCount = 0;
+      final client = _RetryTestClient(
+        statusCodes: [429, 429, 429, 429], // Always 429
+        responses: List.filled(4, '{"error": "still rate limited"}'),
+        onRequest: () => attemptCount++,
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await expectLater(
+        repo
+            .generateText(
+              prompt: 'test',
+              model: 'gemini-2.5-pro',
+              temperature: 0.5,
+              thinkingConfig: GeminiThinkingConfig.disabled,
+              provider: provider,
+            )
+            .toList(),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('429'),
+        )),
+      );
+
+      // Default max retries is 3, so 4 attempts total (1 initial + 3 retries)
+      expect(attemptCount, 4);
+    });
+  });
+
+  group('Request headers and body verification', () {
+    test('sends correct Content-Type and Accept headers', () async {
+      http.BaseRequest? capturedRequest;
+      final client = _RequestCapturingClient(
+        onRequest: (req) => capturedRequest = req,
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'Hello'},
+                ],
+              }
+            }
+          ]
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo
+          .generateText(
+            prompt: 'Hello',
+            model: 'gemini-2.5-pro',
+            temperature: 0.7,
+            thinkingConfig: GeminiThinkingConfig.standard,
+            provider: provider,
+          )
+          .toList();
+
+      expect(capturedRequest, isNotNull);
+      expect(capturedRequest!.headers['Content-Type'], 'application/json');
+      expect(
+        capturedRequest!.headers['Accept'],
+        'application/x-ndjson, application/json, text/event-stream',
+      );
+    });
+
+    test('sends correct request body structure', () async {
+      String? capturedBody;
+      final client = _RequestCapturingClient(
+        onRequest: (req) {
+          if (req is http.Request) {
+            capturedBody = req.body;
+          }
+        },
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'Response'},
+                ],
+              }
+            }
+          ]
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo
+          .generateText(
+            prompt: 'Test prompt',
+            model: 'gemini-2.5-pro',
+            temperature: 0.8,
+            thinkingConfig: const GeminiThinkingConfig(
+              thinkingBudget: 4096,
+              includeThoughts: true,
+            ),
+            provider: provider,
+            systemMessage: 'You are helpful.',
+            maxCompletionTokens: 1000,
+          )
+          .toList();
+
+      expect(capturedBody, isNotNull);
+      final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
+
+      // Verify contents array
+      expect(body['contents'], isA<List<dynamic>>());
+      final contents = body['contents'] as List<dynamic>;
+      expect(contents.length, 1);
+      final firstContent = contents[0] as Map<String, dynamic>;
+      final firstPart =
+          (firstContent['parts'] as List<dynamic>)[0] as Map<String, dynamic>;
+      expect(firstPart['text'], 'Test prompt');
+
+      // Verify generation config
+      expect(body['generationConfig'], isA<Map<String, dynamic>>());
+      final genConfig = body['generationConfig'] as Map<String, dynamic>;
+      expect(genConfig['temperature'], 0.8);
+      expect(genConfig['maxOutputTokens'], 1000);
+
+      // Verify thinking config
+      expect(genConfig['thinkingConfig'], isA<Map<String, dynamic>>());
+      final thinkingConfig =
+          genConfig['thinkingConfig'] as Map<String, dynamic>;
+      expect(thinkingConfig['thinkingBudget'], 4096);
+      expect(thinkingConfig['includeThoughts'], true);
+
+      // Verify system instruction
+      expect(body['systemInstruction'], isA<Map<String, dynamic>>());
+      final sysInstruction = body['systemInstruction'] as Map<String, dynamic>;
+      final sysParts = sysInstruction['parts'] as List<dynamic>;
+      final sysFirstPart = sysParts[0] as Map<String, dynamic>;
+      expect(sysFirstPart['text'], 'You are helpful.');
+    });
+
+    test('includes API key in URL query parameter', () async {
+      http.BaseRequest? capturedRequest;
+      final client = _RequestCapturingClient(
+        onRequest: (req) => capturedRequest = req,
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'Hi'},
+                ],
+              }
+            }
+          ]
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'my-secret-api-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo
+          .generateText(
+            prompt: 'Hi',
+            model: 'gemini-2.5-flash',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
+
+      expect(capturedRequest, isNotNull);
+      expect(
+        capturedRequest!.url.queryParameters['key'],
+        'my-secret-api-key',
+      );
+    });
+
+    test('constructs correct streaming endpoint URL', () async {
+      http.BaseRequest? capturedRequest;
+      final client = _RequestCapturingClient(
+        onRequest: (req) => capturedRequest = req,
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'OK'},
+                ],
+              }
+            }
+          ]
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo
+          .generateText(
+            prompt: 'Test',
+            model: 'gemini-2.5-flash',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
+
+      expect(capturedRequest, isNotNull);
+      expect(
+        capturedRequest!.url.path,
+        '/v1beta/models/gemini-2.5-flash:streamGenerateContent',
+      );
+    });
+
+    test('includes tools in request body when provided', () async {
+      String? capturedBody;
+      final client = _RequestCapturingClient(
+        onRequest: (req) {
+          if (req is http.Request) {
+            capturedBody = req.body;
+          }
+        },
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'Using tool'},
+                ],
+              }
+            }
+          ]
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo.generateText(
+        prompt: 'Call a function',
+        model: 'gemini-2.5-pro',
+        temperature: 0.5,
+        thinkingConfig: GeminiThinkingConfig.disabled,
+        provider: provider,
+        tools: [
+          const ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(
+              name: 'get_weather',
+              description: 'Get weather for a location',
+              parameters: {
+                'type': 'object',
+                'properties': {
+                  'location': {'type': 'string'},
+                },
+                'required': ['location'],
+              },
+            ),
+          ),
+        ],
+      ).toList();
+
+      expect(capturedBody, isNotNull);
+      final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
+
+      expect(body['tools'], isA<List<dynamic>>());
+      final tools = body['tools'] as List<dynamic>;
+      expect(tools.length, 1);
+
+      final tool = tools[0] as Map<String, dynamic>;
+      expect(tool['functionDeclarations'], isA<List<dynamic>>());
+      final funcDecls = tool['functionDeclarations'] as List<dynamic>;
+      expect(funcDecls.length, 1);
+      final firstFuncDecl = funcDecls[0] as Map<String, dynamic>;
+      expect(firstFuncDecl['name'], 'get_weather');
+      expect(firstFuncDecl['description'], 'Get weather for a location');
+    });
+  });
+
+  group('Character cap enforcement', () {
+    test('truncates thinking content at character cap', () async {
+      // Create a response with very long thinking content
+      final longThinking = 'x' * 50000; // 50k chars
+      final line = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'role': 'model',
+              'parts': [
+                {'text': longThinking, 'thought': true},
+                {'text': 'Short answer'},
+              ],
+            }
+          }
+        ]
+      });
+
+      final client = _FakeStreamClient(200, [line]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'Test',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(
+              thinkingBudget: 8192,
+              includeThoughts: true,
+            ),
+            provider: provider,
+          )
+          .toList();
+
+      // Should have thinking block + answer
+      expect(events.length, 2);
+
+      // Thinking should be captured (may be truncated at very high limits)
+      final thinkingContent = events[0].choices!.first.delta!.content!;
+      expect(thinkingContent.startsWith('<think>'), isTrue);
+      expect(thinkingContent.endsWith('</think>\n'), isTrue);
+
+      // Answer should be present
+      expect(events[1].choices!.first.delta!.content, 'Short answer');
+    });
+  });
+}
+
+/// Test client that allows controlling retry behavior
+class _RetryTestClient extends http.BaseClient {
+  _RetryTestClient({
+    required this.statusCodes,
+    required this.responses,
+    this.onRequest,
+  });
+
+  final List<int> statusCodes;
+  final List<String> responses;
+  final void Function()? onRequest;
+  int _callCount = 0;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    onRequest?.call();
+    final idx =
+        _callCount < statusCodes.length ? _callCount : statusCodes.length - 1;
+    _callCount++;
+
+    final body = responses[idx < responses.length ? idx : responses.length - 1];
+    final bytes = utf8.encode(body);
+    final stream = Stream<List<int>>.fromIterable([bytes]);
+
+    return http.StreamedResponse(
+      stream,
+      statusCodes[idx],
+      headers: {'content-type': 'application/json'},
+    );
+  }
+}
+
+/// Test client that captures request details for verification
+class _RequestCapturingClient extends http.BaseClient {
+  _RequestCapturingClient({
+    required this.onRequest,
+    required this.response,
+  });
+
+  final void Function(http.BaseRequest) onRequest;
+  final String response;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    onRequest(request);
+    final bytes = utf8.encode(response);
+    final stream = Stream<List<int>>.fromIterable([bytes]);
+    return http.StreamedResponse(stream, 200, headers: {
+      'content-type': 'application/json',
+    });
+  }
 }
