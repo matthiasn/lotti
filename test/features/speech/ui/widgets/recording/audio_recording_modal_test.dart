@@ -370,7 +370,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -419,7 +418,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: false,
       );
@@ -450,7 +448,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -486,7 +483,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -520,7 +516,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
         enableChecklistUpdates: false,
@@ -560,7 +555,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -589,7 +583,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
         enableChecklistUpdates: true,
@@ -631,7 +624,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -661,7 +653,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -688,7 +679,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
         enableChecklistUpdates: true,
@@ -740,7 +730,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -772,7 +761,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -801,7 +789,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: false,
       );
@@ -854,7 +841,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );
@@ -914,7 +900,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-1',
         enableSpeechRecognition: true,
         enableChecklistUpdates: true,
@@ -1094,7 +1079,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'event-123',
         enableSpeechRecognition: true,
       );
@@ -1173,7 +1157,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'journal-123',
         enableSpeechRecognition: true,
       );
@@ -1246,7 +1229,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'nonexistent-123',
         enableSpeechRecognition: true,
       );
@@ -1321,7 +1303,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'null-value-123',
         enableSpeechRecognition: true,
       );
@@ -1396,7 +1377,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'loading-123',
         enableSpeechRecognition: true,
       );
@@ -1470,7 +1450,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'error-123',
         enableSpeechRecognition: true,
       );
@@ -1573,7 +1552,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
         linkedId: 'task-123',
         enableSpeechRecognition: true,
       );

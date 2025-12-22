@@ -324,7 +324,7 @@ class _ConversationMessagesProviderElement
 }
 
 String _$conversationRepositoryHash() =>
-    r'7aabed8fee944aca696abb0f11bdfb650e885bcf';
+    r'b6bb48858f0bfead25fc931402ad422038804e8a';
 
 /// Repository for managing AI conversations.
 ///

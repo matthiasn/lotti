@@ -7,7 +7,7 @@ part of 'recorder_controller.dart';
 // **************************************************************************
 
 String _$audioRecorderControllerHash() =>
-    r'e5a961b70444f370e7c0f6833d67cdc3981e518a';
+    r'0beadda038a5aa459109641600f687793d7c28ba';
 
 /// Main controller for audio recording functionality.
 ///
@@ -16,7 +16,6 @@ String _$audioRecorderControllerHash() =>
 /// - Real-time audio level monitoring for VU meter display
 /// - Integration with audio player to pause playback during recording
 /// - UI state management (modal visibility, indicator visibility)
-/// - Language selection for transcription
 ///
 /// The controller is kept alive to maintain recording state across navigation.
 ///

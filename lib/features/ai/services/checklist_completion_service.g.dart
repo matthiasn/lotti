@@ -7,7 +7,7 @@ part of 'checklist_completion_service.dart';
 // **************************************************************************
 
 String _$checklistCompletionServiceHash() =>
-    r'f82d23f521be901044c0698aabf4b10ce2e76ba5';
+    r'325f3b15abd863d11de14f0d5386023a9ee14ef9';
 
 /// See also [ChecklistCompletionService].
 @ProviderFor(ChecklistCompletionService)

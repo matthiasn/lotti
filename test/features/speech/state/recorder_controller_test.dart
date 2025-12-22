@@ -89,71 +89,6 @@ void main() {
   });
 
   group('AudioRecorderController - State Management Methods', () {
-    group('setLanguage', () {
-      test('should update language in state', () {
-        // Arrange
-        const language = 'en-US';
-        container
-            .read(audioRecorderControllerProvider.notifier)
-            // Act
-            .setLanguage(language);
-
-        // Assert
-        final state = container.read(audioRecorderControllerProvider);
-        expect(state.language, equals(language));
-      });
-
-      test('should emit new state with updated language', () {
-        // Arrange
-        const language = 'es-ES';
-        const initialLanguage = '';
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier);
-
-        // Verify initial state
-        expect(container.read(audioRecorderControllerProvider).language,
-            equals(initialLanguage));
-
-        // Act
-        controller.setLanguage(language);
-
-        // Assert
-        expect(container.read(audioRecorderControllerProvider).language,
-            equals(language));
-      });
-
-      test('should handle empty language string', () {
-        // Arrange
-        const language = '';
-
-        container
-            .read(audioRecorderControllerProvider.notifier)
-            // Act
-            .setLanguage(language);
-
-        // Assert
-        expect(container.read(audioRecorderControllerProvider).language,
-            equals(language));
-      });
-
-      test('should handle multiple language changes', () {
-        // Arrange
-        const firstLanguage = 'en-US';
-        const secondLanguage = 'fr-FR';
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-
-              // Act & Assert
-              ..setLanguage(firstLanguage);
-        expect(container.read(audioRecorderControllerProvider).language,
-            equals(firstLanguage));
-
-        controller.setLanguage(secondLanguage);
-        expect(container.read(audioRecorderControllerProvider).language,
-            equals(secondLanguage));
-      });
-    });
-
     group('setModalVisible', () {
       test('should update modalVisible to true', () {
         // Arrange
@@ -313,10 +248,8 @@ void main() {
 
       test('should maintain other state properties when pausing', () async {
         // Arrange
-        const language = 'en-US';
-        final controller = container
-            .read(audioRecorderControllerProvider.notifier)
-          ..setLanguage(language);
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
 
         final initialProgress =
             container.read(audioRecorderControllerProvider).progress;
@@ -330,7 +263,6 @@ void main() {
         // Assert
         final state = container.read(audioRecorderControllerProvider);
         expect(state.status, equals(AudioRecorderStatus.paused));
-        expect(state.language, equals(language));
         expect(state.showIndicator, isFalse); // showIndicator remains false
         expect(state.progress, equals(initialProgress));
         expect(state.vu, equals(initialVu));
@@ -418,7 +350,6 @@ void main() {
         expect(state.dBFS, equals(-160.0));
         expect(state.showIndicator, isFalse);
         expect(state.modalVisible, isFalse);
-        expect(state.language, equals(''));
       });
 
       test('should handle exceptions and return null', () async {
@@ -466,7 +397,6 @@ void main() {
       expect(state.progress, equals(Duration.zero));
       expect(state.showIndicator, isFalse);
       expect(state.modalVisible, isFalse);
-      expect(state.language, equals(''));
       expect(state.linkedId, isNull);
     });
 
@@ -489,43 +419,6 @@ void main() {
 
       // Clean up
       container.dispose();
-    });
-
-    test('should handle multiple provider instances independently', () {
-      // Arrange
-      final container1 = ProviderContainer(
-        overrides: [
-          audioRecorderRepositoryProvider.overrideWithValue(
-            mockAudioRecorderRepository,
-          ),
-        ],
-      );
-      final container2 = ProviderContainer(
-        overrides: [
-          audioRecorderRepositoryProvider.overrideWithValue(
-            mockAudioRecorderRepository,
-          ),
-        ],
-      );
-
-      // Act
-      final controller1 =
-          container1.read(audioRecorderControllerProvider.notifier);
-      final controller2 =
-          container2.read(audioRecorderControllerProvider.notifier);
-
-      controller1.setLanguage('en');
-      controller2.setLanguage('es');
-
-      // Assert
-      expect(container1.read(audioRecorderControllerProvider).language,
-          equals('en'));
-      expect(container2.read(audioRecorderControllerProvider).language,
-          equals('es'));
-
-      // Clean up
-      container1.dispose();
-      container2.dispose();
     });
   });
 
@@ -709,9 +602,7 @@ void main() {
         await controller.record();
 
         // Set language and category
-        controller
-          ..setLanguage('en-US')
-          ..setCategoryId('test-category');
+        controller.setCategoryId('test-category');
 
         // Act
         await controller.stop();
@@ -725,7 +616,6 @@ void main() {
         expect(state.dBFS, equals(-160.0));
         expect(state.showIndicator, isFalse);
         expect(state.modalVisible, isFalse);
-        expect(state.language, equals(''));
       });
 
       test('should capture exceptions during stop()', () async {
@@ -956,15 +846,12 @@ void main() {
       );
 
       // Act
-      controller
-        ..setLanguage('en')
-        ..setModalVisible(modalVisible: true);
+      controller.setModalVisible(modalVisible: true);
 
       // Assert
-      expect(states.length, equals(3)); // Initial + 2 changes
-      expect(states[0].language, equals(''));
-      expect(states[1].language, equals('en'));
-      expect(states[2].modalVisible, isTrue);
+      expect(states.length, equals(2)); // Initial + 1 change
+
+      expect(states[1].modalVisible, isTrue);
     });
 
     test('should maintain state consistency across multiple operations', () {
@@ -972,13 +859,11 @@ void main() {
       container.read(audioRecorderControllerProvider.notifier)
 
         // Act - Perform multiple state changes
-        ..setLanguage('de')
         ..setCategoryId('category-123')
         ..setModalVisible(modalVisible: true);
 
       // Assert - All state properties should be as expected
       final state = container.read(audioRecorderControllerProvider);
-      expect(state.language, equals('de'));
       expect(state.showIndicator,
           isFalse); // showIndicator stays false unless recording
       expect(state.modalVisible, isTrue);

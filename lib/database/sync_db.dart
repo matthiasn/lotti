@@ -411,7 +411,6 @@ class SyncDatabase extends _$SyncDatabase {
       '''
       SELECT
         ssl.host_id,
-        MAX(ssl.counter) as latest_counter,
         SUM(CASE WHEN ssl.status = $received THEN 1 ELSE 0 END) as received_count,
         SUM(CASE WHEN ssl.status = $missing THEN 1 ELSE 0 END) as missing_count,
         SUM(CASE WHEN ssl.status = $requested THEN 1 ELSE 0 END) as requested_count,

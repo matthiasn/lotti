@@ -122,7 +122,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: 'en',
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
@@ -139,7 +138,6 @@ void main() {
         progress: const Duration(seconds: 10),
         showIndicator: true,
         modalVisible: true,
-        language: 'en',
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
@@ -157,7 +155,6 @@ void main() {
         progress: const Duration(seconds: 10),
         showIndicator: true,
         modalVisible: false,
-        language: 'en',
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
@@ -186,7 +183,6 @@ void main() {
         progress: const Duration(minutes: 1, seconds: 23),
         showIndicator: true,
         modalVisible: false,
-        language: 'en',
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
@@ -220,7 +216,6 @@ void main() {
         progress: const Duration(seconds: 30),
         showIndicator: true,
         modalVisible: false,
-        language: 'en',
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
@@ -265,7 +260,6 @@ void main() {
           progress: duration,
           showIndicator: true,
           modalVisible: false,
-          language: 'en',
         );
 
         await tester.pumpWidget(makeTestableWidget(state));
@@ -294,7 +288,6 @@ void main() {
         vu: -20,
         showIndicator: true,
         modalVisible: false,
-        language: 'en',
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
@@ -328,7 +321,6 @@ void main() {
           progress: d,
           showIndicator: true,
           modalVisible: false,
-          language: 'en',
         );
 
         await tester.pumpWidget(makeTestableWidget(state));
@@ -360,7 +352,6 @@ void main() {
         progress: const Duration(seconds: 10),
         showIndicator: true,
         modalVisible: false,
-        language: 'en',
         linkedId: 'test-id',
       );
 
@@ -401,7 +392,6 @@ void main() {
         progress: const Duration(seconds: 10),
         showIndicator: true,
         modalVisible: false,
-        language: 'en',
       );
 
       await tester.pumpWidget(makeTestableWidget(state));
@@ -449,7 +439,6 @@ void main() {
         progress: const Duration(seconds: 10),
         showIndicator: true,
         modalVisible: false,
-        language: 'en',
       );
 
       await tester.pumpWidget(makeTestableWidget(state));

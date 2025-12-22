@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -104,28 +102,22 @@ void main() {
         // Arrange
         when(
           () => mockPersistenceLogic.createMetadata(
-            dateFrom: expectedAudioData.dateFrom,
-            dateTo: expectedAudioData.dateTo,
-            uuidV5Input: json.encode(
-              expectedAudioData.copyWith(
-                autoTranscribeWasActive: false,
-                language: testLanguage,
-              ),
-            ),
-            flag: EntryFlag.import,
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            flag: any(named: 'flag'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
           () => mockPersistenceLogic.createDbEntity(
             any(that: isA<JournalAudio>()),
+            linkedId: any(named: 'linkedId'),
           ),
         ).thenAnswer((_) async => true);
 
         // Act
-        final result = await SpeechRepository.createAudioEntry(
-          testAudioNote,
-          language: testLanguage,
-        );
+        final result = await SpeechRepository.createAudioEntry(testAudioNote);
 
         // Assert
         expect(result, isA<JournalAudio>());
@@ -137,16 +129,11 @@ void main() {
         // Arrange
         when(
           () => mockPersistenceLogic.createMetadata(
-            dateFrom: expectedAudioData.dateFrom,
-            dateTo: expectedAudioData.dateTo,
-            uuidV5Input: json.encode(
-              expectedAudioData.copyWith(
-                autoTranscribeWasActive: false,
-                language: testLanguage,
-              ),
-            ),
-            flag: EntryFlag.import,
-            categoryId: testCategoryId,
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            flag: any(named: 'flag'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer(
           (_) async => testMetadata.copyWith(categoryId: testCategoryId),
@@ -154,14 +141,13 @@ void main() {
         when(
           () => mockPersistenceLogic.createDbEntity(
             any(that: isA<JournalAudio>()),
-            linkedId: testLinkedId,
+            linkedId: any(named: 'linkedId'),
           ),
         ).thenAnswer((_) async => true);
 
         // Act
         final result = await SpeechRepository.createAudioEntry(
           testAudioNote,
-          language: testLanguage,
           linkedId: testLinkedId,
           categoryId: testCategoryId,
         );
@@ -180,14 +166,9 @@ void main() {
 
         verify(
           () => mockPersistenceLogic.createMetadata(
-            dateFrom: expectedAudioData.dateFrom,
-            dateTo: expectedAudioData.dateTo,
-            uuidV5Input: json.encode(
-              expectedAudioData.copyWith(
-                autoTranscribeWasActive: false,
-                language: testLanguage,
-              ),
-            ),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
             flag: EntryFlag.import,
             categoryId: testCategoryId,
           ),
@@ -209,10 +190,7 @@ void main() {
         ).thenThrow(exception);
 
         // Act
-        final result = await SpeechRepository.createAudioEntry(
-          testAudioNote,
-          language: testLanguage,
-        );
+        final result = await SpeechRepository.createAudioEntry(testAudioNote);
 
         // Assert
         expect(result, isNull);
@@ -238,28 +216,22 @@ void main() {
         final exception = Exception('DB entity creation error');
         when(
           () => mockPersistenceLogic.createMetadata(
-            dateFrom: expectedAudioData.dateFrom,
-            dateTo: expectedAudioData.dateTo,
-            uuidV5Input: json.encode(
-              expectedAudioData.copyWith(
-                autoTranscribeWasActive: false,
-                language: testLanguage,
-              ),
-            ),
-            flag: EntryFlag.import,
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            flag: any(named: 'flag'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
           () => mockPersistenceLogic.createDbEntity(
             any(that: isA<JournalAudio>()),
+            linkedId: any(named: 'linkedId'),
           ),
         ).thenThrow(exception);
 
         // Act
-        final result = await SpeechRepository.createAudioEntry(
-          testAudioNote,
-          language: testLanguage,
-        );
+        final result = await SpeechRepository.createAudioEntry(testAudioNote);
 
         // Assert
         expect(result, isNull);

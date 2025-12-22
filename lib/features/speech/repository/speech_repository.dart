@@ -10,7 +10,6 @@ import 'package:lotti/services/logging_service.dart';
 class SpeechRepository {
   static Future<JournalAudio?> createAudioEntry(
     AudioNote audioNote, {
-    required String? language,
     String? linkedId,
     String? categoryId,
   }) async {
@@ -23,7 +22,6 @@ class SpeechRepository {
         audioFile: audioNote.audioFile,
         dateTo: audioNote.createdAt.add(audioNote.duration),
         dateFrom: audioNote.createdAt,
-        language: language,
       );
 
       final dateFrom = audioData.dateFrom;

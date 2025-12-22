@@ -7,7 +7,7 @@ part of 'latest_summary_controller.dart';
 // **************************************************************************
 
 String _$latestSummaryControllerHash() =>
-    r'7b446611eed37d47d979ad2afe6a9ddc3316a555';
+    r'0586f2c73cfe19e6ad23a023ca2cf0a8561600ba';
 
 /// Copied from Dart SDK
 class _SystemHash {
