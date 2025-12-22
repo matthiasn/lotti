@@ -666,10 +666,7 @@ class MatrixService {
     return lines.join('\n');
   }
 
-  // Visible for testing only
-  /// Exposes the pipeline instance for tests. Returns `null` when disabled or
-  /// the service was constructed without a pipeline.
-  @visibleForTesting
+  /// Exposes the pipeline instance for integration tests.
   MatrixStreamConsumer? get debugPipeline => _pipeline;
 
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
