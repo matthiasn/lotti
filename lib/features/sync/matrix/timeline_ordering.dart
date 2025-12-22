@@ -8,18 +8,6 @@ class TimelineEventOrdering {
   static num timestamp(Event event) =>
       event.originServerTs.millisecondsSinceEpoch;
 
-  /// Compares two events chronologically (oldest first). When timestamps are
-  /// equal, falls back to lexicographical ordering on the event IDs.
-  static int compare(Event a, Event b) {
-    final timestampComparison = timestamp(a).compareTo(timestamp(b));
-    if (timestampComparison != 0) {
-      return timestampComparison;
-    }
-    final idA = a.eventId;
-    final idB = b.eventId;
-    return idA.compareTo(idB);
-  }
-
   /// Returns a new list sorted by timestamp while preserving the original
   /// order for events that share the same timestamp.
   static List<Event> sortStableByTimestamp(List<Event> events) {

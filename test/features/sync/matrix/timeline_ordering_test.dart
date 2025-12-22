@@ -31,33 +31,6 @@ void main() {
     });
   });
 
-  group('TimelineEventOrdering.compare', () {
-    test('sorts events chronologically (oldest first)', () {
-      final events = [newer, older]..sort(TimelineEventOrdering.compare);
-      expect(events, [older, newer]);
-    });
-
-    test('falls back to eventId when timestamps match', () {
-      final eventA = _MockEvent();
-      final eventB = _MockEvent();
-      when(() => eventA.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
-      when(() => eventB.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
-      when(() => eventA.eventId).thenReturn(r'$0001');
-      when(() => eventB.eventId).thenReturn(r'$0002');
-
-      expect(
-        TimelineEventOrdering.compare(eventA, eventB),
-        lessThan(0),
-      );
-      expect(
-        TimelineEventOrdering.compare(eventB, eventA),
-        greaterThan(0),
-      );
-    });
-  });
-
   group('TimelineEventOrdering.sortStableByTimestamp', () {
     test('preserves original order for equal timestamps', () {
       final first = _MockEvent();

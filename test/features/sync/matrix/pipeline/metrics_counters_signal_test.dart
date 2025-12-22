@@ -77,19 +77,5 @@ void main() {
       expect(snap['signalLatencyMinMs'], isNonZero);
       expect(snap['signalLatencyMaxMs'], isNonZero);
     });
-
-    test('buildFlushLog includes signal summary', () {
-      final m = MetricsCounters(collect: true)
-        ..incSignalClientStream()
-        ..incSignalTimelineCallbacks()
-        ..incSignalConnectivity()
-        ..recordSignalLatencyMs(50);
-      final log = m.buildFlushLog(retriesPending: 0);
-      expect(log, contains('signals('));
-      expect(log, contains('client=1'));
-      expect(log, contains('timeline=1'));
-      expect(log, contains('net=1'));
-      expect(log, contains('lat=50ms'));
-    });
   });
 }

@@ -53,9 +53,9 @@ void main() {
     final metrics = MetricsCounters(collect: true)
       ..incDbApplied()
       ..incDbApplied()
-      ..incProcessed()
-      ..incProcessed()
-      ..incProcessed();
+      ..incProcessedWithType('test')
+      ..incProcessedWithType('test')
+      ..incProcessedWithType('test');
 
     final consumer = buildConsumer(metrics: metrics);
 
