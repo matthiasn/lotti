@@ -60,6 +60,11 @@ that keeps the pipeline testable and observable.
 - `MatrixStreamConsumer` attaches directly to the sync room and performs
   attach-time catch-up via SDK pagination/backfill with a graceful fallback for
   large gaps.
+- `MatrixStreamConsumer` is composed of focused pipeline units in
+  `matrix/pipeline/`: catch-up coordination (`matrix_stream_catch_up.dart`),
+  live-scan scheduling (`matrix_stream_live_scan.dart`), ordered processing +
+  metrics (`matrix_stream_processor.dart`), and signal wiring
+  (`matrix_stream_signals.dart`).
 - Signal-driven ingestion (2025-10-28):
   - Client stream events are treated as signals that always trigger a
     `forceRescan()` with catch-up. An in-flight guard prevents overlapping

@@ -90,6 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync: Fill missing `originatingHostId` on outgoing journal entities and entry links so sequence logs always update.
 - Outbox: Respect retry backoff across triggers to prevent rapid retry storms under flaky networks.
 - Tests: Stabilize Matrix stream consumer signal coverage around live scan timing and stubs.
+### Changed
+- Sync: Split the Matrix stream consumer into catch-up, live-scan, processing, and signal components, and split the pipeline tests into smaller files for maintainability.
 ### Added
 - Automatic Image Analysis: Images added to tasks are now analyzed automatically
   - When dropping, pasting, or importing images to a task with image analysis enabled, analysis runs in background
