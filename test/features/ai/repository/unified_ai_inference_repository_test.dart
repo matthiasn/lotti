@@ -6415,65 +6415,6 @@ Take into account the following task context:
           returnsNormally);
     });
 
-    test('handles deprecated actionItemSuggestions prompts', () async {
-      // Create deprecated prompts
-      final deprecatedPrompt1 = AiConfigPrompt(
-        id: 'deprecated-1',
-        name: 'Deprecated Action Items 1',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        // ignore: deprecated_member_use_from_same_package
-        aiResponseType: AiResponseType.actionItemSuggestions,
-      );
-
-      final deprecatedPrompt2 = AiConfigPrompt(
-        id: 'deprecated-2',
-        name: 'Deprecated Action Items 2',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        // ignore: deprecated_member_use_from_same_package
-        aiResponseType: AiResponseType.actionItemSuggestions,
-      );
-
-      final validPrompt = AiConfigPrompt(
-        id: 'valid-prompt',
-        name: 'Valid Task Summary',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
-      );
-
-      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer(
-              (_) async => [deprecatedPrompt1, deprecatedPrompt2, validPrompt]);
-
-      when(() => mockAiConfigRepo.deleteConfig(any())).thenAnswer((_) async {});
-
-      final result = await repository!.getActivePromptsForContext(
-        entity: taskEntity,
-      );
-
-      // Should delete deprecated prompts and return empty list
-      expect(result, isEmpty);
-      verify(() => mockAiConfigRepo.deleteConfig('deprecated-1')).called(1);
-      verify(() => mockAiConfigRepo.deleteConfig('deprecated-2')).called(1);
-    });
-
     test('handles model not found error', () async {
       final promptConfig = AiConfigPrompt(
         id: 'prompt-1',

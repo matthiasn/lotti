@@ -28,31 +28,33 @@ class GeminiUtils {
     required String baseUrl,
     required String model,
     required String apiKey,
-  }) {
-    final parsed = Uri.parse(baseUrl);
-    final root = Uri(
-      scheme: parsed.scheme.isNotEmpty ? parsed.scheme : 'https',
-      host: parsed.host,
-      port: parsed.hasPort ? parsed.port : null,
-    );
-
-    final trimmed = model.trim().endsWith('/')
-        ? model.trim().substring(0, model.trim().length - 1)
-        : model.trim();
-    final modelPath =
-        trimmed.startsWith('models/') ? trimmed : 'models/$trimmed';
-    final path = '/v1beta/$modelPath:streamGenerateContent';
-    return root.replace(
-      path: path,
-      queryParameters: <String, String>{'key': apiKey},
-    );
-  }
+  }) =>
+      _buildGeminiUri(
+        baseUrl: baseUrl,
+        model: model,
+        apiKey: apiKey,
+        endpoint: 'streamGenerateContent',
+      );
 
   /// Builds the non-streaming `:generateContent` URI (used for fallback).
   static Uri buildGenerateContentUri({
     required String baseUrl,
     required String model,
     required String apiKey,
+  }) =>
+      _buildGeminiUri(
+        baseUrl: baseUrl,
+        model: model,
+        apiKey: apiKey,
+        endpoint: 'generateContent',
+      );
+
+  /// Internal helper to build Gemini API URIs with the specified endpoint.
+  static Uri _buildGeminiUri({
+    required String baseUrl,
+    required String model,
+    required String apiKey,
+    required String endpoint,
   }) {
     final parsed = Uri.parse(baseUrl);
     final root = Uri(
@@ -60,12 +62,13 @@ class GeminiUtils {
       host: parsed.host,
       port: parsed.hasPort ? parsed.port : null,
     );
+
     final trimmed = model.trim().endsWith('/')
         ? model.trim().substring(0, model.trim().length - 1)
         : model.trim();
     final modelPath =
         trimmed.startsWith('models/') ? trimmed : 'models/$trimmed';
-    final path = '/v1beta/$modelPath:generateContent';
+    final path = '/v1beta/$modelPath:$endpoint';
     return root.replace(
       path: path,
       queryParameters: <String, String>{'key': apiKey},

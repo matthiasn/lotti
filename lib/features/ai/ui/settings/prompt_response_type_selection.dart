@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -75,11 +74,7 @@ class _ResponseTypeSelectionModalState
 
   @override
   Widget build(BuildContext context) {
-    final options = AiResponseType.values
-        // TODO(matthiasn): remove after some deprecation period
-        // ignore: deprecated_member_use_from_same_package
-        .whereNot((option) => option == AiResponseType.actionItemSuggestions)
-        .toList();
+    const options = AiResponseType.values;
 
     return SelectionModalContent(
       children: [
@@ -114,9 +109,6 @@ class _ResponseTypeSelectionModalState
   /// Returns appropriate icon for each response type
   IconData _getTypeIcon(AiResponseType type) {
     switch (type) {
-      // ignore: deprecated_member_use_from_same_package
-      case AiResponseType.actionItemSuggestions:
-        return Icons.lightbulb_outline_rounded;
       case AiResponseType.taskSummary:
         return Icons.summarize_rounded;
       case AiResponseType.imageAnalysis:

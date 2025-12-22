@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show InsertMode;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/health.dart';
@@ -15,7 +14,6 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -53,23 +51,6 @@ JournalEntry _buildJournalEntry({
       tagIds: tagIds,
     ),
     entryText: EntryText(plainText: text),
-  );
-}
-
-Task _buildTaskEntry({
-  required String id,
-  required DateTime timestamp,
-  String title = 'Task title',
-}) {
-  return testTask.copyWith(
-    meta: testTask.meta.copyWith(
-      id: id,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      dateFrom: timestamp,
-      dateTo: timestamp.add(const Duration(hours: 1)),
-    ),
-    data: testTask.data.copyWith(title: title),
   );
 }
 
@@ -118,31 +99,6 @@ QuantitativeEntry _buildQuantitativeEntry({
   );
 }
 
-AiResponseEntry _buildAiResponseEntry({
-  required String id,
-  required DateTime timestamp,
-  // ignore: deprecated_member_use_from_same_package
-  AiResponseType type = AiResponseType.actionItemSuggestions,
-}) {
-  return AiResponseEntry(
-    meta: testTextEntry.meta.copyWith(
-      id: id,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      dateFrom: timestamp,
-      dateTo: timestamp,
-    ),
-    data: AiResponseData(
-      model: 'model',
-      systemMessage: 'system',
-      prompt: 'prompt',
-      thoughts: 'thoughts',
-      response: 'response',
-      type: type,
-    ),
-  );
-}
-
 EntryLink _buildEntryLink({
   required String id,
   required String fromId,
@@ -171,15 +127,6 @@ Future<void> _insertEntries(JournalDb db, List<JournalEntity> entries) async {
       mode: InsertMode.insertOrReplace,
     );
   });
-}
-
-Future<File> _ensureJournalDbFile() async {
-  final file = await getDatabaseFile(journalDbFileName);
-  if (!file.existsSync()) {
-    await file.create(recursive: true);
-    await file.writeAsString('journal-db');
-  }
-  return file;
 }
 
 class _ThrowingMaintenance extends Maintenance {
@@ -612,146 +559,6 @@ void main() {
         final matches =
             await newFtsDb.watchFullTextMatches('Should index').first;
         expect(matches, contains('fts-error'));
-      });
-    });
-
-    group('removeActionItemSuggestions', () {
-      setUp(() {
-        when(
-          () => persistenceLogic.updateMetadata(
-            any<Metadata>(),
-            deletedAt: any<DateTime?>(named: 'deletedAt'),
-          ),
-        ).thenAnswer((invocation) async {
-          final metadata = invocation.positionalArguments.first as Metadata;
-          final deletedAt = invocation.namedArguments[#deletedAt] as DateTime?;
-          return metadata.copyWith(deletedAt: deletedAt);
-        });
-
-        when(() => persistenceLogic.updateDbEntity(any<JournalEntity>()))
-            .thenAnswer((_) async => true);
-      });
-
-      test('creates backup before deletion and logs event', () async {
-        await _ensureJournalDbFile();
-
-        final now = DateTime(2024, 10);
-        final entries = [
-          _buildAiResponseEntry(
-            id: 'ai-deprecated',
-            timestamp: now,
-          ),
-          _buildJournalEntry(
-            id: 'regular-entry',
-            timestamp: now.add(const Duration(minutes: 5)),
-            text: 'Regular entry',
-          ),
-        ];
-        await _insertEntries(journalDb, entries);
-
-        final progress = <double>[];
-        await maintenance.removeActionItemSuggestions(
-          triggeredAtAppStart: false,
-          onProgress: progress.add,
-        );
-
-        final backupDir = Directory('${tempDir.path}/backup');
-        expect(backupDir.existsSync(), isTrue);
-        expect(backupDir.listSync(), isNotEmpty);
-        expect(
-          loggedEvents,
-          contains(
-            'Database backup created before removeActionItemSuggestions',
-          ),
-        );
-        expect(progress, isNotEmpty);
-      });
-
-      test('rethrows when backup fails and leaves entries untouched', () async {
-        final now = DateTime(2024, 11);
-        final entries = [
-          _buildAiResponseEntry(
-            id: 'ai-backup-fail',
-            timestamp: now,
-          ),
-        ];
-        await _insertEntries(journalDb, entries);
-
-        final journalFile = await getDatabaseFile(journalDbFileName);
-        if (journalFile.existsSync()) {
-          await journalFile.delete();
-        }
-
-        await expectLater(
-          maintenance.removeActionItemSuggestions(
-            triggeredAtAppStart: false,
-          ),
-          throwsA(isA<FileSystemException>()),
-        );
-
-        verifyNever(
-          () => persistenceLogic.updateDbEntity(any<JournalEntity>()),
-        );
-      });
-
-      test('marks deprecated entries as deleted and logs summary', () async {
-        await _ensureJournalDbFile();
-
-        final base = DateTime(2024, 12);
-        final deprecatedEntries = [
-          _buildAiResponseEntry(
-            id: 'deprecated-1',
-            timestamp: base,
-          ),
-          _buildAiResponseEntry(
-            id: 'deprecated-2',
-            timestamp: base.add(const Duration(minutes: 1)),
-          ),
-        ];
-        final otherEntries = [
-          _buildAiResponseEntry(
-            id: 'other-type',
-            timestamp: base.add(const Duration(minutes: 2)),
-            type: AiResponseType.taskSummary,
-          ),
-          _buildTaskEntry(
-            id: 'task-entry',
-            timestamp: base.add(const Duration(minutes: 3)),
-          ),
-        ];
-        await _insertEntries(
-          journalDb,
-          [
-            ...deprecatedEntries,
-            ...otherEntries,
-          ],
-        );
-
-        final updatedIds = <String>[];
-        when(() => persistenceLogic.updateDbEntity(any<JournalEntity>()))
-            .thenAnswer((invocation) async {
-          final entity = invocation.positionalArguments.first as JournalEntity;
-          updatedIds.add(entity.meta.id);
-          return true;
-        });
-
-        final progress = <double>[];
-        await maintenance.removeActionItemSuggestions(
-          triggeredAtAppStart: false,
-          onProgress: progress.add,
-        );
-
-        expect(updatedIds, containsAll(['deprecated-1', 'deprecated-2']));
-        expect(updatedIds, hasLength(2));
-
-        expect(
-          loggedEvents,
-          contains(
-            'Removed 2 actionItemSuggestions entries out of 4 total entries',
-          ),
-        );
-        expect(progress, isNotEmpty);
-        expect(progress.last, closeTo(1.0, 1e-6));
       });
     });
   });

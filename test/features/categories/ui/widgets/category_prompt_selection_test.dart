@@ -27,7 +27,7 @@ void main() {
       AiConfig.prompt(
         id: 'prompt2',
         name: 'Action Items',
-        description: 'Extract action items from the task',
+        description: 'Update checklist items based on task content',
         systemMessage: 'System message',
         userMessage: 'User message',
         defaultModelId: 'model1',
@@ -36,8 +36,7 @@ void main() {
         updatedAt: DateTime(2024, 1, 2),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
-        // ignore: deprecated_member_use_from_same_package
-        aiResponseType: AiResponseType.actionItemSuggestions,
+        aiResponseType: AiResponseType.checklistUpdates,
       ) as AiConfigPrompt,
       AiConfig.prompt(
         id: 'prompt3',
@@ -136,7 +135,8 @@ void main() {
 
       // Verify descriptions
       expect(find.text('Generate a summary of the task'), findsOneWidget);
-      expect(find.text('Extract action items from the task'), findsOneWidget);
+      expect(find.text('Update checklist items based on task content'),
+          findsOneWidget);
 
       // Verify checkbox states
       final checkboxes = tester

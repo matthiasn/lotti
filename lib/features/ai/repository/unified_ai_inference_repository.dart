@@ -30,6 +30,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -98,22 +99,6 @@ class UnifiedAiInferenceRepository {
     // Check all prompts in parallel for better performance
     final activeChecks = <Future<bool>>[];
     final validPrompts = <AiConfigPrompt>[];
-
-    // TODO(matthiasn): remove after some deprecation period
-    final deprecatedConfigs = allPrompts
-        .whereType<AiConfigPrompt>()
-        .where((p) =>
-            // ignore: deprecated_member_use_from_same_package
-            p.aiResponseType == AiResponseType.actionItemSuggestions)
-        .toList();
-
-    if (deprecatedConfigs.isNotEmpty) {
-      final configRepo = ref.read(aiConfigRepositoryProvider);
-      await Future.wait(
-          deprecatedConfigs.map((c) => configRepo.deleteConfig(c.id)));
-      ref.invalidateSelf();
-      return []; // Return early to avoid using stale data. The provider will rebuild.
-    }
 
     for (final config in allPrompts) {
       if (config is AiConfigPrompt && !config.archived) {
@@ -365,8 +350,7 @@ class UnifiedAiInferenceRepository {
       );
 
       // Process the stream and accumulate tool calls
-      final toolCallAccumulator = <String, Map<String, dynamic>>{};
-      var toolCallCounter = 0;
+      final toolCallAccumulator = ToolCallAccumulator();
       String? pendingProgress;
 
       await for (final chunk in stream) {
@@ -388,130 +372,7 @@ class UnifiedAiInferenceRepository {
             'toolCallCount=${delta?.toolCalls?.length ?? 0}',
             name: 'UnifiedAiInferenceRepository',
           );
-          if (delta?.toolCalls != null) {
-            developer.log(
-              'Tool call details: ${delta!.toolCalls!.map((tc) => 'id=${tc.id}, '
-                  'index=${tc.index}, function=${tc.function?.name}, '
-                  'hasArgs=${tc.function?.arguments != null}').join('; ')}',
-              name: 'UnifiedAiInferenceRepository',
-            );
-            // Special handling: if we receive multiple tool calls in one chunk all with the same index,
-            // they might be complete tool calls rather than chunks
-            if (delta.toolCalls!.length > 1 &&
-                delta.toolCalls!.every(
-                    (tc) => tc.index == 0 && tc.function?.arguments != null)) {
-              developer.log(
-                'Detected ${delta.toolCalls!.length} complete tool calls in single chunk',
-                name: 'UnifiedAiInferenceRepository',
-              );
-
-              // Each is a complete tool call
-              for (final toolCallChunk in delta.toolCalls!) {
-                final toolCallId = 'tool_${toolCallCounter++}';
-                toolCallAccumulator[toolCallId] = {
-                  'id': toolCallId,
-                  'index': toolCallChunk.index ?? 0,
-                  'type': toolCallChunk.type?.toString() ?? 'function',
-                  'function': <String, dynamic>{
-                    'name': toolCallChunk.function?.name ?? '',
-                    'arguments': toolCallChunk.function?.arguments ?? '',
-                  },
-                };
-                developer.log(
-                  'Added complete tool call $toolCallId: ${toolCallChunk.function?.name}',
-                  name: 'UnifiedAiInferenceRepository',
-                );
-              }
-            } else {
-              // Normal streaming chunk processing
-              for (final toolCallChunk in delta.toolCalls!) {
-                // Log the raw chunk data for debugging
-                developer.log(
-                  'Tool call chunk - id: ${toolCallChunk.id}, index: ${toolCallChunk.index}, '
-                  'type: ${toolCallChunk.type}, function: ${toolCallChunk.function?.name}, '
-                  'args length: ${toolCallChunk.function?.arguments?.length ?? 0}',
-                  name: 'UnifiedAiInferenceRepository',
-                );
-
-                // If this chunk has an ID or has function data, it's starting a new tool call
-                var toolCallId = toolCallChunk.id;
-
-                // Generate ID if not provided or if it's an empty string
-                if (toolCallId == null || toolCallId.isEmpty) {
-                  toolCallId = 'tool_${toolCallCounter++}';
-                }
-
-                if (toolCallChunk.id != null ||
-                    toolCallChunk.function?.name != null) {
-                  // This is a new tool call
-                  toolCallAccumulator[toolCallId] = {
-                    'id': toolCallId,
-                    'index': toolCallChunk.index ?? toolCallAccumulator.length,
-                    'type': toolCallChunk.type?.toString() ?? 'function',
-                    'function': <String, dynamic>{
-                      'name': toolCallChunk.function?.name ?? '',
-                      'arguments': toolCallChunk.function?.arguments ?? '',
-                    },
-                  };
-                  developer.log(
-                    'Started new tool call $toolCallId: ${toolCallChunk.function?.name}',
-                    name: 'UnifiedAiInferenceRepository',
-                  );
-                } else if (toolCallChunk.index != null) {
-                  // Try to find by index if no ID
-                  final targetKey = toolCallAccumulator.entries
-                      .firstWhereOrNull(
-                          (e) => e.value['index'] == toolCallChunk.index)
-                      ?.key;
-
-                  if (targetKey != null) {
-                    final existing = toolCallAccumulator[targetKey]!;
-                    final functionData =
-                        existing['function'] as Map<String, dynamic>;
-
-                    if (toolCallChunk.function != null) {
-                      if (toolCallChunk.function!.name != null) {
-                        functionData['name'] = toolCallChunk.function!.name;
-                      }
-                      if (toolCallChunk.function!.arguments != null) {
-                        functionData['arguments'] =
-                            ((functionData['arguments'] ?? '') as String) +
-                                toolCallChunk.function!.arguments!;
-                      }
-                    }
-                    developer.log(
-                      'Continued tool call $targetKey (index ${toolCallChunk.index}) with arguments chunk',
-                      name: 'UnifiedAiInferenceRepository',
-                    );
-                  }
-                } else {
-                  // This is a continuation of an existing tool call
-                  // Find the most recent tool call to append to
-                  if (toolCallAccumulator.isNotEmpty) {
-                    final lastKey = toolCallAccumulator.keys.last;
-                    final existing = toolCallAccumulator[lastKey]!;
-                    final functionData =
-                        existing['function'] as Map<String, dynamic>;
-
-                    if (toolCallChunk.function != null) {
-                      if (toolCallChunk.function!.name != null) {
-                        functionData['name'] = toolCallChunk.function!.name;
-                      }
-                      if (toolCallChunk.function!.arguments != null) {
-                        functionData['arguments'] =
-                            ((functionData['arguments'] ?? '') as String) +
-                                toolCallChunk.function!.arguments!;
-                      }
-                    }
-                    developer.log(
-                      'Continued tool call $lastKey with arguments chunk (no index)',
-                      name: 'UnifiedAiInferenceRepository',
-                    );
-                  }
-                }
-              }
-            }
-          }
+          toolCallAccumulator.processChunk(delta);
         }
       }
 
@@ -521,50 +382,12 @@ class UnifiedAiInferenceRepository {
 
       // Process accumulated tool calls
       List<ChatCompletionMessageToolCall>? toolCalls;
-      if (toolCallAccumulator.isNotEmpty) {
+      if (toolCallAccumulator.hasToolCalls) {
         developer.log(
-          'Processing ${toolCallAccumulator.length} accumulated tool calls',
+          'Processing ${toolCallAccumulator.count} accumulated tool calls',
           name: 'UnifiedAiInferenceRepository',
         );
-
-        // Log all accumulated tool calls for debugging
-        toolCallAccumulator.forEach((key, value) {
-          final functionData = value['function'] as Map<String, dynamic>?;
-          developer.log(
-            'Accumulated tool call $key: function=${functionData?['name']}, '
-            'args length=${functionData?['arguments']?.toString().length ?? 0}',
-            name: 'UnifiedAiInferenceRepository',
-          );
-        });
-
-        toolCalls = toolCallAccumulator.values.where((data) {
-          // Only process tool calls with valid function data
-          final functionData = data['function'] as Map<String, dynamic>?;
-          final hasValidArgs =
-              functionData?['arguments']?.toString().isNotEmpty ?? false;
-          if (!hasValidArgs) {
-            developer.log(
-              'Skipping tool call ${data['id']} - no valid arguments',
-              name: 'UnifiedAiInferenceRepository',
-            );
-          }
-          return hasValidArgs;
-        }).map((data) {
-          final functionData = data['function'] as Map<String, dynamic>;
-          developer.log(
-            'Creating tool call ${data['id']}: ${functionData['name']} with args: ${functionData['arguments']}',
-            name: 'UnifiedAiInferenceRepository',
-          );
-          return ChatCompletionMessageToolCall(
-            id: data['id'] as String,
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: functionData['name'] as String,
-              arguments: functionData['arguments'] as String,
-            ),
-          );
-        }).toList();
-
+        toolCalls = toolCallAccumulator.toToolCalls();
         developer.log(
           'Created ${toolCalls.length} tool calls from accumulator',
           name: 'UnifiedAiInferenceRepository',
@@ -1102,12 +925,6 @@ class UnifiedAiInferenceRepository {
             }
           }
         }
-      // ignore: deprecated_member_use_from_same_package
-      case AiResponseType.actionItemSuggestions:
-        developer.log(
-          'Processing actionItemSuggestions is no longer supported',
-          name: 'UnifiedAiInferenceRepository',
-        );
       case AiResponseType.promptGeneration:
         // Prompt generation has no special post-processing - the response
         // is saved as an AiResponseEntry which is handled by the caller

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -13,8 +12,6 @@ import 'package:mocktail/mocktail.dart';
 class _MockLoggingService extends Mock implements LoggingService {}
 
 class _MockSettingsDb extends Mock implements SettingsDb {}
-
-class _MockMaintenance extends Mock implements Maintenance {}
 
 class _MockSyncDatabase extends Mock implements SyncDatabase {}
 
@@ -202,106 +199,6 @@ void main() {
             ),
         isTrue,
       );
-    });
-  });
-
-  group('checkAndRemoveActionItemSuggestionsForTesting', () {
-    late _MockLoggingService loggingService;
-    late _MockSettingsDb settingsDb;
-    late _MockMaintenance maintenance;
-
-    setUp(() {
-      loggingService = _MockLoggingService();
-      settingsDb = _MockSettingsDb();
-      maintenance = _MockMaintenance();
-
-      when(
-        () => loggingService.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) {});
-      when(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) {});
-
-      getIt
-        ..registerSingleton<LoggingService>(loggingService)
-        ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<Maintenance>(maintenance);
-    });
-
-    test('runs maintenance when flag missing', () async {
-      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-      when(
-        () => maintenance.removeActionItemSuggestions(
-          triggeredAtAppStart: any(named: 'triggeredAtAppStart'),
-        ),
-      ).thenAnswer((_) async {});
-      when(
-        () => settingsDb.saveSettingsItem(any(), any()),
-      ).thenAnswer((_) async => 1);
-
-      await checkAndRemoveActionItemSuggestionsForTesting();
-
-      verify(
-        () => maintenance.removeActionItemSuggestions(
-          triggeredAtAppStart: true,
-        ),
-      ).called(1);
-      verify(
-        () => settingsDb.saveSettingsItem(
-          'maintenance_actionItemSuggestionsRemoved',
-          'true',
-        ),
-      ).called(1);
-      verify(
-        () => loggingService.captureEvent(
-          any<String>(
-              that: contains(
-                  'Automatic removal of action item suggestions completed')),
-          domain: 'MAINTENANCE',
-          subDomain: 'startup',
-        ),
-      ).called(1);
-    });
-
-    test('logs exception when maintenance task fails', () async {
-      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-      when(
-        () => maintenance.removeActionItemSuggestions(
-          triggeredAtAppStart: any(named: 'triggeredAtAppStart'),
-        ),
-      ).thenThrow(Exception('db failure'));
-
-      await checkAndRemoveActionItemSuggestionsForTesting();
-
-      verify(
-        () => loggingService.captureException(
-          any<dynamic>(),
-          domain: 'MAINTENANCE',
-          subDomain: 'startup_removeActionItemSuggestions',
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      ).called(1);
-      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
-    });
-
-    test('skips maintenance when flag already set', () async {
-      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => 'true');
-
-      await checkAndRemoveActionItemSuggestionsForTesting();
-
-      verifyNever(() => maintenance.removeActionItemSuggestions(
-            triggeredAtAppStart: any(named: 'triggeredAtAppStart'),
-          ));
-      verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
     });
   });
 
