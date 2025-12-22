@@ -164,7 +164,6 @@ const _$InputDataTypeEnumMap = {
 };
 
 const _$AiResponseTypeEnumMap = {
-  AiResponseType.actionItemSuggestions: 'ActionItemSuggestions',
   AiResponseType.taskSummary: 'TaskSummary',
   AiResponseType.imageAnalysis: 'ImageAnalysis',
   AiResponseType.audioTranscription: 'AudioTranscription',

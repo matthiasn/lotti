@@ -423,9 +423,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
-  String get aiResponseTypeActionItemSuggestions => 'Action Item Suggestions';
-
-  @override
   String get aiResponseTypeAudioTranscription => 'Audio Transcription';
 
   @override
@@ -1160,21 +1157,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get maintenancePurgeDeletedMessage =>
       'Are you sure you want to purge all deleted items? This action cannot be undone.';
-
-  @override
-  String get maintenanceRemoveActionItemSuggestions =>
-      'Remove deprecated AI suggestions';
-
-  @override
-  String get maintenanceRemoveActionItemSuggestionsDescription =>
-      'Remove old action item suggestions';
-
-  @override
-  String get maintenanceRemoveActionItemSuggestionsMessage =>
-      'Are you sure you want to remove all deprecated action item suggestions? This will permanently delete these entries.';
-
-  @override
-  String get maintenanceRemoveActionItemSuggestionsConfirm => 'YES, REMOVE';
 
   @override
   String get maintenanceReSync => 'Re-sync messages';

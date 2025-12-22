@@ -333,49 +333,9 @@ Future<void> registerSingletons() async {
     'LabelAssignmentEventService',
   );
 
-  // Check and run maintenance task to remove deprecated action item suggestions
-  unawaited(_checkAndRemoveActionItemSuggestions());
-
   // Automatically populate sequence log if empty (one-time migration)
   unawaited(_checkAndPopulateSequenceLog());
 }
-
-Future<void> _checkAndRemoveActionItemSuggestions() async {
-  const settingsKey = 'maintenance_actionItemSuggestionsRemoved';
-  final settingsDb = getIt<SettingsDb>();
-  final maintenance = getIt<Maintenance>();
-
-  // Check if we've already run this maintenance task
-  final hasRun = await settingsDb.itemByKey(settingsKey);
-
-  // TODO(matthiasn): remove after some time
-  if (hasRun == null || hasRun != 'true') {
-    try {
-      // Run the maintenance task
-      await maintenance.removeActionItemSuggestions(triggeredAtAppStart: true);
-
-      // Mark as completed
-      await settingsDb.saveSettingsItem(settingsKey, 'true');
-
-      getIt<LoggingService>().captureEvent(
-        'Automatic removal of action item suggestions completed',
-        domain: 'MAINTENANCE',
-        subDomain: 'startup',
-      );
-    } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
-        e,
-        domain: 'MAINTENANCE',
-        subDomain: 'startup_removeActionItemSuggestions',
-        stackTrace: stackTrace,
-      );
-    }
-  }
-}
-
-@visibleForTesting
-Future<void> checkAndRemoveActionItemSuggestionsForTesting() =>
-    _checkAndRemoveActionItemSuggestions();
 
 /// Automatically populate the sequence log if it's empty and the journal has
 /// entries. This is a one-time migration for existing installations that

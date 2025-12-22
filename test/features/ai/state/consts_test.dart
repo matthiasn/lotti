@@ -8,19 +8,13 @@ import '../../../test_helper.dart';
 void main() {
   group('AiResponseType', () {
     test('should have all expected enum values', () {
-      expect(AiResponseType.values.length, equals(6));
+      expect(AiResponseType.values.length, equals(5));
       expect(AiResponseType.values, contains(AiResponseType.taskSummary));
       expect(AiResponseType.values, contains(AiResponseType.imageAnalysis));
       expect(
           AiResponseType.values, contains(AiResponseType.audioTranscription));
       expect(AiResponseType.values, contains(AiResponseType.checklistUpdates));
       expect(AiResponseType.values, contains(AiResponseType.promptGeneration));
-      expect(
-          AiResponseType.values,
-          contains(
-            // ignore: deprecated_member_use_from_same_package
-            AiResponseType.actionItemSuggestions,
-          ));
     });
 
     test('localizedName returns correct localized strings', () {
@@ -58,9 +52,6 @@ void main() {
           equals(Icons.checklist_rtl_outlined));
       expect(AiResponseType.promptGeneration.icon,
           equals(Icons.auto_fix_high_outlined));
-      // ignore: deprecated_member_use_from_same_package
-      expect(AiResponseType.actionItemSuggestions.icon,
-          equals(Icons.checklist_outlined));
     });
 
     test('const values are correctly defined', () {
@@ -69,7 +60,6 @@ void main() {
       expect(audioTranscriptionConst, equals('AudioTranscription'));
       expect(checklistUpdatesConst, equals('ChecklistUpdates'));
       expect(promptGenerationConst, equals('PromptGeneration'));
-      expect(actionItemSuggestionsConst, equals('ActionItemSuggestions'));
     });
 
     testWidgets('localizedName returns correct strings with BuildContext',
@@ -107,11 +97,6 @@ void main() {
       expect(
         AiResponseType.promptGeneration.localizedName(capturedContext),
         equals('Generated Prompt'),
-      );
-      expect(
-        // ignore: deprecated_member_use_from_same_package
-        AiResponseType.actionItemSuggestions.localizedName(capturedContext),
-        equals('Action Item Suggestions'),
       );
     });
   });

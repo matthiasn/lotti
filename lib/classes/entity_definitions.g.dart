@@ -310,7 +310,6 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
     };
 
 const _$AiResponseTypeEnumMap = {
-  AiResponseType.actionItemSuggestions: 'ActionItemSuggestions',
   AiResponseType.taskSummary: 'TaskSummary',
   AiResponseType.imageAnalysis: 'ImageAnalysis',
   AiResponseType.audioTranscription: 'AudioTranscription',
