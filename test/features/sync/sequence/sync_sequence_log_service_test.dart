@@ -2242,6 +2242,66 @@ void main() {
       expect(counter6Record.createdAt.value, missing6.createdAt);
     });
 
+    test('ignores covered vector clock matching current payload', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-5';
+      final coveredClocks = [
+        const VectorClock({aliceHostId: 5}),
+      ];
+
+      final insertedRecords = <SyncSequenceLogCompanion>[];
+
+      when(() => mockDb.getLastCounterForHost(aliceHostId))
+          .thenAnswer((_) async {
+        var maxCounter = 2;
+        for (final record in insertedRecords) {
+          if (record.counter.value > maxCounter) {
+            maxCounter = record.counter.value;
+          }
+        }
+        return maxCounter;
+      });
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, any()))
+          .thenAnswer((invocation) async {
+        final counter = invocation.positionalArguments[1] as int;
+        for (final record in insertedRecords) {
+          if (record.counter.value == counter) {
+            return _createLogItem(
+              aliceHostId,
+              counter,
+              status: SyncSequenceStatus.received,
+            );
+          }
+        }
+        return null;
+      });
+      when(() => mockDb.recordSequenceEntry(any()))
+          .thenAnswer((invocation) async {
+        insertedRecords
+            .add(invocation.positionalArguments[0] as SyncSequenceLogCompanion);
+        return 1;
+      });
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+        coveredVectorClocks: coveredClocks,
+      );
+
+      final missingCounters = insertedRecords
+          .where(
+            (record) => record.status.value == SyncSequenceStatus.missing.index,
+          )
+          .map((record) => record.counter.value)
+          .toSet();
+      expect(missingCounters, containsAll([3, 4]));
+
+      final counter5Records =
+          insertedRecords.where((record) => record.counter.value == 5);
+      expect(counter5Records, hasLength(1));
+    });
+
     test('marks covered requested counters as received', () async {
       // Scenario: Entry arrives with coveredVectorClocks containing VC5
       // where counter 5 was previously marked as requested.

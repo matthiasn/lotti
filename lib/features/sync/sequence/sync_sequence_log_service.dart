@@ -83,9 +83,10 @@ class SyncSequenceLogService {
   /// Only the originating host's counter is recorded with the entryId.
   /// Other hosts' counters are tracked for gap detection only.
   ///
-  /// [coveredVectorClocks] contains vector clocks from superseded outbox entries
-  /// that were merged into this message. Counters in these VCs are marked as
-  /// received to prevent false gap detection for rapidly-updated entries.
+  /// [coveredVectorClocks] contains vector clocks for this payload, including
+  /// superseded outbox entries and the current vector clock. The current vector
+  /// clock is ignored when pre-marking covered counters to avoid suppressing
+  /// genuine gap detection for the payload itself.
   Future<List<({String hostId, int counter})>> recordReceivedEntry({
     required String entryId,
     required VectorClock vectorClock,
@@ -104,11 +105,11 @@ class SyncSequenceLogService {
     // This prevents false positives: covered counters are pre-emptively marked
     // as received, so gap detection (which checks `existing == null`) will
     // skip them instead of incorrectly marking them as missing.
-    if (coveredVectorClocks != null &&
-        coveredVectorClocks.isNotEmpty &&
-        myHost != null) {
+    final filteredCovered =
+        _filterCoveredVectorClocks(coveredVectorClocks, vectorClock);
+    if (filteredCovered.isNotEmpty && myHost != null) {
       await _markCoveredCountersAsReceived(
-        coveredVectorClocks: coveredVectorClocks,
+        coveredVectorClocks: filteredCovered,
         entryId: entryId,
         payloadType: payloadType,
         myHost: myHost,
@@ -325,6 +326,24 @@ class SyncSequenceLogService {
     // BEFORE gap detection, to prevent false positives.
 
     return gaps;
+  }
+
+  List<VectorClock> _filterCoveredVectorClocks(
+    List<VectorClock>? coveredVectorClocks,
+    VectorClock current,
+  ) {
+    if (coveredVectorClocks == null || coveredVectorClocks.isEmpty) {
+      return const [];
+    }
+    final filtered = <VectorClock>[];
+    for (final clock in coveredVectorClocks) {
+      final isCurrent =
+          VectorClock.compare(clock, current) == VclockStatus.equal;
+      if (!isCurrent) {
+        filtered.add(clock);
+      }
+    }
+    return filtered;
   }
 
   Future<List<({String hostId, int counter})>> recordReceivedEntryLink({

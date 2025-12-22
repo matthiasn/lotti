@@ -39,15 +39,20 @@ class MatrixMessageSender {
   final SentEventRegistry _sentEventRegistry;
 
   List<VectorClock>? _mergeCoveredVectorClocks(
-    List<VectorClock>? existing,
-    VectorClock? add,
+    Iterable<VectorClock?> clocks,
   ) {
-    if (existing == null && add == null) return null;
-    final merged = <VectorClock>{
-      ...?existing,
-      if (add != null) add,
-    };
-    return merged.isEmpty ? null : merged.toList();
+    final merged = <VectorClock>[];
+    for (final clock in clocks) {
+      if (clock == null) continue;
+      final alreadyIncluded = merged.any(
+        (existing) =>
+            VectorClock.compare(existing, clock) == VclockStatus.equal,
+      );
+      if (!alreadyIncluded) {
+        merged.add(clock);
+      }
+    }
+    return merged.isEmpty ? null : merged;
   }
 
   Directory get documentsDirectory => _documentsDirectory;
@@ -113,6 +118,17 @@ class MatrixMessageSender {
           return false;
         }
         outboundMessage = normalized;
+      }
+      if (outboundMessage is SyncEntryLink) {
+        final covered = _mergeCoveredVectorClocks(
+          [
+            ...?outboundMessage.coveredVectorClocks,
+            outboundMessage.entryLink.vectorClock,
+          ],
+        );
+        outboundMessage = outboundMessage.copyWith(
+          coveredVectorClocks: covered,
+        );
       }
 
       final encodedMessage = json.encode(outboundMessage);
@@ -286,8 +302,11 @@ class MatrixMessageSender {
       final status = VectorClock.compare(jsonVectorClock, messageVectorClock);
       if (status != VclockStatus.equal) {
         final covered = _mergeCoveredVectorClocks(
-          message.coveredVectorClocks,
-          messageVectorClock,
+          [
+            ...?message.coveredVectorClocks,
+            messageVectorClock,
+            jsonVectorClock,
+          ],
         );
         outbound = message.copyWith(
           vectorClock: jsonVectorClock,
@@ -303,12 +322,30 @@ class MatrixMessageSender {
         );
       }
     } else if (jsonVectorClock != null && messageVectorClock == null) {
-      outbound = message.copyWith(vectorClock: jsonVectorClock);
+      final covered = _mergeCoveredVectorClocks(
+        [
+          ...?message.coveredVectorClocks,
+          jsonVectorClock,
+        ],
+      );
+      outbound = message.copyWith(
+        vectorClock: jsonVectorClock,
+        coveredVectorClocks: covered,
+      );
       _loggingService.captureEvent(
         'vectorClock absent on message but present in json for ${message.jsonPath}; adopting json clock ${jsonVectorClock.vclock}',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.vclockAdjusted',
       );
+    }
+    final ensuredCovered = _mergeCoveredVectorClocks(
+      [
+        ...?outbound.coveredVectorClocks,
+        outbound.vectorClock,
+      ],
+    );
+    if (ensuredCovered != outbound.coveredVectorClocks) {
+      outbound = outbound.copyWith(coveredVectorClocks: ensuredCovered);
     }
 
     await journalEntity.maybeMap(

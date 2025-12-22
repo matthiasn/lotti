@@ -163,6 +163,23 @@ class OutboxService {
   final StreamController<void> _loginGateEventsController =
       StreamController<void>.broadcast();
 
+  List<VectorClock>? _mergeCoveredVectorClocks(
+    Iterable<VectorClock?> clocks,
+  ) {
+    final merged = <VectorClock>[];
+    for (final clock in clocks) {
+      if (clock == null) continue;
+      final alreadyIncluded = merged.any(
+        (existing) =>
+            VectorClock.compare(existing, clock) == VclockStatus.equal,
+      );
+      if (!alreadyIncluded) {
+        merged.add(clock);
+      }
+    }
+    return merged.isEmpty ? null : merged;
+  }
+
   /// Emits an event whenever `sendNext` is invoked while sync is enabled but
   /// the Matrix service is not logged in. Consumers (UI) can use this to show
   /// a one-time toast informing the user.
@@ -290,6 +307,18 @@ class OutboxService {
             // Continue with original message without links on error
           }
 
+          final coveredClocks = _mergeCoveredVectorClocks(
+            [
+              ...?journalMsg.coveredVectorClocks,
+              journalMsg.vectorClock,
+            ],
+          );
+          if (coveredClocks != journalMsg.coveredVectorClocks) {
+            journalMsg = journalMsg.copyWith(
+              coveredVectorClocks: coveredClocks,
+            );
+          }
+
           return journalMsg;
         }
 
@@ -297,6 +326,17 @@ class OutboxService {
           var linkMsg = syncMessage;
           if (linkMsg.originatingHostId == null && host != null) {
             linkMsg = linkMsg.copyWith(originatingHostId: host);
+          }
+          final coveredClocks = _mergeCoveredVectorClocks(
+            [
+              ...?linkMsg.coveredVectorClocks,
+              linkMsg.entryLink.vectorClock,
+            ],
+          );
+          if (coveredClocks != linkMsg.coveredVectorClocks) {
+            linkMsg = linkMsg.copyWith(
+              coveredVectorClocks: coveredClocks,
+            );
           }
           return linkMsg;
         }
@@ -377,27 +417,26 @@ class OutboxService {
 
             if (oldMessage is SyncJournalEntity) {
               final latestVc = journalEntity.meta.vectorClock;
-              // Use Set to deduplicate vector clocks and avoid redundant
-              // processing on the receiving end.
-              final coveredClocksSet = <VectorClock>{
-                ...?oldMessage.coveredVectorClocks,
-                ...?journalEntityMsg.coveredVectorClocks,
-                if (oldMessage.vectorClock != null) oldMessage.vectorClock!,
-                // Also capture the current enqueue call's VC if it differs from
-                // the latest. This handles the race condition where multiple
-                // enqueue calls are in flight due to the 200ms delay - each
-                // intermediate VC must be captured to prevent false gaps.
-                if (journalEntityMsg.vectorClock != null &&
-                    journalEntityMsg.vectorClock != latestVc)
-                  journalEntityMsg.vectorClock!,
-              };
-              final coveredClocks = coveredClocksSet.toList();
+              final coveredClocks = _mergeCoveredVectorClocks(
+                [
+                  ...?oldMessage.coveredVectorClocks,
+                  ...?journalEntityMsg.coveredVectorClocks,
+                  oldMessage.vectorClock,
+                  // Also capture the current enqueue call's VC if it differs from
+                  // the latest. This handles the race condition where multiple
+                  // enqueue calls are in flight due to the 200ms delay - each
+                  // intermediate VC must be captured to prevent false gaps.
+                  if (journalEntityMsg.vectorClock != null &&
+                      journalEntityMsg.vectorClock != latestVc)
+                    journalEntityMsg.vectorClock,
+                  latestVc,
+                ],
+              );
 
               // Create merged message with updated VC and covered clocks
               final mergedMessage = journalEntityMsg.copyWith(
                 vectorClock: latestVc,
-                coveredVectorClocks:
-                    coveredClocks.isEmpty ? null : coveredClocks,
+                coveredVectorClocks: coveredClocks,
               );
 
               await _syncDatabase.updateOutboxMessage(
@@ -408,10 +447,10 @@ class OutboxService {
 
               // Log covered clocks for debugging - show all counters per vector clock
               final coveredVcStrings =
-                  coveredClocks.map((vc) => vc.vclock).toList();
+                  coveredClocks?.map((vc) => vc.vclock).toList();
               _loggingService.captureEvent(
                 'enqueue MERGED type=SyncJournalEntity id=${journalEntityMsg.id} '
-                'coveredClocks=${coveredClocks.length} covered=$coveredVcStrings '
+                'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
                 'latest=${latestVc?.vclock}',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage',
@@ -521,23 +560,21 @@ class OutboxService {
             );
 
             if (oldMessage is SyncEntryLink) {
-              // Use Set to deduplicate vector clocks and avoid redundant
-              // processing on the receiving end.
-              final coveredClocksSet = <VectorClock>{
-                ...?oldMessage.coveredVectorClocks,
-                ...?entryLinkMsg.coveredVectorClocks,
-                if (oldMessage.entryLink.vectorClock != null)
-                  oldMessage.entryLink.vectorClock!,
-              };
-              final coveredClocks = coveredClocksSet.toList();
+              final coveredClocks = _mergeCoveredVectorClocks(
+                [
+                  ...?oldMessage.coveredVectorClocks,
+                  ...?entryLinkMsg.coveredVectorClocks,
+                  oldMessage.entryLink.vectorClock,
+                  entryLinkMsg.entryLink.vectorClock,
+                ],
+              );
 
               // Create merged message with covered clocks
               // Note: Unlike journal entities, entry links don't refresh from DB,
               // so each enqueue's VC is captured correctly when oldMessage.VC
               // is added to coveredClocks in subsequent merges.
               final mergedMessage = entryLinkMsg.copyWith(
-                coveredVectorClocks:
-                    coveredClocks.isEmpty ? null : coveredClocks,
+                coveredVectorClocks: coveredClocks,
               );
 
               await _syncDatabase.updateOutboxMessage(
@@ -548,11 +585,11 @@ class OutboxService {
 
               // Log covered clocks for debugging - show all counters per vector clock
               final coveredVcStrings =
-                  coveredClocks.map((vc) => vc.vclock).toList();
+                  coveredClocks?.map((vc) => vc.vclock).toList();
               final latestVcStr = entryLinkMsg.entryLink.vectorClock?.vclock;
               _loggingService.captureEvent(
                 'enqueue MERGED type=SyncEntryLink id=$linkId '
-                'coveredClocks=${coveredClocks.length} covered=$coveredVcStrings '
+                'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
                 'latest=$latestVcStr',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage',
