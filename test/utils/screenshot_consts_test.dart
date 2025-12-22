@@ -125,10 +125,6 @@ void main() {
     });
 
     group('Process Configuration', () {
-      test('should have correct run in shell setting', () {
-        expect(runInShell, isFalse);
-      });
-
       test('should have correct success exit code', () {
         expect(successExitCode, equals(0));
       });
@@ -146,62 +142,40 @@ void main() {
       test('should have complete configuration for spectacle', () {
         final config = screenshotToolConfigs[spectacleTool];
         expect(config, isNotNull);
-        expect(config!.name, equals('Spectacle'));
-        expect(config.arguments, equals(spectacleArguments));
-        expect(config.description, equals('KDE screenshot tool'));
-        expect(config.installCommand, equals('sudo apt install spectacle'));
+        expect(config!.arguments, equals(spectacleArguments));
       });
 
       test('should have complete configuration for gnome-screenshot', () {
         final config = screenshotToolConfigs[gnomeScreenshotTool];
         expect(config, isNotNull);
-        expect(config!.name, equals('GNOME Screenshot'));
-        expect(config.arguments, equals(gnomeScreenshotArguments));
-        expect(config.description, equals('GNOME screenshot tool'));
-        expect(
-            config.installCommand, equals('sudo apt install gnome-screenshot'));
+        expect(config!.arguments, equals(gnomeScreenshotArguments));
       });
 
       test('should have complete configuration for scrot', () {
         final config = screenshotToolConfigs[scrotTool];
         expect(config, isNotNull);
-        expect(config!.name, equals('Scrot'));
-        expect(config.arguments, equals(scrotArguments));
-        expect(config.description, equals('Lightweight screenshot tool'));
-        expect(config.installCommand, equals('sudo apt install scrot'));
+        expect(config!.arguments, equals(scrotArguments));
       });
 
       test('should have complete configuration for import', () {
         final config = screenshotToolConfigs[importTool];
         expect(config, isNotNull);
-        expect(config!.name, equals('ImageMagick Import'));
-        expect(config.arguments, equals(importArguments));
-        expect(config.description, equals('ImageMagick screenshot tool'));
-        expect(config.installCommand, equals('sudo apt install imagemagick'));
+        expect(config!.arguments, equals(importArguments));
       });
     });
 
     group('ScreenshotToolConfig Class', () {
-      test('should create configuration with all required fields', () {
+      test('should create configuration with arguments', () {
         const config = ScreenshotToolConfig(
-          name: 'Test Tool',
           arguments: ['-test'],
-          description: 'Test description',
-          installCommand: 'sudo apt install test',
         );
 
-        expect(config.name, equals('Test Tool'));
         expect(config.arguments, equals(['-test']));
-        expect(config.description, equals('Test description'));
-        expect(config.installCommand, equals('sudo apt install test'));
       });
 
       test('should handle empty arguments list', () {
         const config = ScreenshotToolConfig(
-          name: 'Test Tool',
           arguments: [],
-          description: 'Test description',
-          installCommand: 'sudo apt install test',
         );
 
         expect(config.arguments, isEmpty);
@@ -209,10 +183,7 @@ void main() {
 
       test('should handle multiple arguments', () {
         const config = ScreenshotToolConfig(
-          name: 'Test Tool',
           arguments: ['-arg1', '-arg2', 'value'],
-          description: 'Test description',
-          installCommand: 'sudo apt install test',
         );
 
         expect(config.arguments, equals(['-arg1', '-arg2', 'value']));
@@ -221,47 +192,16 @@ void main() {
     });
 
     group('Configuration Validation', () {
-      test('all tool configurations should have non-empty names', () {
-        for (final config in screenshotToolConfigs.values) {
-          expect(config.name, isNotEmpty);
-        }
-      });
-
-      test('all tool configurations should have non-empty descriptions', () {
-        for (final config in screenshotToolConfigs.values) {
-          expect(config.description, isNotEmpty);
-        }
-      });
-
-      test('all tool configurations should have non-empty install commands',
-          () {
-        for (final config in screenshotToolConfigs.values) {
-          expect(config.installCommand, isNotEmpty);
-        }
-      });
-
       test('all tool configurations should have valid argument lists', () {
         for (final config in screenshotToolConfigs.values) {
           expect(config.arguments, isA<List<String>>());
         }
       });
 
-      test('tool configurations should match their tool constants', () {
+      test('all tools have configurations', () {
         for (final tool in linuxScreenshotTools) {
           final config = screenshotToolConfigs[tool];
           expect(config, isNotNull);
-
-          // Verify the tool name in config matches the constant
-          switch (tool) {
-            case 'spectacle':
-              expect(config!.name, equals('Spectacle'));
-            case 'gnome-screenshot':
-              expect(config!.name, equals('GNOME Screenshot'));
-            case 'scrot':
-              expect(config!.name, equals('Scrot'));
-            case 'import':
-              expect(config!.name, equals('ImageMagick Import'));
-          }
         }
       });
     });

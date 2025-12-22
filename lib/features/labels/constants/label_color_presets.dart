@@ -1,6 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:lotti/utils/color.dart';
-
 class LabelColorPreset {
   const LabelColorPreset({
     required this.name,
@@ -9,8 +6,6 @@ class LabelColorPreset {
 
   final String name;
   final String hex;
-
-  Color toColor() => colorFromCssHex(hex, substitute: Colors.blue);
 }
 
 const List<LabelColorPreset> labelColorPresets = [
@@ -31,11 +26,3 @@ const List<LabelColorPreset> labelColorPresets = [
   LabelColorPreset(name: 'Charcoal', hex: '#2D3142'),
   LabelColorPreset(name: 'Rosewood', hex: '#9B5DE5'),
 ];
-
-LabelColorPreset labelPresetForHex(String hex) {
-  final normalized = hex.toUpperCase();
-  return labelColorPresets.firstWhere(
-    (preset) => preset.hex.toUpperCase() == normalized,
-    orElse: () => labelColorPresets.first,
-  );
-}

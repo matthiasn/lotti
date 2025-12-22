@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
+import 'package:lotti/utils/color.dart';
+
+Color _presetToColor(LabelColorPreset preset) =>
+    colorFromCssHex(preset.hex, substitute: Colors.blue);
 
 double _contrastRatio(Color a, Color b) {
   final l1 = a.computeLuminance();
@@ -14,7 +18,7 @@ void main() {
   test('preset palette maintains WCAG AA contrast with black or white text',
       () {
     for (final preset in labelColorPresets) {
-      final color = preset.toColor();
+      final color = _presetToColor(preset);
       final whiteContrast = _contrastRatio(color, Colors.white);
       final blackContrast = _contrastRatio(color, Colors.black);
       expect(
@@ -28,7 +32,7 @@ void main() {
 
   test('chip backgrounds contrast against both light and dark surfaces', () {
     for (final preset in labelColorPresets) {
-      final chipColor = preset.toColor().withValues(alpha: 0.18);
+      final chipColor = _presetToColor(preset).withValues(alpha: 0.18);
       final contrastLight = _contrastRatio(chipColor, Colors.white);
       final contrastDark = _contrastRatio(chipColor, Colors.black);
       expect(

@@ -130,49 +130,37 @@ void main() {
         final config = screenshotToolConfigs[spectacleTool];
 
         expect(config, isNotNull);
-        expect(config!.name, equals('Spectacle'));
-        expect(config.arguments, equals(spectacleArguments));
+        expect(config!.arguments, equals(spectacleArguments));
         expect(config.arguments, contains('-f')); // fullscreen
         expect(config.arguments, contains('-b')); // background
         expect(config.arguments, contains('-n')); // no notification
         expect(config.arguments, contains('-o')); // output to stdout
-        expect(config.description, contains('KDE'));
-        expect(config.installCommand, contains('spectacle'));
       });
 
       test('gnome-screenshot configuration is correct', () {
         final config = screenshotToolConfigs[gnomeScreenshotTool];
 
         expect(config, isNotNull);
-        expect(config!.name, equals('GNOME Screenshot'));
-        expect(config.arguments, equals(gnomeScreenshotArguments));
+        expect(config!.arguments, equals(gnomeScreenshotArguments));
         expect(config.arguments, contains('-f')); // file parameter
-        expect(config.description, contains('GNOME'));
-        expect(config.installCommand, contains('gnome-screenshot'));
       });
 
       test('scrot configuration is correct', () {
         final config = screenshotToolConfigs[scrotTool];
 
         expect(config, isNotNull);
-        expect(config!.name, equals('Scrot'));
-        expect(config.arguments, equals(scrotArguments));
+        expect(config!.arguments, equals(scrotArguments));
         expect(
             config.arguments, isEmpty); // scrot uses filename as positional arg
-        expect(config.description, contains('Lightweight'));
-        expect(config.installCommand, contains('scrot'));
       });
 
       test('import (ImageMagick) configuration is correct', () {
         final config = screenshotToolConfigs[importTool];
 
         expect(config, isNotNull);
-        expect(config!.name, equals('ImageMagick Import'));
-        expect(config.arguments, equals(importArguments));
+        expect(config!.arguments, equals(importArguments));
         expect(config.arguments, contains('-window'));
         expect(config.arguments, contains('root'));
-        expect(config.description, contains('ImageMagick'));
-        expect(config.installCommand, contains('imagemagick'));
       });
 
       test('tool priority order is correct', () {
@@ -275,10 +263,6 @@ void main() {
         expect(screenshotProcessTimeoutSeconds, equals(30));
         expect(screenshotProcessTimeoutSeconds, greaterThan(0));
         expect(screenshotProcessTimeoutSeconds, lessThanOrEqualTo(60));
-      });
-
-      test('runs processes without shell for security', () {
-        expect(runInShell, isFalse);
       });
 
       test('expects zero exit code for success', () {

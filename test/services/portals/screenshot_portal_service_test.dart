@@ -111,7 +111,6 @@ void main() {
             equals('org.freedesktop.portal.Screenshot'));
         expect(
             ScreenshotPortalConstants.screenshotMethod, equals('Screenshot'));
-        expect(ScreenshotPortalConstants.pickColorMethod, equals('PickColor'));
       });
     });
 

@@ -34,15 +34,5 @@ class AppFonts {
       letterSpacing: letterSpacing,
     );
   }
-
-  static String? inclusiveSansFamily() {
-    if (GoogleFonts.config.allowRuntimeFetching) {
-      // Using fontFamily avoids painting-time fetch but creating the style
-      // can still cause a load. We use the string-only accessor where possible.
-      return GoogleFonts.inclusiveSans().fontFamily;
-    }
-    // Fallback to named family; if not available, engine will pick a default.
-    return 'Inclusive Sans';
-  }
 }
 // End of file

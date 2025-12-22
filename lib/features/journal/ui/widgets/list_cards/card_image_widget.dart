@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 
@@ -23,7 +22,6 @@ class CardImageWidget extends StatefulWidget {
 }
 
 class _CardImageWidgetState extends State<CardImageWidget> {
-  Directory docDir = getDocumentsDirectory();
   int retries = 0;
 
   @override

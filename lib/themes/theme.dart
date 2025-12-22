@@ -36,7 +36,6 @@ class AppTheme {
 
   // Chevron icon size
   static const double chevronSize = 22; // Slightly larger
-  static const double chevronSizeCompact = 20;
 
   // Typography constants - Modern typography scale
   static const double titleFontSize = 18; // Increased
@@ -99,7 +98,6 @@ class AppTheme {
   static const double statusIndicatorBorderRadiusTiny = 5;
   static const double statusIndicatorBorderWidth = 0.8; // Slightly thicker
   static const double statusIndicatorSize = 26; // Slightly larger
-  static const double statusIndicatorSizeCompact = 22;
   static const double statusIndicatorIconSize = 16; // Larger icons
   static const double statusIndicatorIconSizeCompact = 14;
 
@@ -121,7 +119,6 @@ class AppTheme {
   // Font sizes for status indicators
   static const double statusIndicatorFontSize = 12; // Increased
   static const double statusIndicatorFontSizeCompact = 11;
-  static const double statusIndicatorFontSizeTiny = 10;
 
   // Modal item spacer widths
   static const double modalIconSpacerWidth = iconContainerSize;
@@ -143,10 +140,6 @@ class AppTheme {
 
 // Gradient and shadow constants - tuned for polished, modern look
 class GradientConstants {
-  // Color blending factors for gradients
-  static const double darkCardBlendFactor = 0.2;
-  static const double darkCardEndBlendFactor = 0.3;
-
   // Shadow alpha values for enhanced cards - much more subtle
   static const double enhancedShadowLightAlpha = 0.06;
   static const double enhancedShadowSecondaryLightAlpha = 0.03;
@@ -156,7 +149,6 @@ class GradientConstants {
   static const double enhancedShadowBlurLight = 8;
   static const double enhancedShadowSecondaryBlurLight = 16;
   static const double enhancedShadowSecondaryBlurDark = 20;
-  static const double enhancedShadowSecondarySpread = 0;
   static const double enhancedShadowOffsetY = 2;
   static const double enhancedShadowSecondaryOffsetY = 4;
 }
@@ -195,12 +187,7 @@ class ModalTheme {
   static const double iconPadding = 16;
   static const double iconSize = 48;
   static const double spacing24 = 24;
-  static const double spacing40 = 40;
   static const double buttonHeight = 56;
-  static const double fontSize = 16;
-  static const double letterSpacing = 0.5;
-  static const double letterSpacingBold = 0.8;
-  static const double buttonBorderWidth = 1.5;
   static const double iconBorderRadiusExtra = 4;
   static const double headlineLetterSpacing = -0.2;
   static const double headlineLineHeight = 1.3;
@@ -318,11 +305,6 @@ const chartTooltipStyleBold = TextStyle(
   fontWeight: FontWeight.bold,
 );
 
-const appBarTextStyle = TextStyle(
-  fontSize: fontSizeMedium,
-  fontWeight: FontWeight.bold,
-);
-
 const appBarTextStyleNew = TextStyle(
   fontSize: fontSizeMedium,
   fontWeight: TypographyConstants.bodyFontWeight,
@@ -383,12 +365,6 @@ const habitTitleStyle = TextStyle(
   fontWeight: FontWeight.w400, // Slightly bolder
 );
 
-TextStyle saveButtonStyle(ThemeData themeData) => TextStyle(
-      fontSize: fontSizeMediumLarge,
-      fontWeight: FontWeight.bold,
-      color: themeData.colorScheme.error,
-    );
-
 // Utility style for monospaced, tabular-digit text with adjustable size.
 TextStyle monoTabularStyle({
   required double fontSize,
@@ -403,16 +379,6 @@ TextStyle monoTabularStyle({
     fontFeatures: const [FontFeature.tabularFigures()],
   );
 }
-
-TextStyle failButtonStyle() => TextStyle(
-      fontSize: fontSizeMediumLarge,
-      fontWeight: FontWeight.bold,
-      color: failColor,
-    );
-
-const segmentItemStyle = TextStyle(
-  fontSize: fontSizeMedium,
-);
 
 const badgeStyle = TextStyle(
   fontWeight: FontWeight.w400, // Slightly bolder
@@ -675,11 +641,6 @@ class GradientThemes {
   /// Creates a subtle top-left to bottom-right gradient for cards
   static LinearGradient? cardGradient(BuildContext context) {
     return ModernGradientThemes.cardGradient(context);
-  }
-
-  /// Creates a subtle gradient for icon containers
-  static LinearGradient iconContainerGradient(BuildContext context) {
-    return ModernGradientThemes.accentGradient(context);
   }
 
   /// Creates a modern primary gradient

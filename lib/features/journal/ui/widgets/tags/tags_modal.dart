@@ -97,7 +97,6 @@ class _TagsModalState extends ConsumerState<TagsModal> {
                     final tag = suggestions.elementAt(index);
                     return TagCard(
                       tagEntity: tag,
-                      index: index,
                       onTap: () => onSuggestionSelected(tag),
                     );
                   },
@@ -164,12 +163,10 @@ class TagCard extends StatelessWidget {
   const TagCard({
     required this.tagEntity,
     required this.onTap,
-    required this.index,
     super.key,
   });
 
   final TagEntity tagEntity;
-  final int index;
   final void Function() onTap;
 
   @override

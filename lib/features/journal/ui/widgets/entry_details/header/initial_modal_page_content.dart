@@ -70,7 +70,6 @@ class InitialModalPageContent extends StatelessWidget {
           ),
         if (link != null)
           ModernToggleHiddenItem(
-            entryId: entryId,
             link: link,
           ),
         ModernCopyImageItem(entryId: entryId),

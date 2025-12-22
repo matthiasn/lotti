@@ -30,7 +30,6 @@ class ModernJournalImageCard extends StatelessWidget {
   static const double spacingAfterHeader = 8;
   static const double tagsHeight = 32; // Approximate height of tags widget
   static const double spacingAfterTags = 8;
-  static const double compactSpacingAfterHeader = 4;
 
   final JournalImage item;
 

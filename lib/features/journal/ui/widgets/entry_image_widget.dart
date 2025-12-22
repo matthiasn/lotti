@@ -27,7 +27,6 @@ class EntryImageWidget extends ConsumerWidget {
         Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute<HeroPhotoViewRouteWrapper>(
             builder: (_) => HeroPhotoViewRouteWrapper(
-              focusNode: focusNode,
               file: file,
             ),
           ),
@@ -56,7 +55,6 @@ class EntryImageWidget extends ConsumerWidget {
 // from https://github.com/bluefireteam/photo_view/blob/master/example/lib/screens/examples/hero_example.dart
 class HeroPhotoViewRouteWrapper extends StatelessWidget {
   const HeroPhotoViewRouteWrapper({
-    required this.focusNode,
     required this.file,
     super.key,
     this.backgroundDecoration,
@@ -64,7 +62,6 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
 
   final File file;
   final BoxDecoration? backgroundDecoration;
-  final FocusNode focusNode;
 
   @override
   Widget build(BuildContext context) {
