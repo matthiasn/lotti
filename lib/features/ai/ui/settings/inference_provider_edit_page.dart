@@ -22,8 +22,6 @@ class InferenceProviderEditPage extends ConsumerStatefulWidget {
     super.key,
   });
 
-  static const String routeName = '/settings/ai/api-keys/edit';
-
   final String? configId;
 
   @override

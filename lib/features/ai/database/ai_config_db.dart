@@ -57,10 +57,6 @@ class AiConfigDb extends _$AiConfigDb {
     return configsByType(type).watch();
   }
 
-  Stream<List<AiConfigDbEntity>> watchAllConfigs() {
-    return allConfigs().watch();
-  }
-
   Future<AiConfig?> getConfigById(String id) async {
     final dbEntity = await configById(id).getSingleOrNull();
     if (dbEntity == null) return null;

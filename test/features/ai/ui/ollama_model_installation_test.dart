@@ -123,11 +123,7 @@ void main() {
           (tester) async {
         // Arrange
         final progressStream = Stream<OllamaPullProgress>.fromIterable([
-          const OllamaPullProgress(
-              status: 'pulling manifest',
-              progress: 0,
-              total: 100,
-              completed: 0),
+          const OllamaPullProgress(status: 'pulling manifest', progress: 0),
         ]);
 
         when(() => mockRepository.installModel(testModelName, any()))
@@ -231,8 +227,7 @@ void main() {
           (tester) async {
         // Arrange
         final progressStream = Stream<OllamaPullProgress>.fromIterable([
-          const OllamaPullProgress(
-              status: 'downloading', progress: 0.5, total: 100, completed: 50),
+          const OllamaPullProgress(status: 'downloading', progress: 0.5),
         ]);
 
         when(() => mockRepository.installModel(testModelName, any()))

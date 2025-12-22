@@ -1,64 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/state/settings/prompt_form_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection.dart';
-
-class PromptResponseTypeSelection extends ConsumerWidget {
-  const PromptResponseTypeSelection({super.key, this.configId});
-
-  final String? configId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final formState =
-        ref.watch(promptFormControllerProvider(configId: configId)).valueOrNull;
-    final formController =
-        ref.read(promptFormControllerProvider(configId: configId).notifier);
-
-    if (formState == null) {
-      return const SizedBox.shrink();
-    }
-
-    final selectedType = formState.aiResponseType.value;
-
-    return InkWell(
-      onTap: () {
-        ResponseTypeSelectionModal.show(
-          context: context,
-          selectedType: selectedType,
-          onSave: formController.aiResponseTypeChanged,
-        );
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: context.messages.aiConfigResponseTypeFieldLabel,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-          suffixIcon: const Icon(Icons.arrow_drop_down),
-          errorText: formState.aiResponseType.isNotValid &&
-                  // !formState.aiResponseType.isPure &&
-                  formState.aiResponseType.error == PromptFormError.notSelected
-              ? context.messages.aiConfigResponseTypeNotSelectedError
-              : null,
-        ),
-        child: Text(
-          selectedType?.localizedName(context) ??
-              context.messages.aiConfigResponseTypeSelectHint,
-          style: selectedType == null
-              ? context.textTheme.bodyLarge?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                )
-              : context.textTheme.bodyLarge,
-        ),
-      ),
-    );
-  }
-}
 
 /// Modal for selecting AI response type with modern styling
 ///

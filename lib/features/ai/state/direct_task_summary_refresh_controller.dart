@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -46,9 +45,6 @@ class ScheduledRefreshState {
 
   /// Get the scheduled refresh time for a task, or null if not scheduled
   DateTime? getScheduledTime(String taskId) => scheduledTimes[taskId];
-
-  /// Check if a task has a pending scheduled refresh
-  bool hasScheduledRefresh(String taskId) => scheduledTimes.containsKey(taskId);
 }
 
 /// Manages scheduled task summary refresh requests from checklist actions.
@@ -99,20 +95,6 @@ class DirectTaskSummaryRefreshController
 
   void _updateState() {
     state = ScheduledRefreshState(_getScheduledTimes());
-  }
-
-  /// Get the scheduled refresh time for a task, or null if not scheduled.
-  /// This is primarily for testing - UI should use the provider pattern.
-  @visibleForTesting
-  DateTime? getScheduledTime(String taskId) {
-    return _scheduledRefreshes[taskId]?.scheduledTime;
-  }
-
-  /// Check if a task has a scheduled refresh.
-  /// This is primarily for testing - UI should use the provider pattern.
-  @visibleForTesting
-  bool hasScheduledRefresh(String taskId) {
-    return _scheduledRefreshes.containsKey(taskId);
   }
 
   /// Cancel a scheduled refresh for the given task ID

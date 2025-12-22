@@ -888,8 +888,9 @@ void main() {
       expect(find.byIcon(Icons.close), findsOneWidget);
       expect(
         container
-            .read(directTaskSummaryRefreshControllerProvider)
-            .hasScheduledRefresh(testId),
+                .read(directTaskSummaryRefreshControllerProvider)
+                .getScheduledTime(testId) !=
+            null,
         isTrue,
       );
 
@@ -903,8 +904,9 @@ void main() {
       expect(find.byIcon(Icons.play_arrow), findsNothing);
       expect(
         container
-            .read(directTaskSummaryRefreshControllerProvider)
-            .hasScheduledRefresh(testId),
+                .read(directTaskSummaryRefreshControllerProvider)
+                .getScheduledTime(testId) !=
+            null,
         isFalse,
       );
 
@@ -944,8 +946,9 @@ void main() {
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
       expect(
         container
-            .read(directTaskSummaryRefreshControllerProvider)
-            .hasScheduledRefresh(testId),
+                .read(directTaskSummaryRefreshControllerProvider)
+                .getScheduledTime(testId) !=
+            null,
         isTrue,
       );
 
@@ -968,8 +971,9 @@ void main() {
       // Scheduled refresh should be cancelled (triggered immediately)
       expect(
         container
-            .read(directTaskSummaryRefreshControllerProvider)
-            .hasScheduledRefresh(testId),
+                .read(directTaskSummaryRefreshControllerProvider)
+                .getScheduledTime(testId) !=
+            null,
         isFalse,
       );
 

@@ -531,75 +531,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     }
   }
 
-  /// Check if a model is installed in Ollama
-  Future<bool> isModelInstalled(String modelName, String baseUrl) async {
-    try {
-      final response = await _httpClient
-          .get(Uri.parse('$baseUrl/api/tags'))
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != httpStatusOk) {
-        return false;
-      }
-
-      final result = jsonDecode(response.body) as Map<String, dynamic>;
-      final models = result['models'] as List<dynamic>? ?? [];
-
-      return models.any((model) {
-        final modelMap = model as Map<String, dynamic>;
-        return modelMap['name'] == modelName || modelMap['model'] == modelName;
-      });
-    } catch (e) {
-      developer.log(
-        'Error checking if model is installed',
-        error: e,
-        name: 'OllamaInferenceRepository',
-      );
-      return false;
-    }
-  }
-
-  /// Get model information including size
-  Future<OllamaModelInfo?> getModelInfo(
-      String modelName, String baseUrl) async {
-    try {
-      final response = await _httpClient
-          .get(Uri.parse('$baseUrl/api/tags'))
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != httpStatusOk) {
-        return null;
-      }
-
-      final result = jsonDecode(response.body) as Map<String, dynamic>;
-      final models = result['models'] as List<dynamic>? ?? [];
-
-      for (final model in models) {
-        final modelMap = model as Map<String, dynamic>;
-        if (modelMap['name'] == modelName || modelMap['model'] == modelName) {
-          final details = modelMap['details'] as Map<String, dynamic>?;
-          return OllamaModelInfo(
-            name: modelMap['name'] as String,
-            size: modelMap['size'] as int? ?? 0,
-            parameterSize: details?['parameter_size'] as String? ?? 'Unknown',
-            quantizationLevel:
-                details?['quantization_level'] as String? ?? 'Unknown',
-          );
-        }
-      }
-
-      return null;
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error getting model info',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'OllamaInferenceRepository',
-      );
-      return null;
-    }
-  }
-
   /// Install a model in Ollama with progress tracking
   Stream<OllamaPullProgress> installModel(
       String modelName, String baseUrl) async* {
@@ -675,8 +606,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
         yield OllamaPullProgress(
           status: status,
-          total: total,
-          completed: completed,
           progress: total > 0 ? (completed / total) : 0.0,
         );
       }
@@ -742,53 +671,13 @@ class ModelNotInstalledException implements Exception {
       'Model "$modelName" is not installed. Please install it first.';
 }
 
-/// Information about an Ollama model
-class OllamaModelInfo {
-  const OllamaModelInfo({
-    required this.name,
-    required this.size,
-    required this.parameterSize,
-    required this.quantizationLevel,
-  });
-
-  final String name;
-  final int size; // Size in bytes
-  final String parameterSize; // e.g., "4.3B"
-  final String quantizationLevel; // e.g., "Q4_K_M"
-
-  /// Get human-readable size
-  String get humanReadableSize {
-    if (size < 1024) return '$size B';
-    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
-    if (size < 1024 * 1024 * 1024) {
-      return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(size / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-  }
-}
-
 /// Progress information for model installation
 class OllamaPullProgress {
   const OllamaPullProgress({
     required this.status,
-    required this.total,
-    required this.completed,
     required this.progress,
   });
 
   final String status; // e.g., "pulling manifest", "downloading", "success"
-  final int total; // Total bytes to download
-  final int completed; // Bytes downloaded so far
   final double progress; // Progress as a fraction (0.0 to 1.0)
-
-  /// Get human-readable progress percentage
-  String get progressPercentage => '${(progress * 100).toStringAsFixed(1)}%';
-
-  /// Get human-readable download progress
-  String get downloadProgress {
-    if (total == 0) return status;
-    final totalMB = (total / (1024 * 1024)).toStringAsFixed(1);
-    final completedMB = (completed / (1024 * 1024)).toStringAsFixed(1);
-    return '$status: $completedMB MB / $totalMB MB ($progressPercentage)';
-  }
 }

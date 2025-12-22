@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/prompt_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/prompt_form_controller.dart';
@@ -485,63 +484,6 @@ void main() {
       expect(savedConfig.updatedAt, isNotNull);
       // Ensure createdAt is not null before calling isAfter
       expect(savedConfig.updatedAt!.isAfter(savedConfig.createdAt), isTrue);
-    });
-
-    test('reset clears controllers and resets state', () async {
-      // Setup initial state by loading a config
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
-      when(() => mockAiConfigRepository.getConfigById('model1'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model1',
-                name: 'Model 1',
-                providerModelId: 'provider-model-1',
-                inferenceProviderId: 'provider-1',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      when(() => mockAiConfigRepository.getConfigById('model2'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model2',
-                name: 'Model 2',
-                providerModelId: 'provider-model-2',
-                inferenceProviderId: 'provider-2',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
-
-      // Verify controllers have text
-      expect(controller.nameController.text, testConfig.name);
-      expect(controller.systemMessageController.text, testConfig.systemMessage);
-      // ... other controllers ...
-
-      controller.reset();
-
-      expect(controller.nameController.text, isEmpty);
-      expect(controller.systemMessageController.text, isEmpty);
-      expect(controller.userMessageController.text, isEmpty);
-      expect(controller.descriptionController.text, isEmpty);
-
-      final state = container
-          .read(promptFormControllerProvider(configId: testConfigId))
-          .value;
-      // Check if state is reset to default PromptFormState
-      // This assumes PromptFormState() creates a state with empty/default values.
-      final defaultState = PromptFormState();
-      expect(state!.name.value, defaultState.name.value);
-      expect(state.systemMessage.value, defaultState.systemMessage.value);
-      // ... compare other relevant fields to their defaults in PromptFormState ...
-      expect(state.id, defaultState.id);
-      expect(state.modelIds, defaultState.modelIds);
-      expect(state.defaultModelId, defaultState.defaultModelId);
     });
   });
 }

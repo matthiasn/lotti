@@ -142,19 +142,6 @@ void main() {
     });
 
     group('export', () {
-      test('should export conversation as formatted string', () {
-        manager
-          ..initialize(systemMessage: 'System message')
-          ..addUserMessage('User message')
-          ..addAssistantMessage(content: 'Assistant response');
-
-        final exported = manager.exportAsString();
-
-        expect(exported, contains('SYSTEM: System message'));
-        expect(exported, contains('USER: User message'));
-        expect(exported, contains('ASSISTANT: Assistant response'));
-      });
-
       test('should handle max turns', () {
         // Test that we can check if conversation can continue
         for (var i = 0; i < 10; i++) {
@@ -346,37 +333,6 @@ void main() {
 
         // No event should be emitted for empty assistant message
         expect(events, isEmpty);
-      });
-    });
-
-    group('Export Functionality - Extended', () {
-      test('exportAsString handles ChatCompletionUserMessageContent parts', () {
-        // Test with a simple message first
-        manager.addUserMessage('Simple message');
-
-        // The ConversationManager's addUserMessage method creates messages with
-        // string content, not parts. To properly test parts handling, we would
-        // need to extend the manager's API or test the export logic differently.
-        // For now, we'll verify that string content is exported correctly.
-
-        final exported = manager.exportAsString();
-
-        expect(exported, contains('USER: Simple message'));
-
-        // Since we can't directly add parts messages through the public API,
-        // we're verifying that regular messages are handled correctly.
-        // The parts handling logic in exportAsString should work if messages
-        // with parts content are added through other means (e.g., from AI responses).
-      });
-
-      test('exportAsString handles unknown content types', () {
-        // Add a message with custom content type
-        // Note: ChatCompletionMessage is a sealed class, so we can't create custom content types
-        manager.addUserMessage('[Unknown content type]');
-
-        final exported = manager.exportAsString();
-
-        expect(exported, contains('USER: [Unknown content type]'));
       });
     });
 

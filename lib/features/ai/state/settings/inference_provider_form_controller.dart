@@ -218,15 +218,4 @@ class InferenceProviderFormController
     final repository = ref.read(aiConfigRepositoryProvider);
     return repository.deleteInferenceProviderWithModels(id);
   }
-
-  void reset() {
-    nameController.clear();
-    apiKeyController.clear();
-    baseUrlController.clear();
-    descriptionController.clear();
-    state = AsyncData(InferenceProviderFormState(
-      apiKey: const ApiKeyValue.pure('', InferenceProviderType.genericOpenAi),
-      lastUpdated: DateTime.now(),
-    ));
-  }
 }

@@ -43,8 +43,6 @@ class GeminiInferenceRepository {
   // Toggle for verbose streaming logs useful during debugging. Disabled by
   // default to avoid console noise in production.
   static const bool kVerboseStreamLogging = false;
-  static const int kMaxRawChunkLogs = 3; // max raw chunk previews
-  static const int kMaxRawLineLogs = 10; // max raw line previews
   // Preview length for debug logging and error previews
   static const int kPreviewLength = 200;
 

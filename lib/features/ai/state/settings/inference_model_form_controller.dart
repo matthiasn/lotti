@@ -175,17 +175,4 @@ class InferenceModelFormController extends _$InferenceModelFormController {
       ),
     );
   }
-
-  /// Delete a configuration
-  Future<void> deleteConfig(String id) async {
-    final repository = ref.read(aiConfigRepositoryProvider);
-    await repository.deleteConfig(id);
-  }
-
-  void reset() {
-    nameController.clear();
-    descriptionController.clear();
-    maxCompletionTokensController.clear();
-    state = AsyncData(InferenceModelFormState());
-  }
 }

@@ -22,8 +22,6 @@ class InferenceModelEditPage extends ConsumerStatefulWidget {
     super.key,
   });
 
-  static const String routeName = '/settings/ai/models/edit';
-
   final String? configId;
 
   @override

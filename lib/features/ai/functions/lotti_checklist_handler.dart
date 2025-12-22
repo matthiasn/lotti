@@ -323,9 +323,4 @@ Do NOT recreate the items that were already successful.''';
       }
     }
   }
-
-  void reset() {
-    _createdDescriptions.clear();
-    _successfulItems.clear();
-  }
 }

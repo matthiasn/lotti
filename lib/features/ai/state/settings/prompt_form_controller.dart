@@ -299,14 +299,6 @@ class PromptFormController extends _$PromptFormController {
     );
   }
 
-  void reset() {
-    nameController.clear();
-    systemMessageController.clear();
-    userMessageController.clear();
-    descriptionController.clear();
-    state = AsyncData(PromptFormState());
-  }
-
   /// Toggle tracking of preconfigured prompt
   // ignore: avoid_positional_boolean_parameters
   void toggleTrackPreconfigured(bool track) {

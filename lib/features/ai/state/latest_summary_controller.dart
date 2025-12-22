@@ -52,25 +52,4 @@ class LatestSummaryController extends _$LatestSummaryController {
         .where((element) => element.data.type == aiResponseType)
         .firstOrNull;
   }
-
-  Future<void> removeActionItem({
-    required String title,
-  }) async {
-    final latestAiEntry = state.valueOrNull;
-
-    if (latestAiEntry == null) {
-      return;
-    }
-
-    final updated = latestAiEntry.copyWith(
-      data: latestAiEntry.data.copyWith(
-        suggestedActionItems: latestAiEntry.data.suggestedActionItems
-            ?.where((item) => item.title != title)
-            .toList(),
-      ),
-    );
-
-    state = AsyncData(updated);
-    await ref.read(journalRepositoryProvider).updateJournalEntity(updated);
-  }
 }

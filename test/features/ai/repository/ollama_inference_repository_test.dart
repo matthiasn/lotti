@@ -402,121 +402,6 @@ void main() {
       });
     });
 
-    group('isModelInstalled', () {
-      test('should return true when model is installed', () async {
-        // Arrange
-        const modelName = 'llama2';
-        const baseUrl = 'http://localhost:11434';
-
-        when(() => mockHttpClient.get(any()))
-            .thenAnswer((_) async => http.Response(
-                  jsonEncode({
-                    'models': [
-                      {'name': 'llama2', 'size': 1000000},
-                      {'name': 'codellama', 'size': 2000000},
-                    ],
-                  }),
-                  200,
-                ));
-
-        // Act
-        final result = await repository.isModelInstalled(modelName, baseUrl);
-
-        // Assert
-        expect(result, isTrue);
-      });
-
-      test('should return false when model is not installed', () async {
-        // Arrange
-        const modelName = 'nonexistent';
-        const baseUrl = 'http://localhost:11434';
-
-        when(() => mockHttpClient.get(any()))
-            .thenAnswer((_) async => http.Response(
-                  jsonEncode({
-                    'models': [
-                      {'name': 'llama2', 'size': 1000000},
-                    ],
-                  }),
-                  200,
-                ));
-
-        // Act
-        final result = await repository.isModelInstalled(modelName, baseUrl);
-
-        // Assert
-        expect(result, isFalse);
-      });
-
-      test('should return false on error', () async {
-        // Arrange
-        const modelName = 'llama2';
-        const baseUrl = 'http://localhost:11434';
-
-        when(() => mockHttpClient.get(any()))
-            .thenThrow(Exception('Network error'));
-
-        // Act
-        final result = await repository.isModelInstalled(modelName, baseUrl);
-
-        // Assert
-        expect(result, isFalse);
-      });
-    });
-
-    group('getModelInfo', () {
-      test('should return model info when found', () async {
-        // Arrange
-        const modelName = 'llama2';
-        const baseUrl = 'http://localhost:11434';
-
-        when(() => mockHttpClient.get(any()))
-            .thenAnswer((_) async => http.Response(
-                  jsonEncode({
-                    'models': [
-                      {
-                        'name': 'llama2',
-                        'size': 4000000000,
-                        'details': {
-                          'parameter_size': '7B',
-                          'quantization_level': 'Q4_K_M',
-                        },
-                      },
-                    ],
-                  }),
-                  200,
-                ));
-
-        // Act
-        final result = await repository.getModelInfo(modelName, baseUrl);
-
-        // Assert
-        expect(result, isNotNull);
-        expect(result!.name, equals('llama2'));
-        expect(result.parameterSize, equals('7B'));
-        expect(result.quantizationLevel, equals('Q4_K_M'));
-        expect(result.humanReadableSize, equals('3.7 GB'));
-      });
-
-      test('should return null when model not found', () async {
-        // Arrange
-        const modelName = 'nonexistent';
-        const baseUrl = 'http://localhost:11434';
-
-        when(() => mockHttpClient.get(any()))
-            .thenAnswer((_) async => http.Response(
-                  jsonEncode({'models': <Map<String, dynamic>>[]}),
-                  200,
-                ));
-
-        // Act
-        final result = await repository.getModelInfo(modelName, baseUrl);
-
-        // Assert
-        expect(result, isNull);
-      });
-    });
-
     group('installModel', () {
       test('should stream installation progress', () async {
         // Arrange
@@ -613,73 +498,15 @@ void main() {
       });
     });
 
-    group('OllamaModelInfo', () {
-      test('should format human-readable sizes correctly', () {
-        expect(
-          const OllamaModelInfo(
-            name: 'test',
-            size: 500,
-            parameterSize: '1B',
-            quantizationLevel: 'Q4',
-          ).humanReadableSize,
-          equals('500 B'),
-        );
-
-        expect(
-          const OllamaModelInfo(
-            name: 'test',
-            size: 2048,
-            parameterSize: '1B',
-            quantizationLevel: 'Q4',
-          ).humanReadableSize,
-          equals('2.0 KB'),
-        );
-
-        expect(
-          const OllamaModelInfo(
-            name: 'test',
-            size: 5242880,
-            parameterSize: '1B',
-            quantizationLevel: 'Q4',
-          ).humanReadableSize,
-          equals('5.0 MB'),
-        );
-
-        expect(
-          const OllamaModelInfo(
-            name: 'test',
-            size: 4294967296,
-            parameterSize: '1B',
-            quantizationLevel: 'Q4',
-          ).humanReadableSize,
-          equals('4.0 GB'),
-        );
-      });
-    });
-
     group('OllamaPullProgress', () {
-      test('should format progress correctly', () {
+      test('should have correct status and progress', () {
         const progress = OllamaPullProgress(
           status: 'downloading',
-          total: 1048576,
-          completed: 524288,
           progress: 0.5,
         );
 
-        expect(progress.progressPercentage, equals('50.0%'));
-        expect(progress.downloadProgress,
-            equals('downloading: 0.5 MB / 1.0 MB (50.0%)'));
-      });
-
-      test('should handle zero total', () {
-        const progress = OllamaPullProgress(
-          status: 'preparing',
-          total: 0,
-          completed: 0,
-          progress: 0,
-        );
-
-        expect(progress.downloadProgress, equals('preparing'));
+        expect(progress.status, equals('downloading'));
+        expect(progress.progress, equals(0.5));
       });
     });
   });

@@ -51,8 +51,6 @@ typedef LabelFilterFn = List<LabelDefinition> Function(
   String? categoryId,
 );
 
-typedef ConfigFlagFn = Future<bool> Function(String name, {bool defaultValue});
-
 class PromptBuilderHelper {
   PromptBuilderHelper({
     required this.aiInputRepository,

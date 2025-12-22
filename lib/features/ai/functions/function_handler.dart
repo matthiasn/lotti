@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:developer' as developer;
-
 import 'package:openai_dart/openai_dart.dart';
 
 /// Base interface for handling different function types in conversations
@@ -42,17 +39,4 @@ class FunctionCallResult {
   final String arguments; // Raw JSON string
   final Map<String, dynamic> data; // Parsed data or error info
   final String? error;
-
-  Map<String, dynamic> get parsedArguments {
-    try {
-      return jsonDecode(arguments) as Map<String, dynamic>;
-    } catch (e) {
-      developer.log(
-        'Failed to parse function arguments for $functionName: $e',
-        name: 'FunctionCallResult',
-        error: e,
-      );
-      return {};
-    }
-  }
 }

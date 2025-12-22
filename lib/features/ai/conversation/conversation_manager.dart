@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Manages AI conversations with context preservation and multi-turn support
@@ -173,32 +172,6 @@ class ConversationManager {
           );
       }
     }
-  }
-
-  /// Export conversation as string
-  String exportAsString() {
-    final buffer = StringBuffer();
-
-    for (final message in _messages) {
-      final role = message.role.name.toUpperCase();
-      String contentStr;
-
-      if (message.content == null) {
-        contentStr = '(function calls)';
-      } else if (message.content is ChatCompletionUserMessageContent) {
-        // Extract text from ChatCompletionUserMessageContent
-        final userContent =
-            message.content! as ChatCompletionUserMessageContent;
-        contentStr =
-            ContentExtractionHelper.extractTextFromUserContent(userContent);
-      } else {
-        contentStr = message.content.toString();
-      }
-
-      buffer.writeln('$role: $contentStr');
-    }
-
-    return buffer.toString();
   }
 
   void dispose() {

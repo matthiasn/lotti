@@ -1,73 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/input_data_type_extensions.dart';
-import 'package:lotti/features/ai/state/settings/prompt_form_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection.dart';
-
-class PromptInputTypeSelection extends ConsumerStatefulWidget {
-  const PromptInputTypeSelection({
-    this.configId,
-    super.key,
-  });
-
-  final String? configId;
-
-  @override
-  ConsumerState<PromptInputTypeSelection> createState() =>
-      _PromptInputTypeSelection();
-}
-
-class _PromptInputTypeSelection
-    extends ConsumerState<PromptInputTypeSelection> {
-  void _showInputDataTypeSelectionModal({
-    required List<InputDataType> selectedTypes,
-    required void Function(List<InputDataType>) onSave,
-  }) {
-    InputDataTypeSelectionModal.show(
-      context: context,
-      selectedTypes: selectedTypes,
-      onSave: onSave,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final configId = widget.configId;
-    final formState =
-        ref.watch(promptFormControllerProvider(configId: configId)).valueOrNull;
-    final formController = ref.read(
-      promptFormControllerProvider(configId: configId).notifier,
-    );
-
-    if (formState == null) {
-      return const SizedBox.shrink();
-    }
-
-    return InkWell(
-      onTap: () => _showInputDataTypeSelectionModal(
-        selectedTypes: formState.requiredInputData,
-        onSave: formController.requiredInputDataChanged,
-      ),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: context.messages.aiConfigRequiredInputDataFieldLabel,
-          suffixIcon: const Icon(Icons.arrow_drop_down),
-        ),
-        child: Text(
-          formState.requiredInputData.isEmpty
-              ? context.messages.aiConfigSelectInputDataTypesPrompt
-              : formState.requiredInputData
-                  .map((type) => type.displayName(context))
-                  .join(', '),
-          style: context.textTheme.bodyLarge,
-        ),
-      ),
-    );
-  }
-}
 
 /// Modal for selecting input data types with modern styling
 ///

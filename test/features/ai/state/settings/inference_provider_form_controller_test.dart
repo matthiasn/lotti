@@ -171,38 +171,10 @@ void main() {
       final result = await controller.deleteConfig('test-id');
 
       // Assert
-      expect(result.deletedModelCount, equals(1));
+      expect(result.deletedModels.length, equals(1));
       expect(result.providerName, equals('Test Provider'));
       verify(() => mockRepository.deleteInferenceProviderWithModels('test-id'))
           .called(1);
-    });
-
-    test('should reset form fields', () async {
-      // Arrange
-      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
-        (_) async => testConfig,
-      );
-
-      // Load the existing config first
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: 'test-id').notifier,
-      );
-      await container.read(
-        inferenceProviderFormControllerProvider(configId: 'test-id').future,
-      );
-
-      // Verify fields are populated
-      expect(controller.nameController.text, isNotEmpty);
-      expect(controller.apiKeyController.text, isNotEmpty);
-
-      // Act
-      controller.reset();
-
-      // Assert
-      expect(controller.nameController.text, isEmpty);
-      expect(controller.apiKeyController.text, isEmpty);
-      expect(controller.baseUrlController.text, isEmpty);
-      expect(controller.descriptionController.text, isEmpty);
     });
 
     test('should update form state when name is changed', () async {
