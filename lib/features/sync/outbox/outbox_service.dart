@@ -267,95 +267,37 @@ class OutboxService {
             host: host,
             hostHash: hostHash,
           ),
-        final SyncEntityDefinition msg => () async {
-            final localCounter = msg.entityDefinition.vectorClock?.vclock[host];
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(subject: Value('$hostHash:$localCounter')),
-            );
-            _loggingService.captureEvent(
-              'enqueue type=SyncEntityDefinition '
-              'subject=$hostHash:$localCounter id=${msg.entityDefinition.id}',
-              domain: 'OUTBOX',
-              subDomain: 'enqueueMessage',
-            );
-            return false;
-          }(),
-        final SyncAiConfig msg => () async {
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(subject: const Value('aiConfig')),
-            );
-            _loggingService.captureEvent(
-              'enqueue type=SyncAiConfig subject=aiConfig id=${msg.aiConfig.id}',
-              domain: 'OUTBOX',
-              subDomain: 'enqueueMessage',
-            );
-            return false;
-          }(),
-        final SyncAiConfigDelete msg => () async {
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(subject: const Value('aiConfigDelete')),
-            );
-            _loggingService.captureEvent(
-              'enqueue type=SyncAiConfigDelete subject=aiConfigDelete id=${msg.id}',
-              domain: 'OUTBOX',
-              subDomain: 'enqueueMessage',
-            );
-            return false;
-          }(),
-        final SyncTagEntity msg => () async {
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(subject: Value('$hostHash:tag')),
-            );
-            _loggingService.captureEvent(
-              'enqueue type=SyncTagEntity subject=$hostHash:tag '
-              'id=${msg.tagEntity.id}',
-              domain: 'OUTBOX',
-              subDomain: 'enqueueMessage',
-            );
-            return false;
-          }(),
-        final SyncThemingSelection msg => () async {
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(subject: const Value('themingSelection')),
-            );
-            _loggingService.captureEvent(
-              'enqueue type=SyncThemingSelection subject=themingSelection '
-              'light=${msg.lightThemeName} dark=${msg.darkThemeName} '
-              'mode=${msg.themeMode}',
-              domain: 'OUTBOX',
-              subDomain: 'enqueueMessage',
-            );
-            return false;
-          }(),
-        final SyncBackfillRequest msg => () async {
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(
-                subject: Value('backfillRequest:batch:${msg.entries.length}'),
-              ),
-            );
-            _loggingService.captureEvent(
-              'enqueue type=SyncBackfillRequest entries=${msg.entries.length}',
-              domain: 'OUTBOX',
-              subDomain: 'enqueueMessage',
-            );
-            return false;
-          }(),
-        final SyncBackfillResponse msg => () async {
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(
-                subject: Value(
-                  'backfillResponse:${msg.hostId}:${msg.counter}',
-                ),
-              ),
-            );
-            _loggingService.captureEvent(
-              'enqueue type=SyncBackfillResponse hostId=${msg.hostId} '
-              'counter=${msg.counter} deleted=${msg.deleted}',
-              domain: 'OUTBOX',
-              subDomain: 'enqueueMessage',
-            );
-            return false;
-          }(),
+        final SyncEntityDefinition msg => _enqueueEntityDefinition(
+            msg: msg,
+            commonFields: commonFields,
+            host: host,
+            hostHash: hostHash,
+          ),
+        final SyncAiConfig msg => _enqueueAiConfig(
+            msg: msg,
+            commonFields: commonFields,
+          ),
+        final SyncAiConfigDelete msg => _enqueueAiConfigDelete(
+            msg: msg,
+            commonFields: commonFields,
+          ),
+        final SyncTagEntity msg => _enqueueTagEntity(
+            msg: msg,
+            commonFields: commonFields,
+            hostHash: hostHash,
+          ),
+        final SyncThemingSelection msg => _enqueueThemingSelection(
+            msg: msg,
+            commonFields: commonFields,
+          ),
+        final SyncBackfillRequest msg => _enqueueBackfillRequest(
+            msg: msg,
+            commonFields: commonFields,
+          ),
+        final SyncBackfillResponse msg => _enqueueBackfillResponse(
+            msg: msg,
+            commonFields: commonFields,
+          ),
       };
 
       // Schedule next send unless merge already did (returns true)
@@ -951,6 +893,126 @@ class OutboxService {
     }
 
     return false; // No merge - caller should call enqueueNextSendRequest
+  }
+
+  Future<bool> _enqueueEntityDefinition({
+    required SyncEntityDefinition msg,
+    required OutboxCompanion commonFields,
+    required String? host,
+    required String? hostHash,
+  }) async {
+    final localCounter = msg.entityDefinition.vectorClock?.vclock[host];
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(subject: Value('$hostHash:$localCounter')),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncEntityDefinition '
+      'subject=$hostHash:$localCounter id=${msg.entityDefinition.id}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
+
+  Future<bool> _enqueueAiConfig({
+    required SyncAiConfig msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(subject: const Value('aiConfig')),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncAiConfig subject=aiConfig id=${msg.aiConfig.id}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
+
+  Future<bool> _enqueueAiConfigDelete({
+    required SyncAiConfigDelete msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(subject: const Value('aiConfigDelete')),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncAiConfigDelete subject=aiConfigDelete id=${msg.id}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
+
+  Future<bool> _enqueueTagEntity({
+    required SyncTagEntity msg,
+    required OutboxCompanion commonFields,
+    required String? hostHash,
+  }) async {
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(subject: Value('$hostHash:tag')),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncTagEntity subject=$hostHash:tag '
+      'id=${msg.tagEntity.id}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
+
+  Future<bool> _enqueueThemingSelection({
+    required SyncThemingSelection msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(subject: const Value('themingSelection')),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncThemingSelection subject=themingSelection '
+      'light=${msg.lightThemeName} dark=${msg.darkThemeName} '
+      'mode=${msg.themeMode}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
+
+  Future<bool> _enqueueBackfillRequest({
+    required SyncBackfillRequest msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(
+        subject: Value('backfillRequest:batch:${msg.entries.length}'),
+      ),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncBackfillRequest entries=${msg.entries.length}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
+
+  Future<bool> _enqueueBackfillResponse({
+    required SyncBackfillResponse msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(
+        subject: Value(
+          'backfillResponse:${msg.hostId}:${msg.counter}',
+        ),
+      ),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncBackfillResponse hostId=${msg.hostId} '
+      'counter=${msg.counter} deleted=${msg.deleted}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
   }
 
   Future<void> dispose() async {

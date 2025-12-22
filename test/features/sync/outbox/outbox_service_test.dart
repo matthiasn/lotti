@@ -3266,4 +3266,238 @@ void main() {
           )).called(1);
     });
   });
+
+  group('Simple message handler edge cases', () {
+    test('SyncEntityDefinition with null vectorClock uses null in subject',
+        () async {
+      final entityDef = HabitDefinition(
+        id: 'habit-no-vc',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null, // Null vector clock
+        name: 'Test Habit',
+        description: 'A habit without vector clock',
+        private: false,
+        active: true,
+        habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+      );
+
+      final message = SyncMessage.entityDefinition(
+        entityDefinition: entityDef,
+        status: SyncEntryStatus.initial,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      // Subject should contain null for the counter part (hhash is the mock value)
+      expect(companion.subject.value, 'hhash:null');
+    });
+
+    test('SyncTagEntity with null hostHash handles gracefully', () async {
+      // Create a vectorClockService that returns null hostHash
+      final nullHashVcs = MockVectorClockService();
+      when(() => nullHashVcs.getHost()).thenAnswer((_) async => 'testHost');
+      when(() => nullHashVcs.getHostHash()).thenAnswer((_) async => null);
+
+      final serviceWithNullHash = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: nullHashVcs,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+      );
+
+      final tag = TagEntity.storyTag(
+        id: 'tag-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        tag: 'TestTag',
+        private: false,
+        vectorClock: const VectorClock({'host': 1}),
+      );
+
+      final message = SyncMessage.tagEntity(
+        tagEntity: tag,
+        status: SyncEntryStatus.initial,
+      );
+
+      await serviceWithNullHash.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'null:tag');
+    });
+
+    test('SyncBackfillRequest with empty entries list', () async {
+      const message = SyncMessage.backfillRequest(
+        requesterId: 'requester-device',
+        entries: [], // Empty list
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'backfillRequest:batch:0');
+
+      verify(() => loggingService.captureEvent(
+            contains('entries=0'),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('SyncBackfillRequest with multiple entries', () async {
+      const message = SyncMessage.backfillRequest(
+        requesterId: 'requester-device',
+        entries: [
+          BackfillRequestEntry(hostId: 'host1', counter: 1),
+          BackfillRequestEntry(hostId: 'host1', counter: 2),
+          BackfillRequestEntry(hostId: 'host2', counter: 1),
+        ],
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'backfillRequest:batch:3');
+    });
+
+    test('SyncBackfillResponse with deleted=true', () async {
+      const message = SyncMessage.backfillResponse(
+        hostId: 'host-abc',
+        counter: 42,
+        deleted: true,
+      );
+
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncBackfillResponse'),
+              contains('hostId=host-abc'),
+              contains('counter=42'),
+              contains('deleted=true'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('SyncBackfillResponse with deleted=false and entryId', () async {
+      const message = SyncMessage.backfillResponse(
+        hostId: 'host-abc',
+        counter: 42,
+        deleted: false,
+        entryId: 'entry-123',
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'backfillResponse:host-abc:42');
+
+      verify(() => loggingService.captureEvent(
+            contains('deleted=false'),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('SyncAiConfig logs config id correctly', () async {
+      final config = AiConfig.inferenceProvider(
+        id: 'config-xyz-789',
+        name: 'Test Config',
+        apiKey: 'sk-test',
+        baseUrl: 'https://api.openai.com/v1',
+        createdAt: DateTime(2025, 1, 1),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      final message = SyncMessage.aiConfig(
+        aiConfig: config,
+        status: SyncEntryStatus.initial,
+      );
+
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncAiConfig'),
+              contains('id=config-xyz-789'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('SyncAiConfigDelete logs deleted config id', () async {
+      const message = SyncMessage.aiConfigDelete(
+        id: 'config-to-delete-456',
+      );
+
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncAiConfigDelete'),
+              contains('id=config-to-delete-456'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('enqueueMessage handles addOutboxItem error gracefully', () async {
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+          .thenThrow(Exception('DB write failed'));
+
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Light',
+        darkThemeName: 'Dark',
+        themeMode: 'system',
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      // Should not throw - error is caught and logged
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureException(
+            any<Object>(),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).called(1);
+    });
+  });
 }
