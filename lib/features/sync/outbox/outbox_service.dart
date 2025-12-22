@@ -163,23 +163,6 @@ class OutboxService {
   final StreamController<void> _loginGateEventsController =
       StreamController<void>.broadcast();
 
-  List<VectorClock>? _mergeCoveredVectorClocks(
-    Iterable<VectorClock?> clocks,
-  ) {
-    final merged = <VectorClock>[];
-    for (final clock in clocks) {
-      if (clock == null) continue;
-      final alreadyIncluded = merged.any(
-        (existing) =>
-            VectorClock.compare(existing, clock) == VclockStatus.equal,
-      );
-      if (!alreadyIncluded) {
-        merged.add(clock);
-      }
-    }
-    return merged.isEmpty ? null : merged;
-  }
-
   /// Emits an event whenever `sendNext` is invoked while sync is enabled but
   /// the Matrix service is not logged in. Consumers (UI) can use this to show
   /// a one-time toast informing the user.
@@ -307,7 +290,7 @@ class OutboxService {
             // Continue with original message without links on error
           }
 
-          final coveredClocks = _mergeCoveredVectorClocks(
+          final coveredClocks = VectorClock.mergeUniqueClocks(
             [
               ...?journalMsg.coveredVectorClocks,
               journalMsg.vectorClock,
@@ -327,7 +310,7 @@ class OutboxService {
           if (linkMsg.originatingHostId == null && host != null) {
             linkMsg = linkMsg.copyWith(originatingHostId: host);
           }
-          final coveredClocks = _mergeCoveredVectorClocks(
+          final coveredClocks = VectorClock.mergeUniqueClocks(
             [
               ...?linkMsg.coveredVectorClocks,
               linkMsg.entryLink.vectorClock,
@@ -417,7 +400,7 @@ class OutboxService {
 
             if (oldMessage is SyncJournalEntity) {
               final latestVc = journalEntity.meta.vectorClock;
-              final coveredClocks = _mergeCoveredVectorClocks(
+              final coveredClocks = VectorClock.mergeUniqueClocks(
                 [
                   ...?oldMessage.coveredVectorClocks,
                   ...?journalEntityMsg.coveredVectorClocks,
@@ -560,7 +543,7 @@ class OutboxService {
             );
 
             if (oldMessage is SyncEntryLink) {
-              final coveredClocks = _mergeCoveredVectorClocks(
+              final coveredClocks = VectorClock.mergeUniqueClocks(
                 [
                   ...?oldMessage.coveredVectorClocks,
                   ...?entryLinkMsg.coveredVectorClocks,

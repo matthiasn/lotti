@@ -42,23 +42,6 @@ class MatrixMessageSender {
   final SentEventRegistry _sentEventRegistry;
   final VectorClockService? _vectorClockService;
 
-  List<VectorClock>? _mergeCoveredVectorClocks(
-    Iterable<VectorClock?> clocks,
-  ) {
-    final merged = <VectorClock>[];
-    for (final clock in clocks) {
-      if (clock == null) continue;
-      final alreadyIncluded = merged.any(
-        (existing) =>
-            VectorClock.compare(existing, clock) == VclockStatus.equal,
-      );
-      if (!alreadyIncluded) {
-        merged.add(clock);
-      }
-    }
-    return merged.isEmpty ? null : merged;
-  }
-
   Directory get documentsDirectory => _documentsDirectory;
   SentEventRegistry get sentEventRegistry => _sentEventRegistry;
 
@@ -153,7 +136,7 @@ class MatrixMessageSender {
         outboundMessage = normalized;
       }
       if (outboundMessage is SyncEntryLink) {
-        final covered = _mergeCoveredVectorClocks(
+        final covered = VectorClock.mergeUniqueClocks(
           [
             ...?outboundMessage.coveredVectorClocks,
             outboundMessage.entryLink.vectorClock,
@@ -334,7 +317,7 @@ class MatrixMessageSender {
     if (messageVectorClock != null && jsonVectorClock != null) {
       final status = VectorClock.compare(jsonVectorClock, messageVectorClock);
       if (status != VclockStatus.equal) {
-        final covered = _mergeCoveredVectorClocks(
+        final covered = VectorClock.mergeUniqueClocks(
           [
             ...?message.coveredVectorClocks,
             messageVectorClock,
@@ -355,7 +338,7 @@ class MatrixMessageSender {
         );
       }
     } else if (jsonVectorClock != null && messageVectorClock == null) {
-      final covered = _mergeCoveredVectorClocks(
+      final covered = VectorClock.mergeUniqueClocks(
         [
           ...?message.coveredVectorClocks,
           jsonVectorClock,
@@ -371,7 +354,7 @@ class MatrixMessageSender {
         subDomain: 'sendMatrixMsg.vclockAdjusted',
       );
     }
-    final ensuredCovered = _mergeCoveredVectorClocks(
+    final ensuredCovered = VectorClock.mergeUniqueClocks(
       [
         ...?outbound.coveredVectorClocks,
         outbound.vectorClock,

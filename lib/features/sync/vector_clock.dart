@@ -98,6 +98,14 @@ class VectorClock extends Equatable {
     return VectorClock(merged);
   }
 
+  /// Merges an iterable of nullable VectorClocks into a deduplicated list.
+  /// Returns null if no non-null clocks are provided.
+  /// Uses Set for O(n) deduplication since VectorClock extends Equatable.
+  static List<VectorClock>? mergeUniqueClocks(Iterable<VectorClock?> clocks) {
+    final merged = clocks.whereType<VectorClock>().toSet().toList();
+    return merged.isEmpty ? null : merged;
+  }
+
   int get(String node) {
     return vclock[node] ?? 0;
   }
