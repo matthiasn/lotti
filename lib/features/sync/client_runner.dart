@@ -10,7 +10,6 @@ class ClientRunner<T> {
     _start();
   }
 
-  int enqueuedCount = 0;
   int queueSize = 0;
 
   Future<void> _start() async {
@@ -33,8 +32,6 @@ class ClientRunner<T> {
 
   /// Enqueue a new request of type [T].
   void enqueueRequest(T event) {
-    enqueuedCount++;
-
     queueSize++;
     _controller.add(event);
   }

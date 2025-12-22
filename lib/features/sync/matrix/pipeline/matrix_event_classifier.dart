@@ -1,7 +1,6 @@
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_helpers.dart'
     as msh;
-import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 // Platform toggle no longer needed here.
 import 'package:matrix/matrix.dart';
 
@@ -18,8 +17,4 @@ class MatrixEventClassifier {
     if (msgType == syncMessageType) return true;
     return msh.isLikelySyncPayloadEvent(e);
   }
-
-  // Prefetch removed.
-
-  static num timestamp(Event e) => TimelineEventOrdering.timestamp(e);
 }

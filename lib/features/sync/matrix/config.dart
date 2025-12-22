@@ -21,14 +21,6 @@ Future<MatrixConfig?> loadMatrixConfig({
   return session.matrixConfig;
 }
 
-Future<void> logout({
-  required MatrixSessionManager session,
-}) async {
-  if (session.client.isLogged()) {
-    await session.client.logout();
-  }
-}
-
 Future<void> setMatrixConfig(
   MatrixConfig config, {
   required MatrixSessionManager session,
