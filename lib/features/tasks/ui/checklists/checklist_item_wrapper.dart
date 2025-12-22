@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/tasks/model/checklist_drag_data.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart';
@@ -51,12 +52,12 @@ class ChecklistItemWrapper extends ConsumerWidget {
 
         final child = DragItemWidget(
           dragItemProvider: (request) async {
-            final dragItem = DragItem(
-              localData: {
-                'checklistItemId': item.id,
-                'checklistId': checklistId,
-              },
-            )..add(Formats.plainText(item.data.title));
+            final dragData = ExistingItemDragData(
+              checklistItemId: item.id,
+              checklistId: checklistId,
+            );
+            final dragItem = DragItem(localData: dragData.toMap())
+              ..add(Formats.plainText(item.data.title));
             return dragItem;
           },
           allowedOperations: () => [DropOperation.move],

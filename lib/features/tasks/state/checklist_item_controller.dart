@@ -5,8 +5,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/state/update_stream_listener.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -14,31 +14,23 @@ part 'checklist_item_controller.g.dart';
 
 @riverpod
 class ChecklistItemController extends _$ChecklistItemController {
-  StreamSubscription<Set<String>>? _updateSubscription;
-
-  void listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
-      if (affectedIds.contains(id)) {
-        final latest = await _fetch();
-        if (latest != state.value) {
-          state = AsyncData(latest);
-        }
-      }
-    });
-  }
+  late final UpdateStreamListener<ChecklistItem> _listener;
 
   @override
   Future<ChecklistItem?> build({
     required String id,
     required String? taskId,
   }) async {
-    ref
-      ..onDispose(() => _updateSubscription?.cancel())
-      ..cacheFor(entryCacheDuration);
+    _listener = ref.createUpdateStreamListener<ChecklistItem>(
+      fetcher: _fetch,
+      getState: () => state.value,
+      setState: (value) => state = AsyncData(value),
+      initialIds: {id},
+    );
+    ref.cacheFor(entryCacheDuration);
 
     final item = await _fetch();
-    listen();
+    _listener.start();
     return item;
   }
 

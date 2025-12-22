@@ -4,8 +4,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
+import 'package:lotti/features/tasks/state/update_stream_listener.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -15,23 +15,12 @@ part 'task_progress_controller.g.dart';
 @riverpod
 class TaskProgressController extends _$TaskProgressController {
   final _durations = <String, Duration>{};
-  final _subscribedIds = <String>{};
   Duration? _estimate;
-  StreamSubscription<Set<String>>? _updateSubscription;
+  late final UpdateStreamListener<TaskProgressState> _listener;
   StreamSubscription<JournalEntity?>? _timeServiceSubscription;
   final TimeService _timeService = getIt<TimeService>();
 
-  void listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
-      if (affectedIds.intersection(_subscribedIds).isNotEmpty) {
-        final latest = await _fetch();
-        if (latest != state.value) {
-          state = AsyncData(latest);
-        }
-      }
-    });
-
+  void _listenToTimeService() {
     _timeServiceSubscription = _timeService.getStream().listen((journalEntity) {
       if (journalEntity != null) {
         if (_timeService.linkedFrom?.id != id) {
@@ -47,14 +36,19 @@ class TaskProgressController extends _$TaskProgressController {
 
   @override
   Future<TaskProgressState?> build({required String id}) async {
-    _subscribedIds.add(id);
+    _listener = ref.createUpdateStreamListener<TaskProgressState>(
+      fetcher: _fetch,
+      getState: () => state.value,
+      setState: (value) => state = AsyncData(value),
+      initialIds: {id},
+    );
     ref
-      ..onDispose(() => _updateSubscription?.cancel())
       ..onDispose(() => _timeServiceSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
 
     final progress = await _fetch();
-    listen();
+    _listener.start();
+    _listenToTimeService();
     return progress;
   }
 
@@ -74,7 +68,7 @@ class TaskProgressController extends _$TaskProgressController {
       ..clear()
       ..addAll(durations);
 
-    _subscribedIds.addAll(durations.keys);
+    _listener.addIds(durations.keys);
 
     return _getProgress();
   }

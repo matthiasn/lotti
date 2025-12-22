@@ -1,12 +1,10 @@
-// ignore_for_file: comment_references
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
+import 'package:lotti/features/tasks/repository/checklist_events.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -29,24 +27,12 @@ class ChecklistRepository {
 
   static const String _callingDomain = 'ChecklistRepository';
 
-  /// Triggers a task summary refresh for all tasks linked to the given checklist
-  Future<void> _triggerTaskSummaryRefresh(String checklistId) async {
-    try {
-      await _ref
-          .read(taskSummaryRefreshServiceProvider)
-          .triggerTaskSummaryRefreshForChecklist(
-            checklistId: checklistId,
-            callingDomain: _callingDomain,
-          );
-    } catch (exception, stackTrace) {
-      _loggingService.captureException(
-        exception,
-        domain: _callingDomain,
-        subDomain: '_triggerTaskSummaryRefresh',
-        stackTrace: stackTrace,
-      );
-      // Swallow the error to prevent persistence flow failures
-    }
+  /// Emits a checklist event for cross-feature communication.
+  ///
+  /// This replaces direct AI service calls, allowing other features
+  /// to subscribe and react to checklist changes independently.
+  void _emitEvent(ChecklistEvent event) {
+    _ref.read(checklistEventsNotifierProvider.notifier).emit(event);
   }
 
   /// Creates a new checklist and optionally populates it with items.
@@ -174,8 +160,8 @@ class ChecklistRepository {
 
       await _persistenceLogic.createDbEntity(newChecklistItem);
 
-      // Trigger task summary refresh for linked tasks
-      await _triggerTaskSummaryRefresh(checklistId);
+      // Notify listeners about the new checklist item
+      _emitEvent(ChecklistItemCreated(checklistId: checklistId));
 
       return newChecklistItem;
     } catch (exception, stackTrace) {
@@ -252,17 +238,14 @@ class ChecklistRepository {
             linkedId: taskId,
           );
 
-          // Trigger task summary refresh for linked tasks
-          // Compute union of old and new linkedChecklists to handle both removals and additions
+          // Notify listeners about the updated checklist item
+          // Include both old and new linkedChecklists to handle removals and additions
           final allChecklistIds = {
             ...checklistItem.data.linkedChecklists, // old linked checklists
             ...data.linkedChecklists, // new linked checklists
           };
 
-          // Trigger refreshes concurrently for all affected checklists
-          await Future.wait(
-            allChecklistIds.map(_triggerTaskSummaryRefresh),
-          );
+          _emitEvent(ChecklistItemUpdated(checklistIds: allChecklistIds));
         },
         orElse: () async => _loggingService.captureException(
           'not a checklist item',
@@ -323,8 +306,8 @@ class ChecklistRepository {
         ),
       );
 
-      // Trigger task summary refresh for linked tasks
-      await _triggerTaskSummaryRefresh(checklistId);
+      // Notify listeners about the added item
+      _emitEvent(ChecklistItemAdded(checklistId: checklistId));
 
       return newItem;
     } catch (exception, stackTrace) {

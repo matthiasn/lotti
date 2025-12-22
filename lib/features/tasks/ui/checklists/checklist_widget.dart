@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/tasks/constants/preference_keys.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
@@ -79,7 +80,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
     super.initState();
     _itemIds = widget.itemIds;
     _isExpanded = widget.completionRate < 1;
-    final key = 'checklist_filter_mode_${widget.id}';
+    final key = TaskPreferenceKeys.checklistFilterMode(widget.id);
     makeSharedPrefsService().getBool(key).then((value) {
       if (!mounted) return;
       if (value != null) {
@@ -266,7 +267,9 @@ class _ChecklistWidgetState extends State<ChecklistWidget> {
                         onSelectionChanged: (sel) {
                           setState(() => _filter = sel.first);
                           makeSharedPrefsService().setBool(
-                            key: 'checklist_filter_mode_${widget.id}',
+                            key: TaskPreferenceKeys.checklistFilterMode(
+                              widget.id,
+                            ),
                             value: _filter == ChecklistFilter.openOnly,
                           );
                         },

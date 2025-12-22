@@ -1,13 +1,12 @@
-import 'dart:async';
-
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/model/checklist_drag_data.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
+import 'package:lotti/features/tasks/state/update_stream_listener.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -16,38 +15,28 @@ part 'checklist_controller.g.dart';
 
 @riverpod
 class ChecklistController extends _$ChecklistController {
-  final subscribedIds = <String>{};
-  StreamSubscription<Set<String>>? _updateSubscription;
-
-  void listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
-      if (affectedIds.intersection(subscribedIds).isNotEmpty) {
-        final latest = await _fetch();
-        if (latest != state.value) {
-          state = AsyncData(latest);
-        }
-      }
-    });
-  }
+  late final UpdateStreamListener<Checklist> _listener;
 
   @override
   Future<Checklist?> build({
     required String id,
     required String? taskId,
   }) async {
-    subscribedIds.add(id);
-    ref
-      ..onDispose(() => _updateSubscription?.cancel())
-      ..cacheFor(entryCacheDuration);
+    _listener = ref.createUpdateStreamListener<Checklist>(
+      fetcher: _fetch,
+      getState: () => state.value,
+      setState: (value) => state = AsyncData(value),
+      initialIds: {id},
+    );
+    ref.cacheFor(entryCacheDuration);
 
     final checklist = await _fetch();
 
     if (checklist != null) {
-      subscribedIds.addAll(checklist.data.linkedChecklistItems);
+      _listener.addIds(checklist.data.linkedChecklistItems);
     }
 
-    listen();
+    _listener.start();
 
     return checklist;
   }
@@ -118,91 +107,85 @@ class ChecklistController extends _$ChecklistController {
         ),
       );
 
+  /// Handles a checklist item being dropped onto this checklist.
+  ///
+  /// Supports both existing items (moved from another checklist) and new items.
   Future<void> dropChecklistItem(
     Object? localData, {
     String? categoryId,
   }) async {
-    if (localData != null && localData is Map && localData.isNotEmpty) {
-      if (localData['checklistItemTitle'] != null) {
-        return dropChecklistNewItem(
-          localData,
-          categoryId: categoryId,
-        );
-      }
+    final dragData = ChecklistDragData.fromMap(localData);
+    if (dragData == null) return;
 
-      final droppedChecklistItemId = localData['checklistItemId'] as String;
-      final fromChecklistId = localData['checklistId'] as String;
+    switch (dragData) {
+      case NewItemDragData():
+        await _handleNewItemDrop(dragData, categoryId: categoryId);
 
-      if (fromChecklistId == id) {
-        return;
-      }
-
-      await ref
-          .read(
-            checklistItemControllerProvider(
-              id: droppedChecklistItemId,
-              taskId: taskId,
-            ).notifier,
-          )
-          .moveToChecklist(
-            linkedChecklistId: droppedChecklistItemId,
-            fromChecklistId: fromChecklistId,
-          );
-
-      await updateChecklist(
-        (checklist) => checklist.copyWith(
-          data: checklist.data.copyWith(
-            linkedChecklistItems: {
-              ...checklist.data.linkedChecklistItems,
-              droppedChecklistItemId,
-            }.toList(),
-          ),
-        ),
-      );
-
-      await ref
-          .read(
-            checklistControllerProvider(id: fromChecklistId, taskId: taskId)
-                .notifier,
-          )
-          .unlinkItem(droppedChecklistItemId);
+      case ExistingItemDragData():
+        await _handleExistingItemDrop(dragData);
     }
   }
 
-  Future<void> dropChecklistNewItem(
-    Object? localData, {
+  Future<void> _handleNewItemDrop(
+    NewItemDragData dragData, {
     String? categoryId,
   }) async {
-    if (localData != null && localData is Map && localData.isNotEmpty) {
-      final checklistItemTitle = localData['checklistItemTitle'] as String?;
-      final checklistItemStatus =
-          localData['checklistItemStatus'] as bool? ?? false;
+    final createdItemId = await createChecklistItem(
+      dragData.title,
+      isChecked: dragData.isChecked,
+      categoryId: categoryId,
+    );
 
-      if (checklistItemTitle == null) {
-        return;
-      }
+    if (createdItemId == null) return;
 
-      final createdItemId = await createChecklistItem(
-        checklistItemTitle,
-        isChecked: checklistItemStatus,
-        categoryId: categoryId,
-      );
-
-      if (createdItemId == null) {
-        return;
-      }
-
-      await updateChecklist(
-        (checklist) => checklist.copyWith(
-          data: checklist.data.copyWith(
-            linkedChecklistItems: {
-              ...checklist.data.linkedChecklistItems,
-              createdItemId,
-            }.toList(),
-          ),
+    await updateChecklist(
+      (checklist) => checklist.copyWith(
+        data: checklist.data.copyWith(
+          linkedChecklistItems: {
+            ...checklist.data.linkedChecklistItems,
+            createdItemId,
+          }.toList(),
         ),
-      );
-    }
+      ),
+    );
+  }
+
+  Future<void> _handleExistingItemDrop(ExistingItemDragData dragData) async {
+    // Don't move if dropped on the same checklist
+    if (dragData.checklistId == id) return;
+
+    final droppedChecklistItemId = dragData.checklistItemId;
+    final fromChecklistId = dragData.checklistId;
+
+    await ref
+        .read(
+          checklistItemControllerProvider(
+            id: droppedChecklistItemId,
+            taskId: taskId,
+          ).notifier,
+        )
+        .moveToChecklist(
+          linkedChecklistId: droppedChecklistItemId,
+          fromChecklistId: fromChecklistId,
+        );
+
+    await updateChecklist(
+      (checklist) => checklist.copyWith(
+        data: checklist.data.copyWith(
+          linkedChecklistItems: {
+            ...checklist.data.linkedChecklistItems,
+            droppedChecklistItemId,
+          }.toList(),
+        ),
+      ),
+    );
+
+    await ref
+        .read(
+          checklistControllerProvider(id: fromChecklistId, taskId: taskId)
+              .notifier,
+        )
+        .unlinkItem(droppedChecklistItemId);
   }
 
   Future<void> unlinkItem(String checklistItemId) => updateChecklist(
