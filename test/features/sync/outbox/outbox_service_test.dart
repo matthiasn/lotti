@@ -205,6 +205,8 @@ void main() {
     // Default stub for findPendingByEntryId - no existing pending item
     when(() => syncDatabase.findPendingByEntryId(any()))
         .thenAnswer((_) async => null);
+    when(() => journalDb.linksForEntryIdsBidirectional(any()))
+        .thenAnswer((_) async => <EntryLink>[]);
     // Ensure activity gate can construct if needed
     when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
     when(() => userActivityService.activityStream)
@@ -625,10 +627,73 @@ void main() {
       expect(companion.filePath.value, getRelativeAssetPath(imagePath));
       expect(companion.subject.value, 'hhash:1');
       expect(companion.status.value, OutboxStatus.pending.index);
+      final decodedMessage = SyncMessage.fromJson(
+        jsonDecode(companion.message.value) as Map<String, dynamic>,
+      );
+      final journalMsg = decodedMessage as SyncJournalEntity;
+      expect(journalMsg.coveredVectorClocks, isNotNull);
+      final coveredCounters = journalMsg.coveredVectorClocks!
+          .map((vc) => vc.vclock['device'])
+          .whereType<int>()
+          .toSet();
+      expect(coveredCounters, contains(1));
 
       // Ensure scheduling happens after enqueue
       expect(testService.enqueueCalls, 1);
       expect(testService.lastDelay, const Duration(seconds: 1));
+    });
+
+    test('enqueues entry link with coveredVectorClocks populated', () async {
+      final capturedCompanions = <OutboxCompanion>[];
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+          .thenAnswer((invocation) async {
+        capturedCompanions
+            .add(invocation.positionalArguments.first as OutboxCompanion);
+        return 1;
+      });
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      final now = DateTime.utc(2024);
+      const linkVc = VectorClock({'hostA': 3});
+      final link = EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from-entry',
+        toId: 'to-entry',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: linkVc,
+      );
+
+      await testService.enqueueMessage(
+        SyncMessage.entryLink(
+          entryLink: link,
+          status: SyncEntryStatus.initial,
+        ),
+      );
+
+      expect(capturedCompanions, hasLength(1));
+      final companion = capturedCompanions.single;
+      final decodedMessage = SyncMessage.fromJson(
+        jsonDecode(companion.message.value) as Map<String, dynamic>,
+      );
+      final linkMsg = decodedMessage as SyncEntryLink;
+      expect(linkMsg.coveredVectorClocks, isNotNull);
+      final coveredCounters = linkMsg.coveredVectorClocks!
+          .map((vc) => vc.vclock['hostA'])
+          .whereType<int>()
+          .toSet();
+      expect(coveredCounters, contains(3));
     });
 
     test(
@@ -735,8 +800,12 @@ void main() {
       expect(decodedMessage, isA<SyncJournalEntity>());
       final journalMsg = decodedMessage as SyncJournalEntity;
       expect(journalMsg.coveredVectorClocks, isNotNull);
-      expect(journalMsg.coveredVectorClocks, hasLength(1));
-      expect(journalMsg.coveredVectorClocks!.first.vclock, {'hostA': 5});
+      final coveredCounters = journalMsg.coveredVectorClocks!
+          .map((vc) => vc.vclock['hostA'])
+          .whereType<int>()
+          .toSet();
+      expect(coveredCounters, containsAll([5, 7]));
+      expect(coveredCounters, hasLength(2));
       expect(capturedSubject, 'hhash:7');
     });
 
@@ -828,11 +897,12 @@ void main() {
         jsonDecode(capturedMessage!) as Map<String, dynamic>,
       );
       final journalMsg = decodedMessage as SyncJournalEntity;
-      expect(journalMsg.coveredVectorClocks, hasLength(2));
-      expect(
-        journalMsg.coveredVectorClocks!.map((vc) => vc.vclock['hostA']),
-        containsAll([5, 6]),
-      );
+      final coveredCounters = journalMsg.coveredVectorClocks!
+          .map((vc) => vc.vclock['hostA'])
+          .whereType<int>()
+          .toSet();
+      expect(coveredCounters, containsAll([5, 6, 7]));
+      expect(coveredCounters, hasLength(3));
     });
 
     test('captures intermediate VC when DB has newer version than enqueue call',
@@ -843,7 +913,8 @@ void main() {
       // 3. Entry updated to VC {A:7} (before enqueue#2 runs)
       // 4. enqueue#1 runs: creates outbox item with VC {A:5}
       // 5. enqueue#2 runs: journalEntityMsg.VC={A:6}, DB has VC={A:7}
-      //    -> coveredClocks should be [{A:5}, {A:6}], final VC is {A:7}
+      //    -> coveredClocks should be [{A:5}, {A:6}, {A:7}],
+      //       final VC is {A:7}
       final sampleDate = DateTime.utc(2024);
       const oldVc = VectorClock({'hostA': 5}); // VC in existing outbox item
       const intermediateVc = VectorClock({'hostA': 6}); // VC from enqueue call
@@ -940,13 +1011,15 @@ void main() {
       // Final VC should be from DB (latest)
       expect(journalMsg.vectorClock?.vclock['hostA'], 7);
 
-      // coveredVectorClocks should contain BOTH old VC (5) AND intermediate (6)
+      // coveredVectorClocks should contain old VC (5), intermediate (6),
+      // and current (7)
       expect(journalMsg.coveredVectorClocks, isNotNull);
-      expect(journalMsg.coveredVectorClocks, hasLength(2));
-      expect(
-        journalMsg.coveredVectorClocks!.map((vc) => vc.vclock['hostA']),
-        containsAll([5, 6]),
-      );
+      final coveredCounters = journalMsg.coveredVectorClocks!
+          .map((vc) => vc.vclock['hostA'])
+          .whereType<int>()
+          .toSet();
+      expect(coveredCounters, containsAll([5, 6, 7]));
+      expect(coveredCounters, hasLength(3));
     });
 
     test('merges entry link updates with coveredVectorClocks', () async {
@@ -1043,8 +1116,12 @@ void main() {
       expect(decodedMessage, isA<SyncEntryLink>());
       final linkMsg = decodedMessage as SyncEntryLink;
       expect(linkMsg.coveredVectorClocks, isNotNull);
-      expect(linkMsg.coveredVectorClocks, hasLength(1));
-      expect(linkMsg.coveredVectorClocks!.first.vclock, {'hostA': 3});
+      final coveredCounters = linkMsg.coveredVectorClocks!
+          .map((vc) => vc.vclock['hostA'])
+          .whereType<int>()
+          .toSet();
+      expect(coveredCounters, containsAll([3, 5]));
+      expect(coveredCounters, hasLength(2));
       expect(capturedSubject, 'hhash:link:5');
     });
 
@@ -2811,15 +2888,15 @@ void main() {
       );
       final link2 = EntryLink.basic(
         id: 'link-2',
-        fromId: entryId,
-        toId: 'category-2',
+        fromId: 'category-2',
+        toId: entryId,
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
         vectorClock: null,
       );
 
-      // Mock journalDb to return links for this entry
-      when(() => journalDb.linksForEntryIds(const {entryId}))
+      // Mock journalDb to return links for this entry (both directions)
+      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
           .thenAnswer((_) async => [link1, link2]);
 
       final journalEntity = JournalEntity.journalEntry(
@@ -2853,11 +2930,14 @@ void main() {
       await service.enqueueMessage(message);
 
       // Verify links were fetched
-      verify(() => journalDb.linksForEntryIds(const {entryId})).called(1);
+      verify(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
+          .called(1);
 
       // Verify logging shows embedded links count
       verify(() => loggingService.captureEvent(
-            contains('enqueueMessage.attachedLinks id=$entryId count=2'),
+            contains(
+              'enqueueMessage.attachedLinks id=$entryId count=2 from=1 to=1',
+            ),
             domain: 'OUTBOX',
             subDomain: 'enqueueMessage.attachLinks',
           )).called(1);
@@ -2880,15 +2960,17 @@ void main() {
           json.decode(companion.message.value) as Map<String, dynamic>;
       expect(encodedMessage['entryLinks'], hasLength(2));
       final entryLinks = encodedMessage['entryLinks'] as List<dynamic>;
-      expect((entryLinks[0] as Map<String, dynamic>)['id'], link1.id);
-      expect((entryLinks[1] as Map<String, dynamic>)['id'], link2.id);
+      final entryLinkIds = entryLinks
+          .map((entry) => (entry as Map<String, dynamic>)['id'])
+          .toList();
+      expect(entryLinkIds, containsAll([link1.id, link2.id]));
     });
 
     test('continues without links when linksForEntryIds fails', () async {
       const entryId = 'entry-456';
 
-      // Mock journalDb.linksForEntryIds to throw an error
-      when(() => journalDb.linksForEntryIds(const {entryId}))
+      // Mock journalDb.linksForEntryIdsBidirectional to throw an error
+      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
           .thenThrow(Exception('Database error'));
 
       final journalEntity = JournalEntity.journalEntry(
@@ -2944,7 +3026,7 @@ void main() {
       const entryId = 'entry-789';
 
       // Mock journalDb to return empty list
-      when(() => journalDb.linksForEntryIds(const {entryId}))
+      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
           .thenAnswer((_) async => []);
 
       final journalEntity = JournalEntity.journalEntry(
@@ -2978,7 +3060,8 @@ void main() {
       await service.enqueueMessage(message);
 
       // Verify links were fetched
-      verify(() => journalDb.linksForEntryIds(const {entryId})).called(1);
+      verify(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
+          .called(1);
 
       // Verify attachedLinks log was NOT called (no links to attach)
       verifyNever(() => loggingService.captureEvent(
@@ -2986,6 +3069,13 @@ void main() {
             domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ));
+
+      // Verify no-links log was emitted
+      verify(() => loggingService.captureEvent(
+            contains('enqueueMessage.noLinks id=$entryId'),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage.attachLinks',
+          )).called(1);
 
       // Verify embeddedLinks=0 in the log
       verify(() => loggingService.captureEvent(

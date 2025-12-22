@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -27,6 +29,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class MockVectorClockService extends Mock implements VectorClockService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -220,6 +224,55 @@ void main() {
 
     expect(result, isTrue);
     expect(sentEventRegistry.consume(r'$text-event-id'), isTrue);
+  });
+
+  test('fills originatingHostId for entry links when missing', () async {
+    final vectorClockService = MockVectorClockService();
+    when(vectorClockService.getHost).thenAnswer((_) async => 'host-A');
+    sentEventRegistry = SentEventRegistry();
+    sender = MatrixMessageSender(
+      loggingService: loggingService,
+      journalDb: journalDb,
+      documentsDirectory: documentsDirectory,
+      sentEventRegistry: sentEventRegistry,
+      vectorClockService: vectorClockService,
+    );
+
+    var capturedPayload = '';
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedPayload = invocation.positionalArguments.first as String;
+      return 'text-id';
+    });
+
+    final link = EntryLink.basic(
+      id: 'link-1',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime.utc(2024),
+      updatedAt: DateTime.utc(2024),
+      vectorClock: const VectorClock({'host-A': 1}),
+    );
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+      ),
+      context: buildContext(),
+      onSent: (_, __) {},
+    );
+
+    expect(result, isTrue);
+    final decoded = json.decode(
+      utf8.decode(base64.decode(capturedPayload)),
+    ) as Map<String, dynamic>;
+    expect(decoded['originatingHostId'], 'host-A');
   });
 
   test('does not register event ID when text send throws', () async {

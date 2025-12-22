@@ -177,6 +177,7 @@ Future<void> registerSingletons() async {
     journalDb: journalDb,
     documentsDirectory: documentsDirectory,
     sentEventRegistry: sentEventRegistry,
+    vectorClockService: vectorClockService,
   );
   // Shared in-memory index of latest attachment events keyed by relativePath.
   final attachmentIndex = AttachmentIndex(logging: loggingService);

@@ -39,9 +39,10 @@ sealed class SyncMessage with _$SyncMessage {
     /// Used for sequence tracking to detect gaps in sync.
     String? originatingHostId,
 
-    /// Vector clocks from superseded outbox entries that were merged into this
-    /// message. Receivers should mark these counters as covered/received to
-    /// prevent false gap detection for rapidly-updated entries.
+    /// Vector clocks covered by this payload, including the current vector
+    /// clock and superseded outbox entries. Receivers should pre-mark
+    /// superseded counters as covered/received to prevent false gap detection;
+    /// the current vector clock is ignored for pre-marking.
     List<VectorClock>? coveredVectorClocks,
   }) = SyncJournalEntity;
 
@@ -63,9 +64,10 @@ sealed class SyncMessage with _$SyncMessage {
     /// Used for sequence tracking to detect gaps in sync.
     String? originatingHostId,
 
-    /// Vector clocks from superseded outbox entries that were merged into this
-    /// message. Receivers should mark these counters as covered/received to
-    /// prevent false gap detection for rapidly-updated entries.
+    /// Vector clocks covered by this payload, including the current vector
+    /// clock and superseded outbox entries. Receivers should pre-mark
+    /// superseded counters as covered/received to prevent false gap detection;
+    /// the current vector clock is ignored for pre-marking.
     List<VectorClock>? coveredVectorClocks,
   }) = SyncEntryLink;
 

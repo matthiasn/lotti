@@ -259,14 +259,26 @@ class OutboxService {
 
           // Attach entry links if available
           try {
-            final links = await _journalDb.linksForEntryIds({journalMsg.id});
+            final links =
+                await _journalDb.linksForEntryIdsBidirectional({journalMsg.id});
             if (links.isNotEmpty) {
+              final fromCount =
+                  links.where((link) => link.fromId == journalMsg.id).length;
+              final toCount =
+                  links.where((link) => link.toId == journalMsg.id).length;
               _loggingService.captureEvent(
-                'enqueueMessage.attachedLinks id=${journalMsg.id} count=${links.length}',
+                'enqueueMessage.attachedLinks id=${journalMsg.id} '
+                'count=${links.length} from=$fromCount to=$toCount',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage.attachLinks',
               );
               journalMsg = journalMsg.copyWith(entryLinks: links);
+            } else {
+              _loggingService.captureEvent(
+                'enqueueMessage.noLinks id=${journalMsg.id}',
+                domain: 'OUTBOX',
+                subDomain: 'enqueueMessage.attachLinks',
+              );
             }
           } catch (e, st) {
             _loggingService.captureException(
@@ -278,6 +290,18 @@ class OutboxService {
             // Continue with original message without links on error
           }
 
+          final coveredClocks = VectorClock.mergeUniqueClocks(
+            [
+              ...?journalMsg.coveredVectorClocks,
+              journalMsg.vectorClock,
+            ],
+          );
+          if (coveredClocks != journalMsg.coveredVectorClocks) {
+            journalMsg = journalMsg.copyWith(
+              coveredVectorClocks: coveredClocks,
+            );
+          }
+
           return journalMsg;
         }
 
@@ -285,6 +309,17 @@ class OutboxService {
           var linkMsg = syncMessage;
           if (linkMsg.originatingHostId == null && host != null) {
             linkMsg = linkMsg.copyWith(originatingHostId: host);
+          }
+          final coveredClocks = VectorClock.mergeUniqueClocks(
+            [
+              ...?linkMsg.coveredVectorClocks,
+              linkMsg.entryLink.vectorClock,
+            ],
+          );
+          if (coveredClocks != linkMsg.coveredVectorClocks) {
+            linkMsg = linkMsg.copyWith(
+              coveredVectorClocks: coveredClocks,
+            );
           }
           return linkMsg;
         }
@@ -365,26 +400,26 @@ class OutboxService {
 
             if (oldMessage is SyncJournalEntity) {
               final latestVc = journalEntity.meta.vectorClock;
-              // Use Set to deduplicate vector clocks and avoid redundant
-              // processing on the receiving end.
-              final coveredClocksSet = <VectorClock>{
-                ...?oldMessage.coveredVectorClocks,
-                if (oldMessage.vectorClock != null) oldMessage.vectorClock!,
-                // Also capture the current enqueue call's VC if it differs from
-                // the latest. This handles the race condition where multiple
-                // enqueue calls are in flight due to the 200ms delay - each
-                // intermediate VC must be captured to prevent false gaps.
-                if (journalEntityMsg.vectorClock != null &&
-                    journalEntityMsg.vectorClock != latestVc)
-                  journalEntityMsg.vectorClock!,
-              };
-              final coveredClocks = coveredClocksSet.toList();
+              final coveredClocks = VectorClock.mergeUniqueClocks(
+                [
+                  ...?oldMessage.coveredVectorClocks,
+                  ...?journalEntityMsg.coveredVectorClocks,
+                  oldMessage.vectorClock,
+                  // Also capture the current enqueue call's VC if it differs from
+                  // the latest. This handles the race condition where multiple
+                  // enqueue calls are in flight due to the 200ms delay - each
+                  // intermediate VC must be captured to prevent false gaps.
+                  if (journalEntityMsg.vectorClock != null &&
+                      journalEntityMsg.vectorClock != latestVc)
+                    journalEntityMsg.vectorClock,
+                  latestVc,
+                ],
+              );
 
               // Create merged message with updated VC and covered clocks
               final mergedMessage = journalEntityMsg.copyWith(
                 vectorClock: latestVc,
-                coveredVectorClocks:
-                    coveredClocks.isEmpty ? null : coveredClocks,
+                coveredVectorClocks: coveredClocks,
               );
 
               await _syncDatabase.updateOutboxMessage(
@@ -394,13 +429,12 @@ class OutboxService {
               );
 
               // Log covered clocks for debugging - show all counters per vector clock
-              final coveredVcStrings = coveredClocks
-                  .map((vc) => vc.vclock.values.join(','))
-                  .toList();
+              final coveredVcStrings =
+                  coveredClocks?.map((vc) => vc.vclock).toList();
               _loggingService.captureEvent(
                 'enqueue MERGED type=SyncJournalEntity id=${journalEntityMsg.id} '
-                'coveredClocks=${coveredClocks.length} covered=$coveredVcStrings '
-                'latest=${latestVc?.vclock.values.join(',')}',
+                'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
+                'latest=${latestVc?.vclock}',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage',
               );
@@ -509,22 +543,21 @@ class OutboxService {
             );
 
             if (oldMessage is SyncEntryLink) {
-              // Use Set to deduplicate vector clocks and avoid redundant
-              // processing on the receiving end.
-              final coveredClocksSet = <VectorClock>{
-                ...?oldMessage.coveredVectorClocks,
-                if (oldMessage.entryLink.vectorClock != null)
-                  oldMessage.entryLink.vectorClock!,
-              };
-              final coveredClocks = coveredClocksSet.toList();
+              final coveredClocks = VectorClock.mergeUniqueClocks(
+                [
+                  ...?oldMessage.coveredVectorClocks,
+                  ...?entryLinkMsg.coveredVectorClocks,
+                  oldMessage.entryLink.vectorClock,
+                  entryLinkMsg.entryLink.vectorClock,
+                ],
+              );
 
               // Create merged message with covered clocks
               // Note: Unlike journal entities, entry links don't refresh from DB,
               // so each enqueue's VC is captured correctly when oldMessage.VC
               // is added to coveredClocks in subsequent merges.
               final mergedMessage = entryLinkMsg.copyWith(
-                coveredVectorClocks:
-                    coveredClocks.isEmpty ? null : coveredClocks,
+                coveredVectorClocks: coveredClocks,
               );
 
               await _syncDatabase.updateOutboxMessage(
@@ -534,14 +567,12 @@ class OutboxService {
               );
 
               // Log covered clocks for debugging - show all counters per vector clock
-              final coveredVcStrings = coveredClocks
-                  .map((vc) => vc.vclock.values.join(','))
-                  .toList();
-              final latestVcStr =
-                  entryLinkMsg.entryLink.vectorClock?.vclock.values.join(',');
+              final coveredVcStrings =
+                  coveredClocks?.map((vc) => vc.vclock).toList();
+              final latestVcStr = entryLinkMsg.entryLink.vectorClock?.vclock;
               _loggingService.captureEvent(
                 'enqueue MERGED type=SyncEntryLink id=$linkId '
-                'coveredClocks=${coveredClocks.length} covered=$coveredVcStrings '
+                'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
                 'latest=$latestVcStr',
                 domain: 'OUTBOX',
                 subDomain: 'enqueueMessage',

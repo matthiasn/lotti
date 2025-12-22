@@ -173,11 +173,15 @@ complete reconstruction of sync state.
   communication with them. The originating host is always considered online
   since they just sent us the current message. Sequence entries are still
   recorded for offline hosts to enable backfill responses later.
+- **Originating Host ID:** Outgoing journal entities and entry links always
+  include `originatingHostId`; the send path fills it if missing so sequence
+  logging can update even when older outbox rows are sent.
 - **Covered Vector Clocks:** When an entry is updated multiple times before being
   sent (e.g., counter 10→12→15→20), the final message includes `coveredVectorClocks`
-  with the intermediate counters. These are processed BEFORE gap detection to
-  prevent false positives — covered counters are pre-emptively marked as received
-  so gap detection skips them.
+  with the intermediate counters plus the current vector clock so each payload
+  declares full coverage. Receivers ignore the current vector clock for
+  pre-marking and still perform normal gap detection; superseded counters are
+  processed BEFORE gap detection to prevent false positives.
 - **In-Order Ingest:** Live scan signals are deferred while catch-up is processing
   older events (`_catchUpInFlight` guard in `_scheduleLiveScan()`). This ensures
   events are ingested in chronological order, preventing false positive gap
