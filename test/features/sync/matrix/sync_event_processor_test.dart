@@ -598,7 +598,6 @@ void main() {
     expect(capturedDiag, isNotNull);
     expect(capturedDiag!.eventId, 'event-id');
     expect(capturedDiag!.payloadType, 'journalEntity');
-    expect(capturedDiag!.entityId, fallbackJournalEntity.meta.id);
     expect(capturedDiag!.conflictStatus, contains('VclockStatus'));
     expect(capturedDiag!.applied, isTrue);
     expect(capturedDiag!.skipReason, isNull);
@@ -663,7 +662,6 @@ void main() {
     expect(diag, isNotNull);
     expect(diag!.payloadType, 'entryLink');
     expect(diag!.applied, isTrue);
-    expect(diag!.entityId, '${link.fromId}->${link.toId}');
   });
 
   test('EntryLink observer exceptions are swallowed', () async {

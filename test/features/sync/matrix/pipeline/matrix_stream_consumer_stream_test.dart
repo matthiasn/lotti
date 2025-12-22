@@ -2993,7 +2993,6 @@ void main() {
         SyncApplyDiagnostics(
           eventId: 'skip-overwrite',
           payloadType: 'journalEntity',
-          entityId: '1',
           vectorClock: null,
           conflictStatus: 'vectorClock.equal',
           applied: false,
@@ -3019,7 +3018,6 @@ void main() {
         SyncApplyDiagnostics(
           eventId: 'skip-null',
           payloadType: 'journalEntity',
-          entityId: '1',
           vectorClock: null,
           conflictStatus: 'vectorClock.equal',
           applied: false,
@@ -3040,7 +3038,6 @@ void main() {
         SyncApplyDiagnostics(
           eventId: 'skip-older',
           payloadType: 'journalEntity',
-          entityId: '1',
           vectorClock: null,
           conflictStatus: 'vectorClock.a_gt_b',
           applied: false,
@@ -3066,7 +3063,6 @@ void main() {
           SyncApplyDiagnostics(
             eventId: 'metrics-throw',
             payloadType: 'journalEntity',
-            entityId: '1',
             vectorClock: null,
             conflictStatus: 'vectorClock.equal',
             applied: false,
@@ -3106,7 +3102,6 @@ void main() {
           SyncApplyDiagnostics(
             eventId: 'event-${entry.$1.name}',
             payloadType: 'journalEntity',
-            entityId: '1',
             vectorClock: null,
             conflictStatus: entry.$2,
             applied: false,

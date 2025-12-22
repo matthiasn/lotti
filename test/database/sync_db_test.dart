@@ -820,11 +820,9 @@ void main() {
       final stats = await database.getBackfillStats();
 
       expect(stats.hostStats, hasLength(1));
-      expect(stats.hostStats.first.hostId, hostId);
       expect(stats.hostStats.first.receivedCount, 2);
       expect(stats.hostStats.first.missingCount, 1);
       expect(stats.hostStats.first.backfilledCount, 1);
-      expect(stats.hostStats.first.latestCounter, 4);
 
       expect(stats.totalReceived, 2);
       expect(stats.totalMissing, 1);

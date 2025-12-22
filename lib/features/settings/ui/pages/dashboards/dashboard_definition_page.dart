@@ -498,7 +498,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                                   .dashboardDeleteConfirm,
                                               key: deleteKey,
                                               isDestructiveAction: true,
-                                              isDefaultAction: true,
                                             ),
                                           ],
                                         );

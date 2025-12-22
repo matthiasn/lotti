@@ -168,7 +168,6 @@ class ModernDeleteItem extends ConsumerWidget {
             label: context.messages.journalDeleteConfirm,
             key: deleteKey,
             isDestructiveAction: true,
-            isDefaultAction: true,
           ),
         ],
       );
@@ -310,7 +309,6 @@ class ModernUnlinkItem extends ConsumerWidget {
               label: context.messages.journalUnlinkConfirm,
               key: unlinkKey,
               isDestructiveAction: true,
-              isDefaultAction: true,
             ),
           ],
         );

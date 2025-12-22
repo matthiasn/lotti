@@ -63,7 +63,6 @@ void main() {
       SyncApplyDiagnostics(
         eventId: 'event',
         payloadType: 'type',
-        entityId: 'entity',
         vectorClock: null,
         conflictStatus: 'none',
         applied: true,

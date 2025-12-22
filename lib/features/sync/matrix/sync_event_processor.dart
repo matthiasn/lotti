@@ -758,7 +758,6 @@ class SyncEventProcessor {
     final diag = SyncApplyDiagnostics(
       eventId: event.eventId,
       payloadType: 'journalEntity',
-      entityId: syncMessage.id,
       vectorClock: incomingVc.toJson(),
       conflictStatus: status.toString(),
       applied: false,
@@ -816,7 +815,6 @@ class SyncEventProcessor {
             final diag = SyncApplyDiagnostics(
               eventId: event.eventId,
               payloadType: 'journalEntity',
-              entityId: syncMessage.id,
               vectorClock: syncMessage.vectorClock?.toJson(),
               conflictStatus: VclockStatus.equal.toString(),
               applied: false,
@@ -871,7 +869,6 @@ class SyncEventProcessor {
           final diag = SyncApplyDiagnostics(
             eventId: event.eventId,
             payloadType: 'journalEntity',
-            entityId: journalEntity.meta.id,
             vectorClock: vcB?.toJson(),
             conflictStatus: predictedStatus.toString(),
             applied: updateResult.applied,
@@ -978,7 +975,6 @@ class SyncEventProcessor {
             final diag = SyncApplyDiagnostics(
               eventId: event.eventId,
               payloadType: 'entryLink',
-              entityId: '${entryLink.fromId}->${entryLink.toId}',
               vectorClock: null,
               conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
               applied: rows > 0,
@@ -1140,7 +1136,6 @@ class SyncApplyDiagnostics {
   SyncApplyDiagnostics({
     required this.eventId,
     required this.payloadType,
-    required this.entityId,
     required this.vectorClock,
     required this.conflictStatus,
     required this.applied,
@@ -1149,7 +1144,6 @@ class SyncApplyDiagnostics {
 
   final String eventId;
   final String payloadType;
-  final String entityId;
   final Object? vectorClock;
   final String conflictStatus;
   final bool applied;

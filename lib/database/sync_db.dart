@@ -430,8 +430,6 @@ class SyncDatabase extends _$SyncDatabase {
     final results = await query.get();
     final hostStats = results.map((row) {
       return BackfillHostStats(
-        hostId: row.read<String>('host_id'),
-        latestCounter: row.read<int>('latest_counter'),
         receivedCount: row.read<int>('received_count'),
         missingCount: row.read<int>('missing_count'),
         requestedCount: row.read<int>('requested_count'),
