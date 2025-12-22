@@ -2293,7 +2293,8 @@ void main() {
         ).captured;
 
         final data = captured.first as AiResponseData;
-        expect(data.thoughts, '<think>Let me analyze this task');
+        // Thoughts should have <think> tags stripped during extraction
+        expect(data.thoughts, 'Let me analyze this task');
         expect(data.response, 'Task completed successfully');
       });
 

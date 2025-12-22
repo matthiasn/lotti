@@ -489,6 +489,102 @@ void main() {
       });
     });
 
+    group('Thought Signatures', () {
+      test('stores thought signatures when adding assistant message', () async {
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'test_function',
+              arguments: '{"arg": "value"}',
+            ),
+          ),
+        ];
+
+        manager.addAssistantMessage(
+          toolCalls: toolCalls,
+          signatures: {'tool-1': 'signature-abc123'},
+        );
+
+        expect(manager.thoughtSignatures, {'tool-1': 'signature-abc123'});
+        expect(manager.getSignatureForToolCall('tool-1'), 'signature-abc123');
+      });
+
+      test('returns null for unknown tool call signature', () {
+        expect(manager.getSignatureForToolCall('unknown-tool'), isNull);
+      });
+
+      test('accumulates signatures across multiple messages', () async {
+        final toolCalls1 = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'func1',
+              arguments: '{}',
+            ),
+          ),
+        ];
+
+        final toolCalls2 = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-2',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'func2',
+              arguments: '{}',
+            ),
+          ),
+        ];
+
+        manager
+          ..addAssistantMessage(
+            toolCalls: toolCalls1,
+            signatures: {'tool-1': 'sig-1'},
+          )
+          ..addToolResponse(toolCallId: 'tool-1', response: 'Result 1')
+          ..addAssistantMessage(
+            toolCalls: toolCalls2,
+            signatures: {'tool-2': 'sig-2'},
+          );
+
+        expect(manager.thoughtSignatures, {
+          'tool-1': 'sig-1',
+          'tool-2': 'sig-2',
+        });
+      });
+
+      test('thoughtSignatures returns unmodifiable map', () {
+        manager.addAssistantMessage(
+          signatures: {'tool-1': 'sig-1'},
+        );
+
+        final signatures = manager.thoughtSignatures;
+        expect(
+          () => signatures['tool-2'] = 'sig-2',
+          throwsUnsupportedError,
+        );
+      });
+
+      test('does not store signatures when null', () async {
+        final toolCalls = [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'test_function',
+              arguments: '{}',
+            ),
+          ),
+        ];
+
+        manager.addAssistantMessage(toolCalls: toolCalls);
+
+        expect(manager.thoughtSignatures, isEmpty);
+      });
+    });
+
     group('Event Classes', () {
       test('ConversationErrorEvent properties', () {
         final event = ConversationEvent.error(

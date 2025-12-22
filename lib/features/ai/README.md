@@ -53,13 +53,12 @@ The repository layer has been refactored for better separation of concerns:
 - **`gemini_inference_repository.dart`**: Native Gemini streaming adapter with OpenAI-compatible output
   - Calls Gemini `:streamGenerateContent` directly using provider base URL and API key
   - Translates Gemini payloads into `CreateChatCompletionStreamResponse` deltas
-  - Surfaces a single consolidated `<thinking>` block for non-flash models when enabled; always hides thoughts for flash
+  - Surfaces a single consolidated `<think>` block when thinking is enabled (all Gemini 2.5+ models support thinking)
   - Emits OpenAI-style tool-call chunks with stable IDs (`tool_#`) and indices to support accumulation
   - Robust stream parsing via `gemini_stream_parser.dart`: handles SSE `data:` lines, NDJSON, and JSON array framing without relying on line boundaries
   - Non-streaming fallback via `:generateContent` kicks in only if the streaming path produced no events, aggregating thinking, text, and tools
 
 - **`gemini_utils.dart`**: Shared helpers used by the Gemini repository
-  - `isFlashModel` – detects flash variants to control thought visibility
   - `buildStreamGenerateContentUri` / `buildGenerateContentUri` – constructs correct Gemini endpoints from a base URL
   - `buildRequestBody` – builds request payloads including thinking config and function tools (mapped from OpenAI style)
   - `stripLeadingFraming` – removes SSE `data:` prefixes and JSON array framing from mixed-format streams

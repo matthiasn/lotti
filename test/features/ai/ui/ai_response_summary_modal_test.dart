@@ -71,9 +71,11 @@ void main() {
       await tester.tap(find.text('Setup'));
       await tester.pumpAndSettle();
 
-      // Should show model information
-      expect(find.text('Model: gpt-4'), findsOneWidget);
-      expect(find.text('Temperature: 0.7'), findsOneWidget);
+      // Should show model information (label and value are separate)
+      expect(find.text('Model'), findsOneWidget);
+      expect(find.text('gpt-4'), findsOneWidget);
+      expect(find.text('Temperature'), findsOneWidget);
+      expect(find.text('0.7'), findsOneWidget);
 
       // Verify GptMarkdown is used for system message
       expect(find.byType(GptMarkdown), findsAtLeastNWidgets(1));
@@ -149,6 +151,207 @@ void main() {
       }
     });
 
+    testWidgets('displays token usage when available', (tester) async {
+      final aiResponseWithUsage = AiResponseEntry(
+        meta: Metadata(
+          id: 'usage-id',
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: const AiResponseData(
+          model: 'gemini-3-flash',
+          temperature: 0.6,
+          systemMessage: 'System',
+          prompt: 'Prompt',
+          thoughts: 'Thoughts',
+          response: 'Response',
+          inputTokens: 1000,
+          outputTokens: 500,
+          thoughtsTokens: 250,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
+            aiResponseWithUsage,
+            linkedFromId: 'linked-id',
+          ),
+        ),
+      );
+
+      // Navigate to Setup tab
+      await tester.tap(find.text('Setup'));
+      await tester.pumpAndSettle();
+
+      // Should show Performance section
+      expect(find.text('Performance'), findsOneWidget);
+      expect(find.text('Token Usage'), findsOneWidget);
+
+      // Should show token counts (Input label appears both in tabs and in usage)
+      expect(find.text('Input'), findsAtLeastNWidgets(1));
+      expect(find.text('1000'), findsOneWidget);
+      expect(find.text('Output'), findsOneWidget);
+      expect(find.text('500'), findsOneWidget);
+      expect(find.text('250'), findsOneWidget); // Thoughts tokens
+      expect(find.text('Total'), findsOneWidget);
+      expect(find.text('1500'), findsOneWidget);
+    });
+
+    testWidgets('displays duration when available', (tester) async {
+      final aiResponseWithDuration = AiResponseEntry(
+        meta: Metadata(
+          id: 'duration-id',
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: const AiResponseData(
+          model: 'gemini-3-flash',
+          temperature: 0.6,
+          systemMessage: 'System',
+          prompt: 'Prompt',
+          thoughts: 'Thoughts',
+          response: 'Response',
+          durationMs: 2500,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
+            aiResponseWithDuration,
+            linkedFromId: 'linked-id',
+          ),
+        ),
+      );
+
+      // Navigate to Setup tab
+      await tester.tap(find.text('Setup'));
+      await tester.pumpAndSettle();
+
+      // Should show Performance section with duration
+      expect(find.text('Performance'), findsOneWidget);
+      expect(find.text('Duration'), findsOneWidget);
+      expect(find.text('2.5s'), findsOneWidget);
+    });
+
+    testWidgets('formats duration in minutes when >= 60s', (tester) async {
+      final aiResponseWithLongDuration = AiResponseEntry(
+        meta: Metadata(
+          id: 'long-duration-id',
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: const AiResponseData(
+          model: 'gemini-3-pro',
+          temperature: 0.6,
+          systemMessage: 'System',
+          prompt: 'Prompt',
+          thoughts: 'Thoughts',
+          response: 'Response',
+          durationMs: 95000, // 1m 35s
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
+            aiResponseWithLongDuration,
+            linkedFromId: 'linked-id',
+          ),
+        ),
+      );
+
+      // Navigate to Setup tab
+      await tester.tap(find.text('Setup'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Duration'), findsOneWidget);
+      expect(find.text('1m 35s'), findsOneWidget);
+    });
+
+    testWidgets('formats duration in ms when < 1s', (tester) async {
+      final aiResponseWithShortDuration = AiResponseEntry(
+        meta: Metadata(
+          id: 'short-duration-id',
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: const AiResponseData(
+          model: 'gemini-3-flash',
+          temperature: 0.6,
+          systemMessage: 'System',
+          prompt: 'Prompt',
+          thoughts: 'Thoughts',
+          response: 'Response',
+          durationMs: 450,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
+            aiResponseWithShortDuration,
+            linkedFromId: 'linked-id',
+          ),
+        ),
+      );
+
+      // Navigate to Setup tab
+      await tester.tap(find.text('Setup'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Duration'), findsOneWidget);
+      expect(find.text('450ms'), findsOneWidget);
+    });
+
+    testWidgets('does not show Performance section without usage data',
+        (tester) async {
+      final aiResponseNoUsage = AiResponseEntry(
+        meta: Metadata(
+          id: 'no-usage-id',
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System',
+          prompt: 'Prompt',
+          thoughts: 'Thoughts',
+          response: 'Response',
+          // No inputTokens, outputTokens, or durationMs
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
+            aiResponseNoUsage,
+            linkedFromId: 'linked-id',
+          ),
+        ),
+      );
+
+      // Navigate to Setup tab
+      await tester.tap(find.text('Setup'));
+      await tester.pumpAndSettle();
+
+      // Should NOT show Performance section
+      expect(find.text('Performance'), findsNothing);
+      expect(find.text('Token Usage'), findsNothing);
+    });
+
     testWidgets('renders with minimal data', (tester) async {
       final minimalAiResponse = AiResponseEntry(
         meta: Metadata(
@@ -181,9 +384,11 @@ void main() {
       await tester.tap(find.text('Setup'));
       await tester.pumpAndSettle();
 
-      // Check that it renders model information
-      expect(find.text('Model: gpt-3.5'), findsOneWidget);
-      expect(find.text('Temperature: 0.0'), findsOneWidget);
+      // Check that it renders model information (label and value are separate)
+      expect(find.text('Model'), findsOneWidget);
+      expect(find.text('gpt-3.5'), findsOneWidget);
+      expect(find.text('Temperature'), findsOneWidget);
+      expect(find.text('0.0'), findsOneWidget);
     });
   });
 }

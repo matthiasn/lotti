@@ -4,15 +4,6 @@ import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 void main() {
-  group('GeminiUtils.isFlashModel', () {
-    test('detects flash variants case-insensitively', () {
-      expect(GeminiUtils.isFlashModel('gemini-1.5-FLASH'), isTrue);
-      expect(GeminiUtils.isFlashModel('GEMINI-2.0-FLASH-LITE'), isTrue);
-      expect(GeminiUtils.isFlashModel('gemini-2.0-pro'), isFalse);
-      expect(GeminiUtils.isFlashModel('pro-exp-0806'), isFalse);
-    });
-  });
-
   group('GeminiUtils.build* URIs', () {
     test('stream URI ignores baseUrl path and preserves port', () {
       final uri = GeminiUtils.buildStreamGenerateContentUri(

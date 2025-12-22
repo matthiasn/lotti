@@ -146,7 +146,6 @@ void main() {
 
       final stream = repo.generateText(
         prompt: 'Summarize tasks',
-        // Use a non-"flash" model so thinking blocks are surfaced
         model: 'gemini-2.5-pro',
         temperature: 0.7,
         thinkingConfig: const GeminiThinkingConfig(
@@ -160,7 +159,7 @@ void main() {
       expect(events.length, 2);
       // First is thinking block
       final firstContent = events[0].choices!.first.delta!.content!;
-      expect(firstContent.startsWith('<thinking>'), isTrue);
+      expect(firstContent.startsWith('<think>'), isTrue);
       expect(firstContent.contains('Consider tasks...'), isTrue);
       expect(firstContent.contains('Check dates.'), isTrue);
       // Second is regular text
@@ -499,8 +498,7 @@ void main() {
       );
     });
 
-    test(
-        'does not emit thinking for flash models even if includeThoughts is true',
+    test('emits thinking for flash models when includeThoughts is true',
         () async {
       final line = jsonEncode({
         'candidates': [
@@ -531,7 +529,7 @@ void main() {
       final events = await repo
           .generateText(
             prompt: 'p',
-            // flash → hide thoughts
+            // Gemini 2.5+ Flash supports thinking
             model: 'gemini-2.5-flash',
             temperature: 0.5,
             thinkingConfig: const GeminiThinkingConfig(
@@ -542,8 +540,13 @@ void main() {
           )
           .toList();
 
-      expect(events.length, 1);
-      expect(events[0].choices!.first.delta!.content, 'Visible answer.');
+      // Expect thinking block + visible answer
+      expect(events.length, 2);
+      expect(
+        events[0].choices!.first.delta!.content,
+        '<think>\ninternal chain\n</think>\n',
+      );
+      expect(events[1].choices!.first.delta!.content, 'Visible answer.');
     });
 
     test('flushes trailing thinking block at end of stream', () async {
@@ -587,7 +590,7 @@ void main() {
 
       expect(events.length, 1);
       final content = events.first.choices!.first.delta!.content!;
-      expect(content.startsWith('<thinking>'), isTrue);
+      expect(content.startsWith('<think>'), isTrue);
       expect(content, contains('reason...'));
       expect(content, contains('more...'));
     });
@@ -741,6 +744,280 @@ void main() {
       expect(events.first.choices!.first.delta!.content, 'from stream');
       expect(client.streamCalls, 1);
       expect(client.fallbackCalls, 0);
+    });
+
+    test('parses usageMetadata and emits in final chunk', () async {
+      final responseWithUsage = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'Hello world'},
+              ]
+            }
+          }
+        ],
+        'usageMetadata': {
+          'promptTokenCount': 100,
+          'candidatesTokenCount': 50,
+          'thoughtsTokenCount': 25,
+          'cachedContentTokenCount': 10,
+        }
+      });
+
+      final client = _FakeStreamClient(200, [responseWithUsage]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+            provider: provider,
+          )
+          .toList();
+
+      // Should have content event + usage event
+      expect(events.length, 2);
+
+      // First event is content
+      expect(events[0].choices!.first.delta!.content, 'Hello world');
+
+      // Last event contains usage
+      final usageEvent = events.last;
+      expect(usageEvent.usage, isNotNull);
+      expect(usageEvent.usage!.promptTokens, 100);
+      expect(usageEvent.usage!.completionTokens, 50);
+      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 25);
+    });
+
+    test('accumulates usageMetadata across multiple chunks', () async {
+      // First chunk has partial usage
+      final chunk1 = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'Hello'},
+              ]
+            }
+          }
+        ],
+        'usageMetadata': {
+          'promptTokenCount': 100,
+        }
+      });
+
+      // Second chunk has more usage data
+      final chunk2 = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': ' world'},
+              ]
+            }
+          }
+        ],
+        'usageMetadata': {
+          'promptTokenCount': 100,
+          'candidatesTokenCount': 50,
+          'thoughtsTokenCount': 25,
+        }
+      });
+
+      final client = _FakeStreamClient(200, [chunk1, chunk2]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+            provider: provider,
+          )
+          .toList();
+
+      // Should have 2 content events + 1 usage event
+      expect(events.length, 3);
+
+      // Last event contains accumulated usage
+      final usageEvent = events.last;
+      expect(usageEvent.usage, isNotNull);
+      expect(usageEvent.usage!.promptTokens, 100);
+      expect(usageEvent.usage!.completionTokens, 50);
+      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 25);
+    });
+
+    test('emits no usage event when usageMetadata is absent', () async {
+      final responseNoUsage = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'No usage data'},
+              ]
+            }
+          }
+        ],
+      });
+
+      final client = _FakeStreamClient(200, [responseNoUsage]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+            provider: provider,
+          )
+          .toList();
+
+      // Should only have content event, no usage event
+      expect(events.length, 1);
+      expect(events.first.choices!.first.delta!.content, 'No usage data');
+      expect(events.first.usage, isNull);
+    });
+
+    test('parses function call with thoughtSignature', () async {
+      final responseWithFunctionCall = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {
+                  'functionCall': {
+                    'name': 'test_function',
+                    'args': {'arg1': 'value1'},
+                    'thoughtSignature': 'sig-abc123-encrypted',
+                  }
+                }
+              ]
+            }
+          }
+        ],
+      });
+
+      final client = _FakeStreamClient(200, [responseWithFunctionCall]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-3-flash-preview',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+            provider: provider,
+          )
+          .toList();
+
+      expect(events.length, 1);
+      final toolCalls = events.first.choices!.first.delta!.toolCalls;
+      expect(toolCalls, isNotNull);
+      expect(toolCalls!.length, 1);
+      expect(toolCalls.first.function!.name, 'test_function');
+      expect(toolCalls.first.function!.arguments, '{"arg1":"value1"}');
+      // Note: thoughtSignature is logged but not exposed in OpenAI-compat types
+    });
+
+    test('handles multiple function calls in single response', () async {
+      final responseWithMultipleFunctionCalls = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {
+                  'functionCall': {
+                    'name': 'function_one',
+                    'args': {'a': 1},
+                  }
+                },
+                {
+                  'functionCall': {
+                    'name': 'function_two',
+                    'args': {'b': 2},
+                  }
+                },
+              ]
+            }
+          }
+        ],
+      });
+
+      final client =
+          _FakeStreamClient(200, [responseWithMultipleFunctionCalls]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-3-pro-preview',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+            provider: provider,
+          )
+          .toList();
+
+      expect(events.length, 2);
+
+      // First function call
+      final firstToolCalls = events[0].choices!.first.delta!.toolCalls;
+      expect(firstToolCalls, isNotNull);
+      expect(firstToolCalls!.first.function!.name, 'function_one');
+
+      // Second function call
+      final secondToolCalls = events[1].choices!.first.delta!.toolCalls;
+      expect(secondToolCalls, isNotNull);
+      expect(secondToolCalls!.first.function!.name, 'function_two');
     });
   });
 }

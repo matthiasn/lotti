@@ -4,20 +4,11 @@ import 'package:openai_dart/openai_dart.dart';
 /// Utilities for building Gemini HTTP requests and decoding stream framing.
 ///
 /// Central responsibilities:
-/// - Detect flash models to control thought visibility policy.
 /// - Construct streaming and non-streaming URIs while preserving scheme/host/port.
 /// - Build request bodies including system instructions, thinking config and tools.
 /// - Strip SSE `data:` prefixes and JSON array framing from mixed-format streams.
 class GeminiUtils {
   const GeminiUtils._();
-
-  /// Returns true if the model ID denotes a Gemini "flash" variant.
-  ///
-  /// Flash models should never surface `<thinking>` blocks in the UI.
-  static bool isFlashModel(String modelId) {
-    final m = modelId.toLowerCase();
-    return m.contains('flash');
-  }
 
   /// Builds the streaming `:streamGenerateContent` URI from a provider base URL.
   ///

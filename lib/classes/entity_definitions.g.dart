@@ -491,6 +491,11 @@ _AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) =>
           .toList(),
       type: $enumDecodeNullable(_$AiResponseTypeEnumMap, json['type']),
       temperature: (json['temperature'] as num?)?.toDouble(),
+      inputTokens: (json['inputTokens'] as num?)?.toInt(),
+      outputTokens: (json['outputTokens'] as num?)?.toInt(),
+      thoughtsTokens: (json['thoughtsTokens'] as num?)?.toInt(),
+      cachedInputTokens: (json['cachedInputTokens'] as num?)?.toInt(),
+      durationMs: (json['durationMs'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$AiResponseDataToJson(_AiResponseData instance) =>
@@ -504,6 +509,11 @@ Map<String, dynamic> _$AiResponseDataToJson(_AiResponseData instance) =>
       'suggestedActionItems': instance.suggestedActionItems,
       'type': _$AiResponseTypeEnumMap[instance.type],
       'temperature': instance.temperature,
+      'inputTokens': instance.inputTokens,
+      'outputTokens': instance.outputTokens,
+      'thoughtsTokens': instance.thoughtsTokens,
+      'cachedInputTokens': instance.cachedInputTokens,
+      'durationMs': instance.durationMs,
     };
 
 _WorkoutData _$WorkoutDataFromJson(Map<String, dynamic> json) => _WorkoutData(

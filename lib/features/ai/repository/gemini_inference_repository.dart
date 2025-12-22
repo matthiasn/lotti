@@ -53,16 +53,13 @@ class GeminiInferenceRepository {
   static const int kMaxRetries = 3;
   static const Duration kRetryBaseDelay = Duration(milliseconds: 500);
 
-  bool _isFlashModel(String modelId) => GeminiUtils.isFlashModel(modelId);
-
   /// Generates text via Gemini's streaming API with thinking and function-calling support.
   ///
   /// Parameters:
   /// - `prompt`: user content to send to the model.
   /// - `model`: Gemini model ID (e.g. `gemini-2.5-pro` or `gemini-2.5-flash`).
   /// - `temperature`: sampling temperature forwarded to Gemini.
-  /// - `thinkingConfig`: budget and policy controlling whether thinking is
-  ///   surfaced for non-flash models.
+  /// - `thinkingConfig`: budget and policy controlling whether thinking is surfaced.
   /// - `provider`: contains base URL and API key.
   /// - `systemMessage`: optional system instruction.
   /// - `maxCompletionTokens`: model-specific token cap.
@@ -157,6 +154,11 @@ class GeminiInferenceRepository {
     var visibleChars = 0;
     var totalCharsEmitted = 0;
     var toolCallIndex = 0; // ensure unique IDs/indices across tool calls
+    // Track usage metadata from Gemini response
+    int? promptTokens;
+    int? candidatesTokens;
+    int? thoughtsTokens;
+    int? cachedTokens;
     await for (final chunk in streamed.stream.transform(utf8.decoder)) {
       if (kVerboseStreamLogging && rawChunkLogs < 3) {
         final preview = chunk.length > kPreviewLength
@@ -172,6 +174,18 @@ class GeminiInferenceRepository {
       {
         final objs = parser.addChunk(chunk);
         for (final obj in objs) {
+          // Parse usageMetadata if present (Gemini includes this at root level)
+          final usage = obj['usageMetadata'];
+          if (usage is Map<String, dynamic>) {
+            promptTokens = usage['promptTokenCount'] as int? ?? promptTokens;
+            candidatesTokens =
+                usage['candidatesTokenCount'] as int? ?? candidatesTokens;
+            thoughtsTokens =
+                usage['thoughtsTokenCount'] as int? ?? thoughtsTokens;
+            cachedTokens =
+                usage['cachedContentTokenCount'] as int? ?? cachedTokens;
+          }
+
           final candidates = obj['candidates'];
           if (candidates is! List || candidates.isEmpty) {
             if (kVerboseStreamLogging) {
@@ -208,12 +222,9 @@ class GeminiInferenceRepository {
             // actual text in `text`.
             final isThought = p['thought'] == true;
             if (isThought) {
-              // Include thoughts only for non-flash models when requested and
-              // only before the visible answer has started. Otherwise, drop
-              // thought parts entirely (do not surface as regular text).
-              if (!answerStarted &&
-                  thinkingConfig.includeThoughts &&
-                  !_isFlashModel(model)) {
+              // Include thoughts when requested and only before the visible
+              // answer has started. Gemini 2.5+ Flash supports thinking.
+              if (!answerStarted && thinkingConfig.includeThoughts) {
                 final t = p['text'];
                 if (t is String && t.isNotEmpty) {
                   inThinking = true;
@@ -241,7 +252,7 @@ class GeminiInferenceRepository {
                   ChatCompletionStreamResponseChoice(
                     index: 0,
                     delta: ChatCompletionStreamResponseDelta(
-                      content: '<thinking>\n$thinkingBuffer\n</thinking>\n',
+                      content: '<think>\n$thinkingBuffer\n</think>\n',
                     ),
                   ),
                 ],
@@ -295,6 +306,19 @@ class GeminiInferenceRepository {
               final fc = p['functionCall'] as Map<String, dynamic>;
               final name = fc['name']?.toString() ?? '';
               final args = jsonEncode(fc['args'] ?? {});
+
+              // Capture thought signature if present (Gemini 3 models)
+              // Note: Signature passing through the stream is not yet implemented
+              // as OpenAI SDK types don't support this field natively
+              final thoughtSignature = fc['thoughtSignature']?.toString();
+              if (thoughtSignature != null && kVerboseStreamLogging) {
+                developer.log(
+                  'Captured thought signature for tool call $name: '
+                  '${thoughtSignature.substring(0, thoughtSignature.length > 50 ? 50 : thoughtSignature.length)}...',
+                  name: 'GeminiInferenceRepository',
+                );
+              }
+
               emittedAny = true;
               final currentIndex = toolCallIndex++;
               yield CreateChatCompletionStreamResponse(
@@ -345,7 +369,7 @@ class GeminiInferenceRepository {
           ChatCompletionStreamResponseChoice(
             index: 0,
             delta: ChatCompletionStreamResponseDelta(
-              content: '<thinking>\n$thinkingBuffer\n</thinking>\n',
+              content: '<think>\n$thinkingBuffer\n</think>\n',
             ),
           ),
         ],
@@ -366,6 +390,24 @@ class GeminiInferenceRepository {
         'Gemini stream finished. latency=${totalLatency.inMilliseconds}ms, processing=$chunkProcessingMicrosµs, '
         'visibleChars=$visibleChars, thinkingChars=$thinkingChars, thinkingRatio=${thinkingRatio.toStringAsFixed(3)}',
         name: 'GeminiInferenceRepository',
+      );
+    }
+
+    // Emit final response with usage metadata if available
+    if (promptTokens != null || candidatesTokens != null) {
+      yield CreateChatCompletionStreamResponse(
+        id: idPrefix,
+        created: created,
+        model: model,
+        choices: const [],
+        usage: CompletionUsage(
+          promptTokens: promptTokens,
+          completionTokens: candidatesTokens,
+          totalTokens: (promptTokens ?? 0) + (candidatesTokens ?? 0),
+          completionTokensDetails: thoughtsTokens != null
+              ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
+              : null,
+        ),
       );
     }
 
@@ -393,8 +435,7 @@ class GeminiInferenceRepository {
         final decoded = jsonDecode(fallbackResp.body) as Map<String, dynamic>;
         final payload = _processGeminiPayload(
           decoded,
-          includeThoughts:
-              thinkingConfig.includeThoughts && !_isFlashModel(model),
+          includeThoughts: thinkingConfig.includeThoughts,
         );
         if (payload.thinking.isNotEmpty) {
           yield CreateChatCompletionStreamResponse(
@@ -405,7 +446,7 @@ class GeminiInferenceRepository {
               ChatCompletionStreamResponseChoice(
                 index: 0,
                 delta: ChatCompletionStreamResponseDelta(
-                  content: '<thinking>\n${payload.thinking}\n</thinking>\n',
+                  content: '<think>\n${payload.thinking}\n</think>\n',
                 ),
               ),
             ],
@@ -439,6 +480,16 @@ class GeminiInferenceRepository {
                 ),
               ),
             ],
+          );
+        }
+        // Emit usage for fallback response
+        if (payload.usage != null) {
+          yield CreateChatCompletionStreamResponse(
+            id: idPrefix,
+            created: created,
+            model: model,
+            choices: const [],
+            usage: payload.usage,
           );
         }
       } else {
@@ -507,11 +558,13 @@ class _ProcessedPayload {
     required this.thinking,
     required this.visible,
     required this.toolChunks,
+    this.usage,
   });
 
   final String thinking;
   final String visible;
   final List<ChatCompletionStreamMessageToolCallChunk> toolChunks;
+  final CompletionUsage? usage;
 }
 
 /// Processes a decoded Gemini response (non-streaming) into compact outputs.
@@ -560,10 +613,32 @@ _ProcessedPayload _processGeminiPayload(
       }
     }
   }
+
+  // Parse usage metadata
+  CompletionUsage? usage;
+  final usageMetadata = decoded['usageMetadata'];
+  if (usageMetadata is Map<String, dynamic>) {
+    final promptTokens = usageMetadata['promptTokenCount'] as int?;
+    final candidatesTokens = usageMetadata['candidatesTokenCount'] as int?;
+    final thoughtsTokens = usageMetadata['thoughtsTokenCount'] as int?;
+
+    if (promptTokens != null || candidatesTokens != null) {
+      usage = CompletionUsage(
+        promptTokens: promptTokens,
+        completionTokens: candidatesTokens,
+        totalTokens: (promptTokens ?? 0) + (candidatesTokens ?? 0),
+        completionTokensDetails: thoughtsTokens != null
+            ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
+            : null,
+      );
+    }
+  }
+
   return _ProcessedPayload(
     thinking: tb.toString(),
     visible: cb.toString(),
     toolChunks: toolChunks,
+    usage: usage,
   );
 }
 
