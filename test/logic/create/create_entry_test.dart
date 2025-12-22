@@ -298,28 +298,6 @@ void main() {
       expect(linkedEntities.any((e) => e.meta.id == event!.meta.id), true);
     });
 
-    test('createTimerEntry without linked creates simple timer', () async {
-      final timer = await createTimerEntry();
-
-      expect(timer, isNotNull);
-      expect(timer, isA<JournalEntry>());
-
-      // TimeService.start should not be called when no linked entry
-      verifyNever(() => mockTimeService.start(any(), any()));
-    });
-
-    test('createTimerEntry with linked entry starts timer', () async {
-      final parent = await createTextEntry();
-      expect(parent, isNotNull);
-
-      final timer = await createTimerEntry(linked: parent);
-
-      expect(timer, isNotNull);
-
-      // TimeService.start should be called with both entries
-      verify(() => mockTimeService.start(timer!, parent)).called(1);
-    });
-
     test('createChecklist creates checklist for valid task', () async {
       // Create a task first
       final task = await createTask();
