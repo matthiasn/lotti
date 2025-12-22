@@ -356,21 +356,9 @@ class CloudInferenceRepository {
 
   // Delegate Ollama-specific methods to OllamaInferenceRepository
 
-  /// Check if a model is installed in Ollama
-  Future<bool> isModelInstalled(String modelName, String baseUrl) =>
-      _ollamaRepository.isModelInstalled(modelName, baseUrl);
-
-  /// Get model information including size
-  Future<OllamaModelInfo?> getModelInfo(String modelName, String baseUrl) =>
-      _ollamaRepository.getModelInfo(modelName, baseUrl);
-
   /// Install a model in Ollama with progress tracking
   Stream<OllamaPullProgress> installModel(String modelName, String baseUrl) =>
       _ollamaRepository.installModel(modelName, baseUrl);
-
-  /// Warm up a model by sending a simple request to load it into memory
-  Future<void> warmUpModel(String modelName, String baseUrl) =>
-      _ollamaRepository.warmUpModel(modelName, baseUrl);
 }
 
 @riverpod

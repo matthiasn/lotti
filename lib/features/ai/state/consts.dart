@@ -25,10 +25,7 @@ const whisperTranscriptionTimeoutSeconds =
 
 // HTTP status codes
 const httpStatusOk = 200;
-const httpStatusBadRequest = 400;
 const httpStatusNotFound = 404;
-const httpStatusInternalServerError = 500;
-const httpStatusServiceUnavailable = 503;
 const httpStatusRequestTimeout = 408;
 
 enum AiResponseType {

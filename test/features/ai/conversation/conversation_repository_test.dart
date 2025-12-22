@@ -99,17 +99,6 @@ void main() {
       expect(manager, isNull);
     });
 
-    test('getActiveConversations returns all conversation IDs', () {
-      final ids = <String>[];
-      for (var i = 0; i < 3; i++) {
-        ids.add(repository.createConversation());
-      }
-
-      final activeIds = repository.getActiveConversations();
-      expect(activeIds.length, 3);
-      expect(activeIds.toSet(), ids.toSet());
-    });
-
     test('dispose cleans up all conversations', () {
       // Create conversations
       final ids = <String>[];
@@ -124,8 +113,10 @@ void main() {
       container = ProviderContainer();
       repository = container.read(conversationRepositoryProvider.notifier);
 
-      // Check all conversations are gone
-      expect(repository.getActiveConversations(), isEmpty);
+      // Check all conversations are gone by trying to get each one
+      for (final id in ids) {
+        expect(repository.getConversation(id), isNull);
+      }
     });
 
     group('sendMessage', () {

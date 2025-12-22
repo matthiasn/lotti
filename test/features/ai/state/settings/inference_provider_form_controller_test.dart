@@ -171,7 +171,7 @@ void main() {
       final result = await controller.deleteConfig('test-id');
 
       // Assert
-      expect(result.deletedModelCount, equals(1));
+      expect(result.deletedModels.length, equals(1));
       expect(result.providerName, equals('Test Provider'));
       verify(() => mockRepository.deleteInferenceProviderWithModels('test-id'))
           .called(1);

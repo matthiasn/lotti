@@ -137,7 +137,7 @@ void main() {
           await repository.deleteInferenceProviderWithModels(providerId);
 
       // Assert
-      expect(result.deletedModelCount, equals(2));
+      expect(result.deletedModels.length, equals(2));
       expect(result.deletedModels.length, equals(2));
       expect(result.deletedModels.map((m) => m.id),
           containsAll(['model-1', 'model-2']));
@@ -171,7 +171,7 @@ void main() {
           await repository.deleteInferenceProviderWithModels(providerId);
 
       // Assert
-      expect(result.deletedModelCount, equals(0));
+      expect(result.deletedModels.length, equals(0));
       expect(result.deletedModels.length, equals(0));
       expect(result.providerName, isNotEmpty);
 
@@ -216,7 +216,7 @@ void main() {
       );
 
       // Assert
-      expect(result.deletedModelCount, equals(1));
+      expect(result.deletedModels.length, equals(1));
       expect(result.deletedModels.length, equals(1));
       expect(
           result.deletedModels.map((m) => m.id), containsAll(['model-sync']));
@@ -284,7 +284,7 @@ void main() {
           await repository.deleteInferenceProviderWithModels(providerId);
 
       // Assert
-      expect(result.deletedModelCount, equals(5));
+      expect(result.deletedModels.length, equals(5));
       expect(result.deletedModels.length, equals(5));
       expect(result.deletedModels.map((m) => m.id),
           containsAll(['model-0', 'model-1', 'model-2', 'model-3', 'model-4']));
@@ -443,7 +443,7 @@ void main() {
           await repository.deleteInferenceProviderWithModels(providerId);
 
       // Assert
-      expect(result.deletedModelCount, equals(1));
+      expect(result.deletedModels.length, equals(1));
       expect(result.deletedModels.length, equals(1));
       expect(result.deletedModels.map((m) => m.id), containsAll(['model-1']));
       expect(result.providerName, isNotEmpty);

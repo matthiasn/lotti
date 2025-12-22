@@ -479,10 +479,6 @@ void main() {
         final count = await handler.executeUpdates(result);
 
         expect(count, 1);
-        expect(handler.updatedItems.length, 1);
-        expect(handler.updatedItems[0].id, 'item-1');
-        expect(handler.updatedItems[0].isChecked, true);
-        expect(handler.updatedItems[0].changes, contains('isChecked'));
 
         verify(
           () => mockChecklistRepository.updateChecklistItem(
@@ -530,8 +526,6 @@ void main() {
         final count = await handler.executeUpdates(result);
 
         expect(count, 1);
-        expect(handler.updatedItems[0].title, 'macOS settings');
-        expect(handler.updatedItems[0].changes, contains('title'));
       });
 
       test('should skip non-existent item', () async {
@@ -670,7 +664,6 @@ void main() {
         final count = await handler.executeUpdates(result);
 
         expect(count, 1);
-        expect(handler.updatedItems.length, 1);
         expect(handler.skippedItems.length, 1);
       });
 
@@ -950,50 +943,6 @@ void main() {
         expect(prompt, contains('"id"'));
         expect(prompt, contains('"isChecked"'));
         expect(prompt, contains('"title"'));
-      });
-    });
-
-    group('reset', () {
-      test('should clear updated and skipped items', () async {
-        final item = TestDataFactory.createChecklistItem(
-          id: 'item-1',
-        );
-
-        final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['item-1']))
-            .thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => testTask);
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).thenAnswer((_) async => true);
-
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': true}
-            ],
-            'taskId': testTask.id,
-          },
-        );
-
-        await handler.executeUpdates(result);
-        expect(handler.updatedItems, isNotEmpty);
-
-        handler.reset();
-
-        expect(handler.updatedItems, isEmpty);
-        expect(handler.skippedItems, isEmpty);
       });
     });
   });

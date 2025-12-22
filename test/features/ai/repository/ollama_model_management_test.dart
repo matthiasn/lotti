@@ -76,213 +76,6 @@ void main() {
       container.dispose();
     });
 
-    group('isModelInstalled', () {
-      test('returns true when model is installed', () async {
-        // Arrange
-        final responseBody = jsonEncode({
-          'models': [
-            {
-              'name': modelName,
-              'model': modelName,
-              'size': 4294967296, // 4GB
-              'details': {
-                'parameter_size': '4.3B',
-                'quantization_level': 'Q4_K_M',
-              },
-            },
-          ],
-        });
-
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async => http.Response(responseBody, httpStatusOk),
-        );
-
-        // Act
-        final result = await repository.isModelInstalled(modelName, baseUrl);
-
-        // Assert
-        expect(result, isTrue);
-        verify(() => mockHttpClient.get(Uri.parse('$baseUrl/api/tags')))
-            .called(1);
-      });
-
-      test('returns false when model is not installed', () async {
-        // Arrange
-        final responseBody = jsonEncode({
-          'models': [
-            {
-              'name': 'other-model',
-              'model': 'other-model',
-              'size': 4294967296,
-            },
-          ],
-        });
-
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async => http.Response(responseBody, httpStatusOk),
-        );
-
-        // Act
-        final result = await repository.isModelInstalled(modelName, baseUrl);
-
-        // Assert
-        expect(result, isFalse);
-      });
-
-      test('returns false when API returns error status', () async {
-        // Arrange
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async => http.Response('Error', httpStatusInternalServerError),
-        );
-
-        // Act
-        final result = await repository.isModelInstalled(modelName, baseUrl);
-
-        // Assert
-        expect(result, isFalse);
-      });
-
-      test('returns false when API call throws exception', () async {
-        // Arrange
-        when(() => mockHttpClient.get(any()))
-            .thenThrow(Exception('Network error'));
-
-        // Act
-        final result = await repository.isModelInstalled(modelName, baseUrl);
-
-        // Assert
-        expect(result, isFalse);
-      });
-
-      test('handles timeout gracefully', () {
-        fakeAsync((async) {
-          // Arrange: force the GET to exceed the repository's 10s timeout
-          when(() => mockHttpClient.get(any())).thenAnswer(
-            (_) async {
-              await Future<void>.delayed(const Duration(seconds: 11));
-              return http.Response('{}', httpStatusOk);
-            },
-          );
-
-          // Act under fake time
-          bool? result;
-          repository
-              .isModelInstalled(modelName, baseUrl)
-              .then((r) => result = r);
-
-          // Elapse timeout + epsilon using the retry helper (single attempt)
-          final plan = buildRetryBackoffPlan(
-            maxRetries: 1,
-            timeout: const Duration(seconds: 10),
-            baseDelay: Duration.zero,
-            epsilon: const Duration(seconds: 1),
-          );
-          async.elapseRetryPlan(plan);
-
-          // Assert: should return false on timeout
-          expect(result, isFalse);
-        });
-      });
-    });
-
-    group('getModelInfo', () {
-      test('returns model info when model is found', () async {
-        // Arrange
-        final responseBody = jsonEncode({
-          'models': [
-            {
-              'name': modelName,
-              'model': modelName,
-              'size': 4294967296, // 4GB
-              'details': {
-                'parameter_size': '4.3B',
-                'quantization_level': 'Q4_K_M',
-              },
-            },
-          ],
-        });
-
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async => http.Response(responseBody, httpStatusOk),
-        );
-
-        // Act
-        final result = await repository.getModelInfo(modelName, baseUrl);
-
-        // Assert
-        expect(result, isNotNull);
-        expect(result!.name, modelName);
-        expect(result.size, 4294967296);
-        expect(result.parameterSize, '4.3B');
-        expect(result.quantizationLevel, 'Q4_K_M');
-        expect(result.humanReadableSize, '4.0 GB');
-      });
-
-      test('returns null when model is not found', () async {
-        // Arrange
-        final responseBody = jsonEncode({
-          'models': [
-            {
-              'name': 'other-model',
-              'model': 'other-model',
-              'size': 4294967296,
-            },
-          ],
-        });
-
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async => http.Response(responseBody, httpStatusOk),
-        );
-
-        // Act
-        final result = await repository.getModelInfo(modelName, baseUrl);
-
-        // Assert
-        expect(result, isNull);
-      });
-
-      test('returns null when API returns error status', () async {
-        // Arrange
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async => http.Response('Error', httpStatusInternalServerError),
-        );
-
-        // Act
-        final result = await repository.getModelInfo(modelName, baseUrl);
-
-        // Assert
-        expect(result, isNull);
-      });
-
-      test('handles missing details gracefully', () async {
-        // Arrange
-        final responseBody = jsonEncode({
-          'models': [
-            {
-              'name': modelName,
-              'model': modelName,
-              'size': 4294967296,
-              // No details field
-            },
-          ],
-        });
-
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async => http.Response(responseBody, httpStatusOk),
-        );
-
-        // Act
-        final result = await repository.getModelInfo(modelName, baseUrl);
-
-        // Assert
-        expect(result, isNotNull);
-        expect(result!.name, modelName);
-        expect(result.size, 4294967296);
-        expect(result.parameterSize, 'Unknown');
-        expect(result.quantizationLevel, 'Unknown');
-      });
-    });
-
     group('installModel', () {
       test('emits progress updates during installation', () async {
         // Arrange
@@ -316,8 +109,7 @@ void main() {
       test('throws exception when installation fails', () async {
         // Arrange
         final mockResponse = MockStreamedResponse();
-        when(() => mockResponse.statusCode)
-            .thenReturn(httpStatusInternalServerError);
+        when(() => mockResponse.statusCode).thenReturn(500);
         when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
               Stream.value(utf8.encode('{"error": "installation failed"}\n')),
             ));
@@ -364,81 +156,6 @@ void main() {
       });
     });
 
-    group('warmUpModel', () {
-      test('sends warm-up request successfully', () async {
-        // Arrange
-        when(() => mockHttpClient.post(any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'))).thenAnswer(
-          (_) async => http.Response('{"response": "Hello"}', httpStatusOk),
-        );
-
-        // Act
-        await repository.warmUpModel(modelName, baseUrl);
-
-        // Assert
-        final captured = verify(() => mockHttpClient.post(
-              any(),
-              headers: captureAny(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
-
-        final headers = captured[0] as Map<String, String>;
-        final body = captured[1] as String;
-
-        expect(headers['Content-Type'], ollamaContentType);
-        expect(jsonDecode(body), {
-          'model': modelName,
-          'messages': [
-            {'role': 'user', 'content': 'Hello'}
-          ],
-          'stream': false,
-        });
-      });
-
-      test('handles warm-up failure gracefully', () async {
-        // Arrange
-        when(() => mockHttpClient.post(any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'))).thenAnswer(
-          (_) async => http.Response('Error', httpStatusInternalServerError),
-        );
-
-        // Act & Assert - should not throw
-        await repository.warmUpModel(modelName, baseUrl);
-      });
-
-      test('handles timeout gracefully', () {
-        fakeAsync((async) {
-          // Arrange: force POST to exceed the repository's 60s timeout
-          when(() => mockHttpClient.post(any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'))).thenAnswer(
-            (_) async {
-              await Future<void>.delayed(const Duration(seconds: 61));
-              return http.Response('{"response": "Hello"}', httpStatusOk);
-            },
-          );
-
-          // Act under fake time & Assert - warmUpModel swallows timeouts
-          Object? error;
-          repository
-              .warmUpModel(modelName, baseUrl)
-              .catchError((dynamic e, __) => error = e);
-
-          final plan = buildRetryBackoffPlan(
-            maxRetries: 1,
-            timeout: const Duration(seconds: 60),
-            baseDelay: Duration.zero,
-            epsilon: const Duration(seconds: 1),
-          );
-          async.elapseRetryPlan(plan);
-
-          expect(error, isNull);
-        });
-      });
-    });
-
     group('_generateWithOllama', () {
       test('generates response with images successfully', () async {
         // Arrange
@@ -446,7 +163,7 @@ void main() {
         const images = [testImage];
         const temperature = 0.7;
 
-        // Use test subclass to override warmUpModel
+        // Set up repository with mock HTTP client
         final testMockRef = MockRef();
         final testOllamaRepo =
             OllamaInferenceRepository(httpClient: mockHttpClient);
@@ -457,8 +174,8 @@ void main() {
         when(() => testMockRef.read(geminiInferenceRepositoryProvider))
             .thenReturn(GeminiInferenceRepository(httpClient: mockHttpClient));
 
-        repository = TestCloudInferenceRepository(testMockRef,
-            httpClient: mockHttpClient);
+        repository =
+            CloudInferenceRepository(testMockRef, httpClient: mockHttpClient);
         ollamaProvider = AiConfig.inferenceProvider(
           id: 'ollama-provider',
           name: 'Ollama Provider',
@@ -727,30 +444,6 @@ void main() {
       });
     });
 
-    group('OllamaModelInfo', () {
-      test('humanReadableSize formats correctly', () {
-        const info = OllamaModelInfo(
-          name: 'test-model',
-          size: 1024, // 1KB
-          parameterSize: '4.3B',
-          quantizationLevel: 'Q4_K_M',
-        );
-
-        expect(info.humanReadableSize, '1.0 KB');
-      });
-
-      test('humanReadableSize handles large sizes', () {
-        const info = OllamaModelInfo(
-          name: 'test-model',
-          size: 4294967296, // 4GB
-          parameterSize: '4.3B',
-          quantizationLevel: 'Q4_K_M',
-        );
-
-        expect(info.humanReadableSize, '4.0 GB');
-      });
-    });
-
     group('_generateTextWithOllama', () {
       test('generates text response successfully', () async {
         // Arrange
@@ -996,11 +689,4 @@ class MockStreamedResponseWithError extends Mock
   http.ByteStream get stream => http.ByteStream(Stream.fromIterable([
         utf8.encode('{"error": "Model not found"}\n'),
       ]));
-}
-
-// Test subclass to override warmUpModel
-class TestCloudInferenceRepository extends CloudInferenceRepository {
-  TestCloudInferenceRepository(super.ref, {super.httpClient});
-  @override
-  Future<void> warmUpModel(String modelName, String baseUrl) async {}
 }

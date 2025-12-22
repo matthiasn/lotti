@@ -129,13 +129,22 @@ void main() {
         async.flushMicrotasks();
 
         // Should have scheduled time set
-        expect(controller.hasScheduledRefresh('test-task-1'), isTrue);
-        expect(controller.getScheduledTime('test-task-1'), isNotNull);
+        expect(
+            container
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('test-task-1') !=
+                null,
+            isTrue);
+        expect(
+            container
+                .read(directTaskSummaryRefreshControllerProvider)
+                .getScheduledTime('test-task-1'),
+            isNotNull);
 
         // State should also reflect this
         final state =
             container.read(directTaskSummaryRefreshControllerProvider);
-        expect(state.hasScheduledRefresh('test-task-1'), isTrue);
+        expect(state.getScheduledTime('test-task-1') != null, isTrue);
 
         // Should not trigger before 5 minutes
         async.elapse(const Duration(minutes: 4, seconds: 59));
@@ -146,7 +155,12 @@ void main() {
         async.flushMicrotasks();
 
         // Scheduled state should be cleared
-        expect(controller.hasScheduledRefresh('test-task-1'), isFalse);
+        expect(
+            container
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('test-task-1') !=
+                null,
+            isFalse);
       });
     });
 
@@ -182,8 +196,9 @@ void main() {
         unawaited(controller.requestTaskSummaryRefresh('test-task-batch'));
         async.flushMicrotasks();
 
-        final firstScheduledTime =
-            controller.getScheduledTime('test-task-batch');
+        final firstScheduledTime = container
+            .read(directTaskSummaryRefreshControllerProvider)
+            .getScheduledTime('test-task-batch');
         expect(firstScheduledTime, isNotNull);
 
         // Wait 2 minutes
@@ -196,7 +211,10 @@ void main() {
 
         // Scheduled time should be the same (not reset)
         expect(
-            controller.getScheduledTime('test-task-batch'), firstScheduledTime);
+            container
+                .read(directTaskSummaryRefreshControllerProvider)
+                .getScheduledTime('test-task-batch'),
+            firstScheduledTime);
       });
     });
 
@@ -252,8 +270,18 @@ void main() {
         async.flushMicrotasks();
 
         // Both should be scheduled
-        expect(controller.hasScheduledRefresh('task-1'), isTrue);
-        expect(controller.hasScheduledRefresh('task-2'), isTrue);
+        expect(
+            container
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('task-1') !=
+                null,
+            isTrue);
+        expect(
+            container
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('task-2') !=
+                null,
+            isTrue);
 
         // State should reflect both
         final state =
@@ -293,7 +321,12 @@ void main() {
         async.flushMicrotasks();
 
         // Should NOT have scheduled (sets up listener instead)
-        expect(controller.hasScheduledRefresh('test-task-running'), isFalse);
+        expect(
+            container
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('test-task-running') !=
+                null,
+            isFalse);
 
         testContainer.dispose();
       });
@@ -330,7 +363,12 @@ void main() {
         unawaited(controller.requestTaskSummaryRefresh('cancel-test'));
         async.flushMicrotasks();
 
-        expect(controller.hasScheduledRefresh('cancel-test'), isTrue);
+        expect(
+            container
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('cancel-test') !=
+                null,
+            isTrue);
 
         // Wait 2 minutes
         async.elapse(const Duration(minutes: 2));
@@ -339,13 +377,22 @@ void main() {
         // Cancel the scheduled refresh
         controller.cancelScheduledRefresh('cancel-test');
 
-        expect(controller.hasScheduledRefresh('cancel-test'), isFalse);
-        expect(controller.getScheduledTime('cancel-test'), isNull);
+        expect(
+            container
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('cancel-test') !=
+                null,
+            isFalse);
+        expect(
+            container
+                .read(directTaskSummaryRefreshControllerProvider)
+                .getScheduledTime('cancel-test'),
+            isNull);
 
         // State should also reflect the cancellation
         final state =
             container.read(directTaskSummaryRefreshControllerProvider);
-        expect(state.hasScheduledRefresh('cancel-test'), isFalse);
+        expect(state.getScheduledTime('cancel-test') != null, isFalse);
       });
     });
 
@@ -405,14 +452,24 @@ void main() {
         unawaited(testController.requestTaskSummaryRefresh('immediate-test'));
         async.flushMicrotasks();
 
-        expect(testController.hasScheduledRefresh('immediate-test'), isTrue);
+        expect(
+            testContainer
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('immediate-test') !=
+                null,
+            isTrue);
 
         // Trigger immediately (don't wait for timer)
         unawaited(testController.triggerImmediately('immediate-test'));
         async.flushMicrotasks();
 
         // Should be cleared
-        expect(testController.hasScheduledRefresh('immediate-test'), isFalse);
+        expect(
+            testContainer
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('immediate-test') !=
+                null,
+            isFalse);
 
         // Verify inference was triggered
         expect(inferenceCallCount, greaterThan(0));
@@ -496,7 +553,12 @@ void main() {
         unawaited(controller.requestTaskSummaryRefresh('dispose-test'));
         async.flushMicrotasks();
 
-        expect(controller.hasScheduledRefresh('dispose-test'), isTrue);
+        expect(
+            testContainer
+                    .read(directTaskSummaryRefreshControllerProvider)
+                    .getScheduledTime('dispose-test') !=
+                null,
+            isTrue);
 
         // Dispose immediately (before timer completes)
         testContainer.dispose();
@@ -753,9 +815,24 @@ void main() {
       ]);
 
       // All should be scheduled (not triggered yet)
-      expect(controller.hasScheduledRefresh('task-a'), isTrue);
-      expect(controller.hasScheduledRefresh('task-b'), isTrue);
-      expect(controller.hasScheduledRefresh('task-c'), isTrue);
+      expect(
+          container
+                  .read(directTaskSummaryRefreshControllerProvider)
+                  .getScheduledTime('task-a') !=
+              null,
+          isTrue);
+      expect(
+          container
+                  .read(directTaskSummaryRefreshControllerProvider)
+                  .getScheduledTime('task-b') !=
+              null,
+          isTrue);
+      expect(
+          container
+                  .read(directTaskSummaryRefreshControllerProvider)
+                  .getScheduledTime('task-c') !=
+              null,
+          isTrue);
     });
 
     test('scheduledTaskSummaryRefreshProvider returns correct scheduled time',
@@ -829,8 +906,8 @@ void main() {
         final state =
             container.read(directTaskSummaryRefreshControllerProvider);
         expect(state.scheduledTimes.length, 2);
-        expect(state.hasScheduledRefresh('state-task-1'), isTrue);
-        expect(state.hasScheduledRefresh('state-task-2'), isTrue);
+        expect(state.getScheduledTime('state-task-1') != null, isTrue);
+        expect(state.getScheduledTime('state-task-2') != null, isTrue);
 
         // Cancel one
         controller.cancelScheduledRefresh('state-task-1');
@@ -839,8 +916,8 @@ void main() {
         final newState =
             container.read(directTaskSummaryRefreshControllerProvider);
         expect(newState.scheduledTimes.length, 1);
-        expect(newState.hasScheduledRefresh('state-task-1'), isFalse);
-        expect(newState.hasScheduledRefresh('state-task-2'), isTrue);
+        expect(newState.getScheduledTime('state-task-1'), isNull);
+        expect(newState.getScheduledTime('state-task-2'), isNotNull);
       });
     });
   });

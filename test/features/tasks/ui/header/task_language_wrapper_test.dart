@@ -63,12 +63,6 @@ class _DirectTaskSummaryRefreshControllerAdapter
   void cancelScheduledRefresh(String taskId) {}
 
   @override
-  DateTime? getScheduledTime(String taskId) => null;
-
-  @override
-  bool hasScheduledRefresh(String taskId) => false;
-
-  @override
   Future<void> triggerImmediately(String taskId) async {}
 }
 

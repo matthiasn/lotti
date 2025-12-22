@@ -311,7 +311,6 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
     return successCount;
   }
 
-  List<UpdatedItemDetail> get updatedItems => List.unmodifiable(_updatedItems);
   List<SkippedItemDetail> get skippedItems => List.unmodifiable(_skippedItems);
 
   @override
@@ -374,11 +373,6 @@ Please retry with the correct format.''';
       });
     }
     return 'Error updating checklist items: ${result.error}';
-  }
-
-  void reset() {
-    _updatedItems.clear();
-    _skippedItems.clear();
   }
 }
 

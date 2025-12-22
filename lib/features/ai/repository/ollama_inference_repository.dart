@@ -531,75 +531,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     }
   }
 
-  /// Check if a model is installed in Ollama
-  Future<bool> isModelInstalled(String modelName, String baseUrl) async {
-    try {
-      final response = await _httpClient
-          .get(Uri.parse('$baseUrl/api/tags'))
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != httpStatusOk) {
-        return false;
-      }
-
-      final result = jsonDecode(response.body) as Map<String, dynamic>;
-      final models = result['models'] as List<dynamic>? ?? [];
-
-      return models.any((model) {
-        final modelMap = model as Map<String, dynamic>;
-        return modelMap['name'] == modelName || modelMap['model'] == modelName;
-      });
-    } catch (e) {
-      developer.log(
-        'Error checking if model is installed',
-        error: e,
-        name: 'OllamaInferenceRepository',
-      );
-      return false;
-    }
-  }
-
-  /// Get model information including size
-  Future<OllamaModelInfo?> getModelInfo(
-      String modelName, String baseUrl) async {
-    try {
-      final response = await _httpClient
-          .get(Uri.parse('$baseUrl/api/tags'))
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != httpStatusOk) {
-        return null;
-      }
-
-      final result = jsonDecode(response.body) as Map<String, dynamic>;
-      final models = result['models'] as List<dynamic>? ?? [];
-
-      for (final model in models) {
-        final modelMap = model as Map<String, dynamic>;
-        if (modelMap['name'] == modelName || modelMap['model'] == modelName) {
-          final details = modelMap['details'] as Map<String, dynamic>?;
-          return OllamaModelInfo(
-            name: modelMap['name'] as String,
-            size: modelMap['size'] as int? ?? 0,
-            parameterSize: details?['parameter_size'] as String? ?? 'Unknown',
-            quantizationLevel:
-                details?['quantization_level'] as String? ?? 'Unknown',
-          );
-        }
-      }
-
-      return null;
-    } catch (e, stackTrace) {
-      developer.log(
-        'Error getting model info',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'OllamaInferenceRepository',
-      );
-      return null;
-    }
-  }
-
   /// Install a model in Ollama with progress tracking
   Stream<OllamaPullProgress> installModel(
       String modelName, String baseUrl) async* {
@@ -740,31 +671,6 @@ class ModelNotInstalledException implements Exception {
   @override
   String toString() =>
       'Model "$modelName" is not installed. Please install it first.';
-}
-
-/// Information about an Ollama model
-class OllamaModelInfo {
-  const OllamaModelInfo({
-    required this.name,
-    required this.size,
-    required this.parameterSize,
-    required this.quantizationLevel,
-  });
-
-  final String name;
-  final int size; // Size in bytes
-  final String parameterSize; // e.g., "4.3B"
-  final String quantizationLevel; // e.g., "Q4_K_M"
-
-  /// Get human-readable size
-  String get humanReadableSize {
-    if (size < 1024) return '$size B';
-    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
-    if (size < 1024 * 1024 * 1024) {
-      return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(size / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-  }
 }
 
 /// Progress information for model installation

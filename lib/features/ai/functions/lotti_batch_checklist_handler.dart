@@ -297,12 +297,6 @@ Do NOT recreate the items that were already successful.''';
 
   List<String> get successfulItems => List.unmodifiable(_successfulItems);
 
-  void reset() {
-    _createdDescriptions.clear();
-    _successfulItems.clear();
-    _createdDetails.clear();
-  }
-
   @override
   String createToolResponse(FunctionCallResult result) {
     if (result.success) {

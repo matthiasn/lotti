@@ -21,8 +21,6 @@ class CascadeDeletionResult {
 
   final List<AiConfigModel> deletedModels;
   final String providerName;
-
-  int get deletedModelCount => deletedModels.length;
 }
 
 @Riverpod(keepAlive: true)

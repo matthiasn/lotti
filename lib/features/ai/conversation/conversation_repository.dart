@@ -292,11 +292,6 @@ class ConversationRepository extends _$ConversationRepository {
     final manager = _conversations.remove(conversationId);
     manager?.dispose();
   }
-
-  /// Get all active conversation IDs
-  List<String> getActiveConversations() {
-    return _conversations.keys.toList();
-  }
 }
 
 /// Provider for accessing conversation events

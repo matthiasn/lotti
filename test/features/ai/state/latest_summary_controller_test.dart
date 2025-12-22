@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -257,87 +256,6 @@ void main() {
       ),
     );
     expect(state.value, equals(updatedEntry));
-  });
-
-  test('removeActionItem updates state and persists changes', () async {
-    // Arrange
-    final testEntry = AiResponseEntry(
-      meta: Metadata(
-        id: testId,
-        dateFrom: testDateTime,
-        dateTo: testDateTime,
-        createdAt: testDateTime,
-        updatedAt: testDateTime,
-      ),
-      data: const AiResponseData(
-        model: 'test-model',
-        temperature: 0.5,
-        systemMessage: 'test-system-message',
-        prompt: 'test-prompt',
-        thoughts: 'test-thoughts',
-        response: 'test-response',
-        type: testAiResponseType,
-        suggestedActionItems: [
-          AiActionItem(
-            title: 'Test Action 1',
-            completed: false,
-          ),
-          AiActionItem(
-            title: 'Test Action 2',
-            completed: false,
-          ),
-        ],
-      ),
-    );
-
-    when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-        .thenAnswer((_) async => [testEntry]);
-
-    when(() => mockJournalRepository.updateJournalEntity(any()))
-        .thenAnswer((_) async => true);
-
-    // Act
-    container.listen(
-      latestSummaryControllerProvider(
-        id: testId,
-        aiResponseType: testAiResponseType,
-      ),
-      listener.call,
-      fireImmediately: true,
-    );
-
-    // Wait for initial state
-    await container.read(
-      latestSummaryControllerProvider(
-        id: testId,
-        aiResponseType: testAiResponseType,
-      ).future,
-    );
-
-    // Remove action item
-    final notifier = container.read(
-      latestSummaryControllerProvider(
-        id: testId,
-        aiResponseType: testAiResponseType,
-      ).notifier,
-    );
-    await notifier.removeActionItem(title: 'Test Action 1');
-
-    // Assert
-    verify(() => mockJournalRepository.updateJournalEntity(any())).called(1);
-    verify(() => listener.call(any(), any())).called(3);
-
-    final state = container.read(
-      latestSummaryControllerProvider(
-        id: testId,
-        aiResponseType: testAiResponseType,
-      ),
-    );
-    expect(state.value?.data.suggestedActionItems?.length, equals(1));
-    expect(
-      state.value?.data.suggestedActionItems?.first.title,
-      equals('Test Action 2'),
-    );
   });
 
   test('disposes subscriptions when disposed', () async {
