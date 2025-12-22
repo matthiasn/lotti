@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -28,15 +29,18 @@ class MatrixMessageSender {
     required JournalDb journalDb,
     required Directory documentsDirectory,
     required SentEventRegistry sentEventRegistry,
+    VectorClockService? vectorClockService,
   })  : _loggingService = loggingService,
         _journalDb = journalDb,
         _documentsDirectory = documentsDirectory,
-        _sentEventRegistry = sentEventRegistry;
+        _sentEventRegistry = sentEventRegistry,
+        _vectorClockService = vectorClockService;
 
   final LoggingService _loggingService;
   final JournalDb _journalDb;
   final Directory _documentsDirectory;
   final SentEventRegistry _sentEventRegistry;
+  final VectorClockService? _vectorClockService;
 
   List<VectorClock>? _mergeCoveredVectorClocks(
     Iterable<VectorClock?> clocks,
@@ -57,6 +61,35 @@ class MatrixMessageSender {
 
   Directory get documentsDirectory => _documentsDirectory;
   SentEventRegistry get sentEventRegistry => _sentEventRegistry;
+
+  Future<SyncMessage> _ensureOriginatingHostId(
+    SyncMessage message,
+  ) async {
+    if (_vectorClockService == null) return message;
+    final host = await _vectorClockService!.getHost();
+    if (host == null) return message;
+
+    if (message is SyncJournalEntity && message.originatingHostId == null) {
+      _loggingService.captureEvent(
+        'originatingHostId filled for journalEntity id=${message.id} jsonPath=${message.jsonPath} host=$host',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.originatingHostId',
+      );
+      return message.copyWith(originatingHostId: host);
+    }
+
+    if (message is SyncEntryLink && message.originatingHostId == null) {
+      _loggingService.captureEvent(
+        'originatingHostId filled for entryLink id=${message.entryLink.id} '
+        'from=${message.entryLink.fromId} to=${message.entryLink.toId} host=$host',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.originatingHostId',
+      );
+      return message.copyWith(originatingHostId: host);
+    }
+
+    return message;
+  }
 
   /// Sends [message] to Matrix, ensuring that any event IDs emitted by the SDK
   /// are registered with [SentEventRegistry] so downstream timelines can
@@ -108,7 +141,7 @@ class MatrixMessageSender {
     try {
       // For journal entity messages, upload JSON (and attachments) first so
       // descriptors are available before the text event is processed.
-      var outboundMessage = message;
+      var outboundMessage = await _ensureOriginatingHostId(message);
       if (outboundMessage is SyncJournalEntity) {
         final normalized = await _sendJournalEntityPayload(
           room: room,

@@ -87,6 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync: Send descriptor JSON from a single snapshot so the message vector clock matches uploaded bytes, avoiding stale vector-clock retries.
 - Sync: Mark superseded own counters as unresolvable during backfill so requested entries can clear.
 - Sync: Always include the current vector clock in `coveredVectorClocks` for journal entries and entry links while ignoring the current clock for pre-marking to preserve gap detection.
+- Sync: Fill missing `originatingHostId` on outgoing journal entities and entry links so sequence logs always update.
 - Outbox: Respect retry backoff across triggers to prevent rapid retry storms under flaky networks.
 - Tests: Stabilize Matrix stream consumer signal coverage around live scan timing and stubs.
 ### Added
