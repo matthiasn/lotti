@@ -141,7 +141,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: 'en',
       );
 
       // Act
@@ -180,7 +179,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: 'en',
       );
 
       // Act
@@ -218,7 +216,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: 'en',
       );
 
       // Act - should not throw
@@ -266,7 +263,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: 'en',
       );
 
       // Act
@@ -314,7 +310,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: 'en',
       );
 
       // Act
@@ -365,7 +360,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: 'en',
       );
 
       // Act
@@ -414,7 +408,6 @@ void main() {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: 'en',
       );
 
       // Act
@@ -484,7 +477,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -554,7 +546,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -643,7 +634,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -736,7 +726,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -846,7 +835,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -932,7 +920,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -1010,7 +997,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -1066,7 +1052,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -1137,7 +1122,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         // Act
@@ -1193,7 +1177,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         await trigger.triggerAutomaticPrompts(
@@ -1276,7 +1259,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         await trigger.triggerAutomaticPrompts(
@@ -1386,7 +1368,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         await trigger.triggerAutomaticPrompts(
@@ -1529,7 +1510,6 @@ void main() {
           progress: Duration.zero,
           showIndicator: false,
           modalVisible: false,
-          language: 'en',
         );
 
         await trigger.triggerAutomaticPrompts(

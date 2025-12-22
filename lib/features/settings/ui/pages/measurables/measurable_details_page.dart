@@ -192,7 +192,6 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                       context.messages.measurableDeleteConfirm,
                                   key: deleteKey,
                                   isDestructiveAction: true,
-                                  isDefaultAction: true,
                                 ),
                               ],
                             );

@@ -19,7 +19,6 @@ void main() {
             dBFS: -20,
             showIndicator: true,
             modalVisible: false,
-            language: '',
           ),
         ),
       );

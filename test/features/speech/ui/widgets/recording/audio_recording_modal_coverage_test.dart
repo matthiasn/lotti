@@ -445,7 +445,6 @@ void main() {
         dBFS: -20,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
       );
 
       await tester.pumpWidget(
@@ -518,7 +517,6 @@ void main() {
         dBFS: -60,
         showIndicator: false,
         modalVisible: true,
-        language: 'en',
       );
 
       await tester.pumpWidget(

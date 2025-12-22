@@ -178,7 +178,6 @@ class _HabitDetailsPageState extends State<HabitDetailsPage> {
                                             context.messages.habitDeleteConfirm,
                                         key: deleteKey,
                                         isDestructiveAction: true,
-                                        isDefaultAction: true,
                                       ),
                                     ],
                                   );

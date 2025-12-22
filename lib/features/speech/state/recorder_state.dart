@@ -44,10 +44,6 @@ abstract class AudioRecorderState with _$AudioRecorderState {
     /// Used to coordinate with indicator display.
     required bool modalVisible,
 
-    /// Selected language for transcription.
-    /// Empty string means auto-detect.
-    required String? language,
-
     /// Optional ID to link recording to existing journal entry.
     String? linkedId,
 

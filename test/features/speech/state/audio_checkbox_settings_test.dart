@@ -204,20 +204,17 @@ void main() {
           container.read(audioRecorderControllerProvider.notifier);
 
       // Set language
-      controller.setLanguage('en');
+
       var state = container.read(audioRecorderControllerProvider);
-      expect(state.language, 'en');
 
       // Update checkbox - language should remain
       controller.setEnableSpeechRecognition(enable: true);
       state = container.read(audioRecorderControllerProvider);
-      expect(state.language, 'en');
       expect(state.enableSpeechRecognition, true);
 
       // Update another checkbox - both language and first checkbox should remain
       controller.setEnableTaskSummary(enable: false);
       state = container.read(audioRecorderControllerProvider);
-      expect(state.language, 'en');
       expect(state.enableSpeechRecognition, true);
       expect(state.enableTaskSummary, false);
     });

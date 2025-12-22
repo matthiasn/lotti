@@ -16,7 +16,6 @@ import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
   const ChecklistItemWithSuggestionWidget({
     required this.itemId,
-    required this.taskId,
     required this.title,
     required this.isChecked,
     required this.onChanged,
@@ -29,7 +28,6 @@ class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
   });
 
   final String itemId;
-  final String taskId;
   final String title;
   final bool readOnly;
   final bool isChecked;

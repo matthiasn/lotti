@@ -116,7 +116,6 @@ class ChecklistItemWrapper extends ConsumerWidget {
               },
               child: ChecklistItemWithSuggestionWidget(
                 itemId: item.id,
-                taskId: taskId,
                 title: item.data.title,
                 isChecked: item.data.isChecked,
                 hideCompleted: hideIfChecked,

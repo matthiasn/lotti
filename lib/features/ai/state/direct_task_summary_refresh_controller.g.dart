@@ -174,7 +174,7 @@ class _ScheduledTaskSummaryRefreshProviderElement
 }
 
 String _$directTaskSummaryRefreshControllerHash() =>
-    r'c43ba295aa153442e084ea681bed55d93c2b8744';
+    r'7973327a99e016662dd7c7d2bb9104b0aa574c41';
 
 /// Manages scheduled task summary refresh requests from checklist actions.
 ///

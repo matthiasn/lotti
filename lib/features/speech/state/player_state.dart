@@ -3,7 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 
 part 'player_state.freezed.dart';
 
-enum AudioPlayerStatus { initializing, initialized, playing, paused, stopped }
+enum AudioPlayerStatus { initializing, playing, paused, stopped }
 
 @freezed
 abstract class AudioPlayerState with _$AudioPlayerState {

@@ -42,7 +42,6 @@ class LoginStickyActionBar extends ConsumerWidget {
             label: context.messages.syncDeleteConfigConfirm,
             key: deleteKey,
             isDestructiveAction: true,
-            isDefaultAction: true,
           ),
         ],
       );

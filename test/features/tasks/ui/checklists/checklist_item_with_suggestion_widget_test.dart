@@ -17,7 +17,6 @@ void main() {
 
   group('ChecklistItemWithSuggestionWidget', () {
     const itemId = 'test-item-id';
-    const taskId = 'test-task-id';
     const title = 'Test checklist item';
 
     Widget createWidget({
@@ -40,7 +39,6 @@ void main() {
         child: WidgetTestBench(
           child: ChecklistItemWithSuggestionWidget(
             itemId: itemId,
-            taskId: taskId,
             title: title,
             isChecked: isChecked,
             hideCompleted: hideCompleted,
@@ -171,7 +169,6 @@ void main() {
           child: WidgetTestBench(
             child: ChecklistItemWithSuggestionWidget(
               itemId: itemId,
-              taskId: taskId,
               title: title,
               isChecked: false,
               onChanged: (_) {
@@ -213,7 +210,6 @@ void main() {
           child: WidgetTestBench(
             child: ChecklistItemWithSuggestionWidget(
               itemId: itemId,
-              taskId: taskId,
               title: title,
               isChecked: false,
               onChanged: (_) {},
@@ -241,7 +237,6 @@ void main() {
           child: WidgetTestBench(
             child: ChecklistItemWithSuggestionWidget(
               itemId: itemId,
-              taskId: taskId,
               title: title,
               isChecked: false,
               onChanged: (_) {},

@@ -714,7 +714,6 @@ Future<void> importDroppedAudio({
       // Create journal entry
       final result = await SpeechRepository.createAudioEntry(
         audioNote,
-        language: null,
         linkedId: linkedId,
         categoryId: categoryId,
       );

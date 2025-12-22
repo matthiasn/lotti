@@ -411,7 +411,6 @@ class SyncDatabase extends _$SyncDatabase {
       '''
       SELECT
         ssl.host_id,
-        MAX(ssl.counter) as latest_counter,
         SUM(CASE WHEN ssl.status = $received THEN 1 ELSE 0 END) as received_count,
         SUM(CASE WHEN ssl.status = $missing THEN 1 ELSE 0 END) as missing_count,
         SUM(CASE WHEN ssl.status = $requested THEN 1 ELSE 0 END) as requested_count,
@@ -430,8 +429,6 @@ class SyncDatabase extends _$SyncDatabase {
     final results = await query.get();
     final hostStats = results.map((row) {
       return BackfillHostStats(
-        hostId: row.read<String>('host_id'),
-        latestCounter: row.read<int>('latest_counter'),
         receivedCount: row.read<int>('received_count'),
         missingCount: row.read<int>('missing_count'),
         requestedCount: row.read<int>('requested_count'),

@@ -1,25 +1,21 @@
 /// Stats for backfill status per host.
 class BackfillHostStats {
   const BackfillHostStats({
-    required this.hostId,
     required this.receivedCount,
     required this.missingCount,
     required this.requestedCount,
     required this.backfilledCount,
     required this.deletedCount,
     required this.unresolvableCount,
-    required this.latestCounter,
     this.lastSeenAt,
   });
 
-  final String hostId;
   final int receivedCount;
   final int missingCount;
   final int requestedCount;
   final int backfilledCount;
   final int deletedCount;
   final int unresolvableCount;
-  final int latestCounter;
   final DateTime? lastSeenAt;
 
   int get totalCount =>
@@ -119,9 +115,6 @@ class SyncTuning {
   // Prevents a single large request from flooding the outbox.
   static const int maxBackfillResponseBatchSize = 50;
 
-  // Maximum entries to fetch from DB per backfill request message
-  static const int backfillBatchSize = 100;
-
   // Maximum entries to process per processing cycle
   static const int backfillProcessingBatchSize = 50;
 
@@ -136,28 +129,4 @@ class SyncTuning {
   // First request (requestCount=0) is immediate.
   static const Duration backfillBackoffBase = Duration(minutes: 5);
   static const Duration backfillBackoffMax = Duration(hours: 2);
-
-  /// Calculate backoff duration based on request count using exponential backoff.
-  /// First request (requestCount=0) is immediate.
-  /// Retries use exponential backoff: min(2h, 5min * 2^(attempt-1))
-  /// - attempt 1: 5 minutes
-  /// - attempt 2: 10 minutes
-  /// - attempt 3: 20 minutes
-  /// - attempt 4: 40 minutes
-  /// - attempt 5: 80 minutes
-  /// - attempt 6+: 2 hours (capped)
-  static Duration calculateBackoff(int requestCount) {
-    if (requestCount <= 0) return Duration.zero;
-
-    // Cap early to avoid integer overflow (2^5 * 5 = 160 already exceeds max)
-    // After attempt 5, always return max backoff
-    if (requestCount >= 6) return backfillBackoffMax;
-
-    // Exponential backoff: base * 2^(attempt-1), capped at max
-    final multiplier = 1 << (requestCount - 1); // 2^(requestCount-1)
-    final backoffMinutes = backfillBackoffBase.inMinutes * multiplier;
-    final cappedMinutes = backoffMinutes.clamp(0, backfillBackoffMax.inMinutes);
-
-    return Duration(minutes: cappedMinutes);
-  }
 }

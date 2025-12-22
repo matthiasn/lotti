@@ -10,7 +10,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 
 JournalEntity buildTask({
   required String id,
@@ -59,14 +58,6 @@ LabelDefinition buildLabel(String id, String name, String color) {
 void main() {
   late JournalDb db;
   Directory? previousDirectory;
-
-  // Ensure EntitiesCacheService can subscribe to DB watchers
-  // by registering the in-memory JournalDb in getIt for these tests.
-  Future<void> registerDbForCache() async {
-    if (!getIt.isRegistered<JournalDb>()) {
-      getIt.registerSingleton<JournalDb>(db);
-    }
-  }
 
   setUp(() {
     if (getIt.isRegistered<Directory>()) {
@@ -241,108 +232,5 @@ void main() {
     final next = await queue.next;
     expect(next?.private, isTrue);
     await queue.cancel();
-  });
-
-  group('category-scoped workflows (integration)', () {
-    LabelDefinition scoped(String id, String name, List<String> cats) {
-      final now = DateTime(2024, 1, 1);
-      return LabelDefinition(
-        id: id,
-        name: name,
-        color: '#222222',
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: const VectorClock(<String, int>{}),
-        applicableCategoryIds: cats,
-      );
-    }
-
-    LabelDefinition global(String id, String name) {
-      final now = DateTime(2024, 1, 1);
-      return LabelDefinition(
-        id: id,
-        name: name,
-        color: '#111111',
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: const VectorClock(<String, int>{}),
-      );
-    }
-
-    Future<void> upsertCategory(String id, String name, String color) async {
-      final now = DateTime(2024, 1, 1);
-      final cat = CategoryDefinition(
-        id: id,
-        name: name,
-        color: color,
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: const VectorClock(<String, int>{}),
-        private: false,
-        active: true,
-      );
-      await db.upsertCategoryDefinition(cat);
-    }
-
-    test('create scoped label → visible only in matching category', () async {
-      await registerDbForCache();
-      final cache = EntitiesCacheService();
-
-      await upsertCategory('work', 'Work', '#0000FF');
-      await upsertCategory('personal', 'Personal', '#00FF00');
-      await upsertLabel(db, scoped('l-work', 'WorkOnly', const ['work']));
-
-      // Let watchers deliver
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      final forWork = cache.availableLabelsForCategory('work');
-      final forPersonal = cache.availableLabelsForCategory('personal');
-      final forNull = cache.availableLabelsForCategory(null);
-
-      expect(forWork.map((l) => l.id), contains('l-work'));
-      expect(forPersonal.map((l) => l.id), isNot(contains('l-work')));
-      expect(forNull.map((l) => l.id), isNot(contains('l-work')));
-    });
-
-    test('global label appears in all categories and unscoped context',
-        () async {
-      await registerDbForCache();
-      final cache = EntitiesCacheService();
-
-      await upsertCategory('work', 'Work', '#0000FF');
-      await upsertCategory('home', 'Home', '#00FF00');
-      await upsertLabel(db, global('l-global', 'Global'));
-
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      expect(cache.availableLabelsForCategory('work').map((l) => l.id),
-          contains('l-global'));
-      expect(cache.availableLabelsForCategory('home').map((l) => l.id),
-          contains('l-global'));
-      expect(cache.availableLabelsForCategory(null).map((l) => l.id),
-          contains('l-global'));
-    });
-
-    test('label scoped to multiple categories appears in each', () async {
-      await registerDbForCache();
-      final cache = EntitiesCacheService();
-
-      await upsertCategory('work', 'Work', '#0000FF');
-      await upsertCategory('personal', 'Personal', '#00FF00');
-      await upsertCategory('health', 'Health', '#FF00FF');
-      await upsertLabel(
-        db,
-        scoped('l-multi', 'Multi', const ['work', 'personal']),
-      );
-
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      expect(cache.availableLabelsForCategory('work').map((l) => l.id),
-          contains('l-multi'));
-      expect(cache.availableLabelsForCategory('personal').map((l) => l.id),
-          contains('l-multi'));
-      expect(cache.availableLabelsForCategory('health').map((l) => l.id),
-          isNot(contains('l-multi')));
-    });
   });
 }

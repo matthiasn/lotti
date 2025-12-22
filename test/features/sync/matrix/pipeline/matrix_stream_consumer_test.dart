@@ -385,7 +385,6 @@ void main() {
       consumer.reportDbApplyDiagnostics(SyncApplyDiagnostics(
         eventId: 'e1',
         payloadType: 'entryLink',
-        entityId: 'A->B',
         vectorClock: null,
         conflictStatus: 'entryLink.noop',
         applied: false,
@@ -1865,7 +1864,6 @@ void main() {
       SyncApplyDiagnostics(
         eventId: 'MB1',
         payloadType: 'journalEntity',
-        entityId: 'e',
         vectorClock: null,
         conflictStatus: 'VclockStatus.b_gt_a',
         applied: false,
@@ -3225,7 +3223,6 @@ void main() {
       SyncApplyDiagnostics(
         eventId: 'e',
         payloadType: 'journalEntity',
-        entityId: 'id',
         vectorClock: null,
         conflictStatus: 'b_gt_a',
         applied: true,
@@ -3237,7 +3234,6 @@ void main() {
       SyncApplyDiagnostics(
         eventId: 'e2',
         payloadType: 'journalEntity',
-        entityId: 'id',
         vectorClock: null,
         conflictStatus: 'a_gt_b',
         applied: false,
@@ -3249,7 +3245,6 @@ void main() {
       SyncApplyDiagnostics(
         eventId: 'e3',
         payloadType: 'journalEntity',
-        entityId: 'id',
         vectorClock: null,
         conflictStatus: 'concurrent',
         applied: false,
@@ -3462,7 +3457,6 @@ void main() {
       SyncApplyDiagnostics(
         eventId: 'X',
         payloadType: 'journalEntity',
-        entityId: 'e',
         vectorClock: null,
         conflictStatus: 'a_gt_b',
         applied: false,

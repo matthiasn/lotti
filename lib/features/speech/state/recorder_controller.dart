@@ -33,7 +33,6 @@ const double vuReferenceLevelDbfs = -18;
 /// - Real-time audio level monitoring for VU meter display
 /// - Integration with audio player to pause playback during recording
 /// - UI state management (modal visibility, indicator visibility)
-/// - Language selection for transcription
 ///
 /// The controller is kept alive to maintain recording state across navigation.
 @Riverpod(keepAlive: true)
@@ -44,7 +43,6 @@ class AudioRecorderController extends _$AudioRecorderController {
   AudioPlayerCubit? _audioPlayerCubit;
   String? _linkedId;
   String? _categoryId;
-  String? _language;
   AudioNote? _audioNote;
   bool _disposed = false;
 
@@ -100,7 +98,6 @@ class AudioRecorderController extends _$AudioRecorderController {
       progress: Duration.zero,
       showIndicator: false,
       modalVisible: false,
-      language: '',
     );
   }
 
@@ -273,7 +270,6 @@ class AudioRecorderController extends _$AudioRecorderController {
         progress: Duration.zero,
         showIndicator: false,
         modalVisible: false,
-        language: '',
         // Preserve the inference preferences
         enableSpeechRecognition: enableSpeechRecognition,
         enableTaskSummary: enableTaskSummary,
@@ -282,7 +278,6 @@ class AudioRecorderController extends _$AudioRecorderController {
       if (_audioNote != null) {
         final journalAudio = await SpeechRepository.createAudioEntry(
           _audioNote!,
-          language: _language,
           linkedId: _linkedId,
           categoryId: _categoryId,
         );
@@ -336,13 +331,6 @@ class AudioRecorderController extends _$AudioRecorderController {
   Future<void> resume() async {
     await _recorderRepository.resumeRecording();
     state = state.copyWith(status: AudioRecorderStatus.recording);
-  }
-
-  /// Sets the language for transcription.
-  /// [language] Language code (e.g., 'en', 'de') or empty string for auto-detect.
-  void setLanguage(String language) {
-    _language = language;
-    state = state.copyWith(language: language);
   }
 
   /// Controls visibility of the recording modal.

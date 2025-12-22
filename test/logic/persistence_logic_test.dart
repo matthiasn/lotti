@@ -987,10 +987,7 @@ void main() {
         duration: const Duration(seconds: 60),
       );
 
-      final audioEntry = await SpeechRepository.createAudioEntry(
-        audioData,
-        language: null,
-      );
+      final audioEntry = await SpeechRepository.createAudioEntry(audioData);
 
       expect(audioEntry, isNotNull);
 

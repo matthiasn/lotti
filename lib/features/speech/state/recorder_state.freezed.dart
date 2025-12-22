@@ -33,10 +33,6 @@ mixin _$AudioRecorderState {
   /// Used to coordinate with indicator display.
   bool get modalVisible;
 
-  /// Selected language for transcription.
-  /// Empty string means auto-detect.
-  String? get language;
-
   /// Optional ID to link recording to existing journal entry.
   String? get linkedId;
 
@@ -74,8 +70,6 @@ mixin _$AudioRecorderState {
                 other.showIndicator == showIndicator) &&
             (identical(other.modalVisible, modalVisible) ||
                 other.modalVisible == modalVisible) &&
-            (identical(other.language, language) ||
-                other.language == language) &&
             (identical(other.linkedId, linkedId) ||
                 other.linkedId == linkedId) &&
             (identical(
@@ -96,7 +90,6 @@ mixin _$AudioRecorderState {
       dBFS,
       showIndicator,
       modalVisible,
-      language,
       linkedId,
       enableSpeechRecognition,
       enableTaskSummary,
@@ -104,7 +97,7 @@ mixin _$AudioRecorderState {
 
   @override
   String toString() {
-    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, language: $language, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary, enableChecklistUpdates: $enableChecklistUpdates)';
+    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary, enableChecklistUpdates: $enableChecklistUpdates)';
   }
 }
 
@@ -121,7 +114,6 @@ abstract mixin class $AudioRecorderStateCopyWith<$Res> {
       double dBFS,
       bool showIndicator,
       bool modalVisible,
-      String? language,
       String? linkedId,
       bool? enableSpeechRecognition,
       bool? enableTaskSummary,
@@ -147,7 +139,6 @@ class _$AudioRecorderStateCopyWithImpl<$Res>
     Object? dBFS = null,
     Object? showIndicator = null,
     Object? modalVisible = null,
-    Object? language = freezed,
     Object? linkedId = freezed,
     Object? enableSpeechRecognition = freezed,
     Object? enableTaskSummary = freezed,
@@ -178,10 +169,6 @@ class _$AudioRecorderStateCopyWithImpl<$Res>
           ? _self.modalVisible
           : modalVisible // ignore: cast_nullable_to_non_nullable
               as bool,
-      language: freezed == language
-          ? _self.language
-          : language // ignore: cast_nullable_to_non_nullable
-              as String?,
       linkedId: freezed == linkedId
           ? _self.linkedId
           : linkedId // ignore: cast_nullable_to_non_nullable
@@ -302,7 +289,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             double dBFS,
             bool showIndicator,
             bool modalVisible,
-            String? language,
             String? linkedId,
             bool? enableSpeechRecognition,
             bool? enableTaskSummary,
@@ -320,7 +306,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             _that.dBFS,
             _that.showIndicator,
             _that.modalVisible,
-            _that.language,
             _that.linkedId,
             _that.enableSpeechRecognition,
             _that.enableTaskSummary,
@@ -352,7 +337,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             double dBFS,
             bool showIndicator,
             bool modalVisible,
-            String? language,
             String? linkedId,
             bool? enableSpeechRecognition,
             bool? enableTaskSummary,
@@ -369,7 +353,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             _that.dBFS,
             _that.showIndicator,
             _that.modalVisible,
-            _that.language,
             _that.linkedId,
             _that.enableSpeechRecognition,
             _that.enableTaskSummary,
@@ -400,7 +383,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             double dBFS,
             bool showIndicator,
             bool modalVisible,
-            String? language,
             String? linkedId,
             bool? enableSpeechRecognition,
             bool? enableTaskSummary,
@@ -417,7 +399,6 @@ extension AudioRecorderStatePatterns on AudioRecorderState {
             _that.dBFS,
             _that.showIndicator,
             _that.modalVisible,
-            _that.language,
             _that.linkedId,
             _that.enableSpeechRecognition,
             _that.enableTaskSummary,
@@ -438,7 +419,6 @@ class _AudioRecorderState implements AudioRecorderState {
       required this.dBFS,
       required this.showIndicator,
       required this.modalVisible,
-      required this.language,
       this.linkedId,
       this.enableSpeechRecognition,
       this.enableTaskSummary,
@@ -468,11 +448,6 @@ class _AudioRecorderState implements AudioRecorderState {
   /// Used to coordinate with indicator display.
   @override
   final bool modalVisible;
-
-  /// Selected language for transcription.
-  /// Empty string means auto-detect.
-  @override
-  final String? language;
 
   /// Optional ID to link recording to existing journal entry.
   @override
@@ -515,8 +490,6 @@ class _AudioRecorderState implements AudioRecorderState {
                 other.showIndicator == showIndicator) &&
             (identical(other.modalVisible, modalVisible) ||
                 other.modalVisible == modalVisible) &&
-            (identical(other.language, language) ||
-                other.language == language) &&
             (identical(other.linkedId, linkedId) ||
                 other.linkedId == linkedId) &&
             (identical(
@@ -537,7 +510,6 @@ class _AudioRecorderState implements AudioRecorderState {
       dBFS,
       showIndicator,
       modalVisible,
-      language,
       linkedId,
       enableSpeechRecognition,
       enableTaskSummary,
@@ -545,7 +517,7 @@ class _AudioRecorderState implements AudioRecorderState {
 
   @override
   String toString() {
-    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, language: $language, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary, enableChecklistUpdates: $enableChecklistUpdates)';
+    return 'AudioRecorderState(status: $status, progress: $progress, vu: $vu, dBFS: $dBFS, showIndicator: $showIndicator, modalVisible: $modalVisible, linkedId: $linkedId, enableSpeechRecognition: $enableSpeechRecognition, enableTaskSummary: $enableTaskSummary, enableChecklistUpdates: $enableChecklistUpdates)';
   }
 }
 
@@ -564,7 +536,6 @@ abstract mixin class _$AudioRecorderStateCopyWith<$Res>
       double dBFS,
       bool showIndicator,
       bool modalVisible,
-      String? language,
       String? linkedId,
       bool? enableSpeechRecognition,
       bool? enableTaskSummary,
@@ -590,7 +561,6 @@ class __$AudioRecorderStateCopyWithImpl<$Res>
     Object? dBFS = null,
     Object? showIndicator = null,
     Object? modalVisible = null,
-    Object? language = freezed,
     Object? linkedId = freezed,
     Object? enableSpeechRecognition = freezed,
     Object? enableTaskSummary = freezed,
@@ -621,10 +591,6 @@ class __$AudioRecorderStateCopyWithImpl<$Res>
           ? _self.modalVisible
           : modalVisible // ignore: cast_nullable_to_non_nullable
               as bool,
-      language: freezed == language
-          ? _self.language
-          : language // ignore: cast_nullable_to_non_nullable
-              as String?,
       linkedId: freezed == linkedId
           ? _self.linkedId
           : linkedId // ignore: cast_nullable_to_non_nullable
