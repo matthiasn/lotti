@@ -332,12 +332,10 @@ class ModernUnlinkItem extends ConsumerWidget {
 /// Modern styled toggle hidden action item
 class ModernToggleHiddenItem extends ConsumerWidget {
   const ModernToggleHiddenItem({
-    required this.entryId,
     required this.link,
     super.key,
   });
 
-  final String entryId;
   final EntryLink link;
 
   @override

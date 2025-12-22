@@ -12,12 +12,10 @@ import 'package:lotti/widgets/modal/animated_modal_item.dart';
 class AnimatedModernTaskCard extends StatelessWidget {
   const AnimatedModernTaskCard({
     required this.task,
-    this.isCompact = false,
     super.key,
   });
 
   final Task task;
-  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {

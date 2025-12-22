@@ -106,10 +106,7 @@ void main() {
           final config = screenshotToolConfigs[tool];
           expect(config, isNotNull,
               reason: 'Tool $tool should have configuration');
-          expect(config!.name, isNotEmpty);
-          expect(config.arguments, isA<List<String>>());
-          expect(config.description, isNotEmpty);
-          expect(config.installCommand, isNotEmpty);
+          expect(config!.arguments, isA<List<String>>());
         }
       });
 
@@ -180,10 +177,7 @@ void main() {
         for (final tool in linuxScreenshotTools) {
           final config = screenshotToolConfigs[tool];
           expect(config, isNotNull);
-          expect(config!.name, isNotEmpty);
-          expect(config.arguments, isA<List<String>>());
-          expect(config.description, isNotEmpty);
-          expect(config.installCommand, isNotEmpty);
+          expect(config!.arguments, isA<List<String>>());
         }
       });
     });

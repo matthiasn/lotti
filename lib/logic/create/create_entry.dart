@@ -9,7 +9,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshots.dart';
 
@@ -40,16 +39,6 @@ Future<JournalEntity?> createChecklist({
       );
 
   return result.checklist;
-}
-
-Future<JournalEntity?> createTimerEntry({JournalEntity? linked}) async {
-  final timerItem = await createTextEntry(linkedId: linked?.meta.id);
-  if (linked != null) {
-    if (timerItem != null) {
-      await getIt<TimeService>().start(timerItem, linked);
-    }
-  }
-  return timerItem;
 }
 
 Future<Task?> createTask({String? linkedId, String? categoryId}) async {

@@ -13,7 +13,6 @@ class ScreenshotPortalConstants {
 
   static const String interfaceName = 'org.freedesktop.portal.Screenshot';
   static const String screenshotMethod = 'Screenshot';
-  static const String pickColorMethod = 'PickColor';
 }
 
 /// Service for taking screenshots using the XDG Desktop Portal

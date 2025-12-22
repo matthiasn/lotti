@@ -61,10 +61,6 @@ const String unsupportedPlatformMessage =
     'Screenshot functionality is not supported on ';
 
 // Process configuration
-/// Set to false to prevent shell injection vulnerabilities.
-/// Since we use Process.start() with direct executable and argument lists,
-/// we don't need shell features and this provides better security.
-const bool runInShell = false;
 const int successExitCode = 0;
 
 /// List of Linux screenshot tools to try in order of preference
@@ -78,42 +74,17 @@ const List<String> linuxScreenshotTools = [
 /// Screenshot tool configuration
 class ScreenshotToolConfig {
   const ScreenshotToolConfig({
-    required this.name,
     required this.arguments,
-    required this.description,
-    required this.installCommand,
   });
 
-  final String name;
   final List<String> arguments;
-  final String description;
-  final String installCommand;
 }
 
 /// Configuration for each screenshot tool
 const Map<String, ScreenshotToolConfig> screenshotToolConfigs = {
-  spectacleTool: ScreenshotToolConfig(
-    name: 'Spectacle',
-    arguments: spectacleArguments,
-    description: 'KDE screenshot tool',
-    installCommand: 'sudo apt install spectacle',
-  ),
-  gnomeScreenshotTool: ScreenshotToolConfig(
-    name: 'GNOME Screenshot',
-    arguments: gnomeScreenshotArguments,
-    description: 'GNOME screenshot tool',
-    installCommand: 'sudo apt install gnome-screenshot',
-  ),
-  scrotTool: ScreenshotToolConfig(
-    name: 'Scrot',
-    arguments: scrotArguments,
-    description: 'Lightweight screenshot tool',
-    installCommand: 'sudo apt install scrot',
-  ),
-  importTool: ScreenshotToolConfig(
-    name: 'ImageMagick Import',
-    arguments: importArguments,
-    description: 'ImageMagick screenshot tool',
-    installCommand: 'sudo apt install imagemagick',
-  ),
+  spectacleTool: ScreenshotToolConfig(arguments: spectacleArguments),
+  gnomeScreenshotTool:
+      ScreenshotToolConfig(arguments: gnomeScreenshotArguments),
+  scrotTool: ScreenshotToolConfig(arguments: scrotArguments),
+  importTool: ScreenshotToolConfig(arguments: importArguments),
 };

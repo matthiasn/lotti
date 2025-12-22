@@ -123,7 +123,6 @@ class EntryDetailsWidget extends ConsumerWidget {
                   color: color,
                   radius: AppTheme.cardBorderRadius,
                   strokeWidth: 1,
-                  glowSigma: 0,
                   duration: const Duration(milliseconds: 1200),
                 ),
               ),
@@ -153,7 +152,6 @@ class EntryDetailsWidget extends ConsumerWidget {
                   color: categoryColor,
                   radius: AppTheme.cardBorderRadius,
                   strokeWidth: 1,
-                  glowSigma: 0,
                   duration: const Duration(milliseconds: 4800),
                   loop: false,
                   startDelay: const Duration(milliseconds: 1000),
@@ -230,7 +228,6 @@ class _PulsingBorder extends StatefulWidget {
     required this.color,
     required this.radius,
     required this.strokeWidth,
-    required this.glowSigma,
     required this.duration,
     this.loop = true,
     this.loopCount,
@@ -240,7 +237,6 @@ class _PulsingBorder extends StatefulWidget {
   final Color color;
   final double radius;
   final double strokeWidth;
-  final double glowSigma;
   final Duration duration;
   final bool loop;
   final int? loopCount; // if set, run this many loops, then stop

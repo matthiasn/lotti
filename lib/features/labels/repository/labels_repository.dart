@@ -45,10 +45,6 @@ class LabelsRepository {
     return _journalDb.getAllLabelDefinitions();
   }
 
-  LabelDefinition? getLabelById(String? id) {
-    return _entitiesCacheService.getLabelById(id);
-  }
-
   /// Build label tuples [{id, name}] for the given label IDs
   Future<List<Map<String, String>>> buildLabelTuples(List<String> ids) async {
     if (ids.isEmpty) return <Map<String, String>>[];
@@ -367,78 +363,6 @@ class LabelsRepository {
         error,
         domain: 'labels_repository',
         subDomain: 'setLabels',
-        stackTrace: stackTrace,
-      );
-      return false;
-    }
-  }
-
-  /// Add one or more label IDs to the task's suppression set.
-  Future<bool?> addSuppressedLabels({
-    required String journalEntityId,
-    required Set<String> labelIds,
-  }) async {
-    if (labelIds.isEmpty) return true;
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-      if (journalEntity is! Task) return false;
-
-      final currentSuppressed =
-          journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-      final assigned = journalEntity.meta.labelIds?.toSet() ?? const <String>{};
-      final next = _mergeSuppressed(
-        current: currentSuppressed,
-        add: labelIds,
-        remove: assigned,
-      );
-
-      final updatedEntity = journalEntity.copyWith(
-        meta: await _persistenceLogic.updateMetadata(journalEntity.meta),
-        data: journalEntity.data.copyWith(
-          aiSuppressedLabelIds: next,
-        ),
-      );
-      return _persistenceLogic.updateDbEntity(updatedEntity);
-    } catch (error, stackTrace) {
-      _loggingService.captureException(
-        error,
-        domain: 'labels_repository',
-        subDomain: 'addSuppressedLabels',
-        stackTrace: stackTrace,
-      );
-      return false;
-    }
-  }
-
-  /// Remove one or more label IDs from the task's suppression set.
-  Future<bool?> removeSuppressedLabels({
-    required String journalEntityId,
-    required Set<String> labelIds,
-  }) async {
-    if (labelIds.isEmpty) return true;
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-      if (journalEntity is! Task) return false;
-
-      final current =
-          journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-      final next = _mergeSuppressed(
-        current: current,
-        remove: labelIds,
-      );
-
-      final updatedEntity = journalEntity.copyWith(
-        meta: await _persistenceLogic.updateMetadata(journalEntity.meta),
-        data: journalEntity.data.copyWith(
-          aiSuppressedLabelIds: next,
-        ),
-      );
-      return _persistenceLogic.updateDbEntity(updatedEntity);
-    } catch (error, stackTrace) {
-      _loggingService.captureException(
-        error,
-        domain: 'labels_repository',
-        subDomain: 'removeSuppressedLabels',
         stackTrace: stackTrace,
       );
       return false;

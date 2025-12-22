@@ -30,18 +30,11 @@ void main() {
     expect(style.letterSpacing, 1.2);
   });
 
-  test('inclusiveSansFamily falls back without runtime fetching', () {
-    GoogleFonts.config.allowRuntimeFetching = false;
-    expect(AppFonts.inclusiveSansFamily(), 'Inclusive Sans');
-  });
-
   test('delegates to google_fonts when runtime fetching allowed', () {
     GoogleFonts.config.allowRuntimeFetching = true;
     final gf = GoogleFonts.inconsolata();
     final style = AppFonts.inconsolata();
     expect(style.fontFamily, gf.fontFamily);
-    expect(
-        AppFonts.inclusiveSansFamily(), GoogleFonts.inclusiveSans().fontFamily);
   });
 
   test('inconsolata returns a style with defaults when no args', () {
