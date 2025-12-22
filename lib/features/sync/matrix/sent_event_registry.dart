@@ -9,13 +9,6 @@ enum SentEventSource {
   file,
 }
 
-extension SentEventSourceLabel on SentEventSource {
-  String get label => switch (this) {
-        SentEventSource.text => 'text',
-        SentEventSource.file => 'file',
-      };
-}
-
 /// In-memory registry of Matrix event IDs emitted by this device.
 ///
 /// Not thread-safe; relies on Dart's single-threaded event loop.

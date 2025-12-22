@@ -60,11 +60,6 @@ class MetricsCounters {
 
   final List<String> lastIgnored = <String>[];
 
-  void incProcessed() {
-    if (!collect) return;
-    processed++;
-  }
-
   void incProcessedWithType(String? rt) {
     if (!collect) return;
     processed++;
@@ -93,19 +88,9 @@ class MetricsCounters {
     failures++;
   }
 
-  void incFlushes() {
-    if (!collect) return;
-    flushes++;
-  }
-
   void incCatchupBatches() {
     if (!collect) return;
     catchupBatches++;
-  }
-
-  void incSkippedByRetryLimit() {
-    if (!collect) return;
-    skippedByRetryLimit++;
   }
 
   void incRetriesScheduled() {
@@ -218,18 +203,5 @@ class MetricsCounters {
       ..putIfAbsent(
           'liveScanTrailingScheduled', () => liveScanTrailingScheduled);
     return base;
-  }
-
-  /// Builds a compact, human-readable line summarizing counters suitable for
-  /// periodic log emission. Includes a signals(...) appendix for quick checks.
-  String buildFlushLog({required int retriesPending}) {
-    final base =
-        'metrics flush=$flushes processed=$processed skipped=$skipped failures=$failures catchup=$catchupBatches skippedByRetry=$skippedByRetryLimit retriesScheduled=$retriesScheduled retriesPending=$retriesPending signals(client=$signalClientStream,timeline=$signalTimelineCallbacks,net=$signalConnectivity,lat=${signalLatencyLastMs}ms)';
-    // Append a compact processedByType breakdown (e.g., entryLink=3,journalEntity=10)
-    if (processedByType.isEmpty) return base;
-    final entries = processedByType.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-    final byType = entries.map((e) => '${e.key}=${e.value}').join(',');
-    return '$base byType=$byType';
   }
 }

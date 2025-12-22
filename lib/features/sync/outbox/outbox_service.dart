@@ -236,10 +236,6 @@ class OutboxService {
     });
   }
 
-  Future<List<OutboxItem>> getNextItems() async {
-    return _syncDatabase.oldestOutboxItems(10);
-  }
-
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
       await Future<void>.delayed(const Duration(milliseconds: 200));

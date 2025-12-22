@@ -1684,10 +1684,6 @@ class MatrixStreamConsumer implements SyncPipeline {
     }
   }
 
-  // Visible for testing only
-  @visibleForTesting
-  bool get debugCollectMetrics => _collectMetrics;
-
   // Additional textual diagnostics not represented in numeric metrics.
   Map<String, String> diagnosticsStrings() {
     final map = <String, String>{

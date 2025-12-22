@@ -17,8 +17,3 @@ abstract class LoginFormState with _$LoginFormState {
     @Default(false) bool loginFailed,
   }) = _LoginFormState;
 }
-
-extension LoginFormStateLogging on LoginFormState {
-  String toSafeString() =>
-      'LoginFormState(homeServer: $homeServer, userName: $userName, password: ***REDACTED***, status: $status, isLoggedIn: $isLoggedIn, loginFailed: $loginFailed)';
-}

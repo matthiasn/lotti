@@ -1004,79 +1004,6 @@ void main() {
     });
   });
 
-  group('markAsReceived', () {
-    test('updates missing entry to backfilled', () async {
-      final existingMissing = _createLogItem(
-        aliceHostId,
-        3,
-      );
-
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
-          .thenAnswer((_) async => existingMissing);
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
-
-      await service.markAsReceived(
-        hostId: aliceHostId,
-        counter: 3,
-        entryId: 'arrived-entry',
-      );
-
-      verify(() => mockDb.recordSequenceEntry(any())).called(1);
-    });
-
-    test('does nothing for already received entry', () async {
-      final existingReceived = _createLogItem(
-        aliceHostId,
-        3,
-        status: SyncSequenceStatus.received,
-      );
-
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
-          .thenAnswer((_) async => existingReceived);
-
-      await service.markAsReceived(
-        hostId: aliceHostId,
-        counter: 3,
-        entryId: 'arrived-entry',
-      );
-
-      verifyNever(() => mockDb.recordSequenceEntry(any()));
-    });
-
-    test('does nothing when entry does not exist', () async {
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 99))
-          .thenAnswer((_) async => null);
-
-      await service.markAsReceived(
-        hostId: aliceHostId,
-        counter: 99,
-        entryId: 'new-entry',
-      );
-
-      verifyNever(() => mockDb.recordSequenceEntry(any()));
-    });
-
-    test('updates requested entry to backfilled', () async {
-      final existingRequested = _createLogItem(
-        aliceHostId,
-        5,
-        status: SyncSequenceStatus.requested,
-      );
-
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => existingRequested);
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
-
-      await service.markAsReceived(
-        hostId: aliceHostId,
-        counter: 5,
-        entryId: 'arrived-entry',
-      );
-
-      verify(() => mockDb.recordSequenceEntry(any())).called(1);
-    });
-  });
-
   group('markAsRequested', () {
     test('delegates to batchIncrementRequestCounts', () async {
       final entries = [
@@ -1099,47 +1026,6 @@ void main() {
       await service.markAsRequested([]);
 
       verify(() => mockDb.batchIncrementRequestCounts([])).called(1);
-    });
-  });
-
-  group('getMissingEntriesForActiveHosts', () {
-    test('delegates to database with default parameters', () async {
-      when(
-        () => mockDb.getMissingEntriesForActiveHosts(
-          limit: any(named: 'limit'),
-          maxRequestCount: any(named: 'maxRequestCount'),
-        ),
-      ).thenAnswer((_) async => []);
-
-      await service.getMissingEntriesForActiveHosts();
-
-      verify(
-        () => mockDb.getMissingEntriesForActiveHosts(
-          limit: 50,
-          maxRequestCount: 10,
-        ),
-      ).called(1);
-    });
-
-    test('passes custom parameters', () async {
-      when(
-        () => mockDb.getMissingEntriesForActiveHosts(
-          limit: any(named: 'limit'),
-          maxRequestCount: any(named: 'maxRequestCount'),
-        ),
-      ).thenAnswer((_) async => []);
-
-      await service.getMissingEntriesForActiveHosts(
-        limit: 20,
-        maxRequestCount: 5,
-      );
-
-      verify(
-        () => mockDb.getMissingEntriesForActiveHosts(
-          limit: 20,
-          maxRequestCount: 5,
-        ),
-      ).called(1);
     });
   });
 
@@ -1200,18 +1086,6 @@ void main() {
       final result = await service.getEntryByHostAndCounter(aliceHostId, 99);
 
       expect(result, isNull);
-    });
-  });
-
-  group('watchMissingCount', () {
-    test('delegates to database stream', () async {
-      when(() => mockDb.watchMissingCount())
-          .thenAnswer((_) => Stream.value(42));
-
-      final count = await service.watchMissingCount().first;
-
-      expect(count, 42);
-      verify(() => mockDb.watchMissingCount()).called(1);
     });
   });
 

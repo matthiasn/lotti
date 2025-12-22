@@ -21,7 +21,6 @@ class OutboxListItemViewModel {
     required this.attachmentValue,
     required this.attachmentIcon,
     required this.semanticsLabel,
-    required this.retryButtonLabel,
     this.subjectValue,
   });
   factory OutboxListItemViewModel.fromItem({
@@ -91,8 +90,6 @@ class OutboxListItemViewModel {
     final semanticsLabel =
         '$statusLabel, $timestamp, ${payloadKind.toLowerCase()}';
 
-    final retryButtonLabel = _titleCase(messages.outboxMonitorRetry, locale);
-
     return OutboxListItemViewModel(
       timestampLabel: timestamp,
       statusLabel: statusLabel,
@@ -105,7 +102,6 @@ class OutboxListItemViewModel {
       attachmentValue: attachmentValue,
       attachmentIcon: attachmentIcon,
       semanticsLabel: semanticsLabel,
-      retryButtonLabel: retryButtonLabel,
     );
   }
 
@@ -119,7 +115,6 @@ class OutboxListItemViewModel {
   final String attachmentValue;
   final IconData attachmentIcon;
   final String semanticsLabel;
-  final String retryButtonLabel;
   final String? subjectValue;
 
   static String _buildRetriesLabel({

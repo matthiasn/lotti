@@ -14,8 +14,3 @@ abstract class MatrixConfig with _$MatrixConfig {
   factory MatrixConfig.fromJson(Map<String, dynamic> json) =>
       _$MatrixConfigFromJson(json);
 }
-
-extension MatrixConfigLogging on MatrixConfig {
-  String toSafeString() =>
-      'MatrixConfig(homeServer: $homeServer, user: $user, password: ***REDACTED***)';
-}

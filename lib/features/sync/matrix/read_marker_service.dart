@@ -5,32 +5,6 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:matrix/matrix.dart';
 
-/// Pure helper used by the remote monotonic guard to determine whether
-/// [candidateEventId] is strictly newer than [baseEventId] within the given
-/// [timeline], using Matrix originServerTs (UTC) with eventId as a tiebreaker.
-///
-/// Returns false if either event cannot be found in the provided timeline.
-bool isStrictlyNewerInTimeline({
-  required Timeline timeline,
-  required String candidateEventId,
-  required String baseEventId,
-}) {
-  Event? a;
-  Event? b;
-  for (final e in timeline.events) {
-    if (e.eventId == candidateEventId) a = e;
-    if (e.eventId == baseEventId) b = e;
-    if (a != null && b != null) break;
-  }
-  if (a == null || b == null) return false;
-  return TimelineEventOrdering.isNewer(
-    candidateTimestamp: a.originServerTs.millisecondsSinceEpoch,
-    candidateEventId: a.eventId,
-    latestTimestamp: b.originServerTs.millisecondsSinceEpoch,
-    latestEventId: b.eventId,
-  );
-}
-
 class SyncReadMarkerService {
   /// Persists and publishes Matrix read markers after successful processing.
   ///
