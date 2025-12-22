@@ -8,7 +8,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// in multiple chunks, tracking them by ID or index, and producing the final
 /// list of complete tool calls.
 class ToolCallAccumulator {
-  final _toolCalls = <String, Map<String, dynamic>>{};
+  final _toolCalls = <String, _AccumulatedToolCall>{};
   var _counter = 0;
 
   /// Process a chunk from the streaming response and accumulate any tool calls.
@@ -43,15 +43,13 @@ class ToolCallAccumulator {
   void _addCompleteToolCall(
       ChatCompletionStreamMessageToolCallChunk toolCallChunk) {
     final toolCallId = 'tool_${_counter++}';
-    _toolCalls[toolCallId] = {
-      'id': toolCallId,
-      'index': toolCallChunk.index ?? 0,
-      'type': toolCallChunk.type?.toString() ?? 'function',
-      'function': <String, dynamic>{
-        'name': toolCallChunk.function?.name ?? '',
-        'arguments': toolCallChunk.function?.arguments ?? '',
-      },
-    };
+    _toolCalls[toolCallId] = _AccumulatedToolCall(
+      id: toolCallId,
+      index: toolCallChunk.index ?? 0,
+      type: toolCallChunk.type?.toString() ?? 'function',
+      functionName: toolCallChunk.function?.name ?? '',
+      functionArguments: toolCallChunk.function?.arguments ?? '',
+    );
     developer.log(
       'Added complete tool call $toolCallId: ${toolCallChunk.function?.name}',
       name: 'ToolCallAccumulator',
@@ -92,15 +90,13 @@ class ToolCallAccumulator {
   /// Start a new tool call entry.
   void _startNewToolCall(
       String toolCallId, ChatCompletionStreamMessageToolCallChunk chunk) {
-    _toolCalls[toolCallId] = {
-      'id': toolCallId,
-      'index': chunk.index ?? _toolCalls.length,
-      'type': chunk.type?.toString() ?? 'function',
-      'function': <String, dynamic>{
-        'name': chunk.function?.name ?? '',
-        'arguments': chunk.function?.arguments ?? '',
-      },
-    };
+    _toolCalls[toolCallId] = _AccumulatedToolCall(
+      id: toolCallId,
+      index: chunk.index ?? _toolCalls.length,
+      type: chunk.type?.toString() ?? 'function',
+      functionName: chunk.function?.name ?? '',
+      functionArguments: chunk.function?.arguments ?? '',
+    );
     developer.log(
       'Started new tool call $toolCallId: ${chunk.function?.name}',
       name: 'ToolCallAccumulator',
@@ -110,7 +106,7 @@ class ToolCallAccumulator {
   /// Continue a tool call by finding it by index.
   void _continueByIndex(ChatCompletionStreamMessageToolCallChunk chunk) {
     final targetEntry = _toolCalls.entries
-        .where((e) => e.value['index'] == chunk.index)
+        .where((e) => e.value.index == chunk.index)
         .firstOrNull;
 
     if (targetEntry != null) {
@@ -138,17 +134,14 @@ class ToolCallAccumulator {
   void _appendToToolCall(
       String key, ChatCompletionStreamMessageToolCallChunk chunk) {
     final existing = _toolCalls[key]!;
-    final functionData = existing['function'] as Map<String, dynamic>;
 
     if (chunk.function != null) {
-      if (chunk.function!.name != null) {
-        functionData['name'] = chunk.function!.name;
-      }
-      if (chunk.function!.arguments != null) {
-        functionData['arguments'] =
-            ((functionData['arguments'] ?? '') as String) +
-                chunk.function!.arguments!;
-      }
+      _toolCalls[key] = existing.copyWith(
+        functionName: chunk.function!.name ?? existing.functionName,
+        functionArguments: chunk.function!.arguments != null
+            ? existing.functionArguments + chunk.function!.arguments!
+            : null,
+      );
     }
   }
 
@@ -159,10 +152,9 @@ class ToolCallAccumulator {
     final validToolCalls = <ChatCompletionMessageToolCall>[];
 
     for (final entry in _toolCalls.entries) {
-      final functionData = entry.value['function'] as Map<String, dynamic>;
-      final arguments = functionData['arguments']?.toString() ?? '';
+      final toolCall = entry.value;
 
-      if (arguments.isEmpty) {
+      if (toolCall.functionArguments.isEmpty) {
         developer.log(
           'Skipping tool call ${entry.key} - no valid arguments',
           name: 'ToolCallAccumulator',
@@ -171,7 +163,7 @@ class ToolCallAccumulator {
       }
 
       developer.log(
-        'Creating tool call ${entry.key}: ${functionData['name']} with args: $arguments',
+        'Creating tool call ${entry.key}: ${toolCall.functionName} with args: ${toolCall.functionArguments}',
         name: 'ToolCallAccumulator',
       );
 
@@ -180,8 +172,8 @@ class ToolCallAccumulator {
           id: entry.key,
           type: ChatCompletionMessageToolCallType.function,
           function: ChatCompletionMessageFunctionCall(
-            name: functionData['name'] as String,
-            arguments: arguments,
+            name: toolCall.functionName,
+            arguments: toolCall.functionArguments,
           ),
         ),
       );
@@ -200,4 +192,34 @@ class ToolCallAccumulator {
 
   /// Get the number of accumulated tool calls.
   int get count => _toolCalls.length;
+}
+
+/// Internal data class representing an accumulated tool call.
+class _AccumulatedToolCall {
+  const _AccumulatedToolCall({
+    required this.id,
+    required this.index,
+    required this.type,
+    required this.functionName,
+    required this.functionArguments,
+  });
+
+  final String id;
+  final int index;
+  final String type;
+  final String functionName;
+  final String functionArguments;
+
+  _AccumulatedToolCall copyWith({
+    String? functionName,
+    String? functionArguments,
+  }) {
+    return _AccumulatedToolCall(
+      id: id,
+      index: index,
+      type: type,
+      functionName: functionName ?? this.functionName,
+      functionArguments: functionArguments ?? this.functionArguments,
+    );
+  }
 }

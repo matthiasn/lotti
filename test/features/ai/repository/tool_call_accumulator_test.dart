@@ -204,6 +204,166 @@ void main() {
         expect(funcA.function.arguments, '{"x": 1}');
         expect(funcB.function.arguments, '{"y": 2}');
       });
+
+      test('continues last tool call when chunk has no ID or index', () {
+        // Start a tool call
+        const chunk1 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+              id: 'call_1',
+              function: ChatCompletionStreamMessageFunctionCall(
+                name: 'my_func',
+                arguments: '{"start": ',
+              ),
+            ),
+          ],
+        );
+
+        // Continue without ID or index (should append to last)
+        const chunk2 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              function: ChatCompletionStreamMessageFunctionCall(
+                arguments: '"middle", ',
+              ),
+            ),
+          ],
+        );
+
+        // Another continuation without ID or index
+        const chunk3 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              function: ChatCompletionStreamMessageFunctionCall(
+                arguments: '"end": true}',
+              ),
+            ),
+          ],
+        );
+
+        accumulator
+          ..processChunk(chunk1)
+          ..processChunk(chunk2)
+          ..processChunk(chunk3);
+
+        expect(accumulator.count, 1);
+        final toolCalls = accumulator.toToolCalls();
+        expect(toolCalls.first.function.arguments,
+            '{"start": "middle", "end": true}');
+      });
+
+      test('handles chunk with empty ID string', () {
+        const delta = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+              id: '', // Empty string ID
+              function: ChatCompletionStreamMessageFunctionCall(
+                name: 'empty_id_func',
+                arguments: '{"test": true}',
+              ),
+            ),
+          ],
+        );
+
+        accumulator.processChunk(delta);
+        expect(accumulator.count, 1);
+
+        final toolCalls = accumulator.toToolCalls();
+        expect(toolCalls.first.id, startsWith('tool_'));
+        expect(toolCalls.first.function.name, 'empty_id_func');
+      });
+
+      test('handles continuation chunk without function data', () {
+        // Start a tool call
+        const chunk1 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+              id: 'call_1',
+              function: ChatCompletionStreamMessageFunctionCall(
+                name: 'my_func',
+                arguments: '{"key": "value"}',
+              ),
+            ),
+          ],
+        );
+
+        // Continuation chunk without function (edge case)
+        const chunk2 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+            ),
+          ],
+        );
+
+        accumulator
+          ..processChunk(chunk1)
+          ..processChunk(chunk2);
+
+        // Should still have the original tool call unchanged
+        expect(accumulator.count, 1);
+        final toolCalls = accumulator.toToolCalls();
+        expect(toolCalls.first.function.arguments, '{"key": "value"}');
+      });
+
+      test('ignores continuation when no tool calls exist', () {
+        // Try to continue without any existing tool calls
+        const chunk = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              function: ChatCompletionStreamMessageFunctionCall(
+                arguments: 'orphan data',
+              ),
+            ),
+          ],
+        );
+
+        accumulator.processChunk(chunk);
+
+        // Should not create any tool calls
+        expect(accumulator.hasToolCalls, isFalse);
+        expect(accumulator.count, 0);
+      });
+
+      test('preserves function name when continuing with only arguments', () {
+        // Start a tool call with name and partial arguments
+        const chunk1 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+              id: 'call_1',
+              function: ChatCompletionStreamMessageFunctionCall(
+                name: 'my_function',
+                arguments: '{"a": ',
+              ),
+            ),
+          ],
+        );
+
+        // Continue with only arguments (no name)
+        const chunk2 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+              function: ChatCompletionStreamMessageFunctionCall(
+                arguments: '1}',
+              ),
+            ),
+          ],
+        );
+
+        accumulator
+          ..processChunk(chunk1)
+          ..processChunk(chunk2);
+
+        final toolCalls = accumulator.toToolCalls();
+        expect(toolCalls.length, 1);
+        expect(toolCalls.first.function.name, 'my_function');
+        expect(toolCalls.first.function.arguments, '{"a": 1}');
+      });
     });
 
     group('toToolCalls', () {
