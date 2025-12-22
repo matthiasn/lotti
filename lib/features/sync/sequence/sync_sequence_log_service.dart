@@ -456,19 +456,6 @@ class SyncSequenceLogService {
     );
   }
 
-  /// Get missing entries that should be requested, filtering out entries
-  /// where we've already requested since the host was last seen.
-  /// This prevents wasteful requests to hosts that haven't been online.
-  Future<List<SyncSequenceLogItem>> getMissingEntriesForActiveHosts({
-    int limit = 50,
-    int maxRequestCount = 10,
-  }) {
-    return _syncDatabase.getMissingEntriesForActiveHosts(
-      limit: limit,
-      maxRequestCount: maxRequestCount,
-    );
-  }
-
   /// Mark entries as requested and increment their request count.
   /// Uses batch operations for efficiency.
   Future<void> markAsRequested(
@@ -691,54 +678,12 @@ class SyncSequenceLogService {
     return resolved;
   }
 
-  /// Update status to backfilled when an entry arrives that was previously
-  /// marked as missing. This is now also handled by [recordReceivedEntry],
-  /// but this method can be called explicitly if needed.
-  Future<void> markAsReceived({
-    required String hostId,
-    required int counter,
-    required String entryId,
-    SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
-  }) async {
-    final existing =
-        await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
-
-    if (existing != null &&
-        (existing.status == SyncSequenceStatus.missing.index ||
-            existing.status == SyncSequenceStatus.requested.index)) {
-      // Previously missing entry has now arrived
-      final now = DateTime.now();
-      await _syncDatabase.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: Value(hostId),
-          counter: Value(counter),
-          entryId: Value(entryId),
-          payloadType: Value(payloadType.index),
-          status: Value(SyncSequenceStatus.backfilled.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-
-      _loggingService.captureEvent(
-        'markAsReceived hostId=$hostId counter=$counter entryId=$entryId (was missing)',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'backfillArrived',
-      );
-    }
-  }
-
   /// Get entry by host ID and counter (for responding to backfill requests).
   Future<SyncSequenceLogItem?> getEntryByHostAndCounter(
     String hostId,
     int counter,
   ) {
     return _syncDatabase.getEntryByHostAndCounter(hostId, counter);
-  }
-
-  /// Watch the count of missing entries for UI display.
-  Stream<int> watchMissingCount() {
-    return _syncDatabase.watchMissingCount();
   }
 
   /// Get backfill statistics grouped by host.

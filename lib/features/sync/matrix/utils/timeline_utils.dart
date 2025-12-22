@@ -33,12 +33,6 @@ int findLastIndexByEventId(List<Event> ordered, String? id) {
   return -1;
 }
 
-/// Returns a new list containing only events strictly after [lastId].
-List<Event> sliceAfterMarker(List<Event> ordered, String? lastId) {
-  final idx = findLastIndexByEventId(ordered, lastId);
-  return idx >= 0 ? ordered.sublist(idx + 1) : ordered;
-}
-
 /// Deduplicates events by eventId while preserving the original order.
 List<Event> dedupEventsByIdPreserveOrder(List<Event> events) {
   final seen = <String>{};

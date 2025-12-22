@@ -17,13 +17,11 @@ class SyncRoomInvite {
     required this.roomId,
     required this.senderId,
     required this.matchesExistingRoom,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+  });
 
   final String roomId;
   final String senderId;
   final bool matchesExistingRoom;
-  final DateTime timestamp;
 }
 
 /// Handles sync-room persistence, invite filtering, and safe join/leave flows.

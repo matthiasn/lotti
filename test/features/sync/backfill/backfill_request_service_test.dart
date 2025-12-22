@@ -513,12 +513,6 @@ void main() {
               maxPerHost: any(named: 'maxPerHost'),
             ));
 
-        // Should NOT use getMissingEntriesForActiveHosts (that filters by activity)
-        verifyNever(() => mockSequenceService.getMissingEntriesForActiveHosts(
-              limit: any(named: 'limit'),
-              maxRequestCount: any(named: 'maxRequestCount'),
-            ));
-
         service.dispose();
       });
     });

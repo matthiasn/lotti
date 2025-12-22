@@ -37,28 +37,27 @@ void main() {
     });
   });
 
-  group('findLastIndexByEventId / sliceAfterMarker', () {
+  group('findLastIndexByEventId', () {
     Event event(String id) {
       final e = MockEvent();
       when(() => e.eventId).thenReturn(id);
       return e;
     }
 
-    test('empty list returns -1 and full slice', () {
+    test('empty list returns -1', () {
       final list = <Event>[];
       expect(findLastIndexByEventId(list, 'x'), -1);
-      expect(sliceAfterMarker(list, 'x'), isEmpty);
     });
 
-    test('finds last index and slices after', () {
+    test('finds last index of event', () {
       final list = <Event>[event('a'), event('b'), event('a')];
       expect(findLastIndexByEventId(list, 'a'), 2);
-      final slice = sliceAfterMarker(list, 'a');
-      expect(slice, isEmpty);
-
       expect(findLastIndexByEventId(list, 'b'), 1);
-      final sliceB = sliceAfterMarker(list, 'b');
-      expect(sliceB.map((e) => e.eventId), ['a']);
+    });
+
+    test('returns -1 for null id', () {
+      final list = <Event>[event('a'), event('b')];
+      expect(findLastIndexByEventId(list, null), -1);
     });
   });
 

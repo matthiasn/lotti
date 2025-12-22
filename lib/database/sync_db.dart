@@ -193,10 +193,6 @@ class SyncDatabase extends _$SyncDatabase {
         .map((res) => res.length);
   }
 
-  Future<int> deleteOutboxItems() {
-    return delete(outbox).go();
-  }
-
   /// Delete a single outbox item by its ID.
   Future<int> deleteOutboxItemById(int id) {
     return (delete(outbox)..where((t) => t.id.equals(id))).go();
@@ -293,24 +289,6 @@ class SyncDatabase extends _$SyncDatabase {
     );
   }
 
-  /// Increment the request count, update status to 'requested', and set lastRequestedAt.
-  /// Uses atomic SQL expression to avoid race conditions.
-  Future<int> incrementRequestCount(String hostId, int counter) {
-    final now = DateTime.now();
-    return (update(syncSequenceLog)
-          ..where(
-            (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
-          ))
-        .write(
-      SyncSequenceLogCompanion.custom(
-        requestCount: syncSequenceLog.requestCount + const Constant(1),
-        status: Constant(SyncSequenceStatus.requested.index),
-        updatedAt: Variable(now),
-        lastRequestedAt: Variable(now),
-      ),
-    );
-  }
-
   /// Batch increment request counts for multiple entries.
   /// Uses batch operations for efficiency while maintaining atomic increments.
   Future<void> batchIncrementRequestCounts(
@@ -353,15 +331,6 @@ class SyncDatabase extends _$SyncDatabase {
         .getSingleOrNull();
   }
 
-  /// Get all pending (missing/requested) sequence log entries for a given entryId.
-  /// Used to resolve pending backfill hints when an entry arrives via sync.
-  Future<List<SyncSequenceLogItem>> getPendingEntriesByEntryId(String entryId) {
-    return getPendingEntriesByPayloadId(
-      payloadType: SyncSequencePayloadType.journalEntity,
-      payloadId: entryId,
-    );
-  }
-
   /// Get all pending (missing/requested) sequence log entries for a given payload.
   /// Used to resolve pending backfill hints when a payload arrives via sync.
   Future<List<SyncSequenceLogItem>> getPendingEntriesByPayloadId({
@@ -377,18 +346,6 @@ class SyncDatabase extends _$SyncDatabase {
                     t.status.equals(SyncSequenceStatus.requested.index)),
           ))
         .get();
-  }
-
-  /// Watch the count of missing entries for UI display.
-  Stream<int> watchMissingCount() {
-    return (select(syncSequenceLog)
-          ..where(
-            (t) =>
-                t.status.equals(SyncSequenceStatus.missing.index) |
-                t.status.equals(SyncSequenceStatus.requested.index),
-          ))
-        .watch()
-        .map((res) => res.length);
   }
 
   /// Get the total count of entries in the sequence log.
@@ -417,68 +374,6 @@ class SyncDatabase extends _$SyncDatabase {
           ..where((t) => t.hostId.equals(hostId)))
         .getSingleOrNull();
     return result?.lastSeenAt;
-  }
-
-  /// Get all host activity records.
-  Future<List<HostActivityItem>> getAllHostActivity() {
-    return select(hostActivity).get();
-  }
-
-  /// Get missing entries that should be requested, applying smart filtering:
-  /// 1. Only request from hosts that have been active since our last request
-  /// 2. Respect exponential backoff based on request count
-  ///
-  /// This prevents wasteful requests to hosts that haven't been online
-  /// and avoids hammering hosts with requests they can't fulfill.
-  Future<List<SyncSequenceLogItem>> getMissingEntriesForActiveHosts({
-    int limit = 50,
-    int maxRequestCount = 10,
-  }) async {
-    // Get all missing/requested entries
-    final missingEntries = await getMissingEntries(
-      limit: limit * 3, // Get more since we'll filter some out
-      maxRequestCount: maxRequestCount,
-    );
-
-    if (missingEntries.isEmpty) return [];
-
-    // Get host activity for all relevant hosts in a single query
-    final hostIds = missingEntries.map((e) => e.hostId).toSet().toList();
-    final activities = await (select(hostActivity)
-          ..where((tbl) => tbl.hostId.isIn(hostIds)))
-        .get();
-    final activityMap = {
-      for (final activity in activities) activity.hostId: activity.lastSeenAt,
-    };
-
-    final now = DateTime.now();
-
-    // Filter: only include entries where:
-    // 1. Host has been active since last request
-    // 2. Exponential backoff period has elapsed
-    final filtered = missingEntries
-        .where((entry) {
-          final hostLastSeen = activityMap[entry.hostId];
-
-          // If we've never seen this host, don't request (they might not exist)
-          if (hostLastSeen == null) return false;
-
-          // If we've never requested this entry, include it
-          if (entry.lastRequestedAt == null) return true;
-
-          // Check exponential backoff: enough time must have passed
-          final backoffDuration =
-              SyncTuning.calculateBackoff(entry.requestCount);
-          final earliestRetry = entry.lastRequestedAt!.add(backoffDuration);
-          if (now.isBefore(earliestRetry)) return false;
-
-          // Host must have been active since our last request
-          return hostLastSeen.isAfter(entry.lastRequestedAt!);
-        })
-        .take(limit)
-        .toList();
-
-    return filtered;
   }
 
   /// Get all existing counters for a specific host.
