@@ -91,17 +91,6 @@ class TaskSummaryRefreshStatusListener {
     return false;
   }
 
-  /// Checks if a listener exists for a specific task
-  bool hasListener(String taskId) {
-    return _statusListenerCleanups.containsKey(taskId);
-  }
-
-  /// Gets the count of active listeners
-  int get activeListenerCount => _statusListenerCleanups.length;
-
-  /// Gets the list of task IDs with active listeners
-  List<String> get activeTaskIds => _statusListenerCleanups.keys.toList();
-
   /// Removes all listeners and cleans up resources
   void dispose() {
     developer.log(

@@ -499,28 +499,14 @@ void main() {
     });
 
     group('OllamaPullProgress', () {
-      test('should format progress correctly', () {
+      test('should have correct status and progress', () {
         const progress = OllamaPullProgress(
           status: 'downloading',
-          total: 1048576,
-          completed: 524288,
           progress: 0.5,
         );
 
-        expect(progress.progressPercentage, equals('50.0%'));
-        expect(progress.downloadProgress,
-            equals('downloading: 0.5 MB / 1.0 MB (50.0%)'));
-      });
-
-      test('should handle zero total', () {
-        const progress = OllamaPullProgress(
-          status: 'preparing',
-          total: 0,
-          completed: 0,
-          progress: 0,
-        );
-
-        expect(progress.downloadProgress, equals('preparing'));
+        expect(progress.status, equals('downloading'));
+        expect(progress.progress, equals(0.5));
       });
     });
   });

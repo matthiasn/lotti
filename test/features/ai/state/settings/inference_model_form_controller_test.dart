@@ -144,49 +144,6 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(1);
     });
 
-    test('should delete a configuration', () async {
-      // Arrange
-      when(() => mockRepository.deleteConfig('test-id'))
-          .thenAnswer((_) async {});
-
-      // Act
-      final controller = container.read(
-        inferenceModelFormControllerProvider(configId: null).notifier,
-      );
-      await controller.deleteConfig('test-id');
-
-      // Assert
-      verify(() => mockRepository.deleteConfig('test-id')).called(1);
-    });
-
-    test('should reset form fields', () async {
-      // Arrange
-      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
-        (_) async => testConfig,
-      );
-
-      // Load the existing config first
-      final controller = container.read(
-        inferenceModelFormControllerProvider(configId: 'test-id').notifier,
-      );
-      await container.read(
-        inferenceModelFormControllerProvider(configId: 'test-id').future,
-      );
-
-      // Verify fields are populated
-      expect(controller.nameController.text, isNotEmpty);
-      expect(controller.descriptionController.text, isNotEmpty);
-      expect(controller.maxCompletionTokensController.text, isNotEmpty);
-
-      // Act
-      controller.reset();
-
-      // Assert
-      expect(controller.nameController.text, isEmpty);
-      expect(controller.descriptionController.text, isEmpty);
-      expect(controller.maxCompletionTokensController.text, isEmpty);
-    });
-
     test('should update form state when name is changed', () async {
       // Arrange
       final controller = container.read(

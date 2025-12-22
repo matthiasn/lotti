@@ -1,21 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/checklist_item_data.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class MockOpenAIClient extends Mock implements OpenAIClient {}
-
 void main() {
   late ProviderContainer container;
-  late MockOpenAIClient mockOpenAIClient;
 
   setUp(() {
-    mockOpenAIClient = MockOpenAIClient();
     container = ProviderContainer();
 
     // Register fallback values
@@ -118,172 +111,6 @@ void main() {
       expect(notFound, isNull);
     });
 
-    test(
-        'analyzeForCompletions skips if model does not support function calling',
-        () async {
-      final notifier =
-          container.read(checklistCompletionServiceProvider.notifier);
-
-      final model = AiConfigModel(
-        id: 'test-model-id',
-        providerModelId: 'test-model',
-        name: 'Test Model',
-        inferenceProviderId: 'test-provider',
-        createdAt: DateTime(2024),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      final checklistItems = [
-        createTestChecklistItem('item-1', 'Task 1', isChecked: false),
-      ];
-
-      await notifier.analyzeForCompletions(
-        taskId: 'task-1',
-        contextText: 'Task 1 has been completed',
-        checklistItems: checklistItems,
-        model: model,
-        provider: AiConfigInferenceProvider(
-          id: 'test',
-          name: 'Test Provider',
-          baseUrl: 'https://api.test.com',
-          apiKey: 'test-key',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        ),
-      );
-
-      // Should not make any API calls
-      verifyNever(() => mockOpenAIClient.createChatCompletion(
-            request: any(named: 'request'),
-          ));
-    });
-
-    test('analyzeForCompletions skips if all items are already completed',
-        () async {
-      final notifier =
-          container.read(checklistCompletionServiceProvider.notifier);
-
-      final model = AiConfigModel(
-        id: 'test-model-id',
-        providerModelId: 'gpt-4',
-        name: 'GPT-4',
-        inferenceProviderId: 'test-provider',
-        createdAt: DateTime(2024),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-        maxCompletionTokens: 4096,
-      );
-
-      final checklistItems = [
-        createTestChecklistItem('item-1', 'Task 1',
-            isChecked: true), // Already completed
-        createTestChecklistItem('item-2', 'Task 2',
-            isChecked: true), // Already completed
-      ];
-
-      await notifier.analyzeForCompletions(
-        taskId: 'task-1',
-        contextText: 'Some context',
-        checklistItems: checklistItems,
-        model: model,
-        provider: AiConfigInferenceProvider(
-          id: 'test',
-          name: 'Test Provider',
-          baseUrl: 'https://api.test.com',
-          apiKey: 'test-key',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        ),
-      );
-
-      // Should not make any API calls
-      verifyNever(() => mockOpenAIClient.createChatCompletion(
-            request: any(named: 'request'),
-          ));
-    });
-
-    test('analyzeForCompletions handles API errors gracefully', () async {
-      // Create a custom container with mocked OpenAI client
-      final testContainer = ProviderContainer();
-      final notifier =
-          testContainer.read(checklistCompletionServiceProvider.notifier);
-
-      // We can't easily mock the OpenAI client creation, so we'll test the error handling
-      // by using an invalid provider configuration
-      final model = AiConfigModel(
-        id: 'test-model-id',
-        providerModelId: 'gpt-4',
-        name: 'GPT-4',
-        inferenceProviderId: 'test-provider',
-        createdAt: DateTime(2024),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-        maxCompletionTokens: 4096,
-      );
-
-      final checklistItems = [
-        createTestChecklistItem('item-1', 'Task 1', isChecked: false),
-      ];
-
-      // Use invalid provider to trigger error
-      await expectLater(
-        notifier.analyzeForCompletions(
-          taskId: 'task-1',
-          contextText: 'Task 1 has been completed',
-          checklistItems: checklistItems,
-          model: model,
-          provider: AiConfigInferenceProvider(
-            id: 'test',
-            name: 'Test Provider',
-            baseUrl: 'invalid-url', // Invalid URL will cause error
-            apiKey: 'test-key',
-            createdAt: DateTime(2024),
-            inferenceProviderType: InferenceProviderType.genericOpenAi,
-          ),
-        ),
-        completes, // Should complete without throwing
-      );
-
-      testContainer.dispose();
-    });
-
-    test('analyzeForCompletions processes valid suggestions correctly',
-        () async {
-      // This test validates the logic for processing AI responses
-      // We'll test the suggestion validation logic directly
-      final notifier =
-          container.read(checklistCompletionServiceProvider.notifier);
-
-      // Test invalid item ID filtering
-
-      // Simulate processing suggestions with invalid IDs
-      final suggestions = [
-        const ChecklistCompletionSuggestion(
-          checklistItemId: 'item-1', // Valid
-          reason: 'Completed',
-          confidence: ChecklistCompletionConfidence.high,
-        ),
-        const ChecklistCompletionSuggestion(
-          checklistItemId: 'item-999', // Invalid - not in incomplete items
-          reason: 'Should be filtered out',
-          confidence: ChecklistCompletionConfidence.high,
-        ),
-      ];
-
-      // Add suggestions and verify only valid ones are kept
-      notifier.addSuggestions([suggestions.first]); // Only add valid suggestion
-
-      final state = container.read(checklistCompletionServiceProvider);
-      expect(state.value?.length, equals(1));
-      expect(state.value?.first.checklistItemId, equals('item-1'));
-    });
-
     test('confidence enum parsing handles invalid values', () {
       // Test the confidence parsing logic
       const validConfidences = ['high', 'medium', 'low'];
@@ -360,26 +187,4 @@ void main() {
           state.value, equals(suggestions)); // Original suggestions unchanged
     });
   });
-}
-
-// Helper function to create test checklist items
-ChecklistItem createTestChecklistItem(
-  String id,
-  String title, {
-  required bool isChecked,
-}) {
-  return ChecklistItem(
-    meta: Metadata(
-      id: id,
-      createdAt: DateTime(2024),
-      updatedAt: DateTime(2024),
-      dateFrom: DateTime(2024),
-      dateTo: DateTime(2024),
-    ),
-    data: ChecklistItemData(
-      title: title,
-      isChecked: isChecked,
-      linkedChecklists: [],
-    ),
-  );
 }

@@ -27,8 +27,6 @@ class PromptEditPage extends ConsumerStatefulWidget {
     super.key,
   });
 
-  static const String routeName = '/settings/ai/prompts/edit';
-
   final String? configId;
 
   @override

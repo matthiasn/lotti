@@ -606,8 +606,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
         yield OllamaPullProgress(
           status: status,
-          total: total,
-          completed: completed,
           progress: total > 0 ? (completed / total) : 0.0,
         );
       }
@@ -677,24 +675,9 @@ class ModelNotInstalledException implements Exception {
 class OllamaPullProgress {
   const OllamaPullProgress({
     required this.status,
-    required this.total,
-    required this.completed,
     required this.progress,
   });
 
   final String status; // e.g., "pulling manifest", "downloading", "success"
-  final int total; // Total bytes to download
-  final int completed; // Bytes downloaded so far
   final double progress; // Progress as a fraction (0.0 to 1.0)
-
-  /// Get human-readable progress percentage
-  String get progressPercentage => '${(progress * 100).toStringAsFixed(1)}%';
-
-  /// Get human-readable download progress
-  String get downloadProgress {
-    if (total == 0) return status;
-    final totalMB = (total / (1024 * 1024)).toStringAsFixed(1);
-    final completedMB = (completed / (1024 * 1024)).toStringAsFixed(1);
-    return '$status: $completedMB MB / $totalMB MB ($progressPercentage)';
-  }
 }

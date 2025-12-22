@@ -613,38 +613,14 @@ void main() {
     });
 
     group('OllamaPullProgress', () {
-      test('progressPercentage formats correctly', () {
+      test('has correct status and progress', () {
         const progress = OllamaPullProgress(
           status: 'downloading',
-          total: 1000000,
-          completed: 500000,
           progress: 0.5,
         );
 
-        expect(progress.progressPercentage, '50.0%');
-      });
-
-      test('downloadProgress formats correctly', () {
-        const progress = OllamaPullProgress(
-          status: 'downloading',
-          total: 1048576, // 1MB
-          completed: 524288, // 0.5MB
-          progress: 0.5,
-        );
-
-        expect(
-            progress.downloadProgress, 'downloading: 0.5 MB / 1.0 MB (50.0%)');
-      });
-
-      test('downloadProgress handles zero total', () {
-        const progress = OllamaPullProgress(
-          status: 'pulling manifest',
-          total: 0,
-          completed: 0,
-          progress: 0,
-        );
-
-        expect(progress.downloadProgress, 'pulling manifest');
+        expect(progress.status, 'downloading');
+        expect(progress.progress, 0.5);
       });
     });
 
