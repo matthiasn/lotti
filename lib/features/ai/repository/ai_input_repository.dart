@@ -5,8 +5,10 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
@@ -193,6 +195,115 @@ class AiInputRepository {
     const encoder = JsonEncoder.withIndent('    ');
     final jsonString = encoder.convert(base);
     return jsonString;
+  }
+
+  /// Build context for tasks that link TO this task (children/subtasks).
+  /// These are tasks where the current task is the target of the link.
+  Future<List<AiLinkedTaskContext>> buildLinkedFromContext(
+      String taskId) async {
+    // Get entities that link TO this task (where toId = taskId)
+    final linkedEntities = await _db.linkedToJournalEntities(taskId).get();
+    final tasks = linkedEntities
+        .map(fromDbEntity)
+        .whereType<Task>()
+        .where((t) => t.meta.deletedAt == null)
+        .toList()
+      ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
+
+    final results = <AiLinkedTaskContext>[];
+    for (final task in tasks) {
+      final context = await _buildLinkedTaskContext(task);
+      results.add(context);
+    }
+    return results;
+  }
+
+  /// Build context for tasks this task links TO (parents/epics).
+  /// These are tasks where the current task is the source of the link.
+  Future<List<AiLinkedTaskContext>> buildLinkedToContext(String taskId) async {
+    // Get entities that this task links TO (where fromId = taskId)
+    final linkedEntities = await _db.getLinkedEntities(taskId);
+    final tasks = linkedEntities
+        .whereType<Task>()
+        .where((t) => t.meta.deletedAt == null)
+        .toList()
+      ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
+
+    final results = <AiLinkedTaskContext>[];
+    for (final task in tasks) {
+      final context = await _buildLinkedTaskContext(task);
+      results.add(context);
+    }
+    return results;
+  }
+
+  /// Build context object for a single linked task.
+  Future<AiLinkedTaskContext> _buildLinkedTaskContext(Task task) async {
+    // Get time spent
+    final progressRepository = ref.read(taskProgressRepositoryProvider);
+    final progressData =
+        await progressRepository.getTaskProgressData(id: task.id);
+    final durations = progressData?.$2 ?? {};
+    final timeSpent = progressRepository
+        .getTaskProgress(durations: durations, estimate: progressData?.$1)
+        .progress;
+
+    // Get labels
+    final labelIds = task.meta.labelIds ?? const <String>[];
+    final labels = labelIds.isNotEmpty
+        ? await buildAssignedLabelTuples(db: _db, ids: labelIds)
+        : <Map<String, String>>[];
+
+    // Get latest summary
+    final latestSummary = await _getLatestTaskSummary(task.id);
+
+    return AiLinkedTaskContext(
+      id: task.id,
+      title: task.data.title,
+      status: task.data.status.toDbString,
+      statusSince: task.data.status.createdAt,
+      priority: task.data.priority.short,
+      estimate: formatHhMm(task.data.estimate ?? Duration.zero),
+      timeSpent: formatHhMm(timeSpent),
+      createdAt: task.meta.createdAt,
+      labels: labels,
+      languageCode: task.data.languageCode,
+      latestSummary: latestSummary,
+    );
+  }
+
+  /// Get the latest AI summary for a task.
+  Future<String?> _getLatestTaskSummary(String taskId) async {
+    final linkedEntities = await _db.getLinkedEntities(taskId);
+    final summaries = linkedEntities
+        .whereType<AiResponseEntry>()
+        .where((e) => e.data.type == AiResponseType.taskSummary)
+        .toList()
+      ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+
+    if (summaries.isEmpty) return null;
+    return summaries.first.data.response;
+  }
+
+  /// Build the full linked tasks JSON for prompt injection.
+  Future<String> buildLinkedTasksJson(String taskId) async {
+    final linkedFrom = await buildLinkedFromContext(taskId);
+    final linkedTo = await buildLinkedToContext(taskId);
+
+    final data = <String, dynamic>{
+      'linked_from': linkedFrom.map((c) => c.toJson()).toList(),
+      'linked_to': linkedTo.map((c) => c.toJson()).toList(),
+    };
+
+    // Add note if there are any linked tasks with summaries containing links
+    if (linkedFrom.isNotEmpty || linkedTo.isNotEmpty) {
+      data['note'] =
+          'If summaries contain links to GitHub PRs, Issues, or similar '
+          'platforms, use web search to retrieve additional context when relevant.';
+    }
+
+    const encoder = JsonEncoder.withIndent('    ');
+    return encoder.convert(data);
   }
 }
 

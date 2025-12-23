@@ -57,30 +57,40 @@ const taskSummaryPrompt = PreconfiguredPrompt(
   id: 'task_summary',
   name: 'Task Summary',
   systemMessage: '''
-You are a helpful AI assistant that creates clear, concise task summaries. 
-Your goal is to help users quickly understand the current state of their tasks, 
+You are a helpful AI assistant that creates clear, concise task summaries.
+Your goal is to help users quickly understand the current state of their tasks,
 including what has been accomplished and what remains to be done.
 
-Focus on providing a comprehensive overview of the task that refreshes the user's memory 
-and clearly outlines progress and next steps. Generate the summary in the language 
-specified by the task's languageCode field, or default to English if not set.''',
+Focus on providing a comprehensive overview of the task that refreshes the user's memory
+and clearly outlines progress and next steps. Generate the summary in the language
+specified by the task's languageCode field, or default to English if not set.
+
+RELATED TASKS CONTEXT:
+You may receive a `linked_tasks` object containing:
+- `linked_from`: Child tasks that reference this task (typically subtasks)
+- `linked_to`: Parent tasks that this task references (typically epics/parent tasks)
+
+Use this context to understand how this task fits into the broader project.
+If relevant, briefly mention related work in your summary.
+
+**IMPORTANT**: If any linked task's summary contains URLs to GitHub (PRs, Issues), Linear, Jira, or similar platforms, include these in your Links section as they provide valuable project context.''',
   userMessage: '''
-Create a task summary for the provided task details and log entries. 
-Imagine the user has not been involved in the task for a long time, and you want to refresh their memory. 
-Talk to the user directly, instead of referring to them as "the user" or "they". 
+Create a task summary for the provided task details and log entries.
+Imagine the user has not been involved in the task for a long time, and you want to refresh their memory.
+Talk to the user directly, instead of referring to them as "the user" or "they".
 
 Generate the summary in the language specified by the task's languageCode field.
 If no languageCode is set, default to English.
 
-Start with a single H1 header (# Title) that suggests a concise, descriptive title 
-for this task. The title should be a single line, ideally under 80-100 characters. 
-If the task already has a title, suggest an improved version that better captures 
-the essence of the task based on the details and logs. Use only one H1 in the 
-entire response. This H1 title is for internal suggestion purposes and will be 
-processed separately; it will not appear directly in the summary text shown to 
+Start with a single H1 header (# Title) that suggests a concise, descriptive title
+for this task. The title should be a single line, ideally under 80-100 characters.
+If the task already has a title, suggest an improved version that better captures
+the essence of the task based on the details and logs. Use only one H1 in the
+entire response. This H1 title is for internal suggestion purposes and will be
+processed separately; it will not appear directly in the summary text shown to
 the user.
 
-After the title, immediately provide a TLDR paragraph that MUST be exactly 3-4 lines maximum (approximately 50-80 words total). 
+After the title, immediately provide a TLDR paragraph that MUST be exactly 3-4 lines maximum (approximately 50-80 words total).
 This paragraph must:
 - Start with "**TLDR:** " (with the entire paragraph in bold using double asterisks)
 - Be extremely concise - focus only on: current status (1 line) + immediate next step (1-2 lines)
@@ -124,6 +134,7 @@ Example:
 Finally, at the very end of your response, include a **Links** section:
 - Scan ALL log entries in the task for URLs (http://, https://, or other valid URL schemes)
 - Extract every unique URL found across all entries
+- Also include relevant links from related tasks' summaries
 - For each link, generate a short, succinct title (2-5 words) that describes what the link is about
 - Format each link as Markdown: `[Succinct Title](URL)`
 - If no links are found, omit the Links section entirely
@@ -139,6 +150,11 @@ Example Links section (these are format examples only - never copy these URLs, o
 **Task Details:**
 ```json
 {{task}}
+```
+
+**Related Tasks:**
+```json
+{{linked_tasks}}
 ```''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.taskSummary,
@@ -342,6 +358,10 @@ Important guidelines:
 - Never mention what is NOT present or missing
 - Be concise and direct in your observations
 
+RELATED TASKS CONTEXT:
+You may receive a `linked_tasks` object containing related parent/child tasks.
+Use this context to better understand what the image might be showing in relation to the broader project.
+
 Include these observations in your analysis so the user can update their task accordingly.''',
   userMessage: '''
 REMINDER: Generate your ENTIRE response in the language specified by the task's "languageCode" field below. Check the languageCode value and respond in that language.
@@ -351,6 +371,11 @@ Analyze the provided image(s) in the context of this task:
 **Task Context:**
 ```json
 {{task}}
+```
+
+**Related Tasks:**
+```json
+{{linked_tasks}}
 ```
 
 Extract ONLY information from the image that is relevant to this task. Be concise and focus on task-related content.
@@ -406,7 +431,11 @@ When transcribing audio in the context of a task, pay attention to:
 1. Any mentions of completed checklist items (e.g., "I finished...", "I've completed...", "That's done")
 2. Any new action items or tasks mentioned (e.g., "I need to...", "Next I'll...", "We should...")
 
-Include these observations in your transcription so the user can update their task accordingly.''',
+Include these observations in your transcription so the user can update their task accordingly.
+
+RELATED TASKS CONTEXT:
+You may receive a `linked_tasks` object containing related parent/child tasks.
+Use this context to better understand domain terms and recognize references to related work.''',
   userMessage: '''
 Please transcribe the provided audio.
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
@@ -418,6 +447,11 @@ Remove filler words.
 **Task Context:**
 ```json
 {{task}}
+```
+
+**Related Tasks:**
+```json
+{{linked_tasks}}
 ```
 
 The task context provides names, places, and concepts relevant to this recording.
@@ -466,6 +500,18 @@ PROMPT STRUCTURE GUIDELINES:
 4. **Technical Details**: Any error messages, code snippets, or specific requirements mentioned
 5. **Desired Outcome**: What success looks like
 
+RELATED TASKS CONTEXT:
+You will receive a `linked_tasks` object containing:
+- `linked_from`: Child tasks that reference this task (typically subtasks)
+- `linked_to`: Parent tasks that this task references (typically epics/parent tasks)
+
+Each linked task includes metadata (status, priority, time spent) and its latest AI summary.
+Use this context to provide richer background in the generated prompt.
+
+**IMPORTANT**: If any linked task's summary contains URLs to GitHub (PRs, Issues), Linear, Jira, or similar platforms:
+1. Include these links in the generated prompt's context section
+2. Instruct the AI coding assistant to use web search to retrieve additional context from those links when relevant
+
 IMPORTANT GUIDELINES:
 - Write in second person ("you" addressing the AI assistant)
 - Be specific about technologies, frameworks, and tools mentioned
@@ -486,10 +532,16 @@ Transform this audio transcription into a well-crafted coding prompt, incorporat
 {{task}}
 ```
 
+**Related Tasks:**
+```json
+{{linked_tasks}}
+```
+
 Generate a comprehensive prompt that captures:
 1. The background and progress from the task context
-2. The current situation/problem from the audio
-3. A clear, actionable request for the AI coding assistant
+2. Context from related tasks (parent epics, child subtasks) where relevant
+3. The current situation/problem from the audio
+4. A clear, actionable request for the AI coding assistant
 
 The prompt should enable another AI to help effectively without needing additional context.''',
   // Note: We use InputDataType.task only (not audioFiles) because we extract

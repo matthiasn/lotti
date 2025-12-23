@@ -72,6 +72,13 @@ void main() {
         id: any<String>(named: 'id'),
       ),
     ).thenAnswer((_) async => null);
+
+    // Default stub for linked tasks JSON calls
+    when(
+      () => mockAiInputRepository.buildLinkedTasksJson(
+        any<String>(),
+      ),
+    ).thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
   });
 
   tearDown(() async {
@@ -90,6 +97,11 @@ void main() {
         id: any<String>(named: 'id'),
       ),
     ).thenAnswer((_) async => null);
+    when(
+      () => mockAiInputRepository.buildLinkedTasksJson(
+        any<String>(),
+      ),
+    ).thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
 
     if (getIt.isRegistered<JournalDb>()) {
       final db = getIt<JournalDb>();
@@ -861,9 +873,11 @@ void main() {
 
         // Assert - should use template message, not custom message
         final template = preconfiguredPrompts['task_summary']!;
-        // The expected prompt should be the template's userMessage with {{task}} replaced
-        final expectedPrompt =
-            template.userMessage.replaceAll('{{task}}', mockTaskJson);
+        // The expected prompt should be the template's userMessage with placeholders replaced
+        final expectedPrompt = template.userMessage
+            .replaceAll('{{task}}', mockTaskJson)
+            .replaceAll(
+                '{{linked_tasks}}', '{"linked_from": [], "linked_to": []}');
         expect(prompt, equals(expectedPrompt));
         // Verify it doesn't contain the custom message
         expect(prompt, isNot(contains('Custom user message')));

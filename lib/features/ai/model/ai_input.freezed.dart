@@ -1685,4 +1685,603 @@ class __$AiInputActionItemsListCopyWithImpl<$Res>
   }
 }
 
+/// @nodoc
+mixin _$AiLinkedTaskContext {
+  String get id;
+  String get title;
+  String get status;
+  DateTime get statusSince;
+  String get priority;
+  String get estimate;
+  String get timeSpent;
+  DateTime get createdAt;
+  List<Map<String, String>> get labels;
+  String? get languageCode;
+  String? get latestSummary;
+
+  /// Create a copy of AiLinkedTaskContext
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiLinkedTaskContextCopyWith<AiLinkedTaskContext> get copyWith =>
+      _$AiLinkedTaskContextCopyWithImpl<AiLinkedTaskContext>(
+          this as AiLinkedTaskContext, _$identity);
+
+  /// Serializes this AiLinkedTaskContext to a JSON map.
+  Map<String, dynamic> toJson();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AiLinkedTaskContext &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.statusSince, statusSince) ||
+                other.statusSince == statusSince) &&
+            (identical(other.priority, priority) ||
+                other.priority == priority) &&
+            (identical(other.estimate, estimate) ||
+                other.estimate == estimate) &&
+            (identical(other.timeSpent, timeSpent) ||
+                other.timeSpent == timeSpent) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            const DeepCollectionEquality().equals(other.labels, labels) &&
+            (identical(other.languageCode, languageCode) ||
+                other.languageCode == languageCode) &&
+            (identical(other.latestSummary, latestSummary) ||
+                other.latestSummary == latestSummary));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      title,
+      status,
+      statusSince,
+      priority,
+      estimate,
+      timeSpent,
+      createdAt,
+      const DeepCollectionEquality().hash(labels),
+      languageCode,
+      latestSummary);
+
+  @override
+  String toString() {
+    return 'AiLinkedTaskContext(id: $id, title: $title, status: $status, statusSince: $statusSince, priority: $priority, estimate: $estimate, timeSpent: $timeSpent, createdAt: $createdAt, labels: $labels, languageCode: $languageCode, latestSummary: $latestSummary)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $AiLinkedTaskContextCopyWith<$Res> {
+  factory $AiLinkedTaskContextCopyWith(
+          AiLinkedTaskContext value, $Res Function(AiLinkedTaskContext) _then) =
+      _$AiLinkedTaskContextCopyWithImpl;
+  @useResult
+  $Res call(
+      {String id,
+      String title,
+      String status,
+      DateTime statusSince,
+      String priority,
+      String estimate,
+      String timeSpent,
+      DateTime createdAt,
+      List<Map<String, String>> labels,
+      String? languageCode,
+      String? latestSummary});
+}
+
+/// @nodoc
+class _$AiLinkedTaskContextCopyWithImpl<$Res>
+    implements $AiLinkedTaskContextCopyWith<$Res> {
+  _$AiLinkedTaskContextCopyWithImpl(this._self, this._then);
+
+  final AiLinkedTaskContext _self;
+  final $Res Function(AiLinkedTaskContext) _then;
+
+  /// Create a copy of AiLinkedTaskContext
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? title = null,
+    Object? status = null,
+    Object? statusSince = null,
+    Object? priority = null,
+    Object? estimate = null,
+    Object? timeSpent = null,
+    Object? createdAt = null,
+    Object? labels = null,
+    Object? languageCode = freezed,
+    Object? latestSummary = freezed,
+  }) {
+    return _then(_self.copyWith(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      statusSince: null == statusSince
+          ? _self.statusSince
+          : statusSince // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      priority: null == priority
+          ? _self.priority
+          : priority // ignore: cast_nullable_to_non_nullable
+              as String,
+      estimate: null == estimate
+          ? _self.estimate
+          : estimate // ignore: cast_nullable_to_non_nullable
+              as String,
+      timeSpent: null == timeSpent
+          ? _self.timeSpent
+          : timeSpent // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      labels: null == labels
+          ? _self.labels
+          : labels // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, String>>,
+      languageCode: freezed == languageCode
+          ? _self.languageCode
+          : languageCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      latestSummary: freezed == latestSummary
+          ? _self.latestSummary
+          : latestSummary // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [AiLinkedTaskContext].
+extension AiLinkedTaskContextPatterns on AiLinkedTaskContext {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AiLinkedTaskContext value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiLinkedTaskContext() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AiLinkedTaskContext value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiLinkedTaskContext():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AiLinkedTaskContext value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiLinkedTaskContext() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            String id,
+            String title,
+            String status,
+            DateTime statusSince,
+            String priority,
+            String estimate,
+            String timeSpent,
+            DateTime createdAt,
+            List<Map<String, String>> labels,
+            String? languageCode,
+            String? latestSummary)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AiLinkedTaskContext() when $default != null:
+        return $default(
+            _that.id,
+            _that.title,
+            _that.status,
+            _that.statusSince,
+            _that.priority,
+            _that.estimate,
+            _that.timeSpent,
+            _that.createdAt,
+            _that.labels,
+            _that.languageCode,
+            _that.latestSummary);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            String id,
+            String title,
+            String status,
+            DateTime statusSince,
+            String priority,
+            String estimate,
+            String timeSpent,
+            DateTime createdAt,
+            List<Map<String, String>> labels,
+            String? languageCode,
+            String? latestSummary)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiLinkedTaskContext():
+        return $default(
+            _that.id,
+            _that.title,
+            _that.status,
+            _that.statusSince,
+            _that.priority,
+            _that.estimate,
+            _that.timeSpent,
+            _that.createdAt,
+            _that.labels,
+            _that.languageCode,
+            _that.latestSummary);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            String id,
+            String title,
+            String status,
+            DateTime statusSince,
+            String priority,
+            String estimate,
+            String timeSpent,
+            DateTime createdAt,
+            List<Map<String, String>> labels,
+            String? languageCode,
+            String? latestSummary)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AiLinkedTaskContext() when $default != null:
+        return $default(
+            _that.id,
+            _that.title,
+            _that.status,
+            _that.statusSince,
+            _that.priority,
+            _that.estimate,
+            _that.timeSpent,
+            _that.createdAt,
+            _that.labels,
+            _that.languageCode,
+            _that.latestSummary);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _AiLinkedTaskContext implements AiLinkedTaskContext {
+  const _AiLinkedTaskContext(
+      {required this.id,
+      required this.title,
+      required this.status,
+      required this.statusSince,
+      required this.priority,
+      required this.estimate,
+      required this.timeSpent,
+      required this.createdAt,
+      required final List<Map<String, String>> labels,
+      this.languageCode,
+      this.latestSummary})
+      : _labels = labels;
+  factory _AiLinkedTaskContext.fromJson(Map<String, dynamic> json) =>
+      _$AiLinkedTaskContextFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String title;
+  @override
+  final String status;
+  @override
+  final DateTime statusSince;
+  @override
+  final String priority;
+  @override
+  final String estimate;
+  @override
+  final String timeSpent;
+  @override
+  final DateTime createdAt;
+  final List<Map<String, String>> _labels;
+  @override
+  List<Map<String, String>> get labels {
+    if (_labels is EqualUnmodifiableListView) return _labels;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_labels);
+  }
+
+  @override
+  final String? languageCode;
+  @override
+  final String? latestSummary;
+
+  /// Create a copy of AiLinkedTaskContext
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AiLinkedTaskContextCopyWith<_AiLinkedTaskContext> get copyWith =>
+      __$AiLinkedTaskContextCopyWithImpl<_AiLinkedTaskContext>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiLinkedTaskContextToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _AiLinkedTaskContext &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.statusSince, statusSince) ||
+                other.statusSince == statusSince) &&
+            (identical(other.priority, priority) ||
+                other.priority == priority) &&
+            (identical(other.estimate, estimate) ||
+                other.estimate == estimate) &&
+            (identical(other.timeSpent, timeSpent) ||
+                other.timeSpent == timeSpent) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            const DeepCollectionEquality().equals(other._labels, _labels) &&
+            (identical(other.languageCode, languageCode) ||
+                other.languageCode == languageCode) &&
+            (identical(other.latestSummary, latestSummary) ||
+                other.latestSummary == latestSummary));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      title,
+      status,
+      statusSince,
+      priority,
+      estimate,
+      timeSpent,
+      createdAt,
+      const DeepCollectionEquality().hash(_labels),
+      languageCode,
+      latestSummary);
+
+  @override
+  String toString() {
+    return 'AiLinkedTaskContext(id: $id, title: $title, status: $status, statusSince: $statusSince, priority: $priority, estimate: $estimate, timeSpent: $timeSpent, createdAt: $createdAt, labels: $labels, languageCode: $languageCode, latestSummary: $latestSummary)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$AiLinkedTaskContextCopyWith<$Res>
+    implements $AiLinkedTaskContextCopyWith<$Res> {
+  factory _$AiLinkedTaskContextCopyWith(_AiLinkedTaskContext value,
+          $Res Function(_AiLinkedTaskContext) _then) =
+      __$AiLinkedTaskContextCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String title,
+      String status,
+      DateTime statusSince,
+      String priority,
+      String estimate,
+      String timeSpent,
+      DateTime createdAt,
+      List<Map<String, String>> labels,
+      String? languageCode,
+      String? latestSummary});
+}
+
+/// @nodoc
+class __$AiLinkedTaskContextCopyWithImpl<$Res>
+    implements _$AiLinkedTaskContextCopyWith<$Res> {
+  __$AiLinkedTaskContextCopyWithImpl(this._self, this._then);
+
+  final _AiLinkedTaskContext _self;
+  final $Res Function(_AiLinkedTaskContext) _then;
+
+  /// Create a copy of AiLinkedTaskContext
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? title = null,
+    Object? status = null,
+    Object? statusSince = null,
+    Object? priority = null,
+    Object? estimate = null,
+    Object? timeSpent = null,
+    Object? createdAt = null,
+    Object? labels = null,
+    Object? languageCode = freezed,
+    Object? latestSummary = freezed,
+  }) {
+    return _then(_AiLinkedTaskContext(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      statusSince: null == statusSince
+          ? _self.statusSince
+          : statusSince // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      priority: null == priority
+          ? _self.priority
+          : priority // ignore: cast_nullable_to_non_nullable
+              as String,
+      estimate: null == estimate
+          ? _self.estimate
+          : estimate // ignore: cast_nullable_to_non_nullable
+              as String,
+      timeSpent: null == timeSpent
+          ? _self.timeSpent
+          : timeSpent // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      labels: null == labels
+          ? _self._labels
+          : labels // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, String>>,
+      languageCode: freezed == languageCode
+          ? _self.languageCode
+          : languageCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      latestSummary: freezed == latestSummary
+          ? _self.latestSummary
+          : latestSummary // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
 // dart format on

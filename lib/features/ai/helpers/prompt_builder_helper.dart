@@ -295,7 +295,43 @@ class PromptBuilderHelper {
       prompt = prompt.replaceAll('{{correction_examples}}', examplesText);
     }
 
+    // Inject linked tasks context if requested (available for all prompt types)
+    if (prompt.contains('{{linked_tasks}}')) {
+      String linkedTasksJson;
+      try {
+        linkedTasksJson = await _buildLinkedTasksJson(entity);
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'linked_tasks',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        linkedTasksJson = '{"linked_from": [], "linked_to": []}';
+      }
+      prompt = prompt.replaceAll('{{linked_tasks}}', linkedTasksJson);
+    }
+
     return prompt;
+  }
+
+  /// Build linked tasks JSON for the given entity.
+  /// Works with Task entities directly, or finds the linked task for
+  /// images/audio.
+  Future<String> _buildLinkedTasksJson(JournalEntity entity) async {
+    String? taskId;
+    if (entity is Task) {
+      taskId = entity.id;
+    } else {
+      final linkedTask = await _findLinkedTask(entity);
+      taskId = linkedTask?.id;
+    }
+
+    if (taskId == null) {
+      return '{"linked_from": [], "linked_to": []}';
+    }
+
+    return aiInputRepository.buildLinkedTasksJson(taskId);
   }
 
   /// Get task JSON for a given entity
