@@ -2254,11 +2254,11 @@ void main() {
       ).called(1);
     });
 
-    test('generateWithMessages respects geminiIncludeThoughtsProvider toggle',
+    test('generateWithMessages disables thoughts for non-thinking models',
         () async {
-      // This test verifies that the toggle is consulted for multi-turn
+      // gemini-2.0-flash has thinkingBudget=0, so includeThoughts should be false
       final provider = createGeminiProvider();
-      const model = 'gemini-2.5-pro';
+      const model = 'gemini-2.0-flash'; // Non-thinking model
       GeminiThinkingConfig? capturedConfig;
 
       when(
@@ -2291,17 +2291,18 @@ void main() {
         provider: provider,
       ).toList();
 
-      // geminiIncludeThoughtsProvider returns true in setUp
-      expect(capturedConfig!.includeThoughts, isTrue);
+      // Non-thinking model (thinkingBudget=0) should have includeThoughts=false
+      expect(capturedConfig!.includeThoughts, isFalse);
     });
 
-    test('generateWithMessages with toggle disabled sets includeThoughts false',
+    test(
+        'generateWithMessages always captures thoughts for thinking-capable models',
         () async {
-      // Reset mock to return false for the toggle
-      when(() => mockRef.read(geminiIncludeThoughtsProvider)).thenReturn(false);
-
+      // The toggle no longer affects thought capture - thoughts are always
+      // captured for thinking-capable models so they appear in the Thoughts tab.
+      // The toggle only controls inline display in chat.
       final provider = createGeminiProvider();
-      const model = 'gemini-2.5-pro';
+      const model = 'gemini-2.5-pro'; // Thinking-capable model
       GeminiThinkingConfig? capturedConfig;
 
       when(
@@ -2334,11 +2335,8 @@ void main() {
         provider: provider,
       ).toList();
 
-      // Toggle is false, so includeThoughts should be false
-      expect(capturedConfig!.includeThoughts, isFalse);
-
-      // Reset mock for other tests
-      when(() => mockRef.read(geminiIncludeThoughtsProvider)).thenReturn(true);
+      // Thoughts are always captured for thinking-capable models
+      expect(capturedConfig!.includeThoughts, isTrue);
     });
   });
 

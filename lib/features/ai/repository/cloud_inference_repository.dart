@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
-import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -134,10 +133,10 @@ class CloudInferenceRepository {
     if (provider != null &&
         provider.inferenceProviderType == InferenceProviderType.gemini) {
       final thinking = getDefaultThinkingConfig(model);
-      // Respect user's "Show reasoning" toggle from UI settings
-      final userWantsThoughts = ref.read(geminiIncludeThoughtsProvider);
-      // Include thoughts if model supports it AND user has enabled the toggle
-      final includeThoughts = thinking.thinkingBudget != 0 && userWantsThoughts;
+      // Always capture thoughts for thinking-capable models (thinkingBudget != 0)
+      // so they're available in the AI response modal's Thoughts tab.
+      // The geminiIncludeThoughtsProvider only controls inline display in chat.
+      final includeThoughts = thinking.thinkingBudget != 0;
       final finalThinking = GeminiThinkingConfig(
         thinkingBudget: thinking.thinkingBudget,
         includeThoughts: includeThoughts,
@@ -398,10 +397,10 @@ class CloudInferenceRepository {
     // For Gemini, use the native multi-turn API with signature support
     if (provider.inferenceProviderType == InferenceProviderType.gemini) {
       final thinking = getDefaultThinkingConfig(model);
-      // Respect user's "Show reasoning" toggle from UI settings
-      final userWantsThoughts = ref.read(geminiIncludeThoughtsProvider);
-      // Include thoughts if model supports it AND user has enabled the toggle
-      final includeThoughts = thinking.thinkingBudget != 0 && userWantsThoughts;
+      // Always capture thoughts for thinking-capable models (thinkingBudget != 0)
+      // so they're available in the AI response modal's Thoughts tab.
+      // The geminiIncludeThoughtsProvider only controls inline display in chat.
+      final includeThoughts = thinking.thinkingBudget != 0;
       final finalThinking = GeminiThinkingConfig(
         thinkingBudget: thinking.thinkingBudget,
         includeThoughts: includeThoughts,
