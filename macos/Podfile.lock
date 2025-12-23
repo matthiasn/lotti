@@ -13,7 +13,8 @@ PODS:
     - FlutterMacOS
   - flutter_local_notifications (0.0.1):
     - FlutterMacOS
-  - flutter_secure_storage_macos (6.1.3):
+  - flutter_secure_storage_darwin (10.0.0):
+    - Flutter
     - FlutterMacOS
   - flutter_vodozemac (0.0.1):
     - FlutterMacOS
@@ -103,7 +104,7 @@ DEPENDENCIES:
   - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
   - flutter_image_compress_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_image_compress_macos/macos`)
   - flutter_local_notifications (from `Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos`)
-  - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
+  - flutter_secure_storage_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - flutter_vodozemac (from `Flutter/ephemeral/.symlinks/plugins/flutter_vodozemac/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
@@ -150,8 +151,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_image_compress_macos/macos
   flutter_local_notifications:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos
-  flutter_secure_storage_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos
+  flutter_secure_storage_darwin:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin
   flutter_vodozemac:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_vodozemac/macos
   FlutterMacOS:
@@ -207,7 +208,7 @@ SPEC CHECKSUMS:
   file_selector_macos: 9e9e068e90ebee155097d00e89ae91edb2374db7
   flutter_image_compress_macos: e68daf54bb4bf2144c580fd4d151c949cbf492f0
   flutter_local_notifications: 4bf37a31afde695b56091b4ae3e4d9c7a7e6cda0
-  flutter_secure_storage_macos: 7f45e30f838cf2659862a4e4e3ee1c347c2b3b54
+  flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   flutter_vodozemac: fd2ea9cb3e2a37beaac883a369811fbfe042fc53
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   HotKey: 400beb7caa29054ea8d864c96f5ba7e5b4852277

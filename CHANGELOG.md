@@ -6,12 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.769] - 2025-12-23
 ### Changed
+- Upgraded to Flutter 3.38.5 and updated dependencies
 - Sync: Refactored `OutboxService.enqueueMessage()` for improved maintainability
   - Converted from if-else chains to Dart 3 pattern matching with exhaustive switch
   - Extracted `_enqueueSimple` shared helper to reduce code duplication across 7 simple message handlers
   - Extracted per-type handler methods (`_enqueueJournalEntity`, `_enqueueEntryLink`, etc.)
   - Added preparation methods (`_prepareJournalEntity`, `_prepareEntryLink`) for message pre-processing
   - Improved test coverage: 60 → 77 tests with edge case coverage for null values and error handling
+
+### Fixed
+- Tests: Fixed resource leak in OutboxService tests where auxiliary service instances were not disposed
 
 ## [0.9.768] - 2025-12-23
 ### Added

@@ -1046,50 +1046,50 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: "9cad52d75ebc511adfae3d447d5d13da15a55a92c9410e50f67335b6d21d16ea"
+      sha256: da922f2aab2d733db7e011a6bcc4a825b844892d4edd6df83ff156b09a9b2e40
       url: "https://pub.dev"
     source: hosted
-    version: "9.2.4"
+    version: "10.0.0"
+  flutter_secure_storage_darwin:
+    dependency: transitive
+    description:
+      name: flutter_secure_storage_darwin
+      sha256: "8878c25136a79def1668c75985e8e193d9d7d095453ec28730da0315dc69aee3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
       name: flutter_secure_storage_linux
-      sha256: be76c1d24a97d0b98f8b54bce6b481a380a6590df992d0098f868ad54dc8f688
+      sha256: "2b5c76dce569ab752d55a1cee6a2242bcc11fdba927078fb88c503f150767cda"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.3"
-  flutter_secure_storage_macos:
-    dependency: transitive
-    description:
-      name: flutter_secure_storage_macos
-      sha256: "6c0a2795a2d1de26ae202a0d78527d163f4acbb11cde4c75c670f3a0fc064247"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.3"
+    version: "3.0.0"
   flutter_secure_storage_platform_interface:
     dependency: transitive
     description:
       name: flutter_secure_storage_platform_interface
-      sha256: cf91ad32ce5adef6fba4d736a542baca9daf3beac4db2d04be350b87f69ac4a8
+      sha256: "8ceea1223bee3c6ac1a22dabd8feefc550e4729b3675de4b5900f55afcb435d6"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "2.0.1"
   flutter_secure_storage_web:
     dependency: transitive
     description:
       name: flutter_secure_storage_web
-      sha256: f4ebff989b4f07b2656fb16b47852c0aab9fed9b4ec1c70103368337bc1886a9
+      sha256: "6a1137df62b84b54261dca582c1c09ea72f4f9a4b2fcee21b025964132d5d0c3"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "2.1.0"
   flutter_secure_storage_windows:
     dependency: transitive
     description:
       name: flutter_secure_storage_windows
-      sha256: b20b07cb5ed4ed74fc567b78a72936203f587eba460af1df11281c9326cd3709
+      sha256: "3b7c8e068875dfd46719ff57c90d8c459c87f2302ed6b00ff006b3c9fcad1613"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.2"
+    version: "4.1.0"
   flutter_shaders:
     dependency: transitive
     description:
@@ -1245,10 +1245,10 @@ packages:
     dependency: "direct main"
     description:
       name: gpt_markdown
-      sha256: "8174983f2ed7d8576d25810913e3afe3f8ffdaa3172c0c823b7cfc289b67f380"
+      sha256: "9b88dfaffea644070b648c204ca4a55745a49f4ad0b58ed0ab70913ad593c7a1"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.4"
+    version: "1.1.5"
   graphic:
     dependency: "direct main"
     description:
@@ -1546,10 +1546,10 @@ packages:
     dependency: transitive
     description:
       name: js
-      sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3
+      sha256: "53385261521cc4a0c4658fd0ad07a7d14591cf8fc33abbceae306ddb974888dc"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.7"
+    version: "0.7.2"
   json2yaml:
     dependency: transitive
     description:
@@ -1737,10 +1737,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "2f2f697a3e2d744e5deb43800eea59ac47df58b90275c31ba272f4115880e946"
+      sha256: fb116ee89f6871441f22f76a988db15cfcfb6dfac97e3e2d654c240080015707
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.1"
+    version: "4.1.0"
   media_kit:
     dependency: "direct main"
     description:
@@ -1897,10 +1897,10 @@ packages:
     dependency: "direct main"
     description:
       name: openai_dart
-      sha256: "0b0b4c3d452d0369465fb5e23bb8ef33edb845496a2864660191df6f8096c323"
+      sha256: "0c392263f5aeadf93c9bef0ce9f4781f4ce45de4e4b84858d5508148dfbfd637"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.5"
+    version: "0.6.1"
   package_config:
     dependency: transitive
     description:
@@ -3111,10 +3111,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: d74b66f283afff135d5be0ceccca2ca74dff7df1e9b1eaca6bd4699875d3ae60
+      sha256: ee4fd520b0cafa02e4a867a0f882092e727cdaa1a2d24762171e787f8a502b0a
       url: "https://pub.dev"
     source: hosted
-    version: "2.8.22"
+    version: "2.9.1"
   video_player_avfoundation:
     dependency: transitive
     description:
@@ -3223,10 +3223,10 @@ packages:
     dependency: "direct main"
     description:
       name: wechat_assets_picker
-      sha256: c307e50394c1e6dfcd5c4701e84efb549fce71444fedcf2e671c50d809b3e2a1
+      sha256: a503da460be2bb558f3331b76b2995fb1e16e9e442c80834a9633e13364b8050
       url: "https://pub.dev"
     source: hosted
-    version: "9.8.0"
+    version: "10.0.0"
   wechat_picker_library:
     dependency: transitive
     description:
