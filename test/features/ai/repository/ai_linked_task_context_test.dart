@@ -15,6 +15,7 @@ import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -40,6 +41,8 @@ class MockTaskProgressRepository extends Mock
 }
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class TestRef implements Ref {
   TestRef(this._mockTaskProgressRepository);
@@ -326,6 +329,7 @@ void main() {
     late MockJournalDb mockDb;
     late MockTaskProgressRepository mockTaskProgressRepository;
     late MockPersistenceLogic mockPersistenceLogic;
+    late MockEntitiesCacheService mockCacheService;
     late TestRef testRef;
     late AiInputRepository repository;
 
@@ -339,11 +343,13 @@ void main() {
       mockDb = MockJournalDb();
       mockTaskProgressRepository = MockTaskProgressRepository();
       mockPersistenceLogic = MockPersistenceLogic();
+      mockCacheService = MockEntitiesCacheService();
       testRef = TestRef(mockTaskProgressRepository);
 
       getIt
         ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EntitiesCacheService>(mockCacheService);
 
       repository = AiInputRepository(testRef);
 
@@ -356,12 +362,14 @@ void main() {
           .thenAnswer((_) async => <JournalEntity>[]);
       when(() => mockDb.getAllLabelDefinitions())
           .thenAnswer((_) async => <LabelDefinition>[]);
+      when(() => mockCacheService.getLabelById(any())).thenReturn(null);
     });
 
     tearDown(() {
       getIt
         ..unregister<JournalDb>()
-        ..unregister<PersistenceLogic>();
+        ..unregister<PersistenceLogic>()
+        ..unregister<EntitiesCacheService>();
     });
 
     Task createTestTask({
@@ -669,18 +677,18 @@ void main() {
         when(() => mockTaskProgressRepository.getTaskProgressData(
               id: any(named: 'id'),
             )).thenAnswer((_) async => (null, <String, Duration>{}));
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [
-            LabelDefinition(
-              id: 'label-1',
-              name: 'Test Label',
-              color: '#FF0000',
-              createdAt: createdDate,
-              updatedAt: createdDate,
-              vectorClock: null,
-              private: false,
-            ),
-          ],
+
+        // Use cache service for label lookups
+        when(() => mockCacheService.getLabelById('label-1')).thenReturn(
+          LabelDefinition(
+            id: 'label-1',
+            name: 'Test Label',
+            color: '#FF0000',
+            createdAt: createdDate,
+            updatedAt: createdDate,
+            vectorClock: null,
+            private: false,
+          ),
         );
 
         final result = await repository.buildLinkedTasksJson(taskId);
@@ -886,27 +894,29 @@ void main() {
         when(() =>
                 mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
             .thenAnswer((_) async => (null, <String, Duration>{}));
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [
-            LabelDefinition(
-              id: 'label-1',
-              name: 'Frontend',
-              color: '#FF0000',
-              createdAt: createdDate,
-              updatedAt: createdDate,
-              vectorClock: null,
-              private: false,
-            ),
-            LabelDefinition(
-              id: 'label-2',
-              name: 'Bug',
-              color: '#00FF00',
-              createdAt: createdDate,
-              updatedAt: createdDate,
-              vectorClock: null,
-              private: false,
-            ),
-          ],
+
+        // Use cache service for label lookups (O(1) per label)
+        when(() => mockCacheService.getLabelById('label-1')).thenReturn(
+          LabelDefinition(
+            id: 'label-1',
+            name: 'Frontend',
+            color: '#FF0000',
+            createdAt: createdDate,
+            updatedAt: createdDate,
+            vectorClock: null,
+            private: false,
+          ),
+        );
+        when(() => mockCacheService.getLabelById('label-2')).thenReturn(
+          LabelDefinition(
+            id: 'label-2',
+            name: 'Bug',
+            color: '#00FF00',
+            createdAt: createdDate,
+            updatedAt: createdDate,
+            vectorClock: null,
+            private: false,
+          ),
         );
 
         final result = await repository.buildLinkedFromContext(taskId);

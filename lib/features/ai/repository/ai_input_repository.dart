@@ -15,6 +15,7 @@ import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -187,6 +188,18 @@ class AiInputRepository {
     return jsonString;
   }
 
+  /// Build label tuples from the cache service (O(1) per label).
+  ///
+  /// Falls back to the ID if a label definition is not found in cache.
+  List<Map<String, String>> _buildLabelTuplesFromCache(List<String> ids) {
+    if (ids.isEmpty) return <Map<String, String>>[];
+    final cache = getIt<EntitiesCacheService>();
+    return ids.map((id) {
+      final def = cache.getLabelById(id);
+      return {'id': id, 'name': def?.name ?? id};
+    }).toList();
+  }
+
   /// Calculate the time spent on a task.
   ///
   /// Returns the total duration of work logged against this task.
@@ -253,11 +266,9 @@ class AiInputRepository {
   Future<AiLinkedTaskContext> _buildLinkedTaskContext(Task task) async {
     final timeSpent = await _calculateTimeSpent(task.id);
 
-    // Get labels
+    // Get labels from cache (avoids N+1 query per task)
     final labelIds = task.meta.labelIds ?? const <String>[];
-    final labels = labelIds.isNotEmpty
-        ? await buildAssignedLabelTuples(db: _db, ids: labelIds)
-        : <Map<String, String>>[];
+    final labels = _buildLabelTuplesFromCache(labelIds);
 
     // Get latest summary
     final latestSummary = await _getLatestTaskSummary(task.id);

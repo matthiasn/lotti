@@ -295,6 +295,14 @@ final timeSpent = progressRepository
 
 ## Future Considerations (Not for This Implementation)
 
+### Batch Task Summary Lookups
+Currently, `_getLatestTaskSummary()` is called once per linked task, resulting in N+1 queries when there are many linked tasks. Consider:
+1. Fetching all linked entity IDs upfront
+2. Batch-querying AI summaries for all tasks in a single database call
+3. Creating a map of `taskId → latestSummary` for O(1) lookups
+
+This optimization becomes important when tasks have many linked parent/child tasks (e.g., 10+ links).
+
 ### Large Prompt Storage as Files
 As prompts grow with linked task context, consider:
 1. Storing full prompt inputs as synced files (similar to images)
