@@ -7,10 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.771] - 2025-12-23
 ### Added
 - Task Summary Link Extraction: AI-generated task summaries now include a "Links" section
-  - Automatically scans all log entries for URLs (http://, https://, etc.)
+  - AI is instructed to scan log entries and extract unique URLs (http://, https://, etc.)
   - Generates succinct, descriptive titles for each link (e.g., "Linear: APP-123", "Lotti PR #456")
-  - Deduplicates URLs and formats as clickable Markdown links
-  - Links section omitted when no URLs are found in task entries
+  - Formats as clickable Markdown links
+  - Links section omitted when no URLs are found (prompt-driven, best-effort)
 
 ## [0.9.770] - 2025-12-23
 ### Changed

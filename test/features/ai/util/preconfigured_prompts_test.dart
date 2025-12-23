@@ -23,9 +23,8 @@ void main() {
       expect(user, contains('short, succinct title'));
     });
 
-    test('instructs to deduplicate URLs', () {
+    test('instructs to extract unique URLs', () {
       final user = taskSummaryPrompt.userMessage;
-      expect(user, contains('Deduplicate URLs'));
       expect(user, contains('unique URL'));
     });
 
@@ -46,6 +45,13 @@ void main() {
       expect(user, contains('github.com'));
       expect(user, contains('[Stack Overflow Solution]'));
       expect(user, contains('stackoverflow.com'));
+    });
+
+    test('includes disclaimer about example URLs', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('format examples only'));
+      expect(user, contains('never copy these URLs'));
+      expect(user, contains('only use actual URLs found in the task'));
     });
   });
 

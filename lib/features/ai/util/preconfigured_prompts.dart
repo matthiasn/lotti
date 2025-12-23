@@ -101,7 +101,7 @@ After the TLDR, provide the detailed summary with:
 - Any annoyances or blockers (use 🤯 emoji)
 
 Keep the detailed summary succinct while maintaining good structure and organization.
-If the task is done, end with a concluding statement.
+If the task is done, include a brief concluding statement before the Links section.
 
 Example:
 Achieved results:
@@ -127,9 +127,8 @@ Finally, at the very end of your response, include a **Links** section:
 - For each link, generate a short, succinct title (2-5 words) that describes what the link is about
 - Format each link as Markdown: `[Succinct Title](URL)`
 - If no links are found, omit the Links section entirely
-- Deduplicate URLs - if the same URL appears multiple times, include it only once
 
-Example Links section:
+Example Links section (these are format examples only - never copy these URLs, only use actual URLs found in the task):
 ## Links
 - [Flutter Documentation](https://docs.flutter.dev)
 - [Linear: APP-123](https://linear.app/team/issue/APP-123)

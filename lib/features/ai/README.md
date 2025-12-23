@@ -457,13 +457,13 @@ When generating task summaries, the system automatically extracts suggested titl
 
 ### 5. Automatic Link Extraction
 
-Task summaries automatically aggregate and display all URLs found within the task's entries:
+Task summaries include AI-driven link extraction that aggregates URLs found within the task's entries:
 
-- **Scanning**: AI scans ALL log entries in the task for URLs (http://, https://, or other valid URL schemes)
-- **Deduplication**: Duplicate URLs are consolidated—each unique URL appears only once
+- **Scanning**: AI is instructed to scan log entries for URLs (http://, https://, or other valid URL schemes)
+- **Unique URLs**: AI extracts every unique URL found across all entries
 - **Succinct Titles**: AI generates short, descriptive titles (2-5 words) for each link
 - **Markdown Format**: Links are formatted as `[Succinct Title](URL)` for clickable rendering
-- **Conditional Display**: Links section is omitted entirely if no URLs are found
+- **Conditional Display**: Links section should be omitted if no URLs are found
 
 Example output in summaries:
 ```markdown
@@ -474,7 +474,7 @@ Example output in summaries:
 - [GitHub Issue #789](https://github.com/user/repo/issues/789)
 ```
 
-This feature helps users quickly access all resources referenced during task work without manually searching through entries.
+**Note**: This is prompt-driven behavior relying on AI compliance. Results are best-effort and may vary by model.
 
 ### 6. Direct Task Summary Refresh with Countdown UX
 
