@@ -824,24 +824,25 @@ void main() {
           () async {
         // Arrange
         const taskId = 'task-123';
+        final testDate = DateTime(2025, 12, 20, 14, 30);
         final task = Task(
           data: TaskData(
             title: 'Test Task',
             status: TaskStatus.open(
               id: 'status_id',
-              createdAt: DateTime.now(),
+              createdAt: testDate,
               utcOffset: 0,
             ),
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
           meta: Metadata(
             id: taskId,
-            createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            updatedAt: testDate,
           ),
           entryText: const EntryText(plainText: 'Test task'),
         );
@@ -853,7 +854,7 @@ void main() {
           userMessage: 'Custom user message',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           useReasoning: false,
           requiredInputData: [InputDataType.task],
           aiResponseType: AiResponseType.taskSummary,
@@ -881,6 +882,63 @@ void main() {
         expect(prompt, equals(expectedPrompt));
         // Verify it doesn't contain the custom message
         expect(prompt, isNot(contains('Custom user message')));
+      });
+
+      test('should handle error in buildLinkedTasksJson gracefully', () async {
+        // Arrange
+        const taskId = 'task-123';
+        final testDate = DateTime(2025, 12, 20, 14, 30);
+        final task = Task(
+          data: TaskData(
+            title: 'Test Task',
+            status: TaskStatus.open(
+              id: 'status_id',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+            statusHistory: [],
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+          meta: Metadata(
+            id: taskId,
+            createdAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            updatedAt: testDate,
+          ),
+          entryText: const EntryText(plainText: 'Test task'),
+        );
+
+        final promptConfig = AiConfigPrompt(
+          id: 'test-prompt',
+          name: 'Test Prompt',
+          systemMessage: 'System',
+          userMessage: 'Task: {{task}}\nLinked: {{linked_tasks}}',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: testDate,
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
+        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
+            .thenAnswer((_) async => mockTaskJson);
+        // Make buildLinkedTasksJson throw an exception
+        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
+            .thenThrow(Exception('Database error'));
+
+        // Act
+        final prompt = await promptBuilder.buildPromptWithData(
+          promptConfig: promptConfig,
+          entity: task,
+        );
+
+        // Assert - should use fallback empty JSON despite error
+        expect(prompt, contains('{"linked_from": [], "linked_to": []}'));
+        expect(prompt, contains(mockTaskJson));
       });
 
       test('should handle non-task entities without task placeholder',

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -51,18 +52,7 @@ class AiInputRepository {
     }
 
     final task = entry;
-
-    final progressRepository = ref.read(taskProgressRepositoryProvider);
-    final taskProgressData =
-        await progressRepository.getTaskProgressData(id: task.id);
-    final durations = taskProgressData?.$2 ?? {};
-
-    final timeSpent = progressRepository
-        .getTaskProgress(
-          durations: durations,
-          estimate: taskProgressData?.$1,
-        )
-        .progress;
+    final timeSpent = await _calculateTimeSpent(task.id);
 
     final logEntries = <AiInputLogEntryObject>[];
     final linkedEntities = await _db.getLinkedEntities(id);
@@ -197,8 +187,26 @@ class AiInputRepository {
     return jsonString;
   }
 
+  /// Calculate the time spent on a task.
+  ///
+  /// Returns the total duration of work logged against this task.
+  Future<Duration> _calculateTimeSpent(String taskId) async {
+    final progressRepository = ref.read(taskProgressRepositoryProvider);
+    final progressData = await progressRepository.getTaskProgressData(
+      id: taskId,
+    );
+    final durations = progressData?.$2 ?? {};
+    return progressRepository
+        .getTaskProgress(durations: durations, estimate: progressData?.$1)
+        .progress;
+  }
+
   /// Build context for tasks that link TO this task (children/subtasks).
   /// These are tasks where the current task is the target of the link.
+  ///
+  /// This method is primarily used internally by [buildLinkedTasksJson].
+  /// It is exposed for testing purposes only.
+  @visibleForTesting
   Future<List<AiLinkedTaskContext>> buildLinkedFromContext(
       String taskId) async {
     // Get entities that link TO this task (where toId = taskId)
@@ -220,6 +228,10 @@ class AiInputRepository {
 
   /// Build context for tasks this task links TO (parents/epics).
   /// These are tasks where the current task is the source of the link.
+  ///
+  /// This method is primarily used internally by [buildLinkedTasksJson].
+  /// It is exposed for testing purposes only.
+  @visibleForTesting
   Future<List<AiLinkedTaskContext>> buildLinkedToContext(String taskId) async {
     // Get entities that this task links TO (where fromId = taskId)
     final linkedEntities = await _db.getLinkedEntities(taskId);
@@ -239,14 +251,7 @@ class AiInputRepository {
 
   /// Build context object for a single linked task.
   Future<AiLinkedTaskContext> _buildLinkedTaskContext(Task task) async {
-    // Get time spent
-    final progressRepository = ref.read(taskProgressRepositoryProvider);
-    final progressData =
-        await progressRepository.getTaskProgressData(id: task.id);
-    final durations = progressData?.$2 ?? {};
-    final timeSpent = progressRepository
-        .getTaskProgress(durations: durations, estimate: progressData?.$1)
-        .progress;
+    final timeSpent = await _calculateTimeSpent(task.id);
 
     // Get labels
     final labelIds = task.meta.labelIds ?? const <String>[];
