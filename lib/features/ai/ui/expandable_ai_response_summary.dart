@@ -189,7 +189,7 @@ class _ExpandableAiResponseSummaryState
                         }
                         return ClipRect(
                           child: Align(
-                            alignment: Alignment.topCenter,
+                            alignment: Alignment.topLeft,
                             heightFactor: _expandAnimation.value,
                             child: child,
                           ),

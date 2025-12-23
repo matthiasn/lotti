@@ -104,21 +104,21 @@ Keep the detailed summary succinct while maintaining good structure and organiza
 If the task is done, include a brief concluding statement before the Links section.
 
 Example:
-Achieved results:
+**Achieved results:**
 ✅ Completed step 1
 ✅ Completed step 2
 ✅ Completed step 3
 
-Remaining steps:
+**Remaining steps:**
 1. Step 1
 2. Step 2
 3. Step 3
 
-Learnings:
+**Learnings:**
 💡 Learned something interesting
 💡 Learned something else
 
-Annoyances:
+**Annoyances:**
 🤯 Annoyed by something
 
 Finally, at the very end of your response, include a **Links** section:
@@ -129,7 +129,7 @@ Finally, at the very end of your response, include a **Links** section:
 - If no links are found, omit the Links section entirely
 
 Example Links section (these are format examples only - never copy these URLs, only use actual URLs found in the task):
-## Links
+**Links:**
 - [Flutter Documentation](https://docs.flutter.dev)
 - [Linear: APP-123](https://linear.app/team/issue/APP-123)
 - [Lotti PR #456](https://github.com/matthiasn/lotti/pull/456)

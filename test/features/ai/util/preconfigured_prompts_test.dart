@@ -6,7 +6,7 @@ void main() {
     test('includes Links section instruction', () {
       final user = taskSummaryPrompt.userMessage;
       expect(user, contains('**Links** section'));
-      expect(user, contains('## Links'));
+      expect(user, contains('**Links:**'));
     });
 
     test('instructs to scan log entries for URLs', () {
