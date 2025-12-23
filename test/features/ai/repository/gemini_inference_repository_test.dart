@@ -1820,6 +1820,558 @@ void main() {
       expect(collector.getSignature('tool_0'), 'fallback-sig-abc');
     });
   });
+
+  group('generateTextWithMessages (multi-turn)', () {
+    test('sends multi-turn request with conversation history', () async {
+      String? capturedBody;
+      final client = _RequestCapturingClient(
+        onRequest: (req) {
+          if (req is http.Request) {
+            capturedBody = req.body;
+          }
+        },
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'Multi-turn response'},
+                ],
+              }
+            }
+          ]
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+        const ChatCompletionMessage.assistant(content: 'Hi there!'),
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('How are you?'),
+        ),
+      ];
+
+      final events = await repo
+          .generateTextWithMessages(
+            messages: messages,
+            model: 'gemini-2.5-pro',
+            temperature: 0.7,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
+
+      expect(events.length, 1);
+      expect(events.first.choices!.first.delta!.content, 'Multi-turn response');
+
+      // Verify body contains messages array (multi-turn format)
+      expect(capturedBody, isNotNull);
+      final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
+      expect(body['contents'], isA<List<dynamic>>());
+      final contents = body['contents'] as List<dynamic>;
+      expect(contents.length, 3); // 3 messages converted
+    });
+
+    test('includes thought signatures in multi-turn request', () async {
+      String? capturedBody;
+      final client = _RequestCapturingClient(
+        onRequest: (req) {
+          if (req is http.Request) {
+            capturedBody = req.body;
+          }
+        },
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'Continuing conversation'},
+                ],
+              }
+            }
+          ]
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Add items'),
+        ),
+        const ChatCompletionMessage.assistant(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-123',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'add_item',
+                arguments: '{"title":"Buy milk"}',
+              ),
+            ),
+          ],
+        ),
+        const ChatCompletionMessage.tool(
+          toolCallId: 'call-123',
+          content: 'Item added successfully',
+        ),
+      ];
+
+      await repo.generateTextWithMessages(
+        messages: messages,
+        model: 'gemini-3-pro',
+        temperature: 0.5,
+        thinkingConfig: GeminiThinkingConfig.disabled,
+        provider: provider,
+        thoughtSignatures: {'call-123': 'sig-encrypted-abc'},
+      ).toList();
+
+      expect(capturedBody, isNotNull);
+      final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
+      final contents = body['contents'] as List<dynamic>;
+
+      // Find the model message with function call and verify signature
+      final modelMessage = contents.firstWhere(
+        (dynamic c) => (c as Map<String, dynamic>)['role'] == 'model',
+        orElse: () => <String, dynamic>{},
+      ) as Map<String, dynamic>;
+
+      expect(modelMessage, isNotEmpty);
+      final parts = modelMessage['parts'] as List<dynamic>;
+      expect(parts, isNotEmpty);
+
+      // Check that signature is at part level (sibling of functionCall)
+      final functionPart = parts.first as Map<String, dynamic>;
+      expect(functionPart['functionCall'], isNotNull);
+      expect(functionPart['thoughtSignature'], 'sig-encrypted-abc');
+    });
+
+    test('captures signatures from multi-turn response', () async {
+      final response = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {
+                  'functionCall': {
+                    'name': 'add_item',
+                    'args': {'title': 'New item'},
+                  },
+                  'thoughtSignature': 'new-sig-xyz',
+                }
+              ]
+            }
+          }
+        ],
+      });
+
+      final client = _FakeStreamClient(200, [response]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final collector = ThoughtSignatureCollector();
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo.generateTextWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Add item'),
+          ),
+        ],
+        model: 'gemini-3-flash',
+        temperature: 0.5,
+        thinkingConfig: GeminiThinkingConfig.disabled,
+        provider: provider,
+        signatureCollector: collector,
+      ).toList();
+
+      expect(collector.hasSignatures, isTrue);
+      expect(collector.getSignature('tool_0'), 'new-sig-xyz');
+    });
+
+    test('emits thinking block in multi-turn mode', () async {
+      final response = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'Let me think about this...', 'thought': true},
+                {'text': 'Here is my response'},
+              ]
+            }
+          }
+        ],
+      });
+
+      final client = _FakeStreamClient(200, [response]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo.generateTextWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Think hard'),
+          ),
+        ],
+        model: 'gemini-2.5-pro',
+        temperature: 0.5,
+        thinkingConfig: const GeminiThinkingConfig(
+          thinkingBudget: 1024,
+          includeThoughts: true,
+        ),
+        provider: provider,
+      ).toList();
+
+      expect(events.length, 2);
+      expect(events[0].choices!.first.delta!.content, contains('<think>'));
+      expect(
+        events[0].choices!.first.delta!.content,
+        contains('Let me think about this...'),
+      );
+      expect(events[1].choices!.first.delta!.content, 'Here is my response');
+    });
+
+    test('emits usage in multi-turn response', () async {
+      final response = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'Response with usage'},
+              ]
+            }
+          }
+        ],
+        'usageMetadata': {
+          'promptTokenCount': 200,
+          'candidatesTokenCount': 100,
+          'thoughtsTokenCount': 50,
+        }
+      });
+
+      final client = _FakeStreamClient(200, [response]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo.generateTextWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hello'),
+          ),
+        ],
+        model: 'gemini-2.5-pro',
+        temperature: 0.5,
+        thinkingConfig: GeminiThinkingConfig.disabled,
+        provider: provider,
+      ).toList();
+
+      // Content + usage events
+      expect(events.length, 2);
+      expect(events.last.usage, isNotNull);
+      expect(events.last.usage!.promptTokens, 200);
+      expect(events.last.usage!.completionTokens, 100);
+      expect(events.last.usage!.completionTokensDetails?.reasoningTokens, 50);
+    });
+
+    test('throws on non-2xx status in multi-turn mode', () async {
+      final client = _FakeStreamClient(500, ['{"error":"internal"}']);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      expect(
+        () => repo.generateTextWithMessages(
+          messages: const [
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string('Hello'),
+            ),
+          ],
+          model: 'gemini-2.5-pro',
+          temperature: 0.5,
+          thinkingConfig: GeminiThinkingConfig.disabled,
+          provider: provider,
+        ).toList(),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('flushes trailing thinking in multi-turn', () async {
+      final response = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': 'Still thinking...', 'thought': true},
+              ]
+            }
+          }
+        ],
+      });
+
+      final client = _FakeStreamClient(200, [response]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo.generateTextWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Think'),
+          ),
+        ],
+        model: 'gemini-2.5-pro',
+        temperature: 0.5,
+        thinkingConfig: const GeminiThinkingConfig(
+          thinkingBudget: 1024,
+          includeThoughts: true,
+        ),
+        provider: provider,
+      ).toList();
+
+      expect(events.length, 1);
+      expect(events.first.choices!.first.delta!.content, contains('<think>'));
+      expect(
+        events.first.choices!.first.delta!.content,
+        contains('Still thinking...'),
+      );
+    });
+
+    test('handles empty stream in multi-turn (no fallback)', () async {
+      final response = jsonEncode({
+        'candidates': [
+          {
+            'content': {'parts': <Object?>[]}
+          }
+        ],
+      });
+
+      final client = _FakeStreamClient(200, [response]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo.generateTextWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hi'),
+          ),
+        ],
+        model: 'gemini-2.5-pro',
+        temperature: 0.5,
+        thinkingConfig: GeminiThinkingConfig.disabled,
+        provider: provider,
+      ).toList();
+
+      // Multi-turn has no fallback, should just emit nothing
+      expect(events, isEmpty);
+    });
+
+    test('includes system message in multi-turn request', () async {
+      String? capturedBody;
+      final client = _RequestCapturingClient(
+        onRequest: (req) {
+          if (req is http.Request) {
+            capturedBody = req.body;
+          }
+        },
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'role': 'model',
+                'parts': [
+                  {'text': 'Following system instructions'},
+                ],
+              }
+            }
+          ]
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo.generateTextWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Do something'),
+          ),
+        ],
+        model: 'gemini-2.5-pro',
+        temperature: 0.5,
+        thinkingConfig: GeminiThinkingConfig.disabled,
+        provider: provider,
+        systemMessage: 'You are a helpful assistant.',
+      ).toList();
+
+      expect(capturedBody, isNotNull);
+      final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
+      expect(body['systemInstruction'], isNotNull);
+      final sysInstruction = body['systemInstruction'] as Map<String, dynamic>;
+      final parts = sysInstruction['parts'] as List<dynamic>;
+      expect((parts.first as Map<String, dynamic>)['text'], 'You are a helpful assistant.');
+    });
+  });
+
+  group('Rate limit with Retry-After header', () {
+    test('respects Retry-After header when present', () async {
+      var attemptCount = 0;
+      final client = _RetryWithHeaderClient(
+        statusCodes: [429, 200],
+        responses: [
+          '{"error": "rate limited"}',
+          jsonEncode({
+            'candidates': [
+              {
+                'content': {
+                  'role': 'model',
+                  'parts': [
+                    {'text': 'Success'},
+                  ],
+                }
+              }
+            ]
+          }),
+        ],
+        retryAfterSeconds: 1,
+        onRequest: () => attemptCount++,
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'test',
+            model: 'gemini-2.5-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+          )
+          .toList();
+
+      expect(attemptCount, 2);
+      expect(events.first.choices!.first.delta!.content, 'Success');
+    });
+  });
+}
+
+/// Test client with Retry-After header support
+class _RetryWithHeaderClient extends http.BaseClient {
+  _RetryWithHeaderClient({
+    required this.statusCodes,
+    required this.responses,
+    this.retryAfterSeconds,
+    this.onRequest,
+  });
+
+  final List<int> statusCodes;
+  final List<String> responses;
+  final int? retryAfterSeconds;
+  final void Function()? onRequest;
+  int _callCount = 0;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    onRequest?.call();
+    final idx =
+        _callCount < statusCodes.length ? _callCount : statusCodes.length - 1;
+    _callCount++;
+
+    final body = responses[idx < responses.length ? idx : responses.length - 1];
+    final bytes = utf8.encode(body);
+    final stream = Stream<List<int>>.fromIterable([bytes]);
+
+    final headers = <String, String>{'content-type': 'application/json'};
+    if (statusCodes[idx] == 429 && retryAfterSeconds != null) {
+      headers['retry-after'] = retryAfterSeconds.toString();
+    }
+
+    return http.StreamedResponse(
+      stream,
+      statusCodes[idx],
+      headers: headers,
+    );
+  }
 }
 
 /// Test client that allows controlling retry behavior
