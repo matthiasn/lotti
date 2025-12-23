@@ -372,6 +372,7 @@ class CloudInferenceRepository {
   /// - [tools]: Optional function declarations
   /// - [thoughtSignatures]: Optional signatures from previous turns (Gemini only)
   /// - [signatureCollector]: Optional collector for new signatures (Gemini only)
+  /// - [turnIndex]: Current turn number for unique tool call ID generation
   Stream<CreateChatCompletionStreamResponse> generateWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -381,6 +382,7 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
   }) {
     developer.log(
       'CloudInferenceRepository.generateWithMessages called with:\n'
@@ -428,6 +430,7 @@ class CloudInferenceRepository {
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
         signatureCollector: signatureCollector,
+        turnIndex: turnIndex,
       );
     }
 

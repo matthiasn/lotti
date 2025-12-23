@@ -100,6 +100,7 @@ class ConversationRepository extends _$ConversationRepository {
 
         // Make API call with full conversation history
         // Pass previous signatures and collector for new ones
+        // turnCount provides unique tool call IDs across conversation turns
         final stream = inferenceRepo.generateTextWithMessages(
           messages: messages,
           model: model,
@@ -108,6 +109,7 @@ class ConversationRepository extends _$ConversationRepository {
           temperature: temperature,
           thoughtSignatures: manager.thoughtSignatures,
           signatureCollector: signatureCollector,
+          turnIndex: manager.turnCount,
         );
 
         // Collect response
@@ -146,10 +148,12 @@ class ConversationRepository extends _$ConversationRepository {
 
               if (isGeminiStyle) {
                 // Handle Gemini's multiple complete tool calls in one chunk
+                // Use turn-prefixed ID for uniqueness across conversation turns
+                final turn = manager.turnCount;
                 for (var i = 0; i < delta.toolCalls!.length; i++) {
                   final toolCallChunk = delta.toolCalls![i];
                   if (toolCallChunk.function != null) {
-                    final toolCallId = 'tool_gemini_${toolCalls.length}';
+                    final toolCallId = 'tool_turn${turn}_${toolCalls.length}';
                     toolCalls.add(ChatCompletionMessageToolCall(
                       id: toolCallId,
                       type: ChatCompletionMessageToolCallType.function,

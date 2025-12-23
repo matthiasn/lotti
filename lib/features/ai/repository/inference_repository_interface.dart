@@ -18,6 +18,7 @@ abstract class InferenceRepositoryInterface {
   /// - [tools]: Optional function declarations
   /// - [thoughtSignatures]: Previous thought signatures for multi-turn (Gemini 3)
   /// - [signatureCollector]: Collector for capturing new signatures from response
+  /// - [turnIndex]: Current turn number for unique tool call ID generation
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -27,6 +28,7 @@ abstract class InferenceRepositoryInterface {
     List<ChatCompletionTool>? tools,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
   });
 
   /// Optional: Generate text with a simple prompt (for backwards compatibility)

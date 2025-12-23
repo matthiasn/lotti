@@ -163,6 +163,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         // Start sendMessage in background
@@ -212,6 +213,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         // Start sendMessage
@@ -283,6 +285,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         when(() => mockStrategy.processToolCalls(
@@ -380,6 +383,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         when(() => mockStrategy.processToolCalls(
@@ -458,6 +462,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) {
           callCount++;
           return Stream.value(
@@ -575,6 +580,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -677,6 +683,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -773,6 +780,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -840,6 +848,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -935,6 +944,7 @@ void main() {
               temperature: any(named: 'temperature'),
               thoughtSignatures: any(named: 'thoughtSignatures'),
               signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(

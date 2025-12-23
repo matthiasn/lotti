@@ -304,7 +304,8 @@ class GeminiInferenceRepository {
 
               emittedAny = true;
               final currentIndex = toolCallIndex++;
-              final toolCallId = 'tool_$currentIndex';
+              // Single-turn is always turn 0
+              final toolCallId = 'tool_turn0_$currentIndex';
 
               _captureSignatureIfPresent(
                 part: p,
@@ -531,6 +532,11 @@ class GeminiInferenceRepository {
   /// - [maxCompletionTokens]: Optional output token limit
   /// - [tools]: Optional function declarations
   /// - [signatureCollector]: Optional collector for capturing new signatures
+  /// Multi-turn variant that accepts full conversation history.
+  ///
+  /// [turnIndex] provides the current turn number for generating unique
+  /// tool call IDs that don't collide across conversation turns. This prevents
+  /// signature/name lookup errors when replaying multi-turn function calls.
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -542,6 +548,7 @@ class GeminiInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
   }) async* {
     final uri = GeminiUtils.buildStreamGenerateContentUri(
       baseUrl: provider.baseUrl,
@@ -678,7 +685,9 @@ class GeminiInferenceRepository {
 
             emittedAny = true;
             final currentIndex = toolCallIndex++;
-            final toolCallId = 'tool_$currentIndex';
+            // Use turn-prefixed ID to ensure uniqueness across conversation turns
+            final turn = turnIndex ?? 0;
+            final toolCallId = 'tool_turn${turn}_$currentIndex';
 
             _captureSignatureIfPresent(
               part: p,
@@ -893,9 +902,12 @@ class _ProcessedPayload {
 }
 
 /// Processes a decoded Gemini response (non-streaming) into compact outputs.
+///
+/// [turnIndex] is used for generating unique tool call IDs across turns.
 _ProcessedPayload _processGeminiPayload(
   Map<String, dynamic> decoded, {
   required bool includeThoughts,
+  int turnIndex = 0,
 }) {
   final tb = StringBuffer();
   final cb = StringBuffer();
@@ -924,7 +936,8 @@ _ProcessedPayload _processGeminiPayload(
             final name = fc['name']?.toString() ?? '';
             final args = jsonEncode(fc['args'] ?? {});
             final idx = toolIndex++;
-            final toolCallId = 'tool_$idx';
+            // Use turn-prefixed ID for uniqueness across conversation turns
+            final toolCallId = 'tool_turn${turnIndex}_$idx';
 
             // Capture thought signature using shared helper
             final signature = extractThoughtSignature(p);

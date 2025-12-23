@@ -56,11 +56,13 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     List<ChatCompletionTool>? tools,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
   }) async* {
     developer.log(
       'CloudInferenceWrapper: Processing ${messages.length} messages for '
       'cloud provider ${provider.inferenceProviderType}, '
-      'hasSignatures: ${thoughtSignatures?.isNotEmpty ?? false}',
+      'hasSignatures: ${thoughtSignatures?.isNotEmpty ?? false}, '
+      'turnIndex: $turnIndex',
       name: 'CloudInferenceWrapper',
     );
 
@@ -75,6 +77,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       tools: tools,
       thoughtSignatures: thoughtSignatures,
       signatureCollector: signatureCollector,
+      turnIndex: turnIndex,
     );
 
     // Pass through the stream but log any tool calls we see

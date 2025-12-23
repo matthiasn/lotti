@@ -86,6 +86,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     List<ChatCompletionTool>? tools,
     Map<String, String>? thoughtSignatures, // Ignored for Ollama
     ThoughtSignatureCollector? signatureCollector, // Ignored for Ollama
+    int? turnIndex, // Ignored for Ollama
   }) {
     // Convert ChatCompletionMessage objects to Ollama format
     final ollamaMessages = messages.map((msg) {

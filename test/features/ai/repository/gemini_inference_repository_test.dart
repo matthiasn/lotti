@@ -290,8 +290,8 @@ void main() {
       final toolsDelta = events[2].choices!.first.delta!;
       expect(toolsDelta.toolCalls, isNotNull);
       expect(toolsDelta.toolCalls!.length, 2);
-      expect(toolsDelta.toolCalls![0].id, 'tool_0');
-      expect(toolsDelta.toolCalls![1].id, 'tool_1');
+      expect(toolsDelta.toolCalls![0].id, 'tool_turn0_0');
+      expect(toolsDelta.toolCalls![1].id, 'tool_turn0_1');
     });
 
     test('maps functionCall to tool call chunk', () async {
@@ -400,9 +400,9 @@ void main() {
       expect(events.length, 2);
       final call0 = events[0].choices!.first.delta!.toolCalls!.first;
       final call1 = events[1].choices!.first.delta!.toolCalls!.first;
-      expect(call0.id, 'tool_0');
+      expect(call0.id, 'tool_turn0_0');
       expect(call0.index, 0);
-      expect(call1.id, 'tool_1');
+      expect(call1.id, 'tool_turn0_1');
       expect(call1.index, 1);
     });
 
@@ -473,8 +473,8 @@ void main() {
       final toolsDelta = events[1].choices!.first.delta!;
       expect(toolsDelta.toolCalls, isNotNull);
       expect(toolsDelta.toolCalls!.length, 2);
-      expect(toolsDelta.toolCalls![0].id, 'tool_0');
-      expect(toolsDelta.toolCalls![1].id, 'tool_1');
+      expect(toolsDelta.toolCalls![0].id, 'tool_turn0_0');
+      expect(toolsDelta.toolCalls![1].id, 'tool_turn0_1');
     });
 
     test('throws for non-2xx streaming status codes', () async {
@@ -1707,8 +1707,8 @@ void main() {
       // Collector should have both signatures
       expect(collector.hasSignatures, isTrue);
       expect(collector.signatures.length, 2);
-      expect(collector.getSignature('tool_0'), 'encrypted-sig-12345');
-      expect(collector.getSignature('tool_1'), 'encrypted-sig-67890');
+      expect(collector.getSignature('tool_turn0_0'), 'encrypted-sig-12345');
+      expect(collector.getSignature('tool_turn0_1'), 'encrypted-sig-67890');
     });
 
     test('handles function calls without signatures', () async {
@@ -1817,7 +1817,7 @@ void main() {
 
       // Signature should be captured from fallback
       expect(collector.hasSignatures, isTrue);
-      expect(collector.getSignature('tool_0'), 'fallback-sig-abc');
+      expect(collector.getSignature('tool_turn0_0'), 'fallback-sig-abc');
     });
   });
 
@@ -2014,7 +2014,7 @@ void main() {
       ).toList();
 
       expect(collector.hasSignatures, isTrue);
-      expect(collector.getSignature('tool_0'), 'new-sig-xyz');
+      expect(collector.getSignature('tool_turn0_0'), 'new-sig-xyz');
     });
 
     test('emits thinking block in multi-turn mode', () async {
@@ -2281,7 +2281,8 @@ void main() {
       expect(body['systemInstruction'], isNotNull);
       final sysInstruction = body['systemInstruction'] as Map<String, dynamic>;
       final parts = sysInstruction['parts'] as List<dynamic>;
-      expect((parts.first as Map<String, dynamic>)['text'], 'You are a helpful assistant.');
+      expect((parts.first as Map<String, dynamic>)['text'],
+          'You are a helpful assistant.');
     });
   });
 
