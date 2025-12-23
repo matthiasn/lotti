@@ -3341,6 +3341,8 @@ void main() {
 
       final companion = captured.first as OutboxCompanion;
       expect(companion.subject.value, 'null:tag');
+
+      await serviceWithNullHash.dispose();
     });
 
     test('SyncBackfillRequest with empty entries list', () async {
@@ -3547,6 +3549,8 @@ void main() {
       final companion = captured.first as OutboxCompanion;
       // With null host, the vclock lookup returns null
       expect(companion.subject.value, 'hash123:null');
+
+      await serviceWithNullHost.dispose();
     });
   });
 
