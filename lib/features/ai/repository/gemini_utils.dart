@@ -22,26 +22,24 @@ class GeminiUtils {
     required String baseUrl,
     required String model,
     required String apiKey,
-  }) =>
-      _buildGeminiUri(
-        baseUrl: baseUrl,
-        model: model,
-        apiKey: apiKey,
-        endpoint: 'streamGenerateContent',
-      );
+  }) => _buildGeminiUri(
+    baseUrl: baseUrl,
+    model: model,
+    apiKey: apiKey,
+    endpoint: 'streamGenerateContent',
+  );
 
   /// Builds the non-streaming `:generateContent` URI (used for fallback).
   static Uri buildGenerateContentUri({
     required String baseUrl,
     required String model,
     required String apiKey,
-  }) =>
-      _buildGeminiUri(
-        baseUrl: baseUrl,
-        model: model,
-        apiKey: apiKey,
-        endpoint: 'generateContent',
-      );
+  }) => _buildGeminiUri(
+    baseUrl: baseUrl,
+    model: model,
+    apiKey: apiKey,
+    endpoint: 'generateContent',
+  );
 
   /// Internal helper to build Gemini API URIs with the specified endpoint.
   static Uri _buildGeminiUri({
@@ -60,8 +58,9 @@ class GeminiUtils {
     final trimmed = model.trim().endsWith('/')
         ? model.trim().substring(0, model.trim().length - 1)
         : model.trim();
-    final modelPath =
-        trimmed.startsWith('models/') ? trimmed : 'models/$trimmed';
+    final modelPath = trimmed.startsWith('models/')
+        ? trimmed
+        : 'models/$trimmed';
     final path = '/v1beta/$modelPath:$endpoint';
     return root.replace(
       path: path,
@@ -105,15 +104,17 @@ class GeminiUtils {
         'tools': [
           {
             'functionDeclarations': tools
-                .map((t) => {
-                      'name': t.function.name,
-                      if (t.function.description != null)
-                        'description': t.function.description,
-                      if (t.function.parameters != null)
-                        'parameters': t.function.parameters,
-                    })
+                .map(
+                  (t) => {
+                    'name': t.function.name,
+                    if (t.function.description != null)
+                      'description': t.function.description,
+                    if (t.function.parameters != null)
+                      'parameters': t.function.parameters,
+                  },
+                )
                 .toList(),
-          }
+          },
         ],
     };
 
@@ -157,18 +158,11 @@ class GeminiUtils {
   }) {
     // Build mapping of toolCallId -> functionName from assistant messages
     // This is needed because tool responses only have the ID, not the name
-    final toolCallIdToName = <String, String>{};
-    for (final message in messages) {
-      message.mapOrNull(
-        assistant: (a) {
-          if (a.toolCalls != null) {
-            for (final tc in a.toolCalls!) {
-              toolCallIdToName[tc.id] = tc.function.name;
-            }
-          }
-        },
-      );
-    }
+    final toolCallIdToName = <String, String>{
+      for (final msg in messages.whereType<ChatCompletionAssistantMessage>())
+        if (msg.toolCalls != null)
+          for (final tc in msg.toolCalls!) tc.id: tc.function.name,
+    };
 
     final contents = <Map<String, dynamic>>[];
 
@@ -196,15 +190,17 @@ class GeminiUtils {
         'tools': [
           {
             'functionDeclarations': tools
-                .map((t) => {
-                      'name': t.function.name,
-                      if (t.function.description != null)
-                        'description': t.function.description,
-                      if (t.function.parameters != null)
-                        'parameters': t.function.parameters,
-                    })
+                .map(
+                  (t) => {
+                    'name': t.function.name,
+                    if (t.function.description != null)
+                      'description': t.function.description,
+                    if (t.function.parameters != null)
+                      'parameters': t.function.parameters,
+                  },
+                )
                 .toList(),
-          }
+          },
         ],
     };
 
@@ -294,10 +290,7 @@ class GeminiUtils {
 
             // Build function call part - signature is at part level as sibling
             final functionCallPart = <String, dynamic>{
-              'functionCall': {
-                'name': toolCall.function.name,
-                'args': args,
-              },
+              'functionCall': {'name': toolCall.function.name, 'args': args},
             };
 
             // Include thought signature at part level (sibling of functionCall)
@@ -313,10 +306,7 @@ class GeminiUtils {
 
         if (parts.isEmpty) return null;
 
-        return {
-          'role': 'model',
-          'parts': parts,
-        };
+        return {'role': 'model', 'parts': parts};
       },
       tool: (tool) {
         // Look up the function name from the mapping, fall back to toolCallId

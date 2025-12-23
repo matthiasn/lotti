@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -407,17 +408,9 @@ class CloudInferenceRepository {
       );
 
       // Extract system message from messages if present
-      String? systemMessage;
-      for (final message in messages) {
-        if (message.role == ChatCompletionMessageRole.system) {
-          message.mapOrNull(
-            system: (s) {
-              systemMessage = s.content;
-            },
-          );
-          break;
-        }
-      }
+      final systemMessage = messages
+          .firstWhereOrNull((m) => m.role == ChatCompletionMessageRole.system)
+          ?.mapOrNull(system: (s) => s.content);
 
       return _geminiRepository.generateTextWithMessages(
         messages: messages,

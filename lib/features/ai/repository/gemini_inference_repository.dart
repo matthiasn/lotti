@@ -44,17 +44,40 @@ class GeminiInferenceRepository {
 
   final http.Client _httpClient;
 
-  // Toggle for verbose streaming logs useful during debugging. Disabled by
-  // default to avoid console noise in production.
+  // -------------------------------------------------------------------------
+  // Configuration constants
+  // -------------------------------------------------------------------------
+
+  /// Toggle for verbose streaming logs useful during debugging.
+  /// Set to `true` to enable detailed logging of raw chunks, parsed objects,
+  /// and processing metrics. Disabled by default to avoid console noise.
   static const bool kVerboseStreamLogging = false;
-  // Preview length for debug logging and error previews
+
+  /// Maximum characters to show in debug log previews and error messages.
   static const int kPreviewLength = 200;
 
-  // Centralized caps and timeouts
-  static const int kMaxStreamingChars = 1000000; // 1M safety cap
+  /// Safety cap on total characters emitted during streaming (1 million).
+  ///
+  /// This prevents runaway responses from consuming excessive memory or
+  /// causing UI performance issues. When reached, the stream terminates
+  /// early with a log message. This is a safety mechanism, not a typical
+  /// limit—most responses are far smaller.
+  static const int kMaxStreamingChars = 1000000;
+
+  /// Timeout for establishing the initial streaming connection.
+  /// This covers the HTTP handshake, not the full response duration.
   static const Duration kInitialRequestTimeout = Duration(seconds: 30);
+
+  /// Timeout for non-streaming (fallback) requests.
+  /// Longer than streaming since we wait for the complete response.
   static const Duration kNonStreamingTimeout = Duration(seconds: 60);
+
+  /// Maximum retry attempts for rate-limited (429) or temporarily
+  /// unavailable (503) responses.
   static const int kMaxRetries = 3;
+
+  /// Base delay for exponential backoff on retries.
+  /// Actual delay doubles with each attempt: 500ms, 1s, 2s.
   static const Duration kRetryBaseDelay = Duration(milliseconds: 500);
 
   /// Generates text via Gemini's streaming API with thinking and function-calling support.
@@ -742,6 +765,103 @@ class GeminiInferenceRepository {
       );
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Private payload processing
+  // -------------------------------------------------------------------------
+
+  /// Processes a decoded Gemini response (non-streaming) into compact outputs.
+  ///
+  /// This is used by the fallback path when streaming produces no events.
+  /// Extracts thinking, visible text, tool calls, and usage metadata from
+  /// a complete Gemini response payload.
+  ///
+  /// [turnIndex] is used for generating unique tool call IDs across turns.
+  static _ProcessedPayload _processGeminiPayload(
+    Map<String, dynamic> decoded, {
+    required bool includeThoughts,
+    int turnIndex = 0,
+  }) {
+    final tb = StringBuffer();
+    final cb = StringBuffer();
+    final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
+    final signatures = <String, String>{};
+    var toolIndex = 0;
+
+    final candidates = decoded['candidates'];
+    if (candidates is List && candidates.isNotEmpty) {
+      final first = candidates.first;
+      final content = first is Map<String, dynamic> ? first['content'] : null;
+      if (content is Map<String, dynamic>) {
+        final parts = content['parts'];
+        if (parts is List) {
+          for (final p in parts) {
+            if (p is! Map<String, dynamic>) continue;
+            final isThought = p['thought'] == true;
+            final text = p['text'];
+            if (isThought && includeThoughts) {
+              if (text is String && text.isNotEmpty) tb.write(text);
+            } else if (text is String && text.isNotEmpty) {
+              cb.write(text);
+            }
+            final fc = p['functionCall'];
+            if (fc is Map<String, dynamic>) {
+              final name = fc['name']?.toString() ?? '';
+              final args = jsonEncode(fc['args'] ?? {});
+              final idx = toolIndex++;
+              // Use turn-prefixed ID for uniqueness across conversation turns
+              final toolCallId = 'tool_turn${turnIndex}_$idx';
+
+              // Capture thought signature using shared helper
+              final signature = extractThoughtSignature(p);
+              if (signature != null) {
+                signatures[toolCallId] = signature;
+              }
+
+              toolChunks.add(
+                ChatCompletionStreamMessageToolCallChunk(
+                  index: idx,
+                  id: toolCallId,
+                  function: ChatCompletionStreamMessageFunctionCall(
+                    name: name,
+                    arguments: args,
+                  ),
+                ),
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Parse usage metadata
+    CompletionUsage? usage;
+    final usageMetadata = decoded['usageMetadata'];
+    if (usageMetadata is Map<String, dynamic>) {
+      final promptTokens = usageMetadata['promptTokenCount'] as int?;
+      final candidatesTokens = usageMetadata['candidatesTokenCount'] as int?;
+      final thoughtsTokens = usageMetadata['thoughtsTokenCount'] as int?;
+
+      if (promptTokens != null || candidatesTokens != null) {
+        usage = CompletionUsage(
+          promptTokens: promptTokens,
+          completionTokens: candidatesTokens,
+          totalTokens: (promptTokens ?? 0) + (candidatesTokens ?? 0),
+          completionTokensDetails: thoughtsTokens != null
+              ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
+              : null,
+        );
+      }
+    }
+
+    return _ProcessedPayload(
+      thinking: tb.toString(),
+      visible: cb.toString(),
+      toolChunks: toolChunks,
+      signatures: signatures,
+      usage: usage,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -899,95 +1019,6 @@ class _ProcessedPayload {
 
   /// Thought signatures captured from function calls, keyed by tool call ID.
   final Map<String, String> signatures;
-}
-
-/// Processes a decoded Gemini response (non-streaming) into compact outputs.
-///
-/// [turnIndex] is used for generating unique tool call IDs across turns.
-_ProcessedPayload _processGeminiPayload(
-  Map<String, dynamic> decoded, {
-  required bool includeThoughts,
-  int turnIndex = 0,
-}) {
-  final tb = StringBuffer();
-  final cb = StringBuffer();
-  final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
-  final signatures = <String, String>{};
-  var toolIndex = 0;
-
-  final candidates = decoded['candidates'];
-  if (candidates is List && candidates.isNotEmpty) {
-    final first = candidates.first;
-    final content = first is Map<String, dynamic> ? first['content'] : null;
-    if (content is Map<String, dynamic>) {
-      final parts = content['parts'];
-      if (parts is List) {
-        for (final p in parts) {
-          if (p is! Map<String, dynamic>) continue;
-          final isThought = p['thought'] == true;
-          final text = p['text'];
-          if (isThought && includeThoughts) {
-            if (text is String && text.isNotEmpty) tb.write(text);
-          } else if (text is String && text.isNotEmpty) {
-            cb.write(text);
-          }
-          final fc = p['functionCall'];
-          if (fc is Map<String, dynamic>) {
-            final name = fc['name']?.toString() ?? '';
-            final args = jsonEncode(fc['args'] ?? {});
-            final idx = toolIndex++;
-            // Use turn-prefixed ID for uniqueness across conversation turns
-            final toolCallId = 'tool_turn${turnIndex}_$idx';
-
-            // Capture thought signature using shared helper
-            final signature = extractThoughtSignature(p);
-            if (signature != null) {
-              signatures[toolCallId] = signature;
-            }
-
-            toolChunks.add(
-              ChatCompletionStreamMessageToolCallChunk(
-                index: idx,
-                id: toolCallId,
-                function: ChatCompletionStreamMessageFunctionCall(
-                  name: name,
-                  arguments: args,
-                ),
-              ),
-            );
-          }
-        }
-      }
-    }
-  }
-
-  // Parse usage metadata
-  CompletionUsage? usage;
-  final usageMetadata = decoded['usageMetadata'];
-  if (usageMetadata is Map<String, dynamic>) {
-    final promptTokens = usageMetadata['promptTokenCount'] as int?;
-    final candidatesTokens = usageMetadata['candidatesTokenCount'] as int?;
-    final thoughtsTokens = usageMetadata['thoughtsTokenCount'] as int?;
-
-    if (promptTokens != null || candidatesTokens != null) {
-      usage = CompletionUsage(
-        promptTokens: promptTokens,
-        completionTokens: candidatesTokens,
-        totalTokens: (promptTokens ?? 0) + (candidatesTokens ?? 0),
-        completionTokensDetails: thoughtsTokens != null
-            ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
-            : null,
-      );
-    }
-  }
-
-  return _ProcessedPayload(
-    thinking: tb.toString(),
-    visible: cb.toString(),
-    toolChunks: toolChunks,
-    signatures: signatures,
-    usage: usage,
-  );
 }
 
 /// Extracts a thought signature from a Gemini response part.
