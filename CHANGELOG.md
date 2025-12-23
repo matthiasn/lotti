@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.769] - 2025-12-23
+## [0.9.771] - 2025-12-23
+### Added
+- Task Summary Link Extraction: AI-generated task summaries now include a "Links" section
+  - AI is instructed to scan log entries and extract unique URLs (http://, https://, etc.)
+  - Generates succinct, descriptive titles for each link (e.g., "Linear: APP-123", "Lotti PR #456")
+  - Formats as clickable Markdown links
+  - Links section omitted when no URLs are found (prompt-driven, best-effort)
+
+## [0.9.770] - 2025-12-23
 ### Changed
 - Upgraded to Flutter 3.38.5 and updated dependencies
 - Sync: Refactored `OutboxService.enqueueMessage()` for improved maintainability

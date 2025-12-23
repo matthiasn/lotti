@@ -2,6 +2,59 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 
 void main() {
+  group('Task Summary Prompt - Link Extraction', () {
+    test('includes Links section instruction', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('**Links** section'));
+      expect(user, contains('**Links:**'));
+    });
+
+    test('instructs to scan log entries for URLs', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('Scan ALL log entries'));
+      expect(user, contains('URLs'));
+      expect(user, contains('http://'));
+      expect(user, contains('https://'));
+    });
+
+    test('instructs Markdown link format', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('[Succinct Title](URL)'));
+      expect(user, contains('short, succinct title'));
+    });
+
+    test('instructs to extract unique URLs', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('unique URL'));
+    });
+
+    test('instructs to omit Links section when no links found', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('no links are found'));
+      expect(user, contains('omit the Links section'));
+    });
+
+    test('includes example links section with various URL types', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('[Flutter Documentation]'));
+      expect(user, contains('docs.flutter.dev'));
+      expect(user, contains('[Linear: APP-123]'));
+      expect(user, contains('linear.app'));
+      expect(user, contains('[Lotti PR #456]'));
+      expect(user, contains('[GitHub Issue'));
+      expect(user, contains('github.com'));
+      expect(user, contains('[Stack Overflow Solution]'));
+      expect(user, contains('stackoverflow.com'));
+    });
+
+    test('includes disclaimer about example URLs', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('format examples only'));
+      expect(user, contains('never copy these URLs'));
+      expect(user, contains('only use actual URLs found in the task'));
+    });
+  });
+
   test('Checklist updates prompt instructs array-of-objects format', () {
     final prompt = checklistUpdatesPrompt.systemMessage;
     expect(prompt, contains('add_multiple_checklist_items'));

@@ -1,3 +1,5 @@
+// ignore_for_file: depend_on_referenced_packages
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -7,8 +9,17 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/expandable_ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../test_helper.dart';
+
+class MockUrlLauncher extends Mock
+    with MockPlatformInterfaceMixin
+    implements UrlLauncherPlatform {}
+
+class FakeLaunchOptions extends Fake implements LaunchOptions {}
 
 void main() {
   group('AiResponseSummary', () {
@@ -200,6 +211,74 @@ Help me implement OAuth 2.0 authentication in my Flutter app.
 
       // Should not use ExpandableAiResponseSummary
       expect(find.byType(ExpandableAiResponseSummary), findsNothing);
+    });
+
+    testWidgets('handles link tap in non-task summary responses',
+        (tester) async {
+      // Set up mock URL launcher and capture original for cleanup
+      final originalPlatform = UrlLauncherPlatform.instance;
+      final mockUrlLauncher = MockUrlLauncher();
+      registerFallbackValue(FakeLaunchOptions());
+      UrlLauncherPlatform.instance = mockUrlLauncher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+      when(() => mockUrlLauncher.canLaunch(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockUrlLauncher.launchUrl(any(), any()))
+          .thenAnswer((_) async => true);
+
+      const responseWithLink =
+          'Check the [docs](https://docs.flutter.dev) for info.';
+
+      final aiResponse = testAiResponseEntry.copyWith(
+        data: testAiResponseEntry.data.copyWith(
+          response: responseWithLink,
+          type: AiResponseType.imageAnalysis,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummary(
+            aiResponse,
+            linkedFromId: 'test-id',
+            fadeOut: false,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find GestureDetector widgets with onTap and manually call the callback
+      // to verify the URL launcher integration
+      var linkCallbackFound = false;
+      final gestureDetectors =
+          tester.widgetList<GestureDetector>(find.byType(GestureDetector));
+      for (final gd in gestureDetectors) {
+        if (gd.onTap != null) {
+          // Try to invoke the callback and check if it triggers URL launcher
+          gd.onTap!();
+          await tester.pumpAndSettle();
+
+          // Check if URL launcher was called with the expected URL
+          try {
+            verify(() => mockUrlLauncher.launchUrl(
+                  'https://docs.flutter.dev',
+                  any(),
+                )).called(1);
+            linkCallbackFound = true;
+            break;
+          } catch (_) {
+            // This callback didn't trigger the right URL, continue searching
+            reset(mockUrlLauncher);
+            when(() => mockUrlLauncher.canLaunch(any()))
+                .thenAnswer((_) async => true);
+            when(() => mockUrlLauncher.launchUrl(any(), any()))
+                .thenAnswer((_) async => true);
+          }
+        }
+      }
+      expect(linkCallbackFound, isTrue);
     });
   });
 }

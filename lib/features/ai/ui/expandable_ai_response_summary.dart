@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ExpandableAiResponseSummary extends StatefulWidget {
   const ExpandableAiResponseSummary(
@@ -116,6 +117,35 @@ class _ExpandableAiResponseSummaryState
     });
   }
 
+  Future<void> _handleLinkTap(String url, String title) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildLink(
+    BuildContext context,
+    InlineSpan text,
+    String url,
+    TextStyle style,
+  ) {
+    final linkColor = Theme.of(context).colorScheme.primary;
+    return GestureDetector(
+      onTap: () => _handleLinkTap(url, ''),
+      child: Text.rich(
+        TextSpan(
+          children: [text],
+          style: style.copyWith(
+            color: linkColor,
+            decoration: TextDecoration.underline,
+            decorationColor: linkColor,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ModernBaseCard(
@@ -141,7 +171,11 @@ class _ExpandableAiResponseSummaryState
                 children: [
                   // TLDR content (always visible)
                   SelectionArea(
-                    child: GptMarkdown(_tldrContent ?? ''),
+                    child: GptMarkdown(
+                      _tldrContent ?? '',
+                      onLinkTap: _handleLinkTap,
+                      linkBuilder: _buildLink,
+                    ),
                   ),
                   // Accordion-style expanding content
                   if (_additionalContent != null &&
@@ -155,7 +189,7 @@ class _ExpandableAiResponseSummaryState
                         }
                         return ClipRect(
                           child: Align(
-                            alignment: Alignment.topCenter,
+                            alignment: Alignment.topLeft,
                             heightFactor: _expandAnimation.value,
                             child: child,
                           ),
@@ -166,7 +200,11 @@ class _ExpandableAiResponseSummaryState
                         children: [
                           const SizedBox(height: 16),
                           SelectionArea(
-                            child: GptMarkdown(_additionalContent!),
+                            child: GptMarkdown(
+                              _additionalContent!,
+                              onLinkTap: _handleLinkTap,
+                              linkBuilder: _buildLink,
+                            ),
                           ),
                         ],
                       ),

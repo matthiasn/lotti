@@ -101,25 +101,40 @@ After the TLDR, provide the detailed summary with:
 - Any annoyances or blockers (use 🤯 emoji)
 
 Keep the detailed summary succinct while maintaining good structure and organization.
-If the task is done, end with a concluding statement.
+If the task is done, include a brief concluding statement before the Links section.
 
 Example:
-Achieved results:
+**Achieved results:**
 ✅ Completed step 1
 ✅ Completed step 2
 ✅ Completed step 3
 
-Remaining steps:
+**Remaining steps:**
 1. Step 1
 2. Step 2
 3. Step 3
 
-Learnings:
+**Learnings:**
 💡 Learned something interesting
 💡 Learned something else
 
-Annoyances:
+**Annoyances:**
 🤯 Annoyed by something
+
+Finally, at the very end of your response, include a **Links** section:
+- Scan ALL log entries in the task for URLs (http://, https://, or other valid URL schemes)
+- Extract every unique URL found across all entries
+- For each link, generate a short, succinct title (2-5 words) that describes what the link is about
+- Format each link as Markdown: `[Succinct Title](URL)`
+- If no links are found, omit the Links section entirely
+
+Example Links section (these are format examples only - never copy these URLs, only use actual URLs found in the task):
+**Links:**
+- [Flutter Documentation](https://docs.flutter.dev)
+- [Linear: APP-123](https://linear.app/team/issue/APP-123)
+- [Lotti PR #456](https://github.com/matthiasn/lotti/pull/456)
+- [GitHub Issue #789](https://github.com/user/repo/issues/789)
+- [Stack Overflow Solution](https://stackoverflow.com/questions/12345)
 
 **Task Details:**
 ```json

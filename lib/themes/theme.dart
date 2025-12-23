@@ -594,6 +594,7 @@ ThemeData withOverrides(ThemeData themeData) {
         ),
         GptMarkdownThemeData(
           brightness: themeData.brightness,
+          linkColor: themeData.colorScheme.primary,
           h1: themeData.textTheme.titleLarge?.copyWith(
             fontSize: fontSizeMediumLarge,
             fontWeight: FontWeight.w600,

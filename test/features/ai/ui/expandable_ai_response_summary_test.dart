@@ -1,11 +1,22 @@
+// ignore_for_file: depend_on_referenced_packages
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/expandable_ai_response_summary.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../test_helper.dart';
+
+class MockUrlLauncher extends Mock
+    with MockPlatformInterfaceMixin
+    implements UrlLauncherPlatform {}
+
+class FakeLaunchOptions extends Fake implements LaunchOptions {}
 
 void main() {
   group('ExpandableAiResponseSummary', () {
@@ -219,8 +230,8 @@ More content here...''';
       const responseWithBoldTldr = '''
 # Task Title
 
-**TLDR:** **This entire paragraph should be bold. 
-Including this second line. 
+**TLDR:** **This entire paragraph should be bold.
+Including this second line.
 And this third line with emoji 🎉**
 
 Additional content after TLDR...''';
@@ -244,6 +255,153 @@ Additional content after TLDR...''';
       // TLDR content should be visible
       expect(find.textContaining('entire paragraph should be bold'),
           findsOneWidget);
+    });
+
+    testWidgets('renders links with custom styling and handles tap',
+        (tester) async {
+      // Set up mock URL launcher and capture original for cleanup
+      final originalPlatform = UrlLauncherPlatform.instance;
+      final mockUrlLauncher = MockUrlLauncher();
+      registerFallbackValue(FakeLaunchOptions());
+      UrlLauncherPlatform.instance = mockUrlLauncher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+      when(() => mockUrlLauncher.canLaunch(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockUrlLauncher.launchUrl(any(), any()))
+          .thenAnswer((_) async => true);
+
+      // Use a simpler markdown structure without bullets
+      const responseWithLink = '''
+# Task Title
+
+**TLDR:** Check the documentation for details.
+
+See [Flutter Docs](https://docs.flutter.dev) for more information.''';
+
+      final aiResponse = testAiResponseEntry.copyWith(
+        data: testAiResponseEntry.data.copyWith(
+          response: responseWithLink,
+          type: AiResponseType.taskSummary,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ExpandableAiResponseSummary(
+            aiResponse,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      // Expand to show the link
+      await tester.tap(find.byIcon(Icons.expand_more));
+      // Pump frames manually to ensure animation completes
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // Find GestureDetector widgets with onTap and manually call the callback
+      // to verify the URL launcher integration
+      var linkCallbackFound = false;
+      final gestureDetectors =
+          tester.widgetList<GestureDetector>(find.byType(GestureDetector));
+      for (final gd in gestureDetectors) {
+        if (gd.onTap != null) {
+          // Try to invoke the callback and check if it triggers URL launcher
+          gd.onTap!();
+          await tester.pumpAndSettle();
+
+          // Check if URL launcher was called with the expected URL
+          try {
+            verify(() => mockUrlLauncher.launchUrl(
+                  'https://docs.flutter.dev',
+                  any(),
+                )).called(1);
+            linkCallbackFound = true;
+            break;
+          } catch (_) {
+            // This callback didn't trigger the right URL, continue searching
+            reset(mockUrlLauncher);
+            when(() => mockUrlLauncher.canLaunch(any()))
+                .thenAnswer((_) async => true);
+            when(() => mockUrlLauncher.launchUrl(any(), any()))
+                .thenAnswer((_) async => true);
+          }
+        }
+      }
+      expect(linkCallbackFound, isTrue);
+    });
+
+    testWidgets('link in TLDR section is tappable', (tester) async {
+      // Set up mock URL launcher and capture original for cleanup
+      final originalPlatform = UrlLauncherPlatform.instance;
+      final mockUrlLauncher = MockUrlLauncher();
+      registerFallbackValue(FakeLaunchOptions());
+      UrlLauncherPlatform.instance = mockUrlLauncher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+      when(() => mockUrlLauncher.canLaunch(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockUrlLauncher.launchUrl(any(), any()))
+          .thenAnswer((_) async => true);
+
+      const responseWithTldrLink = '''
+# Task Title
+
+**TLDR:** See the [GitHub Issue](https://github.com/test/repo/issues/123) for more details.
+
+Additional content here.''';
+
+      final aiResponse = testAiResponseEntry.copyWith(
+        data: testAiResponseEntry.data.copyWith(
+          response: responseWithTldrLink,
+          type: AiResponseType.taskSummary,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ExpandableAiResponseSummary(
+            aiResponse,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find GestureDetector widgets with onTap and manually call the callback
+      // to verify the URL launcher integration
+      var linkCallbackFound = false;
+      final gestureDetectors =
+          tester.widgetList<GestureDetector>(find.byType(GestureDetector));
+      for (final gd in gestureDetectors) {
+        if (gd.onTap != null) {
+          // Try to invoke the callback and check if it triggers URL launcher
+          gd.onTap!();
+          await tester.pumpAndSettle();
+
+          // Check if URL launcher was called with the expected URL
+          try {
+            verify(() => mockUrlLauncher.launchUrl(
+                  'https://github.com/test/repo/issues/123',
+                  any(),
+                )).called(1);
+            linkCallbackFound = true;
+            break;
+          } catch (_) {
+            // This callback didn't trigger the right URL, continue searching
+            reset(mockUrlLauncher);
+            when(() => mockUrlLauncher.canLaunch(any()))
+                .thenAnswer((_) async => true);
+            when(() => mockUrlLauncher.launchUrl(any(), any()))
+                .thenAnswer((_) async => true);
+          }
+        }
+      }
+      expect(linkCallbackFound, isTrue);
     });
   });
 }
