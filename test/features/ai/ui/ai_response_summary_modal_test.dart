@@ -1,3 +1,5 @@
+// ignore_for_file: depend_on_referenced_packages
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -5,8 +7,17 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../test_helper.dart';
+
+class MockUrlLauncher extends Mock
+    with MockPlatformInterfaceMixin
+    implements UrlLauncherPlatform {}
+
+class FakeLaunchOptions extends Fake implements LaunchOptions {}
 
 // Note: We don't need to implement the mocks for clipboard functionality since
 // we're only testing for the presence of UI elements
@@ -389,6 +400,82 @@ void main() {
       expect(find.text('gpt-3.5'), findsOneWidget);
       expect(find.text('Temperature'), findsOneWidget);
       expect(find.text('0.0'), findsOneWidget);
+    });
+
+    testWidgets('handles link tap in Response tab', (tester) async {
+      // Set up mock URL launcher and capture original for cleanup
+      final originalPlatform = UrlLauncherPlatform.instance;
+      final mockUrlLauncher = MockUrlLauncher();
+      registerFallbackValue(FakeLaunchOptions());
+      UrlLauncherPlatform.instance = mockUrlLauncher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+      when(() => mockUrlLauncher.canLaunch(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockUrlLauncher.launchUrl(any(), any()))
+          .thenAnswer((_) async => true);
+
+      final aiResponseWithLink = AiResponseEntry(
+        meta: Metadata(
+          id: 'link-id',
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System',
+          prompt: 'Prompt',
+          thoughts: 'Thoughts',
+          response:
+              'Check the [documentation](https://docs.flutter.dev) for details.',
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummaryModalContent(
+            aiResponseWithLink,
+            linkedFromId: 'linked-id',
+          ),
+        ),
+      );
+
+      // Navigate to Response tab (it's the default)
+      await tester.pumpAndSettle();
+
+      // Find GestureDetector widgets with onTap and manually call the callback
+      // to verify the URL launcher integration
+      var linkCallbackFound = false;
+      final gestureDetectors =
+          tester.widgetList<GestureDetector>(find.byType(GestureDetector));
+      for (final gd in gestureDetectors) {
+        if (gd.onTap != null) {
+          // Try to invoke the callback and check if it triggers URL launcher
+          gd.onTap!();
+          await tester.pumpAndSettle();
+
+          // Check if URL launcher was called with the expected URL
+          try {
+            verify(() => mockUrlLauncher.launchUrl(
+                  'https://docs.flutter.dev',
+                  any(),
+                )).called(1);
+            linkCallbackFound = true;
+            break;
+          } catch (_) {
+            // This callback didn't trigger the right URL, continue searching
+            reset(mockUrlLauncher);
+            when(() => mockUrlLauncher.canLaunch(any()))
+                .thenAnswer((_) async => true);
+            when(() => mockUrlLauncher.launchUrl(any(), any()))
+                .thenAnswer((_) async => true);
+          }
+        }
+      }
+      expect(linkCallbackFound, isTrue);
     });
   });
 }
