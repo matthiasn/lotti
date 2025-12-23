@@ -174,6 +174,288 @@ void main() {
 
       expect(functionCall['thoughtSignature'], 'signature-abc123');
     });
+
+    test('omits thought signature when not in map', () {
+      final messages = [
+        const ChatCompletionMessage.assistant(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'test_function',
+                arguments: '{"key": "value"}',
+              ),
+            ),
+          ],
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+        thoughtSignatures: {'tool-2': 'different-id'}, // Different ID
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final functionCall = parts.first['functionCall'] as Map<String, dynamic>;
+
+      expect(functionCall.containsKey('thoughtSignature'), isFalse);
+    });
+
+    test('handles multiple tool calls with mixed signatures', () {
+      final messages = [
+        const ChatCompletionMessage.assistant(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'tool-0',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'func_a',
+                arguments: '{}',
+              ),
+            ),
+            ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'func_b',
+                arguments: '{}',
+              ),
+            ),
+          ],
+        ),
+      ];
+
+      // Only first tool call has signature (as per Gemini docs)
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+        thoughtSignatures: {'tool-0': 'sig-first-only'},
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+
+      expect(parts.length, 2);
+      expect(
+        (parts[0]['functionCall'] as Map)['thoughtSignature'],
+        'sig-first-only',
+      );
+      expect(
+        (parts[1]['functionCall'] as Map).containsKey('thoughtSignature'),
+        isFalse,
+      );
+    });
+
+    test('converts user message with string content', () {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello, world!'),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'user');
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      expect(parts.first['text'], 'Hello, world!');
+    });
+
+    test('converts assistant message with text content', () {
+      final messages = [
+        const ChatCompletionMessage.assistant(
+          content: 'I am an assistant response',
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'model');
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      expect(parts.first['text'], 'I am an assistant response');
+    });
+
+    test('converts tool response message', () {
+      final messages = [
+        const ChatCompletionMessage.tool(
+          toolCallId: 'call-123',
+          content: 'Tool result data',
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'function');
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final funcResponse = parts.first['functionResponse'] as Map;
+      expect(funcResponse['name'], 'call-123');
+      expect((funcResponse['response'] as Map)['result'], 'Tool result data');
+    });
+
+    test('converts function message (legacy format)', () {
+      final messages = [
+        const ChatCompletionMessage.function(
+          name: 'my_function',
+          content: 'Function result',
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'function');
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final funcResponse = parts.first['functionResponse'] as Map;
+      expect(funcResponse['name'], 'my_function');
+      expect((funcResponse['response'] as Map)['result'], 'Function result');
+    });
+
+    test('skips system messages (handled separately)', () {
+      final messages = [
+        const ChatCompletionMessage.system(content: 'You are a helper'),
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+        systemMessage: 'You are a helper',
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      // Should only have user message, system is handled via systemInstruction
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'user');
+      // System instruction should be present
+      expect(body.containsKey('systemInstruction'), isTrue);
+    });
+
+    test('includes tools in request body', () {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Call a function'),
+        ),
+      ];
+
+      const tools = [
+        ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(
+            name: 'my_tool',
+            description: 'Does something',
+            parameters: {'type': 'object', 'properties': <String, dynamic>{}},
+          ),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.5,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 128),
+        tools: tools,
+      );
+
+      expect(body.containsKey('tools'), isTrue);
+      final toolsArr = (body['tools'] as List).cast<Map<String, dynamic>>();
+      final funcDeclarations =
+          toolsArr.first['functionDeclarations'] as List<dynamic>;
+      expect(funcDeclarations.length, 1);
+      expect((funcDeclarations.first as Map)['name'], 'my_tool');
+      expect((funcDeclarations.first as Map)['description'], 'Does something');
+      expect((funcDeclarations.first as Map).containsKey('parameters'), isTrue);
+    });
+
+    test('skips assistant message with no content or tool calls', () {
+      final messages = [
+        const ChatCompletionMessage.assistant(),
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      // Should only have user message, empty assistant skipped
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'user');
+    });
+
+    test('handles empty string system message', () {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+        systemMessage: '   ', // Whitespace only
+      );
+
+      // Should not include systemInstruction for empty/whitespace
+      expect(body.containsKey('systemInstruction'), isFalse);
+    });
+
+    test('includes maxTokens in generation config', () {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+        maxTokens: 500,
+      );
+
+      final generationConfig = body['generationConfig'] as Map<String, dynamic>;
+      expect(generationConfig['maxOutputTokens'], 500);
+    });
   });
 
   group('GeminiUtils.stripLeadingFraming', () {

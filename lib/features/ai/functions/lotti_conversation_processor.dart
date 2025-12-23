@@ -652,7 +652,8 @@ class LottiChecklistStrategy extends ConversationStrategy {
     // For cloud providers: only continue if there are failed items to retry
     // For Ollama: continue for multiple rounds as models may need guidance
     return _rounds < 10 &&
-        (hasFailedItems || (!isCloudProvider && (_rounds == 1 || totalWorkDone > 0)));
+        (hasFailedItems ||
+            (!isCloudProvider && (_rounds == 1 || totalWorkDone > 0)));
   }
 
   @override

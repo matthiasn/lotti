@@ -242,8 +242,9 @@ class ConversationRepository extends _$ConversationRepository {
         manager.addAssistantMessage(
           content: content.isNotEmpty ? content : null,
           toolCalls: toolCalls.isNotEmpty ? toolCalls : null,
-          signatures:
-              signatureCollector.hasSignatures ? signatureCollector.signatures : null,
+          signatures: signatureCollector.hasSignatures
+              ? signatureCollector.signatures
+              : null,
         );
 
         // Process with strategy if provided
