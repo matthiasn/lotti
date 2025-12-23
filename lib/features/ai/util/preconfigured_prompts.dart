@@ -121,6 +121,22 @@ Learnings:
 Annoyances:
 🤯 Annoyed by something
 
+Finally, at the very end of your response, include a **Links** section:
+- Scan ALL log entries in the task for URLs (http://, https://, or other valid URL schemes)
+- Extract every unique URL found across all entries
+- For each link, generate a short, succinct title (2-5 words) that describes what the link is about
+- Format each link as Markdown: `[Succinct Title](URL)`
+- If no links are found, omit the Links section entirely
+- Deduplicate URLs - if the same URL appears multiple times, include it only once
+
+Example Links section:
+## Links
+- [Flutter Documentation](https://docs.flutter.dev)
+- [Linear: APP-123](https://linear.app/team/issue/APP-123)
+- [Lotti PR #456](https://github.com/matthiasn/lotti/pull/456)
+- [GitHub Issue #789](https://github.com/user/repo/issues/789)
+- [Stack Overflow Solution](https://stackoverflow.com/questions/12345)
+
 **Task Details:**
 ```json
 {{task}}

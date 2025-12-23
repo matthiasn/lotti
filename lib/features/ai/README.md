@@ -442,6 +442,7 @@ For task summaries, the response is treated as markdown text:
 - No JSON parsing (unlike action item suggestions)
 - The complete response is saved as an `AiResponseEntry`
 - Post-processing includes automatic title extraction (see below)
+- Automatic link extraction appends a Links section (see below)
 - Displayed using `GptMarkdown` widget for proper formatting
 
 ### 4. Automatic Title Extraction
@@ -454,7 +455,28 @@ When generating task summaries, the system automatically extracts suggested titl
 - The extracted title updates the task entity in the database
 - When displaying summaries, the H1 title is filtered out to avoid redundancy
 
-### 5. Direct Task Summary Refresh with Countdown UX
+### 5. Automatic Link Extraction
+
+Task summaries automatically aggregate and display all URLs found within the task's entries:
+
+- **Scanning**: AI scans ALL log entries in the task for URLs (http://, https://, or other valid URL schemes)
+- **Deduplication**: Duplicate URLs are consolidated—each unique URL appears only once
+- **Succinct Titles**: AI generates short, descriptive titles (2-5 words) for each link
+- **Markdown Format**: Links are formatted as `[Succinct Title](URL)` for clickable rendering
+- **Conditional Display**: Links section is omitted entirely if no URLs are found
+
+Example output in summaries:
+```markdown
+## Links
+- [Flutter Documentation](https://docs.flutter.dev)
+- [Linear: APP-123](https://linear.app/team/issue/APP-123)
+- [Lotti PR #456](https://github.com/matthiasn/lotti/pull/456)
+- [GitHub Issue #789](https://github.com/user/repo/issues/789)
+```
+
+This feature helps users quickly access all resources referenced during task work without manually searching through entries.
+
+### 6. Direct Task Summary Refresh with Countdown UX
 
 The system includes a scheduled refresh mechanism that updates task summaries when checklist items are modified. Instead of triggering immediately, refreshes are scheduled with a 5-minute delay, giving users control over when summaries are generated. For a user-focused description of this feature, see the [Tasks Feature README - Automatic Task Summary Updates](../tasks/README.md#automatic-task-summary-updates).
 
