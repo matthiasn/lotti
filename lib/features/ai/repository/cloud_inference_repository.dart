@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
+import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -132,10 +133,10 @@ class CloudInferenceRepository {
     if (provider != null &&
         provider.inferenceProviderType == InferenceProviderType.gemini) {
       final thinking = getDefaultThinkingConfig(model);
-      // Always capture thoughts for thinking-capable models (thinkingBudget != 0)
-      // so they're available in the AI response modal's Thoughts tab.
-      // The UI provider only controls inline display in chat.
-      final includeThoughts = thinking.thinkingBudget != 0;
+      // Respect user's "Show reasoning" toggle from UI settings
+      final userWantsThoughts = ref.read(geminiIncludeThoughtsProvider);
+      // Include thoughts if model supports it AND user has enabled the toggle
+      final includeThoughts = thinking.thinkingBudget != 0 && userWantsThoughts;
       final finalThinking = GeminiThinkingConfig(
         thinkingBudget: thinking.thinkingBudget,
         includeThoughts: includeThoughts,
@@ -394,7 +395,10 @@ class CloudInferenceRepository {
     // For Gemini, use the native multi-turn API with signature support
     if (provider.inferenceProviderType == InferenceProviderType.gemini) {
       final thinking = getDefaultThinkingConfig(model);
-      final includeThoughts = thinking.thinkingBudget != 0;
+      // Respect user's "Show reasoning" toggle from UI settings
+      final userWantsThoughts = ref.read(geminiIncludeThoughtsProvider);
+      // Include thoughts if model supports it AND user has enabled the toggle
+      final includeThoughts = thinking.thinkingBudget != 0 && userWantsThoughts;
       final finalThinking = GeminiThinkingConfig(
         thinkingBudget: thinking.thinkingBudget,
         includeThoughts: includeThoughts,
@@ -439,47 +443,30 @@ class CloudInferenceRepository {
       );
     }
 
-    // For other providers, fall back to condensed single prompt
-    // Extract the last user message as the prompt
-    String? prompt;
-    String? systemMessage;
-    for (final message in messages) {
-      if (message.role == ChatCompletionMessageRole.system) {
-        message.mapOrNull(
-          system: (s) {
-            systemMessage = s.content;
-          },
-        );
-      } else if (message.role == ChatCompletionMessageRole.user) {
-        message.mapOrNull(
-          user: (u) {
-            prompt = u.content.map(
-              string: (s) => s.value,
-              parts: (p) => p.value
-                  .map((part) => part.mapOrNull(text: (t) => t.text) ?? '')
-                  .join(),
-            );
-          },
-        );
-      }
-    }
-
-    if (prompt == null) {
-      return Stream.error(
-          ArgumentError('No user message found in conversation'));
-    }
-
-    return generate(
-      prompt!,
-      model: model,
-      temperature: temperature,
+    // For other providers (OpenAI, OpenRouter, Anthropic), use full message history
+    final client = OpenAIClient(
       baseUrl: provider.baseUrl,
       apiKey: provider.apiKey,
-      systemMessage: systemMessage,
-      maxCompletionTokens: maxCompletionTokens,
-      provider: provider,
-      tools: tools,
     );
+
+    if (tools != null && tools.isNotEmpty) {
+      developer.log(
+        'Passing ${tools.length} tools to multi-turn API: ${tools.map((t) => t.function.name).join(', ')}',
+        name: 'CloudInferenceRepository',
+      );
+    }
+
+    final res = client.createChatCompletionStream(
+      request: _createBaseRequest(
+        messages: messages,
+        model: model,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+      ),
+    );
+
+    return _filterAnthropicPings(res).asBroadcastStream();
   }
 
   // Delegate Ollama-specific methods to OllamaInferenceRepository

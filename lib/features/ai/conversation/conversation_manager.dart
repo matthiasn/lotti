@@ -45,6 +45,7 @@ class ConversationManager {
   /// Initialize conversation with optional system message
   void initialize({String? systemMessage}) {
     _messages.clear();
+    _thoughtSignatures.clear(); // Clear signatures from previous conversation
 
     if (systemMessage != null) {
       _messages.add(ChatCompletionMessage.system(content: systemMessage));

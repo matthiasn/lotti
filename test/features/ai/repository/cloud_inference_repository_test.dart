@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
+import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
@@ -1768,6 +1769,8 @@ void main() {
           .thenReturn(mockGeminiRepo);
       when(() => mockRef.read(ollamaInferenceRepositoryProvider))
           .thenReturn(MockOllamaInferenceRepository());
+      // Mock the thoughts toggle provider - default to true for testing
+      when(() => mockRef.read(geminiIncludeThoughtsProvider)).thenReturn(true);
 
       repository =
           CloudInferenceRepository(mockRef, httpClient: mockHttpClient);

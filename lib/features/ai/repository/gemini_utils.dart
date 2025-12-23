@@ -155,12 +155,28 @@ class GeminiUtils {
     int? maxTokens,
     List<ChatCompletionTool>? tools,
   }) {
+    // Build mapping of toolCallId -> functionName from assistant messages
+    // This is needed because tool responses only have the ID, not the name
+    final toolCallIdToName = <String, String>{};
+    for (final message in messages) {
+      message.mapOrNull(
+        assistant: (a) {
+          if (a.toolCalls != null) {
+            for (final tc in a.toolCalls!) {
+              toolCallIdToName[tc.id] = tc.function.name;
+            }
+          }
+        },
+      );
+    }
+
     final contents = <Map<String, dynamic>>[];
 
     for (final message in messages) {
       final converted = _convertMessageToGeminiContent(
         message,
         thoughtSignatures: thoughtSignatures,
+        toolCallIdToName: toolCallIdToName,
       );
       if (converted != null) {
         contents.add(converted);
@@ -207,9 +223,13 @@ class GeminiUtils {
   /// Converts an OpenAI-style message to Gemini content format.
   ///
   /// Returns null for system messages (handled separately as systemInstruction).
+  ///
+  /// [toolCallIdToName] maps tool call IDs to function names, used for
+  /// converting tool response messages (which only have ID, not name).
   static Map<String, dynamic>? _convertMessageToGeminiContent(
     ChatCompletionMessage message, {
     Map<String, String>? thoughtSignatures,
+    Map<String, String>? toolCallIdToName,
   }) {
     return message.map(
       system: (_) => null, // System messages handled separately
@@ -272,18 +292,22 @@ class GeminiUtils {
               args = <String, dynamic>{};
             }
 
-            final functionPart = <String, dynamic>{
-              'name': toolCall.function.name,
-              'args': args,
+            // Build function call part - signature is at part level as sibling
+            final functionCallPart = <String, dynamic>{
+              'functionCall': {
+                'name': toolCall.function.name,
+                'args': args,
+              },
             };
 
-            // Include thought signature if available
+            // Include thought signature at part level (sibling of functionCall)
+            // Per Gemini docs, signature must NOT be nested inside functionCall
             final signature = thoughtSignatures?[toolCall.id];
             if (signature != null) {
-              functionPart['thoughtSignature'] = signature;
+              functionCallPart['thoughtSignature'] = signature;
             }
 
-            parts.add({'functionCall': functionPart});
+            parts.add(functionCallPart);
           }
         }
 
@@ -295,12 +319,16 @@ class GeminiUtils {
         };
       },
       tool: (tool) {
+        // Look up the function name from the mapping, fall back to toolCallId
+        // if not found (shouldn't happen in well-formed conversations)
+        final functionName =
+            toolCallIdToName?[tool.toolCallId] ?? tool.toolCallId;
         return {
           'role': 'function',
           'parts': [
             {
               'functionResponse': {
-                'name': tool.toolCallId,
+                'name': functionName,
                 'response': {'result': tool.content},
               },
             },

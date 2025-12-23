@@ -170,9 +170,12 @@ void main() {
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
       final parts =
           (contents.first['parts'] as List).cast<Map<String, dynamic>>();
-      final functionCall = parts.first['functionCall'] as Map<String, dynamic>;
 
-      expect(functionCall['thoughtSignature'], 'signature-abc123');
+      // Signature is at part level, sibling of functionCall (not nested inside it)
+      expect(parts.first['thoughtSignature'], 'signature-abc123');
+      // functionCall should not contain the signature
+      final functionCall = parts.first['functionCall'] as Map<String, dynamic>;
+      expect(functionCall.containsKey('thoughtSignature'), isFalse);
     });
 
     test('omits thought signature when not in map', () {
@@ -201,9 +204,9 @@ void main() {
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
       final parts =
           (contents.first['parts'] as List).cast<Map<String, dynamic>>();
-      final functionCall = parts.first['functionCall'] as Map<String, dynamic>;
 
-      expect(functionCall.containsKey('thoughtSignature'), isFalse);
+      // Signature should not be present at part level when ID doesn't match
+      expect(parts.first.containsKey('thoughtSignature'), isFalse);
     });
 
     test('handles multiple tool calls with mixed signatures', () {
@@ -243,12 +246,12 @@ void main() {
           (contents.first['parts'] as List).cast<Map<String, dynamic>>();
 
       expect(parts.length, 2);
+      // Signature is at part level, not inside functionCall
+      expect(parts[0]['thoughtSignature'], 'sig-first-only');
+      expect(parts[1].containsKey('thoughtSignature'), isFalse);
+      // Verify functionCall doesn't contain signature (it's a sibling)
       expect(
-        (parts[0]['functionCall'] as Map)['thoughtSignature'],
-        'sig-first-only',
-      );
-      expect(
-        (parts[1]['functionCall'] as Map).containsKey('thoughtSignature'),
+        (parts[0]['functionCall'] as Map).containsKey('thoughtSignature'),
         isFalse,
       );
     });
@@ -295,8 +298,21 @@ void main() {
       expect(parts.first['text'], 'I am an assistant response');
     });
 
-    test('converts tool response message', () {
+    test('converts tool response message with correct function name', () {
+      // Include assistant message with tool calls to build the ID->name mapping
       final messages = [
+        const ChatCompletionMessage.assistant(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-123',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'lookup_data',
+                arguments: '{}',
+              ),
+            ),
+          ],
+        ),
         const ChatCompletionMessage.tool(
           toolCallId: 'call-123',
           content: 'Tool result data',
@@ -310,12 +326,13 @@ void main() {
       );
 
       final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      expect(contents.length, 1);
-      expect(contents.first['role'], 'function');
-      final parts =
-          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 2);
+      // Second content is the tool response
+      expect(contents[1]['role'], 'function');
+      final parts = (contents[1]['parts'] as List).cast<Map<String, dynamic>>();
       final funcResponse = parts.first['functionResponse'] as Map;
-      expect(funcResponse['name'], 'call-123');
+      // Should use function name from the assistant's tool call, not the ID
+      expect(funcResponse['name'], 'lookup_data');
       expect((funcResponse['response'] as Map)['result'], 'Tool result data');
     });
 
