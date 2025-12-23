@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
@@ -28,7 +29,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// - Captures thought signatures from Gemini 3 function calls for potential
 ///   multi-turn conversation support.
 /// - Parses `usageMetadata` from responses and emits usage statistics
-///   (prompt tokens, completion tokens, thoughts tokens) in the final chunk.
+///   (prompt tokens, completion tokens, thought tokens) in the final chunk.
 /// - Provides a non-streaming fallback (`:generateContent`) that runs only
 ///   if the streaming path produced no events; the fallback compacts all
 ///   thinking, visible text, and tool calls into at most three deltas
@@ -67,6 +68,8 @@ class GeminiInferenceRepository {
   /// - `systemMessage`: optional system instruction.
   /// - `maxCompletionTokens`: model-specific token cap.
   /// - `tools`: OpenAI-style function tools mapped to Gemini function declarations.
+  /// - `signatureCollector`: optional collector for capturing thought signatures
+  ///   from Gemini 3 function calls (for multi-turn conversations).
   ///
   /// Returns a stream of OpenAI-compatible deltas. The stream may emit:
   /// 1) a single `<think>` block (when `includeThoughts=true`),
@@ -85,6 +88,7 @@ class GeminiInferenceRepository {
     String? systemMessage,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ThoughtSignatureCollector? signatureCollector,
   }) async* {
     final uri = GeminiUtils.buildStreamGenerateContentUri(
       baseUrl: provider.baseUrl,
@@ -247,18 +251,11 @@ class GeminiInferenceRepository {
             // Emit thinking block once we transition to regular text/content
             if (inThinking) {
               emittedAny = true;
-              yield CreateChatCompletionStreamResponse(
+              yield _createThinkingChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    index: 0,
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: '<think>\n$thinkingBuffer\n</think>\n',
-                    ),
-                  ),
-                ],
+                thinking: thinkingBuffer.toString(),
               );
               thinkingBuffer.clear();
               inThinking = false;
@@ -277,16 +274,11 @@ class GeminiInferenceRepository {
               emittedAny = true;
               visibleChars += text.length;
               totalCharsEmitted = visibleChars + thinkingChars;
-              yield CreateChatCompletionStreamResponse(
+              yield _createTextChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    index: 0,
-                    delta: ChatCompletionStreamResponseDelta(content: text),
-                  ),
-                ],
+                text: text,
               );
               if (kVerboseStreamLogging) {
                 developer.log(
@@ -304,47 +296,32 @@ class GeminiInferenceRepository {
               continue;
             }
 
-            // Function call (tool)
+            // Function call (tool) - see extractThoughtSignature() for signature handling
             if (p['functionCall'] is Map<String, dynamic>) {
               final fc = p['functionCall'] as Map<String, dynamic>;
               final name = fc['name']?.toString() ?? '';
               final args = jsonEncode(fc['args'] ?? {});
 
-              // Capture thought signature if present (Gemini 3 models)
-              // Note: Signature passing through the stream is not yet implemented
-              // as OpenAI SDK types don't support this field natively
-              final thoughtSignature = fc['thoughtSignature']?.toString();
-              if (thoughtSignature != null && kVerboseStreamLogging) {
-                developer.log(
-                  'Captured thought signature for tool call $name: '
-                  '${thoughtSignature.substring(0, thoughtSignature.length > 50 ? 50 : thoughtSignature.length)}...',
-                  name: 'GeminiInferenceRepository',
-                );
-              }
-
               emittedAny = true;
               final currentIndex = toolCallIndex++;
-              yield CreateChatCompletionStreamResponse(
+              final toolCallId = 'tool_$currentIndex';
+
+              _captureSignatureIfPresent(
+                part: p,
+                toolCallId: toolCallId,
+                functionName: name,
+                toolCallIndex: currentIndex,
+                signatureCollector: signatureCollector,
+              );
+
+              yield _createToolCallChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    index: 0,
-                    delta: ChatCompletionStreamResponseDelta(
-                      toolCalls: [
-                        ChatCompletionStreamMessageToolCallChunk(
-                          index: currentIndex,
-                          id: 'tool_$currentIndex',
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            name: name,
-                            arguments: args,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                index: currentIndex,
+                toolCallId: toolCallId,
+                name: name,
+                arguments: args,
               );
               if (kVerboseStreamLogging) {
                 developer.log(
@@ -364,18 +341,11 @@ class GeminiInferenceRepository {
     // Flush any remaining thinking at end of stream
     if (inThinking && thinkingBuffer.isNotEmpty) {
       emittedAny = true;
-      yield CreateChatCompletionStreamResponse(
+      yield _createThinkingChunk(
         id: idPrefix,
         created: created,
         model: model,
-        choices: [
-          ChatCompletionStreamResponseChoice(
-            index: 0,
-            delta: ChatCompletionStreamResponseDelta(
-              content: '<think>\n$thinkingBuffer\n</think>\n',
-            ),
-          ),
-        ],
+        thinking: thinkingBuffer.toString(),
       );
       if (kVerboseStreamLogging) {
         developer.log(
@@ -398,19 +368,13 @@ class GeminiInferenceRepository {
 
     // Emit final response with usage metadata if available
     if (promptTokens != null || candidatesTokens != null) {
-      yield CreateChatCompletionStreamResponse(
+      yield _createUsageChunk(
         id: idPrefix,
         created: created,
         model: model,
-        choices: const [],
-        usage: CompletionUsage(
-          promptTokens: promptTokens,
-          completionTokens: candidatesTokens,
-          totalTokens: (promptTokens ?? 0) + (candidatesTokens ?? 0),
-          completionTokensDetails: thoughtsTokens != null
-              ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
-              : null,
-        ),
+        promptTokens: promptTokens,
+        completionTokens: candidatesTokens,
+        thoughtsTokens: thoughtsTokens,
       );
     }
 
@@ -440,34 +404,28 @@ class GeminiInferenceRepository {
           decoded,
           includeThoughts: thinkingConfig.includeThoughts,
         );
+
+        // Add captured signatures to collector
+        if (signatureCollector != null && payload.signatures.isNotEmpty) {
+          for (final entry in payload.signatures.entries) {
+            signatureCollector.addSignature(entry.key, entry.value);
+          }
+        }
+
         if (payload.thinking.isNotEmpty) {
-          yield CreateChatCompletionStreamResponse(
+          yield _createThinkingChunk(
             id: idPrefix,
             created: created,
             model: model,
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: '<think>\n${payload.thinking}\n</think>\n',
-                ),
-              ),
-            ],
+            thinking: payload.thinking,
           );
         }
         if (payload.visible.isNotEmpty) {
-          yield CreateChatCompletionStreamResponse(
+          yield _createTextChunk(
             id: idPrefix,
             created: created,
             model: model,
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: payload.visible,
-                ),
-              ),
-            ],
+            text: payload.visible,
           );
         }
         if (payload.toolChunks.isNotEmpty) {
@@ -553,7 +511,367 @@ class GeminiInferenceRepository {
       }
     }
   }
+
+  /// Generates text with full conversation history for multi-turn interactions.
+  ///
+  /// This method supports:
+  /// - Full conversation history with user, assistant, and tool messages
+  /// - Thought signatures in function calls (required for Gemini 3 multi-turn)
+  /// - Thinking configuration
+  /// - Function tool declarations
+  ///
+  /// Parameters:
+  /// - [messages]: Full conversation history as OpenAI-style messages
+  /// - [model]: Gemini model ID
+  /// - [temperature]: Sampling temperature
+  /// - [thinkingConfig]: Thinking budget and policy
+  /// - [provider]: Contains base URL and API key
+  /// - [thoughtSignatures]: Map of tool call IDs to signatures (for replay)
+  /// - [systemMessage]: Optional system instruction
+  /// - [maxCompletionTokens]: Optional output token limit
+  /// - [tools]: Optional function declarations
+  /// - [signatureCollector]: Optional collector for capturing new signatures
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required GeminiThinkingConfig thinkingConfig,
+    required AiConfigInferenceProvider provider,
+    Map<String, String>? thoughtSignatures,
+    String? systemMessage,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ThoughtSignatureCollector? signatureCollector,
+  }) async* {
+    final uri = GeminiUtils.buildStreamGenerateContentUri(
+      baseUrl: provider.baseUrl,
+      model: model,
+      apiKey: provider.apiKey,
+    );
+
+    final body = GeminiUtils.buildMultiTurnRequestBody(
+      messages: messages,
+      temperature: temperature,
+      thinkingConfig: thinkingConfig,
+      thoughtSignatures: thoughtSignatures,
+      systemMessage: systemMessage,
+      maxTokens: maxCompletionTokens,
+      tools: tools,
+    );
+
+    developer.log(
+      'Gemini multi-turn streamGenerateContent request to: $uri with ${messages.length} messages',
+      name: 'GeminiInferenceRepository',
+    );
+
+    http.Request buildStreamRequest() {
+      return http.Request('POST', uri)
+        ..headers['Content-Type'] = 'application/json'
+        ..headers['Accept'] =
+            'application/x-ndjson, application/json, text/event-stream'
+        ..body = jsonEncode(body);
+    }
+
+    final streamed = await _sendStreamWithRateLimitBackoff(
+      buildRequest: buildStreamRequest,
+      context:
+          'Gemini multi-turn streamGenerateContent (model=$model, baseUrl=${provider.baseUrl})',
+    );
+
+    if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
+      final bytes = await streamed.stream.toBytes();
+      final reason = utf8.decode(bytes);
+      throw Exception(
+        'Gemini streaming error ${streamed.statusCode} for model "$model" at ${provider.baseUrl}: $reason. '
+        'If rate-limited (429), wait and retry.',
+      );
+    }
+
+    final now = DateTime.now();
+    final idPrefix = 'gemini-${now.millisecondsSinceEpoch}';
+    final created = now.millisecondsSinceEpoch ~/ 1000;
+
+    final thinkingBuffer = StringBuffer();
+    var inThinking = false;
+    var answerStarted = false;
+
+    final parser = GeminiStreamParser();
+    var emittedAny = false;
+    var toolCallIndex = 0;
+
+    // Track usage metadata
+    int? promptTokens;
+    int? candidatesTokens;
+    int? thoughtsTokens;
+
+    await for (final chunk in streamed.stream.transform(utf8.decoder)) {
+      final objs = parser.addChunk(chunk);
+      for (final obj in objs) {
+        // Parse usageMetadata if present
+        final usage = obj['usageMetadata'];
+        if (usage is Map<String, dynamic>) {
+          promptTokens = usage['promptTokenCount'] as int? ?? promptTokens;
+          candidatesTokens =
+              usage['candidatesTokenCount'] as int? ?? candidatesTokens;
+          thoughtsTokens =
+              usage['thoughtsTokenCount'] as int? ?? thoughtsTokens;
+        }
+
+        final candidates = obj['candidates'];
+        if (candidates is! List || candidates.isEmpty) continue;
+
+        final first = candidates.first;
+        final content = first is Map<String, dynamic> ? first['content'] : null;
+        if (content is! Map<String, dynamic>) continue;
+
+        final parts = content['parts'];
+        if (parts is! List) continue;
+
+        for (final p in parts) {
+          if (p is! Map<String, dynamic>) continue;
+
+          // Handle thinking parts
+          final isThought = p['thought'] == true;
+          if (isThought) {
+            if (!answerStarted && thinkingConfig.includeThoughts) {
+              final t = p['text'];
+              if (t is String && t.isNotEmpty) {
+                inThinking = true;
+                thinkingBuffer.write(t);
+              }
+            }
+            continue;
+          }
+
+          // Emit thinking block when transitioning to regular content
+          if (inThinking) {
+            emittedAny = true;
+            yield _createThinkingChunk(
+              id: idPrefix,
+              created: created,
+              model: model,
+              thinking: thinkingBuffer.toString(),
+            );
+            thinkingBuffer.clear();
+            inThinking = false;
+          }
+
+          // Regular text part
+          final text = p['text'];
+          if (text is String && text.isNotEmpty) {
+            answerStarted = true;
+            emittedAny = true;
+            yield _createTextChunk(
+              id: idPrefix,
+              created: created,
+              model: model,
+              text: text,
+            );
+            continue;
+          }
+
+          // Function call (tool) - see extractThoughtSignature() for signature handling
+          if (p['functionCall'] is Map<String, dynamic>) {
+            final fc = p['functionCall'] as Map<String, dynamic>;
+            final name = fc['name']?.toString() ?? '';
+            final args = jsonEncode(fc['args'] ?? {});
+
+            emittedAny = true;
+            final currentIndex = toolCallIndex++;
+            final toolCallId = 'tool_$currentIndex';
+
+            _captureSignatureIfPresent(
+              part: p,
+              toolCallId: toolCallId,
+              functionName: name,
+              toolCallIndex: currentIndex,
+              signatureCollector: signatureCollector,
+            );
+
+            yield _createToolCallChunk(
+              id: idPrefix,
+              created: created,
+              model: model,
+              index: currentIndex,
+              toolCallId: toolCallId,
+              name: name,
+              arguments: args,
+            );
+          }
+        }
+      }
+    }
+
+    // Flush any remaining thinking
+    if (inThinking && thinkingBuffer.isNotEmpty) {
+      emittedAny = true;
+      yield _createThinkingChunk(
+        id: idPrefix,
+        created: created,
+        model: model,
+        thinking: thinkingBuffer.toString(),
+      );
+    }
+
+    // Emit usage metadata
+    if (promptTokens != null || candidatesTokens != null) {
+      yield _createUsageChunk(
+        id: idPrefix,
+        created: created,
+        model: model,
+        promptTokens: promptTokens,
+        completionTokens: candidatesTokens,
+        thoughtsTokens: thoughtsTokens,
+      );
+    }
+
+    // Fallback if no content was emitted
+    if (!emittedAny) {
+      developer.log(
+        'Gemini multi-turn stream produced no output, no fallback available for multi-turn mode',
+        name: 'GeminiInferenceRepository',
+      );
+    }
+  }
 }
+
+// ---------------------------------------------------------------------------
+// Helper methods for creating OpenAI-compatible response chunks
+// ---------------------------------------------------------------------------
+
+/// Creates a response chunk containing a thinking block.
+CreateChatCompletionStreamResponse _createThinkingChunk({
+  required String id,
+  required int created,
+  required String model,
+  required String thinking,
+}) {
+  return CreateChatCompletionStreamResponse(
+    id: id,
+    created: created,
+    model: model,
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        index: 0,
+        delta: ChatCompletionStreamResponseDelta(
+          content: '<think>\n$thinking\n</think>\n',
+        ),
+      ),
+    ],
+  );
+}
+
+/// Creates a response chunk containing visible text content.
+CreateChatCompletionStreamResponse _createTextChunk({
+  required String id,
+  required int created,
+  required String model,
+  required String text,
+}) {
+  return CreateChatCompletionStreamResponse(
+    id: id,
+    created: created,
+    model: model,
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        index: 0,
+        delta: ChatCompletionStreamResponseDelta(content: text),
+      ),
+    ],
+  );
+}
+
+/// Creates a response chunk containing a tool call.
+CreateChatCompletionStreamResponse _createToolCallChunk({
+  required String id,
+  required int created,
+  required String model,
+  required int index,
+  required String toolCallId,
+  required String name,
+  required String arguments,
+}) {
+  return CreateChatCompletionStreamResponse(
+    id: id,
+    created: created,
+    model: model,
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        index: 0,
+        delta: ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: index,
+              id: toolCallId,
+              function: ChatCompletionStreamMessageFunctionCall(
+                name: name,
+                arguments: arguments,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+/// Creates a response chunk containing usage statistics.
+CreateChatCompletionStreamResponse _createUsageChunk({
+  required String id,
+  required int created,
+  required String model,
+  int? promptTokens,
+  int? completionTokens,
+  int? thoughtsTokens,
+}) {
+  return CreateChatCompletionStreamResponse(
+    id: id,
+    created: created,
+    model: model,
+    choices: const [],
+    usage: CompletionUsage(
+      promptTokens: promptTokens,
+      completionTokens: completionTokens,
+      totalTokens: (promptTokens ?? 0) + (completionTokens ?? 0),
+      completionTokensDetails: thoughtsTokens != null
+          ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
+          : null,
+    ),
+  );
+}
+
+/// Captures a thought signature from a Gemini response part if present.
+///
+/// Logs when a signature is captured or when the first function call lacks one.
+/// Uses [extractThoughtSignature] to extract the signature from the part.
+void _captureSignatureIfPresent({
+  required Map<String, dynamic> part,
+  required String toolCallId,
+  required String functionName,
+  required int toolCallIndex,
+  ThoughtSignatureCollector? signatureCollector,
+}) {
+  final thoughtSignature = extractThoughtSignature(part);
+  if (thoughtSignature != null) {
+    signatureCollector?.addSignature(toolCallId, thoughtSignature);
+    developer.log(
+      'Captured thought signature for $functionName ($toolCallId), '
+      'length=${thoughtSignature.length}',
+      name: 'GeminiInferenceRepository',
+    );
+  } else if (toolCallIndex == 0) {
+    // First function call without signature - unexpected for Gemini 3
+    // but may be normal for Gemini 2.x or non-thinking mode
+    developer.log(
+      'First function call $functionName has no thought signature',
+      name: 'GeminiInferenceRepository',
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Internal data structures
+// ---------------------------------------------------------------------------
 
 /// Internal helper result for consolidated (non-streaming) Gemini payloads.
 class _ProcessedPayload {
@@ -561,6 +879,7 @@ class _ProcessedPayload {
     required this.thinking,
     required this.visible,
     required this.toolChunks,
+    required this.signatures,
     this.usage,
   });
 
@@ -568,6 +887,9 @@ class _ProcessedPayload {
   final String visible;
   final List<ChatCompletionStreamMessageToolCallChunk> toolChunks;
   final CompletionUsage? usage;
+
+  /// Thought signatures captured from function calls, keyed by tool call ID.
+  final Map<String, String> signatures;
 }
 
 /// Processes a decoded Gemini response (non-streaming) into compact outputs.
@@ -578,6 +900,7 @@ _ProcessedPayload _processGeminiPayload(
   final tb = StringBuffer();
   final cb = StringBuffer();
   final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
+  final signatures = <String, String>{};
   var toolIndex = 0;
 
   final candidates = decoded['candidates'];
@@ -601,10 +924,18 @@ _ProcessedPayload _processGeminiPayload(
             final name = fc['name']?.toString() ?? '';
             final args = jsonEncode(fc['args'] ?? {});
             final idx = toolIndex++;
+            final toolCallId = 'tool_$idx';
+
+            // Capture thought signature using shared helper
+            final signature = extractThoughtSignature(p);
+            if (signature != null) {
+              signatures[toolCallId] = signature;
+            }
+
             toolChunks.add(
               ChatCompletionStreamMessageToolCallChunk(
                 index: idx,
-                id: 'tool_$idx',
+                id: toolCallId,
                 function: ChatCompletionStreamMessageFunctionCall(
                   name: name,
                   arguments: args,
@@ -641,8 +972,29 @@ _ProcessedPayload _processGeminiPayload(
     thinking: tb.toString(),
     visible: cb.toString(),
     toolChunks: toolChunks,
+    signatures: signatures,
     usage: usage,
   );
+}
+
+/// Extracts a thought signature from a Gemini response part.
+///
+/// Gemini 3 models include `thoughtSignature` as a **sibling** to `functionCall`
+/// at the part level (not nested inside `functionCall`). For example:
+/// ```json
+/// {
+///   "functionCall": { "name": "...", "args": {...} },
+///   "thoughtSignature": "<encrypted-signature>"
+/// }
+/// ```
+///
+/// For parallel function calls, only the first call receives a signature.
+/// These signatures must be included in subsequent multi-turn requests to
+/// maintain reasoning context; without them, Gemini 3 returns 400 errors.
+///
+/// Returns null if no signature is present (normal for Gemini 2.x or non-thinking mode).
+String? extractThoughtSignature(Map<String, dynamic> part) {
+  return part['thoughtSignature']?.toString();
 }
 
 // no non-stream adapter

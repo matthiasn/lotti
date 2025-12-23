@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -35,6 +36,8 @@ void main() {
     registerFallbackValue(FakeChatCompletionMessageToolCall());
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(FakeConversationManager());
+    registerFallbackValue(ThoughtSignatureCollector());
+    registerFallbackValue(<String, String>{});
   });
 
   setUp(() {
@@ -158,6 +161,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         // Start sendMessage in background
@@ -205,6 +210,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         // Start sendMessage
@@ -274,6 +281,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         when(() => mockStrategy.processToolCalls(
@@ -369,6 +378,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         when(() => mockStrategy.processToolCalls(
@@ -445,6 +456,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) {
           callCount++;
           return Stream.value(
@@ -522,6 +535,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenThrow(Exception('API Error'));
 
         final manager = repository.getConversation(conversationId)!;
@@ -558,6 +573,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -658,6 +675,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -752,6 +771,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -817,6 +838,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -910,6 +933,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(

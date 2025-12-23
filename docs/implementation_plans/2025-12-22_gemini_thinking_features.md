@@ -6,7 +6,7 @@ This document summarizes the implementation of Gemini-specific thinking/reasonin
 
 **Target Models:** All Gemini 2.5+ models (including Flash and Pro)
 
-**Status:** ✅ Core features complete, thought signature pass-through deferred to future work
+**Status:** ✅ Complete - All features implemented including thought signature pass-through
 
 ---
 
@@ -68,19 +68,30 @@ int? durationMs,      // Processing time in milliseconds
 - Show processing duration in seconds
 - Graceful fallback when usage not available
 
-### 4. Added Thought Signature Infrastructure ✅
+### 4. Full Thought Signature Pass-Through ✅
 
-**Purpose:** Prepare for Gemini 3 multi-turn function calling which requires thought signatures.
+**Purpose:** Support Gemini 3 multi-turn function calling which requires thought signatures to be passed in subsequent requests.
+
+**New Classes:**
+- `ThoughtSignatureCollector` - Collects signatures during streaming, provides access after
+- `GeminiToolCall` - Data class for tool calls with signature (documentation purposes)
 
 **Implemented:**
-- `ConversationManager` now stores thought signatures keyed by tool call ID
+- `ConversationManager` stores thought signatures keyed by tool call ID
 - `addAssistantMessage()` accepts optional `signatures` parameter
 - `getSignatureForToolCall()` and `thoughtSignatures` getter for retrieval
-- Signature capture in `gemini_inference_repository.dart` (logged but not yet passed through)
+- `ThoughtSignatureCollector` captures signatures during streaming or fallback
+- `GeminiInferenceRepository.generateText()` accepts optional `signatureCollector`
+- `GeminiInferenceRepository.generateTextWithMessages()` - New method for multi-turn conversations
+- `GeminiUtils.buildMultiTurnRequestBody()` - Builds request with full conversation history and signatures
+- `CloudInferenceRepository.generateWithMessages()` - Routes multi-turn requests to provider-specific implementations
+- `CloudInferenceWrapper` accepts optional signature collector and previous signatures
 
-**Deferred (Future Work):**
-- Passing signatures in subsequent Gemini requests
-- Capturing signatures from response metadata in conversation repository
+**Flow:**
+1. Caller creates `ThoughtSignatureCollector` and passes to inference methods
+2. During streaming, signatures are captured from `functionCall.thoughtSignature`
+3. After streaming, caller accesses `collector.signatures` for tool call ID → signature mapping
+4. On subsequent requests, pass `thoughtSignatures` map to include in function call parts
 
 ---
 
@@ -88,12 +99,14 @@ int? durationMs,      // Processing time in milliseconds
 
 | File | Change Type | Description |
 |------|-------------|-------------|
-| `lib/features/ai/repository/gemini_inference_repository.dart` | Modified | `<think>` tags, usage parsing, signature capture |
+| `lib/features/ai/repository/gemini_inference_repository.dart` | Modified | `<think>` tags, usage parsing, signature capture, `generateTextWithMessages()` |
 | `lib/features/ai/repository/unified_ai_inference_repository.dart` | Modified | Usage/duration tracking, thought extraction fix |
-| `lib/features/ai/repository/cloud_inference_repository.dart` | Modified | Enable thoughts for all 2.5+ models |
-| `lib/features/ai/repository/gemini_utils.dart` | Modified | Removed unused `isFlashModel()` |
+| `lib/features/ai/repository/cloud_inference_repository.dart` | Modified | Enable thoughts for all 2.5+ models, `generateWithMessages()` routing |
+| `lib/features/ai/repository/cloud_inference_wrapper.dart` | Modified | Use native multi-turn API, signature pass-through |
+| `lib/features/ai/repository/gemini_utils.dart` | Modified | Removed `isFlashModel()`, added `buildMultiTurnRequestBody()` |
 | `lib/classes/entity_definitions.dart` | Modified | Added usage fields to `AiResponseData` |
 | `lib/features/ai/model/inference_usage.dart` | Created | Usage data container class |
+| `lib/features/ai/model/gemini_tool_call.dart` | Created | `ThoughtSignatureCollector`, `GeminiToolCall` classes |
 | `lib/features/ai/conversation/conversation_manager.dart` | Modified | Thought signature storage |
 | `lib/features/ai/ui/ai_response_summary_modal.dart` | Modified | Usage stats display |
 
@@ -115,6 +128,16 @@ int? durationMs,      // Processing time in milliseconds
 - Request headers and body verification
 - Character cap enforcement
 - Flash model thinking support
+
+### ThoughtSignatureCollector Tests
+- Signature collection and access
+- Clear functionality
+- Unmodifiable signatures map
+
+### Signature Capture from Streaming Tests
+- Captures signatures in collector during streaming
+- Handles function calls without signatures
+- Captures signatures from fallback path
 
 ### Cloud Inference Repository Tests
 - Gemini provider routing
@@ -146,30 +169,25 @@ int? durationMs,      // Processing time in milliseconds
 | Enable thoughts for all 2.5+ models | Gemini documentation confirms Flash supports thinking |
 | Nullable usage fields | Backward compatibility with existing entries |
 | Duration in milliseconds | Integer precision sufficient, avoids floating point |
-| Defer signature pass-through | Not blocking current use cases, complex to implement |
+| Collector pattern for signatures | Allows caller control over signature lifecycle |
+| Multi-turn method separate from single-turn | Cleaner API, avoids breaking existing callers |
 
 ---
 
 ## Future Work
 
-### Thought Signature Pass-Through
-For full Gemini 3 multi-turn function calling support:
-
-1. **Capture signatures from response metadata** - Currently logged but not extracted from OpenAI-compat types
-2. **Include signatures in subsequent requests** - Update `gemini_utils.dart` to add `thoughtSignature` to function call parts
-3. **Thread signatures through conversation repository** - Connect capture to ConversationManager storage
-
 ### Potential Improvements
 - Pass thoughts as separate field instead of XML-wrapped content
 - Add cached token tracking to UI display
 - Cost estimation based on token counts
+- Wire signature collection through `ConversationRepository.sendMessage()` for automatic handling
 
 ---
 
 ## Verification
 
 All tests pass:
-- `gemini_inference_repository_test.dart` - 28 tests
+- `gemini_inference_repository_test.dart` - 34 tests (including 6 new signature tests)
 - `gemini_thinking_config_test.dart` - 17 tests
 - `cloud_inference_repository_test.dart` - Gemini integration tests
 - `inference_usage_test.dart` - 16 tests

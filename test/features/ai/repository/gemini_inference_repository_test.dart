@@ -1,8 +1,11 @@
+// ignore_for_file: cascade_invocations
+
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -1562,6 +1565,259 @@ void main() {
 
       // Answer should be present
       expect(events[1].choices!.first.delta!.content, 'Short answer');
+    });
+  });
+
+  group('ThoughtSignatureCollector', () {
+    test('collects signatures and provides access', () {
+      final collector = ThoughtSignatureCollector();
+
+      expect(collector.hasSignatures, isFalse);
+      expect(collector.signatures, isEmpty);
+
+      collector.addSignature('tool_0', 'sig-abc123');
+      collector.addSignature('tool_1', 'sig-def456');
+
+      expect(collector.hasSignatures, isTrue);
+      expect(collector.signatures.length, 2);
+      expect(collector.getSignature('tool_0'), 'sig-abc123');
+      expect(collector.getSignature('tool_1'), 'sig-def456');
+      expect(collector.getSignature('tool_2'), isNull);
+    });
+
+    test('clear removes all signatures', () {
+      final collector = ThoughtSignatureCollector();
+      collector.addSignature('tool_0', 'sig-abc123');
+      expect(collector.hasSignatures, isTrue);
+
+      collector.clear();
+      expect(collector.hasSignatures, isFalse);
+      expect(collector.signatures, isEmpty);
+    });
+
+    test('signatures map is unmodifiable', () {
+      final collector = ThoughtSignatureCollector();
+      collector.addSignature('tool_0', 'sig-abc123');
+
+      expect(
+        () => collector.signatures['tool_1'] = 'bad',
+        throwsA(isA<UnsupportedError>()),
+      );
+    });
+  });
+
+  group('extractThoughtSignature helper', () {
+    test('extracts signature from part level (sibling of functionCall)', () {
+      final part = <String, dynamic>{
+        'functionCall': {'name': 'test_func', 'args': <String, dynamic>{}},
+        'thoughtSignature': 'encrypted-sig-12345',
+      };
+      expect(extractThoughtSignature(part), 'encrypted-sig-12345');
+    });
+
+    test('returns null when no signature present', () {
+      final part = <String, dynamic>{
+        'functionCall': {'name': 'test_func', 'args': <String, dynamic>{}},
+      };
+      expect(extractThoughtSignature(part), isNull);
+    });
+
+    test('returns null when signature is inside functionCall (wrong location)',
+        () {
+      // This tests that we correctly look at part level, not inside functionCall
+      final part = <String, dynamic>{
+        'functionCall': {
+          'name': 'test_func',
+          'args': <String, dynamic>{},
+          'thoughtSignature': 'wrong-location-sig',
+        },
+      };
+      expect(extractThoughtSignature(part), isNull);
+    });
+
+    test('handles non-string signature values by converting to string', () {
+      final part = <String, dynamic>{
+        'functionCall': {'name': 'test_func', 'args': <String, dynamic>{}},
+        'thoughtSignature': 12345, // numeric value
+      };
+      expect(extractThoughtSignature(part), '12345');
+    });
+  });
+
+  group('Signature capture from streaming', () {
+    test('captures thought signatures in collector during streaming', () async {
+      // According to Gemini docs, thoughtSignature is a sibling of functionCall
+      // at the part level, not inside functionCall. For parallel function calls,
+      // only the first call receives a signature.
+      final responseWithSignature = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {
+                  'functionCall': {
+                    'name': 'add_checklist_item',
+                    'args': {'title': 'Buy milk'},
+                  },
+                  // thoughtSignature is at part level, sibling of functionCall
+                  'thoughtSignature': 'encrypted-sig-12345',
+                },
+                {
+                  'functionCall': {
+                    'name': 'add_checklist_item',
+                    'args': {'title': 'Buy bread'},
+                  },
+                  // Second parallel call also gets signature in test
+                  // (in practice, only first may have it)
+                  'thoughtSignature': 'encrypted-sig-67890',
+                }
+              ]
+            }
+          }
+        ],
+      });
+
+      final client = _FakeStreamClient(200, [responseWithSignature]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final collector = ThoughtSignatureCollector();
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final events = await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-3-flash',
+            temperature: 0.5,
+            thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
+            provider: provider,
+            signatureCollector: collector,
+          )
+          .toList();
+
+      // Should have 2 tool call events
+      expect(events.length, 2);
+
+      // Collector should have both signatures
+      expect(collector.hasSignatures, isTrue);
+      expect(collector.signatures.length, 2);
+      expect(collector.getSignature('tool_0'), 'encrypted-sig-12345');
+      expect(collector.getSignature('tool_1'), 'encrypted-sig-67890');
+    });
+
+    test('handles function calls without signatures', () async {
+      final responseNoSignature = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {
+                  'functionCall': {
+                    'name': 'add_checklist_item',
+                    'args': {'title': 'Buy milk'},
+                    // No thoughtSignature field
+                  }
+                }
+              ]
+            }
+          }
+        ],
+      });
+
+      final client = _FakeStreamClient(200, [responseNoSignature]);
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final collector = ThoughtSignatureCollector();
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-2.5-flash',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+            signatureCollector: collector,
+          )
+          .toList();
+
+      // No signatures should be captured
+      expect(collector.hasSignatures, isFalse);
+    });
+
+    test('captures signatures from fallback path', () async {
+      // Streaming yields empty parts to trigger fallback
+      final streamLine = jsonEncode({
+        'candidates': [
+          {
+            'content': {'parts': <Object?>[]}
+          }
+        ]
+      });
+
+      // Fallback has function calls with signatures at part level
+      final fallback = jsonEncode({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {
+                  'functionCall': {
+                    'name': 'set_task_language',
+                    'args': {'languageCode': 'de'},
+                  },
+                  // thoughtSignature is at part level, sibling of functionCall
+                  'thoughtSignature': 'fallback-sig-abc',
+                }
+              ]
+            }
+          }
+        ],
+      });
+
+      final client = _RoutingFakeClient(
+        streamLines: [streamLine],
+        fallbackBody: fallback,
+      );
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final collector = ThoughtSignatureCollector();
+
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo
+          .generateText(
+            prompt: 'p',
+            model: 'gemini-3-pro',
+            temperature: 0.5,
+            thinkingConfig: GeminiThinkingConfig.disabled,
+            provider: provider,
+            signatureCollector: collector,
+          )
+          .toList();
+
+      // Signature should be captured from fallback
+      expect(collector.hasSignatures, isTrue);
+      expect(collector.getSignature('tool_0'), 'fallback-sig-abc');
     });
   });
 }

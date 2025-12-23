@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
@@ -73,7 +74,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
   /// Generate text using Ollama's chat API with full conversation history
   ///
-  /// This method accepts the full conversation messages for proper context
+  /// This method accepts the full conversation messages for proper context.
+  /// Note: Ollama doesn't support thought signatures, so those parameters are ignored.
   @override
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
@@ -82,6 +84,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    Map<String, String>? thoughtSignatures, // Ignored for Ollama
+    ThoughtSignatureCollector? signatureCollector, // Ignored for Ollama
   }) {
     // Convert ChatCompletionMessage objects to Ollama format
     final ollamaMessages = messages.map((msg) {

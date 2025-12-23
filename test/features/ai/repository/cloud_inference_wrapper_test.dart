@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:mocktail/mocktail.dart';
@@ -23,6 +24,9 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(FakeChatCompletionTool());
+    registerFallbackValue(<ChatCompletionMessage>[]);
+    registerFallbackValue(<String, String>{});
+    registerFallbackValue(ThoughtSignatureCollector());
   });
 
   setUp(() {
@@ -142,7 +146,7 @@ void main() {
     });
 
     group('generateTextWithMessages', () {
-      test('converts simple conversation to prompt', () async {
+      test('delegates to cloud repository generateWithMessages', () async {
         final messages = [
           const ChatCompletionMessage.system(
             content: 'You are a helpful assistant',
@@ -174,16 +178,15 @@ void main() {
           ),
         );
 
-        when(() => mockCloudRepository.generate(
-              any(),
+        when(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => responseStream);
 
         final result = await wrapper
@@ -199,24 +202,12 @@ void main() {
         expect(result.first.choices?.first.delta?.content,
             "I'm doing well, thank you!");
 
-        // Verify the prompt was constructed correctly
-        final capturedCall = verify(() => mockCloudRepository.generate(
-              captureAny(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: captureAny(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-            )).captured;
-
-        expect(
-            capturedCall[0] as String,
-            contains(
-                'Previous conversation:\nUser: Hello\nAssistant: Hi there!\n\nHow are you?'));
-        expect(capturedCall[1] as String?, 'You are a helpful assistant');
+        verify(() => mockCloudRepository.generateWithMessages(
+              messages: messages,
+              model: 'gpt-4',
+              temperature: 0.7,
+              provider: provider,
+            )).called(1);
       });
 
       test('handles messages with tool and function responses', () async {
@@ -237,16 +228,15 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generate(
-              any(),
+        when(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => responseStream);
 
         await wrapper
@@ -258,21 +248,16 @@ void main() {
             )
             .toList();
 
-        // Verify tool and function responses were included
-        final capturedPrompt = verify(() => mockCloudRepository.generate(
-              captureAny(),
+        verify(() => mockCloudRepository.generateWithMessages(
+              messages: messages,
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
-            )).captured.first as String;
-
-        expect(capturedPrompt, contains('Use a tool'));
-        // Tool and function responses would be in assistant messages
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+            )).called(1);
       });
 
       test('detects and logs concatenated JSON in tool calls', () async {
@@ -285,16 +270,15 @@ void main() {
         final responseController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockCloudRepository.generate(
-              any(),
+        when(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => responseController.stream);
 
         final resultFuture = wrapper
@@ -352,16 +336,15 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generate(
-              any(),
+        when(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => responseStream);
 
         await wrapper
@@ -373,76 +356,19 @@ void main() {
             )
             .toList();
 
-        // Should generate with empty prompt
-        final capturedPrompt = verify(() => mockCloudRepository.generate(
-              captureAny(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-            )).captured.first as String;
-
-        expect(capturedPrompt, isEmpty);
-      });
-
-      test('handles ChatCompletionUserMessageContent variations', () async {
-        // Create messages with different content types
-        final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Simple text'),
-          ),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.parts([
-              ChatCompletionMessageContentPart.text(text: 'Part 1'),
-              ChatCompletionMessageContentPart.text(text: 'Part 2'),
-            ]),
-          ),
-        ];
-
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
-
-        when(() => mockCloudRepository.generate(
-              any(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-            )).thenAnswer((_) => responseStream);
-
-        await wrapper
-            .generateTextWithMessages(
+        verify(() => mockCloudRepository.generateWithMessages(
               messages: messages,
-              model: 'gpt-4',
-              temperature: 0.7,
-              provider: provider,
-            )
-            .toList();
-
-        final capturedPrompt = verify(() => mockCloudRepository.generate(
-              captureAny(),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
-            )).captured.first as String;
-
-        expect(capturedPrompt, contains('Part 1Part 2')); // Parts are joined
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+            )).called(1);
       });
 
-      test('preserves tools parameter through conversion', () async {
+      test('preserves tools parameter', () async {
         final messages = [
           const ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string('Use tools'),
@@ -469,16 +395,15 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generate(
-              any(),
+        when(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => responseStream);
 
         await wrapper
@@ -491,69 +416,64 @@ void main() {
             )
             .toList();
 
-        final capturedTools = verify(() => mockCloudRepository.generate(
-              any(),
+        verify(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
-              tools: captureAny(named: 'tools'),
-            )).captured.first as List<ChatCompletionTool>;
-
-        expect(capturedTools, equals(tools));
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              tools: tools,
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+            )).called(1);
       });
 
-      test('handles messages with only user content', () async {
+      test('passes through signature collector and signatures', () async {
+        final collector = ThoughtSignatureCollector();
+        final signatures = {'tool_0': 'sig-abc123'};
+
         final messages = [
           const ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Are you there?'),
           ),
         ];
 
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generate(
-              any(),
+        when(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => responseStream);
 
+        // Pass signatures through method parameters (not constructor)
         await wrapper
             .generateTextWithMessages(
               messages: messages,
               model: 'gpt-4',
               temperature: 0.7,
               provider: provider,
+              thoughtSignatures: signatures,
+              signatureCollector: collector,
             )
             .toList();
 
-        final capturedPrompt = verify(() => mockCloudRepository.generate(
-              captureAny(),
+        verify(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
-            )).captured.first as String;
-
-        // Only the last user message should be in prompt
-        expect(capturedPrompt, equals('Are you there?'));
+              thoughtSignatures: signatures,
+              signatureCollector: collector,
+            )).called(1);
       });
 
       test('handles different provider types', () async {
@@ -575,16 +495,15 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generate(
-              any(),
+        when(() => mockCloudRepository.generateWithMessages(
+              messages: any(named: 'messages'),
               model: any(named: 'model'),
               temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               provider: any(named: 'provider'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
               tools: any(named: 'tools'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenAnswer((_) => responseStream);
 
         await wrapper
@@ -596,12 +515,10 @@ void main() {
             )
             .toList();
 
-        verify(() => mockCloudRepository.generate(
-              'Test gemini',
+        verify(() => mockCloudRepository.generateWithMessages(
+              messages: messages,
               model: 'gemini-pro',
               temperature: 0.7,
-              baseUrl: 'https://generativelanguage.googleapis.com',
-              apiKey: 'gemini-key',
               provider: geminiProvider,
             )).called(1);
       });

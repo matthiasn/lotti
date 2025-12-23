@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
+
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -124,6 +127,202 @@ class GeminiUtils {
     }
 
     return request;
+  }
+
+  /// Builds a Gemini request body for multi-turn conversations with full history.
+  ///
+  /// This method supports:
+  /// - Full conversation history with user, assistant, and tool messages
+  /// - Thought signatures in function calls (required for Gemini 3 multi-turn)
+  /// - System instructions
+  /// - Thinking configuration
+  /// - Function tool declarations
+  ///
+  /// Parameters:
+  /// - [messages]: Full conversation history as OpenAI-style messages
+  /// - [temperature]: Sampling temperature
+  /// - [thinkingConfig]: Thinking budget and policy
+  /// - [thoughtSignatures]: Map of tool call IDs to signatures (for replay)
+  /// - [systemMessage]: Optional system instruction
+  /// - [maxTokens]: Optional output token limit
+  /// - [tools]: Optional function declarations
+  static Map<String, dynamic> buildMultiTurnRequestBody({
+    required List<ChatCompletionMessage> messages,
+    required double temperature,
+    required GeminiThinkingConfig thinkingConfig,
+    Map<String, String>? thoughtSignatures,
+    String? systemMessage,
+    int? maxTokens,
+    List<ChatCompletionTool>? tools,
+  }) {
+    final contents = <Map<String, dynamic>>[];
+
+    for (final message in messages) {
+      final converted = _convertMessageToGeminiContent(
+        message,
+        thoughtSignatures: thoughtSignatures,
+      );
+      if (converted != null) {
+        contents.add(converted);
+      }
+    }
+
+    final generationConfig = <String, dynamic>{
+      'temperature': temperature,
+      if (maxTokens != null) 'maxOutputTokens': maxTokens,
+      'thinkingConfig': thinkingConfig.toJson(),
+    };
+
+    final request = <String, dynamic>{
+      'contents': contents,
+      'generationConfig': generationConfig,
+      if (tools != null && tools.isNotEmpty)
+        'tools': [
+          {
+            'functionDeclarations': tools
+                .map((t) => {
+                      'name': t.function.name,
+                      if (t.function.description != null)
+                        'description': t.function.description,
+                      if (t.function.parameters != null)
+                        'parameters': t.function.parameters,
+                    })
+                .toList(),
+          }
+        ],
+    };
+
+    if (systemMessage != null && systemMessage.trim().isNotEmpty) {
+      request['systemInstruction'] = {
+        'role': 'system',
+        'parts': [
+          {'text': systemMessage},
+        ],
+      };
+    }
+
+    return request;
+  }
+
+  /// Converts an OpenAI-style message to Gemini content format.
+  ///
+  /// Returns null for system messages (handled separately as systemInstruction).
+  static Map<String, dynamic>? _convertMessageToGeminiContent(
+    ChatCompletionMessage message, {
+    Map<String, String>? thoughtSignatures,
+  }) {
+    return message.map(
+      system: (_) => null, // System messages handled separately
+      user: (user) {
+        final content = user.content;
+        return {
+          'role': 'user',
+          'parts': [
+            {
+              'text': content.map(
+                string: (s) => s.value,
+                parts: (p) {
+                  // Extract text from content parts using toJson()
+                  final textParts = <String>[];
+                  for (final part in p.value) {
+                    final partMap = part.toJson();
+                    if (partMap['type'] == 'text') {
+                      final text = partMap['text'];
+                      if (text is String && text.isNotEmpty) {
+                        textParts.add(text);
+                      }
+                    }
+                    // For images, audio, files - add placeholder
+                    else if (partMap['type'] == 'image_url') {
+                      textParts.add('[image]');
+                    } else if (partMap['type'] == 'input_audio') {
+                      textParts.add('[audio]');
+                    } else if (partMap['type'] == 'file') {
+                      textParts.add('[file]');
+                    }
+                  }
+                  return textParts.join();
+                },
+              ),
+            },
+          ],
+        };
+      },
+      assistant: (assistant) {
+        final parts = <Map<String, dynamic>>[];
+
+        // Add text content if present
+        if (assistant.content != null && assistant.content!.isNotEmpty) {
+          parts.add({'text': assistant.content});
+        }
+
+        // Add function calls with signatures if present
+        if (assistant.toolCalls != null) {
+          for (final toolCall in assistant.toolCalls!) {
+            // Defensive JSON parsing for tool call arguments
+            dynamic args;
+            try {
+              args = jsonDecode(toolCall.function.arguments);
+            } on FormatException catch (e) {
+              developer.log(
+                'Failed to parse tool call arguments as JSON: ${e.message}. '
+                'Using empty object. Raw: ${toolCall.function.arguments}',
+                name: 'GeminiUtils',
+              );
+              args = <String, dynamic>{};
+            }
+
+            final functionPart = <String, dynamic>{
+              'name': toolCall.function.name,
+              'args': args,
+            };
+
+            // Include thought signature if available
+            final signature = thoughtSignatures?[toolCall.id];
+            if (signature != null) {
+              functionPart['thoughtSignature'] = signature;
+            }
+
+            parts.add({'functionCall': functionPart});
+          }
+        }
+
+        if (parts.isEmpty) return null;
+
+        return {
+          'role': 'model',
+          'parts': parts,
+        };
+      },
+      tool: (tool) {
+        return {
+          'role': 'function',
+          'parts': [
+            {
+              'functionResponse': {
+                'name': tool.toolCallId,
+                'response': {'result': tool.content},
+              },
+            },
+          ],
+        };
+      },
+      function: (func) {
+        // Legacy function message format - convert to tool format
+        return {
+          'role': 'function',
+          'parts': [
+            {
+              'functionResponse': {
+                'name': func.name,
+                'response': {'result': func.content ?? ''},
+              },
+            },
+          ],
+        };
+      },
+      developer: (_) => null, // Not supported by Gemini
+    );
   }
 
   /// Strips leading SSE `data:` prefixes and JSON array framing tokens.

@@ -105,6 +105,77 @@ void main() {
     });
   });
 
+  group('GeminiUtils.buildMultiTurnRequestBody', () {
+    test('handles malformed JSON in tool call arguments gracefully', () {
+      // Tool call with invalid JSON arguments
+      final messages = [
+        const ChatCompletionMessage.assistant(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'test_function',
+                arguments: 'not valid json {{{',
+              ),
+            ),
+          ],
+        ),
+      ];
+
+      // Should not throw, should use empty object as fallback
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      expect(body['contents'], isA<List<dynamic>>());
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 1);
+
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      expect(parts.length, 1);
+
+      final functionCall = parts.first['functionCall'] as Map<String, dynamic>;
+      expect(functionCall['name'], 'test_function');
+      // Should have empty object as fallback for malformed JSON
+      expect(functionCall['args'], <String, dynamic>{});
+    });
+
+    test('includes thought signatures in function calls', () {
+      final messages = [
+        const ChatCompletionMessage.assistant(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'test_function',
+                arguments: '{"key": "value"}',
+              ),
+            ),
+          ],
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+        thoughtSignatures: {'tool-1': 'signature-abc123'},
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final functionCall = parts.first['functionCall'] as Map<String, dynamic>;
+
+      expect(functionCall['thoughtSignature'], 'signature-abc123');
+    });
+  });
+
   group('GeminiUtils.stripLeadingFraming', () {
     test('removes SSE data: lines and JSON array wrappers', () {
       const input = 'data: test\n  data: ignore\n [ {"a":1} , {"b":2}]';

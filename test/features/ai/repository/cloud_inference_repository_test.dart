@@ -2057,7 +2057,10 @@ void main() {
           function: FunctionObject(
             name: 'test_function',
             description: 'A test function',
-            parameters: <String, dynamic>{'type': 'object', 'properties': <String, dynamic>{}},
+            parameters: <String, dynamic>{
+              'type': 'object',
+              'properties': <String, dynamic>{}
+            },
           ),
         ),
       ];

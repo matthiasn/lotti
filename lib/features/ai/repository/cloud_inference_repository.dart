@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
@@ -354,6 +355,131 @@ class CloudInferenceRepository {
           ),
         )
         .asBroadcastStream();
+  }
+
+  /// Generate with full conversation history for multi-turn interactions.
+  ///
+  /// This method properly routes to provider-specific multi-turn implementations:
+  /// - Gemini: Uses native Gemini API with thought signature support
+  /// - Others: Fall back to single-prompt mode (conversation flattened)
+  ///
+  /// Parameters:
+  /// - [messages]: Full conversation history
+  /// - [model]: Model ID
+  /// - [temperature]: Sampling temperature
+  /// - [provider]: Provider configuration
+  /// - [tools]: Optional function declarations
+  /// - [thoughtSignatures]: Optional signatures from previous turns (Gemini only)
+  /// - [signatureCollector]: Optional collector for new signatures (Gemini only)
+  Stream<CreateChatCompletionStreamResponse> generateWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+  }) {
+    developer.log(
+      'CloudInferenceRepository.generateWithMessages called with:\n'
+      '  model: $model\n'
+      '  provider: ${provider.inferenceProviderType}\n'
+      '  messages: ${messages.length}\n'
+      '  tools: ${tools?.length ?? 0}\n'
+      '  hasSignatures: ${thoughtSignatures?.isNotEmpty ?? false}',
+      name: 'CloudInferenceRepository',
+    );
+
+    // For Gemini, use the native multi-turn API with signature support
+    if (provider.inferenceProviderType == InferenceProviderType.gemini) {
+      final thinking = getDefaultThinkingConfig(model);
+      final includeThoughts = thinking.thinkingBudget != 0;
+      final finalThinking = GeminiThinkingConfig(
+        thinkingBudget: thinking.thinkingBudget,
+        includeThoughts: includeThoughts,
+      );
+
+      // Extract system message from messages if present
+      String? systemMessage;
+      for (final message in messages) {
+        if (message.role == ChatCompletionMessageRole.system) {
+          message.mapOrNull(
+            system: (s) {
+              systemMessage = s.content;
+            },
+          );
+          break;
+        }
+      }
+
+      return _geminiRepository.generateTextWithMessages(
+        messages: messages,
+        model: model,
+        temperature: temperature,
+        thinkingConfig: finalThinking,
+        provider: provider,
+        thoughtSignatures: thoughtSignatures,
+        systemMessage: systemMessage,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        signatureCollector: signatureCollector,
+      );
+    }
+
+    // For Ollama, use the dedicated repository
+    if (provider.inferenceProviderType == InferenceProviderType.ollama) {
+      return _ollamaRepository.generateTextWithMessages(
+        messages: messages,
+        model: model,
+        temperature: temperature,
+        provider: provider,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+      );
+    }
+
+    // For other providers, fall back to condensed single prompt
+    // Extract the last user message as the prompt
+    String? prompt;
+    String? systemMessage;
+    for (final message in messages) {
+      if (message.role == ChatCompletionMessageRole.system) {
+        message.mapOrNull(
+          system: (s) {
+            systemMessage = s.content;
+          },
+        );
+      } else if (message.role == ChatCompletionMessageRole.user) {
+        message.mapOrNull(
+          user: (u) {
+            prompt = u.content.map(
+              string: (s) => s.value,
+              parts: (p) => p.value
+                  .map((part) => part.mapOrNull(text: (t) => t.text) ?? '')
+                  .join(),
+            );
+          },
+        );
+      }
+    }
+
+    if (prompt == null) {
+      return Stream.error(
+          ArgumentError('No user message found in conversation'));
+    }
+
+    return generate(
+      prompt!,
+      model: model,
+      temperature: temperature,
+      baseUrl: provider.baseUrl,
+      apiKey: provider.apiKey,
+      systemMessage: systemMessage,
+      maxCompletionTokens: maxCompletionTokens,
+      provider: provider,
+      tools: tools,
+    );
   }
 
   // Delegate Ollama-specific methods to OllamaInferenceRepository

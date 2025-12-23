@@ -1,4 +1,5 @@
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Abstract interface for inference repositories
@@ -7,6 +8,16 @@ import 'package:openai_dart/openai_dart.dart';
 abstract class InferenceRepositoryInterface {
   /// Generate text with full conversation history
   /// This is the main method used by the conversation system
+  ///
+  /// Parameters:
+  /// - [messages]: Full conversation history
+  /// - [model]: Model identifier
+  /// - [temperature]: Sampling temperature
+  /// - [provider]: Provider configuration
+  /// - [maxCompletionTokens]: Optional output token limit
+  /// - [tools]: Optional function declarations
+  /// - [thoughtSignatures]: Previous thought signatures for multi-turn (Gemini 3)
+  /// - [signatureCollector]: Collector for capturing new signatures from response
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -14,6 +25,8 @@ abstract class InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
   });
 
   /// Optional: Generate text with a simple prompt (for backwards compatibility)
