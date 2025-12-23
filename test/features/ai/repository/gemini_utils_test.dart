@@ -473,6 +473,135 @@ void main() {
       final generationConfig = body['generationConfig'] as Map<String, dynamic>;
       expect(generationConfig['maxOutputTokens'], 500);
     });
+
+    test('converts user message with content parts including image', () {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.parts([
+            ChatCompletionMessageContentPart.text(text: 'Describe this: '),
+            ChatCompletionMessageContentPart.image(
+              imageUrl: ChatCompletionMessageImageUrl(
+                url: 'data:image/png;base64,abc123',
+              ),
+            ),
+          ]),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'user');
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      // Text and image placeholder should be concatenated
+      expect(parts.first['text'], contains('Describe this:'));
+      expect(parts.first['text'], contains('[image]'));
+    });
+
+    test('converts user message with audio content part', () {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.parts([
+            ChatCompletionMessageContentPart.text(text: 'Transcribe: '),
+            ChatCompletionMessageContentPart.audio(
+              inputAudio: ChatCompletionMessageInputAudio(
+                data: 'base64audiodata',
+                format: ChatCompletionMessageInputAudioFormat.wav,
+              ),
+            ),
+          ]),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      expect(parts.first['text'], contains('Transcribe:'));
+      expect(parts.first['text'], contains('[audio]'));
+    });
+
+    test('skips developer messages (not supported by Gemini)', () {
+      final messages = [
+        const ChatCompletionMessage.developer(
+          content: ChatCompletionDeveloperMessageContent.text(
+            'Developer instructions',
+          ),
+        ),
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      // Should only have user message, developer is skipped
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'user');
+    });
+
+    test('handles function message with null content', () {
+      final messages = [
+        const ChatCompletionMessage.function(
+          name: 'my_function',
+          content: null,
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 1);
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final funcResponse = parts.first['functionResponse'] as Map;
+      expect(funcResponse['name'], 'my_function');
+      // Should use empty string for null content
+      expect((funcResponse['response'] as Map)['result'], '');
+    });
+
+    test('falls back to toolCallId when function name not in mapping', () {
+      // Tool response without corresponding assistant message
+      final messages = [
+        const ChatCompletionMessage.tool(
+          toolCallId: 'unknown-id',
+          content: 'Result',
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.7,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      final funcResponse = parts.first['functionResponse'] as Map;
+      // Should fall back to toolCallId when name not in mapping
+      expect(funcResponse['name'], 'unknown-id');
+    });
   });
 
   group('GeminiUtils.stripLeadingFraming', () {
@@ -488,6 +617,42 @@ void main() {
       const input = 'data: partial line without newline';
       final out = GeminiUtils.stripLeadingFraming(input);
       expect(out, input.trimLeft());
+    });
+
+    test('handles data: with JSON payload on same line', () {
+      const input = 'data: {"result": 123}\nmore data';
+      final out = GeminiUtils.stripLeadingFraming(input);
+      expect(out, startsWith('{"result"'));
+    });
+
+    test('handles data: with array payload on same line', () {
+      const input = 'data: [{"a":1}]\nmore';
+      final out = GeminiUtils.stripLeadingFraming(input);
+      expect(out, startsWith('{"a"'));
+    });
+
+    test('drops empty data: lines', () {
+      const input = 'data:\ndata: \n{"result": true}';
+      final out = GeminiUtils.stripLeadingFraming(input);
+      expect(out, startsWith('{"result"'));
+    });
+
+    test('drops non-JSON data: lines like comments/heartbeats', () {
+      const input = 'data: ping\ndata: heartbeat\n{"ok": true}';
+      final out = GeminiUtils.stripLeadingFraming(input);
+      expect(out, startsWith('{"ok"'));
+    });
+
+    test('strips closing bracket and comma', () {
+      const input = '],{"next": 1}';
+      final out = GeminiUtils.stripLeadingFraming(input);
+      expect(out, startsWith('{"next"'));
+    });
+
+    test('handles multiple leading whitespace and brackets', () {
+      const input = '   [  ,  {"data": "value"}';
+      final out = GeminiUtils.stripLeadingFraming(input);
+      expect(out, startsWith('{"data"'));
     });
   });
 }
