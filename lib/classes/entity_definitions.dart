@@ -232,6 +232,13 @@ abstract class AiResponseData with _$AiResponseData {
     List<AiActionItem>? suggestedActionItems,
     AiResponseType? type,
     double? temperature,
+    // Usage statistics (nullable for backward compatibility)
+    int? inputTokens,
+    int? outputTokens,
+    int? thoughtsTokens,
+    int? cachedInputTokens,
+    // Processing duration in milliseconds
+    int? durationMs,
   }) = _AiResponseData;
 
   factory AiResponseData.fromJson(Map<String, dynamic> json) =>

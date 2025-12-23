@@ -6,9 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
+import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -34,12 +36,20 @@ class FakeCreateChatCompletionRequest extends Fake
 
 class FakeRequest extends Fake implements http.Request {}
 
+class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
+
+class FakeAiConfigInferenceProvider extends Fake
+    implements AiConfigInferenceProvider {}
+
 void main() {
   setUpAll(() {
     // Register fallback values for mocktail
     registerFallbackValue(FakeCreateChatCompletionRequest());
     registerFallbackValue(Uri.parse('http://example.com'));
     registerFallbackValue(FakeRequest());
+    registerFallbackValue(FakeGeminiThinkingConfig());
+    registerFallbackValue(FakeAiConfigInferenceProvider());
+    registerFallbackValue(<ChatCompletionTool>[]);
   });
 
   group('CloudInferenceRepository', () {
@@ -1741,6 +1751,678 @@ void main() {
       final request = captured.first as CreateChatCompletionRequest;
       expect(request.toolChoice, isNotNull);
       expect(request.tools, hasLength(1));
+    });
+  });
+
+  group('CloudInferenceRepository - Gemini Provider', () {
+    late MockHttpClient mockHttpClient;
+    late MockRef mockRef;
+    late MockGeminiInferenceRepository mockGeminiRepo;
+    late CloudInferenceRepository repository;
+
+    setUp(() {
+      mockHttpClient = MockHttpClient();
+      mockRef = MockRef();
+      mockGeminiRepo = MockGeminiInferenceRepository();
+
+      when(() => mockRef.read(geminiInferenceRepositoryProvider))
+          .thenReturn(mockGeminiRepo);
+      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
+          .thenReturn(MockOllamaInferenceRepository());
+      // Mock the thoughts toggle provider - default to true for testing
+      when(() => mockRef.read(geminiIncludeThoughtsProvider)).thenReturn(true);
+
+      repository =
+          CloudInferenceRepository(mockRef, httpClient: mockHttpClient);
+    });
+
+    tearDown(() {
+      mockHttpClient.close();
+    });
+
+    AiConfigInferenceProvider createGeminiProvider() {
+      return AiConfigInferenceProvider(
+        id: 'gemini-provider',
+        name: 'Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-api-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+    }
+
+    test('routes to GeminiInferenceRepository when provider type is gemini',
+        () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.5-pro';
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'test-id',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            model: model,
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      final result = await repository
+          .generate(
+            'Test prompt',
+            model: model,
+            temperature: 0.7,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+          )
+          .toList();
+
+      expect(result, hasLength(1));
+      expect(result.first.choices!.first.delta!.content, 'Hello');
+
+      verify(
+        () => mockGeminiRepo.generateText(
+          prompt: 'Test prompt',
+          model: model,
+          temperature: 0.7,
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: provider,
+        ),
+      ).called(1);
+    });
+
+    test('enables includeThoughts for thinking-capable models (Pro)', () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.5-pro';
+      GeminiThinkingConfig? capturedConfig;
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedConfig =
+            invocation.namedArguments[#thinkingConfig] as GeminiThinkingConfig;
+        return const Stream.empty();
+      });
+
+      await repository
+          .generate(
+            'Test',
+            model: model,
+            temperature: 0.5,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+          )
+          .toList();
+
+      expect(capturedConfig, isNotNull);
+      // gemini-2.5-pro has auto config (budget = -1), so includeThoughts should be true
+      expect(capturedConfig!.includeThoughts, isTrue);
+      expect(capturedConfig!.thinkingBudget, -1);
+    });
+
+    test('enables includeThoughts for Flash models with thinking support',
+        () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.5-flash';
+      GeminiThinkingConfig? capturedConfig;
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedConfig =
+            invocation.namedArguments[#thinkingConfig] as GeminiThinkingConfig;
+        return const Stream.empty();
+      });
+
+      await repository
+          .generate(
+            'Test',
+            model: model,
+            temperature: 0.5,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+          )
+          .toList();
+
+      expect(capturedConfig, isNotNull);
+      // gemini-2.5-flash has standard config (budget = 8192), so includeThoughts should be true
+      expect(capturedConfig!.includeThoughts, isTrue);
+      expect(capturedConfig!.thinkingBudget, 8192);
+    });
+
+    test('disables includeThoughts for models without thinking support',
+        () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.0-flash';
+      GeminiThinkingConfig? capturedConfig;
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedConfig =
+            invocation.namedArguments[#thinkingConfig] as GeminiThinkingConfig;
+        return const Stream.empty();
+      });
+
+      await repository
+          .generate(
+            'Test',
+            model: model,
+            temperature: 0.5,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+          )
+          .toList();
+
+      expect(capturedConfig, isNotNull);
+      // gemini-2.0-flash has disabled config (budget = 0), so includeThoughts should be false
+      expect(capturedConfig!.includeThoughts, isFalse);
+      expect(capturedConfig!.thinkingBudget, 0);
+    });
+
+    test('passes system message to Gemini repository', () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.5-pro';
+      const systemMessage = 'You are a helpful assistant.';
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => const Stream.empty());
+
+      await repository
+          .generate(
+            'Test',
+            model: model,
+            temperature: 0.5,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+            systemMessage: systemMessage,
+          )
+          .toList();
+
+      verify(
+        () => mockGeminiRepo.generateText(
+          prompt: 'Test',
+          model: model,
+          temperature: 0.5,
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: provider,
+          systemMessage: systemMessage,
+        ),
+      ).called(1);
+    });
+
+    test('passes maxCompletionTokens to Gemini repository', () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.5-pro';
+      const maxTokens = 4096;
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => const Stream.empty());
+
+      await repository
+          .generate(
+            'Test',
+            model: model,
+            temperature: 0.5,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+            maxCompletionTokens: maxTokens,
+          )
+          .toList();
+
+      verify(
+        () => mockGeminiRepo.generateText(
+          prompt: 'Test',
+          model: model,
+          temperature: 0.5,
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: provider,
+          maxCompletionTokens: maxTokens,
+        ),
+      ).called(1);
+    });
+
+    test('passes tools to Gemini repository', () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.5-pro';
+      final tools = [
+        const ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(
+            name: 'test_function',
+            description: 'A test function',
+            parameters: <String, dynamic>{
+              'type': 'object',
+              'properties': <String, dynamic>{}
+            },
+          ),
+        ),
+      ];
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => const Stream.empty());
+
+      await repository
+          .generate(
+            'Test',
+            model: model,
+            temperature: 0.5,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+            tools: tools,
+          )
+          .toList();
+
+      verify(
+        () => mockGeminiRepo.generateText(
+          prompt: 'Test',
+          model: model,
+          temperature: 0.5,
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: provider,
+          tools: tools,
+        ),
+      ).called(1);
+    });
+
+    test('uses models/ prefix correctly for model ID', () async {
+      final provider = createGeminiProvider();
+      const model = 'models/gemini-2.5-flash';
+      GeminiThinkingConfig? capturedConfig;
+
+      when(
+        () => mockGeminiRepo.generateText(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedConfig =
+            invocation.namedArguments[#thinkingConfig] as GeminiThinkingConfig;
+        return const Stream.empty();
+      });
+
+      await repository
+          .generate(
+            'Test',
+            model: model,
+            temperature: 0.5,
+            baseUrl: provider.baseUrl,
+            apiKey: provider.apiKey,
+            provider: provider,
+          )
+          .toList();
+
+      // models/gemini-2.5-flash should get standard config
+      expect(capturedConfig!.thinkingBudget, 8192);
+      expect(capturedConfig!.includeThoughts, isTrue);
+    });
+
+    test('generateWithMessages routes to Gemini repository for multi-turn',
+        () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.5-pro';
+
+      when(
+        () => mockGeminiRepo.generateTextWithMessages(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          thoughtSignatures: any(named: 'thoughtSignatures'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          signatureCollector: any(named: 'signatureCollector'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'test-id',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            model: model,
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'Response'),
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+        const ChatCompletionMessage.assistant(content: 'Hi there!'),
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('How are you?'),
+        ),
+      ];
+
+      final result = await repository
+          .generateWithMessages(
+            messages: messages,
+            model: model,
+            temperature: 0.7,
+            provider: provider,
+          )
+          .toList();
+
+      expect(result, hasLength(1));
+      expect(result.first.choices!.first.delta!.content, 'Response');
+
+      verify(
+        () => mockGeminiRepo.generateTextWithMessages(
+          messages: messages,
+          model: model,
+          temperature: 0.7,
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: provider,
+        ),
+      ).called(1);
+    });
+
+    test('generateWithMessages passes thought signatures to Gemini', () async {
+      final provider = createGeminiProvider();
+      const model = 'gemini-3-pro';
+      final signatures = {'call-123': 'sig-abc'};
+
+      when(
+        () => mockGeminiRepo.generateTextWithMessages(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          thoughtSignatures: any(named: 'thoughtSignatures'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          signatureCollector: any(named: 'signatureCollector'),
+        ),
+      ).thenAnswer((_) => const Stream.empty());
+
+      await repository.generateWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Continue'),
+          ),
+        ],
+        model: model,
+        temperature: 0.5,
+        provider: provider,
+        thoughtSignatures: signatures,
+      ).toList();
+
+      verify(
+        () => mockGeminiRepo.generateTextWithMessages(
+          messages: any(named: 'messages'),
+          model: model,
+          temperature: 0.5,
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: provider,
+          thoughtSignatures: signatures,
+        ),
+      ).called(1);
+    });
+
+    test('generateWithMessages disables thoughts for non-thinking models',
+        () async {
+      // gemini-2.0-flash has thinkingBudget=0, so includeThoughts should be false
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.0-flash'; // Non-thinking model
+      GeminiThinkingConfig? capturedConfig;
+
+      when(
+        () => mockGeminiRepo.generateTextWithMessages(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          thoughtSignatures: any(named: 'thoughtSignatures'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          signatureCollector: any(named: 'signatureCollector'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedConfig =
+            invocation.namedArguments[#thinkingConfig] as GeminiThinkingConfig;
+        return const Stream.empty();
+      });
+
+      await repository.generateWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ],
+        model: model,
+        temperature: 0.5,
+        provider: provider,
+      ).toList();
+
+      // Non-thinking model (thinkingBudget=0) should have includeThoughts=false
+      expect(capturedConfig!.includeThoughts, isFalse);
+    });
+
+    test(
+        'generateWithMessages always captures thoughts for thinking-capable models',
+        () async {
+      // The toggle no longer affects thought capture - thoughts are always
+      // captured for thinking-capable models so they appear in the Thoughts tab.
+      // The toggle only controls inline display in chat.
+      final provider = createGeminiProvider();
+      const model = 'gemini-2.5-pro'; // Thinking-capable model
+      GeminiThinkingConfig? capturedConfig;
+
+      when(
+        () => mockGeminiRepo.generateTextWithMessages(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          thinkingConfig: any(named: 'thinkingConfig'),
+          provider: any(named: 'provider'),
+          thoughtSignatures: any(named: 'thoughtSignatures'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          signatureCollector: any(named: 'signatureCollector'),
+        ),
+      ).thenAnswer((invocation) {
+        capturedConfig =
+            invocation.namedArguments[#thinkingConfig] as GeminiThinkingConfig;
+        return const Stream.empty();
+      });
+
+      await repository.generateWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ],
+        model: model,
+        temperature: 0.5,
+        provider: provider,
+      ).toList();
+
+      // Thoughts are always captured for thinking-capable models
+      expect(capturedConfig!.includeThoughts, isTrue);
+    });
+  });
+
+  group('CloudInferenceRepository - generateWithMessages for other providers',
+      () {
+    late MockRef mockRef;
+    late CloudInferenceRepository repository;
+    late MockOllamaInferenceRepository mockOllamaRepo;
+    late MockGeminiInferenceRepository mockGeminiRepo;
+
+    setUp(() {
+      mockRef = MockRef();
+      mockOllamaRepo = MockOllamaInferenceRepository();
+      mockGeminiRepo = MockGeminiInferenceRepository();
+
+      when(() => mockRef.read(geminiInferenceRepositoryProvider))
+          .thenReturn(mockGeminiRepo);
+      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
+          .thenReturn(mockOllamaRepo);
+      when(() => mockRef.read(geminiIncludeThoughtsProvider)).thenReturn(true);
+
+      repository = CloudInferenceRepository(mockRef);
+    });
+
+    test('routes to Ollama repository for Ollama provider', () async {
+      final provider = AiConfigInferenceProvider(
+        id: 'ollama-provider',
+        name: 'Ollama',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+      const model = 'llama2';
+
+      when(
+        () => mockOllamaRepo.generateTextWithMessages(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          provider: any(named: 'provider'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'test-id',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            model: model,
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'Ollama'),
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final result = await repository
+          .generateWithMessages(
+            messages: messages,
+            model: model,
+            temperature: 0.7,
+            provider: provider,
+          )
+          .toList();
+
+      expect(result, hasLength(1));
+      expect(result.first.choices!.first.delta!.content, 'Ollama');
+
+      verify(
+        () => mockOllamaRepo.generateTextWithMessages(
+          messages: messages,
+          model: model,
+          temperature: 0.7,
+          provider: provider,
+        ),
+      ).called(1);
     });
   });
 }

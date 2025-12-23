@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -94,13 +95,21 @@ class ConversationRepository extends _$ConversationRepository {
         // Get all messages for the request
         final messages = manager.getMessagesForRequest();
 
+        // Create signature collector for this turn (Gemini 3 multi-turn support)
+        final signatureCollector = ThoughtSignatureCollector();
+
         // Make API call with full conversation history
+        // Pass previous signatures and collector for new ones
+        // turnCount provides unique tool call IDs across conversation turns
         final stream = inferenceRepo.generateTextWithMessages(
           messages: messages,
           model: model,
           provider: provider,
           tools: tools,
           temperature: temperature,
+          thoughtSignatures: manager.thoughtSignatures,
+          signatureCollector: signatureCollector,
+          turnIndex: manager.turnCount,
         );
 
         // Collect response
@@ -139,10 +148,12 @@ class ConversationRepository extends _$ConversationRepository {
 
               if (isGeminiStyle) {
                 // Handle Gemini's multiple complete tool calls in one chunk
+                // Use turn-prefixed ID for uniqueness across conversation turns
+                final turn = manager.turnCount;
                 for (var i = 0; i < delta.toolCalls!.length; i++) {
                   final toolCallChunk = delta.toolCalls![i];
                   if (toolCallChunk.function != null) {
-                    final toolCallId = 'tool_gemini_${toolCalls.length}';
+                    final toolCallId = 'tool_turn${turn}_${toolCalls.length}';
                     toolCalls.add(ChatCompletionMessageToolCall(
                       id: toolCallId,
                       type: ChatCompletionMessageToolCallType.function,
@@ -225,14 +236,19 @@ class ConversationRepository extends _$ConversationRepository {
         final content = contentBuffer.toString();
 
         developer.log(
-          'Stream completed: collected ${toolCalls.length} tool calls and '
-          '${content.length} chars of content',
+          'Stream completed: collected ${toolCalls.length} tool calls, '
+          '${content.length} chars of content, '
+          '${signatureCollector.signatures.length} signatures captured',
           name: 'ConversationRepository',
         );
 
+        // Pass captured signatures to manager for use in subsequent turns
         manager.addAssistantMessage(
           content: content.isNotEmpty ? content : null,
           toolCalls: toolCalls.isNotEmpty ? toolCalls : null,
+          signatures: signatureCollector.hasSignatures
+              ? signatureCollector.signatures
+              : null,
         );
 
         // Process with strategy if provided

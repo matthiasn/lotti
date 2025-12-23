@@ -337,6 +337,9 @@ class UnifiedAiInferenceRepository {
         return; // Exit early, conversation processor handles everything
       }
 
+      // Start timing the inference
+      final stopwatch = Stopwatch()..start();
+
       final stream = await _runCloudInference(
         prompt: prompt,
         model: model,
@@ -352,8 +355,14 @@ class UnifiedAiInferenceRepository {
       // Process the stream and accumulate tool calls
       final toolCallAccumulator = ToolCallAccumulator();
       String? pendingProgress;
+      CompletionUsage? usage;
 
       await for (final chunk in stream) {
+        // Capture usage metadata from the final chunk
+        if (chunk.usage != null) {
+          usage = chunk.usage;
+        }
+
         final text = _extractTextFromChunk(chunk);
         buffer.write(text);
         final latest = buffer.toString();
@@ -375,6 +384,10 @@ class UnifiedAiInferenceRepository {
           toolCallAccumulator.processChunk(delta);
         }
       }
+
+      // Stop timing after stream processing
+      stopwatch.stop();
+      final durationMs = stopwatch.elapsedMilliseconds;
 
       if (!isAiStreamingEnabled && pendingProgress != null) {
         onProgress(pendingProgress);
@@ -412,6 +425,8 @@ class UnifiedAiInferenceRepository {
         onProgress: onProgress,
         onStatusChange: onStatusChange,
         toolCalls: toolCalls,
+        usage: usage,
+        durationMs: durationMs,
       );
 
       onStatusChange(InferenceStatus.idle);
@@ -624,16 +639,18 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
     List<ChatCompletionMessageToolCall>? toolCalls,
+    CompletionUsage? usage,
+    int? durationMs,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
 
-    // Extract thoughts if present (for reasoning models)
+    // Extract thoughts if present (for reasoning models like Gemini and OpenAI Thinking)
     if (response.contains('</think>')) {
       final parts = response.split('</think>');
       if (parts.length == 2) {
-        thoughts = parts[0];
-        cleanResponse = parts[1];
+        thoughts = parts[0].replaceFirst('<think>', '').trim();
+        cleanResponse = parts[1].trim();
       }
     }
 
@@ -684,6 +701,10 @@ class UnifiedAiInferenceRepository {
       thoughts: thoughts,
       response: cleanResponse,
       type: promptConfig.aiResponseType,
+      inputTokens: usage?.promptTokens,
+      outputTokens: usage?.completionTokens,
+      thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+      durationMs: durationMs,
     );
 
     // Save the AI response entry (except for checklist updates which are function-only)

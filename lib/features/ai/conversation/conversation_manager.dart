@@ -24,14 +24,28 @@ class ConversationManager {
   final List<ChatCompletionMessage> _messages = [];
   final _eventController = StreamController<ConversationEvent>.broadcast();
 
+  /// Thought signatures from Gemini 3 models, keyed by tool call ID.
+  /// Required for multi-turn function calling to maintain reasoning context.
+  final Map<String, String> _thoughtSignatures = {};
+
   Stream<ConversationEvent> get events => _eventController.stream;
   List<ChatCompletionMessage> get messages => List.unmodifiable(_messages);
+
+  /// Get all thought signatures for building subsequent Gemini requests.
+  Map<String, String> get thoughtSignatures =>
+      Map.unmodifiable(_thoughtSignatures);
+
+  /// Get signature for a specific tool call ID.
+  String? getSignatureForToolCall(String toolCallId) =>
+      _thoughtSignatures[toolCallId];
+
   int get turnCount =>
       _messages.where((m) => m.role == ChatCompletionMessageRole.user).length;
 
   /// Initialize conversation with optional system message
   void initialize({String? systemMessage}) {
     _messages.clear();
+    _thoughtSignatures.clear(); // Clear signatures from previous conversation
 
     if (systemMessage != null) {
       _messages.add(ChatCompletionMessage.system(content: systemMessage));
@@ -60,10 +74,20 @@ class ConversationManager {
   }
 
   /// Add an assistant message (from AI response)
+  ///
+  /// [signatures] contains thought signatures from Gemini 3 models,
+  /// keyed by tool call ID. These must be included in subsequent
+  /// requests for multi-turn function calling.
   void addAssistantMessage({
     String? content,
     List<ChatCompletionMessageToolCall>? toolCalls,
+    Map<String, String>? signatures,
   }) {
+    // Store thought signatures for later use
+    if (signatures != null) {
+      _thoughtSignatures.addAll(signatures);
+    }
+
     _messages.add(ChatCompletionMessage.assistant(
       content: content,
       toolCalls: toolCalls,

@@ -4507,7 +4507,13 @@ mixin _$AiResponseData {
   String? get promptId;
   List<AiActionItem>? get suggestedActionItems;
   AiResponseType? get type;
-  double? get temperature;
+  double?
+      get temperature; // Usage statistics (nullable for backward compatibility)
+  int? get inputTokens;
+  int? get outputTokens;
+  int? get thoughtsTokens;
+  int? get cachedInputTokens; // Processing duration in milliseconds
+  int? get durationMs;
 
   /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.
@@ -4539,7 +4545,17 @@ mixin _$AiResponseData {
                 .equals(other.suggestedActionItems, suggestedActionItems) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.temperature, temperature) ||
-                other.temperature == temperature));
+                other.temperature == temperature) &&
+            (identical(other.inputTokens, inputTokens) ||
+                other.inputTokens == inputTokens) &&
+            (identical(other.outputTokens, outputTokens) ||
+                other.outputTokens == outputTokens) &&
+            (identical(other.thoughtsTokens, thoughtsTokens) ||
+                other.thoughtsTokens == thoughtsTokens) &&
+            (identical(other.cachedInputTokens, cachedInputTokens) ||
+                other.cachedInputTokens == cachedInputTokens) &&
+            (identical(other.durationMs, durationMs) ||
+                other.durationMs == durationMs));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4554,11 +4570,16 @@ mixin _$AiResponseData {
       promptId,
       const DeepCollectionEquality().hash(suggestedActionItems),
       type,
-      temperature);
+      temperature,
+      inputTokens,
+      outputTokens,
+      thoughtsTokens,
+      cachedInputTokens,
+      durationMs);
 
   @override
   String toString() {
-    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, durationMs: $durationMs)';
   }
 }
 
@@ -4577,7 +4598,12 @@ abstract mixin class $AiResponseDataCopyWith<$Res> {
       String? promptId,
       List<AiActionItem>? suggestedActionItems,
       AiResponseType? type,
-      double? temperature});
+      double? temperature,
+      int? inputTokens,
+      int? outputTokens,
+      int? thoughtsTokens,
+      int? cachedInputTokens,
+      int? durationMs});
 }
 
 /// @nodoc
@@ -4602,6 +4628,11 @@ class _$AiResponseDataCopyWithImpl<$Res>
     Object? suggestedActionItems = freezed,
     Object? type = freezed,
     Object? temperature = freezed,
+    Object? inputTokens = freezed,
+    Object? outputTokens = freezed,
+    Object? thoughtsTokens = freezed,
+    Object? cachedInputTokens = freezed,
+    Object? durationMs = freezed,
   }) {
     return _then(_self.copyWith(
       model: null == model
@@ -4640,6 +4671,26 @@ class _$AiResponseDataCopyWithImpl<$Res>
           ? _self.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
               as double?,
+      inputTokens: freezed == inputTokens
+          ? _self.inputTokens
+          : inputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      outputTokens: freezed == outputTokens
+          ? _self.outputTokens
+          : outputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      thoughtsTokens: freezed == thoughtsTokens
+          ? _self.thoughtsTokens
+          : thoughtsTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      cachedInputTokens: freezed == cachedInputTokens
+          ? _self.cachedInputTokens
+          : cachedInputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      durationMs: freezed == durationMs
+          ? _self.durationMs
+          : durationMs // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -4746,7 +4797,12 @@ extension AiResponseDataPatterns on AiResponseData {
             String? promptId,
             List<AiActionItem>? suggestedActionItems,
             AiResponseType? type,
-            double? temperature)?
+            double? temperature,
+            int? inputTokens,
+            int? outputTokens,
+            int? thoughtsTokens,
+            int? cachedInputTokens,
+            int? durationMs)?
         $default, {
     required TResult orElse(),
   }) {
@@ -4762,7 +4818,12 @@ extension AiResponseDataPatterns on AiResponseData {
             _that.promptId,
             _that.suggestedActionItems,
             _that.type,
-            _that.temperature);
+            _that.temperature,
+            _that.inputTokens,
+            _that.outputTokens,
+            _that.thoughtsTokens,
+            _that.cachedInputTokens,
+            _that.durationMs);
       case _:
         return orElse();
     }
@@ -4792,7 +4853,12 @@ extension AiResponseDataPatterns on AiResponseData {
             String? promptId,
             List<AiActionItem>? suggestedActionItems,
             AiResponseType? type,
-            double? temperature)
+            double? temperature,
+            int? inputTokens,
+            int? outputTokens,
+            int? thoughtsTokens,
+            int? cachedInputTokens,
+            int? durationMs)
         $default,
   ) {
     final _that = this;
@@ -4807,7 +4873,12 @@ extension AiResponseDataPatterns on AiResponseData {
             _that.promptId,
             _that.suggestedActionItems,
             _that.type,
-            _that.temperature);
+            _that.temperature,
+            _that.inputTokens,
+            _that.outputTokens,
+            _that.thoughtsTokens,
+            _that.cachedInputTokens,
+            _that.durationMs);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -4836,7 +4907,12 @@ extension AiResponseDataPatterns on AiResponseData {
             String? promptId,
             List<AiActionItem>? suggestedActionItems,
             AiResponseType? type,
-            double? temperature)?
+            double? temperature,
+            int? inputTokens,
+            int? outputTokens,
+            int? thoughtsTokens,
+            int? cachedInputTokens,
+            int? durationMs)?
         $default,
   ) {
     final _that = this;
@@ -4851,7 +4927,12 @@ extension AiResponseDataPatterns on AiResponseData {
             _that.promptId,
             _that.suggestedActionItems,
             _that.type,
-            _that.temperature);
+            _that.temperature,
+            _that.inputTokens,
+            _that.outputTokens,
+            _that.thoughtsTokens,
+            _that.cachedInputTokens,
+            _that.durationMs);
       case _:
         return null;
     }
@@ -4870,7 +4951,12 @@ class _AiResponseData implements AiResponseData {
       this.promptId,
       final List<AiActionItem>? suggestedActionItems,
       this.type,
-      this.temperature})
+      this.temperature,
+      this.inputTokens,
+      this.outputTokens,
+      this.thoughtsTokens,
+      this.cachedInputTokens,
+      this.durationMs})
       : _suggestedActionItems = suggestedActionItems;
   factory _AiResponseData.fromJson(Map<String, dynamic> json) =>
       _$AiResponseDataFromJson(json);
@@ -4902,6 +4988,18 @@ class _AiResponseData implements AiResponseData {
   final AiResponseType? type;
   @override
   final double? temperature;
+// Usage statistics (nullable for backward compatibility)
+  @override
+  final int? inputTokens;
+  @override
+  final int? outputTokens;
+  @override
+  final int? thoughtsTokens;
+  @override
+  final int? cachedInputTokens;
+// Processing duration in milliseconds
+  @override
+  final int? durationMs;
 
   /// Create a copy of AiResponseData
   /// with the given fields replaced by the non-null parameter values.
@@ -4937,7 +5035,17 @@ class _AiResponseData implements AiResponseData {
                 .equals(other._suggestedActionItems, _suggestedActionItems) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.temperature, temperature) ||
-                other.temperature == temperature));
+                other.temperature == temperature) &&
+            (identical(other.inputTokens, inputTokens) ||
+                other.inputTokens == inputTokens) &&
+            (identical(other.outputTokens, outputTokens) ||
+                other.outputTokens == outputTokens) &&
+            (identical(other.thoughtsTokens, thoughtsTokens) ||
+                other.thoughtsTokens == thoughtsTokens) &&
+            (identical(other.cachedInputTokens, cachedInputTokens) ||
+                other.cachedInputTokens == cachedInputTokens) &&
+            (identical(other.durationMs, durationMs) ||
+                other.durationMs == durationMs));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -4952,11 +5060,16 @@ class _AiResponseData implements AiResponseData {
       promptId,
       const DeepCollectionEquality().hash(_suggestedActionItems),
       type,
-      temperature);
+      temperature,
+      inputTokens,
+      outputTokens,
+      thoughtsTokens,
+      cachedInputTokens,
+      durationMs);
 
   @override
   String toString() {
-    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature)';
+    return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, durationMs: $durationMs)';
   }
 }
 
@@ -4977,7 +5090,12 @@ abstract mixin class _$AiResponseDataCopyWith<$Res>
       String? promptId,
       List<AiActionItem>? suggestedActionItems,
       AiResponseType? type,
-      double? temperature});
+      double? temperature,
+      int? inputTokens,
+      int? outputTokens,
+      int? thoughtsTokens,
+      int? cachedInputTokens,
+      int? durationMs});
 }
 
 /// @nodoc
@@ -5002,6 +5120,11 @@ class __$AiResponseDataCopyWithImpl<$Res>
     Object? suggestedActionItems = freezed,
     Object? type = freezed,
     Object? temperature = freezed,
+    Object? inputTokens = freezed,
+    Object? outputTokens = freezed,
+    Object? thoughtsTokens = freezed,
+    Object? cachedInputTokens = freezed,
+    Object? durationMs = freezed,
   }) {
     return _then(_AiResponseData(
       model: null == model
@@ -5040,6 +5163,26 @@ class __$AiResponseDataCopyWithImpl<$Res>
           ? _self.temperature
           : temperature // ignore: cast_nullable_to_non_nullable
               as double?,
+      inputTokens: freezed == inputTokens
+          ? _self.inputTokens
+          : inputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      outputTokens: freezed == outputTokens
+          ? _self.outputTokens
+          : outputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      thoughtsTokens: freezed == thoughtsTokens
+          ? _self.thoughtsTokens
+          : thoughtsTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      cachedInputTokens: freezed == cachedInputTokens
+          ? _self.cachedInputTokens
+          : cachedInputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      durationMs: freezed == durationMs
+          ? _self.durationMs
+          : durationMs // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }

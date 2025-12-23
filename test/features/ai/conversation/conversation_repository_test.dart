@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -35,6 +36,8 @@ void main() {
     registerFallbackValue(FakeChatCompletionMessageToolCall());
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(FakeConversationManager());
+    registerFallbackValue(ThoughtSignatureCollector());
+    registerFallbackValue(<String, String>{});
   });
 
   setUp(() {
@@ -158,6 +161,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         // Start sendMessage in background
@@ -205,6 +211,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         // Start sendMessage
@@ -274,6 +283,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         when(() => mockStrategy.processToolCalls(
@@ -369,6 +381,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         when(() => mockStrategy.processToolCalls(
@@ -445,6 +460,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) {
           callCount++;
           return Stream.value(
@@ -522,6 +540,8 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
             )).thenThrow(Exception('API Error'));
 
         final manager = repository.getConversation(conversationId)!;
@@ -558,6 +578,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -658,6 +681,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -752,6 +778,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -817,6 +846,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -910,6 +942,9 @@ void main() {
               provider: any(named: 'provider'),
               tools: any(named: 'tools'),
               temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
             )).thenAnswer((_) => streamController.stream);
 
         final sendFuture = repository.sendMessage(
@@ -1028,6 +1063,264 @@ void main() {
         // Each tool call would have its own complete JSON:
         // - function_a with arguments: {"a": 1}
         // - function_b with arguments: {"b": 2}
+      });
+
+      test('handles Gemini-style multiple complete tool calls in one chunk',
+          () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
+            )).thenAnswer((_) => streamController.stream);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Gemini-style tool calls',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'function_a',
+                description: 'First function',
+              ),
+            ),
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'function_b',
+                description: 'Second function',
+              ),
+            ),
+          ],
+        );
+
+        // Gemini sends multiple complete tool calls in one chunk
+        // with empty IDs and null indices
+        streamController.add(
+          CreateChatCompletionStreamResponse(
+            id: 'gemini-response',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    // First tool call - empty ID, null index, complete arguments
+                    ChatCompletionStreamMessageToolCallChunk(
+                      id: '', // Empty ID
+                      // index is null (not specified)
+                      type:
+                          ChatCompletionStreamMessageToolCallChunkType.function,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'function_a',
+                        arguments: '{"param": "value1"}',
+                      ),
+                    ),
+                    // Second tool call - empty ID, null index, complete arguments
+                    ChatCompletionStreamMessageToolCallChunk(
+                      id: '', // Empty ID
+                      // index is null (not specified)
+                      type:
+                          ChatCompletionStreamMessageToolCallChunkType.function,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'function_b',
+                        arguments: '{"param": "value2"}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        await streamController.close();
+        await sendFuture;
+
+        // Verify both tool calls were detected as Gemini-style and processed
+        final manager = repository.getConversation(conversationId);
+        expect(manager, isNotNull);
+        expect(manager!.messages.length, 2);
+
+        // The assistant message should have the tool calls
+        final assistantMsg = manager.messages.last;
+        expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
+
+        // Tool calls would have been given turn-prefixed IDs:
+        // tool_turn0_0 and tool_turn0_1
+      });
+
+      test('handles strategy with wait action', () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
+            )).thenAnswer((_) => streamController.stream);
+
+        when(() => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            )).thenAnswer((_) async => ConversationAction.wait);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Process and wait',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: mockStrategy,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'test_function',
+                description: 'A test function',
+              ),
+            ),
+          ],
+        );
+
+        streamController.add(
+          CreateChatCompletionStreamResponse(
+            id: 'test-response',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool-1',
+                      type:
+                          ChatCompletionStreamMessageToolCallChunkType.function,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'test_function',
+                        arguments: '{}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        await streamController.close();
+        await sendFuture;
+
+        // Verify strategy was called
+        verify(() => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            )).called(1);
+
+        // getContinuationPrompt should NOT be called for wait action
+        verifyNever(() => mockStrategy.getContinuationPrompt(any()));
+      });
+
+      test('handles strategy with null continuation prompt', () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
+            )).thenAnswer((_) => streamController.stream);
+
+        when(() => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            )).thenAnswer((_) async => ConversationAction.continueConversation);
+
+        // Return null for continuation prompt - should stop the loop
+        when(() => mockStrategy.getContinuationPrompt(any())).thenReturn(null);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Continue but no prompt',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: mockStrategy,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'test_function',
+                description: 'A test function',
+              ),
+            ),
+          ],
+        );
+
+        streamController.add(
+          CreateChatCompletionStreamResponse(
+            id: 'test-response',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool-1',
+                      type:
+                          ChatCompletionStreamMessageToolCallChunkType.function,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'test_function',
+                        arguments: '{}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        await streamController.close();
+        await sendFuture;
+
+        // Verify strategy was called but loop ended
+        verify(() => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            )).called(1);
+        verify(() => mockStrategy.getContinuationPrompt(any())).called(1);
+
+        // Should only have 2 messages (user + assistant) since loop ended
+        final manager = repository.getConversation(conversationId);
+        expect(manager!.messages.length, 2);
       });
     });
 

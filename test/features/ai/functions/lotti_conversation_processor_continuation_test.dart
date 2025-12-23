@@ -189,5 +189,273 @@ void main() {
           '(checklist: 5, batch: 0), errors: false';
       expect(logMessage, contains('5 items created'));
     });
+
+    group('cloud provider continuation behavior', () {
+      test('Gemini should NOT continue when items created but no errors', () {
+        final checklistHandler = LottiChecklistItemHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+        )..addSuccessfulItems(['Item 1', 'Item 2']);
+
+        final batchChecklistHandler = LottiBatchChecklistHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+        );
+
+        // Create Gemini provider (cloud)
+        final strategy = LottiChecklistStrategy(
+          checklistHandler: checklistHandler,
+          batchChecklistHandler: batchChecklistHandler,
+          ref: mockRef,
+          provider: AiConfigInferenceProvider(
+            id: 'test-gemini',
+            name: 'Test Gemini',
+            inferenceProviderType: InferenceProviderType.gemini,
+            baseUrl: 'https://generativelanguage.googleapis.com',
+            apiKey: 'test-key',
+            createdAt: DateTime(2025),
+          ),
+        );
+
+        // Cloud provider with success but no errors should NOT continue
+        // This prevents unnecessary multi-turn API calls for Gemini
+        expect(strategy.shouldContinue(mockConversationManager), false,
+            reason:
+                'Gemini should not continue when successful with no errors');
+      });
+
+      test('Ollama should continue on first round with items', () {
+        final checklistHandler = LottiChecklistItemHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+        )..addSuccessfulItems(['Item 1']);
+
+        final batchChecklistHandler = LottiBatchChecklistHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+        );
+
+        // Create Ollama provider (local)
+        final strategy = LottiChecklistStrategy(
+          checklistHandler: checklistHandler,
+          batchChecklistHandler: batchChecklistHandler,
+          ref: mockRef,
+          provider: AiConfigInferenceProvider(
+            id: 'test-ollama',
+            name: 'Test Ollama',
+            inferenceProviderType: InferenceProviderType.ollama,
+            baseUrl: 'http://localhost:11434',
+            apiKey: '',
+            createdAt: DateTime(2025),
+          ),
+        );
+
+        // Ollama should continue for multi-round assistance
+        expect(strategy.shouldContinue(mockConversationManager), true,
+            reason: 'Ollama should continue when items created');
+      });
+
+      test('OpenAI provider should NOT continue when successful', () {
+        final checklistHandler = LottiChecklistItemHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+        )..addSuccessfulItems(['Item 1', 'Item 2']);
+
+        final batchChecklistHandler = LottiBatchChecklistHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+        );
+
+        // Create OpenAI provider (cloud)
+        final strategy = LottiChecklistStrategy(
+          checklistHandler: checklistHandler,
+          batchChecklistHandler: batchChecklistHandler,
+          ref: mockRef,
+          provider: AiConfigInferenceProvider(
+            id: 'test-openai',
+            name: 'Test OpenAI',
+            inferenceProviderType: InferenceProviderType.openAi,
+            baseUrl: 'https://api.openai.com',
+            apiKey: 'test-key',
+            createdAt: DateTime(2025),
+          ),
+        );
+
+        // Cloud provider with success should NOT continue
+        expect(strategy.shouldContinue(mockConversationManager), false,
+            reason: 'OpenAI should not continue when successful');
+      });
+
+      test('Anthropic provider should NOT continue when successful', () {
+        final checklistHandler = LottiChecklistItemHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+        )..addSuccessfulItems(['Item 1']);
+
+        final batchChecklistHandler = LottiBatchChecklistHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+        );
+
+        // Create Anthropic provider (cloud)
+        final strategy = LottiChecklistStrategy(
+          checklistHandler: checklistHandler,
+          batchChecklistHandler: batchChecklistHandler,
+          ref: mockRef,
+          provider: AiConfigInferenceProvider(
+            id: 'test-anthropic',
+            name: 'Test Anthropic',
+            inferenceProviderType: InferenceProviderType.anthropic,
+            baseUrl: 'https://api.anthropic.com',
+            apiKey: 'test-key',
+            createdAt: DateTime(2025),
+          ),
+        );
+
+        // Cloud provider with success should NOT continue
+        expect(strategy.shouldContinue(mockConversationManager), false,
+            reason: 'Anthropic should not continue when successful');
+      });
+    });
+
+    test('getResponseSummary includes both created and updated items', () {
+      final checklistHandler = LottiChecklistItemHandler(
+        task: testTask,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepository,
+      )..addSuccessfulItems(['Created Item 1', 'Created Item 2']);
+
+      final batchChecklistHandler = LottiBatchChecklistHandler(
+        task: testTask,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepository,
+      );
+
+      final strategy = LottiChecklistStrategy(
+        checklistHandler: checklistHandler,
+        batchChecklistHandler: batchChecklistHandler,
+        ref: mockRef,
+        provider: AiConfigInferenceProvider(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          inferenceProviderType: InferenceProviderType.ollama,
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2025),
+        ),
+      );
+
+      final summary = strategy.getResponseSummary();
+      expect(summary, contains('Created 2 checklist items'));
+      expect(summary, contains('Created Item 1'));
+      expect(summary, contains('Created Item 2'));
+    });
+
+    test('getResponseSummary handles empty state', () {
+      final checklistHandler = LottiChecklistItemHandler(
+        task: testTask,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepository,
+      );
+
+      final batchChecklistHandler = LottiBatchChecklistHandler(
+        task: testTask,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepository,
+      );
+
+      final strategy = LottiChecklistStrategy(
+        checklistHandler: checklistHandler,
+        batchChecklistHandler: batchChecklistHandler,
+        ref: mockRef,
+        provider: AiConfigInferenceProvider(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          inferenceProviderType: InferenceProviderType.ollama,
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2025),
+        ),
+      );
+
+      final summary = strategy.getResponseSummary();
+      expect(summary, 'No checklist items were created or updated.');
+    });
+
+    test('getContinuationPrompt returns null when should not continue', () {
+      final checklistHandler = LottiChecklistItemHandler(
+        task: testTask,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepository,
+      )..addSuccessfulItems(['Item 1']);
+
+      final batchChecklistHandler = LottiBatchChecklistHandler(
+        task: testTask,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepository,
+      );
+
+      // Cloud provider - should NOT continue
+      final strategy = LottiChecklistStrategy(
+        checklistHandler: checklistHandler,
+        batchChecklistHandler: batchChecklistHandler,
+        ref: mockRef,
+        provider: AiConfigInferenceProvider(
+          id: 'test-gemini',
+          name: 'Test Gemini',
+          inferenceProviderType: InferenceProviderType.gemini,
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'test-key',
+          createdAt: DateTime(2025),
+        ),
+      );
+
+      // When should not continue, getContinuationPrompt returns null
+      expect(strategy.getContinuationPrompt(mockConversationManager), isNull);
+    });
+
+    test('getContinuationPrompt returns null before any rounds processed', () {
+      // The continuation logic only activates after at least one round
+      // Before any rounds are processed (_rounds == 0), shouldContinue is false
+      final checklistHandler = LottiChecklistItemHandler(
+        task: testTask,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepository,
+      );
+
+      final batchChecklistHandler = LottiBatchChecklistHandler(
+        task: testTask,
+        autoChecklistService: mockAutoChecklistService,
+        checklistRepository: mockChecklistRepository,
+      );
+
+      final strategy = LottiChecklistStrategy(
+        checklistHandler: checklistHandler,
+        batchChecklistHandler: batchChecklistHandler,
+        ref: mockRef,
+        provider: AiConfigInferenceProvider(
+          id: 'test-ollama',
+          name: 'Test Ollama',
+          inferenceProviderType: InferenceProviderType.ollama,
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2025),
+        ),
+      );
+
+      // Before any rounds processed, shouldContinue returns false
+      // so getContinuationPrompt returns null
+      final prompt = strategy.getContinuationPrompt(mockConversationManager);
+      expect(prompt, isNull,
+          reason: 'Should not provide continuation prompt before first round');
+    });
   });
 }

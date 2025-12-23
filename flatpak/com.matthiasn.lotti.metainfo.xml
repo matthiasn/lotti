@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.768" date="2025-12-23">
+      <description>
+        <p>Gemini Thinking Support: All Gemini 2.5+ models (including Flash) now display AI reasoning in the Thoughts tab. Plus new usage statistics tracking shows token counts and processing duration for each AI response.</p>
+      </description>
+    </release>
     <release version="0.9.765" date="2025-12-21">
       <description>
         <p>Sync: Live scans now process strictly after the last marker. The Matrix look-behind tail and its flag have been removed to eliminate redundant work.</p>

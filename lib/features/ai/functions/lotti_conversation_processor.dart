@@ -607,22 +607,26 @@ class LottiChecklistStrategy extends ConversationStrategy {
       }
     }
 
-    // For cloud providers (like Gemini), we don't need multi-round conversations
-    // as they typically return complete responses in the first round
+    // Continue logic: retry failed items for any provider, full multi-round for Ollama
     final isCloudProvider =
         provider.inferenceProviderType != InferenceProviderType.ollama;
+    final hasFailedItems = _failedResults.isNotEmpty;
 
-    // Continue logic depends on provider type
     // Count both created items AND successful updates as work done
     final totalSuccessfulItems = checklistHandler.successfulItems.length;
     final totalWorkDone = totalSuccessfulItems + _successfulUpdates;
-    final shouldContinue = !isCloudProvider && // Only continue for Ollama
-        _rounds < 10 &&
-        (_rounds == 1 || totalWorkDone > 0);
+
+    // For cloud providers (Gemini): only continue if there are failed items to retry
+    // This exercises the thought signature multi-turn wiring when retrying.
+    // For Ollama: continue for multiple rounds as models may need guidance.
+    final shouldContinue = _rounds < 10 &&
+        (hasFailedItems || // Retry failed items for any provider
+            (!isCloudProvider && (_rounds == 1 || totalWorkDone > 0)));
 
     developer.log(
       'Deciding whether to continue: provider=${provider.inferenceProviderType}, '
-      'isCloudProvider=$isCloudProvider, checklistItems=${checklistHandler.successfulItems.length}, '
+      'isCloudProvider=$isCloudProvider, hasFailedItems=$hasFailedItems, '
+      'checklistItems=${checklistHandler.successfulItems.length}, '
       'batchItems=${batchChecklistHandler.successfulItems.length}, '
       'updatedItems=$_successfulUpdates, totalWorkDone=$totalWorkDone, rounds=$_rounds, shouldContinue=$shouldContinue',
       name: 'LottiConversationProcessor',
@@ -637,15 +641,19 @@ class LottiChecklistStrategy extends ConversationStrategy {
 
   @override
   bool shouldContinue(ConversationManager manager) {
-    // Only continue for Ollama providers
-    if (provider.inferenceProviderType != InferenceProviderType.ollama) {
-      return false;
-    }
+    final isCloudProvider =
+        provider.inferenceProviderType != InferenceProviderType.ollama;
+    final hasFailedItems = _failedResults.isNotEmpty;
 
     // Count both created items AND successful updates as work done
     final totalSuccessfulItems = checklistHandler.successfulItems.length;
     final totalWorkDone = totalSuccessfulItems + _successfulUpdates;
-    return _rounds < 10 && (_rounds == 1 || totalWorkDone > 0);
+
+    // For cloud providers: only continue if there are failed items to retry
+    // For Ollama: continue for multiple rounds as models may need guidance
+    return _rounds < 10 &&
+        (hasFailedItems ||
+            (!isCloudProvider && (_rounds == 1 || totalWorkDone > 0)));
   }
 
   @override

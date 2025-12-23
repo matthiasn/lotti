@@ -53,13 +53,12 @@ The repository layer has been refactored for better separation of concerns:
 - **`gemini_inference_repository.dart`**: Native Gemini streaming adapter with OpenAI-compatible output
   - Calls Gemini `:streamGenerateContent` directly using provider base URL and API key
   - Translates Gemini payloads into `CreateChatCompletionStreamResponse` deltas
-  - Surfaces a single consolidated `<thinking>` block for non-flash models when enabled; always hides thoughts for flash
-  - Emits OpenAI-style tool-call chunks with stable IDs (`tool_#`) and indices to support accumulation
+  - Surfaces a single consolidated `<think>` block when thinking is enabled (all Gemini 2.5+ models support thinking)
+  - Emits OpenAI-style tool-call chunks with turn-prefixed IDs (`tool_turn{N}_{index}`) and indices to support accumulation across multi-turn conversations
   - Robust stream parsing via `gemini_stream_parser.dart`: handles SSE `data:` lines, NDJSON, and JSON array framing without relying on line boundaries
   - Non-streaming fallback via `:generateContent` kicks in only if the streaming path produced no events, aggregating thinking, text, and tools
 
 - **`gemini_utils.dart`**: Shared helpers used by the Gemini repository
-  - `isFlashModel` – detects flash variants to control thought visibility
   - `buildStreamGenerateContentUri` / `buildGenerateContentUri` – constructs correct Gemini endpoints from a base URL
   - `buildRequestBody` – builds request payloads including thinking config and function tools (mapped from OpenAI style)
   - `stripLeadingFraming` – removes SSE `data:` prefixes and JSON array framing from mixed-format streams
@@ -97,10 +96,24 @@ The repository layer has been refactored for better separation of concerns:
   - Maintains conversation context and message history
   - Handles tool calls and responses
   - Provides event streaming for real-time updates
+  - Stores thought signatures keyed by tool call ID for Gemini 3 multi-turn support
+  - Clears signatures when conversation is re-initialized
 - **`conversation_repository.dart`**: Repository for conversation persistence
   - Creates and manages conversation sessions
-  - Routes messages to appropriate inference providers
+  - Routes messages to appropriate inference providers via `InferenceRepositoryInterface`
+  - Passes `turnCount` to ensure unique tool call IDs across conversation turns
   - Manages conversation lifecycle and cleanup
+
+#### Inference Interface (`repository/`)
+- **`inference_repository_interface.dart`**: Abstract interface for all inference providers
+  - Enables conversation-based processing for all providers (Ollama, Gemini, OpenAI, etc.)
+  - Defines `generateTextWithMessages` for multi-turn conversations
+  - Includes `turnIndex` parameter for unique tool call ID generation
+  - Supports thought signatures for Gemini 3 models
+- **`cloud_inference_wrapper.dart`**: Adapter for cloud providers
+  - Implements `InferenceRepositoryInterface` for cloud providers
+  - Delegates to `CloudInferenceRepository.generateWithMessages`
+  - Passes through thought signatures and turn index
 
 #### Functions (`functions/`)
 - **`checklist_completion_functions.dart`**: OpenAI-style function definitions for checklist operations
@@ -334,10 +347,12 @@ The system supports multiple inference providers through a modular architecture:
 ### Cloud Providers
 - **OpenAI**: GPT-3.5, GPT-4, and other models via official API
 - **Anthropic**: Claude models (Opus, Sonnet, Haiku) with streaming support
-- **Google Gemini**: Gemini Pro and flash models with native streaming adapter
+- **Google Gemini**: Gemini Pro and Flash models with native streaming adapter
   - Uses `gemini_inference_repository.dart` for REST calls and OpenAI-compatible streaming
-  - Thought visibility policy: flash models hide thoughts; non-flash can surface a consolidated `<thinking>` block
+  - All Gemini 2.5+ models (including Flash) support thinking with consolidated `<think>` blocks
   - Function calling maps to OpenAI-style tool calls with stable IDs and indices
+  - Usage statistics tracking (prompt tokens, completion tokens, thoughts tokens, cached tokens)
+  - Processing duration measurement for performance monitoring
 - **OpenRouter**: Access to multiple models through unified API
 - **Nebius AI Studio**: Enterprise AI platform support
 - **Generic OpenAI-Compatible**: Any service implementing OpenAI's API specification
@@ -642,6 +657,47 @@ Instead of hiding suggestions, the system automatically re-runs the AI prompt af
 - **Natural UX**: Users see the auto-created checklist plus minimal/empty suggestions
 - **No state tracking**: No need for complex `autoChecklistCreated` field management
 - **Consistent results**: Re-run uses the exact same prompt configuration, ensuring consistent behavior
+
+## Usage Statistics and Performance Tracking
+
+The AI system tracks usage statistics and performance metrics for monitoring API consumption and response times.
+
+### Tracked Metrics
+
+- **Input Tokens**: Number of tokens in the prompt/input
+- **Output Tokens**: Number of tokens in the response
+- **Thoughts Tokens**: Reasoning tokens used by thinking models (Gemini-specific)
+- **Cached Input Tokens**: Tokens served from provider cache
+- **Processing Duration**: Time from request start to stream completion (milliseconds)
+
+### Implementation
+
+Usage statistics are captured in `AiResponseData` with nullable fields for backward compatibility:
+```dart
+AiResponseData(
+  // ... existing fields
+  inputTokens: usage?.promptTokens,
+  outputTokens: usage?.completionTokens,
+  thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+  durationMs: stopwatch.elapsedMilliseconds,
+)
+```
+
+### UI Display
+
+Usage statistics are displayed in the AI Response Summary Modal when available:
+- Token breakdown (input, output, thoughts)
+- Processing duration in seconds
+- Total token count
+
+### Provider Support
+
+| Provider | Token Tracking | Thoughts Tokens | Duration |
+|----------|---------------|-----------------|----------|
+| Gemini   | ✅             | ✅               | ✅        |
+| OpenAI   | ✅             | ✅ (Thinking models) | ✅    |
+| Anthropic| ✅             | ❌               | ✅        |
+| Ollama   | ❌             | ❌               | ✅        |
 
 ## Response Types
 
@@ -1102,9 +1158,14 @@ final isGeminiStyle = delta!.toolCalls!.length > 1 &&
 
 This ensures compatibility across different AI provider implementations while maintaining data integrity.
 
-### Current Limitations
+### Provider Support
 
-**Cloud Provider Support**: Currently, the conversation-based approach only works with Ollama (local) providers. Cloud providers (OpenAI, Anthropic, Google Gemini, etc.) fall back to the traditional single-request approach. This is a temporary limitation that will be addressed in future updates.
+The conversation-based approach now works with all providers:
+- **Ollama**: Full support with local model execution
+- **Gemini**: Native multi-turn API with thought signature support
+- **OpenAI, Anthropic, OpenRouter**: Full conversation history support via `CloudInferenceWrapper`
+
+All providers use the unified `InferenceRepositoryInterface` for consistent behavior.
 
 ## Category-Based AI Settings
 
@@ -1112,103 +1173,7 @@ The AI system integrates with the Categories feature for fine-grained control ov
 
 ## TODO / Future Work
 
-### Cloud Provider Support for Conversation-Based Processing
-
-Currently, the conversation-based processing approach is limited to Ollama providers. To enable full support for cloud providers (OpenAI, Anthropic, Google Gemini, etc.), the following implementation plan should be followed:
-
-#### 1. Create a Unified Inference Interface
-
-Create an interface that both `OllamaInferenceRepository` and cloud providers can implement:
-
-```dart
-abstract class InferenceRepositoryInterface {
-  /// Generate text with full conversation history
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
-    required String model,
-    required double temperature,
-    required AiConfigInferenceProvider provider,
-    int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-  });
-}
-```
-
-#### 2. Implement Cloud Provider Adapter
-
-Create an adapter that wraps `CloudInferenceRepository` to implement the conversation interface:
-
-```dart
-class CloudInferenceWrapper implements InferenceRepositoryInterface {
-  final CloudInferenceRepository cloudRepository;
-
-  @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
-    required String model,
-    required double temperature,
-    required AiConfigInferenceProvider provider,
-    int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-  }) {
-    // Convert messages to prompt and delegate to cloud repository
-  }
-}
-```
-
-#### 3. Update Conversation Repository
-
-Modify `ConversationRepository` to accept the abstract interface instead of concrete `OllamaInferenceRepository`:
-
-```dart
-Future<void> sendMessage({
-  required InferenceRepositoryInterface inferenceRepo, // Instead of OllamaInferenceRepository
-  // ... other parameters
-})
-```
-
-#### 4. Factory Pattern for Repository Creation
-
-In `UnifiedAiInferenceRepository._processWithConversation()`:
-
-```dart
-InferenceRepositoryInterface createInferenceRepo(AiConfigInferenceProvider provider) {
-  switch (provider.inferenceProviderType) {
-    case InferenceProviderType.ollama:
-      return OllamaInferenceRepository();
-    case InferenceProviderType.openai:
-    case InferenceProviderType.anthropic:
-    case InferenceProviderType.google:
-      return CloudInferenceWrapper(
-        cloudRepository: ref.read(cloudInferenceRepositoryProvider),
-      );
-    // ... other providers
-  }
-}
-```
-
-#### 5. Handle Provider-Specific Differences
-
-- **Streaming**: Ensure consistent event streaming across providers
-- **Tool Call Format**: Normalize tool call responses between providers
-- **Error Handling**: Unified error handling across different provider APIs
-- **Authentication**: Pass appropriate credentials based on provider type
-
-#### 6. Testing Strategy
-
-- Unit tests for each adapter implementation
-- Integration tests with mock providers
-- End-to-end tests with real providers (behind feature flags)
-- Performance comparison between providers
-
-#### 7. Migration Path
-
-1. Implement interface and adapters without changing existing code
-2. Add feature flag for cloud conversation support
-3. Gradually enable for each provider after testing
-4. Remove fallback to non-conversation approach once stable
-
-### Other Future Improvements
+### Future Improvements
 
 - **Streaming UI Updates**: Show checklist items as they're created in real-time
 - **Progress Indicators**: Better visual feedback during batch operations
@@ -1225,6 +1190,8 @@ InferenceRepositoryInterface createInferenceRepo(AiConfigInferenceProvider provi
 ##### How Gemini ties into chat
 
 - Provider routing: `cloud_inference_repository.dart` selects `GeminiInferenceRepository` when `InferenceProviderType.gemini` is active. The repository streams OpenAI-compatible deltas.
-- Tool calls: the Gemini adapter emits tool calls with unique IDs (`tool_0`, `tool_1`, …) and indices. The conversation layer accumulates arguments across chunks using those identifiers and remains backward-compatible with "Gemini-style" complete tool-call batches.
-- Thinking blocks: for non-flash models the adapter optionally emits a single consolidated `<thinking>` block before visible content; for flash models thoughts are never emitted. The conversation manager simply appends the received content to the assistant message buffer.
+- Tool calls: the Gemini adapter emits tool calls with turn-prefixed IDs (`tool_turn{N}_{index}`) and indices. The turn prefix ensures unique IDs across conversation turns, preventing signature and name lookup collisions. The conversation layer accumulates arguments across chunks using those identifiers and remains backward-compatible with "Gemini-style" complete tool-call batches.
+- Thinking blocks: all Gemini 2.5+ models (including Flash) support thinking. The adapter emits a single consolidated `<think>` block before visible content when thinking is enabled. The conversation manager simply appends the received content to the assistant message buffer.
 - Fallback behavior: if a Gemini stream yields no deltas at all, the adapter performs a single non-streaming call and emits at most three deltas (thinking, text, tools) so the UI never shows an empty bubble.
+- Usage statistics: the adapter parses `usageMetadata` from Gemini responses and emits usage information (prompt tokens, completion tokens, thoughts tokens) in the final stream chunk.
+- Thought signatures: for Gemini 3 models, thought signatures are captured from function calls and stored keyed by tool call ID. These signatures must be included when replaying function calls in subsequent turns for multi-turn conversation support.
