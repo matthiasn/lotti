@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.769] - 2025-12-23
+### Changed
+- Sync: Refactored `OutboxService.enqueueMessage()` for improved maintainability
+  - Converted from if-else chains to Dart 3 pattern matching with exhaustive switch
+  - Extracted `_enqueueSimple` shared helper to reduce code duplication across 7 simple message handlers
+  - Extracted per-type handler methods (`_enqueueJournalEntity`, `_enqueueEntryLink`, etc.)
+  - Added preparation methods (`_prepareJournalEntity`, `_prepareEntryLink`) for message pre-processing
+  - Improved test coverage: 60 → 77 tests with edge case coverage for null values and error handling
+
 ## [0.9.768] - 2025-12-23
 ### Added
 - Gemini Thinking Support: All Gemini 2.5+ models (including Flash) now support thinking/reasoning

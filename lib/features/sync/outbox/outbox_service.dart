@@ -895,6 +895,24 @@ class OutboxService {
     return false; // No merge - caller should call enqueueNextSendRequest
   }
 
+  /// Shared helper for simple message types that don't require merge logic.
+  /// Adds the item to the outbox and logs the event.
+  Future<bool> _enqueueSimple({
+    required OutboxCompanion commonFields,
+    required String subject,
+    required String logMessage,
+  }) async {
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(subject: Value(subject)),
+    );
+    _loggingService.captureEvent(
+      logMessage,
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
+
   Future<bool> _enqueueEntityDefinition({
     required SyncEntityDefinition msg,
     required OutboxCompanion commonFields,
@@ -902,118 +920,83 @@ class OutboxService {
     required String? hostHash,
   }) async {
     final localCounter = msg.entityDefinition.vectorClock?.vclock[host];
-    await _syncDatabase.addOutboxItem(
-      commonFields.copyWith(subject: Value('$hostHash:$localCounter')),
+    final subject = '$hostHash:$localCounter';
+    return _enqueueSimple(
+      commonFields: commonFields,
+      subject: subject,
+      logMessage: 'enqueue type=SyncEntityDefinition '
+          'subject=$subject id=${msg.entityDefinition.id}',
     );
-    _loggingService.captureEvent(
-      'enqueue type=SyncEntityDefinition '
-      'subject=$hostHash:$localCounter id=${msg.entityDefinition.id}',
-      domain: 'OUTBOX',
-      subDomain: 'enqueueMessage',
-    );
-    return false;
   }
 
   Future<bool> _enqueueAiConfig({
     required SyncAiConfig msg,
     required OutboxCompanion commonFields,
-  }) async {
-    await _syncDatabase.addOutboxItem(
-      commonFields.copyWith(subject: const Value('aiConfig')),
-    );
-    _loggingService.captureEvent(
-      'enqueue type=SyncAiConfig subject=aiConfig id=${msg.aiConfig.id}',
-      domain: 'OUTBOX',
-      subDomain: 'enqueueMessage',
-    );
-    return false;
-  }
+  }) =>
+      _enqueueSimple(
+        commonFields: commonFields,
+        subject: 'aiConfig',
+        logMessage: 'enqueue type=SyncAiConfig subject=aiConfig '
+            'id=${msg.aiConfig.id}',
+      );
 
   Future<bool> _enqueueAiConfigDelete({
     required SyncAiConfigDelete msg,
     required OutboxCompanion commonFields,
-  }) async {
-    await _syncDatabase.addOutboxItem(
-      commonFields.copyWith(subject: const Value('aiConfigDelete')),
-    );
-    _loggingService.captureEvent(
-      'enqueue type=SyncAiConfigDelete subject=aiConfigDelete id=${msg.id}',
-      domain: 'OUTBOX',
-      subDomain: 'enqueueMessage',
-    );
-    return false;
-  }
+  }) =>
+      _enqueueSimple(
+        commonFields: commonFields,
+        subject: 'aiConfigDelete',
+        logMessage: 'enqueue type=SyncAiConfigDelete subject=aiConfigDelete '
+            'id=${msg.id}',
+      );
 
   Future<bool> _enqueueTagEntity({
     required SyncTagEntity msg,
     required OutboxCompanion commonFields,
     required String? hostHash,
-  }) async {
-    await _syncDatabase.addOutboxItem(
-      commonFields.copyWith(subject: Value('$hostHash:tag')),
-    );
-    _loggingService.captureEvent(
-      'enqueue type=SyncTagEntity subject=$hostHash:tag '
-      'id=${msg.tagEntity.id}',
-      domain: 'OUTBOX',
-      subDomain: 'enqueueMessage',
-    );
-    return false;
-  }
+  }) =>
+      _enqueueSimple(
+        commonFields: commonFields,
+        subject: '$hostHash:tag',
+        logMessage: 'enqueue type=SyncTagEntity subject=$hostHash:tag '
+            'id=${msg.tagEntity.id}',
+      );
 
   Future<bool> _enqueueThemingSelection({
     required SyncThemingSelection msg,
     required OutboxCompanion commonFields,
-  }) async {
-    await _syncDatabase.addOutboxItem(
-      commonFields.copyWith(subject: const Value('themingSelection')),
-    );
-    _loggingService.captureEvent(
-      'enqueue type=SyncThemingSelection subject=themingSelection '
-      'light=${msg.lightThemeName} dark=${msg.darkThemeName} '
-      'mode=${msg.themeMode}',
-      domain: 'OUTBOX',
-      subDomain: 'enqueueMessage',
-    );
-    return false;
-  }
+  }) =>
+      _enqueueSimple(
+        commonFields: commonFields,
+        subject: 'themingSelection',
+        logMessage:
+            'enqueue type=SyncThemingSelection subject=themingSelection '
+            'light=${msg.lightThemeName} dark=${msg.darkThemeName} '
+            'mode=${msg.themeMode}',
+      );
 
   Future<bool> _enqueueBackfillRequest({
     required SyncBackfillRequest msg,
     required OutboxCompanion commonFields,
-  }) async {
-    await _syncDatabase.addOutboxItem(
-      commonFields.copyWith(
-        subject: Value('backfillRequest:batch:${msg.entries.length}'),
-      ),
-    );
-    _loggingService.captureEvent(
-      'enqueue type=SyncBackfillRequest entries=${msg.entries.length}',
-      domain: 'OUTBOX',
-      subDomain: 'enqueueMessage',
-    );
-    return false;
-  }
+  }) =>
+      _enqueueSimple(
+        commonFields: commonFields,
+        subject: 'backfillRequest:batch:${msg.entries.length}',
+        logMessage: 'enqueue type=SyncBackfillRequest '
+            'entries=${msg.entries.length}',
+      );
 
   Future<bool> _enqueueBackfillResponse({
     required SyncBackfillResponse msg,
     required OutboxCompanion commonFields,
-  }) async {
-    await _syncDatabase.addOutboxItem(
-      commonFields.copyWith(
-        subject: Value(
-          'backfillResponse:${msg.hostId}:${msg.counter}',
-        ),
-      ),
-    );
-    _loggingService.captureEvent(
-      'enqueue type=SyncBackfillResponse hostId=${msg.hostId} '
-      'counter=${msg.counter} deleted=${msg.deleted}',
-      domain: 'OUTBOX',
-      subDomain: 'enqueueMessage',
-    );
-    return false;
-  }
+  }) =>
+      _enqueueSimple(
+        commonFields: commonFields,
+        subject: 'backfillResponse:${msg.hostId}:${msg.counter}',
+        logMessage: 'enqueue type=SyncBackfillResponse hostId=${msg.hostId} '
+            'counter=${msg.counter} deleted=${msg.deleted}',
+      );
 
   Future<void> dispose() async {
     _isDisposed = true;
