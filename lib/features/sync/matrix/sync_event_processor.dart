@@ -798,6 +798,217 @@ class SyncEventProcessor {
     return diag;
   }
 
+  // ---------------------------------------------------------------------------
+  // Per-type message handlers (extracted for readability)
+  // ---------------------------------------------------------------------------
+
+  /// Handles a SyncJournalEntity message. Throws FileSystemException on
+  /// attachment errors (rethrown for pipeline retry).
+  Future<SyncApplyDiagnostics?> _handleJournalEntity({
+    required Event event,
+    required SyncJournalEntity syncMessage,
+    required JournalDb journalDb,
+    required SyncJournalEntityLoader loader,
+  }) async {
+    final jsonPath = syncMessage.jsonPath;
+    final entryLinks = syncMessage.entryLinks;
+
+    if (_isDuplicateJournalEntity(syncMessage.id, syncMessage.vectorClock)) {
+      final diag = SyncApplyDiagnostics(
+        eventId: event.eventId,
+        payloadType: 'journalEntity',
+        vectorClock: syncMessage.vectorClock?.toJson(),
+        conflictStatus: VclockStatus.equal.toString(),
+        applied: false,
+        skipReason: JournalUpdateSkipReason.olderOrEqual,
+      );
+      _loggingService.captureEvent(
+        'apply journalEntity skipped duplicate eventId=${event.eventId} '
+        'id=${syncMessage.id}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'apply',
+      );
+      return diag;
+    }
+
+    final journalEntity = await loader.load(
+      jsonPath: jsonPath,
+      incomingVectorClock: syncMessage.vectorClock,
+    );
+    var predictedStatus = VclockStatus.b_gt_a;
+    if (applyObserver != null) {
+      try {
+        final existing =
+            await journalDb.journalEntityById(journalEntity.meta.id);
+        final vcA = existing?.meta.vectorClock;
+        final vcB0 = journalEntity.meta.vectorClock;
+        if (vcA != null && vcB0 != null) {
+          predictedStatus = VectorClock.compare(vcA, vcB0);
+        }
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'apply.predictVectorClock',
+          stackTrace: st,
+        );
+        predictedStatus = VclockStatus.b_gt_a;
+      }
+    }
+
+    final vcB = journalEntity.meta.vectorClock;
+    final updateResult = await journalDb.updateJournalEntity(journalEntity);
+    final rows = updateResult.rowsWritten ?? 0;
+
+    // Process embedded entry links regardless of journal entity application
+    // status. EntryLinks have their own vector clock for conflict resolution
+    // via upsertEntryLink(). This ensures links are established even when the
+    // entity itself is skipped (e.g., local version is newer), preventing
+    // gray calendar entries that rely on links for category color lookup.
+    final processedLinksCount = await _processEmbeddedEntryLinks(
+      entryLinks: entryLinks,
+      journalDb: journalDb,
+    );
+
+    final diag = SyncApplyDiagnostics(
+      eventId: event.eventId,
+      payloadType: 'journalEntity',
+      vectorClock: vcB?.toJson(),
+      conflictStatus: predictedStatus.toString(),
+      applied: updateResult.applied,
+      skipReason: updateResult.skipReason,
+    );
+    _loggingService.captureEvent(
+      'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} '
+      'rowsWritten=$rows applied=${updateResult.applied} '
+      'skip=${updateResult.skipReason?.label ?? 'none'} '
+      'status=${diag.conflictStatus} '
+      'embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'apply',
+    );
+    _markJournalEntityProcessed(
+      journalEntity.meta.id,
+      vcB ?? syncMessage.vectorClock,
+    );
+    _updateNotifications.notify(journalEntity.affectedIds, fromSync: true);
+
+    // Record in sequence log for gap detection (self-healing sync)
+    if (_sequenceLogService != null &&
+        syncMessage.vectorClock != null &&
+        syncMessage.originatingHostId != null) {
+      final entryExistsInJournal = updateResult.applied ||
+          await journalDb.journalEntityById(journalEntity.meta.id) != null;
+      if (entryExistsInJournal) {
+        try {
+          final gaps = await _sequenceLogService!.recordReceivedEntry(
+            entryId: journalEntity.meta.id,
+            vectorClock: syncMessage.vectorClock!,
+            originatingHostId: syncMessage.originatingHostId!,
+            coveredVectorClocks: syncMessage.coveredVectorClocks,
+          );
+          if (gaps.isNotEmpty) {
+            _loggingService.captureEvent(
+              'apply.gapsDetected count=${gaps.length} '
+              'for entity=${journalEntity.meta.id}',
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'gapDetection',
+            );
+          }
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: st,
+          );
+        }
+      }
+    }
+
+    return diag;
+  }
+
+  /// Handles a SyncEntryLink message.
+  Future<SyncApplyDiagnostics?> _handleEntryLink({
+    required Event event,
+    required SyncEntryLink syncMessage,
+    required JournalDb journalDb,
+  }) async {
+    final entryLink = syncMessage.entryLink;
+    final originatingHostId = syncMessage.originatingHostId;
+    final coveredVectorClocks = syncMessage.coveredVectorClocks;
+
+    final rows = await journalDb.upsertEntryLink(entryLink);
+    try {
+      if (rows > 0) {
+        _loggingService.captureEvent(
+          'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} '
+          'rows=$rows',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'apply.entryLink',
+        );
+      }
+    } catch (_) {
+      // best-effort logging only
+    }
+
+    // Surface DB-apply diagnostics to the pipeline when available
+    if (applyObserver != null) {
+      try {
+        final diag = SyncApplyDiagnostics(
+          eventId: event.eventId,
+          payloadType: 'entryLink',
+          vectorClock: null,
+          conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
+          applied: rows > 0,
+          skipReason: rows > 0 ? null : JournalUpdateSkipReason.olderOrEqual,
+        );
+        applyObserver!.call(diag);
+      } catch (_) {
+        // best-effort only
+      }
+    }
+    _updateNotifications.notify(
+      {entryLink.fromId, entryLink.toId},
+      fromSync: true,
+    );
+
+    // Record in sequence log for gap detection (self-healing sync)
+    if (_sequenceLogService != null &&
+        entryLink.vectorClock != null &&
+        originatingHostId != null) {
+      final linkExists =
+          rows > 0 || await journalDb.entryLinkById(entryLink.id) != null;
+      if (linkExists) {
+        try {
+          final gaps = await _sequenceLogService!.recordReceivedEntryLink(
+            linkId: entryLink.id,
+            vectorClock: entryLink.vectorClock!,
+            originatingHostId: originatingHostId,
+            coveredVectorClocks: coveredVectorClocks,
+          );
+          if (gaps.isNotEmpty) {
+            _loggingService.captureEvent(
+              'apply.entryLink.gapsDetected count=${gaps.length} '
+              'for link=${entryLink.id}',
+              domain: 'SYNC_SEQUENCE',
+              subDomain: 'gapDetection',
+            );
+          }
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: st,
+          );
+        }
+      }
+    }
+    return null;
+  }
+
   Future<SyncApplyDiagnostics?> _handleMessage({
     required Event event,
     required SyncMessage syncMessage,
@@ -805,139 +1016,21 @@ class SyncEventProcessor {
     required SyncJournalEntityLoader loader,
   }) async {
     switch (syncMessage) {
-      case SyncJournalEntity(
-          jsonPath: final jsonPath,
-          entryLinks: final entryLinks,
-        ):
+      case final SyncJournalEntity msg:
         try {
-          if (_isDuplicateJournalEntity(
-              syncMessage.id, syncMessage.vectorClock)) {
-            final diag = SyncApplyDiagnostics(
-              eventId: event.eventId,
-              payloadType: 'journalEntity',
-              vectorClock: syncMessage.vectorClock?.toJson(),
-              conflictStatus: VclockStatus.equal.toString(),
-              applied: false,
-              skipReason: JournalUpdateSkipReason.olderOrEqual,
-            );
-            _loggingService.captureEvent(
-              'apply journalEntity skipped duplicate eventId=${event.eventId} id=${syncMessage.id}',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'apply',
-            );
-            return diag;
-          }
-          final journalEntity = await loader.load(
-            jsonPath: jsonPath,
-            incomingVectorClock: syncMessage.vectorClock,
-          );
-          var predictedStatus = VclockStatus.b_gt_a;
-          if (applyObserver != null) {
-            try {
-              final existing =
-                  await journalDb.journalEntityById(journalEntity.meta.id);
-              final vcA = existing?.meta.vectorClock;
-              final vcB0 = journalEntity.meta.vectorClock;
-              if (vcA != null && vcB0 != null) {
-                predictedStatus = VectorClock.compare(vcA, vcB0);
-              }
-            } catch (e, st) {
-              _loggingService.captureException(
-                e,
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'apply.predictVectorClock',
-                stackTrace: st,
-              );
-              predictedStatus = VclockStatus.b_gt_a;
-            }
-          }
-          final vcB = journalEntity.meta.vectorClock;
-          final updateResult =
-              await journalDb.updateJournalEntity(journalEntity);
-          final rows = updateResult.rowsWritten ?? 0;
-
-          // Process embedded entry links regardless of journal entity application
-          // status. EntryLinks have their own vector clock for conflict resolution
-          // via upsertEntryLink(). This ensures links are established even when the
-          // entity itself is skipped (e.g., local version is newer), preventing
-          // gray calendar entries that rely on links for category color lookup.
-          final processedLinksCount = await _processEmbeddedEntryLinks(
-            entryLinks: entryLinks,
+          return await _handleJournalEntity(
+            event: event,
+            syncMessage: msg,
             journalDb: journalDb,
+            loader: loader,
           );
-
-          final diag = SyncApplyDiagnostics(
-            eventId: event.eventId,
-            payloadType: 'journalEntity',
-            vectorClock: vcB?.toJson(),
-            conflictStatus: predictedStatus.toString(),
-            applied: updateResult.applied,
-            skipReason: updateResult.skipReason,
-          );
-          _loggingService.captureEvent(
-            'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} rowsWritten=$rows applied=${updateResult.applied} skip=${updateResult.skipReason?.label ?? 'none'} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'apply',
-          );
-          _markJournalEntityProcessed(
-            journalEntity.meta.id,
-            vcB ?? syncMessage.vectorClock,
-          );
-          _updateNotifications.notify(
-            journalEntity.affectedIds,
-            fromSync: true,
-          );
-
-          // Record in sequence log for gap detection (self-healing sync)
-          // Note: We update the sequence log even if applied=false, because
-          // the entry may already exist (e.g., from earlier sync) but the
-          // sequence log status still needs to be updated from "requested"
-          // to "backfilled". We check that the entry actually exists in journal.
-          //
-          // originatingHostId must be provided by the sender - it identifies
-          // which host sent this message and can respond to backfill requests.
-          // Messages without originatingHostId (from older clients) are skipped.
-          if (_sequenceLogService != null &&
-              syncMessage.vectorClock != null &&
-              syncMessage.originatingHostId != null) {
-            // Check if entry exists (either just applied, or already in journal)
-            final entryExistsInJournal = updateResult.applied ||
-                await journalDb.journalEntityById(journalEntity.meta.id) !=
-                    null;
-            if (entryExistsInJournal) {
-              try {
-                final gaps = await _sequenceLogService!.recordReceivedEntry(
-                  entryId: journalEntity.meta.id,
-                  vectorClock: syncMessage.vectorClock!,
-                  originatingHostId: syncMessage.originatingHostId!,
-                  coveredVectorClocks: syncMessage.coveredVectorClocks,
-                );
-                if (gaps.isNotEmpty) {
-                  _loggingService.captureEvent(
-                    'apply.gapsDetected count=${gaps.length} for entity=${journalEntity.meta.id}',
-                    domain: 'SYNC_SEQUENCE',
-                    subDomain: 'gapDetection',
-                  );
-                }
-              } catch (e, st) {
-                _loggingService.captureException(
-                  e,
-                  domain: 'SYNC_SEQUENCE',
-                  subDomain: 'recordReceived',
-                  stackTrace: st,
-                );
-              }
-            }
-          }
-
-          return diag;
         } on FileSystemException catch (error, stackTrace) {
           if (_isStaleDescriptorError(error)) {
             final skipped = await _maybeSkipSupersededStaleDescriptor(
               event: event,
-              syncMessage: syncMessage,
+              syncMessage: msg,
               journalDb: journalDb,
-              entryLinks: entryLinks,
+              entryLinks: msg.entryLinks,
             );
             if (skipped != null) {
               return skipped;
@@ -952,79 +1045,12 @@ class SyncEventProcessor {
           // Propagate so the pipeline retries and does not advance the marker.
           rethrow;
         }
-      case SyncEntryLink(
-          entryLink: final entryLink,
-          originatingHostId: final originatingHostId,
-          coveredVectorClocks: final coveredVectorClocks,
-        ):
-        final rows = await journalDb.upsertEntryLink(entryLink);
-        try {
-          if (rows > 0) {
-            _loggingService.captureEvent(
-              'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} rows=$rows',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'apply.entryLink',
-            );
-          }
-        } catch (_) {
-          // best-effort logging only
-        }
-        // Surface DB-apply diagnostics to the pipeline when available.
-        if (applyObserver != null) {
-          try {
-            final diag = SyncApplyDiagnostics(
-              eventId: event.eventId,
-              payloadType: 'entryLink',
-              vectorClock: null,
-              conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
-              applied: rows > 0,
-              skipReason:
-                  rows > 0 ? null : JournalUpdateSkipReason.olderOrEqual,
-            );
-            applyObserver!.call(diag);
-          } catch (_) {
-            // best-effort only
-          }
-        }
-        _updateNotifications.notify(
-          {entryLink.fromId, entryLink.toId},
-          fromSync: true,
+      case final SyncEntryLink msg:
+        return _handleEntryLink(
+          event: event,
+          syncMessage: msg,
+          journalDb: journalDb,
         );
-
-        // Record in sequence log for gap detection (self-healing sync)
-        // Similar to journal entities: update even on no-op upsert when the
-        // link already exists locally, so requested → backfilled can resolve.
-        if (_sequenceLogService != null &&
-            entryLink.vectorClock != null &&
-            originatingHostId != null) {
-          final linkExists =
-              rows > 0 || await journalDb.entryLinkById(entryLink.id) != null;
-          if (linkExists) {
-            try {
-              final gaps = await _sequenceLogService!.recordReceivedEntryLink(
-                linkId: entryLink.id,
-                vectorClock: entryLink.vectorClock!,
-                originatingHostId: originatingHostId,
-                coveredVectorClocks: coveredVectorClocks,
-              );
-              if (gaps.isNotEmpty) {
-                _loggingService.captureEvent(
-                  'apply.entryLink.gapsDetected count=${gaps.length} for link=${entryLink.id}',
-                  domain: 'SYNC_SEQUENCE',
-                  subDomain: 'gapDetection',
-                );
-              }
-            } catch (e, st) {
-              _loggingService.captureException(
-                e,
-                domain: 'SYNC_SEQUENCE',
-                subDomain: 'recordReceived',
-                stackTrace: st,
-              );
-            }
-          }
-        }
-        return null;
       case SyncEntityDefinition(entityDefinition: final entityDefinition):
         await journalDb.upsertEntityDefinition(entityDefinition);
         return null;

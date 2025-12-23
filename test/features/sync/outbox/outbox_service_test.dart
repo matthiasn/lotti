@@ -3266,4 +3266,532 @@ void main() {
           )).called(1);
     });
   });
+
+  group('Simple message handler edge cases', () {
+    test('SyncEntityDefinition with null vectorClock uses null in subject',
+        () async {
+      final entityDef = HabitDefinition(
+        id: 'habit-no-vc',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null, // Null vector clock
+        name: 'Test Habit',
+        description: 'A habit without vector clock',
+        private: false,
+        active: true,
+        habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+      );
+
+      final message = SyncMessage.entityDefinition(
+        entityDefinition: entityDef,
+        status: SyncEntryStatus.initial,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      // Subject should contain null for the counter part (hhash is the mock value)
+      expect(companion.subject.value, 'hhash:null');
+    });
+
+    test('SyncTagEntity with null hostHash handles gracefully', () async {
+      // Create a vectorClockService that returns null hostHash
+      final nullHashVcs = MockVectorClockService();
+      when(() => nullHashVcs.getHost()).thenAnswer((_) async => 'testHost');
+      when(() => nullHashVcs.getHostHash()).thenAnswer((_) async => null);
+
+      final serviceWithNullHash = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: nullHashVcs,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+      );
+
+      final tag = TagEntity.storyTag(
+        id: 'tag-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        tag: 'TestTag',
+        private: false,
+        vectorClock: const VectorClock({'host': 1}),
+      );
+
+      final message = SyncMessage.tagEntity(
+        tagEntity: tag,
+        status: SyncEntryStatus.initial,
+      );
+
+      await serviceWithNullHash.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'null:tag');
+    });
+
+    test('SyncBackfillRequest with empty entries list', () async {
+      const message = SyncMessage.backfillRequest(
+        requesterId: 'requester-device',
+        entries: [], // Empty list
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'backfillRequest:batch:0');
+
+      verify(() => loggingService.captureEvent(
+            contains('entries=0'),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('SyncBackfillRequest with multiple entries', () async {
+      const message = SyncMessage.backfillRequest(
+        requesterId: 'requester-device',
+        entries: [
+          BackfillRequestEntry(hostId: 'host1', counter: 1),
+          BackfillRequestEntry(hostId: 'host1', counter: 2),
+          BackfillRequestEntry(hostId: 'host2', counter: 1),
+        ],
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'backfillRequest:batch:3');
+    });
+
+    test('SyncBackfillResponse with deleted=true', () async {
+      const message = SyncMessage.backfillResponse(
+        hostId: 'host-abc',
+        counter: 42,
+        deleted: true,
+      );
+
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncBackfillResponse'),
+              contains('hostId=host-abc'),
+              contains('counter=42'),
+              contains('deleted=true'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('SyncBackfillResponse with deleted=false and entryId', () async {
+      const message = SyncMessage.backfillResponse(
+        hostId: 'host-abc',
+        counter: 42,
+        deleted: false,
+        entryId: 'entry-123',
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'backfillResponse:host-abc:42');
+
+      verify(() => loggingService.captureEvent(
+            contains('deleted=false'),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('SyncAiConfig logs config id correctly', () async {
+      final config = AiConfig.inferenceProvider(
+        id: 'config-xyz-789',
+        name: 'Test Config',
+        apiKey: 'sk-test',
+        baseUrl: 'https://api.openai.com/v1',
+        createdAt: DateTime(2025, 1, 1),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      final message = SyncMessage.aiConfig(
+        aiConfig: config,
+        status: SyncEntryStatus.initial,
+      );
+
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncAiConfig'),
+              contains('id=config-xyz-789'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('SyncAiConfigDelete logs deleted config id', () async {
+      const message = SyncMessage.aiConfigDelete(
+        id: 'config-to-delete-456',
+      );
+
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncAiConfigDelete'),
+              contains('id=config-to-delete-456'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          )).called(1);
+    });
+
+    test('enqueueMessage handles addOutboxItem error gracefully', () async {
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+          .thenThrow(Exception('DB write failed'));
+
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Light',
+        darkThemeName: 'Dark',
+        themeMode: 'system',
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      // Should not throw - error is caught and logged
+      await service.enqueueMessage(message);
+
+      verify(() => loggingService.captureException(
+            any<Object>(),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          )).called(1);
+    });
+
+    test('SyncEntityDefinition with null host uses null in counter lookup',
+        () async {
+      // Create a vectorClockService that returns null host
+      final nullHostVcs = MockVectorClockService();
+      when(() => nullHostVcs.getHost()).thenAnswer((_) async => null);
+      when(() => nullHostVcs.getHostHash()).thenAnswer((_) async => 'hash123');
+
+      final serviceWithNullHost = OutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: nullHostVcs,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+      );
+
+      final entityDef = HabitDefinition(
+        id: 'habit-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: const VectorClock({'someHost': 5}),
+        name: 'Test Habit',
+        description: 'A habit with VC but null host lookup',
+        private: false,
+        active: true,
+        habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+      );
+
+      final message = SyncMessage.entityDefinition(
+        entityDefinition: entityDef,
+        status: SyncEntryStatus.initial,
+      );
+
+      await serviceWithNullHost.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      // With null host, the vclock lookup returns null
+      expect(companion.subject.value, 'hash123:null');
+    });
+  });
+
+  group('Message preparation', () {
+    test('prepareJournalEntity adds originatingHostId when null', () async {
+      const entryId = 'entry-with-no-host';
+      final journalEntity = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: entryId,
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025, 1, 1),
+          dateTo: DateTime(2025, 1, 1),
+          vectorClock: const VectorClock({'hostA': 1}),
+        ),
+        entryText: const EntryText(plainText: 'Test entry'),
+      );
+
+      // Create JSON file on disk (required by readEntityFromJson)
+      final jsonPath = relativeEntityPath(journalEntity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      // Mock journalEntityById to return the entity
+      when(() => journalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntity);
+
+      final message = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: jsonPath,
+        vectorClock: const VectorClock({'hostA': 1}),
+        status: SyncEntryStatus.initial,
+        // originatingHostId is null
+      );
+
+      await service.enqueueMessage(message);
+
+      // Verify the message was enqueued with originatingHostId set
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      final decodedMessage = SyncMessage.fromJson(
+        json.decode(companion.message.value) as Map<String, dynamic>,
+      );
+
+      expect(decodedMessage, isA<SyncJournalEntity>());
+      final journalMsg = decodedMessage as SyncJournalEntity;
+      // hostA is the mock value returned by vectorClockService.getHost()
+      expect(journalMsg.originatingHostId, 'hostA');
+    });
+
+    test('prepareJournalEntity preserves existing originatingHostId', () async {
+      const entryId = 'entry-with-existing-host';
+      final journalEntity = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: entryId,
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025, 1, 1),
+          dateTo: DateTime(2025, 1, 1),
+          vectorClock: const VectorClock({'hostA': 1}),
+        ),
+        entryText: const EntryText(plainText: 'Test entry'),
+      );
+
+      // Create JSON file on disk
+      final jsonPath = relativeEntityPath(journalEntity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      when(() => journalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntity);
+
+      final message = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: jsonPath,
+        vectorClock: const VectorClock({'hostA': 1}),
+        status: SyncEntryStatus.initial,
+        originatingHostId: 'originalHost', // Already set
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+
+      final companion = captured.first as OutboxCompanion;
+      final decodedMessage = SyncMessage.fromJson(
+        json.decode(companion.message.value) as Map<String, dynamic>,
+      );
+
+      final journalMsg = decodedMessage as SyncJournalEntity;
+      // Should preserve the original value, not overwrite
+      expect(journalMsg.originatingHostId, 'originalHost');
+    });
+
+    test('prepareJournalEntity merges coveredVectorClocks', () async {
+      const entryId = 'entry-for-vc-merge';
+      final journalEntity = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: entryId,
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025, 1, 1),
+          dateTo: DateTime(2025, 1, 1),
+          vectorClock: const VectorClock({'hostA': 3}),
+        ),
+        entryText: const EntryText(plainText: 'Test entry'),
+      );
+
+      // Create JSON file on disk
+      final jsonPath = relativeEntityPath(journalEntity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      when(() => journalDb.journalEntityById(entryId))
+          .thenAnswer((_) async => journalEntity);
+
+      final message = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: jsonPath,
+        vectorClock: const VectorClock({'hostA': 3}),
+        status: SyncEntryStatus.update,
+        coveredVectorClocks: const [
+          VectorClock({'hostA': 1}),
+          VectorClock({'hostA': 2}),
+        ],
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+
+      final companion = captured.first as OutboxCompanion;
+      final decodedMessage = SyncMessage.fromJson(
+        json.decode(companion.message.value) as Map<String, dynamic>,
+      );
+
+      final journalMsg = decodedMessage as SyncJournalEntity;
+      // Should have all 3 VCs merged (1, 2, and the current 3)
+      expect(journalMsg.coveredVectorClocks, isNotNull);
+      expect(journalMsg.coveredVectorClocks!.length, 3);
+    });
+
+    test('prepareEntryLink adds originatingHostId when null', () async {
+      final link = EntryLink.basic(
+        id: 'link-no-host',
+        fromId: 'entry-A',
+        toId: 'entry-B',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: const VectorClock({'hostA': 1}),
+      );
+
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.initial,
+        // originatingHostId is null
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+
+      final companion = captured.first as OutboxCompanion;
+      final decodedMessage = SyncMessage.fromJson(
+        json.decode(companion.message.value) as Map<String, dynamic>,
+      );
+
+      final linkMsg = decodedMessage as SyncEntryLink;
+      expect(linkMsg.originatingHostId, 'hostA');
+    });
+
+    test('prepareEntryLink merges coveredVectorClocks', () async {
+      final link = EntryLink.basic(
+        id: 'link-for-vc-merge',
+        fromId: 'entry-A',
+        toId: 'entry-B',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: const VectorClock({'hostA': 3}),
+      );
+
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.update,
+        coveredVectorClocks: const [
+          VectorClock({'hostA': 1}),
+          VectorClock({'hostA': 2}),
+        ],
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+
+      final companion = captured.first as OutboxCompanion;
+      final decodedMessage = SyncMessage.fromJson(
+        json.decode(companion.message.value) as Map<String, dynamic>,
+      );
+
+      final linkMsg = decodedMessage as SyncEntryLink;
+      expect(linkMsg.coveredVectorClocks, isNotNull);
+      expect(linkMsg.coveredVectorClocks!.length, 3);
+    });
+
+    test('prepareMessage passes through non-entity messages unchanged',
+        () async {
+      final message = SyncMessage.themingSelection(
+        lightThemeName: 'Light',
+        darkThemeName: 'Dark',
+        themeMode: 'system',
+        updatedAt: DateTime(2025, 1, 1).millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+
+      final companion = captured.first as OutboxCompanion;
+      final decodedMessage = SyncMessage.fromJson(
+        json.decode(companion.message.value) as Map<String, dynamic>,
+      );
+
+      // Should be unchanged (no originatingHostId or coveredVectorClocks added)
+      expect(decodedMessage, isA<SyncThemingSelection>());
+      final themingMsg = decodedMessage as SyncThemingSelection;
+      expect(themingMsg.lightThemeName, 'Light');
+      expect(themingMsg.darkThemeName, 'Dark');
+    });
+  });
 }
