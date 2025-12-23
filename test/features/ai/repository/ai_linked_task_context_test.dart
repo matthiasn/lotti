@@ -360,6 +360,8 @@ void main() {
       when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
       when(() => mockDb.getLinkedEntities(any()))
           .thenAnswer((_) async => <JournalEntity>[]);
+      when(() => mockDb.getBulkLinkedEntities(any()))
+          .thenAnswer((_) async => <String, List<JournalEntity>>{});
       when(() => mockDb.getAllLabelDefinitions())
           .thenAnswer((_) async => <LabelDefinition>[]);
       when(() => mockCacheService.getLabelById(any())).thenReturn(null);
@@ -430,6 +432,24 @@ void main() {
       );
     }
 
+    /// Creates a JournalEntry with specified duration for time tracking tests.
+    JournalEntity createJournalEntryWithDuration({
+      required String id,
+      required Duration duration,
+      DateTime? dateFrom,
+    }) {
+      final from = dateFrom ?? createdDate;
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: id,
+          dateFrom: from,
+          dateTo: from.add(duration),
+          createdAt: from,
+          updatedAt: from,
+        ),
+      );
+    }
+
     group('buildLinkedFromContext', () {
       test('returns empty list when no tasks link to this task', () async {
         final mockSelectable = MockSelectable<JournalDbEntity>();
@@ -452,18 +472,21 @@ void main() {
         );
         final childDbEntity = createDbEntityFromTask(childTask);
 
+        // Create a journal entry with 45 minutes duration for time tracking
+        final timeEntry = createJournalEntryWithDuration(
+          id: 'time-entry-1',
+          duration: const Duration(minutes: 45),
+        );
+
         final mockSelectable = MockSelectable<JournalDbEntity>();
         when(() => mockDb.linkedToJournalEntities(taskId))
             .thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => []);
-        when(() =>
-                mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (
-                  const Duration(hours: 2),
-                  {'entry': const Duration(minutes: 45)},
-                ));
+        // Bulk fetch returns entities for time calculation
+        when(() => mockDb.getBulkLinkedEntities({childTaskId}))
+            .thenAnswer((_) async => {
+                  childTaskId: [timeEntry]
+                });
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -555,16 +578,19 @@ void main() {
           estimate: const Duration(hours: 40),
         );
 
+        // Create time entry for 12 hours 30 minutes
+        final timeEntry = createJournalEntryWithDuration(
+          id: 'work-entry',
+          duration: const Duration(hours: 12, minutes: 30),
+        );
+
         when(() => mockDb.getLinkedEntities(taskId))
             .thenAnswer((_) async => [parentTask]);
-        when(() => mockDb.getLinkedEntities(parentTaskId))
-            .thenAnswer((_) async => []);
-        when(() => mockTaskProgressRepository.getTaskProgressData(
-              id: parentTaskId,
-            )).thenAnswer((_) async => (
-              const Duration(hours: 40),
-              {'work': const Duration(hours: 12, minutes: 30)},
-            ));
+        // Bulk fetch returns entities for time calculation
+        when(() => mockDb.getBulkLinkedEntities({parentTaskId}))
+            .thenAnswer((_) async => {
+                  parentTaskId: [timeEntry]
+                });
 
         final result = await repository.buildLinkedToContext(taskId);
 
@@ -625,7 +651,7 @@ void main() {
         expect(parsed['note'], isNull);
       });
 
-      test('includes note when linked tasks exist', () async {
+      test('does not include note (note is added by prompt builder)', () async {
         final childTask = createTestTask(
           id: childTaskId,
           title: 'Child Task',
@@ -638,17 +664,16 @@ void main() {
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
         when(() => mockDb.getLinkedEntities(taskId))
             .thenAnswer((_) async => []);
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => []);
-        when(() =>
-                mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, Duration>{}));
+        when(() => mockDb.getBulkLinkedEntities({childTaskId}))
+            .thenAnswer((_) async => {childTaskId: <JournalEntity>[]});
 
         final result = await repository.buildLinkedTasksJson(taskId);
         final parsed = jsonDecode(result) as Map<String, dynamic>;
 
-        expect(parsed['note'], contains('web search'));
-        expect(parsed['note'], contains('GitHub'));
+        // Note is intentionally NOT included in repository output
+        // The prompt builder is responsible for adding contextual notes
+        expect(parsed['note'], isNull);
+        expect(parsed['linked_from'], isNotEmpty);
       });
 
       test('produces valid JSON that can be parsed', () async {
@@ -757,11 +782,11 @@ void main() {
         when(() => mockDb.linkedToJournalEntities(taskId))
             .thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => [summaryEntry]);
-        when(() =>
-                mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, Duration>{}));
+        // Bulk fetch returns the AI summary entry
+        when(() => mockDb.getBulkLinkedEntities({childTaskId}))
+            .thenAnswer((_) async => {
+                  childTaskId: [summaryEntry]
+                });
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -819,11 +844,10 @@ void main() {
             .thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
         // Return in wrong order to test sorting
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => [olderSummary, newerSummary]);
-        when(() =>
-                mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, Duration>{}));
+        when(() => mockDb.getBulkLinkedEntities({childTaskId}))
+            .thenAnswer((_) async => {
+                  childTaskId: [olderSummary, newerSummary]
+                });
 
         final result = await repository.buildLinkedFromContext(taskId);
 

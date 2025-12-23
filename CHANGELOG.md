@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.772] - 2025-12-24
+### Added
+- AI Linked Task Context: AI prompts now include context from related tasks
+  - `{{linked_tasks}}` placeholder provides parent/child task relationships
+  - Includes task metadata (status, priority, time spent, labels) for each linked task
+  - Includes latest AI summary for linked tasks (with GitHub/external link awareness)
+  - Batched database queries avoid N+1 performance issues
+  - Labels resolved via O(1) cache lookup
+
+### Changed
+- AI Repository: Decoupled prompt semantics from data construction
+  - Note about web search for external links moved from repository to prompt builder
+  - Repository now returns pure data; prompt builder adds contextual instructions
+
 ## [0.9.771] - 2025-12-23
 ### Added
 - Task Summary Link Extraction: AI-generated task summaries now include a "Links" section
@@ -110,7 +124,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Requests missing entries from peers to ensure complete synchronization
   - Integration tests verify backfill functionality
 
-## [Unreleased]
 ### Fixed
 - Sync: Treat missing attachment fetches as retryable failures so markers do not advance past incomplete entries, serialize `forceRescan` with a completer to avoid overlapping runs, and include Matrix stream consumer instance IDs in sync logs to track concurrent pipelines.
 - Sync: Avoid redundant descriptor catch-up retries by running catch-up only on pending changes, triggering retryNow only when new descriptors are discovered, and skipping stale descriptor errors when the local entry already supersedes the incoming vector clock.

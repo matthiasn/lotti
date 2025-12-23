@@ -191,7 +191,7 @@ void main() {
 
       test('injects correction examples for audioTranscription response type',
           () async {
-        when(() => mockJournalRepository.getLinkedToEntities(
+        when(() => mockJournalRepository.getLinkedEntities(
               linkedTo: 'audio-1',
             )).thenAnswer((_) async => [testTask]);
         when(() => mockEntitiesCacheService.getCategoryById('category-1'))

@@ -421,7 +421,14 @@ The prompt template includes:
 | Placeholder | Description | Available For |
 |-------------|-------------|---------------|
 | `{{task}}` | Current task's JSON data (title, status, log entries, action items) | All task-related prompts |
-| `{{linked_tasks}}` | JSON object with parent/child task context | All prompt types |
+| `{{linked_tasks}}` | JSON object with parent/child task context (see details below) | All prompt types |
+| `{{current_entry}}` | Focused entry being analyzed (id, type, createdAt, text/transcript) | Recording modal, linked-entry AI popup |
+| `{{labels}}` | All available label definitions as JSON | Action item prompts |
+| `{{assigned_labels}}` | Labels assigned to the current task | Action item prompts |
+| `{{suppressed_labels}}` | Label IDs that AI should not suggest | Action item prompts |
+| `{{deleted_checklist_items}}` | Soft-deleted checklist items (to avoid recreating) | Action item prompts |
+| `{{audioTranscript}}` | Raw audio transcript text | Audio transcription prompts |
+| `{{languageCode}}` | Task's language code (e.g., "en", "de") | Task summary, transcription prompts |
 | `{{correction_examples}}` | Transcription correction examples | Audio transcription prompts |
 | `{{speech_dictionary}}` | Speech recognition dictionary | Audio transcription prompts |
 

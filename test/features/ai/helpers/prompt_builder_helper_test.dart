@@ -1159,8 +1159,9 @@ void main() {
           labelsRepository: label_test.MockLabelsRepository(),
         );
 
-        when(() => mockJournalRepository.getLinkedToEntities(
-            linkedTo: 'image-123')).thenAnswer((_) async => [linkedTask]);
+        when(() =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
+            .thenAnswer((_) async => [linkedTask]);
         when(() => mockAiInputRepository.buildTaskDetailsJson(id: 'task-456'))
             .thenAnswer(
                 (_) async => '{"id": "task-456", "title": "Linked Task"}');
@@ -1176,10 +1177,251 @@ void main() {
             prompt,
             equals(
                 'Analyze this image: {"id": "task-456", "title": "Linked Task"}'));
-        verify(() => mockJournalRepository.getLinkedToEntities(
-            linkedTo: 'image-123')).called(1);
+        verify(() =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
+            .called(1);
         verify(() => mockAiInputRepository.buildTaskDetailsJson(id: 'task-456'))
             .called(1);
+      });
+
+      test(
+          'should find linked task for image entity with {{linked_tasks}} placeholder',
+          () async {
+        // Arrange
+        final image = JournalImage(
+          data: ImageData(
+            imageId: 'image-linked-tasks',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test',
+            capturedAt: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'image-linked-tasks',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          entryText: const EntryText(plainText: 'Test image'),
+        );
+
+        final linkedTask = Task(
+          data: TaskData(
+            title: 'Linked Task',
+            checklistIds: const [],
+            status: TaskStatus.inProgress(
+              id: 'status-456',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'task-456',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final promptConfig = AiConfigPrompt(
+          id: 'test-prompt',
+          name: 'Image Analysis with Context',
+          systemMessage: 'System',
+          userMessage: 'Analyze image with context: {{linked_tasks}}',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        // Create a builder with journal repository
+        final mockJournalRepository = MockJournalRepository();
+        final builderWithJournal = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
+        );
+
+        when(() => mockJournalRepository.getLinkedEntities(
+                linkedTo: 'image-linked-tasks'))
+            .thenAnswer((_) async => [linkedTask]);
+        when(() => mockAiInputRepository.buildLinkedTasksJson('task-456'))
+            .thenAnswer((_) async =>
+                '{"linked_from": [{"id": "child-1"}], "linked_to": []}');
+
+        // Act
+        final prompt = await builderWithJournal.buildPromptWithData(
+          promptConfig: promptConfig,
+          entity: image,
+        );
+
+        // Assert - should contain the linked tasks with note added
+        expect(prompt, contains('linked_from'));
+        expect(prompt, contains('child-1'));
+        expect(prompt, contains('note'));
+        expect(prompt, contains('web search'));
+        verify(() => mockJournalRepository.getLinkedEntities(
+            linkedTo: 'image-linked-tasks')).called(1);
+        verify(() => mockAiInputRepository.buildLinkedTasksJson('task-456'))
+            .called(1);
+      });
+
+      test(
+          'should find linked task for audio entity with {{linked_tasks}} placeholder',
+          () async {
+        // Arrange
+        final audio = JournalAudio(
+          data: AudioData(
+            audioFile: 'audio.m4a',
+            audioDirectory: '/test',
+            duration: const Duration(minutes: 5),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'audio-linked-tasks',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          entryText: const EntryText(plainText: 'Test audio'),
+        );
+
+        final linkedTask = Task(
+          data: TaskData(
+            title: 'Audio Task',
+            checklistIds: const [],
+            status: TaskStatus.done(
+              id: 'status-789',
+              createdAt: DateTime(2025, 1, 1),
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'task-789',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final promptConfig = AiConfigPrompt(
+          id: 'test-prompt',
+          name: 'Audio Transcription with Context',
+          systemMessage: 'System',
+          userMessage: 'Transcribe audio with context: {{linked_tasks}}',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        // Create a builder with journal repository
+        final mockJournalRepository = MockJournalRepository();
+        final builderWithJournal = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
+        );
+
+        when(() => mockJournalRepository.getLinkedEntities(
+                linkedTo: 'audio-linked-tasks'))
+            .thenAnswer((_) async => [linkedTask]);
+        when(() => mockAiInputRepository.buildLinkedTasksJson('task-789'))
+            .thenAnswer((_) async =>
+                '{"linked_from": [], "linked_to": [{"id": "parent-1"}]}');
+
+        // Act
+        final prompt = await builderWithJournal.buildPromptWithData(
+          promptConfig: promptConfig,
+          entity: audio,
+        );
+
+        // Assert - should contain the linked tasks with note added
+        expect(prompt, contains('linked_to'));
+        expect(prompt, contains('parent-1'));
+        expect(prompt, contains('note'));
+        expect(prompt, contains('web search'));
+        verify(() => mockJournalRepository.getLinkedEntities(
+            linkedTo: 'audio-linked-tasks')).called(1);
+        verify(() => mockAiInputRepository.buildLinkedTasksJson('task-789'))
+            .called(1);
+      });
+
+      test('should return empty linked tasks when image has no linked task',
+          () async {
+        // Arrange
+        final image = JournalImage(
+          data: ImageData(
+            imageId: 'orphan-image',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test',
+            capturedAt: DateTime(2025, 1, 1),
+          ),
+          meta: Metadata(
+            id: 'orphan-image',
+            createdAt: DateTime(2025, 1, 1),
+            dateFrom: DateTime(2025, 1, 1),
+            dateTo: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
+
+        final promptConfig = AiConfigPrompt(
+          id: 'test-prompt',
+          name: 'Image Analysis',
+          systemMessage: 'System',
+          userMessage: 'Context: {{linked_tasks}}',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2025, 1, 1),
+          useReasoning: false,
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        // Create a builder with journal repository
+        final mockJournalRepository = MockJournalRepository();
+        final builderWithJournal = PromptBuilderHelper(
+          aiInputRepository: mockAiInputRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: MockChecklistRepository(),
+          labelsRepository: label_test.MockLabelsRepository(),
+        );
+
+        // No linked task found
+        when(() => mockJournalRepository.getLinkedEntities(
+            linkedTo: 'orphan-image')).thenAnswer((_) async => []);
+
+        // Act
+        final prompt = await builderWithJournal.buildPromptWithData(
+          promptConfig: promptConfig,
+          entity: image,
+        );
+
+        // Assert - should return empty arrays (fallback)
+        expect(prompt, contains('"linked_from": []'));
+        expect(prompt, contains('"linked_to": []'));
+        // No note since there are no linked tasks
+        expect(prompt, isNot(contains('note')));
+        verify(() => mockJournalRepository.getLinkedEntities(
+            linkedTo: 'orphan-image')).called(1);
+        verifyNever(() => mockAiInputRepository.buildLinkedTasksJson(any()));
       });
     });
 
@@ -1277,8 +1519,9 @@ void main() {
           labelsRepository: label_test.MockLabelsRepository(),
         );
 
-        when(() => mockJournalRepository.getLinkedToEntities(
-            linkedTo: 'image-123')).thenAnswer((_) async => [linkedTask]);
+        when(() =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
+            .thenAnswer((_) async => [linkedTask]);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -1374,8 +1617,9 @@ void main() {
         );
 
         // No linked task
-        when(() => mockJournalRepository.getLinkedToEntities(
-            linkedTo: 'image-123')).thenAnswer((_) async => []);
+        when(() =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
+            .thenAnswer((_) async => []);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -1426,8 +1670,9 @@ void main() {
         );
 
         // Simulate an error when finding linked task
-        when(() => mockJournalRepository.getLinkedToEntities(
-            linkedTo: 'image-123')).thenThrow(Exception('Database error'));
+        when(() =>
+                mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'))
+            .thenThrow(Exception('Database error'));
 
         final config = AiConfigPrompt(
           id: 'prompt',

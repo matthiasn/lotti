@@ -315,9 +315,19 @@ class PromptBuilderHelper {
     return prompt;
   }
 
-  /// Build linked tasks JSON for the given entity.
-  /// Works with Task entities directly, or finds the linked task for
-  /// images/audio.
+  /// Build linked tasks JSON for the given entity with prompt semantics.
+  ///
+  /// Works with [Task] entities directly, or finds the linked task for
+  /// images/audio via [_findLinkedTask].
+  ///
+  /// **Separation of Concerns**: The underlying data is constructed by
+  /// [AiInputRepository.buildLinkedTasksJson] (pure data, no prompt logic).
+  /// This method adds prompt-specific semantics:
+  /// - A contextual note encouraging web search for external links (GitHub
+  ///   PRs, Issues, etc.) when linked tasks with summaries are present
+  ///
+  /// This separation keeps the repository focused on data construction while
+  /// prompt-building logic lives here.
   Future<String> _buildLinkedTasksJson(JournalEntity entity) async {
     String? taskId;
     if (entity is Task) {
@@ -331,7 +341,24 @@ class PromptBuilderHelper {
       return '{"linked_from": [], "linked_to": []}';
     }
 
-    return aiInputRepository.buildLinkedTasksJson(taskId);
+    final json = await aiInputRepository.buildLinkedTasksJson(taskId);
+
+    // Add contextual note if there are linked tasks
+    final data = jsonDecode(json) as Map<String, dynamic>;
+    final linkedFrom = data['linked_from'] as List<dynamic>? ?? [];
+    final linkedTo = data['linked_to'] as List<dynamic>? ?? [];
+
+    if (linkedFrom.isNotEmpty || linkedTo.isNotEmpty) {
+      data['note'] =
+          'If summaries contain links to GitHub PRs, Issues, or similar '
+          'platforms, use web search to retrieve additional context when '
+          'relevant.';
+      const encoder = JsonEncoder.withIndent('    ');
+      return encoder.convert(data);
+    }
+
+    // Return original JSON if no linked tasks (no note needed)
+    return json;
   }
 
   /// Get task JSON for a given entity
@@ -353,16 +380,32 @@ class PromptBuilderHelper {
     return null;
   }
 
-  /// Find a task linked to the given entity
+  /// Find a task that this entity is linked to.
+  ///
+  /// Links can exist in either direction depending on how the entry was created:
+  /// 1. `entry → task` (entry links TO task) - when entry explicitly references a task
+  /// 2. `task → entry` (task links TO entry) - when entry is added as a child of task
+  ///
+  /// We check both directions, preferring direction 1 when available to avoid
+  /// picking the wrong task when multiple tasks link to the same entry.
   Future<Task?> _findLinkedTask(JournalEntity entity) async {
-    List<JournalEntity> linkedEntities;
-    linkedEntities =
-        await journalRepository.getLinkedToEntities(linkedTo: entity.id);
-
+    // First, try to find tasks that this entry links TO (entry → task).
+    // This is the preferred direction as it's an explicit reference.
+    final linkedEntities =
+        await journalRepository.getLinkedEntities(linkedTo: entity.id);
     final task = linkedEntities.firstWhereOrNull(
       (linked) => linked is Task,
     ) as Task?;
-    return task;
+
+    if (task != null) return task;
+
+    // Fallback: find tasks that link TO this entry (task → entry).
+    // This handles the case where entry was added as a child of a task.
+    final fallbackEntities =
+        await journalRepository.getLinkedToEntities(linkedTo: entity.id);
+    return fallbackEntities.firstWhereOrNull(
+      (linked) => linked is Task,
+    ) as Task?;
   }
 
   /// Build JSON array of deleted checklist item titles for the task.

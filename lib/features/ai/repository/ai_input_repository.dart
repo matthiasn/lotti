@@ -21,6 +21,20 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ai_input_repository.g.dart';
 
+/// Repository for preparing AI input data from journal entities.
+///
+/// This repository is responsible for data construction only - it returns
+/// pure data structures without any prompt-specific semantics (e.g., notes
+/// about how to use the data). Prompt semantics belong in `PromptBuilderHelper`.
+///
+/// ## Performance Considerations
+///
+/// The linked task context methods use **batched database queries** to avoid
+/// N+1 query problems. When processing multiple linked tasks:
+/// - A single call to [JournalDb.getBulkLinkedEntities] fetches all linked
+///   entities for all tasks
+/// - Time spent and latest summaries are derived from this pre-fetched data
+/// - Labels are resolved via O(1) cache lookups from [EntitiesCacheService]
 class AiInputRepository {
   AiInputRepository(this.ref);
 
@@ -188,9 +202,11 @@ class AiInputRepository {
     return jsonString;
   }
 
-  /// Build label tuples from the cache service (O(1) per label).
+  /// Build label tuples from the cache service.
   ///
-  /// Falls back to the ID if a label definition is not found in cache.
+  /// Uses [EntitiesCacheService] for O(1) lookups per label, avoiding
+  /// additional database queries. Falls back to the ID as the name if
+  /// a label definition is not found in cache.
   List<Map<String, String>> _buildLabelTuplesFromCache(List<String> ids) {
     if (ids.isEmpty) return <Map<String, String>>[];
     final cache = getIt<EntitiesCacheService>();
@@ -221,7 +237,8 @@ class AiInputRepository {
   /// It is exposed for testing purposes only.
   @visibleForTesting
   Future<List<AiLinkedTaskContext>> buildLinkedFromContext(
-      String taskId) async {
+    String taskId,
+  ) async {
     // Get entities that link TO this task (where toId = taskId)
     final linkedEntities = await _db.linkedToJournalEntities(taskId).get();
     final tasks = linkedEntities
@@ -231,12 +248,7 @@ class AiInputRepository {
         .toList()
       ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
 
-    final results = <AiLinkedTaskContext>[];
-    for (final task in tasks) {
-      final context = await _buildLinkedTaskContext(task);
-      results.add(context);
-    }
-    return results;
+    return _buildLinkedTaskContextsBatched(tasks);
   }
 
   /// Build context for tasks this task links TO (parents/epics).
@@ -254,44 +266,94 @@ class AiInputRepository {
         .toList()
       ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
 
+    return _buildLinkedTaskContextsBatched(tasks);
+  }
+
+  /// Build context objects for multiple tasks using batched database queries.
+  ///
+  /// **N+1 Query Avoidance**: This method fetches all linked entities for all
+  /// tasks in a single database call via [JournalDb.getBulkLinkedEntities].
+  /// Both time spent and latest AI summaries are then derived from this
+  /// pre-fetched data without additional queries.
+  ///
+  /// For each task, the method:
+  /// 1. Calculates time spent by summing durations of non-Task, non-AiResponse
+  ///    linked entities
+  /// 2. Finds the latest [AiResponseType.taskSummary] from linked AI responses
+  /// 3. Resolves labels via O(1) cache lookups
+  Future<List<AiLinkedTaskContext>> _buildLinkedTaskContextsBatched(
+    List<Task> tasks,
+  ) async {
+    if (tasks.isEmpty) return [];
+
+    // Collect all task IDs for bulk fetch
+    final taskIds = tasks.map((t) => t.id).toSet();
+
+    // Single bulk query to get all linked entities for all tasks
+    final bulkLinkedEntities = await _db.getBulkLinkedEntities(taskIds);
+
+    // Build context for each task using the pre-fetched data
     final results = <AiLinkedTaskContext>[];
     for (final task in tasks) {
-      final context = await _buildLinkedTaskContext(task);
-      results.add(context);
+      final linkedEntities = bulkLinkedEntities[task.id] ?? [];
+
+      // Calculate time spent from linked entities (non-Task, non-AiResponseEntry)
+      final timeSpent = _calculateTimeSpentFromEntities(linkedEntities);
+
+      // Get latest summary from linked AiResponseEntry items
+      final latestSummary = _getLatestSummaryFromEntities(linkedEntities);
+
+      // Get labels from cache (O(1) per label)
+      final labelIds = task.meta.labelIds ?? const <String>[];
+      final labels = _buildLabelTuplesFromCache(labelIds);
+
+      results.add(
+        AiLinkedTaskContext(
+          id: task.id,
+          title: task.data.title,
+          status: task.data.status.toDbString,
+          statusSince: task.data.status.createdAt,
+          priority: task.data.priority.short,
+          estimate: formatHhMm(task.data.estimate ?? Duration.zero),
+          timeSpent: formatHhMm(timeSpent),
+          createdAt: task.meta.createdAt,
+          labels: labels,
+          languageCode: task.data.languageCode,
+          latestSummary: latestSummary,
+        ),
+      );
     }
+
     return results;
   }
 
-  /// Build context object for a single linked task.
-  Future<AiLinkedTaskContext> _buildLinkedTaskContext(Task task) async {
-    final timeSpent = await _calculateTimeSpent(task.id);
-
-    // Get labels from cache (avoids N+1 query per task)
-    final labelIds = task.meta.labelIds ?? const <String>[];
-    final labels = _buildLabelTuplesFromCache(labelIds);
-
-    // Get latest summary
-    final latestSummary = await _getLatestTaskSummary(task.id);
-
-    return AiLinkedTaskContext(
-      id: task.id,
-      title: task.data.title,
-      status: task.data.status.toDbString,
-      statusSince: task.data.status.createdAt,
-      priority: task.data.priority.short,
-      estimate: formatHhMm(task.data.estimate ?? Duration.zero),
-      timeSpent: formatHhMm(timeSpent),
-      createdAt: task.meta.createdAt,
-      labels: labels,
-      languageCode: task.data.languageCode,
-      latestSummary: latestSummary,
-    );
+  /// Calculate time spent from a list of pre-fetched linked entities.
+  ///
+  /// Part of the batched query strategy: operates on entities already fetched
+  /// by [_buildLinkedTaskContextsBatched], avoiding additional database calls.
+  ///
+  /// Sums durations of all entities except [Task] and [AiResponseEntry],
+  /// which represent task structure and AI outputs rather than logged work.
+  Duration _calculateTimeSpentFromEntities(List<JournalEntity> entities) {
+    var total = Duration.zero;
+    for (final entity in entities) {
+      if (entity is! Task && entity is! AiResponseEntry) {
+        total += entryDuration(entity);
+      }
+    }
+    return total;
   }
 
-  /// Get the latest AI summary for a task.
-  Future<String?> _getLatestTaskSummary(String taskId) async {
-    final linkedEntities = await _db.getLinkedEntities(taskId);
-    final summaries = linkedEntities
+  /// Get the latest AI summary from a list of pre-fetched linked entities.
+  ///
+  /// Part of the batched query strategy: operates on entities already fetched
+  /// by [_buildLinkedTaskContextsBatched], avoiding additional database calls.
+  ///
+  /// Filters for [AiResponseEntry] items with [AiResponseType.taskSummary],
+  /// sorts by date descending, and returns the response text from the most
+  /// recent one. Returns `null` if no summaries exist.
+  String? _getLatestSummaryFromEntities(List<JournalEntity> entities) {
+    final summaries = entities
         .whereType<AiResponseEntry>()
         .where((e) => e.data.type == AiResponseType.taskSummary)
         .toList()
@@ -301,7 +363,16 @@ class AiInputRepository {
     return summaries.first.data.response;
   }
 
-  /// Build the full linked tasks JSON for prompt injection.
+  /// Build the full linked tasks JSON for a task.
+  ///
+  /// Returns a JSON object with:
+  /// - `linked_from`: Child/subtask contexts (tasks that link TO this task)
+  /// - `linked_to`: Parent/epic contexts (tasks this task links TO)
+  ///
+  /// **Note**: This method returns pure data only. Prompt-specific semantics
+  /// (e.g., notes about using web search for external links) are added by
+  /// `PromptBuilderHelper._buildLinkedTasksJson()` to maintain separation of
+  /// concerns between data construction and prompt building.
   Future<String> buildLinkedTasksJson(String taskId) async {
     final linkedFrom = await buildLinkedFromContext(taskId);
     final linkedTo = await buildLinkedToContext(taskId);
@@ -310,13 +381,6 @@ class AiInputRepository {
       'linked_from': linkedFrom.map((c) => c.toJson()).toList(),
       'linked_to': linkedTo.map((c) => c.toJson()).toList(),
     };
-
-    // Add note if there are any linked tasks with summaries containing links
-    if (linkedFrom.isNotEmpty || linkedTo.isNotEmpty) {
-      data['note'] =
-          'If summaries contain links to GitHub PRs, Issues, or similar '
-          'platforms, use web search to retrieve additional context when relevant.';
-    }
 
     const encoder = JsonEncoder.withIndent('    ');
     return encoder.convert(data);
