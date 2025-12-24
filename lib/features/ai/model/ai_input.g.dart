@@ -91,3 +91,36 @@ Map<String, dynamic> _$AiInputActionItemsListToJson(
     <String, dynamic>{
       'items': instance.items,
     };
+
+_AiLinkedTaskContext _$AiLinkedTaskContextFromJson(Map<String, dynamic> json) =>
+    _AiLinkedTaskContext(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      status: json['status'] as String,
+      statusSince: DateTime.parse(json['statusSince'] as String),
+      priority: json['priority'] as String,
+      estimate: json['estimate'] as String,
+      timeSpent: json['timeSpent'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      labels: (json['labels'] as List<dynamic>)
+          .map((e) => Map<String, String>.from(e as Map))
+          .toList(),
+      languageCode: json['languageCode'] as String?,
+      latestSummary: json['latestSummary'] as String?,
+    );
+
+Map<String, dynamic> _$AiLinkedTaskContextToJson(
+        _AiLinkedTaskContext instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'status': instance.status,
+      'statusSince': instance.statusSince.toIso8601String(),
+      'priority': instance.priority,
+      'estimate': instance.estimate,
+      'timeSpent': instance.timeSpent,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'labels': instance.labels,
+      'languageCode': instance.languageCode,
+      'latestSummary': instance.latestSummary,
+    };

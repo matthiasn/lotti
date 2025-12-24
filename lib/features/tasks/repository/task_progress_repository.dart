@@ -14,6 +14,25 @@ TaskProgressRepository taskProgressRepository(Ref ref) {
 }
 
 class TaskProgressRepository {
+  /// Calculate total time spent from a list of entities.
+  ///
+  /// Filters out [Task] and [AiResponseEntry] entities (which represent
+  /// task structure and AI outputs rather than logged work), then sums
+  /// the durations of the remaining entities.
+  ///
+  /// This is the canonical implementation of time-spent calculation logic.
+  /// Both [getTaskProgressData] and `AiInputRepository._calculateTimeSpentFromEntities`
+  /// use this same filtering logic.
+  static Duration sumTimeSpentFromEntities(List<JournalEntity> entities) {
+    var total = Duration.zero;
+    for (final entity in entities) {
+      if (entity is! Task && entity is! AiResponseEntry) {
+        total += entryDuration(entity);
+      }
+    }
+    return total;
+  }
+
   Future<(Duration?, Map<String, Duration>)?> getTaskProgressData({
     required String id,
   }) async {

@@ -414,6 +414,54 @@ The prompt template includes:
 - System message setting context (with language preference if set)
 - Detailed user message with formatting instructions
 - Placeholder `{{task}}` replaced with actual task JSON
+- Placeholder `{{linked_tasks}}` replaced with related task context (see below)
+
+#### Available Placeholders
+
+| Placeholder | Description | Available For |
+|-------------|-------------|---------------|
+| `{{task}}` | Current task's JSON data (title, status, log entries, action items) | All task-related prompts |
+| `{{linked_tasks}}` | JSON object with parent/child task context (see details below) | All prompt types |
+| `{{current_entry}}` | Focused entry being analyzed (id, type, createdAt, text/transcript) | Recording modal, linked-entry AI popup |
+| `{{labels}}` | All available label definitions as JSON | Action item prompts |
+| `{{assigned_labels}}` | Labels assigned to the current task | Action item prompts |
+| `{{suppressed_labels}}` | Label IDs that AI should not suggest | Action item prompts |
+| `{{deleted_checklist_items}}` | Soft-deleted checklist items (to avoid recreating) | Action item prompts |
+| `{{audioTranscript}}` | Raw audio transcript text | Audio transcription prompts |
+| `{{languageCode}}` | Task's language code (e.g., "en", "de") | Task summary, transcription prompts |
+| `{{correction_examples}}` | Transcription correction examples | Audio transcription prompts |
+| `{{speech_dictionary}}` | Speech recognition dictionary | Audio transcription prompts |
+
+#### Linked Tasks Placeholder (`{{linked_tasks}}`)
+
+The `{{linked_tasks}}` placeholder injects structured context about related tasks:
+
+```json
+{
+  "linked_from": [...],  // Child tasks that link TO this task (subtasks)
+  "linked_to": [...],    // Parent tasks this task links TO (epics)
+  "note": "If summaries contain links to GitHub PRs..."
+}
+```
+
+Each linked task includes:
+- `id`, `title`, `status`, `statusSince` (timestamp of status transition)
+- `priority` (P0-P3), `estimate`, `timeSpent`, `createdAt`
+- `labels` (list of `{id, name}` tuples)
+- `languageCode`, `latestSummary` (most recent AI-generated summary)
+
+**Key behaviors:**
+- Tasks are sorted chronologically (oldest first)
+- Deleted tasks are filtered out
+- Tasks without summaries are included (metadata still provides context)
+- Full summaries are included (no truncation)
+- Works for non-task entities (images, audio) by finding their linked task
+
+**Prompts using this placeholder:**
+- `task_summary` - Include related context in summaries
+- `prompt_generation` - Provide broader project context for coding prompts
+- `audio_transcription_task_context` - Help recognize domain terms
+- `image_analysis_task_context` - Understand image context from related work
 
 ### 2. Data Flow
 

@@ -58,3 +58,25 @@ abstract class AiInputActionItemsList with _$AiInputActionItemsList {
   factory AiInputActionItemsList.fromJson(Map<String, dynamic> json) =>
       _$AiInputActionItemsListFromJson(json);
 }
+
+/// Context for a linked task (parent or child) to be injected into AI prompts.
+/// Contains distilled information about related work.
+@freezed
+abstract class AiLinkedTaskContext with _$AiLinkedTaskContext {
+  const factory AiLinkedTaskContext({
+    required String id,
+    required String title,
+    required String status,
+    required DateTime statusSince,
+    required String priority,
+    required String estimate,
+    required String timeSpent,
+    required DateTime createdAt,
+    required List<Map<String, String>> labels,
+    String? languageCode,
+    String? latestSummary,
+  }) = _AiLinkedTaskContext;
+
+  factory AiLinkedTaskContext.fromJson(Map<String, dynamic> json) =>
+      _$AiLinkedTaskContextFromJson(json);
+}

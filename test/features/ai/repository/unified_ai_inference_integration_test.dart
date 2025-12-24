@@ -159,6 +159,10 @@ void main() {
     when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
         .thenAnswer((_) async => false);
 
+    // Default mock for getLinkedEntities - returns empty so fallback to getLinkedToEntities
+    when(() => mockJournalRepo.getLinkedEntities(linkedTo: any(named: 'linkedTo')))
+        .thenAnswer((_) async => <JournalEntity>[]);
+
     repository = UnifiedAiInferenceRepository(mockRef)
       ..autoChecklistServiceForTesting = mockAutoChecklistService;
   });

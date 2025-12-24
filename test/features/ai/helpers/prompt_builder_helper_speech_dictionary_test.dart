@@ -236,7 +236,7 @@ void main() {
 
       test('injects speech dictionary for audio entry linked to task',
           () async {
-        when(() => mockJournalRepository.getLinkedToEntities(
+        when(() => mockJournalRepository.getLinkedEntities(
               linkedTo: 'audio-1',
             )).thenAnswer((_) async => [testTask]);
         when(() => mockEntitiesCacheService.getCategoryById('category-1'))
@@ -269,7 +269,7 @@ void main() {
 
       test('injects speech dictionary for image entry linked to task',
           () async {
-        when(() => mockJournalRepository.getLinkedToEntities(
+        when(() => mockJournalRepository.getLinkedEntities(
               linkedTo: 'image-1',
             )).thenAnswer((_) async => [testTask]);
         when(() => mockEntitiesCacheService.getCategoryById('category-1'))
@@ -330,7 +330,7 @@ void main() {
       });
 
       test('replaces with empty when audio not linked to any task', () async {
-        when(() => mockJournalRepository.getLinkedToEntities(
+        when(() => mockJournalRepository.getLinkedEntities(
               linkedTo: 'audio-1',
             )).thenAnswer((_) async => []);
 
