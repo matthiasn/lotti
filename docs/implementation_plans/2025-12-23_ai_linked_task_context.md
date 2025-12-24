@@ -203,9 +203,9 @@ Each linked task includes metadata (status, priority, time spent) and its latest
 | 1.2 | Run `build_runner` | Generate `.freezed.dart` and `.g.dart` files |
 | 1.3 | `lib/features/ai/repository/ai_input_repository.dart` | Add `buildLinkedFromContext()` method |
 | 1.4 | `lib/features/ai/repository/ai_input_repository.dart` | Add `buildLinkedToContext()` method |
-| 1.5 | `lib/features/ai/repository/ai_input_repository.dart` | Add `_extractExternalLinks()` helper |
-| 1.6 | `lib/features/ai/repository/ai_input_repository.dart` | Add `_getLatestTaskSummary()` helper |
-| 1.7 | `lib/features/ai/repository/ai_input_repository.dart` | Add `_buildLinkedTaskContext()` to convert Task → AiLinkedTaskContext |
+| 1.5 | `lib/features/ai/repository/ai_input_repository.dart` | Add `_buildLinkedTaskContextsBatched()` for N+1 query avoidance |
+| 1.6 | `lib/features/ai/repository/ai_input_repository.dart` | Add `_calculateTimeSpentFromEntities()` and `_getLatestSummaryFromEntities()` helpers |
+| 1.7 | `lib/features/ai/helpers/prompt_builder_helper.dart` | Add note about external links in `_buildLinkedTasksJson()` (prompt semantics) |
 
 ### Phase 2: Prompt Builder Integration
 
@@ -237,22 +237,51 @@ Each linked task includes metadata (status, priority, time spent) and its latest
 
 ## Key Implementation Details
 
-### Latest Summary Retrieval
+### Batched Context Building (N+1 Query Avoidance)
 
-Reuse logic from `TaskSummaryRepository` to get the most recent `AiResponseEntry` with `type == taskSummary`:
+The implementation uses `_buildLinkedTaskContextsBatched()` which fetches all linked entities
+for multiple tasks in a **single database call** via `JournalDb.getBulkLinkedEntities()`.
+Both time spent and latest summaries are derived from this pre-fetched data:
 
 ```dart
-Future<String?> _getLatestTaskSummary(String taskId) async {
-  final linkedEntities = await _db.getLinkedEntities(taskId);
-  final summaries = linkedEntities
+Future<List<AiLinkedTaskContext>> _buildLinkedTaskContextsBatched(
+  List<Task> tasks,
+) async {
+  if (tasks.isEmpty) return [];
+
+  // Single bulk query for all linked entities
+  final taskIds = tasks.map((t) => t.id).toSet();
+  final bulkLinkedEntities = await _db.getBulkLinkedEntities(taskIds);
+
+  final results = <AiLinkedTaskContext>[];
+  for (final task in tasks) {
+    final linkedEntities = bulkLinkedEntities[task.id] ?? [];
+
+    // Derive time spent and summary from pre-fetched data (no additional queries)
+    final timeSpent = _calculateTimeSpentFromEntities(linkedEntities);
+    final latestSummary = _getLatestSummaryFromEntities(linkedEntities);
+    final labels = _buildLabelTuplesFromCache(task.meta.labelIds ?? []);
+
+    results.add(AiLinkedTaskContext(
+      id: task.id,
+      title: task.data.title,
+      // ... other fields
+      timeSpent: formatHhMm(timeSpent),
+      latestSummary: latestSummary,
+      labels: labels,
+    ));
+  }
+  return results;
+}
+
+/// Get latest summary from pre-fetched entities (no additional DB call)
+String? _getLatestSummaryFromEntities(List<JournalEntity> entities) {
+  final summaries = entities
       .whereType<AiResponseEntry>()
       .where((e) => e.data.type == AiResponseType.taskSummary)
       .toList()
     ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
-
   if (summaries.isEmpty) return null;
-
-  // Return full summary (no truncation per design decision)
   return summaries.first.data.response;
 }
 ```
@@ -293,15 +322,13 @@ final timeSpent = progressRepository
 
 ---
 
-## Future Considerations (Not for This Implementation)
+## Future Considerations
 
-### Batch Task Summary Lookups
-Currently, `_getLatestTaskSummary()` is called once per linked task, resulting in N+1 queries when there are many linked tasks. Consider:
-1. Fetching all linked entity IDs upfront
-2. Batch-querying AI summaries for all tasks in a single database call
-3. Creating a map of `taskId → latestSummary` for O(1) lookups
-
-This optimization becomes important when tasks have many linked parent/child tasks (e.g., 10+ links).
+### ✅ Batch Task Summary Lookups (IMPLEMENTED)
+This optimization was implemented as part of the initial feature:
+- `_buildLinkedTaskContextsBatched()` uses `getBulkLinkedEntities()` for a single database call
+- Both time spent and summaries are derived from pre-fetched data
+- No N+1 queries regardless of linked task count
 
 ### Large Prompt Storage as Files
 As prompts grow with linked task context, consider:

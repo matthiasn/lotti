@@ -332,16 +332,10 @@ class AiInputRepository {
   /// Part of the batched query strategy: operates on entities already fetched
   /// by [_buildLinkedTaskContextsBatched], avoiding additional database calls.
   ///
-  /// Sums durations of all entities except [Task] and [AiResponseEntry],
-  /// which represent task structure and AI outputs rather than logged work.
+  /// Delegates to [TaskProgressRepository.sumTimeSpentFromEntities] which is
+  /// the canonical implementation of time-spent calculation logic.
   Duration _calculateTimeSpentFromEntities(List<JournalEntity> entities) {
-    var total = Duration.zero;
-    for (final entity in entities) {
-      if (entity is! Task && entity is! AiResponseEntry) {
-        total += entryDuration(entity);
-      }
-    }
-    return total;
+    return TaskProgressRepository.sumTimeSpentFromEntities(entities);
   }
 
   /// Get the latest AI summary from a list of pre-fetched linked entities.
