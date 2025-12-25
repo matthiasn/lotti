@@ -51,7 +51,15 @@ class CorrectionCaptureNotifier extends _$CorrectionCaptureNotifier {
     // Start the countdown timer
     _saveTimer = Timer(kCorrectionSaveDelay, () async {
       if (state == pending) {
-        await onSave();
+        try {
+          await onSave();
+        } catch (e) {
+          // Log error but don't crash - correction save is fire-and-forget
+          developer.log(
+            'Correction capture: timer callback failed: $e',
+            name: 'CorrectionCaptureService',
+          );
+        }
         state = null;
       }
     });

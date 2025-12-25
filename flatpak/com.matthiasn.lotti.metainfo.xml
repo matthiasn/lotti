@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.773" date="2025-12-25">
+      <description>
+        <p>Checklist Correction UX: Corrections now use a delayed-save pattern with a cancel option. A 5-second countdown snackbar lets you discard accidental corrections before they're saved as AI learning examples.</p>
+      </description>
+    </release>
     <release version="0.9.771" date="2025-12-23">
       <description>
         <p>Task Summary Link Extraction: AI summaries now include a Links section that automatically extracts and displays all URLs from task entries with succinct titles (e.g., "Linear: APP-123", "Lotti PR #456"). Links are deduplicated and formatted as clickable Markdown.</p>

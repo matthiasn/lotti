@@ -52,8 +52,9 @@ class _CorrectionUndoSnackbarContentState
     // Animate from current progress down to 0
     _progressController.reverse(from: _progressController.value);
 
-    // Update remaining time display periodically
-    _updateTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    // Update remaining time display periodically (500ms is sufficient since
+    // secondsLeft only changes once per second)
+    _updateTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       if (mounted) {
         setState(() {});
       }
