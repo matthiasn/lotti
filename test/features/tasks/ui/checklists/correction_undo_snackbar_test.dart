@@ -91,13 +91,16 @@ void main() {
       // Get initial progress value
       final progressFinder = find.byType(LinearProgressIndicator);
       expect(progressFinder, findsOneWidget);
+      final initialProgress =
+          tester.widget<LinearProgressIndicator>(progressFinder).value;
+      expect(initialProgress, isNotNull);
 
-      // Advance time and check that widget still works
+      // Advance time and check that progress value has decreased
       await tester.pump(const Duration(milliseconds: 500));
-      expect(progressFinder, findsOneWidget);
-
-      await tester.pump(const Duration(seconds: 1));
-      expect(progressFinder, findsOneWidget);
+      final laterProgress =
+          tester.widget<LinearProgressIndicator>(progressFinder).value;
+      expect(laterProgress, isNotNull);
+      expect(laterProgress, lessThan(initialProgress!));
     });
 
     testWidgets('handles expired pending correction gracefully',
