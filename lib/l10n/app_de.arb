@@ -414,6 +414,13 @@
     }
   },
   "correctionExampleCaptured": "Korrektur für KI-Lernen gespeichert",
+  "correctionExamplePending": "Korrektur wird in {seconds}s gespeichert...",
+  "@correctionExamplePending": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "correctionExampleCancel": "ABBRECHEN",
   "aiResponseTypePromptGeneration": "Generierter Prompt",
   "promptGenerationCardTitle": "KI-Coding-Prompt",
   "promptGenerationCopyTooltip": "Prompt in Zwischenablage kopieren",

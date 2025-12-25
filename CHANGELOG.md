@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.773] - 2025-12-25
+### Changed
+- Checklist Correction UX: Corrections now use a delayed-save pattern with cancel option
+  - When editing a checklist item triggers a correction, a snackbar appears with a 5-second countdown
+  - Users can tap "CANCEL" to discard the correction before it's saved
+  - If the countdown completes without cancellation, the correction is saved to the database
+  - Prevents accidental one-time fixes from being permanently saved as AI learning examples
+
 ## [0.9.772] - 2025-12-24
 ### Added
 - AI Linked Task Context: AI prompts now include context from related tasks

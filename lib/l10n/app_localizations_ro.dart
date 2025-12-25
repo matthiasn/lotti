@@ -2807,4 +2807,12 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get correctionExampleCaptured =>
       'Corecție salvată pentru învățarea AI';
+
+  @override
+  String correctionExamplePending(int seconds) {
+    return 'Salvare corecție în ${seconds}s...';
+  }
+
+  @override
+  String get correctionExampleCancel => 'ANULEAZĂ';
 }

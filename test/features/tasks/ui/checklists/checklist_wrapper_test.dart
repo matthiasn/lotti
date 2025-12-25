@@ -568,18 +568,21 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Emit a correction capture event
-      container.read(correctionCaptureNotifierProvider.notifier).notify(
-            const CorrectionCaptureEvent(
+      // Set a pending correction to trigger snackbar
+      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+            pending: PendingCorrection(
               before: 'test flight',
               after: 'TestFlight',
+              categoryId: 'cat-1',
               categoryName: 'Dev',
+              createdAt: DateTime.now(),
             ),
+            onSave: () async {},
           );
 
       await tester.pump();
 
-      // Snackbar should appear with correction captured message
+      // Snackbar should appear with pending correction UI
       expect(find.byType(SnackBar), findsOneWidget);
     });
 

@@ -2794,6 +2794,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get correctionExampleCaptured => 'Correction saved for AI learning';
+
+  @override
+  String correctionExamplePending(int seconds) {
+    return 'Saving correction in ${seconds}s...';
+  }
+
+  @override
+  String get correctionExampleCancel => 'CANCEL';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -4100,4 +4108,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get correctionExampleCaptured => 'Correction saved for AI learning';
+
+  @override
+  String correctionExamplePending(int seconds) {
+    return 'Saving correction in ${seconds}s...';
+  }
+
+  @override
+  String get correctionExampleCancel => 'CANCEL';
 }

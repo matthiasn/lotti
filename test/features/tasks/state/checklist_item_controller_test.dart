@@ -119,13 +119,13 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        // Set up listener to capture the notification event
-        CorrectionCaptureEvent? capturedEvent;
-        container.listen<CorrectionCaptureEvent?>(
+        // Set up listener to capture the pending correction
+        PendingCorrection? capturedPending;
+        container.listen<PendingCorrection?>(
           correctionCaptureNotifierProvider,
           (previous, next) {
             if (next != null) {
-              capturedEvent = next;
+              capturedPending = next;
             }
           },
           fireImmediately: true,
@@ -158,17 +158,19 @@ void main() {
           ),
         ).called(1);
 
-        // Verify correction was captured
+        // Verify correction capture called getCategoryById for validation
         verify(() => mockCategoryRepository.getCategoryById('category-1'))
             .called(1);
-        verify(() => mockCategoryRepository.updateCategory(any())).called(1);
 
-        // Check the notification was fired (captured by listener)
-        expect(capturedEvent, isNotNull);
-        expect(capturedEvent?.before, equals('Original Title'));
-        expect(capturedEvent?.after, equals('Updated Title'));
-        // Service now populates category name (not empty string)
-        expect(capturedEvent?.categoryName, equals('Test Category'));
+        // Note: updateCategory is NOT called immediately - it's delayed
+        // The pending correction should be set instead
+        verifyNever(() => mockCategoryRepository.updateCategory(any()));
+
+        // Check the pending correction was set
+        expect(capturedPending, isNotNull);
+        expect(capturedPending?.before, equals('Original Title'));
+        expect(capturedPending?.after, equals('Updated Title'));
+        expect(capturedPending?.categoryName, equals('Test Category'));
       });
 
       test('does not notify when capture returns non-success', () async {

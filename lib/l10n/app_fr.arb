@@ -378,5 +378,12 @@
       "max": { "type": "int" }
     }
   },
-  "correctionExampleCaptured": "Correction enregistrée pour l'apprentissage IA"
+  "correctionExampleCaptured": "Correction enregistrée pour l'apprentissage IA",
+  "correctionExamplePending": "Enregistrement de la correction dans {seconds}s...",
+  "@correctionExamplePending": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "correctionExampleCancel": "ANNULER"
 }

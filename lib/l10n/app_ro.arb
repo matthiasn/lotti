@@ -377,5 +377,12 @@
       "max": { "type": "int" }
     }
   },
-  "correctionExampleCaptured": "Corecție salvată pentru învățarea AI"
+  "correctionExampleCaptured": "Corecție salvată pentru învățarea AI",
+  "correctionExamplePending": "Salvare corecție în {seconds}s...",
+  "@correctionExamplePending": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "correctionExampleCancel": "ANULEAZĂ"
 }
