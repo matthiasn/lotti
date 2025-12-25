@@ -2816,4 +2816,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get correctionExampleCaptured =>
       'Corrección guardada para aprendizaje de IA';
+
+  @override
+  String correctionExamplePending(int seconds) {
+    return 'Guardando corrección en ${seconds}s...';
+  }
+
+  @override
+  String get correctionExampleCancel => 'CANCELAR';
 }

@@ -2812,4 +2812,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get correctionExampleCaptured => 'Korrektur für KI-Lernen gespeichert';
+
+  @override
+  String correctionExamplePending(int seconds) {
+    return 'Korrektur wird in ${seconds}s gespeichert...';
+  }
+
+  @override
+  String get correctionExampleCancel => 'ABBRECHEN';
 }

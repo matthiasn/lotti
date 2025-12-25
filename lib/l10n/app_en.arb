@@ -1032,5 +1032,12 @@
       "max": { "type": "int" }
     }
   },
-  "correctionExampleCaptured": "Correction saved for AI learning"
+  "correctionExampleCaptured": "Correction saved for AI learning",
+  "correctionExamplePending": "Saving correction in {seconds}s...",
+  "@correctionExamplePending": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "correctionExampleCancel": "CANCEL"
 }

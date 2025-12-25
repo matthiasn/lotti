@@ -2818,4 +2818,12 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get correctionExampleCaptured =>
       'Correction enregistrée pour l\'apprentissage IA';
+
+  @override
+  String correctionExamplePending(int seconds) {
+    return 'Enregistrement de la correction dans ${seconds}s...';
+  }
+
+  @override
+  String get correctionExampleCancel => 'ANNULER';
 }

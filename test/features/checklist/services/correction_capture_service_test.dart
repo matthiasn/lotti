@@ -116,10 +116,9 @@ void main() {
         verifyNever(() => mockCategoryRepository.updateCategory(any()));
       });
 
-      test('successfully captures new correction', () async {
+      test('returns pending for valid new correction (no immediate save)',
+          () async {
         when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
-        when(() => mockCategoryRepository.updateCategory(any()))
             .thenAnswer((_) async => testCategory);
 
         final result = await service.captureCorrection(
@@ -128,25 +127,14 @@ void main() {
           afterText: 'TestFlight release',
         );
 
-        expect(result, equals(CorrectionCaptureResult.success));
+        expect(result, equals(CorrectionCaptureResult.pending));
 
-        final captured =
-            verify(() => mockCategoryRepository.updateCategory(captureAny()))
-                .captured
-                .single as CategoryDefinition;
-
-        expect(captured.correctionExamples, hasLength(1));
-        expect(captured.correctionExamples!.first.before,
-            equals('test flight release'));
-        expect(captured.correctionExamples!.first.after,
-            equals('TestFlight release'));
-        expect(captured.correctionExamples!.first.capturedAt, isNotNull);
+        // Verify no immediate save
+        verifyNever(() => mockCategoryRepository.updateCategory(any()));
       });
 
-      test('notifies via notifier on success', () async {
+      test('sets pending correction on notifier', () async {
         when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
-        when(() => mockCategoryRepository.updateCategory(any()))
             .thenAnswer((_) async => testCategory);
 
         final container = ProviderContainer(
@@ -157,13 +145,13 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        // Listen for notification events
-        CorrectionCaptureEvent? capturedEvent;
-        container.listen<CorrectionCaptureEvent?>(
+        // Listen for pending correction events
+        PendingCorrection? capturedPending;
+        container.listen<PendingCorrection?>(
           correctionCaptureNotifierProvider,
           (previous, next) {
             if (next != null) {
-              capturedEvent = next;
+              capturedPending = next;
             }
           },
           fireImmediately: true,
@@ -179,19 +167,18 @@ void main() {
           afterText: 'TestFlight',
         );
 
-        expect(result, equals(CorrectionCaptureResult.success));
+        expect(result, equals(CorrectionCaptureResult.pending));
 
-        // Verify notification was sent with correct data
-        expect(capturedEvent, isNotNull);
-        expect(capturedEvent?.before, equals('test flight'));
-        expect(capturedEvent?.after, equals('TestFlight'));
-        expect(capturedEvent?.categoryName, equals('Test Category'));
+        // Verify pending correction was set with correct data
+        expect(capturedPending, isNotNull);
+        expect(capturedPending?.before, equals('test flight'));
+        expect(capturedPending?.after, equals('TestFlight'));
+        expect(capturedPending?.categoryName, equals('Test Category'));
+        expect(capturedPending?.categoryId, equals('category-1'));
       });
 
-      test('does not notify when no notifier provided', () async {
+      test('does not set pending when no notifier provided', () async {
         when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
-        when(() => mockCategoryRepository.updateCategory(any()))
             .thenAnswer((_) async => testCategory);
 
         // Service without notifier (created manually in setUp)
@@ -201,77 +188,86 @@ void main() {
           afterText: 'TestFlight',
         );
 
-        // Still succeeds, just no notification
-        expect(result, equals(CorrectionCaptureResult.success));
+        // Still returns pending, just no notifier to call
+        expect(result, equals(CorrectionCaptureResult.pending));
       });
 
-      test('appends to existing corrections', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-2'))
-            .thenAnswer((_) async => categoryWithExamples);
-        when(() => mockCategoryRepository.updateCategory(any()))
-            .thenAnswer((_) async => categoryWithExamples);
-
-        final result = await service.captureCorrection(
-          categoryId: 'category-2',
-          beforeText: 'new before',
-          afterText: 'new after',
-        );
-
-        expect(result, equals(CorrectionCaptureResult.success));
-
-        final captured =
-            verify(() => mockCategoryRepository.updateCategory(captureAny()))
-                .captured
-                .single as CategoryDefinition;
-
-        expect(captured.correctionExamples, hasLength(2));
-        expect(captured.correctionExamples!.last.before, equals('new before'));
-        expect(captured.correctionExamples!.last.after, equals('new after'));
-      });
-
-      test('normalizes whitespace before saving', () async {
+      test('sets pending and does not immediately save', () async {
         when(() => mockCategoryRepository.getCategoryById('category-1'))
             .thenAnswer((_) async => testCategory);
-        when(() => mockCategoryRepository.updateCategory(any()))
+
+        final container = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider
+                .overrideWithValue(mockCategoryRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final serviceWithNotifier =
+            container.read(correctionCaptureServiceProvider);
+
+        // Call captureCorrection
+        await serviceWithNotifier.captureCorrection(
+          categoryId: 'category-1',
+          beforeText: 'test flight',
+          afterText: 'TestFlight',
+        );
+
+        // Verify getCategoryById was called for validation
+        verify(() => mockCategoryRepository.getCategoryById('category-1'))
+            .called(1);
+
+        // Verify NO immediate save
+        verifyNever(() => mockCategoryRepository.updateCategory(any()));
+
+        // Verify pending state was set
+        final pending = container.read(correctionCaptureNotifierProvider);
+        expect(pending, isNotNull);
+        expect(pending!.before, equals('test flight'));
+        expect(pending.after, equals('TestFlight'));
+        expect(pending.categoryName, equals('Test Category'));
+      });
+
+      test('normalizes whitespace when setting pending', () async {
+        when(() => mockCategoryRepository.getCategoryById('category-1'))
             .thenAnswer((_) async => testCategory);
 
-        final result = await service.captureCorrection(
+        final container = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider
+                .overrideWithValue(mockCategoryRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Listen for pending correction events
+        PendingCorrection? capturedPending;
+        container.listen<PendingCorrection?>(
+          correctionCaptureNotifierProvider,
+          (previous, next) {
+            if (next != null) {
+              capturedPending = next;
+            }
+          },
+          fireImmediately: true,
+        );
+
+        final serviceWithNotifier =
+            container.read(correctionCaptureServiceProvider);
+
+        await serviceWithNotifier.captureCorrection(
           categoryId: 'category-1',
           beforeText: '  test   flight  ',
           afterText: '  TestFlight  ',
         );
 
-        expect(result, equals(CorrectionCaptureResult.success));
-
-        final captured =
-            verify(() => mockCategoryRepository.updateCategory(captureAny()))
-                .captured
-                .single as CategoryDefinition;
-
-        expect(
-            captured.correctionExamples!.first.before, equals('test flight'));
-        expect(captured.correctionExamples!.first.after, equals('TestFlight'));
-      });
-
-      test('returns saveFailed when repository throws', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
-        when(() => mockCategoryRepository.updateCategory(any()))
-            .thenThrow(Exception('Database error'));
-
-        final result = await service.captureCorrection(
-          categoryId: 'category-1',
-          beforeText: 'before',
-          afterText: 'after',
-        );
-
-        expect(result, equals(CorrectionCaptureResult.saveFailed));
+        expect(capturedPending?.before, equals('test flight'));
+        expect(capturedPending?.after, equals('TestFlight'));
       });
 
       test('captures meaningful case changes for longer texts', () async {
         when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
-        when(() => mockCategoryRepository.updateCategory(any()))
             .thenAnswer((_) async => testCategory);
 
         final result = await service.captureCorrection(
@@ -280,17 +276,18 @@ void main() {
           afterText: 'macOS',
         );
 
-        expect(result, equals(CorrectionCaptureResult.success));
+        expect(result, equals(CorrectionCaptureResult.pending));
       });
     });
   });
 
   group('CorrectionCaptureResult', () {
     test('has all expected values', () {
-      expect(CorrectionCaptureResult.values, hasLength(7));
+      expect(CorrectionCaptureResult.values, hasLength(8));
       expect(
         CorrectionCaptureResult.values,
         containsAll([
+          CorrectionCaptureResult.pending,
           CorrectionCaptureResult.success,
           CorrectionCaptureResult.noCategory,
           CorrectionCaptureResult.noChange,
@@ -303,52 +300,56 @@ void main() {
     });
   });
 
-  group('CorrectionCaptureEvent', () {
-    test('creates event with required properties', () {
-      const event = CorrectionCaptureEvent(
+  group('PendingCorrection', () {
+    test('creates with required properties', () {
+      final createdAt = DateTime(2025, 1, 15, 10);
+      final pending = PendingCorrection(
         before: 'test flight',
         after: 'TestFlight',
+        categoryId: 'cat-1',
         categoryName: 'iOS Development',
+        createdAt: createdAt,
       );
 
-      expect(event.before, equals('test flight'));
-      expect(event.after, equals('TestFlight'));
-      expect(event.categoryName, equals('iOS Development'));
+      expect(pending.before, equals('test flight'));
+      expect(pending.after, equals('TestFlight'));
+      expect(pending.categoryId, equals('cat-1'));
+      expect(pending.categoryName, equals('iOS Development'));
+      expect(pending.createdAt, equals(createdAt));
+    });
+
+    test('remainingTime returns approximately correct duration', () {
+      // Create a pending correction 2 seconds ago
+      final createdAt = DateTime.now().subtract(const Duration(seconds: 2));
+      final pending = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: createdAt,
+      );
+
+      // Expected remaining: 5s - 2s = ~3s (allow for slight timing variance)
+      final remaining = pending.remainingTime;
+      expect(remaining.inSeconds, inInclusiveRange(2, 3));
+    });
+
+    test('remainingTime returns zero when expired', () {
+      // Create a pending correction 10 seconds ago (past the 5s delay)
+      final createdAt = DateTime.now().subtract(const Duration(seconds: 10));
+      final pending = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: createdAt,
+      );
+
+      expect(pending.remainingTime, equals(Duration.zero));
     });
   });
 
   group('CorrectionCaptureNotifier', () {
-    test('notify sets state and resets after delay', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      const event = CorrectionCaptureEvent(
-        before: 'before',
-        after: 'after',
-        categoryName: 'Test',
-      );
-
-      // Initial state should be null
-      expect(
-        container.read(correctionCaptureNotifierProvider),
-        isNull,
-      );
-
-      // Notify sets the state
-      container.read(correctionCaptureNotifierProvider.notifier).notify(event);
-      expect(
-        container.read(correctionCaptureNotifierProvider),
-        equals(event),
-      );
-
-      // After delay, state resets to null
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-      expect(
-        container.read(correctionCaptureNotifierProvider),
-        isNull,
-      );
-    });
-
     test('build returns null initially', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -359,66 +360,183 @@ void main() {
       );
     });
 
-    test('disposal before timer fires does not throw', () async {
-      // This test verifies the P2 fix: disposing the provider before the
-      // 100ms reset timer fires should not throw an exception
+    test('setPending sets state correctly', () {
       final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-      const event = CorrectionCaptureEvent(
+      final pending = PendingCorrection(
         before: 'before',
         after: 'after',
+        categoryId: 'cat-1',
         categoryName: 'Test',
+        createdAt: DateTime.now(),
       );
 
-      // Notify the event (starts the 100ms timer)
-      container.read(correctionCaptureNotifierProvider.notifier).notify(event);
+      // Set pending with save callback
+      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+            pending: pending,
+            onSave: () async {},
+          );
+
+      // State should be set
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        equals(pending),
+      );
+    });
+
+    test('cancel clears state immediately', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final pending = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: DateTime.now(),
+      );
+
+      // Set pending with save callback
+      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+            pending: pending,
+            onSave: () async {},
+          );
+
+      // State should be set
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        equals(pending),
+      );
+
+      // Cancel the pending correction immediately
+      final wasCancelled =
+          container.read(correctionCaptureNotifierProvider.notifier).cancel();
+
+      expect(wasCancelled, isTrue);
+
+      // State should be cleared immediately
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        isNull,
+      );
+    });
+
+    test('cancel returns false when no pending correction', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final wasCancelled =
+          container.read(correctionCaptureNotifierProvider.notifier).cancel();
+
+      expect(wasCancelled, isFalse);
+    });
+
+    test('new setPending replaces previous pending', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final pending1 = PendingCorrection(
+        before: 'first',
+        after: 'event',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: DateTime.now(),
+      );
+
+      // Set first pending
+      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+            pending: pending1,
+            onSave: () async {},
+          );
+
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        equals(pending1),
+      );
+
+      final pending2 = PendingCorrection(
+        before: 'second',
+        after: 'event',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: DateTime.now(),
+      );
+
+      // Set second pending (should replace first)
+      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+            pending: pending2,
+            onSave: () async {},
+          );
+
+      // State should now be pending2
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        equals(pending2),
+      );
+
+      // Verify pending1 is no longer the state
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        isNot(equals(pending1)),
+      );
+    });
+
+    test('disposal before timer fires does not throw', () async {
+      final container = ProviderContainer();
+
+      final pending = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
+        categoryName: 'Test',
+        createdAt: DateTime.now(),
+      );
+
+      // Set pending (starts the save timer)
+      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+            pending: pending,
+            onSave: () async {},
+          );
 
       // Immediately dispose before the timer fires
       container.dispose();
 
-      // Wait for longer than the timer would have fired
-      await Future<void>.delayed(const Duration(milliseconds: 150));
+      // Wait past the save delay
+      await Future<void>.delayed(
+          kCorrectionSaveDelay + const Duration(milliseconds: 100));
 
       // If we get here without throwing, the test passes
       // The timer was properly cancelled on disposal
     });
 
-    test('new notify cancels pending timer', () async {
+    test('clear clears state immediately', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      const event1 = CorrectionCaptureEvent(
-        before: 'first',
-        after: 'event',
+      final pending = PendingCorrection(
+        before: 'before',
+        after: 'after',
+        categoryId: 'cat-1',
         categoryName: 'Test',
-      );
-      const event2 = CorrectionCaptureEvent(
-        before: 'second',
-        after: 'event',
-        categoryName: 'Test',
+        createdAt: DateTime.now(),
       );
 
-      // Notify first event
-      container.read(correctionCaptureNotifierProvider.notifier).notify(event1);
+      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+            pending: pending,
+            onSave: () async {},
+          );
+
+      // State should be set
       expect(
         container.read(correctionCaptureNotifierProvider),
-        equals(event1),
+        equals(pending),
       );
 
-      // Wait a bit but less than the reset delay
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Clear the state
+      container.read(correctionCaptureNotifierProvider.notifier).clear();
 
-      // Notify second event (should cancel the first timer)
-      container.read(correctionCaptureNotifierProvider.notifier).notify(event2);
-      expect(
-        container.read(correctionCaptureNotifierProvider),
-        equals(event2),
-      );
-
-      // Wait for the timer to fire (relative to second notify)
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-
-      // State should be null (reset occurred)
+      // State should be cleared
       expect(
         container.read(correctionCaptureNotifierProvider),
         isNull,

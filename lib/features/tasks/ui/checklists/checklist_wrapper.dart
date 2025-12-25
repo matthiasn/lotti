@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/services/checklist_markdown_exporter.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
+import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/share_service.dart';
@@ -76,19 +77,29 @@ class ChecklistWrapper extends ConsumerWidget {
         )
         .value;
 
-    // Listen for correction capture events and show snackbar
-    ref.listen<CorrectionCaptureEvent?>(
+    // Listen for pending correction events and show countdown snackbar
+    ref.listen<PendingCorrection?>(
       correctionCaptureNotifierProvider,
       (previous, next) {
         if (next != null && previous != next) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.messages.correctionExampleCaptured),
-              backgroundColor: context.colorScheme.primaryContainer,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          final notifier = ref.read(correctionCaptureNotifierProvider.notifier);
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: CorrectionUndoSnackbarContent(
+                  pending: next,
+                  onUndo: () {
+                    notifier.cancel();
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  },
+                ),
+                backgroundColor: context.colorScheme.primaryContainer,
+                behavior: SnackBarBehavior.floating,
+                duration: kCorrectionSaveDelay + const Duration(seconds: 1),
+                padding: EdgeInsets.zero,
+              ),
+            );
         }
       },
     );

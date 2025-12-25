@@ -5235,6 +5235,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Correction saved for AI learning'**
   String get correctionExampleCaptured;
+
+  /// No description provided for @correctionExamplePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving correction in {seconds}s...'**
+  String correctionExamplePending(int seconds);
+
+  /// No description provided for @correctionExampleCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'CANCEL'**
+  String get correctionExampleCancel;
 }
 
 class _AppLocalizationsDelegate
