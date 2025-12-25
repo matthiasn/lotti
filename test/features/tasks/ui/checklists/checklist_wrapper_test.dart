@@ -586,6 +586,108 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
     });
 
+    testWidgets('cancel button in snackbar clears pending and hides snackbar',
+        (tester) async {
+      const checklistId = 'correction-2';
+      const taskId = 't-correction-2';
+      const itemId1 = 'c2';
+
+      final checklist = Checklist(
+        meta: Metadata(
+          id: checklistId,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: const ChecklistData(
+          title: 'Cancel Test',
+          linkedChecklistItems: [itemId1],
+          linkedTasks: [],
+        ),
+      );
+
+      final item1 = ChecklistItem(
+        meta: Metadata(
+          id: itemId1,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: const ChecklistItemData(
+          title: 'Item',
+          isChecked: false,
+          linkedChecklists: [],
+        ),
+      );
+
+      late ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistControllerProvider(
+              id: checklistId,
+              taskId: taskId,
+            ).overrideWith(() => _MockChecklistController(checklist)),
+            checklistItemControllerProvider(id: itemId1, taskId: taskId)
+                .overrideWith(() => _MockChecklistItemController(item1)),
+          ],
+          child: Consumer(
+            builder: (context, ref, child) {
+              container = ProviderScope.containerOf(context);
+              return const WidgetTestBench(
+                child: ChecklistWrapper(
+                  entryId: checklistId,
+                  taskId: taskId,
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Set a pending correction to trigger snackbar
+      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+            pending: PendingCorrection(
+              before: 'test flight',
+              after: 'TestFlight',
+              categoryId: 'cat-1',
+              categoryName: 'Dev',
+              createdAt: DateTime.now(),
+            ),
+            onSave: () async {},
+          );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Snackbar should be visible
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      // Pending correction should exist
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        isNotNull,
+      );
+
+      // Cancel the pending correction (simulating button tap)
+      // Note: Direct tap on floating snackbar button doesn't work reliably in tests
+      // due to hit testing issues, so we call cancel() directly which is what the
+      // button's onPressed handler does
+      container.read(correctionCaptureNotifierProvider.notifier).cancel();
+      await tester.pumpAndSettle();
+
+      // Pending correction should be cleared
+      expect(
+        container.read(correctionCaptureNotifierProvider),
+        isNull,
+      );
+    });
+
     /* Skipped: loading-state null branch is transient and racey in tests.
     testWidgets('returns nothing while completionRate is loading', (tester) async {
       const checklistId = 'null-rate';

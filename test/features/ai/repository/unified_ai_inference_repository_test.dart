@@ -204,7 +204,8 @@ void main() {
         .thenAnswer((_) async => false);
 
     // Default mock for getLinkedEntities - returns empty so fallback to getLinkedToEntities
-    when(() => mockJournalRepo.getLinkedEntities(linkedTo: any(named: 'linkedTo')))
+    when(() =>
+            mockJournalRepo.getLinkedEntities(linkedTo: any(named: 'linkedTo')))
         .thenAnswer((_) async => <JournalEntity>[]);
 
     // Set up default behavior for prompt capability filter to pass through all prompts
