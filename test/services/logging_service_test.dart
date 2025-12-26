@@ -231,4 +231,96 @@ void main() {
       expect(File(logPath).existsSync(), isFalse);
     });
   });
+
+  test(
+      'captureEvent CRITICAL fallback failure logs all errors when both '
+      'DB and file write fail', () {
+    fakeAsync((async) {
+      // Override DI to use a directory that doesn't exist and can't be created
+      // This will cause file write to fail
+      getIt.unregister<Directory>();
+      // Use a path that should fail (nested under file instead of directory)
+      final invalidDir = Directory('/invalid/nonexistent/path/for/test');
+      getIt.registerSingleton<Directory>(invalidDir);
+
+      // Make DB write fail
+      when(() => loggingDb.log(any())).thenThrow(Exception('db failure'));
+
+      // Create fresh service pointing to the invalid directory
+      final brokenLogging = LoggingService()..listenToConfigFlag();
+
+      // Wait for stream microtask to enable logging
+      async.flushMicrotasks();
+
+      DevLogger.capturedLogs.clear();
+
+      brokenLogging.captureEvent('critical test', domain: 'CRITICAL');
+
+      async.flushMicrotasks();
+
+      // Verify DevLogger.error was called for the DB write failure
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('LOGGING_DB event.write failed') &&
+              log.contains('db failure'),
+        ),
+        isTrue,
+        reason: 'DB write failure should be logged via DevLogger.error',
+      );
+    });
+  });
+
+  test(
+      'captureException CRITICAL fallback failure logs all errors when both '
+      'DB and file write fail', () {
+    fakeAsync((async) {
+      // Override DI to use a directory that doesn't exist and can't be created
+      getIt.unregister<Directory>();
+      final invalidDir = Directory('/invalid/nonexistent/path/for/test');
+      getIt.registerSingleton<Directory>(invalidDir);
+
+      // Make DB write fail
+      when(() => loggingDb.log(any())).thenThrow(Exception('db exception'));
+
+      // Create fresh service pointing to the invalid directory
+      final brokenLogging = LoggingService()..listenToConfigFlag();
+
+      // Wait for stream microtask to enable logging
+      async.flushMicrotasks();
+
+      DevLogger.capturedLogs.clear();
+
+      brokenLogging.captureException(
+        'critical exception test',
+        domain: 'CRITICAL_EXC',
+        subDomain: 'test',
+        stackTrace: 'mock stack trace',
+      );
+
+      async.flushMicrotasks();
+
+      // Verify DevLogger.error was called for captureException
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('EXCEPTION CRITICAL_EXC test') &&
+              log.contains('critical exception test'),
+        ),
+        isTrue,
+        reason: 'captureException should call DevLogger.error',
+      );
+
+      // Verify DevLogger.error was called for the DB write failure
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('LOGGING_DB exception.write failed') &&
+              log.contains('db exception'),
+        ),
+        isTrue,
+        reason: 'DB write failure should be logged via DevLogger.error',
+      );
+    });
+  });
 }

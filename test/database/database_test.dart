@@ -2445,6 +2445,8 @@ void main() {
 
     group('Conflict Handling -', () {
       test('detectConflict detects concurrent vector clocks', () async {
+        DevLogger.clear();
+
         // Create two entities with concurrent vector clocks
         const vclockA = VectorClock(<String, int>{'device1': 1, 'device2': 1});
         const vclockB = VectorClock(<String, int>{'device1': 2, 'device3': 1});
@@ -2469,6 +2471,17 @@ void main() {
         final serializedEntity = jsonDecode(conflict!.serialized);
         // ignore: avoid_dynamic_calls
         expect(serializedEntity['meta']['id'], entryA.meta.id);
+
+        // Verify DevLogger.warning was called for conflicting vector clocks
+        expect(
+          DevLogger.capturedLogs.any(
+            (log) =>
+                log.contains('JournalDb') &&
+                log.contains('Conflicting vector clocks'),
+          ),
+          isTrue,
+          reason: 'Should log warning for conflicting vector clocks',
+        );
       });
 
       test('updateJournalEntity respects vector clock ordering', () async {
