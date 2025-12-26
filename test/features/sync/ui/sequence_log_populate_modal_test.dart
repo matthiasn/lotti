@@ -108,7 +108,9 @@ void main() {
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Cancel'));
+      // Tap Cancel button (warnIfMissed: false because modal barrier intercepts hit test
+      // but tap still propagates correctly)
+      await tester.tap(find.text('Cancel'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       expect(find.text('Cancel'), findsNothing);

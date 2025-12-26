@@ -1,11 +1,13 @@
-// ignore_for_file: avoid_print
 import 'dart:developer' as developer;
+
+import 'package:lotti/services/dev_logger.dart';
 
 /// Lightweight dev logging helper.
 ///
-/// Writes to `developer.log` and mirrors the message to `print` inside an
-/// `assert` so unit tests can capture logs via `ZoneSpecification`. The
-/// mirrored print is stripped in release builds.
+/// Writes to `developer.log` for DevTools and uses [DevLogger] for console
+/// output. The console output can be suppressed in tests by setting
+/// [DevLogger.suppressOutput] to true, while still capturing logs for
+/// verification via [DevLogger.capturedLogs].
 void lottiDevLog({
   required String name,
   required String message,
@@ -13,12 +15,18 @@ void lottiDevLog({
   Object? error,
   StackTrace? stackTrace,
 }) {
-  developer.log(message,
-      name: name, level: level, error: error, stackTrace: stackTrace);
+  // Always write to developer.log for DevTools
+  developer.log(
+    message,
+    name: name,
+    level: level,
+    error: error,
+    stackTrace: stackTrace,
+  );
+
+  // Use DevLogger for console output (respects suppressOutput setting)
   assert(() {
-    // Mirror to print in debug/test only
-    // Prefix with logger name for easier matching in tests
-    print('[$name] $message');
+    DevLogger.log(name: name, message: message);
     return true;
-  }(), 'mirror log to test output');
+  }(), 'log to console in debug builds');
 }

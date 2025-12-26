@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Constants for CategoryIcon functionality.
@@ -595,7 +596,10 @@ extension CategoryIconExtension on CategoryIcon {
     if (icon == null) {
       // Log the error in debug mode for troubleshooting
       assert(() {
-        debugPrint('${CategoryIconStrings.invalidIconWarning}"$trimmedJson"');
+        DevLogger.warning(
+          name: 'CategoryIcon',
+          message: '${CategoryIconStrings.invalidIconWarning}"$trimmedJson"',
+        );
         return true;
       }(), 'Invalid CategoryIcon name: "$trimmedJson"');
     }

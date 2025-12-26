@@ -40,6 +40,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/health_service.dart';
@@ -92,7 +93,7 @@ void _registerLazyServiceSafely<T extends Object>(
   }
 }
 
-/// Safe logging helper that falls back to print if LoggingService is unavailable
+/// Safe logging helper that falls back to DevLogger if LoggingService is unavailable
 void _safeLog(String message, {required bool isError}) {
   try {
     if (getIt.isRegistered<LoggingService>()) {
@@ -110,14 +111,25 @@ void _safeLog(String message, {required bool isError}) {
         );
       }
     } else {
-      // Fallback to print if LoggingService not available
-      // ignore: avoid_print
-      print('SERVICE_REGISTRATION: $message');
+      // Fallback to DevLogger if LoggingService not available
+      if (isError) {
+        DevLogger.error(
+          name: 'SERVICE_REGISTRATION',
+          message: message,
+        );
+      } else {
+        DevLogger.log(
+          name: 'SERVICE_REGISTRATION',
+          message: message,
+        );
+      }
     }
   } catch (e) {
     // Ultimate fallback if even the safe check fails
-    // ignore: avoid_print
-    print('SERVICE_REGISTRATION: $message (logging failed: $e)');
+    DevLogger.error(
+      name: 'SERVICE_REGISTRATION',
+      message: '$message (logging failed: $e)',
+    );
   }
 }
 

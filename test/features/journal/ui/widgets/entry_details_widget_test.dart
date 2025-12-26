@@ -335,6 +335,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      // Ensure button is visible before tapping (may be below fold)
+      await tester.ensureVisible(find.text('Highlight'));
       await tester.tap(find.text('Highlight'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

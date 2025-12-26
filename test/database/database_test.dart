@@ -19,6 +19,7 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -1738,21 +1739,13 @@ void main() {
       });
 
       test('latestQuantitativeByType returns null when none exist', () async {
-        final messages = <String?>[];
-        final original = debugPrint;
-        debugPrint = (String? message, {int? wrapWidth}) {
-          messages.add(message);
-        };
-        addTearDown(() {
-          debugPrint = original;
-        });
+        DevLogger.clear();
 
         final result = await db!.latestQuantitativeByType('missing-type');
         expect(result, isNull);
         expect(
-          messages.any(
-            (message) =>
-                message?.contains('no result for missing-type') ?? false,
+          DevLogger.capturedLogs.any(
+            (message) => message.contains('no result for missing-type'),
           ),
           isTrue,
         );
@@ -1778,20 +1771,13 @@ void main() {
       });
 
       test('latestWorkout returns null when none exist', () async {
-        final messages = <String?>[];
-        final original = debugPrint;
-        debugPrint = (String? message, {int? wrapWidth}) {
-          messages.add(message);
-        };
-        addTearDown(() {
-          debugPrint = original;
-        });
+        DevLogger.clear();
 
         final result = await db!.latestWorkout();
         expect(result, isNull);
         expect(
-          messages
-              .any((message) => message?.contains('no workout found') ?? false),
+          DevLogger.capturedLogs
+              .any((message) => message.contains('no workout found')),
           isTrue,
         );
       });

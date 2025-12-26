@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:lotti/services/dev_logger.dart';
 
 /// Mixin for managing entry highlight animations and scroll-to-entry with retry logic.
 ///
@@ -102,8 +103,10 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
     if (_disposed || attempt >= maxScrollRetries) {
       _scrollingToEntryId = null;
       if (attempt >= maxScrollRetries) {
-        debugPrint(
-          'Failed to scroll to entry $entryId after $maxScrollRetries attempts',
+        DevLogger.warning(
+          name: 'HighlightScrollMixin',
+          message:
+              'Failed to scroll to entry $entryId after $maxScrollRetries attempts',
         );
       }
       // Clear intent on terminal failure if requested
@@ -150,7 +153,10 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
           // Clear intent on success if requested
           onScrolled?.call();
         } catch (e) {
-          debugPrint('Failed to scroll to entry $entryId: $e');
+          DevLogger.warning(
+            name: 'HighlightScrollMixin',
+            message: 'Failed to scroll to entry $entryId: $e',
+          );
           _scrollingToEntryId = null;
           _retryTimer?.cancel();
           // Treat exception as terminal and clear intent if requested

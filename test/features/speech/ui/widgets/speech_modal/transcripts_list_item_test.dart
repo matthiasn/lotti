@@ -575,8 +575,8 @@ void main() {
       final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
       expect(deleteButtonFinder, findsOneWidget);
 
-      // Try to tap the hidden button
-      await tester.tap(deleteButtonFinder);
+      // Try to tap the hidden button (warnIfMissed: false since we know it's hidden)
+      await tester.tap(deleteButtonFinder, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       // Verify that updateDbEntity was NOT called

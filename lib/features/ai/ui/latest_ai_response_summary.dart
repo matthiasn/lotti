@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// A wrapper widget for AiResponseSummary that automatically fetches
@@ -92,8 +93,12 @@ class _LatestAiResponseSummaryState
         ),
       ),
       error: (error, stackTrace) {
-        // Log the actual error for debugging (without stack trace to avoid cluttering test output)
-        debugPrint('Error loading AI summary: $error');
+        // Log the actual error for debugging
+        DevLogger.error(
+          name: 'LatestAiResponseSummary',
+          message: 'Error loading AI summary',
+          error: error,
+        );
 
         return Center(
           child: Padding(

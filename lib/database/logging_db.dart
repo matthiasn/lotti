@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/services/dev_logger.dart';
 
 part 'logging_db.g.dart';
 
@@ -81,7 +81,10 @@ class LoggingDb extends _$LoggingDb {
           .map(_sortEntriesByCreatedAtDesc);
     } catch (e) {
       // Log error and return empty stream to prevent app crashes
-      debugPrint('Error in watchSearchLogEntries: $e');
+      DevLogger.warning(
+        name: 'LoggingDb',
+        message: 'Error in watchSearchLogEntries: $e',
+      );
       return Stream.value([]);
     }
   }
@@ -125,7 +128,10 @@ class LoggingDb extends _$LoggingDb {
           .map(_sortEntriesByCreatedAtDesc);
     } catch (e) {
       // Log error and return empty stream to prevent app crashes
-      debugPrint('Error in watchSearchLogEntriesPaginated: $e');
+      DevLogger.warning(
+        name: 'LoggingDb',
+        message: 'Error in watchSearchLogEntriesPaginated: $e',
+      );
       return Stream.value([]);
     }
   }
@@ -154,7 +160,10 @@ class LoggingDb extends _$LoggingDb {
       return result;
     } catch (e) {
       // Log error and return 0 to prevent app crashes
-      debugPrint('Error in getSearchLogEntriesCount: $e');
+      DevLogger.warning(
+        name: 'LoggingDb',
+        message: 'Error in getSearchLogEntriesCount: $e',
+      );
       return 0;
     }
   }

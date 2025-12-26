@@ -9,6 +9,7 @@ import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -319,7 +320,10 @@ class HabitDescription extends StatelessWidget {
           domain: 'HABIT_COMPLETION',
           subDomain: 'Click Link in Description',
         );
-        debugPrint('Could not launch $uri');
+        DevLogger.warning(
+          name: 'HabitDialog',
+          message: 'Could not launch $uri',
+        );
       }
     }
 

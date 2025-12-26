@@ -1,7 +1,7 @@
 import 'package:fake_async/fake_async.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/client_runner.dart';
+import 'package:lotti/services/dev_logger.dart';
 import '../test_utils/fake_time.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
         const n = 10;
         final runner = ClientRunner<int>(
           callback: (event) async {
-            debugPrint('Request #$event');
+            DevLogger.log(name: 'Test', message: 'Request #$event');
             lastCalled = event;
             await Future<void>.delayed(const Duration(milliseconds: delayMs));
           },

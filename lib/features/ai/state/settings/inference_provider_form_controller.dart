@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'inference_provider_form_controller.g.dart';
@@ -195,8 +196,11 @@ class InferenceProviderFormController
 
       // Log the number of models created for debugging
       if (modelsCreated > 0) {
-        debugPrint(
-            'Pre-populated $modelsCreated models for provider ${config.name}');
+        DevLogger.log(
+          name: 'InferenceProviderForm',
+          message:
+              'Pre-populated $modelsCreated models for provider ${config.name}',
+        );
       }
     }
   }

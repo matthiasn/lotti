@@ -6,6 +6,7 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
@@ -134,7 +135,12 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                     navigator.pop();
                   } catch (e, s) {
                     // Log the actual error with stack trace for debugging
-                    debugPrint('Error creating category: $e\n$s');
+                    DevLogger.error(
+                      name: 'CategoryCreateModal',
+                      message: 'Error creating category',
+                      error: e,
+                      stackTrace: s,
+                    );
 
                     scaffoldMessenger.showSnackBar(
                       SnackBar(

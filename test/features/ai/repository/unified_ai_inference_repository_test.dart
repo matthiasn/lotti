@@ -33,6 +33,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -460,19 +461,13 @@ void main() {
           return mockStream;
         });
 
-        final logs = <String>[];
-        await runZoned(
-          () async {
-            await repository!.runInference(
-              entityId: 'test-id',
-              promptConfig: promptConfig,
-              onProgress: (_) {},
-              onStatusChange: (_) {},
-            );
-          },
-          zoneSpecification: ZoneSpecification(
-            print: (self, parent, zone, line) => logs.add(line),
-          ),
+        DevLogger.clear();
+
+        await repository!.runInference(
+          entityId: 'test-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
         );
 
         // Verify tools passed include multi-item (array-only)
@@ -482,7 +477,7 @@ void main() {
         expect(names, contains('suggest_checklist_completion'));
 
         // Verify log line includes provider/model and tool list
-        final logged = logs.join('\n');
+        final logged = DevLogger.capturedLogs.join('\n');
         expect(logged, contains('[UnifiedAiInferenceRepository]'));
         expect(logged, contains('Checklist tools:'));
         expect(logged, contains('provider=InferenceProviderType.openAi'));
@@ -558,22 +553,16 @@ void main() {
           ),
         ).thenAnswer((_) => mockStream);
 
-        final logs = <String>[];
-        await runZoned(
-          () async {
-            await repository!.runInference(
-              entityId: 'legacy-id',
-              promptConfig: promptConfig,
-              onProgress: (_) {},
-              onStatusChange: (_) {},
-            );
-          },
-          zoneSpecification: ZoneSpecification(
-            print: (self, parent, zone, line) => logs.add(line),
-          ),
+        DevLogger.clear();
+
+        await repository!.runInference(
+          entityId: 'legacy-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
         );
 
-        final logged = logs.join('\n');
+        final logged = DevLogger.capturedLogs.join('\n');
         expect(
             logged, contains('Including checklist completion and task tools'));
         expect(logged, contains('add_multiple_checklist_items'));
@@ -647,24 +636,17 @@ void main() {
         ).thenAnswer(
             (_) => const Stream<CreateChatCompletionStreamResponse>.empty());
 
-        // Cause conversation to fail quickly after logging
-        final logs = <String>[];
-        await runZoned(
-          () async {
-            await repository!.runInference(
-              entityId: 'conv-id',
-              promptConfig: promptConfig,
-              onProgress: (_) {},
-              onStatusChange: (_) {},
-              useConversationApproach: true,
-            );
-          },
-          zoneSpecification: ZoneSpecification(
-            print: (self, parent, zone, line) => logs.add(line),
-          ),
+        DevLogger.clear();
+
+        await repository!.runInference(
+          entityId: 'conv-id',
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+          useConversationApproach: true,
         );
 
-        final logged = logs.join('\n');
+        final logged = DevLogger.capturedLogs.join('\n');
         expect(logged, contains('Conversation tool set. Checklist tools:'));
         expect(logged, contains('add_multiple_checklist_items'));
       });

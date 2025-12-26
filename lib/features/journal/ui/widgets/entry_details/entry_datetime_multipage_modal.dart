@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -390,7 +391,10 @@ class _DateTimeRangeStickyActionBar extends ConsumerWidget {
                               Navigator.of(context).pop();
                             }
                           } catch (e) {
-                            debugPrint('Error updating date range: $e');
+                            DevLogger.warning(
+                              name: 'EntryDateTimeMultiPageModal',
+                              message: 'Error updating date range: $e',
+                            );
                           }
                         }
                       : null,

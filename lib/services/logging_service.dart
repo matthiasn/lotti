@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -104,12 +104,29 @@ class LoggingService {
       } catch (fileErr, fileSt) {
         // Last resort: surface both the original DB error and the fallback
         // file error to the console so bootstrap failures are not invisible.
-        debugPrint('CRITICAL: Logging fallback failed!');
-        debugPrint('Original DB error: $e');
-        debugPrint('Fallback file error: $fileErr\n$fileSt');
+        DevLogger.error(
+          name: 'LoggingService',
+          message: 'CRITICAL: Logging fallback failed!',
+        );
+        DevLogger.error(
+          name: 'LoggingService',
+          message: 'Original DB error',
+          error: e,
+        );
+        DevLogger.error(
+          name: 'LoggingService',
+          message: 'Fallback file error',
+          error: fileErr,
+          stackTrace: fileSt,
+        );
       }
-      // Also print to console in dev
-      debugPrint('LOGGING_DB event.write failed: $e\n$st');
+      // Also log to DevLogger
+      DevLogger.error(
+        name: 'LoggingService',
+        message: 'LOGGING_DB event.write failed',
+        error: e,
+        stackTrace: st,
+      );
     }
 
     // File sink (best-effort). Await to ensure ordering and determinism.
@@ -181,11 +198,28 @@ class LoggingService {
         );
         unawaited(_appendToFile(line));
       } catch (fileErr, fileSt) {
-        debugPrint('CRITICAL: Logging fallback failed!');
-        debugPrint('Original DB error: $e');
-        debugPrint('Fallback file error: $fileErr\n$fileSt');
+        DevLogger.error(
+          name: 'LoggingService',
+          message: 'CRITICAL: Logging fallback failed!',
+        );
+        DevLogger.error(
+          name: 'LoggingService',
+          message: 'Original DB error',
+          error: e,
+        );
+        DevLogger.error(
+          name: 'LoggingService',
+          message: 'Fallback file error',
+          error: fileErr,
+          stackTrace: fileSt,
+        );
       }
-      debugPrint('LOGGING_DB exception.write failed: $e\n$st2');
+      DevLogger.error(
+        name: 'LoggingService',
+        message: 'LOGGING_DB exception.write failed',
+        error: e,
+        stackTrace: st2,
+      );
     }
 
     // File sink (best-effort). Await to ensure ordering and determinism.
@@ -200,7 +234,12 @@ class LoggingService {
     InsightLevel level = InsightLevel.error,
     InsightType type = InsightType.exception,
   }) {
-    debugPrint('EXCEPTION $domain $subDomain $exception $stackTrace');
+    DevLogger.error(
+      name: 'LoggingService',
+      message: 'EXCEPTION $domain ${subDomain ?? ''}',
+      error: exception,
+      stackTrace: stackTrace is StackTrace ? stackTrace : null,
+    );
     _captureExceptionAsync(
       exception,
       domain: domain,
