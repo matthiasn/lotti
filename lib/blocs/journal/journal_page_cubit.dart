@@ -14,6 +14,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
@@ -429,7 +430,10 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       emitState();
       await refreshQuery();
     } catch (e) {
-      debugPrint('Error loading persisted filters: $e');
+      DevLogger.warning(
+        name: 'JournalPageCubit',
+        message: 'Error loading persisted filters: $e',
+      );
     }
   }
 
@@ -489,7 +493,10 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     emitState();
 
     if (state.pagingController == null) {
-      debugPrint('Warning: refreshQuery called but pagingController is null');
+      DevLogger.warning(
+        name: 'JournalPageCubit',
+        message: 'refreshQuery called but pagingController is null',
+      );
       return;
     }
 

@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:beamer/beamer.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 
 const String lastRouteKey = 'NAV_LAST_ROUTE';
@@ -56,7 +56,7 @@ class NavService {
 
   Future<void> restoreRoute() async {
     final path = await getSavedRoute();
-    debugPrint('restoreRoute $path');
+    DevLogger.log(name: 'NavService', message: 'restoreRoute $path');
     if (path != null) {
       beamToNamed(path);
     }

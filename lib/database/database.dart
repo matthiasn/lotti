@@ -15,6 +15,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -58,11 +59,14 @@ class JournalDb extends _$JournalDb {
         return m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        debugPrint('Migration from v$from to v$to');
+        DevLogger.log(
+            name: 'JournalDb', message: 'Migration from v$from to v$to');
 
         if (from < 19) {
           await () async {
-            debugPrint('Creating category_definitions table and indices');
+            DevLogger.log(
+                name: 'JournalDb',
+                message: 'Creating category_definitions table and indices');
             await m.createTable(categoryDefinitions);
             await m.createIndex(idxCategoryDefinitionsName);
             await m.createIndex(idxCategoryDefinitionsId);
@@ -72,14 +76,18 @@ class JournalDb extends _$JournalDb {
 
         if (from < 21) {
           await () async {
-            debugPrint('Add category_id in journal table, with index');
+            DevLogger.log(
+                name: 'JournalDb',
+                message: 'Add category_id in journal table, with index');
             await m.addColumn(journal, journal.category);
           }();
         }
 
         if (from < 22) {
           await () async {
-            debugPrint('Add hidden in linked_entries table, with index');
+            DevLogger.log(
+                name: 'JournalDb',
+                message: 'Add hidden in linked_entries table, with index');
             await m.addColumn(linkedEntries, linkedEntries.hidden);
             await m.createIndex(idxLinkedEntriesHidden);
           }();
@@ -87,7 +95,9 @@ class JournalDb extends _$JournalDb {
 
         if (from < 23) {
           await () async {
-            debugPrint('Add timestamps in linked_entries table, with index');
+            DevLogger.log(
+                name: 'JournalDb',
+                message: 'Add timestamps in linked_entries table, with index');
             await m.addColumn(linkedEntries, linkedEntries.createdAt);
             await m.addColumn(linkedEntries, linkedEntries.updatedAt);
           }();
@@ -95,7 +105,8 @@ class JournalDb extends _$JournalDb {
 
         if (from < 24) {
           await () async {
-            debugPrint('Adding composite indices');
+            DevLogger.log(
+                name: 'JournalDb', message: 'Adding composite indices');
             await m.createIndex(idxLinkedEntriesFromIdHidden);
             await m.createIndex(idxLinkedEntriesToIdHidden);
           }();
@@ -103,7 +114,8 @@ class JournalDb extends _$JournalDb {
 
         if (from < 25) {
           await () async {
-            debugPrint('Adding composite indices');
+            DevLogger.log(
+                name: 'JournalDb', message: 'Adding composite indices');
             await m.createIndex(idxJournalTab);
             await m.createIndex(idxJournalTasks);
             await m.createIndex(idxJournalTypeSubtype);
@@ -112,7 +124,9 @@ class JournalDb extends _$JournalDb {
 
         if (from < 26) {
           await () async {
-            debugPrint('Creating label_definitions and labeled tables');
+            DevLogger.log(
+                name: 'JournalDb',
+                message: 'Creating label_definitions and labeled tables');
             await m.createTable(labelDefinitions);
             await m.createIndex(idxLabelDefinitionsId);
             await m.createIndex(idxLabelDefinitionsName);
@@ -126,7 +140,9 @@ class JournalDb extends _$JournalDb {
 
         if (from < 27) {
           await () async {
-            debugPrint('Ensuring label tables exist for legacy v26 installs');
+            DevLogger.log(
+                name: 'JournalDb',
+                message: 'Ensuring label tables exist for legacy v26 installs');
             await _ensureLabelTables(m);
           }();
         }
@@ -134,8 +150,10 @@ class JournalDb extends _$JournalDb {
         // v28: Rebuild `labeled` with FK on label_id -> label_definitions(id) ON DELETE CASCADE
         if (from < 28) {
           await () async {
-            debugPrint(
-                'Rebuilding labeled table to add FK with ON DELETE CASCADE');
+            DevLogger.log(
+                name: 'JournalDb',
+                message:
+                    'Rebuilding labeled table to add FK with ON DELETE CASCADE');
             await _rebuildLabeledWithFkCascade();
           }();
         }
@@ -143,7 +161,9 @@ class JournalDb extends _$JournalDb {
         // v29: Add task priority columns and update tasks index
         if (from < 29) {
           await () async {
-            debugPrint('Adding task priority columns and updating index');
+            DevLogger.log(
+                name: 'JournalDb',
+                message: 'Adding task priority columns and updating index');
 
             // Add columns only if missing to avoid masking other errors
             final hasTaskPriority =
@@ -207,7 +227,10 @@ class JournalDb extends _$JournalDb {
         [priority, rank, id],
       );
     } catch (e) {
-      debugPrint('updateTaskPriorityColumn error: $e');
+      DevLogger.error(
+          name: 'JournalDb',
+          message: 'updateTaskPriorityColumn error',
+          error: e);
     }
   }
 
@@ -226,7 +249,8 @@ class JournalDb extends _$JournalDb {
       final status = VectorClock.compare(vcA, vcB);
 
       if (status == VclockStatus.concurrent) {
-        debugPrint('Conflicting vector clocks: $status');
+        DevLogger.warning(
+            name: 'JournalDb', message: 'Conflicting vector clocks: $status');
         final now = DateTime.now();
         await addConflict(
           Conflict(
@@ -256,7 +280,8 @@ class JournalDb extends _$JournalDb {
         mode: InsertMode.insertOrIgnore,
       );
     } catch (ex) {
-      debugPrint(ex.toString());
+      DevLogger.error(
+          name: 'JournalDb', message: 'insertTag failed', error: ex);
     }
   }
 
@@ -280,7 +305,8 @@ class JournalDb extends _$JournalDb {
         ),
       );
     } catch (ex) {
-      debugPrint(ex.toString());
+      DevLogger.error(
+          name: 'JournalDb', message: 'insertLabel failed', error: ex);
     }
   }
 
@@ -996,7 +1022,9 @@ class JournalDb extends _$JournalDb {
   Future<QuantitativeEntry?> latestQuantitativeByType(String type) async {
     final dbEntities = await latestQuantByType(type).get();
     if (dbEntities.isEmpty) {
-      debugPrint('latestQuantitativeByType no result for $type');
+      DevLogger.log(
+          name: 'JournalDb',
+          message: 'latestQuantitativeByType no result for $type');
       return null;
     }
     return fromDbEntity(dbEntities.first) as QuantitativeEntry;
@@ -1005,7 +1033,7 @@ class JournalDb extends _$JournalDb {
   Future<WorkoutEntry?> latestWorkout() async {
     final dbEntities = await findLatestWorkout().get();
     if (dbEntities.isEmpty) {
-      debugPrint('no workout found');
+      DevLogger.log(name: 'JournalDb', message: 'no workout found');
       return null;
     }
     return fromDbEntity(dbEntities.first) as WorkoutEntry;

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:path/path.dart' as p;
 
 // Test constants
@@ -455,6 +456,44 @@ void main() {
 
       // The path should use the platform's separator
       expect(file.path, contains(Platform.pathSeparator));
+    });
+  });
+
+  group('DevLogger error handling', () {
+    late Directory testDir;
+
+    setUp(() {
+      testDir = setupTestDirectory();
+      DevLogger.capturedLogs.clear();
+    });
+
+    tearDown(() async {
+      if (testDir.existsSync()) {
+        await testDir.delete(recursive: true);
+      }
+    });
+
+    test('logs warning when temp directory resolution fails', () async {
+      final db = EditorDb(
+        documentsDirectoryProvider: () async => testDir,
+        tempDirectoryProvider: () async => throw Exception('Temp dir failed'),
+      );
+
+      // Trigger initialization
+      await db.allDrafts().get();
+      await db.close();
+
+      // Verify DevLogger.warning was called
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('Database') &&
+              log.contains('Failed to resolve temp directory') &&
+              log.contains('Temp dir failed'),
+        ),
+        isTrue,
+        reason: 'Temp directory resolution failure should be logged',
+      );
     });
   });
 

@@ -19,6 +19,7 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -1738,21 +1739,13 @@ void main() {
       });
 
       test('latestQuantitativeByType returns null when none exist', () async {
-        final messages = <String?>[];
-        final original = debugPrint;
-        debugPrint = (String? message, {int? wrapWidth}) {
-          messages.add(message);
-        };
-        addTearDown(() {
-          debugPrint = original;
-        });
+        DevLogger.clear();
 
         final result = await db!.latestQuantitativeByType('missing-type');
         expect(result, isNull);
         expect(
-          messages.any(
-            (message) =>
-                message?.contains('no result for missing-type') ?? false,
+          DevLogger.capturedLogs.any(
+            (message) => message.contains('no result for missing-type'),
           ),
           isTrue,
         );
@@ -1778,20 +1771,13 @@ void main() {
       });
 
       test('latestWorkout returns null when none exist', () async {
-        final messages = <String?>[];
-        final original = debugPrint;
-        debugPrint = (String? message, {int? wrapWidth}) {
-          messages.add(message);
-        };
-        addTearDown(() {
-          debugPrint = original;
-        });
+        DevLogger.clear();
 
         final result = await db!.latestWorkout();
         expect(result, isNull);
         expect(
-          messages
-              .any((message) => message?.contains('no workout found') ?? false),
+          DevLogger.capturedLogs
+              .any((message) => message.contains('no workout found')),
           isTrue,
         );
       });
@@ -2459,6 +2445,8 @@ void main() {
 
     group('Conflict Handling -', () {
       test('detectConflict detects concurrent vector clocks', () async {
+        DevLogger.clear();
+
         // Create two entities with concurrent vector clocks
         const vclockA = VectorClock(<String, int>{'device1': 1, 'device2': 1});
         const vclockB = VectorClock(<String, int>{'device1': 2, 'device3': 1});
@@ -2483,6 +2471,17 @@ void main() {
         final serializedEntity = jsonDecode(conflict!.serialized);
         // ignore: avoid_dynamic_calls
         expect(serializedEntity['meta']['id'], entryA.meta.id);
+
+        // Verify DevLogger.warning was called for conflicting vector clocks
+        expect(
+          DevLogger.capturedLogs.any(
+            (log) =>
+                log.contains('JournalDb') &&
+                log.contains('Conflicting vector clocks'),
+          ),
+          isTrue,
+          reason: 'Should log warning for conflicting vector clocks',
+        );
       });
 
       test('updateJournalEntity respects vector clock ordering', () async {

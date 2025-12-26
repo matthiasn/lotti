@@ -18,6 +18,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -203,7 +204,10 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
             }).toList();
 
             void setCategory(String? newCategoryId) {
-              debugPrint('setCategory $newCategoryId');
+              DevLogger.log(
+                name: 'DashboardDefinitionPage',
+                message: 'setCategory $newCategoryId',
+              );
               categoryId = newCategoryId;
               setState(() {
                 dirty = true;

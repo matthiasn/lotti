@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:research_package/research_package.dart';
 
 class SurveyWidget extends StatelessWidget {
@@ -15,7 +16,10 @@ class SurveyWidget extends StatelessWidget {
 
   void cancelCallBack(RPTaskResult result) {
     // Do anything with the result at the moment of the cancellation
-    debugPrint('The result so far:\n${_encode(result)}');
+    DevLogger.log(
+      name: 'SurveyWidget',
+      message: 'The result so far:\n${_encode(result)}',
+    );
   }
 
   @override
@@ -28,7 +32,7 @@ class SurveyWidget extends StatelessWidget {
         onSubmit: resultCallback,
         onCancel: (RPTaskResult? result) {
           if (result == null) {
-            debugPrint('No result');
+            DevLogger.log(name: 'SurveyWidget', message: 'No result');
           } else {
             cancelCallBack(result);
           }

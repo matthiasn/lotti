@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -508,7 +508,10 @@ class PersistenceLogic {
         subDomain: 'createDbEntity',
         stackTrace: stackTrace,
       );
-      debugPrint('Exception $exception');
+      DevLogger.error(
+        name: 'PersistenceLogic',
+        message: 'Exception: $exception',
+      );
     }
     return null;
   }
@@ -817,7 +820,10 @@ class PersistenceLogic {
         subDomain: 'updateDbEntity',
         stackTrace: stackTrace,
       );
-      debugPrint('Exception $exception');
+      DevLogger.error(
+        name: 'PersistenceLogic',
+        message: 'Exception: $exception',
+      );
     }
     return null;
   }

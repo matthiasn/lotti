@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'calendar_category_visibility_controller.g.dart';
@@ -58,7 +58,10 @@ class CalendarCategoryVisibilityController
       final tasksFilter = TasksFilter.fromJson(json);
       state = tasksFilter.selectedCategoryIds;
     } catch (e) {
-      debugPrint('Error parsing category visibility settings: $e');
+      DevLogger.warning(
+        name: 'CalendarCategoryVisibilityController',
+        message: 'Error parsing category visibility settings: $e',
+      );
       state = {};
     }
   }

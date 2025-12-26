@@ -8,6 +8,7 @@ import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -434,6 +435,71 @@ void main() {
 
       // The dropdown doesn't have the expected key in the current structure
       // so we skip that verification
+    });
+
+    testWidgets(
+        'dashboard definition page setCategory logs to DevLogger '
+        'when clearing category', (tester) async {
+      final formKey = GlobalKey<FormBuilderState>();
+
+      // Clear DevLogger captured logs before test
+      DevLogger.clear();
+
+      when(() => mockPersistenceLogic.upsertDashboardDefinition(any()))
+          .thenAnswer((_) async => 1);
+
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
+
+      // Use testDashboardConfig which has categoryId set
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          DashboardDefinitionPage(
+            dashboard: testDashboardConfig,
+            formKey: formKey,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the category selector field
+      final categoryFieldFinder =
+          find.byKey(const Key('select_dashboard_category'));
+      expect(categoryFieldFinder, findsOneWidget);
+
+      // The close button (clear category) must be visible since categoryId is set
+      final clearCategoryButtonFinder = find.byIcon(Icons.close_rounded);
+      expect(
+        clearCategoryButtonFinder,
+        findsOneWidget,
+        reason:
+            'Clear category button should be present when categoryId is set',
+      );
+
+      // Scroll to make the clear button visible if needed
+      await tester.dragUntilVisible(
+        clearCategoryButtonFinder,
+        find.byType(SingleChildScrollView),
+        const Offset(0, -100),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the clear button to trigger setCategory(null)
+      await tester.tap(clearCategoryButtonFinder);
+      await tester.pumpAndSettle();
+
+      // Verify DevLogger.log was called for setCategory
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('DashboardDefinitionPage') &&
+              log.contains('setCategory'),
+        ),
+        isTrue,
+        reason: 'setCategory should log to DevLogger',
+      );
     });
   });
 }

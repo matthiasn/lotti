@@ -7,6 +7,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
@@ -110,7 +111,10 @@ class _LoggingPageState extends State<LoggingPage> {
     } catch (e) {
       if (!mounted) return;
       // Log the actual error for debugging
-      debugPrint('Failed to load logs: $e');
+      DevLogger.warning(
+        name: 'LoggingPage',
+        message: 'Failed to load logs: $e',
+      );
       setState(() {
         _isSearching = false;
       });
@@ -158,7 +162,11 @@ class _LoggingPageState extends State<LoggingPage> {
     } catch (e) {
       if (!mounted) return;
       // Log the actual error for debugging
-      debugPrint('Search failed: $e');
+      DevLogger.error(
+        name: 'LoggingPage',
+        message: 'Search failed',
+        error: e,
+      );
       setState(() {
         _isSearching = false;
       });
@@ -197,7 +205,10 @@ class _LoggingPageState extends State<LoggingPage> {
     } catch (e) {
       if (!mounted) return;
       // Log the actual error for debugging
-      debugPrint('Failed to load more results: $e');
+      DevLogger.warning(
+        name: 'LoggingPage',
+        message: 'Failed to load more results: $e',
+      );
       setState(() {
         _isLoadingMore = false;
       });

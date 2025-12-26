@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -56,20 +57,16 @@ void main() {
     ).called(1);
   });
 
-  test('safeLogForTesting prints when logging service missing', () {
-    final printed = <String>[];
+  test('safeLogForTesting uses DevLogger when logging service missing', () {
+    DevLogger.clear();
 
-    runZoned(
-      _logFallback,
-      zoneSpecification: ZoneSpecification(
-        print: (self, parent, zone, line) {
-          printed.add(line);
-        },
-      ),
+    _logFallback();
+
+    expect(DevLogger.capturedLogs, isNotEmpty);
+    expect(
+      DevLogger.capturedLogs.any((log) => log.contains('fallback')),
+      isTrue,
     );
-
-    expect(printed, isNotEmpty);
-    expect(printed.single, contains('fallback'));
   });
 
   test('registerLazyServiceForTesting registers and logs success', () {
@@ -118,7 +115,13 @@ void main() {
       'ThrowingService',
     );
 
-    expect(_resolveThrowingService, throwsStateError);
+    // Suppress get_it package's internal debug printing during error
+    runZoned(
+      () => expect(_resolveThrowingService, throwsStateError),
+      zoneSpecification: ZoneSpecification(
+        print: (_, __, ___, ____) {}, // Suppress prints from get_it package
+      ),
+    );
 
     verify(
       () => loggingService.captureEvent(

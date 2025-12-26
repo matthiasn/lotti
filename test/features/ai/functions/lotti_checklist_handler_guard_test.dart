@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -8,6 +6,7 @@ import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -111,23 +110,15 @@ void main() {
 
     test('logs rejected bracketed list with truncation', () {
       final longList = '[${List.generate(50, (i) => 'item$i').join(', ')}]';
-      final logs = <String>[];
-      runZoned(
-        () {
-          final result = handler.processFunctionCall(
-              _call('{"actionItemDescription": "$longList"}'));
-          expect(result.success, false);
-        },
-        zoneSpecification: ZoneSpecification(
-          print: (self, parent, zone, line) {
-            logs.add(line);
-          },
-        ),
-      );
+      DevLogger.clear();
 
-      // Expect our dev log mirror printed a line containing this rejection
+      final result = handler
+          .processFunctionCall(_call('{"actionItemDescription": "$longList"}'));
+      expect(result.success, false);
+
+      // Expect our dev log captured a line containing this rejection
       expect(
-        logs.any((l) =>
+        DevLogger.capturedLogs.any((l) =>
             l.contains('[LottiChecklistItemHandler]') &&
             l.contains('Rejected multi-item') &&
             l.contains('item0')),

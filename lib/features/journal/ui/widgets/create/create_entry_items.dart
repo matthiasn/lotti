@@ -12,6 +12,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
@@ -315,8 +316,10 @@ void _waitForTimerAndScroll({
 
   void checkAndScroll() {
     if (attempts >= _kTimerScrollMaxAttempts) {
-      debugPrint(
-        'Failed to find timer entry $timerEntryId after $_kTimerScrollMaxAttempts attempts',
+      DevLogger.warning(
+        name: 'CreateEntryItems',
+        message:
+            'Failed to find timer entry $timerEntryId after $_kTimerScrollMaxAttempts attempts',
       );
       return;
     }

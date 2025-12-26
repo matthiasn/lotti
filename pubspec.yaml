@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.774+3559
+version: 0.9.774+3562
 
 msix_config:
   display_name: LottiApp
@@ -167,6 +167,7 @@ dev_dependencies:
   plugin_platform_interface: any
   riverpod_generator: ^2.4.0
   riverpod_lint: ^2.6.5
+  url_launcher_platform_interface: any
   very_good_analysis: ^10.0.0
 
 flutter_launcher_icons:

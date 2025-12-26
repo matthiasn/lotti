@@ -6,6 +6,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -60,23 +61,22 @@ void main() {
       ).called(1);
     });
 
-    test('falls back to print when logging service missing', () {
-      final prints = <String>[];
+    test('falls back to DevLogger when logging service missing', () {
+      DevLogger.clear();
 
-      runZoned(
-        () => safeLogForTesting('fallback', isError: false),
-        zoneSpecification: ZoneSpecification(
-          print: (_, __, ___, String line) => prints.add(line),
-        ),
-      );
+      safeLogForTesting('fallback', isError: false);
 
+      expect(DevLogger.capturedLogs, isNotEmpty);
       expect(
-        prints.single,
-        contains('SERVICE_REGISTRATION: fallback'),
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('SERVICE_REGISTRATION') && log.contains('fallback'),
+        ),
+        isTrue,
       );
     });
 
-    test('prints when logging service throws', () {
+    test('uses DevLogger when logging service throws', () {
       final loggingService = _MockLoggingService();
       when(
         () => loggingService.captureEvent(
@@ -88,19 +88,19 @@ void main() {
 
       getIt.registerSingleton<LoggingService>(loggingService);
 
-      final prints = <String>[];
+      DevLogger.clear();
 
-      runZoned(
-        () => safeLogForTesting('failure', isError: true),
-        zoneSpecification: ZoneSpecification(
-          print: (_, __, ___, String line) => prints.add(line),
-        ),
-      );
+      safeLogForTesting('failure', isError: true);
 
+      expect(DevLogger.capturedLogs, isNotEmpty);
       expect(
-        prints.single,
-        contains(
-            'SERVICE_REGISTRATION: failure (logging failed: Exception: fail)'),
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('SERVICE_REGISTRATION') &&
+              log.contains('failure') &&
+              log.contains('logging failed'),
+        ),
+        isTrue,
       );
     });
   });
@@ -155,7 +155,13 @@ void main() {
         'BrokenService',
       );
 
-      expect(getIt.call<int>, throwsA(isA<StateError>()));
+      // Suppress get_it package's internal debug printing during error
+      runZoned(
+        () => expect(getIt.call<int>, throwsA(isA<StateError>())),
+        zoneSpecification: ZoneSpecification(
+          print: (_, __, ___, ____) {}, // Suppress prints from get_it package
+        ),
+      );
 
       verify(
         () => loggingService.captureEvent(

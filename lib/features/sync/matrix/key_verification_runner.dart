@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -21,7 +21,10 @@ class KeyVerificationRunner {
         final newLastStep = keyVerification.lastStep;
         if (newLastStep != null && newLastStep != lastStep) {
           lastStep = newLastStep;
-          debugPrint('$name newLastStep: $newLastStep');
+          DevLogger.log(
+            name: 'KeyVerificationRunner',
+            message: '$name newLastStep: $newLastStep',
+          );
 
           if (lastStep == 'm.key.verification.key') {
             readEmojis();
@@ -89,11 +92,19 @@ Future<void> listenForKeyVerificationRequests({
         name: 'Incoming KeyVerificationRunner',
       );
 
-      debugPrint('Key Verification Request from ${keyVerification.deviceId}');
+      DevLogger.log(
+        name: 'KeyVerificationRunner',
+        message: 'Key Verification Request from ${keyVerification.deviceId}',
+      );
       service.incomingKeyVerificationController.add(keyVerification);
     });
   } catch (e, stackTrace) {
-    debugPrint('$e');
+    DevLogger.error(
+      name: 'KeyVerificationRunner',
+      message: 'Error listening for key verification requests',
+      error: e,
+      stackTrace: stackTrace,
+    );
     loggingService.captureException(
       e,
       domain: 'MATRIX_SERVICE',
