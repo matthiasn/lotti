@@ -33,26 +33,6 @@ String? _truncatePlainText(String? value, int maxLength) {
   return '${value.substring(0, maxLength - 3)}...';
 }
 
-/// Determines if a category is visible based on the visibility filter.
-///
-/// Visibility rules:
-/// - Empty visibleCategoryIds set = all categories visible (show all text)
-/// - Non-empty set = only those specific categories are visible
-/// - For unassigned entries (null/empty categoryId), check for '' in the set
-bool _isCategoryVisible(String? categoryId, Set<String> visibleCategoryIds) {
-  // Empty set means "show all" - all categories are visible
-  if (visibleCategoryIds.isEmpty) {
-    return true;
-  }
-
-  // Handle unassigned entries (null or empty categoryId)
-  if (categoryId == null || categoryId.isEmpty) {
-    return visibleCategoryIds.contains('');
-  }
-
-  return visibleCategoryIds.contains(categoryId);
-}
-
 @riverpod
 class DayViewController extends _$DayViewController {
   StreamSubscription<Set<String>>? _updateSubscription;
@@ -71,12 +51,7 @@ class DayViewController extends _$DayViewController {
         .listen((affectedIds) async {
       if (affectedIds.intersection(subscribedIds).isNotEmpty && _isVisible) {
         final timeSpanDays = ref.read(timeFrameControllerProvider);
-        final visibleCategoryIds =
-            ref.read(calendarCategoryVisibilityControllerProvider);
-        final latest = await _fetch(
-          timeSpanDays: timeSpanDays,
-          visibleCategoryIds: visibleCategoryIds,
-        );
+        final latest = await _fetch(timeSpanDays: timeSpanDays);
         state = AsyncData(latest);
       }
     });
@@ -85,9 +60,7 @@ class DayViewController extends _$DayViewController {
   void onVisibilityChanged(VisibilityInfo info) {
     _isVisible = info.visibleFraction > 0.5;
     if (_isVisible) {
-      final visibleCategoryIds =
-          ref.read(calendarCategoryVisibilityControllerProvider);
-      _fetch(visibleCategoryIds: visibleCategoryIds).then((latest) {
+      _fetch().then((latest) {
         if (latest != state.value) {
           state = AsyncData(latest);
         }
@@ -99,24 +72,20 @@ class DayViewController extends _$DayViewController {
   Future<List<CalendarEventData<CalendarEvent>>> build() async {
     final timeSpanDays = ref.watch(timeFrameControllerProvider);
     // Watch visibility state to rebuild when it changes
-    final visibleCategoryIds =
-        ref.watch(calendarCategoryVisibilityControllerProvider);
-
     ref
+      ..watch(calendarCategoryVisibilityControllerProvider)
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
-    final data = await _fetch(
-      timeSpanDays: timeSpanDays,
-      visibleCategoryIds: visibleCategoryIds,
-    );
+    final data = await _fetch(timeSpanDays: timeSpanDays);
     listen();
     return data;
   }
 
   Future<List<CalendarEventData<CalendarEvent>>> _fetch({
     int timeSpanDays = 30,
-    Set<String> visibleCategoryIds = const {},
   }) async {
+    final visibilityController =
+        ref.read(calendarCategoryVisibilityControllerProvider.notifier);
     final now = DateTime.now();
     final db = getIt<JournalDb>();
     final data = <CalendarEventData<CalendarEvent>>[];
@@ -181,7 +150,7 @@ class DayViewController extends _$DayViewController {
 
         // Check if this category is visible for privacy filtering
         final isCategoryVisible =
-            _isCategoryVisible(categoryId, visibleCategoryIds);
+            visibilityController.isCategoryVisible(categoryId);
 
         // Build title - only show if category is visible
         final title = isCategoryVisible
