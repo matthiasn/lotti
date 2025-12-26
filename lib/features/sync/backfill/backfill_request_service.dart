@@ -8,7 +8,6 @@ import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:meta/meta.dart';
 
 /// Service responsible for periodically sending backfill requests
 /// for missing entries detected in the sync sequence log.
@@ -74,22 +73,6 @@ class BackfillRequestService {
       subDomain: 'start',
     );
   }
-
-  /// Stop periodic processing.
-  void stop() {
-    _timer?.cancel();
-    _timer = null;
-
-    _loggingService.captureEvent(
-      'stop',
-      domain: 'SYNC_BACKFILL',
-      subDomain: 'stop',
-    );
-  }
-
-  /// Force immediate processing (for testing or manual trigger).
-  /// Uses bounded limits (age and per-host).
-  Future<void> processNow() => _processBackfillRequests(useLimits: true);
 
   /// Process full historical backfill without age/per-host limits.
   /// This should be triggered manually from the UI.
@@ -333,12 +316,4 @@ class BackfillRequestService {
     _timer?.cancel();
     _timer = null;
   }
-
-  /// Exposed for tests to check timer state.
-  @visibleForTesting
-  bool get isRunning => _timer != null && _timer!.isActive;
-
-  /// Exposed for tests to check processing state.
-  @visibleForTesting
-  bool get isProcessing => _isProcessing;
 }

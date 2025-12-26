@@ -123,10 +123,4 @@ class SyncTuning {
   // is more restrictive. Deeper historical backfill requires manual trigger.
   static const Duration defaultBackfillMaxAge = Duration(days: 1);
   static const int defaultBackfillMaxEntriesPerHost = 250;
-
-  // Exponential backoff for retry requests
-  // Base interval that doubles with each attempt, capped at max interval.
-  // First request (requestCount=0) is immediate.
-  static const Duration backfillBackoffBase = Duration(minutes: 5);
-  static const Duration backfillBackoffMax = Duration(hours: 2);
 }
