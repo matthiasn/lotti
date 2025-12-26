@@ -469,33 +469,37 @@ void main() {
           find.byKey(const Key('select_dashboard_category'));
       expect(categoryFieldFinder, findsOneWidget);
 
-      // The close button (clear category) should be visible since categoryId is set
+      // The close button (clear category) must be visible since categoryId is set
       final clearCategoryButtonFinder = find.byIcon(Icons.close_rounded);
+      expect(
+        clearCategoryButtonFinder,
+        findsOneWidget,
+        reason:
+            'Clear category button should be present when categoryId is set',
+      );
 
-      if (clearCategoryButtonFinder.evaluate().isNotEmpty) {
-        // Scroll to make the clear button visible if needed
-        await tester.dragUntilVisible(
-          clearCategoryButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, -100),
-        );
-        await tester.pumpAndSettle();
+      // Scroll to make the clear button visible if needed
+      await tester.dragUntilVisible(
+        clearCategoryButtonFinder,
+        find.byType(SingleChildScrollView),
+        const Offset(0, -100),
+      );
+      await tester.pumpAndSettle();
 
-        // Tap the clear button to trigger setCategory(null)
-        await tester.tap(clearCategoryButtonFinder.first);
-        await tester.pumpAndSettle();
+      // Tap the clear button to trigger setCategory(null)
+      await tester.tap(clearCategoryButtonFinder);
+      await tester.pumpAndSettle();
 
-        // Verify DevLogger.log was called for setCategory
-        expect(
-          DevLogger.capturedLogs.any(
-            (log) =>
-                log.contains('DashboardDefinitionPage') &&
-                log.contains('setCategory'),
-          ),
-          isTrue,
-          reason: 'setCategory should log to DevLogger',
-        );
-      }
+      // Verify DevLogger.log was called for setCategory
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('DashboardDefinitionPage') &&
+              log.contains('setCategory'),
+        ),
+        isTrue,
+        reason: 'setCategory should log to DevLogger',
+      );
     });
   });
 }

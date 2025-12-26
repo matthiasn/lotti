@@ -52,7 +52,7 @@ void main() {
       // The exact text depends on research_package implementation
     });
 
-    testWidgets('SurveyWidget cancelCallBack logs result to DevLogger',
+    testWidgets('SurveyWidget renders with cancel-enabled task',
         (tester) async {
       final task = RPOrderedTask(
         identifier: 'cancel_test_task',
@@ -78,12 +78,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Get the SurveyWidget state to access cancelCallBack
-      // The cancelCallBack is private, but we can verify the DevLogger
-      // by triggering a cancel action if possible
-
-      // Note: The research_package RPUITask handles cancel internally
-      // We verify the widget renders without error
+      // The RPUITask widget handles cancel internally via research_package.
+      // We verify the widget renders without error.
       expect(find.byType(SurveyWidget), findsOneWidget);
     });
 
