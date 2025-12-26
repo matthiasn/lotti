@@ -42,7 +42,8 @@ abstract class MatrixSyncGateway {
   Stream<RoomInviteEvent> get invites;
 
   /// Stream of timeline events received for the specified room.
-  Stream<MatrixTimelineEvent> timelineEvents(String roomId);
+  /// Note: Currently returns an empty stream; timeline streaming not yet implemented.
+  Stream<Event> timelineEvents(String roomId);
 
   /// Sends a text event to the given room and returns the event ID.
   Future<String> sendText({
@@ -85,15 +86,4 @@ class RoomInviteEvent {
 
   /// The user who sent the invite
   final String senderId;
-}
-
-/// Wrapper around Matrix timeline events emitted for the sync room.
-class MatrixTimelineEvent {
-  const MatrixTimelineEvent({
-    required this.roomId,
-    required this.event,
-  });
-
-  final String roomId;
-  final Event event;
 }

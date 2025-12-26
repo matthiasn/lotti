@@ -97,8 +97,6 @@ void main() {
             )).thenAnswer((_) async => []);
 
         service.start();
-        expect(service.isRunning, isTrue);
-
         async.flushMicrotasks();
 
         // Elapse first interval
@@ -124,7 +122,6 @@ void main() {
             )).called(1);
 
         service.dispose();
-        expect(service.isRunning, isFalse);
       });
     });
 
@@ -227,39 +224,6 @@ void main() {
       });
     });
 
-    test('processNow triggers immediate processing', () {
-      fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
-          requestInterval: const Duration(minutes: 5),
-        );
-
-        when(() => mockSequenceService.getMissingEntriesWithLimits(
-              limit: any(named: 'limit'),
-              maxRequestCount: any(named: 'maxRequestCount'),
-              maxAge: any(named: 'maxAge'),
-              maxPerHost: any(named: 'maxPerHost'),
-            )).thenAnswer((_) async => []);
-
-        // Call processNow without starting the timer
-        service.processNow();
-        async.flushMicrotasks();
-
-        verify(() => mockSequenceService.getMissingEntriesWithLimits(
-              limit: any(named: 'limit'),
-              maxRequestCount: any(named: 'maxRequestCount'),
-              maxAge: any(named: 'maxAge'),
-              maxPerHost: any(named: 'maxPerHost'),
-            )).called(1);
-
-        service.dispose();
-      });
-    });
-
     test('skips processing when no host ID available', () {
       fakeAsync((async) {
         final service = BackfillRequestService(
@@ -296,45 +260,6 @@ void main() {
       });
     });
 
-    test('stop cancels the timer', () {
-      fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
-          requestInterval: const Duration(seconds: 5),
-        );
-
-        when(() => mockSequenceService.getMissingEntriesWithLimits(
-              limit: any(named: 'limit'),
-              maxRequestCount: any(named: 'maxRequestCount'),
-              maxAge: any(named: 'maxAge'),
-              maxPerHost: any(named: 'maxPerHost'),
-            )).thenAnswer((_) async => []);
-
-        service.start();
-        expect(service.isRunning, isTrue);
-
-        service.stop();
-        expect(service.isRunning, isFalse);
-
-        // Elapse time - should not trigger processing
-        async.elapse(const Duration(seconds: 10));
-        async.flushMicrotasks();
-
-        verifyNever(() => mockSequenceService.getMissingEntriesWithLimits(
-              limit: any(named: 'limit'),
-              maxRequestCount: any(named: 'maxRequestCount'),
-              maxAge: any(named: 'maxAge'),
-              maxPerHost: any(named: 'maxPerHost'),
-            ));
-
-        service.dispose();
-      });
-    });
-
     test('does not process if already processing', () {
       fakeAsync((async) {
         final service = BackfillRequestService(
@@ -354,30 +279,27 @@ void main() {
               maxPerHost: any(named: 'maxPerHost'),
             )).thenAnswer((_) async {
           callCount++;
-          // Simulate slow processing
-          await Future<void>.delayed(const Duration(seconds: 3));
+          // Simulate slow processing (longer than interval)
+          await Future<void>.delayed(const Duration(seconds: 8));
           return [];
         });
 
         service.start();
         async.flushMicrotasks();
 
-        // Trigger first processing
+        // Trigger first processing at 5s
         async.elapse(const Duration(seconds: 5));
         async.flushMicrotasks();
 
-        // Start processing (isProcessing should be true)
-        expect(service.isProcessing, isTrue);
-
-        // Call processNow while still processing - should be ignored
-        service.processNow();
+        // Timer fires again at 10s while still processing - should be ignored
+        async.elapse(const Duration(seconds: 5));
         async.flushMicrotasks();
 
-        // Complete the first processing
+        // Complete the first processing at 13s (5s + 8s delay)
         async.elapse(const Duration(seconds: 3));
         async.flushMicrotasks();
 
-        expect(service.isProcessing, isFalse);
+        // Only one call should have been made despite two timer fires
         expect(callCount, 1);
 
         service.dispose();
@@ -407,12 +329,12 @@ void main() {
 
         service.dispose();
 
-        // Try to start again after dispose
+        // Try to start again after dispose - should not work
         service.start();
-        expect(service.isRunning, isFalse);
+        async.flushMicrotasks();
 
-        // processNow should also not work
-        service.processNow();
+        // Elapse time - timer should not fire after dispose
+        async.elapse(const Duration(seconds: 10));
         async.flushMicrotasks();
 
         verifyNever(() => mockSequenceService.getMissingEntriesWithLimits(
@@ -459,9 +381,19 @@ void main() {
           ),
         ).called(1);
 
-        // Service should still be running
-        expect(service.isRunning, isTrue);
-        expect(service.isProcessing, isFalse);
+        // Service should still be running - verify by elapsing another interval
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+
+        // Exception should be logged again (timer still firing)
+        verify(
+          () => mockLogging.captureException(
+            any<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
 
         service.dispose();
       });
@@ -867,20 +799,19 @@ void main() {
           service.processReRequest();
           async.flushMicrotasks();
 
-          expect(service.isProcessing, isTrue);
-
-          // Try to start another - should be ignored
+          // Try to start another while first is processing - should return 0
           int? result;
           service.processReRequest().then((r) => result = r);
           async.flushMicrotasks();
 
+          // Second call returns 0 immediately since processing is in progress
           expect(result, 0);
 
           // Complete the first processing
           async.elapse(const Duration(seconds: 2));
           async.flushMicrotasks();
 
-          // Only one call to getRequestedEntries
+          // Only one call to getRequestedEntries (second was rejected)
           expect(getRequestedCallCount, 1);
 
           service.dispose();
