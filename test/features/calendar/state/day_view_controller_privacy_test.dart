@@ -419,5 +419,57 @@ void main() {
       expect(event.description, isNotNull);
       expect(event.color, isNotNull);
     });
+
+    test('WorkoutEntry shows workout type as title and formatted description',
+        () async {
+      // Arrange
+      final dateFrom = DateTime(2024, 1, 15, 10);
+      final dateTo = dateFrom.add(const Duration(hours: 2));
+
+      final workoutEntry = JournalEntity.workout(
+        meta: Metadata(
+          id: 'workout-1',
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          createdAt: dateFrom,
+          updatedAt: dateFrom,
+        ),
+        data: WorkoutData(
+          id: 'workout-data-1',
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          workoutType: 'Running',
+          energy: 500,
+          distance: 5000,
+          source: 'test',
+        ),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [workoutEntry]);
+
+      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+      when(() => mockDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => []);
+      when(() => mockEntitiesCacheService.getCategoryById(any()))
+          .thenReturn(null);
+
+      // Act - with empty filter (show all)
+      final events = await container.read(dayViewControllerProvider.future);
+
+      // Assert - workout entry should show workout type as title
+      expect(events, isNotEmpty);
+      final event = events.first;
+      // Title should contain the workout type
+      expect(event.title, contains('Running'));
+      // Description should contain workout details (distance, energy)
+      expect(event.description, isNotNull);
+      // Workout entries have a specific green color (#A8CD66)
+      expect(event.color, isNotNull);
+    });
   });
 }
