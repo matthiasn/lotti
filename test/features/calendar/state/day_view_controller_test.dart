@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
 import 'package:lotti/features/calendar/state/day_view_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -25,6 +26,8 @@ class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockVisibilityInfo extends Mock implements VisibilityInfo {}
 
+class MockSettingsDb extends Mock implements SettingsDb {}
+
 // Listener for state changes
 class Listener<T> extends Mock {
   void call(T? previous, T next);
@@ -37,8 +40,10 @@ void main() {
   late MockJournalDb mockDb;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockUpdateNotifications mockUpdateNotifications;
+  late MockSettingsDb mockSettingsDb;
   late Listener<AsyncValue<List<CalendarEventData<CalendarEvent>>>> listener;
   late StreamController<Set<String>> updateStreamController;
+  late StreamController<List<SettingsItem>> settingsStreamController;
 
   setUpAll(() {
     // Register fallback values for Mocktail
@@ -54,18 +59,24 @@ void main() {
     mockDb = MockJournalDb();
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockUpdateNotifications = MockUpdateNotifications();
+    mockSettingsDb = MockSettingsDb();
     listener = Listener<AsyncValue<List<CalendarEventData<CalendarEvent>>>>();
 
     updateStreamController = StreamController<Set<String>>.broadcast();
+    settingsStreamController = StreamController<List<SettingsItem>>.broadcast();
 
     when(() => mockUpdateNotifications.updateStream)
         .thenAnswer((_) => updateStreamController.stream);
+
+    when(() => mockSettingsDb.watchSettingsItemByKey(any()))
+        .thenAnswer((_) => settingsStreamController.stream);
 
     // Register mocks in GetIt
     getIt
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<SettingsDb>(mockSettingsDb);
 
     // Create a provider container without overrides
     container = ProviderContainer();
@@ -74,6 +85,7 @@ void main() {
   tearDown(() {
     container.dispose();
     updateStreamController.close();
+    settingsStreamController.close();
   });
 
   test('initial state loads calendar entries', () async {

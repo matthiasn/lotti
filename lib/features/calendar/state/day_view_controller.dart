@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/calendar/state/calendar_category_visibility_controller.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
 import 'package:lotti/features/calendar/state/time_by_category_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -32,6 +33,26 @@ String? _truncatePlainText(String? value, int maxLength) {
   return '${value.substring(0, maxLength - 3)}...';
 }
 
+/// Determines if a category is visible based on the visibility filter.
+///
+/// Visibility rules:
+/// - Empty visibleCategoryIds set = all categories visible (show all text)
+/// - Non-empty set = only those specific categories are visible
+/// - For unassigned entries (null/empty categoryId), check for '' in the set
+bool _isCategoryVisible(String? categoryId, Set<String> visibleCategoryIds) {
+  // Empty set means "show all" - all categories are visible
+  if (visibleCategoryIds.isEmpty) {
+    return true;
+  }
+
+  // Handle unassigned entries (null or empty categoryId)
+  if (categoryId == null || categoryId.isEmpty) {
+    return visibleCategoryIds.contains('');
+  }
+
+  return visibleCategoryIds.contains(categoryId);
+}
+
 @riverpod
 class DayViewController extends _$DayViewController {
   StreamSubscription<Set<String>>? _updateSubscription;
@@ -50,7 +71,12 @@ class DayViewController extends _$DayViewController {
         .listen((affectedIds) async {
       if (affectedIds.intersection(subscribedIds).isNotEmpty && _isVisible) {
         final timeSpanDays = ref.read(timeFrameControllerProvider);
-        final latest = await _fetch(timeSpanDays: timeSpanDays);
+        final visibleCategoryIds =
+            ref.read(calendarCategoryVisibilityControllerProvider);
+        final latest = await _fetch(
+          timeSpanDays: timeSpanDays,
+          visibleCategoryIds: visibleCategoryIds,
+        );
         state = AsyncData(latest);
       }
     });
@@ -59,7 +85,9 @@ class DayViewController extends _$DayViewController {
   void onVisibilityChanged(VisibilityInfo info) {
     _isVisible = info.visibleFraction > 0.5;
     if (_isVisible) {
-      _fetch().then((latest) {
+      final visibleCategoryIds =
+          ref.read(calendarCategoryVisibilityControllerProvider);
+      _fetch(visibleCategoryIds: visibleCategoryIds).then((latest) {
         if (latest != state.value) {
           state = AsyncData(latest);
         }
@@ -70,17 +98,24 @@ class DayViewController extends _$DayViewController {
   @override
   Future<List<CalendarEventData<CalendarEvent>>> build() async {
     final timeSpanDays = ref.watch(timeFrameControllerProvider);
+    // Watch visibility state to rebuild when it changes
+    final visibleCategoryIds =
+        ref.watch(calendarCategoryVisibilityControllerProvider);
 
     ref
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
-    final data = await _fetch(timeSpanDays: timeSpanDays);
+    final data = await _fetch(
+      timeSpanDays: timeSpanDays,
+      visibleCategoryIds: visibleCategoryIds,
+    );
     listen();
     return data;
   }
 
   Future<List<CalendarEventData<CalendarEvent>>> _fetch({
     int timeSpanDays = 30,
+    Set<String> visibleCategoryIds = const {},
   }) async {
     final now = DateTime.now();
     final db = getIt<JournalDb>();
@@ -144,31 +179,45 @@ class DayViewController extends _$DayViewController {
         final endTime =
             dateTo.day != startTime.day ? startTime.endOfDay : dateTo;
 
-        final title = journalEntity is WorkoutEntry
-            ? journalEntity.data.workoutType
-            : switch (linkedEntry) {
-                Task() => linkedEntry.data.title,
-                JournalEvent() => linkedEntry.data.title,
-                _ => '',
-              };
+        // Check if this category is visible for privacy filtering
+        final isCategoryVisible =
+            _isCategoryVisible(categoryId, visibleCategoryIds);
+
+        // Build title - only show if category is visible
+        final title = isCategoryVisible
+            ? (journalEntity is WorkoutEntry
+                ? journalEntity.data.workoutType
+                : switch (linkedEntry) {
+                    Task() => linkedEntry.data.title,
+                    JournalEvent() => linkedEntry.data.title,
+                    _ => '',
+                  })
+            : '';
 
         final categoryName = category?.name;
-        final categoryPrefix = categoryName != null ? '$categoryName - ' : '';
+        // Only show category prefix if category is visible
+        final categoryPrefix = (categoryName != null && isCategoryVisible)
+            ? '$categoryName - '
+            : '';
         final titleWithCategory = '$categoryPrefix$title';
 
-        final description = journalEntity is WorkoutEntry
-            ? entryTextForWorkout(
-                journalEntity.data,
-                includeTitle: false,
-              )
-            : _truncatePlainText(
-                journalEntity.entryText?.plainText,
-                100,
-              );
+        // Build description - only show if category is visible
+        final description = isCategoryVisible
+            ? (journalEntity is WorkoutEntry
+                ? entryTextForWorkout(
+                    journalEntity.data,
+                    includeTitle: false,
+                  )
+                : _truncatePlainText(
+                    journalEntity.entryText?.plainText,
+                    100,
+                  ))
+            : null;
 
         final event = CalendarEvent(
           entity: journalEntity,
           linkedFrom: linkedEntry,
+          categoryId: categoryId,
         );
 
         data.add(

@@ -29,7 +29,7 @@ final correctionCaptureServiceProvider =
 typedef CorrectionCaptureServiceRef
     = AutoDisposeProviderRef<CorrectionCaptureService>;
 String _$correctionCaptureNotifierHash() =>
-    r'0abaac382c1656d97314e2b87639d14bd78bb1be';
+    r'ed14d115ddb7914c2e4594fffdeb3ba2277d54d7';
 
 /// Notifier for pending correction with countdown.
 /// UI watches this to show the snackbar with undo functionality.

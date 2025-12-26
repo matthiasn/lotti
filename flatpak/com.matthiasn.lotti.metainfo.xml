@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.774" date="2025-12-26">
+      <description>
+        <p>Calendar Privacy Filtering: Calendar view now respects category visibility settings from the Tasks page. Selected categories show colored boxes with text; unselected categories show colored boxes only (text hidden for privacy).</p>
+      </description>
+    </release>
     <release version="0.9.773" date="2025-12-25">
       <description>
         <p>Checklist Correction UX: Corrections now use a delayed-save pattern with a cancel option. A 5-second countdown snackbar lets you discard accidental corrections before they're saved as AI learning examples.</p>
