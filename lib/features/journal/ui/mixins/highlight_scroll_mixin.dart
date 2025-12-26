@@ -100,15 +100,8 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
     // Guard: bail out if this retry is for a stale scroll operation
     if (_scrollingToEntryId != entryId) return;
 
-    if (_disposed || attempt >= maxScrollRetries) {
+    if (_disposed) {
       _scrollingToEntryId = null;
-      if (attempt >= maxScrollRetries) {
-        DevLogger.warning(
-          name: 'HighlightScrollMixin',
-          message:
-              'Failed to scroll to entry $entryId after $maxScrollRetries attempts',
-        );
-      }
       // Clear intent on terminal failure if requested
       onScrolled?.call();
       return;
@@ -175,6 +168,12 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
           );
         });
       } else {
+        // Final attempt failed - log warning and clear state
+        DevLogger.warning(
+          name: 'HighlightScrollMixin',
+          message:
+              'Failed to scroll to entry $entryId after $maxScrollRetries attempts',
+        );
         _scrollingToEntryId = null;
         _retryTimer?.cancel();
         // Final attempt failed: clear intent if requested

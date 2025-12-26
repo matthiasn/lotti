@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'dart:developer' as developer;
 
 /// Centralized development logging utility with configurable output.
 ///
@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 /// - Suppressing output in tests to keep test output clean
 /// - Capturing logs for test verification when needed
 /// - Consistent logging format across the codebase
+/// - Structured logging for DevTools via dart:developer.log
 ///
 /// Usage in production code:
 /// ```dart
@@ -43,15 +44,32 @@ class DevLogger {
   ///
   /// The message is always added to [capturedLogs] for test verification.
   /// It is only printed to console if [suppressOutput] is false.
+  ///
+  /// Uses dart:developer.log for structured logging in DevTools.
   static void log({
     required String name,
     required String message,
+    int level = 0,
+    Object? error,
+    StackTrace? stackTrace,
   }) {
-    final formattedMessage = '[$name] $message';
-    capturedLogs.add(formattedMessage);
+    final fullMessage = StringBuffer('[$name] $message');
+    if (error != null) {
+      fullMessage.write(' | error: $error');
+    }
+    if (stackTrace != null) {
+      fullMessage.write(' | stackTrace: $stackTrace');
+    }
+    capturedLogs.add(fullMessage.toString());
 
     if (!suppressOutput) {
-      debugPrint(formattedMessage);
+      developer.log(
+        message,
+        name: name,
+        level: level,
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -60,7 +78,7 @@ class DevLogger {
     required String name,
     required String message,
   }) {
-    log(name: name, message: 'WARNING: $message');
+    log(name: name, message: 'WARNING: $message', level: 900);
   }
 
   /// Logs an error message with optional exception and stack trace.
@@ -70,8 +88,12 @@ class DevLogger {
     Object? error,
     StackTrace? stackTrace,
   }) {
-    final errorDetails = error != null ? ' $error' : '';
-    final stackDetails = stackTrace != null ? '\n$stackTrace' : '';
-    log(name: name, message: 'ERROR: $message$errorDetails$stackDetails');
+    log(
+      name: name,
+      message: 'ERROR: $message',
+      error: error,
+      stackTrace: stackTrace,
+      level: 1000,
+    );
   }
 }

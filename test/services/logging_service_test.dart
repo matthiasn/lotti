@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -42,6 +43,9 @@ void main() {
     tempDocs = Directory.systemTemp.createTempSync('logging_svc_test_');
     addTearDown(() =>
         tempDocs.existsSync() ? tempDocs.deleteSync(recursive: true) : null);
+
+    // Clear captured logs from previous tests
+    DevLogger.capturedLogs.clear();
 
     // Reset DI and register dependencies used by LoggingService
     await getIt.reset();
@@ -118,6 +122,17 @@ void main() {
       final content = file.readAsStringSync();
       // Even on DB failure, original event line is still appended
       expect(content.contains(' [INFO] OUTBOX watchdog: evt'), isTrue);
+
+      // Verify DevLogger.error was called for the DB write failure
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('LOGGING_DB event.write failed') &&
+              log.contains('db down'),
+        ),
+        isTrue,
+        reason: 'DB write failure should be logged via DevLogger.error',
+      );
     });
   });
 
@@ -144,6 +159,16 @@ void main() {
       final content = File(logPath).readAsStringSync();
       expect(
           content.contains(' [ERROR] PIPE liveScan: Exception: boom'), isTrue);
+
+      // Verify DevLogger.error was called (lines 237-242 in logging_service.dart)
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('EXCEPTION PIPE liveScan') &&
+              log.contains('Exception: boom'),
+        ),
+        isTrue,
+      );
     });
   });
 
@@ -166,6 +191,24 @@ void main() {
         'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
       )).readAsStringSync();
       expect(content.contains(' [ERROR] DB insert: oops trace'), isTrue);
+
+      // Verify DevLogger.error calls for both captureException and DB failure
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) => log.contains('EXCEPTION DB insert') && log.contains('oops'),
+        ),
+        isTrue,
+        reason: 'captureException should call DevLogger.error',
+      );
+      expect(
+        DevLogger.capturedLogs.any(
+          (log) =>
+              log.contains('LOGGING_DB exception.write failed') &&
+              log.contains('cantopen'),
+        ),
+        isTrue,
+        reason: 'DB write failure should be logged via DevLogger.error',
+      );
     });
   });
 

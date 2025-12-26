@@ -1,13 +1,11 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/services/dev_logger.dart';
 
 /// Lightweight dev logging helper.
 ///
-/// Writes to `developer.log` for DevTools and uses [DevLogger] for console
-/// output. The console output can be suppressed in tests by setting
-/// [DevLogger.suppressOutput] to true, while still capturing logs for
-/// verification via [DevLogger.capturedLogs].
+/// Delegates to [DevLogger] which handles logging to DevTools via
+/// dart:developer.log and capturing logs for test verification.
+/// Console output can be suppressed in tests by setting
+/// [DevLogger.suppressOutput] to true.
 void lottiDevLog({
   required String name,
   required String message,
@@ -15,18 +13,15 @@ void lottiDevLog({
   Object? error,
   StackTrace? stackTrace,
 }) {
-  // Always write to developer.log for DevTools
-  developer.log(
-    message,
-    name: name,
-    level: level,
-    error: error,
-    stackTrace: stackTrace,
-  );
-
-  // Use DevLogger for console output (respects suppressOutput setting)
+  // DevLogger handles logging to DevTools and capturing for tests.
   assert(() {
-    DevLogger.log(name: name, message: message);
+    DevLogger.log(
+      name: name,
+      message: message,
+      level: level,
+      error: error,
+      stackTrace: stackTrace,
+    );
     return true;
   }(), 'log to console in debug builds');
 }
