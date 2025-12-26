@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/calendar/state/calendar_category_visibility_controller.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
 import 'package:lotti/features/calendar/state/time_by_category_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -70,8 +71,9 @@ class DayViewController extends _$DayViewController {
   @override
   Future<List<CalendarEventData<CalendarEvent>>> build() async {
     final timeSpanDays = ref.watch(timeFrameControllerProvider);
-
+    // Watch visibility state to rebuild when it changes
     ref
+      ..watch(calendarCategoryVisibilityControllerProvider)
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
     final data = await _fetch(timeSpanDays: timeSpanDays);
@@ -82,6 +84,8 @@ class DayViewController extends _$DayViewController {
   Future<List<CalendarEventData<CalendarEvent>>> _fetch({
     int timeSpanDays = 30,
   }) async {
+    final visibilityController =
+        ref.read(calendarCategoryVisibilityControllerProvider.notifier);
     final now = DateTime.now();
     final db = getIt<JournalDb>();
     final data = <CalendarEventData<CalendarEvent>>[];
@@ -144,31 +148,45 @@ class DayViewController extends _$DayViewController {
         final endTime =
             dateTo.day != startTime.day ? startTime.endOfDay : dateTo;
 
-        final title = journalEntity is WorkoutEntry
-            ? journalEntity.data.workoutType
-            : switch (linkedEntry) {
-                Task() => linkedEntry.data.title,
-                JournalEvent() => linkedEntry.data.title,
-                _ => '',
-              };
+        // Check if this category is visible for privacy filtering
+        final isCategoryVisible =
+            visibilityController.isCategoryVisible(categoryId);
+
+        // Build title - only show if category is visible
+        final title = isCategoryVisible
+            ? (journalEntity is WorkoutEntry
+                ? journalEntity.data.workoutType
+                : switch (linkedEntry) {
+                    Task() => linkedEntry.data.title,
+                    JournalEvent() => linkedEntry.data.title,
+                    _ => '',
+                  })
+            : '';
 
         final categoryName = category?.name;
-        final categoryPrefix = categoryName != null ? '$categoryName - ' : '';
+        // Only show category prefix if category is visible
+        final categoryPrefix = (categoryName != null && isCategoryVisible)
+            ? '$categoryName - '
+            : '';
         final titleWithCategory = '$categoryPrefix$title';
 
-        final description = journalEntity is WorkoutEntry
-            ? entryTextForWorkout(
-                journalEntity.data,
-                includeTitle: false,
-              )
-            : _truncatePlainText(
-                journalEntity.entryText?.plainText,
-                100,
-              );
+        // Build description - only show if category is visible
+        final description = isCategoryVisible
+            ? (journalEntity is WorkoutEntry
+                ? entryTextForWorkout(
+                    journalEntity.data,
+                    includeTitle: false,
+                  )
+                : _truncatePlainText(
+                    journalEntity.entryText?.plainText,
+                    100,
+                  ))
+            : null;
 
         final event = CalendarEvent(
           entity: journalEntity,
           linkedFrom: linkedEntry,
+          categoryId: categoryId,
         );
 
         data.add(
