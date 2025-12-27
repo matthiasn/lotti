@@ -219,6 +219,16 @@ class _RoomConfigState extends ConsumerState<RoomConfig>
           showCam = false;
         });
       }
+    } catch (_) {
+      // Invite failed - restart the scanner if camera UI is still visible
+      // so the user can try again without navigating away
+      if (mounted && showCam) {
+        try {
+          await _scannerController.start();
+        } catch (_) {
+          // best-effort restart
+        }
+      }
     } finally {
       _inviting = false;
     }

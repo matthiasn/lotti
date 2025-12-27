@@ -384,5 +384,21 @@
       "seconds": { "type": "int" }
     }
   },
-  "correctionExampleCancel": "ANULEAZĂ"
+  "correctionExampleCancel": "ANULEAZĂ",
+
+  "syncRoomDiscoveryTitle": "Găsește cameră de sincronizare existentă",
+  "syncDiscoverRoomsButton": "Descoperă camerele existente",
+  "syncDiscoveringRooms": "Se caută camerele de sincronizare...",
+  "syncNoRoomsFound": "Nu s-au găsit camere de sincronizare.\nPoți crea o cameră nouă pentru a începe sincronizarea.",
+  "syncCreateNewRoom": "Creează cameră nouă",
+  "syncSelectRoom": "Selectează cameră de sincronizare",
+  "syncSelectRoomDescription": "Am găsit camere de sincronizare existente. Selectează una pentru a te alătura sau creează o cameră nouă.",
+  "syncCreateNewRoomInstead": "Creează cameră nouă în schimb",
+  "syncDiscoveryError": "Descoperirea camerelor a eșuat",
+  "syncRetry": "Reîncearcă",
+  "syncSkip": "Omite",
+  "syncRoomUnnamed": "Cameră fără nume",
+  "syncRoomCreatedUnknown": "Necunoscut",
+  "syncRoomVerified": "Verificat",
+  "syncRoomHasContent": "Are conținut"
 }

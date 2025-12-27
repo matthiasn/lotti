@@ -384,5 +384,21 @@
       "seconds": { "type": "int" }
     }
   },
-  "correctionExampleCancel": "CANCELAR"
+  "correctionExampleCancel": "CANCELAR",
+
+  "syncRoomDiscoveryTitle": "Buscar sala de sincronización existente",
+  "syncDiscoverRoomsButton": "Descubrir salas existentes",
+  "syncDiscoveringRooms": "Buscando salas de sincronización...",
+  "syncNoRoomsFound": "No se encontraron salas de sincronización.\nPuede crear una nueva sala para comenzar a sincronizar.",
+  "syncCreateNewRoom": "Crear nueva sala",
+  "syncSelectRoom": "Seleccionar sala de sincronización",
+  "syncSelectRoomDescription": "Encontramos salas de sincronización existentes. Seleccione una para unirse o cree una nueva sala.",
+  "syncCreateNewRoomInstead": "Crear nueva sala en su lugar",
+  "syncDiscoveryError": "Error al descubrir salas",
+  "syncRetry": "Reintentar",
+  "syncSkip": "Omitir",
+  "syncRoomUnnamed": "Sala sin nombre",
+  "syncRoomCreatedUnknown": "Desconocido",
+  "syncRoomVerified": "Verificado",
+  "syncRoomHasContent": "Tiene contenido"
 }

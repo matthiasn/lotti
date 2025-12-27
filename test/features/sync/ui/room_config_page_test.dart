@@ -15,9 +15,13 @@ import '../../../widget_test_utils.dart';
 class MockMatrixService extends Mock implements MatrixService {}
 
 class _FakeMatrixRoomController extends MatrixRoomController {
-  _FakeMatrixRoomController({this.initialRoom});
+  _FakeMatrixRoomController({
+    this.initialRoom,
+    this.shouldThrowOnInvite = false,
+  });
 
   final String? initialRoom;
+  final bool shouldThrowOnInvite;
   bool leaveCalled = false;
   bool joinCalled = false;
   bool createCalled = false;
@@ -43,6 +47,9 @@ class _FakeMatrixRoomController extends MatrixRoomController {
   Future<void> inviteToRoom(String userId) async {
     inviteCalled = true;
     invitedUserId = userId;
+    if (shouldThrowOnInvite) {
+      throw Exception('Invite failed');
+    }
   }
 
   @override
@@ -256,6 +263,50 @@ void main() {
       expect(inviteCalled, isTrue);
       expect(invitedUserId, '@friend:server');
       expect(showCamAfter, isFalse);
+    });
+
+    testWidgets('scanner stays active when invite fails', (tester) async {
+      final controller = _FakeMatrixRoomController(
+        initialRoom: '!room:server',
+        shouldThrowOnInvite: true,
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      // Run the barcode handling in runAsync to avoid test hangs from
+      // MobileScannerController operations that don't work in test env
+      await tester.runAsync(() async {
+        await handle.handleBarcodeForTesting(
+          const BarcodeCapture(
+            barcodes: [
+              Barcode(rawValue: '@friend:server'),
+            ],
+          ),
+        );
+      });
+
+      await tester.pump();
+
+      // Invite was attempted
+      expect(controller.inviteCalled, isTrue);
+      expect(controller.invitedUserId, '@friend:server');
+      // Camera stays visible so user can retry without navigating away
+      expect(handle.showCamForTesting, isTrue);
     });
 
     testWidgets('invite stream shows dialog and accepts invite',

@@ -62,6 +62,10 @@ class SyncRoomDiscoveryService {
 
   final LoggingService _loggingService;
 
+  /// Maximum number of rooms to evaluate concurrently.
+  /// Bounded to avoid overwhelming the Matrix SDK with parallel timeline fetches.
+  static const _maxConcurrentEvaluations = 5;
+
   /// Discovers potential Lotti sync rooms from the client's joined rooms.
   ///
   /// Returns a list of [SyncRoomCandidate] sorted by confidence (highest first).
@@ -69,13 +73,25 @@ class SyncRoomDiscoveryService {
   /// 1. Encrypted
   /// 2. Private (not public/world-readable)
   /// 3. Have either the Lotti state marker OR contain Lotti sync messages
+  ///
+  /// Uses bounded concurrency to evaluate rooms in parallel while avoiding
+  /// overwhelming the Matrix SDK with too many concurrent timeline fetches.
   Future<List<SyncRoomCandidate>> discoverSyncRooms(Client client) async {
     final candidates = <SyncRoomCandidate>[];
+    final rooms = client.rooms;
 
-    for (final room in client.rooms) {
-      final candidate = await _evaluateRoom(room);
-      if (candidate != null) {
-        candidates.add(candidate);
+    // Process rooms in batches with bounded concurrency
+    for (var i = 0; i < rooms.length; i += _maxConcurrentEvaluations) {
+      final batchEnd = (i + _maxConcurrentEvaluations).clamp(0, rooms.length);
+      final batch = rooms.sublist(i, batchEnd);
+
+      // Evaluate batch in parallel
+      final results = await Future.wait(batch.map(_evaluateRoom));
+
+      for (final candidate in results) {
+        if (candidate != null) {
+          candidates.add(candidate);
+        }
       }
     }
 

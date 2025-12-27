@@ -259,9 +259,40 @@ if (isSameUserSetup) {
 #### 5.3 Migration Notes
 
 Existing users with multi-user setups:
-- **Continue working:** No breaking changes
-- **Optional migration:** Users can create new single-user setup if desired
+- **Continue working:** No breaking changes to existing setups
+- **Optional migration:** Users can manually transition to single-user model
 - **No automated migration:** Would require account credential changes
+
+##### Manual Migration Path (Optional)
+
+For users who want to transition from multi-user (device-specific accounts) to single-user (primary account on all devices):
+
+1. **On the primary device:**
+   - Note the Matrix account credentials (homeserver, username, password)
+   - The existing sync room already contains all synced data
+
+2. **On secondary devices:**
+   - Log out of the device-specific Matrix account (Settings → Sync → Logout)
+   - Log in with the primary account credentials
+   - Room Discovery will find the existing sync room
+   - Select the room to join it
+
+3. **Data handling during migration:**
+   - **Local data is preserved:** All journal entries on the device remain in the local database
+   - **Sync state resets:** The device will perform a fresh catch-up from the sync room
+   - **No data loss:** Entries already in the sync room will be deduplicated via vector clocks
+   - **Unsynced entries:** Any entries not yet synced will sync once the new connection is established
+
+4. **After migration:**
+   - Device verification is required for E2E encryption keys
+   - All devices share the same sync room and receive updates in real-time
+   - The old device-specific Matrix accounts can be deactivated if desired
+
+##### When NOT to Migrate
+
+- **Different users:** If devices belong to different people, keep separate accounts
+- **Working setup:** If current multi-device sync works, migration is optional
+- **Limited time:** Migration requires re-verification on each device
 
 ## File Change Summary
 
