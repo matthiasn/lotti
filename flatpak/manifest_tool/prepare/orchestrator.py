@@ -51,7 +51,11 @@ def get_default_flutter_tag() -> str:
     """Read the default Flutter tag from FVM config or fall back to 'stable'."""
     # Try to read from repository root's FVM config
     repo_root = next(
-        (p for p in Path(__file__).resolve().parents if (p / ".fvm").exists() or (p / ".git").exists()),
+        (
+            p
+            for p in Path(__file__).resolve().parents
+            if (p / ".fvm").exists() or (p / ".git").exists()
+        ),
         Path(__file__).resolve().parents[3],
     )
     fvm_tag = _read_fvm_flutter_tag(repo_root)
@@ -61,7 +65,9 @@ def get_default_flutter_tag() -> str:
 # Computed once at module load for consistency in tests and logging
 DEFAULT_FLUTTER_TAG = get_default_flutter_tag()
 
-_SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3510100")
+_SQLITE_AUTOCONF_VERSION = os.getenv(
+    "SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3510100"
+)
 _SQLITE_AUTOCONF_SHA256 = os.getenv(
     "SQLITE_AUTOCONF_SHA256",
     "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0",
@@ -89,7 +95,10 @@ CARGO_LOCK_SOURCES: tuple[tuple[str, str], ...] = (
     ),
     (
         "irondash_engine_context",
-        ("https://raw.githubusercontent.com/irondash/irondash/" "65343873472d6796c0388362a8e04b6e9a499044/Cargo.lock"),
+        (
+            "https://raw.githubusercontent.com/irondash/irondash/"
+            "65343873472d6796c0388362a8e04b6e9a499044/Cargo.lock"
+        ),
     ),
 )
 
@@ -212,7 +221,9 @@ def prepare_flathub(options: PrepareFlathubOptions) -> None:
     _execute_pipeline(context, printer)
 
 
-def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> PrepareFlathubContext:
+def _build_context(
+    options: PrepareFlathubOptions, printer: _StatusPrinter
+) -> PrepareFlathubContext:
     repo_root = options.repository_root
     flatpak_dir = options.flatpak_dir
     script_dir = flatpak_dir
@@ -241,7 +252,9 @@ def _build_context(options: PrepareFlathubOptions, printer: _StatusPrinter) -> P
     # Defer Flutter tag resolution to prefer FVM configuration first.
     # The tag will be determined later via _ensure_flutter_tag_from_modules.
     flutter_tag = None
-    cached_flutter_dir = build_utils.find_flutter_sdk(search_roots=[repo_root], max_depth=6)
+    cached_flutter_dir = build_utils.find_flutter_sdk(
+        search_roots=[repo_root], max_depth=6
+    )
 
     context = PrepareFlathubContext(
         options=options,
@@ -290,7 +303,9 @@ def _print_intro(context: PrepareFlathubContext, printer: _StatusPrinter) -> Non
     print("  USE_NESTED_FLUTTER=" + ("true" if options.use_nested_flutter else "false"))
     print("  CLEAN_AFTER_GEN=" + ("true" if options.clean_after_gen else "false"))
     timeout = options.flatpak_flutter_timeout
-    print("  FLATPAK_FLUTTER_TIMEOUT=" + ("<unset>" if timeout is None else str(timeout)))
+    print(
+        "  FLATPAK_FLUTTER_TIMEOUT=" + ("<unset>" if timeout is None else str(timeout))
+    )
     print("  TEST_BUILD=" + ("true" if options.test_build else "false"))
     print()
 
@@ -305,17 +320,23 @@ def _run_git(args: Iterable[str], *, cwd: Path) -> str:
         text=True,
     )
     if result.returncode != 0:
-        raise PrepareFlathubError(f"git {' '.join(args)} failed with code {result.returncode}: {result.stderr.strip()}")
+        raise PrepareFlathubError(
+            f"git {' '.join(args)} failed with code {result.returncode}: {result.stderr.strip()}"
+        )
     return result.stdout.strip()
 
 
-def _determine_branch(repo_root: Path, env: Mapping[str, str], printer: _StatusPrinter) -> str:
+def _determine_branch(
+    repo_root: Path, env: Mapping[str, str], printer: _StatusPrinter
+) -> str:
     branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root)
     if branch == "HEAD":
         for candidate in ("GITHUB_HEAD_REF", "GITHUB_REF_NAME"):
             value = env.get(candidate)
             if value:
-                printer.warn(f"Detached HEAD detected; using {candidate.lower()} value '{value}'")
+                printer.warn(
+                    f"Detached HEAD detected; using {candidate.lower()} value '{value}'"
+                )
                 branch = value
                 break
         else:
@@ -330,14 +351,20 @@ def _determine_branch(repo_root: Path, env: Mapping[str, str], printer: _StatusP
         text=True,
     )
     if remote_check.returncode != 0:
-        printer.warn(f"Unable to verify remote branch {branch} (git ls-remote exited with {remote_check.returncode}).")
+        printer.warn(
+            f"Unable to verify remote branch {branch} (git ls-remote exited with {remote_check.returncode})."
+        )
     elif not remote_check.stdout.strip():
-        printer.warn(f"Branch {branch} not found on remote; ensure it is pushed before publishing")
+        printer.warn(
+            f"Branch {branch} not found on remote; ensure it is pushed before publishing"
+        )
 
     return branch
 
 
-def _extract_flutter_tag(manifest_template: Path, printer: _StatusPrinter) -> Optional[str]:
+def _extract_flutter_tag(
+    manifest_template: Path, printer: _StatusPrinter
+) -> Optional[str]:
     if not manifest_template.is_file():
         printer.warn(f"Manifest template not found at {manifest_template}")
         return None
@@ -355,7 +382,9 @@ def _extract_flutter_tag(manifest_template: Path, printer: _StatusPrinter) -> Op
             for source in sources:
                 if isinstance(source, dict) and "tag" in source:
                     return str(source["tag"]).strip()
-    printer.warn(f"Could not detect Flutter tag from manifest; defaulting to {DEFAULT_FLUTTER_TAG}")
+    printer.warn(
+        f"Could not detect Flutter tag from manifest; defaulting to {DEFAULT_FLUTTER_TAG}"
+    )
     return DEFAULT_FLUTTER_TAG
 
 
@@ -394,7 +423,8 @@ def _ensure_flutter_tag_from_modules(
     if detected and context.flutter_tag:
         if detected != context.flutter_tag:
             printer.warn(
-                "Manifest flutter-sdk tag %s differs from FVM (%s); using FVM" % (detected, context.flutter_tag)
+                "Manifest flutter-sdk tag %s differs from FVM (%s); using FVM"
+                % (detected, context.flutter_tag)
             )
         return
 
@@ -422,9 +452,13 @@ def _ensure_branch_for_lotti_sources(sources: list[object], branch: str) -> bool
     return changed
 
 
-def _ensure_flutter_source_in_lotti(sources: list[object], context: PrepareFlathubContext) -> bool:
+def _ensure_flutter_source_in_lotti(
+    sources: list[object], context: PrepareFlathubContext
+) -> bool:
     if any(
-        isinstance(source, dict) and source.get("type") == "git" and source.get("dest") == "flutter"
+        isinstance(source, dict)
+        and source.get("type") == "git"
+        and source.get("dest") == "flutter"
         for source in sources
     ):
         return False
@@ -465,10 +499,17 @@ def _prepare_lotti_module_for_flatpak_flutter(
         if not isinstance(module, dict) or module.get("name") != "lotti":
             continue
         sources = module.setdefault("sources", [])
-        branch_applied = _ensure_branch_for_lotti_sources(sources, context.current_branch) or branch_applied
-        flutter_added = _ensure_flutter_source_in_lotti(sources, context) or flutter_added
+        branch_applied = (
+            _ensure_branch_for_lotti_sources(sources, context.current_branch)
+            or branch_applied
+        )
+        flutter_added = (
+            _ensure_flutter_source_in_lotti(sources, context) or flutter_added
+        )
         if context.pr_head_url:
-            repo_overridden = _ensure_lotti_repo_url(sources, context.pr_head_url) or repo_overridden
+            repo_overridden = (
+                _ensure_lotti_repo_url(sources, context.pr_head_url) or repo_overridden
+            )
     return branch_applied, flutter_added, repo_overridden
 
 
@@ -497,7 +538,9 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _print_summary(context, printer)
 
 
-def _prestage_local_tool_for_pub_get(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _prestage_local_tool_for_pub_get(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     """Pre-stage local tool path deps into flatpak-flutter build dir before pub get.
 
     flatpak-flutter clones the app into `.flatpak-builder/build/lotti` and runs
@@ -515,12 +558,16 @@ def _prestage_local_tool_for_pub_get(context: PrepareFlathubContext, printer: _S
         # Copy only if missing or stale
         if not target_dir.exists():
             _copytree(source_dir, target_dir)
-            printer.info("Pre-staged tool/lotti_custom_lint for flatpak-flutter pub get")
+            printer.info(
+                "Pre-staged tool/lotti_custom_lint for flatpak-flutter pub get"
+            )
     except (OSError, shutil.Error):
         _LOGGER.debug("Failed to pre-stage local tool path", exc_info=True)
 
 
-def _prepare_directories(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _prepare_directories(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Creating clean work directory...")
     work_dir = context.work_dir
     output_dir = context.output_dir
@@ -538,7 +585,9 @@ def _prepare_directories(context: PrepareFlathubContext, printer: _StatusPrinter
     context.flatpak_flutter_log.parent.mkdir(parents=True, exist_ok=True)
 
 
-def _prepare_manifest_for_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _prepare_manifest_for_flatpak_flutter(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Preparing source manifest...")
     manifest_path = context.manifest_work
     _copy_manifest_template(context)
@@ -548,7 +597,9 @@ def _prepare_manifest_for_flatpak_flutter(context: PrepareFlathubContext, printe
 
     _ensure_flutter_tag_from_modules(context, modules, printer)
 
-    branch_applied, flutter_added, repo_overridden = _prepare_lotti_module_for_flatpak_flutter(modules, context)
+    branch_applied, flutter_added, repo_overridden = (
+        _prepare_lotti_module_for_flatpak_flutter(modules, context)
+    )
 
     # Ensure local tool path dependencies are available to flatpak-flutter before pub get
     _ensure_local_tool_paths(context, document, printer)
@@ -586,7 +637,9 @@ def _ensure_local_tool_paths(
             try:
                 _copytree(repo_tool, tool_abs)
                 printer.info("Staged local tool path: tool/lotti_custom_lint")
-            except Exception as exc:  # noqa: BLE001 - best effort staging, log and continue
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 - best effort staging, log and continue
                 printer.warn(f"Failed to stage local tool path: {exc}")
     if not tool_abs.exists():
         return
@@ -597,7 +650,10 @@ def _ensure_local_tool_paths(
             continue
         sources = module.setdefault("sources", [])
         already = any(
-            isinstance(s, dict) and s.get("type") == "dir" and s.get("path") == str(tool_rel) for s in sources
+            isinstance(s, dict)
+            and s.get("type") == "dir"
+            and s.get("path") == str(tool_rel)
+            for s in sources
         )
         if not already:
             sources.insert(
@@ -613,16 +669,22 @@ def _ensure_local_tool_paths(
         break
 
 
-def _ensure_setup_helper_reference(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _ensure_setup_helper_reference(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     document = ManifestDocument.load(context.manifest_work)
-    result = manifest_ops.ensure_flutter_setup_helper(document, helper_name=context.setup_helper_basename)
+    result = manifest_ops.ensure_flutter_setup_helper(
+        document, helper_name=context.setup_helper_basename
+    )
     if result.changed:
         document.save()
     for message in result.messages:
         printer.info(message)
 
 
-def _ensure_flatpak_flutter_repo(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _ensure_flatpak_flutter_repo(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     repo_dir = context.flatpak_flutter_repo
     if repo_dir.is_dir():
         return
@@ -641,10 +703,14 @@ def _ensure_flatpak_flutter_repo(context: PrepareFlathubContext, printer: _Statu
         check=False,
     )
     if result.returncode != 0:
-        raise PrepareFlathubError("Failed to clone flatpak-flutter: " + result.stderr.strip())
+        raise PrepareFlathubError(
+            "Failed to clone flatpak-flutter: " + result.stderr.strip()
+        )
 
 
-def _prepare_workspace_files(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _prepare_workspace_files(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Preparing workspace inputs...")
     repo_root = context.repo_root
     work_dir = context.work_dir
@@ -684,7 +750,9 @@ def _prepare_workspace_files(context: PrepareFlathubContext, printer: _StatusPri
                     }
                 }
             }
-            (work_dir / "foreign.json").write_text(json.dumps(foreign_json, indent=2) + "\n", encoding="utf-8")
+            (work_dir / "foreign.json").write_text(
+                json.dumps(foreign_json, indent=2) + "\n", encoding="utf-8"
+            )
         except Exception as exc:  # noqa: BLE001 - best effort hint file
             printer.warn(f"Failed to write foreign.json: {exc}")
     _copyfile(pubspec_yaml, work_dir / "pubspec.yaml")
@@ -716,21 +784,29 @@ def _prime_flutter_sdk(context: PrepareFlathubContext, printer: _StatusPrinter) 
     if flutter_bin.is_file() and os.access(flutter_bin, os.X_OK):
         return
 
-    printer.status(f"Priming Flutter SDK at {target_dir} (tag {context.flutter_tag})...")
+    printer.status(
+        f"Priming Flutter SDK at {target_dir} (tag {context.flutter_tag})..."
+    )
     target_dir.mkdir(parents=True, exist_ok=True)
 
     local_candidate = _resolve_cached_flutter_sdk(context, target_dir)
     if local_candidate:
         _copy_cached_flutter_sdk(local_candidate, target_dir, printer)
 
-    if not flutter_bin.is_file() and not _clone_flutter_sdk_from_remote(context, printer, target_dir):
-        printer.warn("Failed to provision Flutter SDK; flatpak-flutter will attempt its own clone.")
+    if not flutter_bin.is_file() and not _clone_flutter_sdk_from_remote(
+        context, printer, target_dir
+    ):
+        printer.warn(
+            "Failed to provision Flutter SDK; flatpak-flutter will attempt its own clone."
+        )
         return
 
     _verify_flutter_sdk_version(flutter_bin, target_dir)
 
 
-def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _run_flatpak_flutter(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Running flatpak-flutter to generate dependency manifests...")
     script_path = context.flatpak_flutter_repo / "flatpak-flutter.py"
     if not script_path.is_file():
@@ -766,7 +842,9 @@ def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter
     except subprocess.TimeoutExpired as exc:
         log_output = (exc.output or "") + (exc.stderr or "")
         context.flatpak_flutter_log.write_text(log_output, encoding="utf-8")
-        raise PrepareFlathubError(f"flatpak-flutter timed out after {timeout}s; see {context.flatpak_flutter_log}")
+        raise PrepareFlathubError(
+            f"flatpak-flutter timed out after {timeout}s; see {context.flatpak_flutter_log}"
+        )
 
     context.flatpak_flutter_log.write_text(log_output, encoding="utf-8")
     if context.flatpak_flutter_status != 0:
@@ -776,7 +854,9 @@ def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter
     printer.status("Generated manifest and dependency definitions")
 
 
-def _normalize_sqlite_patch(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _normalize_sqlite_patch(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     patch_dir = context.work_dir / "sqlite3_flutter_libs"
     if not patch_dir.is_dir():
         return
@@ -785,7 +865,7 @@ def _normalize_sqlite_patch(context: PrepareFlathubContext, printer: _StatusPrin
         if not patch_path.is_file():
             continue
         content = patch_path.read_text(encoding="utf-8")
-        new_content = re.sub(r"sqlite-autoconf-3[0-9]{6}", _SQLITE_AUTOCONF_VERSION, content)
+        new_content = re.sub(r"sqlite-autoconf-\d+", _SQLITE_AUTOCONF_VERSION, content)
         new_content = re.sub(
             r"SHA256=[0-9a-f]{64}",
             f"SHA256={_SQLITE_AUTOCONF_SHA256}",
@@ -796,18 +876,26 @@ def _normalize_sqlite_patch(context: PrepareFlathubContext, printer: _StatusPrin
             new_content += "\n"
         if new_content != content:
             patch_path.write_text(new_content, encoding="utf-8")
-            printer.info(f"Normalized {patch_path.name} to target version {_SQLITE_AUTOCONF_VERSION}")
+            printer.info(
+                f"Normalized {patch_path.name} to target version {_SQLITE_AUTOCONF_VERSION}"
+            )
 
 
 def _assert_commit_pinned(manifest_path: Path, label: str) -> None:
     text = manifest_path.read_text(encoding="utf-8")
     if "COMMIT_PLACEHOLDER" in text:
-        raise PrepareFlathubError(f"{label} manifest contains COMMIT_PLACEHOLDER; final manifest must be commit-pinned")
+        raise PrepareFlathubError(
+            f"{label} manifest contains COMMIT_PLACEHOLDER; final manifest must be commit-pinned"
+        )
     if re.search(r"^\s*branch:\s", text, re.MULTILINE):
-        raise PrepareFlathubError(f"{label} manifest contains branch entries; final manifest must be commit-pinned")
+        raise PrepareFlathubError(
+            f"{label} manifest contains branch entries; final manifest must be commit-pinned"
+        )
 
 
-def _pin_working_manifest(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _pin_working_manifest(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     target_commit = context.pr_head_commit or context.app_commit
     printer.status(f"Pinning working manifest to commit: {target_commit}")
     document = ManifestDocument.load(context.manifest_work)
@@ -817,7 +905,9 @@ def _pin_working_manifest(context: PrepareFlathubContext, printer: _StatusPrinte
     _assert_commit_pinned(context.manifest_work, "Working")
 
 
-def _copy_generated_artifacts(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _copy_generated_artifacts(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Creating flathub manifest...")
     output_dir = context.output_dir
     work_dir = context.work_dir
@@ -872,7 +962,9 @@ def _copy_generated_artifacts(context: PrepareFlathubContext, printer: _StatusPr
     _fix_flutter_sdk_json_helper(context, printer)
 
 
-def _fix_flutter_sdk_json_helper(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _fix_flutter_sdk_json_helper(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     """Replace inline setup-flutter.sh script with proper file source in flutter-sdk JSONs."""
     for json_path in context.output_dir.glob("flutter-sdk-*.json"):
         if not json_path.is_file():
@@ -901,7 +993,9 @@ def _fix_flutter_sdk_json_helper(context: PrepareFlathubContext, printer: _Statu
 
         if script_idx is not None:
             del sources[script_idx]
-            printer.info(f"Removed broken inline setup-flutter.sh from {json_path.name}")
+            printer.info(
+                f"Removed broken inline setup-flutter.sh from {json_path.name}"
+            )
 
         # Add proper file source
         sources.append(
@@ -928,20 +1022,28 @@ def _stage_pubdev_archive(
         return
 
     candidates = [
-        context.repo_root / ".pub-cache" / "hosted" / "pub.dev" / f"{package}-{version}",
+        context.repo_root
+        / ".pub-cache"
+        / "hosted"
+        / "pub.dev"
+        / f"{package}-{version}",
         Path.home() / ".pub-cache" / "hosted" / "pub.dev" / f"{package}-{version}",
     ]
 
     pub_cache_env = context.env.get("PUB_CACHE")
     if pub_cache_env:
-        candidates.append(Path(pub_cache_env) / "hosted" / "pub.dev" / f"{package}-{version}")
+        candidates.append(
+            Path(pub_cache_env) / "hosted" / "pub.dev" / f"{package}-{version}"
+        )
 
     # Also search any local pub caches created by flatpak-flutter under the work directory
     # e.g., .flatpak-builder/build/lotti/.pub-cache/hosted/pub.dev/<package>-<version>
     build_root = context.work_dir / ".flatpak-builder" / "build"
     if build_root.is_dir():
         try:
-            for path in build_root.glob(f"**/.pub-cache/hosted/pub.dev/{package}-{version}"):
+            for path in build_root.glob(
+                f"**/.pub-cache/hosted/pub.dev/{package}-{version}"
+            ):
                 if path.is_dir():
                     candidates.append(path)
         except OSError:
@@ -955,7 +1057,9 @@ def _stage_pubdev_archive(
             printer.info(f"Staged pub.dev archive {package}-{version} from {candidate}")
             return
 
-    printer.warn(f"Missing staged pub.dev archive for {package}-{version}; offline bundling may fail")
+    printer.warn(
+        f"Missing staged pub.dev archive for {package}-{version}; offline bundling may fail"
+    )
 
 
 def _find_flutter_tools_lock(context: PrepareFlathubContext) -> Path | None:
@@ -993,7 +1097,9 @@ def _find_preset_cargokit_locks(context: PrepareFlathubContext) -> list[Path]:
 def _collect_pubspec_lock_inputs(context: PrepareFlathubContext) -> list[Path]:
     app_lock = context.work_dir / "pubspec.lock"
     if not app_lock.is_file():
-        raise PrepareFlathubError(f"FATAL: Application pubspec.lock not found at: {app_lock}")
+        raise PrepareFlathubError(
+            f"FATAL: Application pubspec.lock not found at: {app_lock}"
+        )
 
     lock_inputs: list[Path] = [app_lock]
 
@@ -1005,13 +1111,19 @@ def _collect_pubspec_lock_inputs(context: PrepareFlathubContext) -> list[Path]:
     lock_inputs.extend(_find_preset_cargokit_locks(context))
 
     if not lock_inputs:
-        raise PrepareFlathubError("FATAL: No lockfiles found for pubspec-sources.json generation")
+        raise PrepareFlathubError(
+            "FATAL: No lockfiles found for pubspec-sources.json generation"
+        )
 
     return lock_inputs
 
 
-def _run_pubspec_sources_generator(context: PrepareFlathubContext, lock_inputs: list[Path]) -> Path:
-    generator = context.flatpak_flutter_repo / "pubspec_generator" / "pubspec_generator.py"
+def _run_pubspec_sources_generator(
+    context: PrepareFlathubContext, lock_inputs: list[Path]
+) -> Path:
+    generator = (
+        context.flatpak_flutter_repo / "pubspec_generator" / "pubspec_generator.py"
+    )
     if not generator.is_file():
         raise PrepareFlathubError(f"pubspec_generator not found at {generator}")
 
@@ -1031,7 +1143,9 @@ def _run_pubspec_sources_generator(context: PrepareFlathubContext, lock_inputs: 
         check=False,
     )
     if result.returncode != 0 or not output_tmp.is_file():
-        raise PrepareFlathubError("Failed to generate pubspec-sources.json:\n" + (result.stdout or ""))
+        raise PrepareFlathubError(
+            "Failed to generate pubspec-sources.json:\n" + (result.stdout or "")
+        )
 
     final_path = context.output_dir / "pubspec-sources.json"
     _copyfile(output_tmp, final_path)
@@ -1045,7 +1159,9 @@ def _stage_packages_from_pubspec_json(
     json_path: Path,
 ) -> None:
     if not json_path.is_file():
-        raise PrepareFlathubError("pubspec-sources.json missing after preparation; offline bundle is incomplete")
+        raise PrepareFlathubError(
+            "pubspec-sources.json missing after preparation; offline bundle is incomplete"
+        )
 
     data = json.loads(json_path.read_text(encoding="utf-8"))
     seen: set[tuple[str, str]] = set()
@@ -1077,7 +1193,9 @@ def _split_package_version(dest: str) -> tuple[str, str]:
     return package, version
 
 
-def _regenerate_pubspec_sources_if_needed(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _regenerate_pubspec_sources_if_needed(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     # If flatpak-flutter succeeded and already produced pubspec-sources.json, keep it.
     existing = context.output_dir / "pubspec-sources.json"
     if context.flatpak_flutter_status == 0 and existing.is_file():
@@ -1093,7 +1211,9 @@ def _regenerate_pubspec_sources_if_needed(context: PrepareFlathubContext, printe
     _stage_packages_from_pubspec_json(context, printer, final_path)
 
 
-def _apply_core_manifest_fixes(document: ManifestDocument, printer: _StatusPrinter) -> None:
+def _apply_core_manifest_fixes(
+    document: ManifestDocument, printer: _StatusPrinter
+) -> None:
     _apply_operation(document, printer, flutter.remove_network_from_build_args)
     _apply_operation(document, printer, flutter.remove_flutter_config_command)
     _apply_operation(document, printer, flutter.ensure_flutter_pub_get_offline)
@@ -1165,8 +1285,16 @@ def _add_offline_sources_to_manifest(
     flutter_json_name: Optional[str],
     context: PrepareFlathubContext,
 ) -> None:
-    pubspec_json = "pubspec-sources.json" if (context.output_dir / "pubspec-sources.json").is_file() else None
-    cargo_json = "cargo-sources.json" if (context.output_dir / "cargo-sources.json").is_file() else None
+    pubspec_json = (
+        "pubspec-sources.json"
+        if (context.output_dir / "pubspec-sources.json").is_file()
+        else None
+    )
+    cargo_json = (
+        "cargo-sources.json"
+        if (context.output_dir / "cargo-sources.json").is_file()
+        else None
+    )
 
     _apply_operation(
         document,
@@ -1196,7 +1324,9 @@ def _apply_layout_adjustments(
         ensure_append_path=True,
     )
 
-    source_result = flutter.ensure_setup_helper_source(document, helper_name=context.setup_helper_basename)
+    source_result = flutter.ensure_setup_helper_source(
+        document, helper_name=context.setup_helper_basename
+    )
     command_result = flutter.ensure_setup_helper_command(
         document,
         working_dir=working_dir,
@@ -1215,7 +1345,9 @@ def _finalize_manifest_adjustments(
     _apply_operation(document, printer, sources_ops.remove_rustup_sources)
 
 
-def _stage_package_config(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _stage_package_config(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     tools_lock = _find_flutter_tools_lock(context)
     output_path = context.output_dir / "package_config.json"
 
@@ -1229,22 +1361,34 @@ def _stage_package_config(context: PrepareFlathubContext, printer: _StatusPrinte
     fallback = None
     search_root = context.work_dir / ".flatpak-builder" / "build"
     if search_root.is_dir():
-        for path in search_root.glob("**/flutter/packages/flutter_tools/.dart_tool/package_config.json"):
+        for path in search_root.glob(
+            "**/flutter/packages/flutter_tools/.dart_tool/package_config.json"
+        ):
             fallback = path
             break
     if fallback and fallback.is_file():
         _copyfile(fallback, output_path)
     else:
-        printer.warn("Could not locate flutter_tools package_config.json for offline cache")
+        printer.warn(
+            "Could not locate flutter_tools package_config.json for offline cache"
+        )
 
 
-def _ensure_flutter_json(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _ensure_flutter_json(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     output_dir = context.output_dir
     if list(output_dir.glob("flutter-sdk-*.json")):
         return
 
-    printer.warn("No flutter-sdk JSON produced by flatpak-flutter; generating locally...")
-    generator = context.flatpak_flutter_repo / "flutter_sdk_generator" / "flutter_sdk_generator.py"
+    printer.warn(
+        "No flutter-sdk JSON produced by flatpak-flutter; generating locally..."
+    )
+    generator = (
+        context.flatpak_flutter_repo
+        / "flutter_sdk_generator"
+        / "flutter_sdk_generator.py"
+    )
     if not generator.is_file():
         printer.warn("flutter_sdk_generator not found; skipping generation")
         return
@@ -1252,7 +1396,9 @@ def _ensure_flutter_json(context: PrepareFlathubContext, printer: _StatusPrinter
     input_dir = context.work_dir / ".flatpak-builder" / "build" / "lotti" / "flutter"
     flutter_bin = input_dir / "bin" / "flutter"
     if not flutter_bin.is_file():
-        printer.warn(f"Primed Flutter SDK not found at {input_dir}; cannot generate flutter-sdk JSON")
+        printer.warn(
+            f"Primed Flutter SDK not found at {input_dir}; cannot generate flutter-sdk JSON"
+        )
         return
 
     output_path = output_dir / f"flutter-sdk-{context.flutter_tag}.json"
@@ -1271,7 +1417,9 @@ def _ensure_flutter_json(context: PrepareFlathubContext, printer: _StatusPrinter
     printer.status(f"Generated {output_path}")
 
 
-def _run_cargo_generator(context: PrepareFlathubContext, inputs: list[Path], output_path: Path) -> bool:
+def _run_cargo_generator(
+    context: PrepareFlathubContext, inputs: list[Path], output_path: Path
+) -> bool:
     generator = context.flatpak_flutter_repo / "cargo_generator" / "cargo_generator.py"
     if not generator.is_file():
         return False
@@ -1307,7 +1455,9 @@ def _apply_operation(
         printer.info(message)
 
 
-def _apply_manifest_compliance(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _apply_manifest_compliance(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Applying Flathub compliance fixes...")
     manifest_path = context.output_dir / context.manifest_work.name
     if not manifest_path.is_file():
@@ -1317,14 +1467,18 @@ def _apply_manifest_compliance(context: PrepareFlathubContext, printer: _StatusP
     _apply_core_manifest_fixes(document, printer)
 
 
-def _copy_assets_and_metadata(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _copy_assets_and_metadata(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Copying additional files...")
     _copy_flutter_patches(context, printer)
     _copy_prebuilt_patches(context)
     _copy_helper_directories(context)
 
 
-def _copy_flutter_patches(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _copy_flutter_patches(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     out_manifest = context.output_dir / context.manifest_work.name
     for patch_name in (
         "flutter-shared.sh.patch",
@@ -1341,12 +1495,20 @@ def _copy_flutter_patches(context: PrepareFlathubContext, printer: _StatusPrinte
             )
             if replaced:
                 printer.info(f"Bundled Flutter patch {patch_name}")
-        elif out_manifest.is_file() and patch_name in out_manifest.read_text(encoding="utf-8"):
-            printer.warn(f"Referenced Flutter patch {patch_name} not found in flatpak-flutter sources")
+        elif out_manifest.is_file() and patch_name in out_manifest.read_text(
+            encoding="utf-8"
+        ):
+            printer.warn(
+                f"Referenced Flutter patch {patch_name} not found in flatpak-flutter sources"
+            )
 
 
-def _find_flutter_patch(context: PrepareFlathubContext, patch_name: str) -> Optional[Path]:
-    releases_candidate = context.flatpak_flutter_repo / "releases" / "flutter" / patch_name
+def _find_flutter_patch(
+    context: PrepareFlathubContext, patch_name: str
+) -> Optional[Path]:
+    releases_candidate = (
+        context.flatpak_flutter_repo / "releases" / "flutter" / patch_name
+    )
     if releases_candidate.is_file():
         return releases_candidate
     direct_candidate = context.flatpak_flutter_repo / patch_name
@@ -1375,16 +1537,15 @@ def _copy_helper_directories(context: PrepareFlathubContext) -> None:
         local_override = context.flatpak_dir / helper_dir
         if local_override.is_dir():
             dest_dir = context.output_dir / helper_dir
-            dest_dir.mkdir(parents=True, exist_ok=True)
-            for item in local_override.iterdir():
-                if item.is_file():
-                    _copyfile(item, dest_dir / item.name)
+            shutil.copytree(local_override, dest_dir, dirs_exist_ok=True)
 
 
 def _remove_flutter_sdk_module(document: ManifestDocument) -> bool:
     modules = document.ensure_modules()
     new_modules = [
-        module for module in modules if not (isinstance(module, dict) and module.get("name") == "flutter-sdk")
+        module
+        for module in modules
+        if not (isinstance(module, dict) and module.get("name") == "flutter-sdk")
     ]
     if len(new_modules) != len(modules):
         document.data["modules"] = new_modules
@@ -1407,10 +1568,14 @@ def _ensure_flutter_archive(
     archive_source = _find_existing_flutter_archive(context, tag)
 
     if not archive_source and context.options.download_missing_sources:
-        archive_source = _download_flutter_archive(context, printer, tag, archive_target)
+        archive_source = _download_flutter_archive(
+            context, printer, tag, archive_target
+        )
 
     if not archive_source:
-        printer.warn("No cached Flutter archive found; flutter-sdk module will continue to reference upstream git")
+        printer.warn(
+            "No cached Flutter archive found; flutter-sdk module will continue to reference upstream git"
+        )
         return
 
     if archive_source != archive_target:
@@ -1427,7 +1592,9 @@ def _ensure_flutter_archive(
     printer.info(f"Bundled Flutter archive {archive_target.name} for offline builds")
 
 
-def _find_existing_flutter_archive(context: PrepareFlathubContext, tag: str) -> Optional[Path]:
+def _find_existing_flutter_archive(
+    context: PrepareFlathubContext, tag: str
+) -> Optional[Path]:
     archive_target = context.output_dir / f"flutter_linux_{tag}-stable.tar.xz"
     if archive_target.is_file():
         return archive_target
@@ -1481,7 +1648,9 @@ def _download_https_resource(url: str, destination: Path) -> None:
             shutil.copyfileobj(response, handle)
 
 
-def _resolve_cached_flutter_sdk(context: PrepareFlathubContext, target_dir: Path) -> Optional[Path]:
+def _resolve_cached_flutter_sdk(
+    context: PrepareFlathubContext, target_dir: Path
+) -> Optional[Path]:
     local_candidate = context.cached_flutter_dir
     try:
         if local_candidate and local_candidate.resolve() == target_dir.resolve():
@@ -1499,7 +1668,9 @@ def _resolve_cached_flutter_sdk(context: PrepareFlathubContext, target_dir: Path
     )
 
 
-def _copy_cached_flutter_sdk(source: Path, target_dir: Path, printer: _StatusPrinter) -> None:
+def _copy_cached_flutter_sdk(
+    source: Path, target_dir: Path, printer: _StatusPrinter
+) -> None:
     printer.info(f"Using cached Flutter SDK from {source}")
     for child in list(target_dir.iterdir()):
         if child.is_dir() and not child.is_symlink():
@@ -1514,7 +1685,9 @@ def _clone_flutter_sdk_from_remote(
     printer: _StatusPrinter,
     target_dir: Path,
 ) -> bool:
-    printer.warn("Cached Flutter SDK not available; attempting shallow clone from remote.")
+    printer.warn(
+        "Cached Flutter SDK not available; attempting shallow clone from remote."
+    )
     tag = context.flutter_tag or "stable"
     result = _run_command(
         [
@@ -1574,7 +1747,9 @@ def _download_cargo_lock_files(
             continue
 
         if "[package]" not in content:
-            printer.warn(f"Downloaded file for {name} did not look like a Cargo.lock; removing")
+            printer.warn(
+                f"Downloaded file for {name} did not look like a Cargo.lock; removing"
+            )
             destination.unlink(missing_ok=True)
             continue
 
@@ -1584,7 +1759,9 @@ def _download_cargo_lock_files(
     return downloaded
 
 
-def _copy_rustup_module(context: PrepareFlathubContext, printer: _StatusPrinter) -> bool:
+def _copy_rustup_module(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> bool:
     """Copy rustup module JSON from flatpak-flutter releases to output directory.
 
     This provides the rustup binary for offline Flathub builds when cargo sources
@@ -1593,7 +1770,13 @@ def _copy_rustup_module(context: PrepareFlathubContext, printer: _StatusPrinter)
     Returns:
         True if rustup module was copied successfully, False otherwise.
     """
-    source = context.flatpak_flutter_repo / "releases" / "rust" / RUST_VERSION / "rustup.json"
+    source = (
+        context.flatpak_flutter_repo
+        / "releases"
+        / "rust"
+        / RUST_VERSION
+        / "rustup.json"
+    )
     destination = context.output_dir / f"rustup-{RUST_VERSION}.json"
 
     if destination.exists():
@@ -1613,15 +1796,21 @@ def _copy_rustup_module(context: PrepareFlathubContext, printer: _StatusPrinter)
         return False
 
 
-def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
-    printer.info("Downloading Cargo.lock files from GitHub to generate correct cargo-sources.json...")
+def _download_and_generate_cargo_sources(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
+    printer.info(
+        "Downloading Cargo.lock files from GitHub to generate correct cargo-sources.json..."
+    )
     downloaded_locks = _download_cargo_lock_files(context, printer)
 
     cargo_generated = False
     if downloaded_locks:
         cargo_json = context.output_dir / "cargo-sources.json"
         if _run_cargo_generator(context, downloaded_locks, cargo_json):
-            printer.status("Generated cargo-sources.json from downloaded Cargo.lock files")
+            printer.status(
+                "Generated cargo-sources.json from downloaded Cargo.lock files"
+            )
             with cargo_json.open(encoding="utf-8") as fh:
                 line_count = sum(1 for _ in fh)
             printer.info(f"Line count: {line_count}")
@@ -1635,7 +1824,9 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
                 _LOGGER.debug("Failed to remove stale cargo-sources.json: %s", exc)
 
     if not cargo_generated:
-        raise PrepareFlathubError("Failed to generate cargo-sources.json; aborting for reproducibility")
+        raise PrepareFlathubError(
+            "Failed to generate cargo-sources.json; aborting for reproducibility"
+        )
 
     # Copy rustup module when cargo sources are generated (provides rustup for offline builds)
     if cargo_generated:
@@ -1647,7 +1838,9 @@ def _download_and_generate_cargo_sources(context: PrepareFlathubContext, printer
         shutil.rmtree(locks_dir, ignore_errors=True)
 
 
-def _post_process_output_manifest(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _post_process_output_manifest(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Post-processing output manifest...")
     manifest_path = context.output_dir / context.manifest_work.name
     if not manifest_path.is_file():
@@ -1665,16 +1858,24 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
     _maybe_apply_nested_flutter(document, context, printer)
 
     flutter_json_name = _first_matching_file(context.output_dir, "flutter-sdk-*.json")
-    remove_flutter = flutter.should_remove_flutter_sdk(document, output_dir=context.output_dir)
+    remove_flutter = flutter.should_remove_flutter_sdk(
+        document, output_dir=context.output_dir
+    )
     if remove_flutter:
         if _remove_flutter_sdk_module(document):
             document.save()
-        printer.info("Offline Flutter JSON found and referenced; removing top-level flutter-sdk module.")
+        printer.info(
+            "Offline Flutter JSON found and referenced; removing top-level flutter-sdk module."
+        )
     else:
-        printer.info("Keeping top-level flutter-sdk module (offline JSON missing or not referenced).")
+        printer.info(
+            "Keeping top-level flutter-sdk module (offline JSON missing or not referenced)."
+        )
 
     _apply_operation(document, printer, flutter.normalize_flutter_sdk_module)
-    _add_offline_sources_to_manifest(document, printer, rustup_modules, flutter_json_name, context)
+    _add_offline_sources_to_manifest(
+        document, printer, rustup_modules, flutter_json_name, context
+    )
 
     # Ensure plugin toolchain sources that normally fetch at configure time are provided offline.
     # 1) sqlite3_flutter_libs downloads SQLite – add as file sources for each arch.
@@ -1695,7 +1896,9 @@ def _post_process_output_manifest(context: PrepareFlathubContext, printer: _Stat
 
     # Ensure pubspec-sources.json includes exact pinned pub packages needed by cargokit build tools.
     # Some plugin versions pin yaml=3.1.2, which may not be included by default generators when only 3.1.3 exists.
-    _ensure_pub_package_in_pubspec_sources(context, printer, name="yaml", version="3.1.2")
+    _ensure_pub_package_in_pubspec_sources(
+        context, printer, name="yaml", version="3.1.2"
+    )
 
     document.save()
 
@@ -1732,7 +1935,9 @@ def _ensure_pub_package_in_pubspec_sources(
             destination=tmp_path,
         )
     except Exception:
-        printer.warn(f"Failed to fetch {name}-{version} archive for sha256; skipping injection")
+        printer.warn(
+            f"Failed to fetch {name}-{version} archive for sha256; skipping injection"
+        )
         return
     sha = _file_sha256(tmp_path)
     tmp_path.unlink(missing_ok=True)
@@ -1750,7 +1955,9 @@ def _ensure_pub_package_in_pubspec_sources(
     printer.info(f"Injected pub package {name}-{version} into pubspec-sources.json")
 
 
-def _remove_local_dir_sources(document: ManifestDocument, printer: _StatusPrinter) -> None:
+def _remove_local_dir_sources(
+    document: ManifestDocument, printer: _StatusPrinter
+) -> None:
     modules = document.ensure_modules()
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -1778,7 +1985,9 @@ def _is_dep_include_entry(entry: object) -> bool:
         return "pubspec-sources.json" in entry or "cargo-sources.json" in entry
     if isinstance(entry, dict):
         path = str(entry.get("path", ""))
-        return path.endswith("pubspec-sources.json") or path.endswith("cargo-sources.json")
+        return path.endswith("pubspec-sources.json") or path.endswith(
+            "cargo-sources.json"
+        )
     return False
 
 
@@ -1803,7 +2012,9 @@ def _is_sqlite_patch_entry(entry: object) -> bool:
     return path.endswith("-CMakeLists.txt.patch")
 
 
-def _ensure_cargokit_patches_after_dependency_sources(document: ManifestDocument, printer: _StatusPrinter) -> None:
+def _ensure_cargokit_patches_after_dependency_sources(
+    document: ManifestDocument, printer: _StatusPrinter
+) -> None:
     """Reorder cargokit patch sources to appear after dependency source includes.
 
     flatpak-builder processes sources sequentially. Cargokit patches must run
@@ -1823,7 +2034,9 @@ def _ensure_cargokit_patches_after_dependency_sources(document: ManifestDocument
     if not isinstance(sources, list):
         return
 
-    last_dep_idx = max((idx for idx, e in enumerate(sources) if _is_dep_include_entry(e)), default=-1)
+    last_dep_idx = max(
+        (idx for idx, e in enumerate(sources) if _is_dep_include_entry(e)), default=-1
+    )
     if last_dep_idx < 0:
         return
 
@@ -1831,7 +2044,8 @@ def _ensure_cargokit_patches_after_dependency_sources(document: ManifestDocument
     early_patch_indices = [
         idx
         for idx, e in enumerate(sources)
-        if (_is_cargokit_patch_entry(e) or _is_sqlite_patch_entry(e)) and idx <= last_dep_idx
+        if (_is_cargokit_patch_entry(e) or _is_sqlite_patch_entry(e))
+        and idx <= last_dep_idx
     ]
     if not early_patch_indices:
         return
@@ -1851,7 +2065,9 @@ def _ensure_cargokit_patches_after_dependency_sources(document: ManifestDocument
     printer.info("Reordered cargokit patches after dependency sources")
 
 
-def _final_manifest_checks(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+def _final_manifest_checks(
+    context: PrepareFlathubContext, printer: _StatusPrinter
+) -> None:
     printer.status("Checking manifest for Flathub compliance...")
     manifest_path = context.output_dir / context.manifest_work.name
     document = ManifestDocument.load(manifest_path)
@@ -1860,7 +2076,9 @@ def _final_manifest_checks(context: PrepareFlathubContext, printer: _StatusPrint
     for detail in result.details or []:
         print(f"  - {detail}")
     if not result.success:
-        raise PrepareFlathubError("FATAL: Flathub compliance violations found in final manifest")
+        raise PrepareFlathubError(
+            "FATAL: Flathub compliance violations found in final manifest"
+        )
     printer.status("Flathub compliance checks passed")
     _assert_commit_pinned(manifest_path, "Output")
 
