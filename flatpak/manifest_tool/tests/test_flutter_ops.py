@@ -16,9 +16,7 @@ def test_ensure_nested_sdk(make_document, tmp_path: Path):
     result = flutter_ops.ensure_nested_sdk(document, output_dir=out_dir)
 
     assert result.changed
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     assert "flutter-sdk-offline.json" in lotti["modules"]
 
 
@@ -38,22 +36,16 @@ def test_normalize_flutter_sdk_module(make_document):
     result = flutter_ops.normalize_flutter_sdk_module(document)
 
     assert result.changed
-    commands = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )["build-commands"]
+    commands = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")["build-commands"]
     assert commands == ["mv flutter /app/flutter", "export PATH=/app/flutter/bin:$PATH"]
 
 
 def test_normalize_lotti_env_top_layout(make_document):
     document = make_document()
-    result = flutter_ops.normalize_lotti_env(
-        document, flutter_bin="/app/flutter/bin", ensure_append_path=True
-    )
+    result = flutter_ops.normalize_lotti_env(document, flutter_bin="/app/flutter/bin", ensure_append_path=True)
 
     assert result.changed
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     # When ensure_append_path=True, only append-path is updated
     append_path = lotti["build-options"]["append-path"]
     assert "/app/flutter/bin" in append_path
@@ -68,17 +60,13 @@ def test_remove_network_from_build_args(make_document):
     document = make_document()
 
     # Add --share=network to both flutter-sdk and lotti modules
-    flutter_sdk = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )
+    flutter_sdk = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")
     flutter_sdk.setdefault("build-options", {})["build-args"] = [
         "--share=network",
         "--allow=devel",
     ]
 
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     lotti["build-options"]["build-args"] = ["--share=network"]
 
     # Remove network access
@@ -106,9 +94,7 @@ def test_ensure_flutter_pub_get_offline(make_document):
     document = make_document()
 
     # Add flutter pub get commands to lotti module
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     lotti["build-commands"] = [
         "echo Starting build",
         "/run/build/lotti/flutter_sdk/bin/flutter pub get",
@@ -137,9 +123,7 @@ def test_ensure_flutter_pub_get_offline(make_document):
 
 def test_ensure_setup_helper_source_and_command(make_document):
     document = make_document()
-    source_result = flutter_ops.ensure_setup_helper_source(
-        document, helper_name="setup-flutter.sh"
-    )
+    source_result = flutter_ops.ensure_setup_helper_source(document, helper_name="setup-flutter.sh")
     command_result = flutter_ops.ensure_setup_helper_command(
         document,
         working_dir="/app",
@@ -149,19 +133,12 @@ def test_ensure_setup_helper_source_and_command(make_document):
     assert command_result.changed
 
     # Helper source is added to flutter-sdk module
-    flutter_sdk = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )
+    flutter_sdk = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")
     sources = flutter_sdk["sources"]
-    assert any(
-        isinstance(src, dict) and src.get("dest-filename") == "setup-flutter.sh"
-        for src in sources
-    )
+    assert any(isinstance(src, dict) and src.get("dest-filename") == "setup-flutter.sh" for src in sources)
 
     # Command is added to lotti module
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
 
     commands = lotti["build-commands"]
     # The helper command resolves the helper and invokes it; assert the command contains -C /app
@@ -172,9 +149,7 @@ def test_ensure_rust_sdk_env(make_document):
     document = make_document()
     result = flutter_ops.ensure_rust_sdk_env(document)
     assert result.changed
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     build_opts = lotti["build-options"]
     assert "/usr/lib/sdk/rust-stable/bin" in build_opts["append-path"]
     assert "/run/build/lotti/.cargo/bin" in build_opts["append-path"]
@@ -186,9 +161,7 @@ def test_normalize_sdk_copy_replaces_command(make_document):
     document = make_document()
 
     # First modify the lotti module to have the command we want to replace
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     lotti["build-commands"] = ["cp -r /var/lib/flutter .", "echo build"]
 
     result = flutter_ops.normalize_sdk_copy(document)
@@ -207,14 +180,9 @@ def test_convert_flutter_git_to_archive(make_document):
     )
 
     assert result.changed
-    flutter_module = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )
+    flutter_module = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")
     assert flutter_module["sources"][0]["type"] == "archive"
-    assert (
-        flutter_module["sources"][0]["url"]
-        == "https://github.com/flutter/flutter/archive/flutter.tar.xz"
-    )
+    assert flutter_module["sources"][0]["url"] == "https://github.com/flutter/flutter/archive/flutter.tar.xz"
     assert flutter_module["sources"][0]["sha256"] == "deadbeef"
     # Archive sources don't have 'dest' - that's for git sources
 
@@ -225,9 +193,7 @@ def test_convert_flutter_git_to_archive(make_document):
 def test_rewrite_flutter_git_url(make_document):
     document = make_document()
     # The function operates on flutter-sdk module, not lotti
-    flutter_sdk = next(
-        module for module in document.data["modules"] if module["name"] == "flutter-sdk"
-    )
+    flutter_sdk = next(module for module in document.data["modules"] if module["name"] == "flutter-sdk")
     # Add a non-canonical Flutter git source
     flutter_sdk["sources"] = [
         {
@@ -260,20 +226,14 @@ def test_bundle_app_archive_updates_sources(make_document, tmp_path: Path):
     assert result.changed
     # Note: The new implementation doesn't remove flutter-sdk module
 
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     first_source = lotti["sources"][0]
     assert first_source["path"] == str(out_dir / "lotti.tar.xz")
     assert first_source["sha256"] == "cafebabe"
 
 
-@pytest.mark.parametrize(
-    "layout,expected_dir", [("top", "/app"), ("nested", "/var/lib")]
-)
-def test_ensure_setup_helper_command_layout(
-    make_document, layout: str, expected_dir: str
-):
+@pytest.mark.parametrize("layout,expected_dir", [("top", "/app"), ("nested", "/var/lib")])
+def test_ensure_setup_helper_command_layout(make_document, layout: str, expected_dir: str):
     document = make_document()
     result = flutter_ops.ensure_setup_helper_command(
         document,
@@ -281,9 +241,7 @@ def test_ensure_setup_helper_command_layout(
     )
 
     assert result.changed
-    lotti = next(
-        module for module in document.data["modules"] if module["name"] == "lotti"
-    )
+    lotti = next(module for module in document.data["modules"] if module["name"] == "lotti")
     commands = lotti["build-commands"]
     assert any(expected_dir in command for command in commands)
 
@@ -567,9 +525,7 @@ def test_bundle_app_archive_no_lotti_module(make_document, tmp_path):
 
     # Remove lotti module
     document.data["modules"] = [
-        m
-        for m in document.data["modules"]
-        if not (isinstance(m, dict) and m.get("name") == "lotti")
+        m for m in document.data["modules"] if not (isinstance(m, dict) and m.get("name") == "lotti")
     ]
 
     out_dir = tmp_path / "output"
@@ -667,10 +623,7 @@ def test_add_media_kit_mimalloc_source(make_document):
     for source in sources:
         assert source["type"] == "file"
         assert "mimalloc/archive/refs/tags/v2.1.2.tar.gz" in source["url"]
-        assert (
-            source["sha256"]
-            == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
-        )
+        assert source["sha256"] == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
         assert source["dest-filename"] == "mimalloc-2.1.2.tar.gz"
         assert "only-arches" in source
         assert len(source["only-arches"]) == 1
@@ -728,9 +681,7 @@ def test_remove_network_from_build_args_cleans_empty(make_document):
 
     assert result.changed
     # build-options should be completely removed when empty
-    assert "build-options" not in lotti or "build-args" not in lotti.get(
-        "build-options", {}
-    )
+    assert "build-options" not in lotti or "build-args" not in lotti.get("build-options", {})
 
 
 def test_bundle_app_archive_preserves_mimalloc_source(make_document, tmp_path):
@@ -766,18 +717,13 @@ def test_bundle_app_archive_preserves_mimalloc_source(make_document, tmp_path):
 
     # Find the mimalloc source
     mimalloc_sources = [
-        src
-        for src in updated_sources
-        if isinstance(src, dict) and src.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
+        src for src in updated_sources if isinstance(src, dict) and src.get("dest-filename") == "mimalloc-2.1.2.tar.gz"
     ]
 
     # Mimalloc source should be preserved
     assert len(mimalloc_sources) == 1
     assert mimalloc_sources[0]["type"] == "file"
-    assert (
-        mimalloc_sources[0]["sha256"]
-        == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
-    )
+    assert mimalloc_sources[0]["sha256"] == "2b1bff6f717f9725c70bf8d79e4786da13de8a270059e4ba0bdd262ae7be46eb"
 
 
 def test_add_sqlite3_source(make_document):
@@ -801,28 +747,16 @@ def test_add_sqlite3_source(make_document):
     x64_source = next(s for s in sources if "x86_64" in s.get("only-arches", []))
     assert x64_source["type"] == "file"
     assert "sqlite-autoconf-3510100.tar.gz" in x64_source["url"]
-    assert (
-        x64_source["sha256"]
-        == "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0"
-    )
-    assert (
-        x64_source["dest"]
-        == "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
-    )
+    assert x64_source["sha256"] == "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0"
+    assert x64_source["dest"] == "./build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
     assert x64_source["dest-filename"] == "sqlite-autoconf-3510100.tar.gz"
 
     # Check aarch64 source
     arm64_source = next(s for s in sources if "aarch64" in s.get("only-arches", []))
     assert arm64_source["type"] == "file"
     assert "sqlite-autoconf-3510100.tar.gz" in arm64_source["url"]
-    assert (
-        arm64_source["sha256"]
-        == "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0"
-    )
-    assert (
-        arm64_source["dest"]
-        == "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
-    )
+    assert arm64_source["sha256"] == "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0"
+    assert arm64_source["dest"] == "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
     assert arm64_source["dest-filename"] == "sqlite-autoconf-3510100.tar.gz"
 
     # Run again - should not change

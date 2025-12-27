@@ -39,9 +39,7 @@ def _sqlite_matches_version(source: dict, version: str) -> bool:
     return False
 
 
-def _remove_stale_sqlite_sources(
-    sources: list, dest_map: dict, old_version: str
-) -> tuple[list, bool]:
+def _remove_stale_sqlite_sources(sources: list, dest_map: dict, old_version: str) -> tuple[list, bool]:
     """Remove outdated SQLite sources from the sources list.
 
     Returns:
@@ -64,9 +62,7 @@ def _remove_stale_sqlite_sources(
     return filtered_sources, removed_stale
 
 
-def _add_sqlite_sources_for_architectures(
-    sources: list, dest_map: dict, current_version: str
-) -> tuple[bool, list]:
+def _add_sqlite_sources_for_architectures(sources: list, dest_map: dict, current_version: str) -> tuple[bool, list]:
     """Add SQLite sources for each architecture if not already present.
 
     Returns:
@@ -142,9 +138,7 @@ def _is_mimalloc_source(entry: dict, arch: str, dest: str) -> bool:
     url = entry.get("url", "")
     path = entry.get("path", "")
     filename = entry.get("dest-filename")
-    return (
-        "mimalloc" in url or "mimalloc" in path or filename == "mimalloc-2.1.2.tar.gz"
-    )
+    return "mimalloc" in url or "mimalloc" in path or filename == "mimalloc-2.1.2.tar.gz"
 
 
 def _has_mimalloc_source(sources: list, arch: str, dest: str) -> bool:
@@ -206,17 +200,13 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
             module["sources"] = sources
 
         # Remove stale SQLite sources
-        sources, removed_stale = _remove_stale_sqlite_sources(
-            sources, dest_map, OLD_VERSION
-        )
+        sources, removed_stale = _remove_stale_sqlite_sources(sources, dest_map, OLD_VERSION)
         if removed_stale:
             messages.append(f"Removed outdated SQLite {OLD_VERSION} sources")
             changed = True
 
         # Add current SQLite sources
-        sources_changed, add_messages = _add_sqlite_sources_for_architectures(
-            sources, dest_map, CURRENT_VERSION
-        )
+        sources_changed, add_messages = _add_sqlite_sources_for_architectures(sources, dest_map, CURRENT_VERSION)
         if sources_changed:
             changed = True
             messages.extend(add_messages)
@@ -231,9 +221,7 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
         patch_rel = _compute_sqlite_patch_rel(manifest_dir, plugin_version)
 
         if plugin_version and patch_rel:
-            plugin_root = (
-                f".pub-cache/hosted/pub.dev/sqlite3_flutter_libs-{plugin_version}"
-            )
+            plugin_root = f".pub-cache/hosted/pub.dev/sqlite3_flutter_libs-{plugin_version}"
             # Remove any existing sqlite3_flutter_libs CMake patches (avoid duplicate patching)
             old_sources = sources[:]
             sources[:] = [
@@ -251,15 +239,10 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
                 messages.append("Removed outdated sqlite3_flutter_libs CMake patch(es)")
             # Add the correct version patch
             already = any(
-                isinstance(src, dict)
-                and src.get("type") == "patch"
-                and src.get("path") == patch_rel
-                for src in sources
+                isinstance(src, dict) and src.get("type") == "patch" and src.get("path") == patch_rel for src in sources
             )
             if not already:
-                sources.append(
-                    {"type": "patch", "path": patch_rel, "dest": plugin_root}
-                )
+                sources.append({"type": "patch", "path": patch_rel, "dest": plugin_root})
                 changed = True
                 messages.append(f"Added sqlite3_flutter_libs CMake patch {patch_rel}")
 
@@ -292,9 +275,7 @@ def _extract_sqlite_plugin_version(entries) -> Optional[str]:
     return None
 
 
-def _compute_sqlite_patch_rel(
-    manifest_dir: Path, plugin_version: Optional[str]
-) -> Optional[str]:
+def _compute_sqlite_patch_rel(manifest_dir: Path, plugin_version: Optional[str]) -> Optional[str]:
     """Return relative path to the best sqlite patch file if present."""
     patch_dir = manifest_dir / "sqlite3_flutter_libs"
     if not patch_dir.is_dir():
