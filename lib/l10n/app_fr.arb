@@ -385,5 +385,27 @@
       "seconds": { "type": "int" }
     }
   },
-  "correctionExampleCancel": "ANNULER"
+  "correctionExampleCancel": "ANNULER",
+
+  "syncRoomDiscoveryTitle": "Rechercher une salle de synchronisation existante",
+  "syncDiscoverRoomsButton": "Découvrir les salles existantes",
+  "syncDiscoveringRooms": "Recherche des salles de synchronisation...",
+  "syncNoRoomsFound": "Aucune salle de synchronisation trouvée.\nVous pouvez créer une nouvelle salle pour commencer la synchronisation.",
+  "syncCreateNewRoom": "Créer une nouvelle salle",
+  "syncSelectRoom": "Sélectionner une salle de synchronisation",
+  "syncSelectRoomDescription": "Nous avons trouvé des salles de synchronisation existantes. Sélectionnez-en une pour la rejoindre ou créez une nouvelle salle.",
+  "syncCreateNewRoomInstead": "Créer une nouvelle salle à la place",
+  "syncDiscoveryError": "Échec de la découverte des salles",
+  "syncRetry": "Réessayer",
+  "syncSkip": "Ignorer",
+  "syncRoomUnnamed": "Salle sans nom",
+  "syncRoomCreatedUnknown": "Inconnu",
+  "syncRoomVerified": "Vérifié",
+  "syncRoomHasContent": "Contient des données",
+
+  "syncInviteErrorNetwork": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
+  "syncInviteErrorUserNotFound": "Utilisateur non trouvé. Veuillez vérifier que le code scanné est correct.",
+  "syncInviteErrorForbidden": "Permission refusée. Vous n'avez peut-être pas accès pour inviter cet utilisateur.",
+  "syncInviteErrorRateLimited": "Trop de requêtes. Veuillez patienter un moment et réessayer.",
+  "syncInviteErrorUnknown": "Échec de l'envoi de l'invitation. Veuillez réessayer plus tard."
 }

@@ -384,5 +384,27 @@
       "seconds": { "type": "int" }
     }
   },
-  "correctionExampleCancel": "CANCELAR"
+  "correctionExampleCancel": "CANCELAR",
+
+  "syncRoomDiscoveryTitle": "Buscar sala de sincronización existente",
+  "syncDiscoverRoomsButton": "Descubrir salas existentes",
+  "syncDiscoveringRooms": "Buscando salas de sincronización...",
+  "syncNoRoomsFound": "No se encontraron salas de sincronización.\nPuede crear una nueva sala para comenzar a sincronizar.",
+  "syncCreateNewRoom": "Crear nueva sala",
+  "syncSelectRoom": "Seleccionar sala de sincronización",
+  "syncSelectRoomDescription": "Encontramos salas de sincronización existentes. Seleccione una para unirse o cree una nueva sala.",
+  "syncCreateNewRoomInstead": "Crear nueva sala en su lugar",
+  "syncDiscoveryError": "Error al descubrir salas",
+  "syncRetry": "Reintentar",
+  "syncSkip": "Omitir",
+  "syncRoomUnnamed": "Sala sin nombre",
+  "syncRoomCreatedUnknown": "Desconocido",
+  "syncRoomVerified": "Verificado",
+  "syncRoomHasContent": "Tiene contenido",
+
+  "syncInviteErrorNetwork": "Error de red. Por favor, compruebe su conexión e inténtelo de nuevo.",
+  "syncInviteErrorUserNotFound": "Usuario no encontrado. Por favor, verifique que el código escaneado sea correcto.",
+  "syncInviteErrorForbidden": "Permiso denegado. Es posible que no tenga acceso para invitar a este usuario.",
+  "syncInviteErrorRateLimited": "Demasiadas solicitudes. Por favor, espere un momento e inténtelo de nuevo.",
+  "syncInviteErrorUnknown": "No se pudo enviar la invitación. Por favor, inténtelo más tarde."
 }

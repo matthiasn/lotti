@@ -2824,4 +2824,72 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get correctionExampleCancel => 'CANCELAR';
+
+  @override
+  String get syncRoomDiscoveryTitle =>
+      'Buscar sala de sincronización existente';
+
+  @override
+  String get syncDiscoverRoomsButton => 'Descubrir salas existentes';
+
+  @override
+  String get syncDiscoveringRooms => 'Buscando salas de sincronización...';
+
+  @override
+  String get syncNoRoomsFound =>
+      'No se encontraron salas de sincronización.\nPuede crear una nueva sala para comenzar a sincronizar.';
+
+  @override
+  String get syncCreateNewRoom => 'Crear nueva sala';
+
+  @override
+  String get syncSelectRoom => 'Seleccionar sala de sincronización';
+
+  @override
+  String get syncSelectRoomDescription =>
+      'Encontramos salas de sincronización existentes. Seleccione una para unirse o cree una nueva sala.';
+
+  @override
+  String get syncCreateNewRoomInstead => 'Crear nueva sala en su lugar';
+
+  @override
+  String get syncDiscoveryError => 'Error al descubrir salas';
+
+  @override
+  String get syncRetry => 'Reintentar';
+
+  @override
+  String get syncSkip => 'Omitir';
+
+  @override
+  String get syncRoomUnnamed => 'Sala sin nombre';
+
+  @override
+  String get syncRoomCreatedUnknown => 'Desconocido';
+
+  @override
+  String get syncRoomVerified => 'Verificado';
+
+  @override
+  String get syncRoomHasContent => 'Tiene contenido';
+
+  @override
+  String get syncInviteErrorNetwork =>
+      'Error de red. Por favor, compruebe su conexión e inténtelo de nuevo.';
+
+  @override
+  String get syncInviteErrorUserNotFound =>
+      'Usuario no encontrado. Por favor, verifique que el código escaneado sea correcto.';
+
+  @override
+  String get syncInviteErrorForbidden =>
+      'Permiso denegado. Es posible que no tenga acceso para invitar a este usuario.';
+
+  @override
+  String get syncInviteErrorRateLimited =>
+      'Demasiadas solicitudes. Por favor, espere un momento e inténtelo de nuevo.';
+
+  @override
+  String get syncInviteErrorUnknown =>
+      'No se pudo enviar la invitación. Por favor, inténtelo más tarde.';
 }

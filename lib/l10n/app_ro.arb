@@ -384,5 +384,27 @@
       "seconds": { "type": "int" }
     }
   },
-  "correctionExampleCancel": "ANULEAZĂ"
+  "correctionExampleCancel": "ANULEAZĂ",
+
+  "syncRoomDiscoveryTitle": "Găsește cameră de sincronizare existentă",
+  "syncDiscoverRoomsButton": "Descoperă camerele existente",
+  "syncDiscoveringRooms": "Se caută camerele de sincronizare...",
+  "syncNoRoomsFound": "Nu s-au găsit camere de sincronizare.\nPoți crea o cameră nouă pentru a începe sincronizarea.",
+  "syncCreateNewRoom": "Creează cameră nouă",
+  "syncSelectRoom": "Selectează cameră de sincronizare",
+  "syncSelectRoomDescription": "Am găsit camere de sincronizare existente. Selectează una pentru a te alătura sau creează o cameră nouă.",
+  "syncCreateNewRoomInstead": "Creează cameră nouă în schimb",
+  "syncDiscoveryError": "Descoperirea camerelor a eșuat",
+  "syncRetry": "Reîncearcă",
+  "syncSkip": "Omite",
+  "syncRoomUnnamed": "Cameră fără nume",
+  "syncRoomCreatedUnknown": "Necunoscut",
+  "syncRoomVerified": "Verificat",
+  "syncRoomHasContent": "Are conținut",
+
+  "syncInviteErrorNetwork": "Eroare de rețea. Verificați conexiunea și încercați din nou.",
+  "syncInviteErrorUserNotFound": "Utilizator negăsit. Verificați că codul scanat este corect.",
+  "syncInviteErrorForbidden": "Permisiune refuzată. Este posibil să nu aveți acces pentru a invita acest utilizator.",
+  "syncInviteErrorRateLimited": "Prea multe cereri. Așteptați un moment și încercați din nou.",
+  "syncInviteErrorUnknown": "Invitația nu a putut fi trimisă. Încercați din nou mai târziu."
 }

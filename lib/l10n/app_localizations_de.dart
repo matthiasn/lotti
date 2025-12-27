@@ -2820,4 +2820,71 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get correctionExampleCancel => 'ABBRECHEN';
+
+  @override
+  String get syncRoomDiscoveryTitle => 'Bestehenden Sync-Raum finden';
+
+  @override
+  String get syncDiscoverRoomsButton => 'Bestehende Räume entdecken';
+
+  @override
+  String get syncDiscoveringRooms => 'Sync-Räume werden gesucht...';
+
+  @override
+  String get syncNoRoomsFound =>
+      'Keine bestehenden Sync-Räume gefunden.\nSie können einen neuen Raum erstellen, um mit der Synchronisierung zu beginnen.';
+
+  @override
+  String get syncCreateNewRoom => 'Neuen Raum erstellen';
+
+  @override
+  String get syncSelectRoom => 'Sync-Raum auswählen';
+
+  @override
+  String get syncSelectRoomDescription =>
+      'Wir haben bestehende Sync-Räume gefunden. Wählen Sie einen zum Beitreten oder erstellen Sie einen neuen Raum.';
+
+  @override
+  String get syncCreateNewRoomInstead => 'Stattdessen neuen Raum erstellen';
+
+  @override
+  String get syncDiscoveryError => 'Räume konnten nicht gefunden werden';
+
+  @override
+  String get syncRetry => 'Erneut versuchen';
+
+  @override
+  String get syncSkip => 'Überspringen';
+
+  @override
+  String get syncRoomUnnamed => 'Unbenannter Raum';
+
+  @override
+  String get syncRoomCreatedUnknown => 'Unbekannt';
+
+  @override
+  String get syncRoomVerified => 'Verifiziert';
+
+  @override
+  String get syncRoomHasContent => 'Hat Inhalt';
+
+  @override
+  String get syncInviteErrorNetwork =>
+      'Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.';
+
+  @override
+  String get syncInviteErrorUserNotFound =>
+      'Benutzer nicht gefunden. Bitte überprüfen Sie den gescannten Code.';
+
+  @override
+  String get syncInviteErrorForbidden =>
+      'Zugriff verweigert. Sie haben möglicherweise keine Berechtigung, diesen Benutzer einzuladen.';
+
+  @override
+  String get syncInviteErrorRateLimited =>
+      'Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.';
+
+  @override
+  String get syncInviteErrorUnknown =>
+      'Einladung konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.';
 }

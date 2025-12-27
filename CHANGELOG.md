@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.775] - 2025-12-27
+### Added
+- Single-User Multi-Device Sync: New room discovery feature for simplified sync setup
+  - Device B can now discover and join existing sync rooms without invitation from Device A
+  - Room Discovery page shows potential sync rooms with confidence indicators
+  - Rooms are evaluated based on encryption status, Lotti state markers, and message content
+  - Smart navigation skips discovery when a room is already configured
+  - Bounded concurrency (5 parallel evaluations) for faster discovery with many rooms
+- Full localization support for room discovery (EN, DE, ES, FR, RO)
+
+### Fixed
+- QR scanner now restarts properly after invite failure, allowing retry without navigation
+
 ## [0.9.774] - 2025-12-26
 ### Added
 - Calendar Privacy Filtering: Calendar view now respects category visibility settings from Tasks page

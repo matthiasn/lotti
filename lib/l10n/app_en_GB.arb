@@ -432,5 +432,27 @@
       "seconds": { "type": "int" }
     }
   },
-  "correctionExampleCancel": "CANCEL"
+  "correctionExampleCancel": "CANCEL",
+
+  "syncRoomDiscoveryTitle": "Find Existing Sync Room",
+  "syncDiscoverRoomsButton": "Discover Existing Rooms",
+  "syncDiscoveringRooms": "Discovering sync rooms...",
+  "syncNoRoomsFound": "No existing sync rooms found.\nYou can create a new room to start syncing.",
+  "syncCreateNewRoom": "Create New Room",
+  "syncSelectRoom": "Select a Sync Room",
+  "syncSelectRoomDescription": "We found existing sync rooms. Select one to join, or create a new room.",
+  "syncCreateNewRoomInstead": "Create New Room Instead",
+  "syncDiscoveryError": "Failed to discover rooms",
+  "syncRetry": "Retry",
+  "syncSkip": "Skip",
+  "syncRoomUnnamed": "Unnamed Room",
+  "syncRoomCreatedUnknown": "Unknown",
+  "syncRoomVerified": "Verified",
+  "syncRoomHasContent": "Has Content",
+
+  "syncInviteErrorNetwork": "Network error. Please check your connection and try again.",
+  "syncInviteErrorUserNotFound": "User not found. Please verify the scanned code is correct.",
+  "syncInviteErrorForbidden": "Permission denied. You may not have access to invite this user.",
+  "syncInviteErrorRateLimited": "Too many requests. Please wait a moment and try again.",
+  "syncInviteErrorUnknown": "Failed to send invite. Please try again later."
 }

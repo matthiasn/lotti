@@ -31,6 +31,8 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -225,6 +227,19 @@ Future<void> registerSingletons() async {
 
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
+  // Room discovery service for single-user multi-device flow
+  final discoveryService = SyncRoomDiscoveryService(
+    loggingService: loggingService,
+  );
+
+  // Room manager with discovery capability
+  final roomManager = SyncRoomManager(
+    gateway: matrixGateway,
+    settingsDb: settingsDb,
+    loggingService: loggingService,
+    discoveryService: discoveryService,
+  );
+
   final matrixService = MatrixService(
     gateway: matrixGateway,
     loggingService: loggingService,
@@ -237,6 +252,7 @@ Future<void> registerSingletons() async {
     secureStorage: secureStorage,
     collectSyncMetrics: collectSyncMetrics,
     attachmentIndex: attachmentIndex,
+    roomManager: roomManager,
   );
 
   getIt

@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/features/sync/ui/room_config_page.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/logging_service.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -14,10 +17,16 @@ import '../../../widget_test_utils.dart';
 
 class MockMatrixService extends Mock implements MatrixService {}
 
+class MockLoggingService extends Mock implements LoggingService {}
+
 class _FakeMatrixRoomController extends MatrixRoomController {
-  _FakeMatrixRoomController({this.initialRoom});
+  _FakeMatrixRoomController({
+    this.initialRoom,
+    this.inviteError,
+  });
 
   final String? initialRoom;
+  final Object? inviteError;
   bool leaveCalled = false;
   bool joinCalled = false;
   bool createCalled = false;
@@ -43,6 +52,10 @@ class _FakeMatrixRoomController extends MatrixRoomController {
   Future<void> inviteToRoom(String userId) async {
     inviteCalled = true;
     invitedUserId = userId;
+    if (inviteError != null) {
+      // ignore: only_throw_errors
+      throw inviteError!;
+    }
   }
 
   @override
@@ -73,8 +86,10 @@ void main() {
   });
 
   group('roomConfigPage sticky action bar', () {
-    testWidgets('updates page index when navigating', (tester) async {
-      final pageIndexNotifier = ValueNotifier<int>(1);
+    testWidgets('updates page index when navigating (no room configured)',
+        (tester) async {
+      // Start at page index 3 (room config page) with no room configured
+      final pageIndexNotifier = ValueNotifier<int>(3);
       addTearDown(pageIndexNotifier.dispose);
 
       await tester.pumpWidget(
@@ -90,19 +105,63 @@ void main() {
           ),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            // No room configured - back should go to room discovery (page 2)
+            matrixRoomControllerProvider
+                .overrideWith(_FakeMatrixRoomController.new),
           ],
         ),
       );
 
       await tester.pumpAndSettle();
 
+      // When no room is configured, back goes to previous page (discovery)
       await tester.tap(find.text('Previous Page'));
       await tester.pumpAndSettle();
-      expect(pageIndexNotifier.value, 0);
+      expect(pageIndexNotifier.value, 2); // room discovery page
+
+      // Reset to page 3
+      pageIndexNotifier.value = 3;
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Next Page'));
       await tester.pumpAndSettle();
-      expect(pageIndexNotifier.value, 1);
+      expect(pageIndexNotifier.value, 4); // unverified devices page
+    });
+
+    testWidgets('back button skips discovery when room is configured',
+        (tester) async {
+      // Start at page index 3 (room config page) with a room configured
+      final pageIndexNotifier = ValueNotifier<int>(3);
+      addTearDown(pageIndexNotifier.dispose);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) {
+              final page = roomConfigPage(
+                context: context,
+                pageIndexNotifier: pageIndexNotifier,
+              );
+              return page.stickyActionBar ?? const SizedBox.shrink();
+            },
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            // Room IS configured - back should skip discovery
+            matrixRoomControllerProvider.overrideWith(
+              () => _FakeMatrixRoomController(initialRoom: '!room:server'),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // When room is configured, back skips discovery and goes to logged-in config
+      await tester.tap(find.text('Previous Page'));
+      await tester.pumpAndSettle();
+      expect(pageIndexNotifier.value,
+          1); // logged-in config page, skipped discovery
     });
   });
 
@@ -210,6 +269,310 @@ void main() {
       expect(inviteCalled, isTrue);
       expect(invitedUserId, '@friend:server');
       expect(showCamAfter, isFalse);
+    });
+
+    testWidgets('scanner stays active when invite fails', (tester) async {
+      final controller = _FakeMatrixRoomController(
+        initialRoom: '!room:server',
+        inviteError: Exception('Invite failed'),
+      );
+
+      final mockLoggingService = MockLoggingService();
+      // Stub the captureException method
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+            loggingServiceProvider.overrideWithValue(mockLoggingService),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      // Run the barcode handling in runAsync to avoid test hangs from
+      // MobileScannerController operations that don't work in test env
+      await tester.runAsync(() async {
+        await handle.handleBarcodeForTesting(
+          const BarcodeCapture(
+            barcodes: [
+              Barcode(rawValue: '@friend:server'),
+            ],
+          ),
+        );
+      });
+
+      await tester.pump();
+
+      // Invite was attempted
+      expect(controller.inviteCalled, isTrue);
+      expect(controller.invitedUserId, '@friend:server');
+      // Camera stays visible so user can retry without navigating away
+      expect(handle.showCamForTesting, isTrue);
+      // Verify that the error was logged
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: 'ROOM_CONFIG',
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('shows user not found error for M_NOT_FOUND', (tester) async {
+      final controller = _FakeMatrixRoomController(
+        initialRoom: '!room:server',
+        inviteError: MatrixException.fromJson({
+          'errcode': 'M_NOT_FOUND',
+          'error': 'User not found',
+        }),
+      );
+
+      final mockLoggingService = MockLoggingService();
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+            loggingServiceProvider.overrideWithValue(mockLoggingService),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      await tester.runAsync(() async {
+        await handle.handleBarcodeForTesting(
+          const BarcodeCapture(
+            barcodes: [Barcode(rawValue: '@friend:server')],
+          ),
+        );
+      });
+
+      await tester.pump();
+
+      // Camera should NOT restart for permanent errors
+      expect(handle.showCamForTesting, isTrue);
+      // Error logged with correct subdomain
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: 'ROOM_CONFIG',
+          subDomain: 'invite.userNotFound',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('shows rate limited error with retry for M_LIMIT_EXCEEDED',
+        (tester) async {
+      final controller = _FakeMatrixRoomController(
+        initialRoom: '!room:server',
+        inviteError: MatrixException.fromJson({
+          'errcode': 'M_LIMIT_EXCEEDED',
+          'error': 'Too many requests',
+        }),
+      );
+
+      final mockLoggingService = MockLoggingService();
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+            loggingServiceProvider.overrideWithValue(mockLoggingService),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      await tester.runAsync(() async {
+        await handle.handleBarcodeForTesting(
+          const BarcodeCapture(
+            barcodes: [Barcode(rawValue: '@friend:server')],
+          ),
+        );
+      });
+
+      await tester.pump();
+
+      // Camera stays visible for recoverable errors
+      expect(handle.showCamForTesting, isTrue);
+      // Error logged with correct subdomain
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: 'ROOM_CONFIG',
+          subDomain: 'invite.rateLimited',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('shows network error with retry for SocketException',
+        (tester) async {
+      final controller = _FakeMatrixRoomController(
+        initialRoom: '!room:server',
+        inviteError: const SocketException('Connection refused'),
+      );
+
+      final mockLoggingService = MockLoggingService();
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+            loggingServiceProvider.overrideWithValue(mockLoggingService),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      await tester.runAsync(() async {
+        await handle.handleBarcodeForTesting(
+          const BarcodeCapture(
+            barcodes: [Barcode(rawValue: '@friend:server')],
+          ),
+        );
+      });
+
+      await tester.pump();
+
+      // Camera stays visible for recoverable network errors
+      expect(handle.showCamForTesting, isTrue);
+      // Error logged with network subdomain
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: 'ROOM_CONFIG',
+          subDomain: 'invite.network',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('shows forbidden error for M_FORBIDDEN', (tester) async {
+      final controller = _FakeMatrixRoomController(
+        initialRoom: '!room:server',
+        inviteError: MatrixException.fromJson({
+          'errcode': 'M_FORBIDDEN',
+          'error': 'Not allowed',
+        }),
+      );
+
+      final mockLoggingService = MockLoggingService();
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const RoomConfig(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixRoomControllerProvider.overrideWith(() => controller),
+            loggingServiceProvider.overrideWithValue(mockLoggingService),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(RoomConfig)) as StatefulElement;
+      final handle = element.state as RoomConfigStateAccess;
+      handle.showCamForTesting = true;
+
+      await tester.runAsync(() async {
+        await handle.handleBarcodeForTesting(
+          const BarcodeCapture(
+            barcodes: [Barcode(rawValue: '@friend:server')],
+          ),
+        );
+      });
+
+      await tester.pump();
+
+      // Camera stays visible but error is permanent (no auto-restart expected)
+      expect(handle.showCamForTesting, isTrue);
+      // Error logged with forbidden subdomain
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: 'ROOM_CONFIG',
+          subDomain: 'invite.forbidden',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
 
     testWidgets('invite stream shows dialog and accepts invite',
