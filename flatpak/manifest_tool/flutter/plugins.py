@@ -225,7 +225,8 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
             # Remove any existing sqlite3_flutter_libs CMake patches (avoid duplicate patching)
             old_sources = sources[:]
             sources[:] = [
-                src for src in sources
+                src
+                for src in sources
                 if not (
                     isinstance(src, dict)
                     and src.get("type") == "patch"
