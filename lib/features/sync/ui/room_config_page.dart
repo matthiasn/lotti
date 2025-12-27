@@ -20,15 +20,43 @@ SliverWoltModalSheetPage roomConfigPage({
   return ModalUtils.modalSheetPage(
     context: context,
     showCloseButton: true,
-    stickyActionBar: Padding(
+    stickyActionBar: _RoomConfigActionBar(pageIndexNotifier: pageIndexNotifier),
+    title: context.messages.settingsMatrixRoomConfigTitle,
+    padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
+    child: const RoomConfig(),
+  );
+}
+
+/// Sticky action bar for room config page.
+///
+/// When a room is already configured, the back button skips the room discovery
+/// page (index 2) and goes directly to the logged-in config page (index 1).
+class _RoomConfigActionBar extends ConsumerWidget {
+  const _RoomConfigActionBar({required this.pageIndexNotifier});
+
+  final ValueNotifier<int> pageIndexNotifier;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final room = ref.watch(matrixRoomControllerProvider).value;
+    final isRoomConfigured = room != null;
+
+    return Padding(
       padding: WoltModalConfig.pagePadding,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
             child: OutlinedButton(
-              onPressed: () =>
-                  pageIndexNotifier.value = pageIndexNotifier.value - 1,
+              onPressed: () {
+                // Skip room discovery (page 2) if a room is already configured
+                // Go directly to logged-in config (page 1) instead
+                if (isRoomConfigured) {
+                  pageIndexNotifier.value = 1; // logged-in config
+                } else {
+                  pageIndexNotifier.value = pageIndexNotifier.value - 1;
+                }
+              },
               child: Text(context.messages.settingsMatrixPreviousPage),
             ),
           ),
@@ -42,11 +70,8 @@ SliverWoltModalSheetPage roomConfigPage({
           ),
         ],
       ),
-    ),
-    title: context.messages.settingsMatrixRoomConfigTitle,
-    padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
-    child: const RoomConfig(),
-  );
+    );
+  }
 }
 
 class RoomConfig extends ConsumerStatefulWidget {

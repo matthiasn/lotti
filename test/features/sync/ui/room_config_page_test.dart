@@ -73,8 +73,10 @@ void main() {
   });
 
   group('roomConfigPage sticky action bar', () {
-    testWidgets('updates page index when navigating', (tester) async {
-      final pageIndexNotifier = ValueNotifier<int>(1);
+    testWidgets('updates page index when navigating (no room configured)',
+        (tester) async {
+      // Start at page index 3 (room config page) with no room configured
+      final pageIndexNotifier = ValueNotifier<int>(3);
       addTearDown(pageIndexNotifier.dispose);
 
       await tester.pumpWidget(
@@ -90,19 +92,63 @@ void main() {
           ),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            // No room configured - back should go to room discovery (page 2)
+            matrixRoomControllerProvider
+                .overrideWith(_FakeMatrixRoomController.new),
           ],
         ),
       );
 
       await tester.pumpAndSettle();
 
+      // When no room is configured, back goes to previous page (discovery)
       await tester.tap(find.text('Previous Page'));
       await tester.pumpAndSettle();
-      expect(pageIndexNotifier.value, 0);
+      expect(pageIndexNotifier.value, 2); // room discovery page
+
+      // Reset to page 3
+      pageIndexNotifier.value = 3;
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Next Page'));
       await tester.pumpAndSettle();
-      expect(pageIndexNotifier.value, 1);
+      expect(pageIndexNotifier.value, 4); // unverified devices page
+    });
+
+    testWidgets('back button skips discovery when room is configured',
+        (tester) async {
+      // Start at page index 3 (room config page) with a room configured
+      final pageIndexNotifier = ValueNotifier<int>(3);
+      addTearDown(pageIndexNotifier.dispose);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) {
+              final page = roomConfigPage(
+                context: context,
+                pageIndexNotifier: pageIndexNotifier,
+              );
+              return page.stickyActionBar ?? const SizedBox.shrink();
+            },
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            // Room IS configured - back should skip discovery
+            matrixRoomControllerProvider.overrideWith(
+              () => _FakeMatrixRoomController(initialRoom: '!room:server'),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // When room is configured, back skips discovery and goes to logged-in config
+      await tester.tap(find.text('Previous Page'));
+      await tester.pumpAndSettle();
+      expect(pageIndexNotifier.value,
+          1); // logged-in config page, skipped discovery
     });
   });
 

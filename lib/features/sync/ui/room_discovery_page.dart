@@ -33,8 +33,12 @@ class _RoomDiscoveryPageContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Use responsive height based on screen size, with sensible bounds
+    final screenHeight = MediaQuery.of(context).size.height;
+    final modalHeight = (screenHeight * 0.5).clamp(300.0, 500.0);
+
     return SizedBox(
-      height: 400, // Fixed height to work in modal
+      height: modalHeight,
       child: RoomDiscoveryWidget(
         onRoomSelected: () {
           // Room was selected and joined, refresh the room provider

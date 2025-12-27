@@ -35,9 +35,14 @@ class _RoomDiscoveryWidgetState extends ConsumerState<RoomDiscoveryWidget> {
   @override
   void initState() {
     super.initState();
-    // Start discovery when widget is mounted
+    // Start discovery when widget is mounted, but only if not already done
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(roomDiscoveryControllerProvider.notifier).discoverRooms();
+      final currentState = ref.read(roomDiscoveryControllerProvider);
+      // Only trigger discovery if we're in the initial state
+      // This prevents redundant network calls when navigating back and forth
+      if (currentState is RoomDiscoveryInitial) {
+        ref.read(roomDiscoveryControllerProvider.notifier).discoverRooms();
+      }
     });
   }
 
