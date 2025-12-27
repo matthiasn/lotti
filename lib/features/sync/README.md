@@ -350,15 +350,35 @@ When a user logs in on a new device with the same Matrix account:
 - **State event marking**: New rooms created via `SyncRoomManager.createRoom()`
   are automatically marked with `m.lotti.sync_room` for future discovery
 - **E2E encryption preserved**: Discovery only evaluates encrypted, private rooms
+- **Bounded concurrency**: Room evaluation uses batched parallel processing
+  (5 concurrent evaluations) to speed up discovery on accounts with many rooms
+- **Smart navigation**: Back button in room config skips discovery page when
+  a room is already configured, streamlining the return path
+
+### Invite Error Handling (QR Flow)
+
+When inviting another device via QR code scan, errors are handled gracefully:
+
+- **Error classification**: Errors are categorized as recoverable (network,
+  rate-limited) or permanent (user not found, permission denied)
+- **User feedback**: SnackBar messages with localized error descriptions
+- **Scanner behavior**:
+  - Recoverable errors: Scanner auto-restarts for immediate retry
+  - Permanent errors: Scanner stops, user must navigate away
+- **Logging**: All errors logged with `ROOM_CONFIG` domain and error type for
+  debugging
 
 ### Testing
 
 - `test/features/sync/matrix/sync_room_discovery_test.dart`: Unit tests for the
   discovery service covering filtering, content detection, and confidence scoring
+  (28 tests)
 - `test/features/sync/state/room_discovery_provider_test.dart`: Provider state
   management tests
 - `test/features/sync/ui/widgets/room_discovery_widget_test.dart`: Widget tests
   for the selection UI
+- `test/features/sync/ui/room_config_page_test.dart`: Tests for invite error
+  handling and smart navigation
 
 ### Data Flow
 

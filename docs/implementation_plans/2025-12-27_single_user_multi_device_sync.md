@@ -1,7 +1,7 @@
 # Single-User Multi-Device Sync Implementation Plan
 
 **Date:** 2025-12-27
-**Status:** Investigation Complete, Ready for Implementation
+**Status:** ✅ Implemented (Phase 1-2 complete, Phases 3-4 optional)
 **Author:** Claude (with human direction)
 
 ## Executive Summary
@@ -125,29 +125,27 @@ class SyncRoomDiscoveryService {
 - Create: `lib/features/sync/matrix/sync_room_discovery.dart`
 - Update: `lib/features/sync/matrix.dart` (exports)
 
-#### 1.2 Update Session Manager
+#### 1.2 Integrate Discovery into Room Manager
 
-Modify `MatrixSessionManager.connect()` to check for existing rooms:
+The discovery service is integrated into `SyncRoomManager` which provides it to the UI layer:
 
 ```dart
-// lib/features/sync/matrix/session_manager.dart
-Future<bool> connect({required bool shouldAttemptLogin}) async {
-  // ... existing login code ...
+// lib/features/sync/matrix/sync_room_manager.dart
+class SyncRoomManager {
+  final SyncRoomDiscoveryService _discoveryService;
 
-  // NEW: After login, check for existing sync rooms
-  if (client.isLogged()) {
-    final existingRooms = await _roomDiscovery.discoverSyncRooms();
-    if (existingRooms.isNotEmpty && savedRoomId == null) {
-      // Surface to UI for room selection
-      _pendingRoomSelection.add(existingRooms);
-    }
-    // ... rest of existing code ...
+  /// Discovers existing sync rooms for the current user.
+  Future<List<SyncRoomCandidate>> discoverSyncRooms() async {
+    final client = await _matrixService.getClient();
+    if (client == null) return [];
+    return _discoveryService.discoverSyncRooms(client);
   }
 }
 ```
 
-**Files to modify:**
-- `lib/features/sync/matrix/session_manager.dart`
+**Files modified:**
+- `lib/features/sync/matrix/sync_room_manager.dart` - Added discovery delegation
+- `lib/get_it.dart` - Wire discovery service into room manager
 
 ### Phase 2: UI Flow Changes
 
@@ -160,40 +158,46 @@ When user enters Matrix credentials:
 1. **No existing rooms found:** First device setup (current flow)
 2. **Existing rooms found:** Additional device setup (new flow)
 
-#### 2.2 Room Selection UI
+#### 2.2 Room Discovery UI Components
 
-For additional devices, show room selection:
+The room discovery flow is implemented as a new page in the setup wizard modal:
 
 ```dart
-// Pseudocode for room selection dialog
-class SyncRoomSelectionDialog extends StatelessWidget {
-  final List<SyncRoomCandidate> rooms;
+// lib/features/sync/ui/widgets/room_discovery_widget.dart
+class RoomDiscoveryWidget extends ConsumerStatefulWidget {
+  final VoidCallback onRoomSelected;
+  final VoidCallback onSkip;
+  // Displays room cards with confidence indicators
+  // Handles loading, error, and empty states
+}
 
-  // Display room names, creation dates, member counts
-  // Allow selection or "Create New Room" option
+// lib/features/sync/ui/room_discovery_page.dart
+SliverWoltModalSheetPage roomDiscoveryPage({...}) {
+  // Integrates RoomDiscoveryWidget into the modal wizard
+  // Uses responsive height based on screen size
 }
 ```
 
-**Files to modify:**
-- Create: `lib/features/sync/ui/room_selection_dialog.dart`
-- Update: `lib/features/sync/ui/matrix_settings_modal.dart` (or equivalent)
+**Files created:**
+- `lib/features/sync/ui/widgets/room_discovery_widget.dart` - Room selection UI
+- `lib/features/sync/ui/room_discovery_page.dart` - Modal page wrapper
+- `lib/features/sync/state/room_discovery_provider.dart` - Riverpod state management
 
-#### 2.3 Update Setup Flow Widget
+**Files modified:**
+- `lib/features/sync/ui/matrix_settings_modal.dart` - Insert discovery page into wizard
 
-Modify the main setup flow to branch based on scenario:
+#### 2.3 Smart Navigation
 
-```dart
-// In setup flow
-if (existingRooms.isNotEmpty) {
-  // Show room selection UI
-  // On selection: saveRoomId() + hydrateRoomSnapshot()
-} else {
-  // Current flow: create room
-}
-```
+The setup wizard includes intelligent navigation:
 
-**Files to modify:**
-- `lib/features/sync/ui/` (setup-related widgets)
+- **Room discovery page** inserted after login, before room config
+- **Smart back button** in room config: skips discovery when a room is already configured
+- **Conditional discovery trigger**: Only runs discovery if state is initial (prevents redundant calls)
+
+**Key implementation details:**
+- `_RoomConfigActionBar` is a `ConsumerWidget` that watches room state
+- Back navigation goes to page 1 (logged-in config) if room exists, page 2 (discovery) otherwise
+- Discovery only triggers on `RoomDiscoveryInitial` state to avoid redundant network calls
 
 ### Phase 3: Verification Flow Adjustments
 
@@ -299,25 +303,32 @@ For users who want to transition from multi-user (device-specific accounts) to s
 ### New Files
 | File | Purpose |
 |------|---------|
-| `lib/features/sync/matrix/sync_room_discovery.dart` | Room discovery service |
-| `lib/features/sync/ui/room_selection_dialog.dart` | Room selection UI |
+| `lib/features/sync/matrix/sync_room_discovery.dart` | Room discovery service with confidence scoring |
+| `lib/features/sync/ui/room_discovery_page.dart` | Modal wizard page for discovery |
+| `lib/features/sync/ui/widgets/room_discovery_widget.dart` | Room selection UI with cards |
+| `lib/features/sync/state/room_discovery_provider.dart` | Riverpod state management |
 
 ### Modified Files
 | File | Changes |
 |------|---------|
-| `lib/features/sync/matrix/session_manager.dart` | Add room discovery integration |
-| `lib/features/sync/matrix/sync_room_manager.dart` | Add room selection via discovery |
-| `lib/features/sync/matrix.dart` | Export new service |
-| `lib/features/sync/README.md` | Update documentation |
-| `lib/widgets/sync/matrix/verification_modal.dart` | Update labels |
-| Setup UI files | Add room selection branch |
+| `lib/features/sync/matrix/sync_room_manager.dart` | Add discovery service integration, mark new rooms |
+| `lib/features/sync/matrix.dart` | Export new service and models |
+| `lib/features/sync/ui/matrix_settings_modal.dart` | Insert discovery page into wizard |
+| `lib/features/sync/ui/room_config_page.dart` | Smart back navigation, invite error handling |
+| `lib/get_it.dart` | Wire discovery service into room manager |
+| `lib/l10n/app_*.arb` | Add localization strings (all 5 locales) |
+| `lib/features/sync/README.md` | Document single-user flow |
+| `CHANGELOG.md` | Version 0.9.775 entry |
+| `flatpak/com.matthiasn.lotti.metainfo.xml` | Release notes |
 
 ### Test Files
 | File | Purpose |
 |------|---------|
-| `test/features/sync/matrix/sync_room_discovery_test.dart` | Unit tests for discovery |
-| `test/features/sync/ui/room_selection_dialog_test.dart` | Widget tests |
-| Integration tests | Update for single-user flow |
+| `test/features/sync/matrix/sync_room_discovery_test.dart` | Unit tests for discovery (28 tests) |
+| `test/features/sync/state/room_discovery_provider_test.dart` | Provider state tests |
+| `test/features/sync/ui/room_discovery_page_test.dart` | Page integration tests |
+| `test/features/sync/ui/widgets/room_discovery_widget_test.dart` | Widget tests |
+| `test/features/sync/ui/room_config_page_test.dart` | Updated with error handling tests |
 
 ## Risk Assessment
 
