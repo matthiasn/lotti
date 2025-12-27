@@ -2828,49 +2828,71 @@ class AppLocalizationsFr extends AppLocalizations {
   String get correctionExampleCancel => 'ANNULER';
 
   @override
-  String get syncRoomDiscoveryTitle => 'Find Existing Sync Room';
+  String get syncRoomDiscoveryTitle =>
+      'Rechercher une salle de synchronisation existante';
 
   @override
-  String get syncDiscoverRoomsButton => 'Discover Existing Rooms';
+  String get syncDiscoverRoomsButton => 'Découvrir les salles existantes';
 
   @override
-  String get syncDiscoveringRooms => 'Discovering sync rooms...';
+  String get syncDiscoveringRooms =>
+      'Recherche des salles de synchronisation...';
 
   @override
   String get syncNoRoomsFound =>
-      'No existing sync rooms found.\nYou can create a new room to start syncing.';
+      'Aucune salle de synchronisation trouvée.\nVous pouvez créer une nouvelle salle pour commencer la synchronisation.';
 
   @override
-  String get syncCreateNewRoom => 'Create New Room';
+  String get syncCreateNewRoom => 'Créer une nouvelle salle';
 
   @override
-  String get syncSelectRoom => 'Select a Sync Room';
+  String get syncSelectRoom => 'Sélectionner une salle de synchronisation';
 
   @override
   String get syncSelectRoomDescription =>
-      'We found existing sync rooms. Select one to join, or create a new room.';
+      'Nous avons trouvé des salles de synchronisation existantes. Sélectionnez-en une pour la rejoindre ou créez une nouvelle salle.';
 
   @override
-  String get syncCreateNewRoomInstead => 'Create New Room Instead';
+  String get syncCreateNewRoomInstead => 'Créer une nouvelle salle à la place';
 
   @override
-  String get syncDiscoveryError => 'Failed to discover rooms';
+  String get syncDiscoveryError => 'Échec de la découverte des salles';
 
   @override
-  String get syncRetry => 'Retry';
+  String get syncRetry => 'Réessayer';
 
   @override
-  String get syncSkip => 'Skip';
+  String get syncSkip => 'Ignorer';
 
   @override
-  String get syncRoomUnnamed => 'Unnamed Room';
+  String get syncRoomUnnamed => 'Salle sans nom';
 
   @override
-  String get syncRoomCreatedUnknown => 'Unknown';
+  String get syncRoomCreatedUnknown => 'Inconnu';
 
   @override
-  String get syncRoomVerified => 'Verified';
+  String get syncRoomVerified => 'Vérifié';
 
   @override
-  String get syncRoomHasContent => 'Has Content';
+  String get syncRoomHasContent => 'Contient des données';
+
+  @override
+  String get syncInviteErrorNetwork =>
+      'Erreur réseau. Veuillez vérifier votre connexion et réessayer.';
+
+  @override
+  String get syncInviteErrorUserNotFound =>
+      'Utilisateur non trouvé. Veuillez vérifier que le code scanné est correct.';
+
+  @override
+  String get syncInviteErrorForbidden =>
+      'Permission refusée. Vous n\'avez peut-être pas accès pour inviter cet utilisateur.';
+
+  @override
+  String get syncInviteErrorRateLimited =>
+      'Trop de requêtes. Veuillez patienter un moment et réessayer.';
+
+  @override
+  String get syncInviteErrorUnknown =>
+      'Échec de l\'envoi de l\'invitation. Veuillez réessayer plus tard.';
 }

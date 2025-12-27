@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/features/sync/ui/room_config_page.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -13,6 +14,8 @@ import '../../../widget_test_utils.dart';
 // ignore_for_file: cascade_invocations
 
 class MockMatrixService extends Mock implements MatrixService {}
+
+class MockLoggingService extends Mock implements LoggingService {}
 
 class _FakeMatrixRoomController extends MatrixRoomController {
   _FakeMatrixRoomController({
@@ -271,12 +274,24 @@ void main() {
         shouldThrowOnInvite: true,
       );
 
+      final mockLoggingService = MockLoggingService();
+      // Stub the captureException method
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const RoomConfig(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
             matrixRoomControllerProvider.overrideWith(() => controller),
+            loggingServiceProvider.overrideWithValue(mockLoggingService),
           ],
         ),
       );
@@ -307,6 +322,15 @@ void main() {
       expect(controller.invitedUserId, '@friend:server');
       // Camera stays visible so user can retry without navigating away
       expect(handle.showCamForTesting, isTrue);
+      // Verify that the error was logged
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: 'ROOM_CONFIG',
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
 
     testWidgets('invite stream shows dialog and accepts invite',

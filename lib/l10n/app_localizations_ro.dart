@@ -2817,49 +2817,70 @@ class AppLocalizationsRo extends AppLocalizations {
   String get correctionExampleCancel => 'ANULEAZĂ';
 
   @override
-  String get syncRoomDiscoveryTitle => 'Find Existing Sync Room';
+  String get syncRoomDiscoveryTitle =>
+      'Găsește cameră de sincronizare existentă';
 
   @override
-  String get syncDiscoverRoomsButton => 'Discover Existing Rooms';
+  String get syncDiscoverRoomsButton => 'Descoperă camerele existente';
 
   @override
-  String get syncDiscoveringRooms => 'Discovering sync rooms...';
+  String get syncDiscoveringRooms => 'Se caută camerele de sincronizare...';
 
   @override
   String get syncNoRoomsFound =>
-      'No existing sync rooms found.\nYou can create a new room to start syncing.';
+      'Nu s-au găsit camere de sincronizare.\nPoți crea o cameră nouă pentru a începe sincronizarea.';
 
   @override
-  String get syncCreateNewRoom => 'Create New Room';
+  String get syncCreateNewRoom => 'Creează cameră nouă';
 
   @override
-  String get syncSelectRoom => 'Select a Sync Room';
+  String get syncSelectRoom => 'Selectează cameră de sincronizare';
 
   @override
   String get syncSelectRoomDescription =>
-      'We found existing sync rooms. Select one to join, or create a new room.';
+      'Am găsit camere de sincronizare existente. Selectează una pentru a te alătura sau creează o cameră nouă.';
 
   @override
-  String get syncCreateNewRoomInstead => 'Create New Room Instead';
+  String get syncCreateNewRoomInstead => 'Creează cameră nouă în schimb';
 
   @override
-  String get syncDiscoveryError => 'Failed to discover rooms';
+  String get syncDiscoveryError => 'Descoperirea camerelor a eșuat';
 
   @override
-  String get syncRetry => 'Retry';
+  String get syncRetry => 'Reîncearcă';
 
   @override
-  String get syncSkip => 'Skip';
+  String get syncSkip => 'Omite';
 
   @override
-  String get syncRoomUnnamed => 'Unnamed Room';
+  String get syncRoomUnnamed => 'Cameră fără nume';
 
   @override
-  String get syncRoomCreatedUnknown => 'Unknown';
+  String get syncRoomCreatedUnknown => 'Necunoscut';
 
   @override
-  String get syncRoomVerified => 'Verified';
+  String get syncRoomVerified => 'Verificat';
 
   @override
-  String get syncRoomHasContent => 'Has Content';
+  String get syncRoomHasContent => 'Are conținut';
+
+  @override
+  String get syncInviteErrorNetwork =>
+      'Eroare de rețea. Verificați conexiunea și încercați din nou.';
+
+  @override
+  String get syncInviteErrorUserNotFound =>
+      'Utilizator negăsit. Verificați că codul scanat este corect.';
+
+  @override
+  String get syncInviteErrorForbidden =>
+      'Permisiune refuzată. Este posibil să nu aveți acces pentru a invita acest utilizator.';
+
+  @override
+  String get syncInviteErrorRateLimited =>
+      'Prea multe cereri. Așteptați un moment și încercați din nou.';
+
+  @override
+  String get syncInviteErrorUnknown =>
+      'Invitația nu a putut fi trimisă. Încercați din nou mai târziu.';
 }

@@ -449,5 +449,11 @@
   "syncRoomUnnamed": "Unbenannter Raum",
   "syncRoomCreatedUnknown": "Unbekannt",
   "syncRoomVerified": "Verifiziert",
-  "syncRoomHasContent": "Hat Inhalt"
+  "syncRoomHasContent": "Hat Inhalt",
+
+  "syncInviteErrorNetwork": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+  "syncInviteErrorUserNotFound": "Benutzer nicht gefunden. Bitte überprüfen Sie den gescannten Code.",
+  "syncInviteErrorForbidden": "Zugriff verweigert. Sie haben möglicherweise keine Berechtigung, diesen Benutzer einzuladen.",
+  "syncInviteErrorRateLimited": "Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+  "syncInviteErrorUnknown": "Einladung konnte nicht gesendet werden. Bitte versuchen Sie es später erneut."
 }

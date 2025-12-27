@@ -401,5 +401,11 @@
   "syncRoomUnnamed": "Salle sans nom",
   "syncRoomCreatedUnknown": "Inconnu",
   "syncRoomVerified": "Vérifié",
-  "syncRoomHasContent": "Contient des données"
+  "syncRoomHasContent": "Contient des données",
+
+  "syncInviteErrorNetwork": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
+  "syncInviteErrorUserNotFound": "Utilisateur non trouvé. Veuillez vérifier que le code scanné est correct.",
+  "syncInviteErrorForbidden": "Permission refusée. Vous n'avez peut-être pas accès pour inviter cet utilisateur.",
+  "syncInviteErrorRateLimited": "Trop de requêtes. Veuillez patienter un moment et réessayer.",
+  "syncInviteErrorUnknown": "Échec de l'envoi de l'invitation. Veuillez réessayer plus tard."
 }

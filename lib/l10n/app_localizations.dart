@@ -5337,6 +5337,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Has Content'**
   String get syncRoomHasContent;
+
+  /// No description provided for @syncInviteErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Please check your connection and try again.'**
+  String get syncInviteErrorNetwork;
+
+  /// No description provided for @syncInviteErrorUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found. Please verify the scanned code is correct.'**
+  String get syncInviteErrorUserNotFound;
+
+  /// No description provided for @syncInviteErrorForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission denied. You may not have access to invite this user.'**
+  String get syncInviteErrorForbidden;
+
+  /// No description provided for @syncInviteErrorRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Please wait a moment and try again.'**
+  String get syncInviteErrorRateLimited;
+
+  /// No description provided for @syncInviteErrorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send invite. Please try again later.'**
+  String get syncInviteErrorUnknown;
 }
 
 class _AppLocalizationsDelegate

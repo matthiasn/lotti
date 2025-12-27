@@ -2849,6 +2849,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncRoomHasContent => 'Has Content';
+
+  @override
+  String get syncInviteErrorNetwork =>
+      'Network error. Please check your connection and try again.';
+
+  @override
+  String get syncInviteErrorUserNotFound =>
+      'User not found. Please verify the scanned code is correct.';
+
+  @override
+  String get syncInviteErrorForbidden =>
+      'Permission denied. You may not have access to invite this user.';
+
+  @override
+  String get syncInviteErrorRateLimited =>
+      'Too many requests. Please wait a moment and try again.';
+
+  @override
+  String get syncInviteErrorUnknown =>
+      'Failed to send invite. Please try again later.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -4163,4 +4183,71 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get correctionExampleCancel => 'CANCEL';
+
+  @override
+  String get syncRoomDiscoveryTitle => 'Find Existing Sync Room';
+
+  @override
+  String get syncDiscoverRoomsButton => 'Discover Existing Rooms';
+
+  @override
+  String get syncDiscoveringRooms => 'Discovering sync rooms...';
+
+  @override
+  String get syncNoRoomsFound =>
+      'No existing sync rooms found.\nYou can create a new room to start syncing.';
+
+  @override
+  String get syncCreateNewRoom => 'Create New Room';
+
+  @override
+  String get syncSelectRoom => 'Select a Sync Room';
+
+  @override
+  String get syncSelectRoomDescription =>
+      'We found existing sync rooms. Select one to join, or create a new room.';
+
+  @override
+  String get syncCreateNewRoomInstead => 'Create New Room Instead';
+
+  @override
+  String get syncDiscoveryError => 'Failed to discover rooms';
+
+  @override
+  String get syncRetry => 'Retry';
+
+  @override
+  String get syncSkip => 'Skip';
+
+  @override
+  String get syncRoomUnnamed => 'Unnamed Room';
+
+  @override
+  String get syncRoomCreatedUnknown => 'Unknown';
+
+  @override
+  String get syncRoomVerified => 'Verified';
+
+  @override
+  String get syncRoomHasContent => 'Has Content';
+
+  @override
+  String get syncInviteErrorNetwork =>
+      'Network error. Please check your connection and try again.';
+
+  @override
+  String get syncInviteErrorUserNotFound =>
+      'User not found. Please verify the scanned code is correct.';
+
+  @override
+  String get syncInviteErrorForbidden =>
+      'Permission denied. You may not have access to invite this user.';
+
+  @override
+  String get syncInviteErrorRateLimited =>
+      'Too many requests. Please wait a moment and try again.';
+
+  @override
+  String get syncInviteErrorUnknown =>
+      'Failed to send invite. Please try again later.';
 }

@@ -400,5 +400,11 @@
   "syncRoomUnnamed": "Cameră fără nume",
   "syncRoomCreatedUnknown": "Necunoscut",
   "syncRoomVerified": "Verificat",
-  "syncRoomHasContent": "Are conținut"
+  "syncRoomHasContent": "Are conținut",
+
+  "syncInviteErrorNetwork": "Eroare de rețea. Verificați conexiunea și încercați din nou.",
+  "syncInviteErrorUserNotFound": "Utilizator negăsit. Verificați că codul scanat este corect.",
+  "syncInviteErrorForbidden": "Permisiune refuzată. Este posibil să nu aveți acces pentru a invita acest utilizator.",
+  "syncInviteErrorRateLimited": "Prea multe cereri. Așteptați un moment și încercați din nou.",
+  "syncInviteErrorUnknown": "Invitația nu a putut fi trimisă. Încercați din nou mai târziu."
 }

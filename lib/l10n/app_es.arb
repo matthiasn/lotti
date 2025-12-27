@@ -400,5 +400,11 @@
   "syncRoomUnnamed": "Sala sin nombre",
   "syncRoomCreatedUnknown": "Desconocido",
   "syncRoomVerified": "Verificado",
-  "syncRoomHasContent": "Tiene contenido"
+  "syncRoomHasContent": "Tiene contenido",
+
+  "syncInviteErrorNetwork": "Error de red. Por favor, compruebe su conexión e inténtelo de nuevo.",
+  "syncInviteErrorUserNotFound": "Usuario no encontrado. Por favor, verifique que el código escaneado sea correcto.",
+  "syncInviteErrorForbidden": "Permiso denegado. Es posible que no tenga acceso para invitar a este usuario.",
+  "syncInviteErrorRateLimited": "Demasiadas solicitudes. Por favor, espere un momento e inténtelo de nuevo.",
+  "syncInviteErrorUnknown": "No se pudo enviar la invitación. Por favor, inténtelo más tarde."
 }

@@ -448,5 +448,11 @@
   "syncRoomUnnamed": "Unnamed Room",
   "syncRoomCreatedUnknown": "Unknown",
   "syncRoomVerified": "Verified",
-  "syncRoomHasContent": "Has Content"
+  "syncRoomHasContent": "Has Content",
+
+  "syncInviteErrorNetwork": "Network error. Please check your connection and try again.",
+  "syncInviteErrorUserNotFound": "User not found. Please verify the scanned code is correct.",
+  "syncInviteErrorForbidden": "Permission denied. You may not have access to invite this user.",
+  "syncInviteErrorRateLimited": "Too many requests. Please wait a moment and try again.",
+  "syncInviteErrorUnknown": "Failed to send invite. Please try again later."
 }
