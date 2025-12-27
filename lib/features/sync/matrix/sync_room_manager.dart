@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -34,15 +35,18 @@ class SyncRoomManager {
     required MatrixSyncGateway gateway,
     required SettingsDb settingsDb,
     required LoggingService loggingService,
+    SyncRoomDiscoveryService? discoveryService,
   })  : _gateway = gateway,
         _settingsDb = settingsDb,
-        _loggingService = loggingService {
+        _loggingService = loggingService,
+        _discoveryService = discoveryService {
     _inviteSubscription = _gateway.invites.listen(_handleInvite);
   }
 
   final MatrixSyncGateway _gateway;
   final SettingsDb _settingsDb;
   final LoggingService _loggingService;
+  final SyncRoomDiscoveryService? _discoveryService;
 
   final StreamController<SyncRoomInvite> _inviteController =
       StreamController<SyncRoomInvite>.broadcast();
@@ -61,6 +65,18 @@ class SyncRoomManager {
   /// the user and explicitly call [acceptInvite] when appropriate.
   Stream<SyncRoomInvite> get inviteRequests => _inviteController.stream;
 
+  /// Discovers existing Lotti sync rooms that this user is a member of.
+  ///
+  /// Returns an empty list if no discovery service is configured or if no
+  /// sync rooms are found. Used by the setup flow to detect existing rooms
+  /// when a user logs in on an additional device.
+  Future<List<SyncRoomCandidate>> discoverExistingSyncRooms() async {
+    if (_discoveryService == null) {
+      return const [];
+    }
+    return _discoveryService!.discoverSyncRooms(_gateway.client);
+  }
+
   /// Loads any persisted room identifier and resolves the current room snapshot
   /// if the Matrix client has already synced it.
   Future<void> initialize() async {
@@ -73,6 +89,9 @@ class SyncRoomManager {
   }
 
   /// Creates a new encrypted private sync room and persists its identifier.
+  ///
+  /// The room is marked with the Lotti sync room state event for future
+  /// discovery by other devices using the same Matrix account.
   Future<String> createRoom({List<String>? inviteUserIds}) async {
     final name = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
     final roomId = await _gateway.createRoom(
@@ -81,7 +100,12 @@ class SyncRoomManager {
     );
 
     await _settingsDb.saveSettingsItem(matrixRoomKey, roomId);
-    _updateCurrentRoom(roomId);
+    final room = _updateCurrentRoom(roomId);
+
+    // Mark the room for future discovery by other devices
+    if (room != null && _discoveryService != null) {
+      await _discoveryService!.markRoomAsLottiSync(room);
+    }
 
     _loggingService.captureEvent(
       'Created sync room $roomId (invitees: ${inviteUserIds?.length ?? 0})',

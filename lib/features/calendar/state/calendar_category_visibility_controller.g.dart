@@ -7,7 +7,7 @@ part of 'calendar_category_visibility_controller.dart';
 // **************************************************************************
 
 String _$calendarCategoryVisibilityControllerHash() =>
-    r'062fa912856fe8cac391492b5768efc87f0c7fb7';
+    r'82e832a18c871e053c4a108884f28a10ef26294d';
 
 /// Controller that provides category visibility state for the Calendar view.
 ///

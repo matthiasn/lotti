@@ -2824,4 +2824,51 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get correctionExampleCancel => 'CANCELAR';
+
+  @override
+  String get syncRoomDiscoveryTitle => 'Find Existing Sync Room';
+
+  @override
+  String get syncDiscoverRoomsButton => 'Discover Existing Rooms';
+
+  @override
+  String get syncDiscoveringRooms => 'Discovering sync rooms...';
+
+  @override
+  String get syncNoRoomsFound =>
+      'No existing sync rooms found.\nYou can create a new room to start syncing.';
+
+  @override
+  String get syncCreateNewRoom => 'Create New Room';
+
+  @override
+  String get syncSelectRoom => 'Select a Sync Room';
+
+  @override
+  String get syncSelectRoomDescription =>
+      'We found existing sync rooms. Select one to join, or create a new room.';
+
+  @override
+  String get syncCreateNewRoomInstead => 'Create New Room Instead';
+
+  @override
+  String get syncDiscoveryError => 'Failed to discover rooms';
+
+  @override
+  String get syncRetry => 'Retry';
+
+  @override
+  String get syncSkip => 'Skip';
+
+  @override
+  String get syncRoomUnnamed => 'Unnamed Room';
+
+  @override
+  String get syncRoomCreatedUnknown => 'Unknown';
+
+  @override
+  String get syncRoomVerified => 'Verified';
+
+  @override
+  String get syncRoomHasContent => 'Has Content';
 }

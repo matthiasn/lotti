@@ -5247,6 +5247,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'CANCEL'**
   String get correctionExampleCancel;
+
+  /// No description provided for @syncRoomDiscoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Existing Sync Room'**
+  String get syncRoomDiscoveryTitle;
+
+  /// No description provided for @syncDiscoverRoomsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover Existing Rooms'**
+  String get syncDiscoverRoomsButton;
+
+  /// No description provided for @syncDiscoveringRooms.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovering sync rooms...'**
+  String get syncDiscoveringRooms;
+
+  /// No description provided for @syncNoRoomsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No existing sync rooms found.\nYou can create a new room to start syncing.'**
+  String get syncNoRoomsFound;
+
+  /// No description provided for @syncCreateNewRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Room'**
+  String get syncCreateNewRoom;
+
+  /// No description provided for @syncSelectRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a Sync Room'**
+  String get syncSelectRoom;
+
+  /// No description provided for @syncSelectRoomDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'We found existing sync rooms. Select one to join, or create a new room.'**
+  String get syncSelectRoomDescription;
+
+  /// No description provided for @syncCreateNewRoomInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Room Instead'**
+  String get syncCreateNewRoomInstead;
+
+  /// No description provided for @syncDiscoveryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to discover rooms'**
+  String get syncDiscoveryError;
+
+  /// No description provided for @syncRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get syncRetry;
+
+  /// No description provided for @syncSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get syncSkip;
+
+  /// No description provided for @syncRoomUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed Room'**
+  String get syncRoomUnnamed;
+
+  /// No description provided for @syncRoomCreatedUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get syncRoomCreatedUnknown;
+
+  /// No description provided for @syncRoomVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get syncRoomVerified;
+
+  /// No description provided for @syncRoomHasContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Has Content'**
+  String get syncRoomHasContent;
 }
 
 class _AppLocalizationsDelegate

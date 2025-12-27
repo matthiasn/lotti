@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -26,7 +27,15 @@ class MockClient extends Mock implements Client {}
 
 class MockMatrixException extends Mock implements MatrixException {}
 
+class MockSyncRoomDiscoveryService extends Mock
+    implements SyncRoomDiscoveryService {}
+
+class FakeRoom extends Fake implements Room {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeRoom());
+  });
   late MockMatrixGateway gateway;
   late MockSettingsDb settingsDb;
   late MockLoggingService loggingService;
@@ -247,5 +256,93 @@ void main() {
 
     verify(() => settingsDb.removeSettingsItem(matrixRoomKey)).called(1);
     expect(manager.currentRoomId, isNull);
+  });
+
+  group('room discovery integration', () {
+    late MockSyncRoomDiscoveryService discoveryService;
+    late SyncRoomManager managerWithDiscovery;
+    late StreamController<RoomInviteEvent> inviteController2;
+
+    setUp(() {
+      discoveryService = MockSyncRoomDiscoveryService();
+      inviteController2 = StreamController<RoomInviteEvent>.broadcast();
+
+      when(() => gateway.invites).thenAnswer((_) => inviteController2.stream);
+
+      managerWithDiscovery = SyncRoomManager(
+        gateway: gateway,
+        settingsDb: settingsDb,
+        loggingService: loggingService,
+        discoveryService: discoveryService,
+      );
+    });
+
+    tearDown(() async {
+      await managerWithDiscovery.dispose();
+      await inviteController2.close();
+    });
+
+    test('discoverExistingSyncRooms returns empty when no discovery service',
+        () async {
+      // manager without discovery service
+      final rooms = await manager.discoverExistingSyncRooms();
+      expect(rooms, isEmpty);
+    });
+
+    test('discoverExistingSyncRooms delegates to discovery service', () async {
+      final client = MockClient();
+      final candidates = [
+        const SyncRoomCandidate(
+          roomId: '!room1:server',
+          roomName: 'Room 1',
+          createdAt: null,
+          memberCount: 2,
+          hasStateMarker: true,
+          hasLottiContent: true,
+        ),
+      ];
+
+      when(() => gateway.client).thenReturn(client);
+      when(() => discoveryService.discoverSyncRooms(client))
+          .thenAnswer((_) async => candidates);
+
+      final rooms = await managerWithDiscovery.discoverExistingSyncRooms();
+
+      expect(rooms, equals(candidates));
+      verify(() => discoveryService.discoverSyncRooms(client)).called(1);
+    });
+
+    test('createRoom marks room with Lotti state when discovery service exists',
+        () async {
+      final room = MockRoom();
+      when(() => gateway.createRoom(
+            name: any(named: 'name'),
+            inviteUserIds: any(named: 'inviteUserIds'),
+          )).thenAnswer((_) async => '!newroom:server');
+      when(() => gateway.getRoomById('!newroom:server')).thenReturn(room);
+      when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'))
+          .thenAnswer((_) async => 1);
+      when(() => discoveryService.markRoomAsLottiSync(room))
+          .thenAnswer((_) async {});
+
+      await managerWithDiscovery.createRoom();
+
+      verify(() => discoveryService.markRoomAsLottiSync(room)).called(1);
+    });
+
+    test('createRoom does not mark room when gateway returns null room',
+        () async {
+      when(() => gateway.createRoom(
+            name: any(named: 'name'),
+            inviteUserIds: any(named: 'inviteUserIds'),
+          )).thenAnswer((_) async => '!newroom:server');
+      when(() => gateway.getRoomById('!newroom:server')).thenReturn(null);
+      when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'))
+          .thenAnswer((_) async => 1);
+
+      await managerWithDiscovery.createRoom();
+
+      verifyNever(() => discoveryService.markRoomAsLottiSync(any()));
+    });
   });
 }

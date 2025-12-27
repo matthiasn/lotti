@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/ui/login/sync_login_modal_page.dart';
 import 'package:lotti/features/sync/ui/matrix_logged_in_config_page.dart';
 import 'package:lotti/features/sync/ui/matrix_stats_page.dart';
 import 'package:lotti/features/sync/ui/room_config_page.dart';
+import 'package:lotti/features/sync/ui/room_discovery_page.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -111,6 +112,10 @@ class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard>
               pageIndexNotifier: pageIndexNotifier,
             ),
             homeServerLoggedInPage(
+              context: modalSheetContext,
+              pageIndexNotifier: pageIndexNotifier,
+            ),
+            roomDiscoveryPage(
               context: modalSheetContext,
               pageIndexNotifier: pageIndexNotifier,
             ),

@@ -295,12 +295,70 @@ that shows phase indicators, progress percentage, and completion counts.
 1. **Device A** logs in, creates the encrypted sync room, and displays its user
    QR code.
 2. **Device B** logs in with its own Matrix account, scans the QR (or enters
-   Device A’s Matrix ID), and waits for the invite surfaced by `SyncRoomManager`.
+   Device A's Matrix ID), and waits for the invite surfaced by `SyncRoomManager`.
 3. Device A approves the invite. Both devices verify each other using the emoji
    SAS flow.
 4. `SyncLifecycleCoordinator` starts the streaming pipeline once both devices are
    logged in and the room has been hydrated. Synchronisation continues
    automatically while both devices are idle.
+
+## Single-User Multi-Device (Room Discovery) (2025-12)
+
+In addition to the multi-user flow above, Lotti supports a **single-user
+multi-device** flow where the same Matrix account is used across all devices.
+This simplifies setup for users who don't need separate accounts per device.
+
+### How It Works
+
+When a user logs in on a new device with the same Matrix account:
+
+1. **Room Discovery:** After login, `SyncRoomDiscoveryService` scans the user's
+   joined rooms looking for existing Lotti sync rooms based on:
+   - **State marker** (`m.lotti.sync_room`): New rooms are marked with this state
+     event for reliable future discovery (confidence +10)
+   - **Content detection**: Rooms containing messages with `msgtype:
+     com.lotti.sync.message` or base64-encoded JSON with `runtimeType` fields
+     (confidence +5)
+   - Only encrypted, private rooms are considered candidates
+
+2. **Room Selection UI:** The setup wizard presents discovered rooms:
+   - If **exactly one** room is found with high confidence, auto-selection is
+     recommended
+   - If **multiple** rooms are found, a selection UI allows the user to choose
+   - Room cards display name, member count, creation date, and confidence
+     indicators
+
+3. **Fallback:** If no rooms are found (or the user skips discovery), the
+   standard room creation flow is used
+
+### Components
+
+| Component | Responsibility |
+| --- | --- |
+| `SyncRoomDiscoveryService` (`matrix/sync_room_discovery.dart`) | Discovers sync rooms by scanning joined rooms for state markers or Lotti content |
+| `SyncRoomCandidate` | Data class representing a discovered room with confidence scoring |
+| `RoomDiscoveryController` (`state/room_discovery_provider.dart`) | Riverpod state management for the discovery flow |
+| `RoomDiscoveryWidget` (`ui/widgets/room_discovery_widget.dart`) | UI component for displaying and selecting discovered rooms |
+| `roomDiscoveryPage` (`ui/room_discovery_page.dart`) | Modal page integrated into the setup wizard |
+
+### Key Features
+
+- **Hybrid detection**: Combines explicit state markers (new rooms) with content
+  analysis (legacy rooms) for backward compatibility
+- **Confidence scoring**: Rooms with state markers score higher than those
+  detected only by content, helping users identify the most reliable candidates
+- **State event marking**: New rooms created via `SyncRoomManager.createRoom()`
+  are automatically marked with `m.lotti.sync_room` for future discovery
+- **E2E encryption preserved**: Discovery only evaluates encrypted, private rooms
+
+### Testing
+
+- `test/features/sync/matrix/sync_room_discovery_test.dart`: Unit tests for the
+  discovery service covering filtering, content detection, and confidence scoring
+- `test/features/sync/state/room_discovery_provider_test.dart`: Provider state
+  management tests
+- `test/features/sync/ui/widgets/room_discovery_widget_test.dart`: Widget tests
+  for the selection UI
 
 ### Data Flow
 

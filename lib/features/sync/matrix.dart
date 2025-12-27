@@ -12,4 +12,5 @@ export 'matrix/session_manager.dart';
 export 'matrix/stats.dart';
 export 'matrix/sync_engine.dart';
 export 'matrix/sync_lifecycle_coordinator.dart';
+export 'matrix/sync_room_discovery.dart';
 export 'matrix/sync_room_manager.dart';
