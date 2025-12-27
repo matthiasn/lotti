@@ -3223,10 +3223,10 @@ packages:
     dependency: "direct main"
     description:
       name: wechat_assets_picker
-      sha256: a503da460be2bb558f3331b76b2995fb1e16e9e442c80834a9633e13364b8050
+      sha256: e718fc1593e7afa9f01f8bc8b0a9831859b4ca8caf359eeb1aece4825305103b
       url: "https://pub.dev"
     source: hosted
-    version: "10.0.0"
+    version: "10.1.0"
   wechat_picker_library:
     dependency: transitive
     description:
