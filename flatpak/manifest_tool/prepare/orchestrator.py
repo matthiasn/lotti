@@ -61,10 +61,10 @@ def get_default_flutter_tag() -> str:
 # Computed once at module load for consistency in tests and logging
 DEFAULT_FLUTTER_TAG = get_default_flutter_tag()
 
-_SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400")
+_SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3510100")
 _SQLITE_AUTOCONF_SHA256 = os.getenv(
     "SQLITE_AUTOCONF_SHA256",
-    "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+    "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0",
 )
 
 # Rust toolchain version for offline builds (must match flatpak-flutter releases)
@@ -777,19 +777,26 @@ def _run_flatpak_flutter(context: PrepareFlathubContext, printer: _StatusPrinter
 
 
 def _normalize_sqlite_patch(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
-    patch_path = context.work_dir / "sqlite3_flutter_libs" / "0.5.34-CMakeLists.txt.patch"
-    if not patch_path.is_file():
+    patch_dir = context.work_dir / "sqlite3_flutter_libs"
+    if not patch_dir.is_dir():
         return
-    content = patch_path.read_text(encoding="utf-8")
-    new_content = re.sub(r"sqlite-autoconf-350[0-9]{4}", _SQLITE_AUTOCONF_VERSION, content)
-    new_content = re.sub(
-        r"SHA256=[0-9a-f]{64}",
-        f"SHA256={_SQLITE_AUTOCONF_SHA256}",
-        new_content,
-    )
-    if new_content != content:
-        patch_path.write_text(new_content, encoding="utf-8")
-        printer.info("Normalized sqlite3 patch to target version " f"{_SQLITE_AUTOCONF_VERSION}")
+    # Process all versioned CMakeLists.txt patches
+    for patch_path in patch_dir.glob("*-CMakeLists.txt.patch"):
+        if not patch_path.is_file():
+            continue
+        content = patch_path.read_text(encoding="utf-8")
+        new_content = re.sub(r"sqlite-autoconf-\d+", _SQLITE_AUTOCONF_VERSION, content)
+        new_content = re.sub(
+            r"SHA256=[0-9a-f]{64}",
+            f"SHA256={_SQLITE_AUTOCONF_SHA256}",
+            new_content,
+        )
+        # Ensure trailing newline (required for patch files)
+        if new_content and not new_content.endswith("\n"):
+            new_content += "\n"
+        if new_content != content:
+            patch_path.write_text(new_content, encoding="utf-8")
+            printer.info(f"Normalized {patch_path.name} to target version {_SQLITE_AUTOCONF_VERSION}")
 
 
 def _assert_commit_pinned(manifest_path: Path, label: str) -> None:
@@ -1359,15 +1366,16 @@ def _copy_helper_directories(context: PrepareFlathubContext) -> None:
     for helper_dir in ("sqlite3_flutter_libs", "cargokit"):
         helper_source = context.work_dir / helper_dir
         if not helper_source.is_dir():
-            # Check local flatpak dir for overrides first
-            local_override = context.flatpak_dir / helper_dir
-            if local_override.is_dir():
-                helper_source = local_override
-            else:
-                fallback_source = foreign_deps_root / helper_dir
-                helper_source = fallback_source if fallback_source.is_dir() else None
+            # Try flatpak-flutter foreign_deps as primary source
+            fallback_source = foreign_deps_root / helper_dir
+            helper_source = fallback_source if fallback_source.is_dir() else None
         if helper_source and helper_source.is_dir():
             _copytree(helper_source, context.output_dir / helper_dir)
+        # Overlay local overrides on top (allows adding version-specific patches)
+        local_override = context.flatpak_dir / helper_dir
+        if local_override.is_dir():
+            dest_dir = context.output_dir / helper_dir
+            shutil.copytree(local_override, dest_dir, dirs_exist_ok=True)
 
 
 def _remove_flutter_sdk_module(document: ManifestDocument) -> bool:
