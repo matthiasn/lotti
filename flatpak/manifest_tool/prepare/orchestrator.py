@@ -61,10 +61,10 @@ def get_default_flutter_tag() -> str:
 # Computed once at module load for consistency in tests and logging
 DEFAULT_FLUTTER_TAG = get_default_flutter_tag()
 
-_SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3500400")
+_SQLITE_AUTOCONF_VERSION = os.getenv("SQLITE_AUTOCONF_VERSION", "sqlite-autoconf-3510100")
 _SQLITE_AUTOCONF_SHA256 = os.getenv(
     "SQLITE_AUTOCONF_SHA256",
-    "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+    "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0",
 )
 
 # Rust toolchain version for offline builds (must match flatpak-flutter releases)
@@ -785,7 +785,7 @@ def _normalize_sqlite_patch(context: PrepareFlathubContext, printer: _StatusPrin
         if not patch_path.is_file():
             continue
         content = patch_path.read_text(encoding="utf-8")
-        new_content = re.sub(r"sqlite-autoconf-350[0-9]{4}", _SQLITE_AUTOCONF_VERSION, content)
+        new_content = re.sub(r"sqlite-autoconf-3[0-9]{6}", _SQLITE_AUTOCONF_VERSION, content)
         new_content = re.sub(
             r"SHA256=[0-9a-f]{64}",
             f"SHA256={_SQLITE_AUTOCONF_SHA256}",
@@ -1366,15 +1366,19 @@ def _copy_helper_directories(context: PrepareFlathubContext) -> None:
     for helper_dir in ("sqlite3_flutter_libs", "cargokit"):
         helper_source = context.work_dir / helper_dir
         if not helper_source.is_dir():
-            # Check local flatpak dir for overrides first
-            local_override = context.flatpak_dir / helper_dir
-            if local_override.is_dir():
-                helper_source = local_override
-            else:
-                fallback_source = foreign_deps_root / helper_dir
-                helper_source = fallback_source if fallback_source.is_dir() else None
+            # Try flatpak-flutter foreign_deps as primary source
+            fallback_source = foreign_deps_root / helper_dir
+            helper_source = fallback_source if fallback_source.is_dir() else None
         if helper_source and helper_source.is_dir():
             _copytree(helper_source, context.output_dir / helper_dir)
+        # Overlay local overrides on top (allows adding version-specific patches)
+        local_override = context.flatpak_dir / helper_dir
+        if local_override.is_dir():
+            dest_dir = context.output_dir / helper_dir
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            for item in local_override.iterdir():
+                if item.is_file():
+                    _copyfile(item, dest_dir / item.name)
 
 
 def _remove_flutter_sdk_module(document: ManifestDocument) -> bool:

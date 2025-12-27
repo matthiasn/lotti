@@ -77,7 +77,7 @@ def _add_sqlite_sources_for_architectures(sources: list, dest_map: dict, current
 
         sqlite_source = _create_sqlite_source(arch, dest, current_version)
         sources.append(sqlite_source)
-        messages.append(f"Added SQLite 3.50.4 file for {arch}")
+        messages.append(f"Added SQLite file for {arch}")
         changed = True
 
     return changed, messages
@@ -94,13 +94,20 @@ def _has_sqlite_source(sources: list, dest: str, version: str) -> bool:
     )
 
 
+_SQLITE_VERSIONS = {
+    "3500400": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+    "3510100": "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0",
+}
+
+
 def _create_sqlite_source(arch: str, dest: str, version: str) -> dict:
     """Create a SQLite source dictionary for the given architecture."""
+    sha256 = _SQLITE_VERSIONS.get(version, _SQLITE_VERSIONS["3510100"])
     return {
         "type": "file",
         "only-arches": [arch],
         "url": f"https://www.sqlite.org/2025/sqlite-autoconf-{version}.tar.gz",
-        "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+        "sha256": sha256,
         "dest": dest,
         "dest-filename": f"sqlite-autoconf-{version}.tar.gz",
     }
@@ -180,8 +187,8 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
         "aarch64": "./build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src",
     }
 
-    OLD_VERSION = "3500100"
-    CURRENT_VERSION = "3500400"
+    OLD_VERSION = "3500400"
+    CURRENT_VERSION = "3510100"
 
     for module in modules:
         if not isinstance(module, dict) or module.get("name") != "lotti":
@@ -215,6 +222,21 @@ def add_sqlite3_source(document: ManifestDocument) -> OperationResult:
 
         if plugin_version and patch_rel:
             plugin_root = f".pub-cache/hosted/pub.dev/sqlite3_flutter_libs-{plugin_version}"
+            # Remove any existing sqlite3_flutter_libs CMake patches (avoid duplicate patching)
+            old_sources = sources[:]
+            sources[:] = [
+                src for src in sources
+                if not (
+                    isinstance(src, dict)
+                    and src.get("type") == "patch"
+                    and str(src.get("path", "")).startswith("sqlite3_flutter_libs/")
+                    and str(src.get("path", "")).endswith("-CMakeLists.txt.patch")
+                )
+            ]
+            if len(sources) < len(old_sources):
+                changed = True
+                messages.append("Removed outdated sqlite3_flutter_libs CMake patch(es)")
+            # Add the correct version patch
             already = any(
                 isinstance(src, dict) and src.get("type") == "patch" and src.get("path") == patch_rel for src in sources
             )
