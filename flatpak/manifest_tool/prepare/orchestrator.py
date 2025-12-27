@@ -1758,9 +1758,17 @@ def _remove_local_dir_sources(document: ManifestDocument, printer: _StatusPrinte
         filtered: list[object] = []
         removed = 0
         for src in sources:
-            if isinstance(src, dict) and src.get("type") == "dir":
-                removed += 1
-                continue
+            if isinstance(src, dict):
+                # Remove type: dir sources (local directories)
+                if src.get("type") == "dir":
+                    removed += 1
+                    continue
+                # Also remove any source referencing local tool paths
+                path = str(src.get("path", ""))
+                dest = str(src.get("dest", ""))
+                if "tool/lotti_custom_lint" in path or "tool/lotti_custom_lint" in dest:
+                    removed += 1
+                    continue
             filtered.append(src)
         if removed:
             module["sources"] = filtered
