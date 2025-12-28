@@ -224,6 +224,91 @@ More content here...''';
           findsOneWidget);
     });
 
+    testWidgets('Goal section is hidden when collapsed', (tester) async {
+      const responseWithGoal = '''
+# Task Title
+
+**TLDR:** Quick summary of the task progress.
+This is line two of the TLDR. 🚀
+
+**Goal:** Enable secure user authentication across devices so users can
+access their data from anywhere.
+
+**Achieved results:**
+✅ First achievement
+✅ Second achievement
+
+**Remaining steps:**
+1. First remaining step''';
+
+      final aiResponse = testAiResponseEntry.copyWith(
+        data: testAiResponseEntry.data.copyWith(
+          response: responseWithGoal,
+          type: AiResponseType.taskSummary,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ExpandableAiResponseSummary(
+            aiResponse,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      // TLDR should be visible
+      expect(find.textContaining('Quick summary'), findsOneWidget);
+
+      // Goal section should NOT be visible when collapsed
+      expect(find.textContaining('Enable secure user authentication'),
+          findsNothing);
+      expect(find.textContaining('Achieved results:'), findsNothing);
+    });
+
+    testWidgets('Goal section is visible when expanded', (tester) async {
+      const responseWithGoal = '''
+# Task Title
+
+**TLDR:** Quick summary of the task progress. 🚀
+
+**Goal:** Enable secure user authentication across devices so users can
+access their data from anywhere.
+
+**Achieved results:**
+✅ First achievement''';
+
+      final aiResponse = testAiResponseEntry.copyWith(
+        data: testAiResponseEntry.data.copyWith(
+          response: responseWithGoal,
+          type: AiResponseType.taskSummary,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ExpandableAiResponseSummary(
+            aiResponse,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      // Tap the expand icon
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pump();
+
+      // Pump frames to let the animation progress
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // Now Goal section should be visible
+      expect(find.textContaining('Enable secure user authentication'),
+          findsOneWidget);
+      expect(find.textContaining('Achieved results:'), findsOneWidget);
+    });
+
     testWidgets('handles TLDR with bold formatting correctly', (tester) async {
       const responseWithBoldTldr = '''
 # Task Title

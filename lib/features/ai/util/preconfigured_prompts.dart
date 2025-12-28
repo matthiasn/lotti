@@ -104,7 +104,15 @@ Example TLDR format:
 **TLDR:** **Core auth system and database done. Next: email verification and password reset.
 Almost there - just these two features left! 🚀 Focus on the email flow first. 💪**
 
-After the TLDR, provide the detailed summary with:
+After the TLDR, include a **Goal** section that succinctly describes the desired outcome
+or essential purpose of this task (1-3 sentences, rarely a short paragraph). This helps
+keep focus on the "why" behind the work.
+
+Example Goal format:
+**Goal:** Enable users to authenticate securely and manage their sessions across devices,
+so they can access their data from anywhere without compromising security.
+
+After the Goal, provide the detailed summary with:
 - Achieved results (use ✅ emoji for each completed item)
 - Remaining steps (numbered list)
 - Any learnings or insights (use 💡 emoji)
@@ -114,6 +122,8 @@ Keep the detailed summary succinct while maintaining good structure and organiza
 If the task is done, include a brief concluding statement before the Links section.
 
 Example:
+**Goal:** [1-3 sentence description of the essential purpose of this task]
+
 **Achieved results:**
 ✅ Completed step 1
 ✅ Completed step 2
