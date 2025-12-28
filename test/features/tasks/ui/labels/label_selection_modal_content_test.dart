@@ -92,7 +92,7 @@ void main() {
       child: WidgetTestBench(
         child: Material(
           child: LabelSelectionModalContent(
-            taskId: 'task-123',
+            entryId: 'task-123',
             initialLabelIds: initialLabelIds,
             categoryId: categoryId,
             applyController: applyController,
@@ -257,7 +257,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -293,7 +293,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -329,7 +329,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -361,7 +361,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -394,7 +394,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -445,7 +445,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -479,7 +479,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -510,7 +510,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -548,7 +548,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -581,7 +581,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -619,7 +619,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -655,7 +655,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -690,7 +690,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -736,7 +736,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -774,7 +774,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const ['label-1'],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -825,7 +825,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const ['label-1', 'label-2'],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -871,7 +871,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const ['label-1'],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -963,7 +963,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -1012,7 +1012,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -1060,7 +1060,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -1113,7 +1113,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -1149,7 +1149,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -1186,7 +1186,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -1233,7 +1233,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 applyController: applyController,
                 searchQuery: searchQuery,
@@ -1282,7 +1282,7 @@ void main() {
           child: WidgetTestBench(
             child: Material(
               child: LabelSelectionModalContent(
-                taskId: 'task-123',
+                entryId: 'task-123',
                 initialLabelIds: const [],
                 categoryId: 'work-category',
                 applyController: applyController,

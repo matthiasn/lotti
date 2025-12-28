@@ -290,7 +290,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
         return ConstrainedBox(
           constraints: BoxConstraints(minHeight: minHeight),
           child: LabelSelectionModalContent(
-            taskId: taskId,
+            entryId: taskId,
             initialLabelIds: assignedIds,
             categoryId: selectedCategoryId,
             applyController: applyController,

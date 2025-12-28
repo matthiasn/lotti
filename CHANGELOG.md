@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Describes the desired outcome or essential purpose of the task (1-3 sentences)
   - Helps maintain focus on the "why" behind the work
   - Displayed in the expanded summary view alongside Achieved Results and Remaining Steps
+- Entry Labels Support: Labels can now be assigned to all entry types, not just tasks
+  - Labels display on journal list cards (alphabetically sorted, privacy-filtered)
+  - Labels display in entry detail views with edit capability
+  - New "Labels" action in the triple-dot menu for quick label assignment
+  - Consistent Wolt-style modal UX for label selection across all entry types
 
 ## [0.9.775] - 2025-12-27
 ### Added

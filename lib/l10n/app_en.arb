@@ -999,8 +999,14 @@
   "tasksQuickFilterLabelsActiveTitle": "Active label filters",
   "tasksQuickFilterClear": "Clear",
   "tasksQuickFilterUnassignedLabel": "Unassigned",
-  "taskLabelUnassignedLabel": "unassigned"
-  ,
+  "taskLabelUnassignedLabel": "unassigned",
+
+  "entryLabelsHeaderTitle": "Labels",
+  "entryLabelsEditTooltip": "Edit labels",
+  "entryLabelsNoLabels": "No labels assigned",
+  "entryLabelsActionTitle": "Labels",
+  "entryLabelsActionSubtitle": "Assign labels to organize this entry",
+
   "tasksPriorityTitle": "Priority:",
   "tasksPriorityP0": "Urgent",
   "tasksPriorityP1": "High",

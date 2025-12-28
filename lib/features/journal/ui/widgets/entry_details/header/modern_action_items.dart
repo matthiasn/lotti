@@ -4,6 +4,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/search/index.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -429,6 +431,155 @@ class ModernCopyEntryTextItem extends ConsumerWidget {
           await Navigator.of(context).maybePop();
         }
       },
+    );
+  }
+}
+
+/// Modern styled labels action item for non-task entries.
+/// Opens a dedicated single-page modal for label selection.
+class ModernLabelsItem extends ConsumerWidget {
+  const ModernLabelsItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final entryState = ref.watch(provider).value;
+    final entry = entryState?.entry;
+
+    // Only show for non-task entries (tasks have their own labels UI)
+    if (entry == null || entry is Task) {
+      return const SizedBox.shrink();
+    }
+
+    return ModernModalActionItem(
+      icon: MdiIcons.labelOutline,
+      title: context.messages.entryLabelsActionTitle,
+      subtitle: context.messages.entryLabelsActionSubtitle,
+      onTap: () async {
+        // Close the multi-page modal first
+        Navigator.of(context).pop();
+        // Open dedicated labels modal
+        await _openLabelsModal(context, ref, entry);
+      },
+    );
+  }
+
+  Future<void> _openLabelsModal(
+    BuildContext context,
+    WidgetRef ref,
+    JournalEntity entry,
+  ) async {
+    final applyController = ValueNotifier<Future<bool> Function()?>(null);
+    final searchNotifier = ValueNotifier<String>('');
+    final searchController = TextEditingController();
+    final assignedIds = entry.meta.labelIds ?? <String>[];
+    final categoryId = entry.meta.categoryId;
+
+    try {
+      await ModalUtils.showSinglePageModal<void>(
+        context: context,
+        titleWidget: Padding(
+          padding:
+              const EdgeInsets.only(top: 8, left: 20, right: 20, bottom: 8),
+          child: LottiSearchBar(
+            hintText: context.messages.tasksLabelsSheetSearchHint,
+            controller: searchController,
+            useGradientInDark: false,
+            onChanged: (value) => searchNotifier.value = value,
+            onClear: () {
+              searchNotifier.value = '';
+              searchController.clear();
+            },
+            textCapitalization: TextCapitalization.words,
+          ),
+        ),
+        navBarHeight: 80,
+        stickyActionBar: _buildStickyActionBar(context, applyController),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
+        builder: (ctx) {
+          final minHeight = MediaQuery.of(ctx).size.height * 0.5;
+          return ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: LabelSelectionModalContent(
+              entryId: entryId,
+              initialLabelIds: assignedIds,
+              categoryId: categoryId,
+              applyController: applyController,
+              searchQuery: searchNotifier,
+            ),
+          );
+        },
+      );
+    } finally {
+      applyController.dispose();
+      searchNotifier.dispose();
+      searchController.dispose();
+    }
+  }
+
+  Widget _buildStickyActionBar(
+    BuildContext context,
+    ValueNotifier<Future<bool> Function()?> applyController,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
+          border: Border(
+            top: BorderSide(
+              color: colorScheme.outline.withValues(alpha: 0.12),
+            ),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(context.messages.cancelButton),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ValueListenableBuilder<Future<bool> Function()?>(
+                valueListenable: applyController,
+                builder: (context, applyFn, _) {
+                  return FilledButton(
+                    onPressed: applyFn == null
+                        ? null
+                        : () async {
+                            final ok = await applyFn();
+                            if (!context.mounted) return;
+                            if (ok) {
+                              Navigator.of(context).pop();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    context.messages.tasksLabelsUpdateFailed,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                    child: Text(context.messages.tasksLabelsSheetApply),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
