@@ -2,6 +2,41 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 
 void main() {
+  group('Task Summary Prompt - Goal Section', () {
+    test('includes Goal section instruction', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('**Goal**'));
+      expect(user, contains('desired outcome'));
+      expect(user, contains('essential purpose'));
+    });
+
+    test('specifies Goal should be succinct', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('1-3 sentences'));
+    });
+
+    test('includes Goal example format', () {
+      final user = taskSummaryPrompt.userMessage;
+      expect(user, contains('**Goal:**'));
+    });
+
+    test('Goal section comes after TLDR in instructions', () {
+      final user = taskSummaryPrompt.userMessage;
+      final tldrExampleIndex = user.indexOf('Example TLDR format:');
+      final goalInstructionIndex =
+          user.indexOf('After the TLDR, include a **Goal**');
+      expect(goalInstructionIndex, greaterThan(tldrExampleIndex));
+    });
+
+    test('Goal section comes before Achieved results in example', () {
+      final user = taskSummaryPrompt.userMessage;
+      final goalExampleIndex = user.indexOf('**Goal:** [1-3 sentence');
+      final achievedIndex = user.indexOf('**Achieved results:**');
+      expect(goalExampleIndex, greaterThan(-1));
+      expect(achievedIndex, greaterThan(goalExampleIndex));
+    });
+  });
+
   group('Task Summary Prompt - Link Extraction', () {
     test('includes Links section instruction', () {
       final user = taskSummaryPrompt.userMessage;
