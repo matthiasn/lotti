@@ -1660,27 +1660,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get promptGenerationFullPromptLabel => 'Full Prompt:';
 
   @override
-  String get aiResponseTypeImagePromptGeneration => 'Image Prompt';
+  String get aiResponseTypeImagePromptGeneration => 'Prompt de Imagen';
 
   @override
-  String get imagePromptGenerationCardTitle => 'AI Image Prompt';
+  String get imagePromptGenerationCardTitle => 'Prompt de Imagen AI';
 
   @override
   String get imagePromptGenerationCopyTooltip =>
-      'Copy image prompt to clipboard';
+      'Copiar prompt de imagen al portapapeles';
 
   @override
-  String get imagePromptGenerationCopyButton => 'Copy Prompt';
+  String get imagePromptGenerationCopyButton => 'Copiar Prompt';
 
   @override
   String get imagePromptGenerationCopiedSnackbar =>
-      'Image prompt copied to clipboard';
+      'Prompt de imagen copiado al portapapeles';
 
   @override
-  String get imagePromptGenerationExpandTooltip => 'Show full prompt';
+  String get imagePromptGenerationExpandTooltip => 'Mostrar prompt completo';
 
   @override
-  String get imagePromptGenerationFullPromptLabel => 'Full Image Prompt:';
+  String get imagePromptGenerationFullPromptLabel =>
+      'Prompt de Imagen Completo:';
 
   @override
   String nestedAiResponsesTitle(int count) {

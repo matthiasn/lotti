@@ -215,9 +215,12 @@ IMPORTANT GUIDELINES:
 - Generate in English (image generators work best with English prompts)
 - Aim for prompts between 100-300 words for optimal results''',
   userMessage: '''
-Transform this task context into a detailed image generation prompt.
+Transform this audio transcription or text entry into a detailed image generation prompt, incorporating the full task context.
 
-**Task Context:**
+**User's Description (from audio/text):**
+{{audioTranscript}}
+
+**Full Task Context:**
 ```json
 {{task}}
 ```
@@ -228,23 +231,30 @@ Transform this task context into a detailed image generation prompt.
 ```
 
 Generate a visually rich prompt that captures:
-1. The current state/mood of the task (is it frustrating? nearly done? just starting?)
-2. Key metrics as visual elements (time spent, items completed, etc.)
-3. Abstract concepts as tangible metaphors
-4. An appropriate visual style based on the task nature
+1. The user's specific vision from their audio/text description
+2. The current state/mood of the task (is it frustrating? nearly done? just starting?)
+3. Key metrics as visual elements (time spent, items completed, etc.)
+4. Abstract concepts as tangible metaphors
+5. An appropriate visual style based on the user's preferences and task nature
 
-The prompt should enable an AI image generator to create a compelling visual representation of this task.
+The prompt should enable an AI image generator to create a compelling visual representation that matches what the user described.
 
 Consider:
+- What did the user specifically ask for in their description?
 - What visual metaphor best represents this task's current state?
-- What style would resonate with the task's nature (technical = infographic, creative = artistic)?
+- What style would resonate (technical = infographic, creative = artistic, playful = cartoon)?
 - What specific details from the task should appear as visual elements?
-- What mood should the image convey?''',
+- What mood should the image convey?
+- What aspect ratio would work best for the intended use?''',
+  // Note: We use InputDataType.task only (not audioFiles) because we extract
+  // the transcript via {{audioTranscript}} placeholder, not by uploading the audio file.
+  // The prompt appears on audio entries via a special case in _isPromptActiveForEntity
+  // that allows imagePromptGeneration to show on audio entries linked to tasks.
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.imagePromptGeneration,
   useReasoning: true,
   description:
-      'Generate a detailed image prompt from task context for AI image generators',
+      'Generate a detailed image prompt from audio/text with full task context',
 );
 ```
 

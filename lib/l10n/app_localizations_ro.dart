@@ -1655,27 +1655,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptGenerationFullPromptLabel => 'Full Prompt:';
 
   @override
-  String get aiResponseTypeImagePromptGeneration => 'Image Prompt';
+  String get aiResponseTypeImagePromptGeneration => 'Prompt Imagine';
 
   @override
-  String get imagePromptGenerationCardTitle => 'AI Image Prompt';
+  String get imagePromptGenerationCardTitle => 'Prompt Imagine AI';
 
   @override
   String get imagePromptGenerationCopyTooltip =>
-      'Copy image prompt to clipboard';
+      'Copiază promptul de imagine în clipboard';
 
   @override
-  String get imagePromptGenerationCopyButton => 'Copy Prompt';
+  String get imagePromptGenerationCopyButton => 'Copiază Prompt';
 
   @override
   String get imagePromptGenerationCopiedSnackbar =>
-      'Image prompt copied to clipboard';
+      'Promptul de imagine a fost copiat în clipboard';
 
   @override
-  String get imagePromptGenerationExpandTooltip => 'Show full prompt';
+  String get imagePromptGenerationExpandTooltip => 'Afișează promptul complet';
 
   @override
-  String get imagePromptGenerationFullPromptLabel => 'Full Image Prompt:';
+  String get imagePromptGenerationFullPromptLabel => 'Prompt Imagine Complet:';
 
   @override
   String nestedAiResponsesTitle(int count) {
