@@ -8,13 +8,14 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Specialized card for displaying AI-generated coding prompts.
+/// Specialized card for displaying AI-generated prompts (coding or image).
 ///
 /// Features:
 /// - Brief summary visible by default
 /// - Prominent copy button
 /// - Expandable full prompt view
 /// - Read-only (no editing)
+/// - Supports both promptGeneration and imagePromptGeneration types
 class GeneratedPromptCard extends StatefulWidget {
   const GeneratedPromptCard(
     this.aiResponse, {
@@ -48,6 +49,10 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
   bool _isExpanded = false;
   late String _summary;
   late String _fullPrompt;
+
+  /// Returns true if this is an image prompt generation response
+  bool get _isImagePrompt =>
+      widget.aiResponse.data.type == AiResponseType.imagePromptGeneration;
 
   @override
   void initState() {
@@ -128,7 +133,11 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.messages.promptGenerationCopiedSnackbar),
+          content: Text(
+            _isImagePrompt
+                ? context.messages.imagePromptGenerationCopiedSnackbar
+                : context.messages.promptGenerationCopiedSnackbar,
+          ),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -145,14 +154,18 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
         Row(
           children: [
             Icon(
-              AiResponseType.promptGeneration.icon,
+              _isImagePrompt
+                  ? AiResponseType.imagePromptGeneration.icon
+                  : AiResponseType.promptGeneration.icon,
               color: context.colorScheme.primary,
               size: 18,
             ),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                context.messages.promptGenerationCardTitle,
+                _isImagePrompt
+                    ? context.messages.imagePromptGenerationCardTitle
+                    : context.messages.promptGenerationCardTitle,
                 style: context.textTheme.titleSmall?.copyWith(
                   color: context.colorScheme.primary,
                   fontWeight: FontWeight.w600,
@@ -167,7 +180,9 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                 size: 20,
               ),
               visualDensity: VisualDensity.compact,
-              tooltip: context.messages.promptGenerationCopyTooltip,
+              tooltip: _isImagePrompt
+                  ? context.messages.imagePromptGenerationCopyTooltip
+                  : context.messages.promptGenerationCopyTooltip,
               onPressed: _copyToClipboard,
             ),
             // Expand/collapse button
@@ -180,7 +195,9 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                   size: 20,
                 ),
                 visualDensity: VisualDensity.compact,
-                tooltip: context.messages.promptGenerationExpandTooltip,
+                tooltip: _isImagePrompt
+                    ? context.messages.imagePromptGenerationExpandTooltip
+                    : context.messages.promptGenerationExpandTooltip,
                 onPressed: _toggleExpanded,
               ),
             ),
@@ -232,7 +249,10 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                 children: [
                   Expanded(
                     child: Text(
-                      context.messages.promptGenerationFullPromptLabel,
+                      _isImagePrompt
+                          ? context
+                              .messages.imagePromptGenerationFullPromptLabel
+                          : context.messages.promptGenerationFullPromptLabel,
                       style: context.textTheme.labelMedium?.copyWith(
                         color: context.colorScheme.onSurfaceVariant,
                       ),
@@ -241,7 +261,11 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                   FilledButton.icon(
                     onPressed: _copyToClipboard,
                     icon: const Icon(Icons.copy_rounded, size: 18),
-                    label: Text(context.messages.promptGenerationCopyButton),
+                    label: Text(
+                      _isImagePrompt
+                          ? context.messages.imagePromptGenerationCopyButton
+                          : context.messages.promptGenerationCopyButton,
+                    ),
                   ),
                 ],
               ),

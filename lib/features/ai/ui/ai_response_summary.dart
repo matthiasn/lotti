@@ -38,8 +38,9 @@ class AiResponseSummary extends StatelessWidget {
       );
     }
 
-    // Use specialized card for generated prompts
-    if (aiResponse.data.type == AiResponseType.promptGeneration) {
+    // Use specialized card for generated prompts (coding or image)
+    if (aiResponse.data.type == AiResponseType.promptGeneration ||
+        aiResponse.data.type == AiResponseType.imagePromptGeneration) {
       return GeneratedPromptCard(
         aiResponse,
         linkedFromId: linkedFromId,

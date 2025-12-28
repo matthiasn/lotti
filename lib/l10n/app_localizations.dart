@@ -3081,6 +3081,48 @@ abstract class AppLocalizations {
   /// **'Full Prompt:'**
   String get promptGenerationFullPromptLabel;
 
+  /// No description provided for @aiResponseTypeImagePromptGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'Image Prompt'**
+  String get aiResponseTypeImagePromptGeneration;
+
+  /// No description provided for @imagePromptGenerationCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Image Prompt'**
+  String get imagePromptGenerationCardTitle;
+
+  /// No description provided for @imagePromptGenerationCopyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy image prompt to clipboard'**
+  String get imagePromptGenerationCopyTooltip;
+
+  /// No description provided for @imagePromptGenerationCopyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Prompt'**
+  String get imagePromptGenerationCopyButton;
+
+  /// No description provided for @imagePromptGenerationCopiedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Image prompt copied to clipboard'**
+  String get imagePromptGenerationCopiedSnackbar;
+
+  /// No description provided for @imagePromptGenerationExpandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show full prompt'**
+  String get imagePromptGenerationExpandTooltip;
+
+  /// No description provided for @imagePromptGenerationFullPromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Image Prompt:'**
+  String get imagePromptGenerationFullPromptLabel;
+
   /// No description provided for @nestedAiResponsesTitle.
   ///
   /// In en, this message translates to:

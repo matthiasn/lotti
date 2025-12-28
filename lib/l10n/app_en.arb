@@ -620,6 +620,13 @@
   "promptGenerationCopiedSnackbar": "Prompt copied to clipboard",
   "promptGenerationExpandTooltip": "Show full prompt",
   "promptGenerationFullPromptLabel": "Full Prompt:",
+  "aiResponseTypeImagePromptGeneration": "Image Prompt",
+  "imagePromptGenerationCardTitle": "AI Image Prompt",
+  "imagePromptGenerationCopyTooltip": "Copy image prompt to clipboard",
+  "imagePromptGenerationCopyButton": "Copy Prompt",
+  "imagePromptGenerationCopiedSnackbar": "Image prompt copied to clipboard",
+  "imagePromptGenerationExpandTooltip": "Show full prompt",
+  "imagePromptGenerationFullPromptLabel": "Full Image Prompt:",
   "nestedAiResponsesTitle": "{count} AI response{count, plural, =1{} other{s}}",
   "@nestedAiResponsesTitle": {
     "placeholders": {
