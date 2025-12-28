@@ -188,13 +188,14 @@ void main() {
     });
 
     testWidgets('advances page index when room is selected', (tester) async {
+      // Use low-confidence room to prevent auto-selection (confidence < 10)
       final candidates = [
         const SyncRoomCandidate(
           roomId: '!room:server',
           roomName: 'Test Room',
           createdAt: null,
           memberCount: 2,
-          hasStateMarker: true,
+          hasStateMarker: false, // confidence = 5, won't auto-select
           hasLottiContent: true,
         ),
       ];
@@ -299,13 +300,14 @@ void main() {
     testWidgets(
         'onRoomSelected callback invalidates provider and advances page',
         (tester) async {
+      // Use low-confidence room to prevent auto-selection (confidence < 10)
       final candidates = [
         const SyncRoomCandidate(
           roomId: '!room:server',
           roomName: 'Page Content Room',
           createdAt: null,
           memberCount: 2,
-          hasStateMarker: true,
+          hasStateMarker: false, // confidence = 5, won't auto-select
           hasLottiContent: true,
         ),
       ];

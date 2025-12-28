@@ -5367,6 +5367,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to send invite. Please try again later.'**
   String get syncInviteErrorUnknown;
+
+  /// No description provided for @syncAddDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Another Device'**
+  String get syncAddDevice;
+
+  /// No description provided for @syncAddDeviceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this QR code from your other device and enter the PIN'**
+  String get syncAddDeviceDescription;
+
+  /// No description provided for @syncSetupPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup PIN'**
+  String get syncSetupPin;
+
+  /// No description provided for @syncSetupPinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this PIN verbally with your other device'**
+  String get syncSetupPinHint;
+
+  /// No description provided for @syncSetupScanQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Setup QR'**
+  String get syncSetupScanQr;
+
+  /// No description provided for @syncSetupEnterPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit PIN shown on your other device'**
+  String get syncSetupEnterPin;
+
+  /// No description provided for @syncSetupInvalidPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid PIN. Please try again.'**
+  String get syncSetupInvalidPin;
+
+  /// No description provided for @syncSetupExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code has expired. Please generate a new one.'**
+  String get syncSetupExpired;
+
+  /// No description provided for @syncSetupAutoJoining.
+  ///
+  /// In en, this message translates to:
+  /// **'Joining sync room...'**
+  String get syncSetupAutoJoining;
+
+  /// No description provided for @syncSetupGeneratingQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating secure QR code...'**
+  String get syncSetupGeneratingQr;
+
+  /// No description provided for @syncSetupRegenerateQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate QR'**
+  String get syncSetupRegenerateQr;
+
+  /// No description provided for @syncSetupExpiresIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires in {minutes}:{seconds}'**
+  String syncSetupExpiresIn(String minutes, String seconds);
+
+  /// No description provided for @syncSetupQrExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code expired'**
+  String get syncSetupQrExpired;
+
+  /// No description provided for @syncSetupLoginSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged in successfully'**
+  String get syncSetupLoginSuccess;
+
+  /// No description provided for @syncSetupLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed. Please check the PIN and try again.'**
+  String get syncSetupLoginFailed;
+
+  /// No description provided for @syncSetupScanningQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning for QR code...'**
+  String get syncSetupScanningQr;
+
+  /// No description provided for @syncSetupEnterPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter PIN'**
+  String get syncSetupEnterPinTitle;
+
+  /// No description provided for @syncSetupEnterPinDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit PIN displayed on your other device'**
+  String get syncSetupEnterPinDescription;
+
+  /// No description provided for @syncSetupPinPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 6-digit PIN'**
+  String get syncSetupPinPlaceholder;
+
+  /// No description provided for @syncSetupVerifyPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get syncSetupVerifyPin;
+
+  /// No description provided for @syncSetupCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get syncSetupCancel;
 }
 
 class _AppLocalizationsDelegate

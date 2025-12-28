@@ -1061,5 +1061,37 @@
   "syncInviteErrorUserNotFound": "User not found. Please verify the scanned code is correct.",
   "syncInviteErrorForbidden": "Permission denied. You may not have access to invite this user.",
   "syncInviteErrorRateLimited": "Too many requests. Please wait a moment and try again.",
-  "syncInviteErrorUnknown": "Failed to send invite. Please try again later."
+  "syncInviteErrorUnknown": "Failed to send invite. Please try again later.",
+
+  "syncAddDevice": "Add Another Device",
+  "syncAddDeviceDescription": "Scan this QR code from your other device and enter the PIN",
+  "syncSetupPin": "Setup PIN",
+  "syncSetupPinHint": "Share this PIN verbally with your other device",
+  "syncSetupScanQr": "Scan Setup QR",
+  "syncSetupEnterPin": "Enter the 6-digit PIN shown on your other device",
+  "syncSetupInvalidPin": "Invalid PIN. Please try again.",
+  "syncSetupExpired": "This QR code has expired. Please generate a new one.",
+  "syncSetupAutoJoining": "Joining sync room...",
+  "syncSetupGeneratingQr": "Generating secure QR code...",
+  "syncSetupRegenerateQr": "Regenerate QR",
+  "syncSetupExpiresIn": "Expires in {minutes}:{seconds}",
+  "@syncSetupExpiresIn": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "syncSetupQrExpired": "QR code expired",
+  "syncSetupLoginSuccess": "Logged in successfully",
+  "syncSetupLoginFailed": "Login failed. Please check the PIN and try again.",
+  "syncSetupScanningQr": "Scanning for QR code...",
+  "syncSetupEnterPinTitle": "Enter PIN",
+  "syncSetupEnterPinDescription": "Enter the 6-digit PIN displayed on your other device",
+  "syncSetupPinPlaceholder": "Enter 6-digit PIN",
+  "syncSetupVerifyPin": "Verify",
+  "syncSetupCancel": "Cancel"
 }

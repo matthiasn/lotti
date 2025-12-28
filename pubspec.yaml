@@ -27,6 +27,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   country_flags: ^3.0.0
   crypto: ^3.0.1
+  cryptography: ^2.7.0
   dart_geohash: ^2.0.1
   dbus: ^0.7.11
   delta_markdown:

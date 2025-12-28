@@ -32,6 +32,9 @@ class RoomDiscoveryWidget extends ConsumerStatefulWidget {
 }
 
 class _RoomDiscoveryWidgetState extends ConsumerState<RoomDiscoveryWidget> {
+  bool _autoSelectAttempted = false;
+  bool _isAutoJoining = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,12 +46,39 @@ class _RoomDiscoveryWidgetState extends ConsumerState<RoomDiscoveryWidget> {
       if (currentState is RoomDiscoveryInitial) {
         ref.read(roomDiscoveryControllerProvider.notifier).discoverRooms();
       }
+
+      // Set up listener for auto-selection
+      ref.listenManual(roomDiscoveryControllerProvider, (previous, next) {
+        _handleAutoSelection(next);
+      });
     });
+  }
+
+  /// Auto-selects a single high-confidence room without user interaction.
+  ///
+  /// Only triggers if:
+  /// - Exactly 1 room is found
+  /// - The room has confidence >= 10 (has state marker)
+  /// - Auto-selection hasn't been attempted yet
+  void _handleAutoSelection(RoomDiscoveryState state) {
+    if (_autoSelectAttempted || _isAutoJoining) return;
+
+    if (state is RoomDiscoverySuccess &&
+        state.rooms.length == 1 &&
+        state.rooms.first.confidence >= 10) {
+      _autoSelectAttempted = true;
+      _selectRoom(state.rooms.first);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(roomDiscoveryControllerProvider);
+
+    // Show auto-joining state
+    if (_isAutoJoining) {
+      return _buildAutoJoining(context);
+    }
 
     return switch (state) {
       RoomDiscoveryInitial() => _buildInitial(context),
@@ -58,6 +88,22 @@ class _RoomDiscoveryWidgetState extends ConsumerState<RoomDiscoveryWidget> {
       RoomDiscoverySuccess(:final rooms) => _buildRoomList(context, rooms),
       RoomDiscoveryError(:final error) => _buildError(context, error),
     };
+  }
+
+  Widget _buildAutoJoining(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(
+            context.messages.syncSetupAutoJoining,
+            style: context.textTheme.bodyLarge,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildInitial(BuildContext context) {
@@ -201,8 +247,16 @@ class _RoomDiscoveryWidgetState extends ConsumerState<RoomDiscoveryWidget> {
   }
 
   Future<void> _selectRoom(SyncRoomCandidate room) async {
+    if (!mounted) return;
+
+    setState(() => _isAutoJoining = true);
+
     final success =
         await ref.read(roomDiscoveryControllerProvider.notifier).joinRoom(room);
+
+    if (!mounted) return;
+
+    setState(() => _isAutoJoining = false);
 
     if (success) {
       widget.onRoomSelected();

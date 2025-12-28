@@ -155,13 +155,14 @@ void main() {
         (tester) async {
       var skipCalled = false;
 
+      // Use low-confidence room to prevent auto-selection (confidence < 10)
       final candidates = [
         const SyncRoomCandidate(
           roomId: '!room:server',
           roomName: 'Test Room',
           createdAt: null,
           memberCount: 2,
-          hasStateMarker: true,
+          hasStateMarker: false, // confidence = 5, won't auto-select
           hasLottiContent: true,
         ),
       ];
@@ -186,13 +187,14 @@ void main() {
         (tester) async {
       var roomSelected = false;
 
+      // Use low-confidence room to prevent auto-selection (confidence < 10)
       final candidates = [
         const SyncRoomCandidate(
           roomId: '!room:server',
           roomName: 'Test Room',
           createdAt: null,
           memberCount: 2,
-          hasStateMarker: true,
+          hasStateMarker: false, // confidence = 5, won't auto-select
           hasLottiContent: true,
         ),
       ];
@@ -268,14 +270,23 @@ void main() {
     });
 
     testWidgets('shows member count and confidence badge', (tester) async {
+      // Use multiple rooms to ensure auto-selection doesn't trigger
       final candidates = [
         const SyncRoomCandidate(
-          roomId: '!room:server',
-          roomName: 'High Confidence Room',
+          roomId: '!room1:server',
+          roomName: 'Room With Count',
           createdAt: null,
-          memberCount: 5,
-          hasStateMarker: true,
+          memberCount: 3,
+          hasStateMarker: false, // confidence = 5
           hasLottiContent: true,
+        ),
+        const SyncRoomCandidate(
+          roomId: '!room2:server',
+          roomName: 'Another Room',
+          createdAt: null,
+          memberCount: 2,
+          hasStateMarker: false,
+          hasLottiContent: false,
         ),
       ];
 
@@ -289,22 +300,23 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should show member count
-      expect(find.text('5'), findsOneWidget);
+      // Should show member count (3 for first room)
+      expect(find.text('3'), findsOneWidget);
 
-      // Should show confidence badge (10 + 5 = 15)
-      expect(find.text('15'), findsOneWidget);
+      // Should show confidence badge (5 for first room)
+      expect(find.text('5'), findsOneWidget);
     });
 
     testWidgets('shows unnamed room label when room name is null',
         (tester) async {
+      // Use low-confidence room to prevent auto-selection (confidence < 10)
       final candidates = [
         const SyncRoomCandidate(
           roomId: '!room:server',
           roomName: null,
           createdAt: null,
           memberCount: 2,
-          hasStateMarker: true,
+          hasStateMarker: false, // confidence = 0, won't auto-select
           hasLottiContent: false,
         ),
       ];

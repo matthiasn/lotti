@@ -2895,4 +2895,75 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get syncInviteErrorUnknown =>
       'Échec de l\'envoi de l\'invitation. Veuillez réessayer plus tard.';
+
+  @override
+  String get syncAddDevice => 'Add Another Device';
+
+  @override
+  String get syncAddDeviceDescription =>
+      'Scan this QR code from your other device and enter the PIN';
+
+  @override
+  String get syncSetupPin => 'Setup PIN';
+
+  @override
+  String get syncSetupPinHint =>
+      'Share this PIN verbally with your other device';
+
+  @override
+  String get syncSetupScanQr => 'Scan Setup QR';
+
+  @override
+  String get syncSetupEnterPin =>
+      'Enter the 6-digit PIN shown on your other device';
+
+  @override
+  String get syncSetupInvalidPin => 'Invalid PIN. Please try again.';
+
+  @override
+  String get syncSetupExpired =>
+      'This QR code has expired. Please generate a new one.';
+
+  @override
+  String get syncSetupAutoJoining => 'Joining sync room...';
+
+  @override
+  String get syncSetupGeneratingQr => 'Generating secure QR code...';
+
+  @override
+  String get syncSetupRegenerateQr => 'Regenerate QR';
+
+  @override
+  String syncSetupExpiresIn(String minutes, String seconds) {
+    return 'Expires in $minutes:$seconds';
+  }
+
+  @override
+  String get syncSetupQrExpired => 'QR code expired';
+
+  @override
+  String get syncSetupLoginSuccess => 'Logged in successfully';
+
+  @override
+  String get syncSetupLoginFailed =>
+      'Login failed. Please check the PIN and try again.';
+
+  @override
+  String get syncSetupScanningQr => 'Scanning for QR code...';
+
+  @override
+  String get syncSetupEnterPinTitle => 'Enter PIN';
+
+  @override
+  String get syncSetupEnterPinDescription =>
+      'Enter the 6-digit PIN displayed on your other device';
+
+  @override
+  String get syncSetupPinPlaceholder => 'Enter 6-digit PIN';
+
+  @override
+  String get syncSetupVerifyPin => 'Verify';
+
+  @override
+  String get syncSetupCancel => 'Cancel';
 }

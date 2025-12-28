@@ -6,7 +6,6 @@ import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart'
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/ui/invite_dialog_helper.dart';
 import 'package:lotti/features/sync/ui/login/sync_login_modal_page.dart';
-import 'package:lotti/features/sync/ui/matrix_logged_in_config_page.dart';
 import 'package:lotti/features/sync/ui/matrix_stats_page.dart';
 import 'package:lotti/features/sync/ui/room_config_page.dart';
 import 'package:lotti/features/sync/ui/room_discovery_page.dart';
@@ -103,15 +102,17 @@ class _MatrixSettingsCardState extends ConsumerState<MatrixSettingsCard>
           }
         });
 
+        // New consolidated setup flow:
+        // Page 0: Login (manual or QR scan)
+        // Page 1: Room Discovery (auto-joins single high-confidence room)
+        // Page 2: Room Config (create room if needed)
+        // Page 3: Unverified Devices
+        // Page 4: Stats (includes Add Device button)
         ModalUtils.showMultiPageModal<void>(
           context: context,
           pageIndexNotifier: pageIndexNotifier,
           pageListBuilder: (modalSheetContext) => [
             syncLoginModalPage(
-              context: modalSheetContext,
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            homeServerLoggedInPage(
               context: modalSheetContext,
               pageIndexNotifier: pageIndexNotifier,
             ),
