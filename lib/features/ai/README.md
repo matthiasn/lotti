@@ -771,7 +771,7 @@ Usage statistics are displayed in the AI Response Summary Modal when available:
 
 ## Response Types
 
-The system supports four AI response types:
+The system supports six AI response types:
 
 1. **Task Summary** (`AiResponseType.taskSummary`)
    - Generates comprehensive task overviews
@@ -779,11 +779,12 @@ The system supports four AI response types:
    - Automatic title extraction for tasks with short titles
    - Language-aware generation based on task content
 
-2. **Action Item Suggestions** (`AiResponseType.actionItemSuggestions`)
-   - Extracts potential action items from logs
-   - Response is parsed as JSON array
-   - Items not already in task are suggested
-   - **Automatic Checklist Creation with Smart Re-run** - If no checklists exist for the task, automatically creates a checklist with all AI suggestions, then re-runs the prompt to show updated suggestions (typically empty since items are now in the checklist)
+2. **Checklist Updates** (`AiResponseType.checklistUpdates`)
+   - Processes task updates through function calls only
+   - Creates new checklist items from audio/text content
+   - Updates existing items (mark complete, fix transcription errors)
+   - Assigns task labels based on content analysis
+   - Detects and sets task language
 
 3. **Image Analysis** (`AiResponseType.imageAnalysis`)
    - Analyzes attached images in task context
@@ -796,6 +797,23 @@ The system supports four AI response types:
    - When linked to a task, uses task context for better accuracy with names and concepts
    - Response is transcribed text
    - Supports automatic language detection
+
+5. **Coding Prompt Generation** (`AiResponseType.promptGeneration`)
+   - Transforms audio recording + task context into a detailed coding prompt
+   - Triggered from audio entries linked to tasks
+   - Uses `{{audioTranscript}}` placeholder for user's verbal description
+   - Output format: `## Summary` + `## Prompt` sections
+   - Designed for copy-paste into AI coding assistants (Claude Code, GitHub Copilot)
+   - Uses `GeneratedPromptCard` UI with prominent copy button
+
+6. **Image Prompt Generation** (`AiResponseType.imagePromptGeneration`)
+   - Transforms audio recording + task context into a detailed image generation prompt
+   - Triggered from audio entries linked to tasks (same as coding prompt)
+   - Uses `{{audioTranscript}}` placeholder for user's visual description
+   - Output format: `## Summary` + `## Prompt` sections
+   - Designed for copy-paste into AI image generators (Midjourney, DALL-E, Gemini)
+   - Includes visual metaphor guidelines, style options, and technical parameters
+   - Uses `GeneratedPromptCard` UI with prominent copy button
 
 ## Function Calling and Tool Use
 

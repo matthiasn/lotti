@@ -399,9 +399,12 @@ class _UnifiedAiProgressContentState
           fontWeight: FontWeight.w300,
         );
 
-        // For prompt generation, extract the prompt and add a copy button
-        final isPromptGeneration =
-            promptConfig.aiResponseType == AiResponseType.promptGeneration;
+        // For prompt generation types, extract the prompt and add a copy button
+        final isPromptGeneration = promptConfig.aiResponseType ==
+                AiResponseType.promptGeneration ||
+            promptConfig.aiResponseType == AiResponseType.imagePromptGeneration;
+        final isImagePrompt =
+            promptConfig.aiResponseType == AiResponseType.imagePromptGeneration;
         String? extractedPrompt;
         if (isPromptGeneration && state.isNotEmpty) {
           // Reuse static regex from GeneratedPromptCard to avoid duplication
@@ -435,8 +438,13 @@ class _UnifiedAiProgressContentState
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(context
-                                    .messages.promptGenerationCopiedSnackbar),
+                                content: Text(
+                                  isImagePrompt
+                                      ? context.messages
+                                          .imagePromptGenerationCopiedSnackbar
+                                      : context.messages
+                                          .promptGenerationCopiedSnackbar,
+                                ),
                                 duration: const Duration(seconds: 2),
                                 behavior: SnackBarBehavior.floating,
                               ),
@@ -444,8 +452,11 @@ class _UnifiedAiProgressContentState
                           }
                         },
                         icon: const Icon(Icons.copy_rounded, size: 18),
-                        label:
-                            Text(context.messages.promptGenerationCopyButton),
+                        label: Text(
+                          isImagePrompt
+                              ? context.messages.imagePromptGenerationCopyButton
+                              : context.messages.promptGenerationCopyButton,
+                        ),
                       ),
                     ],
                   ),

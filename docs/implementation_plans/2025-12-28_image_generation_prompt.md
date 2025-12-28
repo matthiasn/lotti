@@ -315,19 +315,30 @@ case AiResponseType.imagePromptGeneration:
   );
 ```
 
-#### 4.2 Ensure Task-Level Menu Visibility
+#### 4.2 Audio Entry Menu Visibility
 
-Unlike `promptGeneration` (which requires audio entry), `imagePromptGeneration` should appear on Task entities directly:
+Like `promptGeneration`, `imagePromptGeneration` is triggered from audio entries linked to tasks:
 
 ```dart
 // In _isPromptActiveForEntity:
 if (entity is Task) {
-  // promptGeneration requires audio entry
-  if (prompt.aiResponseType == AiResponseType.promptGeneration) {
+  // Both prompt types require audio entry for the transcript
+  if (prompt.aiResponseType == AiResponseType.promptGeneration ||
+      prompt.aiResponseType == AiResponseType.imagePromptGeneration) {
     return false;
   }
-  // imagePromptGeneration is valid for tasks
-  // (already handled by default task logic)
+}
+
+// Special case for audio entries linked to tasks:
+if (entity is JournalAudio &&
+    (prompt.aiResponseType == AiResponseType.checklistUpdates ||
+        prompt.aiResponseType == AiResponseType.promptGeneration ||
+        prompt.aiResponseType == AiResponseType.imagePromptGeneration)) {
+  // Check if audio is linked to a task
+  final linkedEntities = await ref
+      .read(journalRepositoryProvider)
+      .getLinkedToEntities(linkedTo: entity.id);
+  return linkedEntities.any((e) => e is Task);
 }
 ```
 
