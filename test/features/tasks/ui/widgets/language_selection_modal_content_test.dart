@@ -194,5 +194,12 @@ void main() {
         expect(find.byKey(ValueKey('flag-$code')), findsOneWidget);
       }
     });
+
+    testWidgets('shows Ghana flag for Twi language', (tester) async {
+      await pumpHarness(tester);
+
+      expect(find.byKey(const ValueKey('flag-tw')), findsOneWidget);
+      expect(find.text('Twi'), findsOneWidget);
+    });
   });
 }

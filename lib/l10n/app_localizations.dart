@@ -4930,6 +4930,12 @@ abstract class AppLocalizations {
   /// **'Thai'**
   String get taskLanguageThai;
 
+  /// No description provided for @taskLanguageTwi.
+  ///
+  /// In en, this message translates to:
+  /// **'Twi'**
+  String get taskLanguageTwi;
+
   /// No description provided for @taskLanguageTurkish.
   ///
   /// In en, this message translates to:

@@ -2657,6 +2657,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskLanguageThai => 'Thailändisch';
 
   @override
+  String get taskLanguageTwi => 'Twi';
+
+  @override
   String get taskLanguageTurkish => 'Türkisch';
 
   @override
