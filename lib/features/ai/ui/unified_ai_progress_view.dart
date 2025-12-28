@@ -400,9 +400,8 @@ class _UnifiedAiProgressContentState
         );
 
         // For prompt generation types, extract the prompt and add a copy button
-        final isPromptGeneration = promptConfig.aiResponseType ==
-                AiResponseType.promptGeneration ||
-            promptConfig.aiResponseType == AiResponseType.imagePromptGeneration;
+        final isPromptGeneration =
+            promptConfig.aiResponseType.isPromptGenerationType;
         final isImagePrompt =
             promptConfig.aiResponseType == AiResponseType.imagePromptGeneration;
         String? extractedPrompt;

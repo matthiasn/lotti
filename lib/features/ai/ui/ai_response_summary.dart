@@ -39,8 +39,7 @@ class AiResponseSummary extends StatelessWidget {
     }
 
     // Use specialized card for generated prompts (coding or image)
-    if (aiResponse.data.type == AiResponseType.promptGeneration ||
-        aiResponse.data.type == AiResponseType.imagePromptGeneration) {
+    if (aiResponse.data.type?.isPromptGenerationType ?? false) {
       return GeneratedPromptCard(
         aiResponse,
         linkedFromId: linkedFromId,

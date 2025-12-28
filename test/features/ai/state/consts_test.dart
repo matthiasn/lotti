@@ -112,5 +112,17 @@ void main() {
         equals('Image Prompt'),
       );
     });
+
+    test('isPromptGenerationType returns true for prompt generation types', () {
+      expect(AiResponseType.promptGeneration.isPromptGenerationType, true);
+      expect(AiResponseType.imagePromptGeneration.isPromptGenerationType, true);
+    });
+
+    test('isPromptGenerationType returns false for non-prompt types', () {
+      expect(AiResponseType.taskSummary.isPromptGenerationType, false);
+      expect(AiResponseType.imageAnalysis.isPromptGenerationType, false);
+      expect(AiResponseType.audioTranscription.isPromptGenerationType, false);
+      expect(AiResponseType.checklistUpdates.isPromptGenerationType, false);
+    });
   });
 }

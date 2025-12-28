@@ -158,10 +158,9 @@ class UnifiedAiInferenceRepository {
     // For prompts that require task context
     if (hasTask) {
       if (entity is Task) {
-        // promptGeneration and imagePromptGeneration require an audio entry as
-        // input (for the transcript) so they should not appear on task-level menus.
-        if (prompt.aiResponseType == AiResponseType.promptGeneration ||
-            prompt.aiResponseType == AiResponseType.imagePromptGeneration) {
+        // Prompt generation types require an audio entry as input (for the
+        // transcript) so they should not appear on task-level menus.
+        if (prompt.aiResponseType.isPromptGenerationType) {
           return false;
         }
         // Direct task entity - always valid as long as additional modality
@@ -184,12 +183,10 @@ class UnifiedAiInferenceRepository {
       // Special case: Certain prompts may be triggered from an audio entry
       // popup even though they only require task context (not audio file upload).
       // - checklistUpdates: extracts action items from transcript
-      // - promptGeneration: uses {{audioTranscript}} placeholder for transcript
-      // - imagePromptGeneration: uses {{audioTranscript}} placeholder for transcript
+      // - prompt generation types: use {{audioTranscript}} placeholder
       if (entity is JournalAudio &&
           (prompt.aiResponseType == AiResponseType.checklistUpdates ||
-              prompt.aiResponseType == AiResponseType.promptGeneration ||
-              prompt.aiResponseType == AiResponseType.imagePromptGeneration)) {
+              prompt.aiResponseType.isPromptGenerationType)) {
         final linkedEntities = await ref
             .read(journalRepositoryProvider)
             .getLinkedToEntities(linkedTo: entity.id);
@@ -475,8 +472,7 @@ class UnifiedAiInferenceRepository {
   ) async {
     // Skip audio preparation entirely for prompt generation types - they use
     // transcript text via {{audioTranscript}} placeholder, not audio files
-    if (promptConfig.aiResponseType == AiResponseType.promptGeneration ||
-        promptConfig.aiResponseType == AiResponseType.imagePromptGeneration) {
+    if (promptConfig.aiResponseType.isPromptGenerationType) {
       return null;
     }
 
@@ -714,12 +710,11 @@ class UnifiedAiInferenceRepository {
     // Save the AI response entry (except for checklist updates which are function-only)
     // Also save for prompt generation types even when triggered from audio entries
     AiResponseEntry? aiResponseEntry;
-    final shouldSaveEntry = promptConfig.aiResponseType ==
-            AiResponseType.promptGeneration ||
-        promptConfig.aiResponseType == AiResponseType.imagePromptGeneration ||
-        (entity is! JournalAudio &&
-            entity is! JournalImage &&
-            promptConfig.aiResponseType != AiResponseType.checklistUpdates);
+    final shouldSaveEntry =
+        promptConfig.aiResponseType.isPromptGenerationType ||
+            (entity is! JournalAudio &&
+                entity is! JournalImage &&
+                promptConfig.aiResponseType != AiResponseType.checklistUpdates);
 
     if (shouldSaveEntry) {
       try {

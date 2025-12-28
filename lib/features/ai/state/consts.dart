@@ -79,4 +79,13 @@ extension AiResponseTypeDisplay on AiResponseType {
         return Icons.palette_outlined;
     }
   }
+
+  /// Returns true if this is a prompt generation type (coding or image).
+  /// These types share common behavior:
+  /// - Triggered from audio entries (not task-level)
+  /// - Use {{audioTranscript}} placeholder
+  /// - Display via GeneratedPromptCard with copy functionality
+  bool get isPromptGenerationType =>
+      this == AiResponseType.promptGeneration ||
+      this == AiResponseType.imagePromptGeneration;
 }
