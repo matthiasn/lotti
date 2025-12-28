@@ -962,6 +962,10 @@
   "taskLanguageSwahili": "Swahili",
   "taskLanguageSwedish": "Swedish",
   "taskLanguageThai": "Thai",
+  "taskLanguageTwi": "Twi",
+  "@taskLanguageTwi": {
+    "description": "The Twi language, spoken primarily in Ghana"
+  },
   "taskLanguageTurkish": "Turkish",
   "taskLanguageUkrainian": "Ukrainian",
   "taskLanguageIgbo": "Igbo",
