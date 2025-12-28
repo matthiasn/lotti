@@ -4,12 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.776] - 2025-12-28
+## [0.9.777] - 2025-12-28
 ### Added
-- Task Summary Goal Section: AI task summaries now include a succinct Goal section after the TLDR
-  - Describes the desired outcome or essential purpose of the task (1-3 sentences)
-  - Helps maintain focus on the "why" behind the work
-  - Displayed in the expanded summary view alongside Achieved Results and Remaining Steps
 - Image Prompt Generation: New AI response type for generating image prompts from task context
   - Transforms audio recording + task context into detailed prompts for AI image generators
   - Triggered from audio entries linked to tasks (same pattern as Coding Prompt)
@@ -18,7 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Output format with Summary and Prompt sections for easy copy-paste
   - Designed for Midjourney, DALL-E 3, Stable Diffusion, Gemini Imagen
   - Uses GeneratedPromptCard UI with prominent copy button
-  - Full localization support (EN, DE)
+  - Full localization support (EN, DE, ES, FR, RO)
+
+## [0.9.776] - 2025-12-28
+### Added
+- Task Summary Goal Section: AI task summaries now include a succinct Goal section after the TLDR
+  - Describes the desired outcome or essential purpose of the task (1-3 sentences)
+  - Helps maintain focus on the "why" behind the work
+  - Displayed in the expanded summary view alongside Achieved Results and Remaining Steps
 
 ## [0.9.775] - 2025-12-27
 ### Added

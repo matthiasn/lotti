@@ -407,5 +407,13 @@
   "syncInviteErrorUserNotFound": "Utilisateur non trouvé. Veuillez vérifier que le code scanné est correct.",
   "syncInviteErrorForbidden": "Permission refusée. Vous n'avez peut-être pas accès pour inviter cet utilisateur.",
   "syncInviteErrorRateLimited": "Trop de requêtes. Veuillez patienter un moment et réessayer.",
-  "syncInviteErrorUnknown": "Échec de l'envoi de l'invitation. Veuillez réessayer plus tard."
+  "syncInviteErrorUnknown": "Échec de l'envoi de l'invitation. Veuillez réessayer plus tard.",
+
+  "aiResponseTypeImagePromptGeneration": "Prompt Image",
+  "imagePromptGenerationCardTitle": "Prompt Image IA",
+  "imagePromptGenerationCopyTooltip": "Copier le prompt d'image dans le presse-papiers",
+  "imagePromptGenerationCopyButton": "Copier Prompt",
+  "imagePromptGenerationCopiedSnackbar": "Prompt d'image copié dans le presse-papiers",
+  "imagePromptGenerationExpandTooltip": "Afficher le prompt complet",
+  "imagePromptGenerationFullPromptLabel": "Prompt Image Complet:"
 }

@@ -412,6 +412,14 @@ class _UnifiedAiProgressContentState
           extractedPrompt = match?.group(1)?.trim() ?? state;
         }
 
+        // Extract conditional strings for cleaner widget tree
+        final copySnackbarMessage = isImagePrompt
+            ? context.messages.imagePromptGenerationCopiedSnackbar
+            : context.messages.promptGenerationCopiedSnackbar;
+        final copyButtonLabel = isImagePrompt
+            ? context.messages.imagePromptGenerationCopyButton
+            : context.messages.promptGenerationCopyButton;
+
         return Padding(
           padding: const EdgeInsets.only(
             top: 10,
@@ -437,13 +445,7 @@ class _UnifiedAiProgressContentState
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                  isImagePrompt
-                                      ? context.messages
-                                          .imagePromptGenerationCopiedSnackbar
-                                      : context.messages
-                                          .promptGenerationCopiedSnackbar,
-                                ),
+                                content: Text(copySnackbarMessage),
                                 duration: const Duration(seconds: 2),
                                 behavior: SnackBarBehavior.floating,
                               ),
@@ -451,11 +453,7 @@ class _UnifiedAiProgressContentState
                           }
                         },
                         icon: const Icon(Icons.copy_rounded, size: 18),
-                        label: Text(
-                          isImagePrompt
-                              ? context.messages.imagePromptGenerationCopyButton
-                              : context.messages.promptGenerationCopyButton,
-                        ),
+                        label: Text(copyButtonLabel),
                       ),
                     ],
                   ),

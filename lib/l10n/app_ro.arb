@@ -406,5 +406,13 @@
   "syncInviteErrorUserNotFound": "Utilizator negăsit. Verificați că codul scanat este corect.",
   "syncInviteErrorForbidden": "Permisiune refuzată. Este posibil să nu aveți acces pentru a invita acest utilizator.",
   "syncInviteErrorRateLimited": "Prea multe cereri. Așteptați un moment și încercați din nou.",
-  "syncInviteErrorUnknown": "Invitația nu a putut fi trimisă. Încercați din nou mai târziu."
+  "syncInviteErrorUnknown": "Invitația nu a putut fi trimisă. Încercați din nou mai târziu.",
+
+  "aiResponseTypeImagePromptGeneration": "Prompt Imagine",
+  "imagePromptGenerationCardTitle": "Prompt Imagine AI",
+  "imagePromptGenerationCopyTooltip": "Copiază promptul de imagine în clipboard",
+  "imagePromptGenerationCopyButton": "Copiază Prompt",
+  "imagePromptGenerationCopiedSnackbar": "Promptul de imagine a fost copiat în clipboard",
+  "imagePromptGenerationExpandTooltip": "Afișează promptul complet",
+  "imagePromptGenerationFullPromptLabel": "Prompt Imagine Complet:"
 }

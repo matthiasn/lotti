@@ -236,6 +236,78 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       expect(gptMarkdown.data, contains('Monument Valley'));
     });
 
+    testWidgets('shows copy button in expanded section', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: GeneratedPromptCard(
+            testImagePromptEntry,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      // Expand the card
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      // The expanded section should show both copy icons (header + expanded)
+      expect(find.byIcon(Icons.copy_rounded), findsNWidgets(2));
+      // And the "Copy Prompt" text should be visible
+      expect(find.text('Copy Prompt'), findsOneWidget);
+    });
+
+    testWidgets('shows Full Image Prompt label in expanded section',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: GeneratedPromptCard(
+            testImagePromptEntry,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      // Expand the card
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      // The expanded section should show image-specific label
+      expect(find.text('Full Image Prompt:'), findsOneWidget);
+    });
+
+    testWidgets('coding prompt shows Full Prompt label in expanded section',
+        (tester) async {
+      final codingPromptEntry = testImagePromptEntry.copyWith(
+        data: testImagePromptEntry.data.copyWith(
+          type: AiResponseType.promptGeneration,
+          response: '''
+## Summary
+Help with OAuth implementation.
+
+## Prompt
+Implement OAuth 2.0 in Flutter.
+''',
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: GeneratedPromptCard(
+            codingPromptEntry,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      // Expand the card
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      // The expanded section should show coding-specific label
+      expect(find.text('Full Prompt:'), findsOneWidget);
+      expect(find.text('Full Image Prompt:'), findsNothing);
+    });
+
     testWidgets(
         'differentiates between coding prompt and image prompt correctly',
         (tester) async {
