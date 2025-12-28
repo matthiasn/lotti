@@ -863,4 +863,141 @@ void main() {
       expect(find.text('Test'), findsOneWidget);
     });
   });
+
+  group('UnifiedAiProgressContent - Image Prompt Generation Copy Button', () {
+    const entityId = 'image-prompt-entity';
+    const promptId = 'image-prompt-id';
+
+    testWidgets('shows copy button for image prompt generation with result',
+        (tester) async {
+      final imagePromptConfig = AiConfig.prompt(
+        id: promptId,
+        name: 'Image Prompt',
+        systemMessage: 'System message',
+        userMessage: 'Generate image prompt',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.imagePromptGeneration,
+        description: 'Generate image prompts',
+      ) as AiConfigPrompt;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: promptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => imagePromptConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(const <AiConfig>[]),
+            ),
+            unifiedAiControllerProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith(
+              () => _TestUnifiedAiController(
+                const UnifiedAiState(
+                  message: '''
+## Summary
+A beautiful sunset over mountains.
+
+## Prompt
+Digital painting of a vibrant sunset over misty mountains, warm orange and purple tones, atmospheric, cinematic lighting, 4K --ar 16:9''',
+                ),
+              ),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: AiResponseType.imagePromptGeneration,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.idle),
+            ),
+            triggerNewInferenceProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith((ref) async {}),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should show copy button for image prompt generation
+      expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows copy button for regular prompt generation with result',
+        (tester) async {
+      final promptGenConfig = AiConfig.prompt(
+        id: promptId,
+        name: 'Coding Prompt',
+        systemMessage: 'System message',
+        userMessage: 'Generate coding prompt',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.promptGeneration,
+        description: 'Generate coding prompts',
+      ) as AiConfigPrompt;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: entityId,
+            promptId: promptId,
+          ),
+          overrides: [
+            aiConfigByIdProvider(promptId).overrideWith(
+              (ref) async => promptGenConfig,
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(const <AiConfig>[]),
+            ),
+            unifiedAiControllerProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith(
+              () => _TestUnifiedAiController(
+                const UnifiedAiState(
+                  message: '''
+## Summary
+Help implement OAuth.
+
+## Prompt
+Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
+                ),
+              ),
+            ),
+            inferenceStatusControllerProvider(
+              id: entityId,
+              aiResponseType: AiResponseType.promptGeneration,
+            ).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.idle),
+            ),
+            triggerNewInferenceProvider(
+              entityId: entityId,
+              promptId: promptId,
+            ).overrideWith((ref) async {}),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should show copy button for prompt generation
+      expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
+    });
+  });
 }

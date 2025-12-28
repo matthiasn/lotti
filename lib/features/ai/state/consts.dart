@@ -7,6 +7,7 @@ const imageAnalysisConst = 'ImageAnalysis';
 const audioTranscriptionConst = 'AudioTranscription';
 const checklistUpdatesConst = 'ChecklistUpdates';
 const promptGenerationConst = 'PromptGeneration';
+const imagePromptGenerationConst = 'ImagePromptGeneration';
 
 // Ollama API constants
 const ollamaChatEndpoint = '/api/chat';
@@ -38,6 +39,8 @@ enum AiResponseType {
   checklistUpdates,
   @JsonValue(promptGenerationConst)
   promptGeneration,
+  @JsonValue(imagePromptGenerationConst)
+  imagePromptGeneration,
 }
 
 extension AiResponseTypeDisplay on AiResponseType {
@@ -54,6 +57,8 @@ extension AiResponseTypeDisplay on AiResponseType {
         return l10n.aiResponseTypeChecklistUpdates;
       case AiResponseType.promptGeneration:
         return l10n.aiResponseTypePromptGeneration;
+      case AiResponseType.imagePromptGeneration:
+        return l10n.aiResponseTypeImagePromptGeneration;
     }
   }
 
@@ -70,6 +75,17 @@ extension AiResponseTypeDisplay on AiResponseType {
         return Icons.checklist_rtl_outlined;
       case AiResponseType.promptGeneration:
         return Icons.auto_fix_high_outlined;
+      case AiResponseType.imagePromptGeneration:
+        return Icons.palette_outlined;
     }
   }
+
+  /// Returns true if this is a prompt generation type (coding or image).
+  /// These types share common behavior:
+  /// - Triggered from audio entries (not task-level)
+  /// - Use {{audioTranscript}} placeholder
+  /// - Display via GeneratedPromptCard with copy functionality
+  bool get isPromptGenerationType =>
+      this == AiResponseType.promptGeneration ||
+      this == AiResponseType.imagePromptGeneration;
 }

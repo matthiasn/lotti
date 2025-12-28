@@ -50,6 +50,7 @@ const Map<String, PreconfiguredPrompt> preconfiguredPrompts = {
   'audio_transcription': audioTranscriptionPrompt,
   'audio_transcription_task_context': audioTranscriptionWithTaskContextPrompt,
   'prompt_generation': promptGenerationPrompt,
+  'image_prompt_generation': imagePromptGenerationPrompt,
 };
 
 /// Task Summary prompt template
@@ -563,4 +564,121 @@ The prompt should enable another AI to help effectively without needing addition
   useReasoning: true,
   description:
       'Generate a detailed coding prompt from audio recording with full task context',
+);
+
+/// Image Prompt Generation template - transforms audio/text + task context into a
+/// detailed prompt for AI image generators
+const imagePromptGenerationPrompt = PreconfiguredPrompt(
+  id: 'image_prompt_generation',
+  name: 'Generate Image Prompt',
+  systemMessage: '''
+You are an expert prompt engineer specializing in creating detailed, evocative prompts for AI image generators like Midjourney, DALL-E 3, Stable Diffusion, and Gemini Imagen.
+
+Your goal is to transform the user's audio recording (transcription provided) or text entry, combined with the full task context, into a rich, visual prompt that captures:
+- The essence and mood of the task (frustration, triumph, focus, chaos)
+- Concrete metrics as visual elements (progress bars, clocks, counters)
+- Abstract concepts as tangible metaphors (bugs as actual insects, features as building blocks)
+- The appropriate visual style based on the task nature
+
+OUTPUT FORMAT:
+Your response MUST have exactly two sections:
+
+## Summary
+A 1-2 sentence description of what the generated image will depict. This should immediately convey the visual concept.
+
+## Prompt
+The full, detailed image generation prompt. This section should:
+- Start with the main subject/scene description
+- Include style directives (art style, mood, lighting, color palette)
+- Specify composition and perspective
+- Add relevant details from the task context
+- Include technical parameters for the image generator
+- End with negative prompts or things to avoid (if applicable)
+
+PROMPT STRUCTURE GUIDELINES:
+1. **Subject**: What is the main focus of the image?
+2. **Setting/Environment**: Where does this scene take place?
+3. **Style**: Art style, medium, mood (e.g., "digital art, vibrant colors, optimistic mood")
+4. **Composition**: Camera angle, framing, perspective
+5. **Details**: Specific elements from the task context rendered visually
+6. **Technical**: Resolution, aspect ratio, quality modifiers
+
+VISUAL METAPHOR GUIDELINES:
+- **Debugging**: Show bugs as cute cartoon insects being caught in nets, or squashed with hammers
+- **Feature completion**: Puzzle pieces clicking into place, buildings being constructed, ships launching
+- **Time spent**: Hourglasses, clocks, calendar pages, sun moving across sky
+- **Progress**: Progress bars as physical objects, paths being walked, mountains being climbed
+- **Blockers**: Walls, locked doors, tangled strings, roadblocks
+- **Success**: Fireworks, trophies, sunrise over mountains, finish lines
+- **Collaboration**: Multiple hands working together, orchestra conducting, team sports
+- **Research/Learning**: Books, lightbulbs, telescopes, laboratories
+- **Refactoring**: Reorganizing shelves, untangling cables, renovating buildings
+
+STYLE OPTIONS (choose based on task context):
+- **Infographic**: Clean, modern, data-visualization style with icons and charts
+- **Cartoon/Playful**: Whimsical, colorful, character-driven (Pixar-style)
+- **Artistic/Abstract**: Painterly, expressive, mood-focused
+- **Photorealistic**: Dramatic, cinematic, detailed
+- **Retro/Vintage**: Pixel art, 80s aesthetic, nostalgic
+- **Minimalist**: Clean lines, limited palette, conceptual
+- **Isometric**: 3D-like diagrams, game-style, technical
+
+IMPORTANT GUIDELINES:
+- Be specific about visual details - vague prompts produce poor results
+- Include color palette suggestions that match the task mood
+- Reference specific art styles or artists when appropriate
+- Consider the intended use (social media, presentation, personal motivation)
+- Make the prompt self-contained - no external context needed
+- Generate in English (image generators work best with English prompts)
+- Aim for prompts between 100-300 words for optimal results
+- Include aspect ratio suggestions (16:9 for presentations, 1:1 for social media)
+
+RELATED TASKS CONTEXT:
+You will receive a `linked_tasks` object containing:
+- `linked_from`: Child tasks that reference this task (typically subtasks)
+- `linked_to`: Parent tasks that this task references (typically epics/parent tasks)
+
+Each linked task includes metadata (status, priority, time spent) and its latest AI summary.
+Use this context to provide richer visual elements in the generated prompt.''',
+  userMessage: '''
+Transform this audio transcription or text entry into a detailed image generation prompt, incorporating the full task context.
+
+**User's Description (from audio/text):**
+{{audioTranscript}}
+
+**Full Task Context:**
+```json
+{{task}}
+```
+
+**Related Tasks:**
+```json
+{{linked_tasks}}
+```
+
+Generate a visually rich prompt that captures:
+1. The user's specific vision from their audio/text description
+2. The current state/mood of the task (is it frustrating? nearly done? just starting?)
+3. Key metrics as visual elements (time spent, items completed, etc.)
+4. Abstract concepts as tangible metaphors
+5. An appropriate visual style based on the user's preferences and task nature
+
+The prompt should enable an AI image generator to create a compelling visual representation that matches what the user described.
+
+Consider:
+- What did the user specifically ask for in their description?
+- What visual metaphor best represents this task's current state?
+- What style would resonate (technical = infographic, creative = artistic, playful = cartoon)?
+- What specific details from the task should appear as visual elements?
+- What mood should the image convey?
+- What aspect ratio would work best for the intended use?''',
+  // Note: We use InputDataType.task only (not audioFiles) because we extract
+  // the transcript via {{audioTranscript}} placeholder, not by uploading the audio file.
+  // The prompt appears on audio entries via a special case in _isPromptActiveForEntity
+  // that allows imagePromptGeneration to show on audio entries linked to tasks.
+  requiredInputData: [InputDataType.task],
+  aiResponseType: AiResponseType.imagePromptGeneration,
+  useReasoning: true,
+  description:
+      'Generate a detailed image prompt from audio/text with full task context',
 );

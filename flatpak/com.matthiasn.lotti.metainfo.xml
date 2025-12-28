@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.777" date="2025-12-28">
+      <description>
+        <p>Image Prompt Generation: New AI response type that transforms audio recordings and task context into detailed prompts for AI image generators like Midjourney, DALL-E 3, and Stable Diffusion. Features visual metaphor guidelines, multiple style options, and a convenient copy-to-clipboard button.</p>
+      </description>
+    </release>
     <release version="0.9.776" date="2025-12-28">
       <description>
         <p>Task Summary Goal Section: AI task summaries now include a succinct Goal section after the TLDR. This 1-3 sentence description captures the desired outcome or essential purpose of the task, helping maintain focus on the "why" behind the work.</p>

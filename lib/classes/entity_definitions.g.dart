@@ -315,6 +315,7 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.audioTranscription: 'AudioTranscription',
   AiResponseType.checklistUpdates: 'ChecklistUpdates',
   AiResponseType.promptGeneration: 'PromptGeneration',
+  AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
 };
 
 LabelDefinition _$LabelDefinitionFromJson(Map<String, dynamic> json) =>

@@ -8,13 +8,15 @@ import '../../../test_helper.dart';
 void main() {
   group('AiResponseType', () {
     test('should have all expected enum values', () {
-      expect(AiResponseType.values.length, equals(5));
+      expect(AiResponseType.values.length, equals(6));
       expect(AiResponseType.values, contains(AiResponseType.taskSummary));
       expect(AiResponseType.values, contains(AiResponseType.imageAnalysis));
       expect(
           AiResponseType.values, contains(AiResponseType.audioTranscription));
       expect(AiResponseType.values, contains(AiResponseType.checklistUpdates));
       expect(AiResponseType.values, contains(AiResponseType.promptGeneration));
+      expect(AiResponseType.values,
+          contains(AiResponseType.imagePromptGeneration));
     });
 
     test('localizedName returns correct localized strings', () {
@@ -41,6 +43,10 @@ void main() {
         l10n.aiResponseTypePromptGeneration,
         equals('Generated Prompt'),
       );
+      expect(
+        l10n.aiResponseTypeImagePromptGeneration,
+        equals('Image Prompt'),
+      );
     });
 
     test('icon returns correct icons for each type', () {
@@ -52,6 +58,8 @@ void main() {
           equals(Icons.checklist_rtl_outlined));
       expect(AiResponseType.promptGeneration.icon,
           equals(Icons.auto_fix_high_outlined));
+      expect(AiResponseType.imagePromptGeneration.icon,
+          equals(Icons.palette_outlined));
     });
 
     test('const values are correctly defined', () {
@@ -60,6 +68,7 @@ void main() {
       expect(audioTranscriptionConst, equals('AudioTranscription'));
       expect(checklistUpdatesConst, equals('ChecklistUpdates'));
       expect(promptGenerationConst, equals('PromptGeneration'));
+      expect(imagePromptGenerationConst, equals('ImagePromptGeneration'));
     });
 
     testWidgets('localizedName returns correct strings with BuildContext',
@@ -98,6 +107,22 @@ void main() {
         AiResponseType.promptGeneration.localizedName(capturedContext),
         equals('Generated Prompt'),
       );
+      expect(
+        AiResponseType.imagePromptGeneration.localizedName(capturedContext),
+        equals('Image Prompt'),
+      );
+    });
+
+    test('isPromptGenerationType returns true for prompt generation types', () {
+      expect(AiResponseType.promptGeneration.isPromptGenerationType, true);
+      expect(AiResponseType.imagePromptGeneration.isPromptGenerationType, true);
+    });
+
+    test('isPromptGenerationType returns false for non-prompt types', () {
+      expect(AiResponseType.taskSummary.isPromptGenerationType, false);
+      expect(AiResponseType.imageAnalysis.isPromptGenerationType, false);
+      expect(AiResponseType.audioTranscription.isPromptGenerationType, false);
+      expect(AiResponseType.checklistUpdates.isPromptGenerationType, false);
     });
   });
 }

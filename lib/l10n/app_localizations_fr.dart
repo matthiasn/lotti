@@ -1664,6 +1664,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get promptGenerationFullPromptLabel => 'Full Prompt:';
 
   @override
+  String get aiResponseTypeImagePromptGeneration => 'Prompt Image';
+
+  @override
+  String get imagePromptGenerationCardTitle => 'Prompt Image IA';
+
+  @override
+  String get imagePromptGenerationCopyTooltip =>
+      'Copier le prompt d\'image dans le presse-papiers';
+
+  @override
+  String get imagePromptGenerationCopyButton => 'Copier Prompt';
+
+  @override
+  String get imagePromptGenerationCopiedSnackbar =>
+      'Prompt d\'image copié dans le presse-papiers';
+
+  @override
+  String get imagePromptGenerationExpandTooltip => 'Afficher le prompt complet';
+
+  @override
+  String get imagePromptGenerationFullPromptLabel => 'Prompt Image Complet:';
+
+  @override
   String nestedAiResponsesTitle(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

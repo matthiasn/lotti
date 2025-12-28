@@ -406,5 +406,13 @@
   "syncInviteErrorUserNotFound": "Usuario no encontrado. Por favor, verifique que el código escaneado sea correcto.",
   "syncInviteErrorForbidden": "Permiso denegado. Es posible que no tenga acceso para invitar a este usuario.",
   "syncInviteErrorRateLimited": "Demasiadas solicitudes. Por favor, espere un momento e inténtelo de nuevo.",
-  "syncInviteErrorUnknown": "No se pudo enviar la invitación. Por favor, inténtelo más tarde."
+  "syncInviteErrorUnknown": "No se pudo enviar la invitación. Por favor, inténtelo más tarde.",
+
+  "aiResponseTypeImagePromptGeneration": "Prompt de Imagen",
+  "imagePromptGenerationCardTitle": "Prompt de Imagen AI",
+  "imagePromptGenerationCopyTooltip": "Copiar prompt de imagen al portapapeles",
+  "imagePromptGenerationCopyButton": "Copiar Prompt",
+  "imagePromptGenerationCopiedSnackbar": "Prompt de imagen copiado al portapapeles",
+  "imagePromptGenerationExpandTooltip": "Mostrar prompt completo",
+  "imagePromptGenerationFullPromptLabel": "Prompt de Imagen Completo:"
 }

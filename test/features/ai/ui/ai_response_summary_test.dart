@@ -211,6 +211,42 @@ Help me implement OAuth 2.0 authentication in my Flutter app.
       expect(find.byType(ExpandableAiResponseSummary), findsNothing);
     });
 
+    testWidgets(
+        'uses GeneratedPromptCard for image prompt generation responses',
+        (tester) async {
+      const imagePromptResponse = '''
+## Summary
+A vibrant isometric illustration of a fortress being built.
+
+## Prompt
+Digital illustration of a medieval fortress under construction, 60% complete.
+Style: isometric digital art. --ar 16:9
+''';
+
+      final aiResponse = testAiResponseEntry.copyWith(
+        data: testAiResponseEntry.data.copyWith(
+          response: imagePromptResponse,
+          type: AiResponseType.imagePromptGeneration,
+        ),
+      );
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: AiResponseSummary(
+            aiResponse,
+            linkedFromId: 'test-id',
+            fadeOut: false,
+          ),
+        ),
+      );
+
+      // Should use GeneratedPromptCard for image prompt generation
+      expect(find.byType(GeneratedPromptCard), findsOneWidget);
+
+      // Should not use ExpandableAiResponseSummary
+      expect(find.byType(ExpandableAiResponseSummary), findsNothing);
+    });
+
     testWidgets('handles link tap in non-task summary responses',
         (tester) async {
       // Set up mock URL launcher and capture original for cleanup
