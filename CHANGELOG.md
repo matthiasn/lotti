@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.776] - 2025-12-28
+### Added
+- Task Summary Goal Section: AI task summaries now include a succinct Goal section after the TLDR
+  - Describes the desired outcome or essential purpose of the task (1-3 sentences)
+  - Helps maintain focus on the "why" behind the work
+  - Displayed in the expanded summary view alongside Achieved Results and Remaining Steps
+
 ## [0.9.775] - 2025-12-27
 ### Added
 - Single-User Multi-Device Sync: New room discovery feature for simplified sync setup

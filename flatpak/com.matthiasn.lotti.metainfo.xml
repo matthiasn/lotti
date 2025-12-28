@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.776" date="2025-12-28">
+      <description>
+        <p>Task Summary Goal Section: AI task summaries now include a succinct Goal section after the TLDR. This 1-3 sentence description captures the desired outcome or essential purpose of the task, helping maintain focus on the "why" behind the work.</p>
+      </description>
+    </release>
     <release version="0.9.775" date="2025-12-27">
       <description>
         <p>Single-User Multi-Device Sync: New room discovery feature allows Device B to find and join existing sync rooms without invitation. Includes confidence indicators, smart navigation, and bounded concurrency for faster discovery. Also fixes QR scanner restart after invite failures.</p>
