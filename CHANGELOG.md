@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.778] - 2025-12-28
+### Added
+- Twi Language Support: Added Twi (Akan) as a supported language for task summarization
+  - Twi is spoken by approximately 9 million people, primarily in Ghana
+  - Enables AI-generated task summaries in Twi
+  - Includes Ghana flag in language selection UI
+
 ## [0.9.777] - 2025-12-28
 ### Added
 - Image Prompt Generation: New AI response type for generating image prompts from task context

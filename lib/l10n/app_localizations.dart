@@ -4930,7 +4930,7 @@ abstract class AppLocalizations {
   /// **'Thai'**
   String get taskLanguageThai;
 
-  /// No description provided for @taskLanguageTwi.
+  /// The Twi language, spoken primarily in Ghana
   ///
   /// In en, this message translates to:
   /// **'Twi'**

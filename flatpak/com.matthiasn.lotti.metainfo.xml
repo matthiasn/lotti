@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.778" date="2025-12-28">
+      <description>
+        <p>Twi Language Support: Added Twi (Akan) as a supported language for task summarization. Twi is spoken by approximately 9 million people in Ghana. Enables AI-generated task summaries in Twi with Ghana flag in the language selection UI.</p>
+      </description>
+    </release>
     <release version="0.9.777" date="2025-12-28">
       <description>
         <p>Image Prompt Generation: New AI response type that transforms audio recordings and task context into detailed prompts for AI image generators like Midjourney, DALL-E 3, and Stable Diffusion. Features visual metaphor guidelines, multiple style options, and a convenient copy-to-clipboard button.</p>
