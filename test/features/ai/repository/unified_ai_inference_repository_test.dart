@@ -868,6 +868,94 @@ void main() {
         expect(result.first.id, 'active-prompt');
       });
 
+      test('filters out imagePromptGeneration for task entities', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final taskPrompt = _createPrompt(
+          id: 'task-prompt',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        final imagePromptGenPrompt = _createPrompt(
+          id: 'image-prompt-gen',
+          name: 'Image Prompt Generation',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.imagePromptGeneration,
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [taskPrompt, imagePromptGenPrompt]);
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        // imagePromptGeneration should be filtered out for task entities
+        // (it requires audio entry input for the transcript)
+        expect(result.length, 1);
+        expect(result.first.id, 'task-prompt');
+        expect(result.any((p) => p.id == 'image-prompt-gen'), false);
+      });
+
+      test('filters out promptGeneration for task entities', () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+        );
+
+        final taskPrompt = _createPrompt(
+          id: 'task-prompt',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        final promptGenPrompt = _createPrompt(
+          id: 'prompt-gen',
+          name: 'Coding Prompt Generation',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.promptGeneration,
+        );
+
+        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
+            .thenAnswer((_) async => [taskPrompt, promptGenPrompt]);
+
+        final result = await repository!.getActivePromptsForContext(
+          entity: taskEntity,
+        );
+
+        // promptGeneration should be filtered out for task entities
+        // (it requires audio entry input for the transcript)
+        expect(result.length, 1);
+        expect(result.first.id, 'task-prompt');
+        expect(result.any((p) => p.id == 'prompt-gen'), false);
+      });
+
       test('returns empty list when no prompts match', () async {
         final journalEntry = JournalEntry(
           meta: _createMetadata(),
