@@ -140,6 +140,7 @@ class _InfiniteJournalPageBodyState extends State<InfiniteJournalPageBody> {
                           itemBuilder: (context, item, index) {
                             return CardWrapperWidget(
                               item: item,
+                              showCreationDate: snapshot.showCreationDate,
                               key: ValueKey(item.meta.id),
                             );
                           },

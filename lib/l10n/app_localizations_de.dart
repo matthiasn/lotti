@@ -2687,6 +2687,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksFilterTitle => 'Aufgabenfilter';
 
   @override
+  String get tasksSortByLabel => 'Sortieren nach';
+
+  @override
+  String get tasksSortByPriority => 'Priorität';
+
+  @override
+  String get tasksSortByDate => 'Datum';
+
+  @override
+  String get tasksShowCreationDate => 'Erstellungsdatum auf Karten anzeigen';
+
+  @override
   String get timeByCategoryChartTitle => 'Zeit nach Kategorie';
 
   @override

@@ -608,6 +608,7 @@ class JournalDb extends _$JournalDb {
     List<String>? labelIds,
     List<String>? priorities,
     List<String>? ids,
+    bool sortByDate = false,
     int limit = 500,
     int offset = 0,
   }) async {
@@ -618,6 +619,7 @@ class JournalDb extends _$JournalDb {
       labelIds: labelIds,
       priorities: priorities,
       ids: ids,
+      sortByDate: sortByDate,
       limit: limit,
       offset: offset,
     ).get();
@@ -632,6 +634,7 @@ class JournalDb extends _$JournalDb {
     List<String>? labelIds,
     List<String>? priorities,
     List<String>? ids,
+    bool sortByDate = false,
     int limit = 500,
     int offset = 0,
   }) {
@@ -654,38 +657,73 @@ class JournalDb extends _$JournalDb {
     final dbPriorities = selectedPriorities.cast<String?>();
 
     if (ids != null) {
-      return filteredTasks2(
-        types,
-        ids,
-        starredStatuses,
-        dbTaskStatuses,
-        categoryIds,
-        filterByLabels,
-        labelFilterCount,
-        effectiveLabelIds,
-        includeUnlabeled,
-        filterByPriorities,
-        selectedPriorities.length,
-        dbPriorities,
-        limit,
-        offset,
-      );
+      // Use date-sorted or priority-sorted query based on sortByDate flag
+      return sortByDate
+          ? filteredTasksByDate2(
+              types,
+              ids,
+              starredStatuses,
+              dbTaskStatuses,
+              categoryIds,
+              filterByLabels,
+              labelFilterCount,
+              effectiveLabelIds,
+              includeUnlabeled,
+              filterByPriorities,
+              selectedPriorities.length,
+              dbPriorities,
+              limit,
+              offset,
+            )
+          : filteredTasks2(
+              types,
+              ids,
+              starredStatuses,
+              dbTaskStatuses,
+              categoryIds,
+              filterByLabels,
+              labelFilterCount,
+              effectiveLabelIds,
+              includeUnlabeled,
+              filterByPriorities,
+              selectedPriorities.length,
+              dbPriorities,
+              limit,
+              offset,
+            );
     } else {
-      return filteredTasks(
-        types,
-        starredStatuses,
-        dbTaskStatuses,
-        categoryIds,
-        filterByLabels,
-        labelFilterCount,
-        effectiveLabelIds,
-        includeUnlabeled,
-        filterByPriorities,
-        selectedPriorities.length,
-        dbPriorities,
-        limit,
-        offset,
-      );
+      // Use date-sorted or priority-sorted query based on sortByDate flag
+      return sortByDate
+          ? filteredTasksByDate(
+              types,
+              starredStatuses,
+              dbTaskStatuses,
+              categoryIds,
+              filterByLabels,
+              labelFilterCount,
+              effectiveLabelIds,
+              includeUnlabeled,
+              filterByPriorities,
+              selectedPriorities.length,
+              dbPriorities,
+              limit,
+              offset,
+            )
+          : filteredTasks(
+              types,
+              starredStatuses,
+              dbTaskStatuses,
+              categoryIds,
+              filterByLabels,
+              labelFilterCount,
+              effectiveLabelIds,
+              includeUnlabeled,
+              filterByPriorities,
+              selectedPriorities.length,
+              dbPriorities,
+              limit,
+              offset,
+            );
     }
   }
 

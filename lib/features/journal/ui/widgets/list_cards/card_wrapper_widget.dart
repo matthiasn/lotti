@@ -7,10 +7,12 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_imag
 class CardWrapperWidget extends StatelessWidget {
   const CardWrapperWidget({
     required this.item,
+    this.showCreationDate = false,
     super.key,
   });
 
   final JournalEntity item;
+  final bool showCreationDate;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +22,10 @@ class CardWrapperWidget extends StatelessWidget {
         journalImage: (JournalImage image) =>
             ModernJournalImageCard(item: image),
         task: (Task task) {
-          return AnimatedModernTaskCard(task: task);
+          return AnimatedModernTaskCard(
+            task: task,
+            showCreationDate: showCreationDate,
+          );
         },
         orElse: () => ModernJournalCard(item: item),
       ),

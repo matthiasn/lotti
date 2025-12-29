@@ -2679,6 +2679,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksFilterTitle => 'Filtru sarcini';
 
   @override
+  String get tasksSortByLabel => 'Sortare după';
+
+  @override
+  String get tasksSortByPriority => 'Prioritate';
+
+  @override
+  String get tasksSortByDate => 'Dată';
+
+  @override
+  String get tasksShowCreationDate => 'Afișează data creării pe carduri';
+
+  @override
   String get timeByCategoryChartTitle => 'Timp pe categorie';
 
   @override

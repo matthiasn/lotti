@@ -118,6 +118,7 @@ void main() {
             categoryIds: any(named: 'categoryIds'),
             labelIds: any(named: 'labelIds'),
             priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           )).thenAnswer((_) async => []);
@@ -587,6 +588,74 @@ void main() {
 
         await cubit.close();
         await newCubit.close();
+      });
+
+      test('verifies sortOption is included in encoded data', () {
+        // Test the data encoding logic directly
+        final filterData = jsonEncode(
+          TasksFilter(
+            selectedCategoryIds: {'cat1'},
+            sortOption: TaskSortOption.byDate,
+          ),
+        );
+
+        final decoded = TasksFilter.fromJson(
+            jsonDecode(filterData) as Map<String, dynamic>);
+
+        expect(decoded.sortOption, TaskSortOption.byDate);
+      });
+
+      test('verifies showCreationDate is included in encoded data', () {
+        // Test the data encoding logic directly
+        final filterData = jsonEncode(
+          TasksFilter(
+            selectedCategoryIds: {'cat1'},
+            showCreationDate: true,
+          ),
+        );
+
+        final decoded = TasksFilter.fromJson(
+            jsonDecode(filterData) as Map<String, dynamic>);
+
+        expect(decoded.showCreationDate, isTrue);
+      });
+
+      test('verifies sortOption defaults to byPriority when missing', () {
+        // Test migration from old data without sortOption
+        final legacyJson = <String, dynamic>{
+          'selectedCategoryIds': ['cat1'],
+          'selectedTaskStatuses': <String>[],
+          'selectedLabelIds': <String>[],
+          'selectedPriorities': <String>[],
+        };
+
+        final decoded = TasksFilter.fromJson(legacyJson);
+
+        expect(decoded.sortOption, TaskSortOption.byPriority);
+        expect(decoded.showCreationDate, isFalse);
+      });
+
+      test('sortOption and showCreationDate not loaded on journal tab',
+          () async {
+        // Store data with sortOption and showCreationDate
+        final filterData = TasksFilter(
+          selectedCategoryIds: {'cat1'},
+          sortOption: TaskSortOption.byDate,
+          showCreationDate: true,
+        );
+        storedSettings[JournalPageCubit.journalCategoryFiltersKey] =
+            jsonEncode(filterData);
+
+        // Create journal tab cubit (showTasks=false)
+        final cubit = JournalPageCubit(showTasks: false);
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+
+        // sortOption and showCreationDate should remain default on journal tab
+        expect(cubit.state.sortOption, TaskSortOption.byPriority);
+        expect(cubit.state.showCreationDate, isFalse);
+
+        await cubit.close();
+        await Future<void>.delayed(Duration.zero);
       });
     });
   });

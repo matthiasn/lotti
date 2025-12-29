@@ -420,5 +420,10 @@
   "entryLabelsEditTooltip": "Editar etiquetas",
   "entryLabelsNoLabels": "Sin etiquetas asignadas",
   "entryLabelsActionTitle": "Etiquetas",
-  "entryLabelsActionSubtitle": "Asignar etiquetas para organizar esta entrada"
+  "entryLabelsActionSubtitle": "Asignar etiquetas para organizar esta entrada",
+
+  "tasksSortByLabel": "Ordenar por",
+  "tasksSortByPriority": "Prioridad",
+  "tasksSortByDate": "Fecha",
+  "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas"
 }

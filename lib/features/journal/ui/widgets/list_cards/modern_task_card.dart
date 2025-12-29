@@ -17,10 +17,12 @@ import 'package:lotti/widgets/cards/index.dart';
 class ModernTaskCard extends StatelessWidget {
   const ModernTaskCard({
     required this.task,
+    this.showCreationDate = false,
     super.key,
   });
 
   final Task task;
+  final bool showCreationDate;
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +34,35 @@ class ModernTaskCard extends StatelessWidget {
         horizontal: 12,
         vertical: AppTheme.cardSpacing / 2,
       ),
-      child: ModernCardContent(
-        title: task.data.title,
-        maxTitleLines: 3,
-        subtitleWidget: _buildSubtitleWidget(context),
-        trailing: TimeRecordingIcon(
-          taskId: task.meta.id,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ModernCardContent(
+            title: task.data.title,
+            maxTitleLines: 3,
+            subtitleWidget: _buildSubtitleWidget(context),
+            trailing: TimeRecordingIcon(
+              taskId: task.meta.id,
+            ),
+          ),
+          if (showCreationDate) _buildCreationDateRow(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCreationDateRow(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Align(
+        alignment: Alignment.bottomRight,
+        child: Text(
+          DateFormat.yMMMd().format(task.meta.dateFrom),
+          style: context.textTheme.bodySmall?.copyWith(
+            fontSize: fontSizeSmall,
+            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
         ),
       ),
     );

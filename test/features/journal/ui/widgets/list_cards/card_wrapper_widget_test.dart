@@ -303,5 +303,42 @@ void main() {
       expect(find.byType(AnimatedModernTaskCard), findsNothing);
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
+
+    testWidgets('passes showCreationDate to AnimatedModernTaskCard',
+        (WidgetTester tester) async {
+      // Arrange - with showCreationDate: true
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: CardWrapperWidget(
+            item: testTask,
+            showCreationDate: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert - AnimatedModernTaskCard should receive showCreationDate: true
+      final animatedCard = tester.widget<AnimatedModernTaskCard>(
+        find.byType(AnimatedModernTaskCard),
+      );
+      expect(animatedCard.showCreationDate, isTrue);
+    });
+
+    testWidgets('showCreationDate defaults to false',
+        (WidgetTester tester) async {
+      // Arrange - without showCreationDate parameter
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: CardWrapperWidget(item: testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert - AnimatedModernTaskCard should have showCreationDate: false
+      final animatedCard = tester.widget<AnimatedModernTaskCard>(
+        find.byType(AnimatedModernTaskCard),
+      );
+      expect(animatedCard.showCreationDate, isFalse);
+    });
   });
 }

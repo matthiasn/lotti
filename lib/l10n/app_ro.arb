@@ -420,5 +420,10 @@
   "entryLabelsEditTooltip": "Editează etichetele",
   "entryLabelsNoLabels": "Nicio etichetă atribuită",
   "entryLabelsActionTitle": "Etichete",
-  "entryLabelsActionSubtitle": "Atribuie etichete pentru a organiza această intrare"
+  "entryLabelsActionSubtitle": "Atribuie etichete pentru a organiza această intrare",
+
+  "tasksSortByLabel": "Sortare după",
+  "tasksSortByPriority": "Prioritate",
+  "tasksSortByDate": "Dată",
+  "tasksShowCreationDate": "Afișează data creării pe carduri"
 }

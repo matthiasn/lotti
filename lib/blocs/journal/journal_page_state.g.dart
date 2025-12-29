@@ -23,6 +23,10 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
               ?.map((e) => e as String)
               .toSet() ??
           const <String>{},
+      sortOption:
+          $enumDecodeNullable(_$TaskSortOptionEnumMap, json['sortOption']) ??
+              TaskSortOption.byPriority,
+      showCreationDate: json['showCreationDate'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
@@ -31,4 +35,11 @@ Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
       'selectedTaskStatuses': instance.selectedTaskStatuses.toList(),
       'selectedLabelIds': instance.selectedLabelIds.toList(),
       'selectedPriorities': instance.selectedPriorities.toList(),
+      'sortOption': _$TaskSortOptionEnumMap[instance.sortOption]!,
+      'showCreationDate': instance.showCreationDate,
     };
+
+const _$TaskSortOptionEnumMap = {
+  TaskSortOption.byPriority: 'byPriority',
+  TaskSortOption.byDate: 'byDate',
+};

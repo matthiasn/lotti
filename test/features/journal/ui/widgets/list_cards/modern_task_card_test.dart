@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -358,5 +359,143 @@ void main() {
       matching: find.byType(Text),
     );
     expect(textFinder, findsNothing);
+  });
+
+  group('showCreationDate', () {
+    // Use DateFormat to generate locale-independent expected date strings
+    final taskDate = DateTime(2025, 11, 3, 12);
+    final expectedTaskDateString = DateFormat.yMMMd().format(taskDate);
+
+    testWidgets('does not show creation date when showCreationDate is false',
+        (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The formatted date should NOT be present
+      expect(find.text(expectedTaskDateString), findsNothing);
+    });
+
+    testWidgets('shows creation date when showCreationDate is true',
+        (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showCreationDate: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The formatted date should be present (from dateFrom in buildTask)
+      expect(find.text(expectedTaskDateString), findsOneWidget);
+    });
+
+    testWidgets('creation date is aligned to bottom right', (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showCreationDate: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the Align widget containing the date
+      final alignFinder = find.ancestor(
+        of: find.text(expectedTaskDateString),
+        matching: find.byType(Align),
+      );
+      expect(alignFinder, findsOneWidget);
+
+      final alignWidget = tester.widget<Align>(alignFinder);
+      expect(alignWidget.alignment, Alignment.bottomRight);
+    });
+
+    testWidgets('showCreationDate defaults to false', (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Default should be false, so no date displayed
+      expect(find.text(expectedTaskDateString), findsNothing);
+    });
+
+    testWidgets('creation date uses correct date format (yMMMd)',
+        (tester) async {
+      // Create a task with a specific date to verify format
+      final testDate = DateTime(2024, 12, 25, 10);
+      final expectedDateString = DateFormat.yMMMd().format(testDate);
+      final meta = Metadata(
+        id: 'task-date-format',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+      );
+      final data = TaskData(
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+        dateFrom: testDate,
+        dateTo: testDate,
+        statusHistory: const [],
+        title: 'Date Format Test',
+      );
+      final task = Task(meta: meta, data: data);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showCreationDate: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Format should match yMMMd format for the locale
+      expect(find.text(expectedDateString), findsOneWidget);
+    });
   });
 }

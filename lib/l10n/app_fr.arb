@@ -421,5 +421,10 @@
   "entryLabelsEditTooltip": "Modifier les étiquettes",
   "entryLabelsNoLabels": "Aucune étiquette assignée",
   "entryLabelsActionTitle": "Étiquettes",
-  "entryLabelsActionSubtitle": "Assigner des étiquettes pour organiser cette entrée"
+  "entryLabelsActionSubtitle": "Assigner des étiquettes pour organiser cette entrée",
+
+  "tasksSortByLabel": "Trier par",
+  "tasksSortByPriority": "Priorité",
+  "tasksSortByDate": "Date",
+  "tasksShowCreationDate": "Afficher la date de création sur les cartes"
 }

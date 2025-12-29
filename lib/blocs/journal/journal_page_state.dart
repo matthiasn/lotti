@@ -11,6 +11,15 @@ enum DisplayFilter {
   privateEntriesOnly,
 }
 
+/// Sort order options for task lists
+enum TaskSortOption {
+  /// Sort by priority first (P0 > P1 > P2 > P3), then by date within each priority
+  byPriority,
+
+  /// Sort by creation date (newest first)
+  byDate,
+}
+
 @freezed
 abstract class JournalPageState with _$JournalPageState {
   factory JournalPageState({
@@ -27,6 +36,8 @@ abstract class JournalPageState with _$JournalPageState {
     required Set<String?> selectedCategoryIds,
     required Set<String> selectedLabelIds,
     @Default(<String>{}) Set<String> selectedPriorities,
+    @Default(TaskSortOption.byPriority) TaskSortOption sortOption,
+    @Default(false) bool showCreationDate,
   }) = _JournalPageState;
 }
 
@@ -37,6 +48,8 @@ abstract class TasksFilter with _$TasksFilter {
     @Default(<String>{}) Set<String> selectedTaskStatuses,
     @Default(<String>{}) Set<String> selectedLabelIds,
     @Default(<String>{}) Set<String> selectedPriorities,
+    @Default(TaskSortOption.byPriority) TaskSortOption sortOption,
+    @Default(false) bool showCreationDate,
   }) = _TasksFilter;
 
   factory TasksFilter.fromJson(Map<String, dynamic> json) =>
