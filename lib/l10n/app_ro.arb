@@ -414,5 +414,11 @@
   "imagePromptGenerationCopyButton": "Copiază Prompt",
   "imagePromptGenerationCopiedSnackbar": "Promptul de imagine a fost copiat în clipboard",
   "imagePromptGenerationExpandTooltip": "Afișează promptul complet",
-  "imagePromptGenerationFullPromptLabel": "Prompt Imagine Complet:"
+  "imagePromptGenerationFullPromptLabel": "Prompt Imagine Complet:",
+
+  "entryLabelsHeaderTitle": "Etichete",
+  "entryLabelsEditTooltip": "Editează etichetele",
+  "entryLabelsNoLabels": "Nicio etichetă atribuită",
+  "entryLabelsActionTitle": "Etichete",
+  "entryLabelsActionSubtitle": "Atribuie etichete pentru a organiza această intrare"
 }

@@ -2765,17 +2765,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get entryLabelsHeaderTitle => 'Labels';
 
   @override
-  String get entryLabelsEditTooltip => 'Edit labels';
+  String get entryLabelsEditTooltip => 'Labels bearbeiten';
 
   @override
-  String get entryLabelsNoLabels => 'No labels assigned';
+  String get entryLabelsNoLabels => 'Keine Labels zugewiesen';
 
   @override
   String get entryLabelsActionTitle => 'Labels';
 
   @override
   String get entryLabelsActionSubtitle =>
-      'Assign labels to organize this entry';
+      'Labels zuweisen, um diesen Eintrag zu organisieren';
 
   @override
   String get tasksPriorityTitle => 'Priority:';

@@ -414,5 +414,11 @@
   "imagePromptGenerationCopyButton": "Copiar Prompt",
   "imagePromptGenerationCopiedSnackbar": "Prompt de imagen copiado al portapapeles",
   "imagePromptGenerationExpandTooltip": "Mostrar prompt completo",
-  "imagePromptGenerationFullPromptLabel": "Prompt de Imagen Completo:"
+  "imagePromptGenerationFullPromptLabel": "Prompt de Imagen Completo:",
+
+  "entryLabelsHeaderTitle": "Etiquetas",
+  "entryLabelsEditTooltip": "Editar etiquetas",
+  "entryLabelsNoLabels": "Sin etiquetas asignadas",
+  "entryLabelsActionTitle": "Etiquetas",
+  "entryLabelsActionSubtitle": "Asignar etiquetas para organizar esta entrada"
 }

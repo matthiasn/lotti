@@ -463,6 +463,7 @@ class ModernLabelsItem extends ConsumerWidget {
       onTap: () async {
         // Close the multi-page modal first
         Navigator.of(context).pop();
+        if (!context.mounted) return;
         // Open dedicated labels modal
         await _openLabelsModal(context, ref, entry);
       },

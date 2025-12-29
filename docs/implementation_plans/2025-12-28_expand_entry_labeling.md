@@ -39,7 +39,7 @@ covers only the UI integration required to assign and display labels on non-task
 
 ### Data Flow
 
-```
+```text
 Entry.meta.labelIds (List<String>)
     → EntitiesCacheService.getLabelById()
     → List<LabelDefinition>
@@ -106,7 +106,7 @@ Entry.meta.labelIds (List<String>)
 **Goal**: Add label selector to event form header, similar to task form layout.
 
 **Current Event Form Layout** (`lib/widgets/events/event_form.dart`):
-```
+```text
 Title TextField
   ↓
 [Category] [Status] [Stars] (Wrap)
@@ -115,7 +115,7 @@ EditorWidget
 ```
 
 **Updated Layout**:
-```
+```text
 Title TextField
   ↓
 [Category] [Status] [Stars] (Wrap)

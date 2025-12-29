@@ -20,16 +20,17 @@ import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
 class _TestEntryController extends EntryController {
-  _TestEntryController(this.entry);
+  _TestEntryController(this._entry);
 
-  final JournalEntity? entry;
+  final JournalEntity? _entry;
 
   @override
   Future<EntryState?> build({required String id}) async {
+    final entry = _entry;
     if (entry == null) return null;
     return EntryState.saved(
       entryId: id,
-      entry: entry!,
+      entry: entry,
       showMap: false,
       isFocused: false,
       shouldShowEditorToolBar: false,
@@ -222,7 +223,8 @@ void main() {
     testWidgets('no padding wrapper when bottomPadding is 0', (tester) async {
       final entry = textEntryWithLabels(['label-a']);
 
-      await tester.pumpWidget(buildWrapper(entry, bottomPadding: 0));
+      // Uses default bottomPadding: 0
+      await tester.pumpWidget(buildWrapper(entry));
       await tester.pumpAndSettle();
 
       // Should render Wrap directly without extra Padding
@@ -271,8 +273,9 @@ void main() {
         (tester) async {
       final entry = textEntryWithLabels(['label-a']);
 
+      // showEditButton defaults to false
       await tester.pumpWidget(
-        buildWrapper(entry, showHeader: true, showEditButton: false),
+        buildWrapper(entry, showHeader: true),
       );
       await tester.pumpAndSettle();
 
@@ -284,7 +287,8 @@ void main() {
     testWidgets('shows only chips without header', (tester) async {
       final entry = textEntryWithLabels(['label-a', 'label-b']);
 
-      await tester.pumpWidget(buildWrapper(entry, showHeader: false));
+      // showHeader defaults to false
+      await tester.pumpWidget(buildWrapper(entry));
       await tester.pumpAndSettle();
 
       expect(find.text('Labels'), findsNothing);
