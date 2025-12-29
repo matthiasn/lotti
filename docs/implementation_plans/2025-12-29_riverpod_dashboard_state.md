@@ -1,5 +1,14 @@
 # Refactor Dashboards from Bloc to Riverpod
 
+## Status: COMPLETED (2025-12-29)
+
+All tasks completed successfully:
+- Created Riverpod providers in `lib/features/dashboards/state/dashboards_page_controller.dart`
+- Updated all UI components to use Riverpod instead of Bloc
+- Deleted old Bloc files from `lib/blocs/dashboards/`
+- Added comprehensive unit tests (17 test cases covering all providers)
+- All 19 dashboard-related tests pass
+
 ## Overview
 Migrate the dashboards page state management from Bloc (`lib/blocs/dashboards/`) to Riverpod (`lib/features/dashboards/state/`), following established Riverpod patterns used throughout the codebase.
 
@@ -127,9 +136,10 @@ Changes:
 9. Delete old bloc files
 10. Final verification
 
-## Files to Create
+## Files Created
 - `lib/features/dashboards/state/dashboards_page_controller.dart`
 - `lib/features/dashboards/state/dashboards_page_controller.g.dart` (generated)
+- `test/features/dashboards/state/dashboards_page_controller_test.dart` (new tests)
 
 ## Files to Modify
 - `lib/features/dashboards/ui/pages/dashboards_list_page.dart` - Remove BlocProvider, convert to ConsumerStatefulWidget
