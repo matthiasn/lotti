@@ -405,10 +405,11 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     await persistTasksFilter();
   }
 
-  // Creation date display toggle
+  // Creation date display toggle (visual only, no query refresh needed)
   Future<void> setShowCreationDate({required bool show}) async {
     _showCreationDate = show;
-    await persistTasksFilter();
+    emitState();
+    await _persistTasksFilterWithoutRefresh();
   }
 
   /// Loads persisted filters with migration from legacy key
@@ -457,7 +458,12 @@ class JournalPageCubit extends Cubit<JournalPageState> {
 
   Future<void> persistTasksFilter() async {
     await refreshQuery();
+    await _persistTasksFilterWithoutRefresh();
+  }
 
+  /// Persists filter state without triggering a query refresh.
+  /// Use for visual-only settings like showCreationDate.
+  Future<void> _persistTasksFilterWithoutRefresh() async {
     final settingsDb = getIt<SettingsDb>();
 
     final filter = TasksFilter(

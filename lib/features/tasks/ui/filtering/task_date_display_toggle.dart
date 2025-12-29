@@ -15,22 +15,17 @@ class TaskDateDisplayToggle extends StatelessWidget {
       builder: (context, snapshot) {
         final cubit = context.read<JournalPageCubit>();
 
-        return Row(
-          children: [
-            Expanded(
-              child: Text(
-                context.messages.tasksShowCreationDate,
-                style: context.textTheme.bodySmall,
-              ),
-            ),
-            Switch(
-              value: snapshot.showCreationDate,
-              onChanged: (value) {
-                cubit.setShowCreationDate(show: value);
-                HapticFeedback.selectionClick();
-              },
-            ),
-          ],
+        return SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            context.messages.tasksShowCreationDate,
+            style: context.textTheme.bodySmall,
+          ),
+          value: snapshot.showCreationDate,
+          onChanged: (value) {
+            cubit.setShowCreationDate(show: value);
+            HapticFeedback.selectionClick();
+          },
         );
       },
     );

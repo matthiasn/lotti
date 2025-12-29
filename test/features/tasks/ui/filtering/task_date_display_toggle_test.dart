@@ -66,7 +66,8 @@ void main() {
   }
 
   group('TaskDateDisplayToggle', () {
-    testWidgets('renders correctly with Switch and label', (tester) async {
+    testWidgets('renders correctly with SwitchListTile and label',
+        (tester) async {
       when(() => mockCubit.state).thenReturn(createState());
 
       await tester.pumpWidget(buildSubject());
@@ -75,8 +76,8 @@ void main() {
       // Verify the widget is rendered
       expect(find.byType(TaskDateDisplayToggle), findsOneWidget);
 
-      // Verify Switch is present
-      expect(find.byType(Switch), findsOneWidget);
+      // Verify SwitchListTile is present (which contains Switch internally)
+      expect(find.byType(SwitchListTile), findsOneWidget);
 
       // Verify label text is present
       expect(find.text('Show creation date on cards'), findsOneWidget);
@@ -138,23 +139,26 @@ void main() {
       verify(() => mockCubit.setShowCreationDate(show: false)).called(1);
     });
 
-    testWidgets('label and switch are in a Row', (tester) async {
+    testWidgets('SwitchListTile contains label and switch', (tester) async {
       when(() => mockCubit.state).thenReturn(createState());
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Verify Row contains both label and switch
-      final rowFinder = find.byType(Row);
-      expect(rowFinder, findsOneWidget);
+      // Verify SwitchListTile contains both label and switch
+      final listTileFinder = find.byType(SwitchListTile);
+      expect(listTileFinder, findsOneWidget);
 
+      // Verify Switch is within SwitchListTile
       expect(
-        find.descendant(of: rowFinder, matching: find.byType(Switch)),
+        find.descendant(of: listTileFinder, matching: find.byType(Switch)),
         findsOneWidget,
       );
+
+      // Verify label text is within SwitchListTile
       expect(
         find.descendant(
-          of: rowFinder,
+          of: listTileFinder,
           matching: find.text('Show creation date on cards'),
         ),
         findsOneWidget,

@@ -48,7 +48,7 @@ final dashboardCategoriesProvider =
 typedef DashboardCategoriesRef
     = AutoDisposeStreamProviderRef<List<CategoryDefinition>>;
 String _$filteredSortedDashboardsHash() =>
-    r'ed3e0b4a140ae72eae1d69d26ce7988687cf9e63';
+    r'9d9e22a73aa7d46d317209ea19e9d381a060ac01';
 
 /// Computed provider for dashboards filtered by selected categories and sorted
 /// by name.

@@ -5873,7 +5873,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC LIMIT ?6 OFFSET ?7',
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
         variables: [
           Variable<bool>(filterByLabels),
           Variable<int>(labelFilterCount),
@@ -5929,7 +5929,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC LIMIT ?6 OFFSET ?7',
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
         variables: [
           Variable<bool>(filterByLabels),
           Variable<int>(labelFilterCount),

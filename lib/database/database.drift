@@ -436,7 +436,7 @@ SELECT * FROM journal
       ELSE 1
     END
   ) = 1
-  ORDER BY date_from DESC
+  ORDER BY date_from DESC, id ASC
   LIMIT :limit
   OFFSET :offset;
 
@@ -474,7 +474,7 @@ SELECT * FROM journal
       ELSE 1
     END
   ) = 1
-  ORDER BY date_from DESC
+  ORDER BY date_from DESC, id ASC
   LIMIT :limit
   OFFSET :offset;
 

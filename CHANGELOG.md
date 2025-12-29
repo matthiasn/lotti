@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.781] - 2025-12-29
+### Added
+- Task Sorting Options: Tasks can now be sorted by date (newest first) or by priority
+  - New segmented button in task filter modal to toggle between sort modes
+  - Priority sort (default): Orders by priority rank (P0→P1→P2→P3), then by date within same priority
+  - Date sort: Orders by creation date descending, regardless of priority
+  - Sort preference persists across sessions
+- Creation Date Display: Optional creation date shown on task cards
+  - Toggle in filter modal to show/hide creation date on task list cards
+  - Date displayed in bottom-right corner with subtle styling (small font, low contrast)
+  - Uses locale-aware date format (e.g., "Dec 29, 2024")
+  - Preference persists across sessions
+
+### Changed
+- Improved accessibility for task filter toggle (now uses SwitchListTile)
+- Optimized date display toggle to not trigger unnecessary query refreshes
+
 ## [0.9.780] - 2025-12-29
 ### Changed
 - Migrated dashboard list state management from Bloc to Riverpod
