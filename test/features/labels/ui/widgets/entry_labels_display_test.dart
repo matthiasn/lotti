@@ -296,34 +296,6 @@ void main() {
     });
   });
 
-  group('EntryLabelsDisplayCompact', () {
-    testWidgets('renders EntryLabelsDisplay without header or edit button',
-        (tester) async {
-      final entry = textEntryWithLabels(['label-a']);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            entryControllerProvider(id: 'entry-123').overrideWith(
-              () => _TestEntryController(entry),
-            ),
-            labelsStreamProvider.overrideWith(
-              (ref) => Stream<List<LabelDefinition>>.value([labelA]),
-            ),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const EntryLabelsDisplayCompact(entryId: 'entry-123'),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(LabelChip), findsOneWidget);
-      expect(find.text('Labels'), findsNothing);
-      expect(find.byIcon(Icons.edit_outlined), findsNothing);
-    });
-  });
-
   group('EntryLabelsDisplay handles missing labels', () {
     testWidgets('ignores label IDs not found in cache', (tester) async {
       // label-missing is not registered in cache

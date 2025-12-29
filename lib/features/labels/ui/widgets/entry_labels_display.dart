@@ -5,12 +5,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
-import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
+import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/search/index.dart';
 
 /// Displays assigned labels for any journal entry type.
 ///
@@ -99,7 +97,6 @@ class EntryLabelsDisplay extends ConsumerWidget {
                 tooltip: context.messages.entryLabelsEditTooltip,
                 onPressed: () => _openSelector(
                   context,
-                  ref,
                   entry.meta.labelIds ?? [],
                   entry.meta.categoryId,
                 ),
@@ -147,133 +144,14 @@ class EntryLabelsDisplay extends ConsumerWidget {
 
   Future<void> _openSelector(
     BuildContext context,
-    WidgetRef ref,
     List<String> assignedIds,
     String? categoryId,
   ) async {
-    final applyController = ValueNotifier<Future<bool> Function()?>(null);
-    final searchNotifier = ValueNotifier<String>('');
-    final searchController = TextEditingController();
-
-    try {
-      await ModalUtils.showSinglePageModal<List<String>>(
-        context: context,
-        titleWidget: Padding(
-          padding:
-              const EdgeInsets.only(top: 8, left: 20, right: 20, bottom: 8),
-          child: LottiSearchBar(
-            hintText: context.messages.tasksLabelsSheetSearchHint,
-            controller: searchController,
-            useGradientInDark: false,
-            onChanged: (value) => searchNotifier.value = value,
-            onClear: () {
-              searchNotifier.value = '';
-              searchController.clear();
-            },
-            textCapitalization: TextCapitalization.words,
-          ),
-        ),
-        navBarHeight: 80,
-        stickyActionBar: _buildStickyActionBar(context, applyController),
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
-        builder: (ctx) {
-          final minHeight = MediaQuery.of(ctx).size.height * 0.5;
-          return ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minHeight),
-            child: LabelSelectionModalContent(
-              entryId: entryId,
-              initialLabelIds: assignedIds,
-              categoryId: categoryId,
-              applyController: applyController,
-              searchQuery: searchNotifier,
-            ),
-          );
-        },
-      );
-    } finally {
-      applyController.dispose();
-      searchNotifier.dispose();
-      searchController.dispose();
-    }
-  }
-
-  Widget _buildStickyActionBar(
-    BuildContext context,
-    ValueNotifier<Future<bool> Function()?> applyController,
-  ) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
-          border: Border(
-            top: BorderSide(
-              color: colorScheme.outline.withValues(alpha: 0.12),
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.messages.cancelButton),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ValueListenableBuilder<Future<bool> Function()?>(
-                valueListenable: applyController,
-                builder: (context, applyFn, _) {
-                  return FilledButton(
-                    onPressed: applyFn == null
-                        ? null
-                        : () async {
-                            final ok = await applyFn();
-                            if (!context.mounted) return;
-                            if (ok) {
-                              Navigator.of(context).pop();
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    context.messages.tasksLabelsUpdateFailed,
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                    child: Text(context.messages.tasksLabelsSheetApply),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Compact version of [EntryLabelsDisplay] for use in list cards.
-///
-/// Only displays labels, no header or edit button.
-class EntryLabelsDisplayCompact extends ConsumerWidget {
-  const EntryLabelsDisplayCompact({
-    required this.entryId,
-    super.key,
-  });
-
-  final String entryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return EntryLabelsDisplay(
+    await LabelSelectionModalUtils.openLabelSelector(
+      context: context,
       entryId: entryId,
+      initialLabelIds: assignedIds,
+      categoryId: categoryId,
     );
   }
 }

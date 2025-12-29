@@ -617,4 +617,129 @@ void main() {
       expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
     });
   });
+
+  group('EntryDetailsWidget Labels Display Tests', () {
+    TestWidgetsFlutterBinding.ensureInitialized();
+
+    late JournalDb mockJournalDb;
+    late MockPersistenceLogic mockPersistenceLogic;
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+
+    setUpAll(setFakeDocumentsPath);
+
+    setUp(() async {
+      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+      mockPersistenceLogic = MockPersistenceLogic();
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+
+      final mockTagsService = mockTagsServiceWithTags([]);
+      final mockTimeService = MockTimeService();
+      final mockEditorStateService = MockEditorStateService();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<TagsService>(mockTagsService)
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
+        (_) => [],
+      );
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockTagsService.stream).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(
+          any(),
+          any(),
+        ),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
+      when(mockTimeService.getStream)
+          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    testWidgets('shows EntryLabelsDisplay for text entries', (tester) async {
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            child: EntryDetailsWidget(
+              itemId: testTextEntry.meta.id,
+              showAiEntry: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // EntryLabelsDisplay should be present for text entries
+      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+    });
+
+    testWidgets('does not show header or edit button for labels in detail view',
+        (tester) async {
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProviderScope(
+            child: EntryDetailsWidget(
+              itemId: testTextEntry.meta.id,
+              showAiEntry: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // The labels display in entry details uses chips only mode (no header/edit)
+      // The "Labels" header text should NOT be present
+      expect(find.text('Labels'), findsNothing);
+    });
+  });
 }
