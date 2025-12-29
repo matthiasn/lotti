@@ -25,8 +25,30 @@ final dashboardsProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DashboardsRef = AutoDisposeStreamProviderRef<List<DashboardDefinition>>;
+String _$dashboardCategoriesHash() =>
+    r'f031890b75aa1d2cd5dab8730e8b57059ffde6b4';
+
+/// Stream provider for categories from database.
+///
+/// Copied from [dashboardCategories].
+@ProviderFor(dashboardCategories)
+final dashboardCategoriesProvider =
+    AutoDisposeStreamProvider<List<CategoryDefinition>>.internal(
+  dashboardCategories,
+  name: r'dashboardCategoriesProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$dashboardCategoriesHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef DashboardCategoriesRef
+    = AutoDisposeStreamProviderRef<List<CategoryDefinition>>;
 String _$filteredSortedDashboardsHash() =>
-    r'4312e77a2883fed20ca74eeaa395e418d9336cae';
+    r'ed3e0b4a140ae72eae1d69d26ce7988687cf9e63';
 
 /// Computed provider for dashboards filtered by selected categories and sorted
 /// by name.

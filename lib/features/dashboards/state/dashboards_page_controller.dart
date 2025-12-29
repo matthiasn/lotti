@@ -35,6 +35,13 @@ class SelectedCategoryIds extends _$SelectedCategoryIds {
   }
 }
 
+/// Stream provider for categories from database.
+@riverpod
+Stream<List<CategoryDefinition>> dashboardCategories(Ref ref) {
+  final db = getIt<JournalDb>();
+  return db.watchCategories();
+}
+
 /// Computed provider for dashboards filtered by selected categories and sorted
 /// by name.
 @riverpod
@@ -45,9 +52,7 @@ List<DashboardDefinition> filteredSortedDashboards(Ref ref) {
   return dashboardsAsync.maybeWhen(
     data: (dashboards) {
       final filtered = selectedCategories.isNotEmpty
-          ? dashboards
-              .where((d) => selectedCategories.contains(d.categoryId))
-              .toList()
+          ? dashboards.where((d) => selectedCategories.contains(d.categoryId))
           : dashboards;
       return filtered.sortedBy((item) => item.name.toLowerCase());
     },

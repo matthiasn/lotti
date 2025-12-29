@@ -23,6 +23,15 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
   }
 
   @override
+  void dispose() {
+    final listener = getIt<UserActivityService>().updateActivity;
+    _scrollController
+      ..removeListener(listener)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
