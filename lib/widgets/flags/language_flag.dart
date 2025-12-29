@@ -11,6 +11,7 @@ Widget buildLanguageFlag({
   const nigerianLanguageCodes = {'ig', 'pcm', 'yo'};
   const languageCountryOverrides = {
     'zh': 'cn',
+    'tw': 'gh',
   };
 
   if (nigerianLanguageCodes.contains(languageCode)) {
