@@ -1,6 +1,7 @@
 // ignore_for_file: cascade_invocations
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:fake_async/fake_async.dart';
@@ -120,6 +121,7 @@ void main() {
             categoryIds: any(named: 'categoryIds'),
             labelIds: any(named: 'labelIds'),
             priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           )).thenAnswer((_) async => []);
@@ -559,6 +561,124 @@ void main() {
       },
     );
 
+    blocTest<_TestJournalPageCubit, JournalPageState>(
+      'setSortOption updates sortOption in state',
+      setUp: () {
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      },
+      build: () => _TestJournalPageCubit(showTasks: true),
+      act: (cubit) => cubit.setSortOption(TaskSortOption.byDate),
+      wait: defaultWait,
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.sortOption, equals(TaskSortOption.byDate));
+      },
+    );
+
+    blocTest<_TestJournalPageCubit, JournalPageState>(
+      'setSortOption can toggle back to byPriority',
+      setUp: () {
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      },
+      build: () => _TestJournalPageCubit(showTasks: true),
+      act: (cubit) async {
+        await cubit.setSortOption(TaskSortOption.byDate);
+        await cubit.setSortOption(TaskSortOption.byPriority);
+      },
+      wait: defaultWait,
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.sortOption, equals(TaskSortOption.byPriority));
+      },
+    );
+
+    blocTest<_TestJournalPageCubit, JournalPageState>(
+      'setShowCreationDate updates showCreationDate in state',
+      setUp: () {
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      },
+      build: () => _TestJournalPageCubit(showTasks: true),
+      act: (cubit) => cubit.setShowCreationDate(show: true),
+      wait: defaultWait,
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.showCreationDate, isTrue);
+      },
+    );
+
+    blocTest<_TestJournalPageCubit, JournalPageState>(
+      'setShowCreationDate can toggle back to false',
+      setUp: () {
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      },
+      build: () => _TestJournalPageCubit(showTasks: true),
+      act: (cubit) async {
+        await cubit.setShowCreationDate(show: true);
+        await cubit.setShowCreationDate(show: false);
+      },
+      wait: defaultWait,
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.showCreationDate, isFalse);
+      },
+    );
+
+    blocTest<_TestJournalPageCubit, JournalPageState>(
+      'sortOption and showCreationDate persist across other state changes',
+      setUp: () {
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+      },
+      build: () => _TestJournalPageCubit(showTasks: true),
+      act: (cubit) async {
+        await cubit.setSortOption(TaskSortOption.byDate);
+        await cubit.setShowCreationDate(show: true);
+        // Trigger unrelated state update
+        cubit.setFilters({DisplayFilter.starredEntriesOnly});
+      },
+      wait: defaultWait,
+      skip: 1,
+      verify: (cubit) {
+        expect(cubit.state.sortOption, equals(TaskSortOption.byDate));
+        expect(cubit.state.showCreationDate, isTrue);
+        expect(cubit.state.filters, contains(DisplayFilter.starredEntriesOnly));
+      },
+    );
+
+    test('loads persisted sortOption and showCreationDate on initialization',
+        () async {
+      // Override SettingsDb to return persisted filter with sortOption and
+      // showCreationDate
+      final mockSettingsDb = getIt<SettingsDb>();
+      final persistedFilter = jsonEncode({
+        'selectedCategoryIds': <String>[],
+        'selectedTaskStatuses': ['OPEN'],
+        'selectedLabelIds': <String>[],
+        'selectedPriorities': <String>[],
+        'sortOption': 'byDate',
+        'showCreationDate': true,
+      });
+      // Match the task filter key specifically (contains 'TASK_FILTERS')
+      when(() => mockSettingsDb.itemByKey(any(
+            that: contains('TASK_FILTERS'),
+          ))).thenAnswer((_) async => persistedFilter);
+      // Return null for entry types key (expects a List, not object)
+      when(() => mockSettingsDb.itemByKey('SELECTED_ENTRY_TYPES'))
+          .thenAnswer((_) async => null);
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+
+      final cubit = JournalPageCubit(showTasks: true);
+
+      // Wait for initialization and loading to complete
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Verify the persisted values were loaded
+      expect(cubit.state.sortOption, equals(TaskSortOption.byDate));
+      expect(cubit.state.showCreationDate, isTrue);
+
+      await cubit.close();
+    });
+
     test('updateVisibility refreshes when becoming visible', () async {
       // Track refresh calls
       var refreshCallCount = 0;
@@ -789,6 +909,7 @@ class MockVisibilityInfo extends VisibilityInfo {
             categoryIds: any(named: 'categoryIds'),
             labelIds: any(named: 'labelIds'),
             priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           )).thenAnswer((_) async => []);

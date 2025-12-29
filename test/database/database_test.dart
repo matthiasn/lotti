@@ -932,6 +932,95 @@ void main() {
           ['newest-high', 'middle-urgent', 'oldest-low'],
         );
       });
+
+      test('getTasks with sortByDate and ids uses filteredTasksByDate2',
+          () async {
+        final base = DateTime(2024, 7, 5, 12);
+        // Create tasks with different priorities and dates
+        final p3oldest = JournalEntity.task(
+          meta: Metadata(
+            id: 'oldest-low',
+            createdAt: base,
+            updatedAt: base,
+            dateFrom: base,
+            dateTo: base,
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 's3',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            dateFrom: base,
+            dateTo: base,
+            title: 'P3 oldest',
+            priority: TaskPriority.p3Low,
+          ),
+          entryText: const EntryText(plainText: 'oldest low'),
+        );
+        final p0middle = JournalEntity.task(
+          meta: Metadata(
+            id: 'middle-urgent',
+            createdAt: base.add(const Duration(minutes: 1)),
+            updatedAt: base.add(const Duration(minutes: 1)),
+            dateFrom: base.add(const Duration(minutes: 1)),
+            dateTo: base.add(const Duration(minutes: 1)),
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 's0',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            dateFrom: base.add(const Duration(minutes: 1)),
+            dateTo: base.add(const Duration(minutes: 1)),
+            title: 'P0 middle',
+            priority: TaskPriority.p0Urgent,
+          ),
+          entryText: const EntryText(plainText: 'middle urgent'),
+        );
+        final p1newest = JournalEntity.task(
+          meta: Metadata(
+            id: 'newest-high',
+            createdAt: base.add(const Duration(minutes: 2)),
+            updatedAt: base.add(const Duration(minutes: 2)),
+            dateFrom: base.add(const Duration(minutes: 2)),
+            dateTo: base.add(const Duration(minutes: 2)),
+          ),
+          data: testTask.data.copyWith(
+            status: TaskStatus.open(
+              id: 's1',
+              createdAt: base.add(const Duration(minutes: 2)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            dateFrom: base.add(const Duration(minutes: 2)),
+            dateTo: base.add(const Duration(minutes: 2)),
+            title: 'P1 newest',
+            priority: TaskPriority.p1High,
+          ),
+          entryText: const EntryText(plainText: 'newest high'),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(p3oldest));
+        await db!.upsertJournalDbEntity(toDbEntity(p0middle));
+        await db!.upsertJournalDbEntity(toDbEntity(p1newest));
+
+        // Query with ids filter + sortByDate to exercise filteredTasksByDate2
+        final results = await db!.getTasks(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const [''],
+          ids: ['oldest-low', 'newest-high', 'middle-urgent'],
+          sortByDate: true,
+        );
+
+        // Order: newest -> middle -> oldest (date_from DESC, ignoring priority)
+        // With ids filter, should use filteredTasksByDate2 query
+        expect(
+          results.map((e) => e.meta.id).toList(),
+          ['newest-high', 'middle-urgent', 'oldest-low'],
+        );
+      });
     });
 
     group('Linked entities -', () {
