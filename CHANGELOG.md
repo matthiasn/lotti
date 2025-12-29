@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.779] - 2025-12-29
+### Added
+- Labels for All Entry Types: Labels can now be assigned to any journal entry, not just tasks
+  - Labels display on journal list cards (alphabetically sorted, privacy-filtered)
+  - Labels display in entry detail views with edit capability
+  - New "Labels" action in the triple-dot menu for quick label assignment
+  - Unified label selection modal with search, create, and apply functionality
+  - Consistent UX across all entry types (text, audio, image, event entries)
+
+### Changed
+- Refactored label selection modal code into shared utility for better maintainability
+  - Extracted `LabelSelectionModalUtils` for centralized modal handling
+  - Fixed memory leak in label selector (proper disposal of controllers)
+  - Apply button now correctly disables when no changes are pending
+
 ## [0.9.778] - 2025-12-28
 ### Added
 - Twi Language Support: Added Twi (Akan) as a supported language for task summarization

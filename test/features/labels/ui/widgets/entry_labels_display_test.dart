@@ -309,4 +309,84 @@ void main() {
       expect(find.text('Alpha'), findsOneWidget);
     });
   });
+
+  group('EntryLabelsDisplay edit button interaction', () {
+    testWidgets('edit button is tappable with correct tooltip', (tester) async {
+      final entry = textEntryWithLabels(['label-a'], categoryId: 'cat-1');
+
+      await tester.pumpWidget(
+        buildWrapper(entry, showHeader: true, showEditButton: true),
+      );
+      await tester.pumpAndSettle();
+
+      // Find edit button
+      final editButton = find.byIcon(Icons.edit_outlined);
+      expect(editButton, findsOneWidget);
+
+      // Verify tooltip
+      expect(find.byTooltip('Edit labels'), findsOneWidget);
+    });
+
+    testWidgets('edit button has correct icon styling', (tester) async {
+      final entry = textEntryWithLabels(['label-a']);
+
+      await tester.pumpWidget(
+        buildWrapper(entry, showHeader: true, showEditButton: true),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the Icon widget and verify its properties
+      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.edit_outlined));
+      expect(iconWidget.size, equals(18));
+    });
+
+    testWidgets('edit button is shown even when labels are empty',
+        (tester) async {
+      final entry = textEntryWithLabels(const []);
+
+      await tester.pumpWidget(
+        buildWrapper(entry, showHeader: true, showEditButton: true),
+      );
+      await tester.pumpAndSettle();
+
+      // Edit button should still be shown so users can add labels
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+    });
+  });
+
+  group('EntryLabelsDisplay with header empty state', () {
+    testWidgets('shows empty message with edit button when no labels',
+        (tester) async {
+      final entry = textEntryWithLabels(const []);
+
+      await tester.pumpWidget(
+        buildWrapper(entry, showHeader: true, showEditButton: true),
+      );
+      await tester.pumpAndSettle();
+
+      // Header is shown
+      expect(find.text('Labels'), findsOneWidget);
+
+      // Edit button is shown (so users can add labels)
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+
+      // "No labels assigned" message is shown
+      expect(find.text('No labels assigned'), findsOneWidget);
+
+      // No label chips
+      expect(find.byType(LabelChip), findsNothing);
+    });
+
+    testWidgets('message has dimmed text style', (tester) async {
+      final entry = textEntryWithLabels(const []);
+
+      await tester.pumpWidget(
+        buildWrapper(entry, showHeader: true, showEditButton: true),
+      );
+      await tester.pumpAndSettle();
+
+      final textWidget = tester.widget<Text>(find.text('No labels assigned'));
+      expect(textWidget.style?.color, isNotNull);
+    });
+  });
 }
