@@ -14,9 +14,11 @@ import 'package:lotti/utils/color.dart';
 /// shared Wolt modal (see ModalUtils) to match the Category selection
 /// look and feel. It exposes an `apply()` method to persist selection
 /// via an external controller.
+///
+/// Works with any journal entry type (tasks, events, text entries, etc.).
 class LabelSelectionModalContent extends ConsumerStatefulWidget {
   const LabelSelectionModalContent({
-    required this.taskId,
+    required this.entryId,
     required this.initialLabelIds,
     required this.applyController,
     required this.searchQuery,
@@ -24,7 +26,7 @@ class LabelSelectionModalContent extends ConsumerStatefulWidget {
     super.key,
   });
 
-  final String taskId;
+  final String entryId;
   final List<String> initialLabelIds;
   final String? categoryId;
   final ValueNotifier<Future<bool> Function()?> applyController;
@@ -51,7 +53,7 @@ class _LabelSelectionModalContentState
     final repository = ref.read(labelsRepositoryProvider);
     final ids = _selectedLabelIds.toList();
     final result = await repository.setLabels(
-      journalEntityId: widget.taskId,
+      journalEntityId: widget.entryId,
       labelIds: ids,
     );
     return result ?? false;

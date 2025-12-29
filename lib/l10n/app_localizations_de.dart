@@ -2762,6 +2762,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskLabelUnassignedLabel => 'unassigned';
 
   @override
+  String get entryLabelsHeaderTitle => 'Labels';
+
+  @override
+  String get entryLabelsEditTooltip => 'Labels bearbeiten';
+
+  @override
+  String get entryLabelsNoLabels => 'Keine Labels zugewiesen';
+
+  @override
+  String get entryLabelsActionTitle => 'Labels';
+
+  @override
+  String get entryLabelsActionSubtitle =>
+      'Labels zuweisen, um diesen Eintrag zu organisieren';
+
+  @override
   String get tasksPriorityTitle => 'Priority:';
 
   @override

@@ -2764,6 +2764,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskLabelUnassignedLabel => 'unassigned';
 
   @override
+  String get entryLabelsHeaderTitle => 'Étiquettes';
+
+  @override
+  String get entryLabelsEditTooltip => 'Modifier les étiquettes';
+
+  @override
+  String get entryLabelsNoLabels => 'Aucune étiquette assignée';
+
+  @override
+  String get entryLabelsActionTitle => 'Étiquettes';
+
+  @override
+  String get entryLabelsActionSubtitle =>
+      'Assigner des étiquettes pour organiser cette entrée';
+
+  @override
   String get tasksPriorityTitle => 'Priority:';
 
   @override

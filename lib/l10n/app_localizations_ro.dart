@@ -2754,6 +2754,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskLabelUnassignedLabel => 'unassigned';
 
   @override
+  String get entryLabelsHeaderTitle => 'Etichete';
+
+  @override
+  String get entryLabelsEditTooltip => 'Editează etichetele';
+
+  @override
+  String get entryLabelsNoLabels => 'Nicio etichetă atribuită';
+
+  @override
+  String get entryLabelsActionTitle => 'Etichete';
+
+  @override
+  String get entryLabelsActionSubtitle =>
+      'Atribuie etichete pentru a organiza această intrare';
+
+  @override
   String get tasksPriorityTitle => 'Priority:';
 
   @override

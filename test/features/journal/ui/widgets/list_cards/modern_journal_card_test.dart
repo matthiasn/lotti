@@ -23,6 +23,8 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/get_it.dart';
@@ -821,6 +823,282 @@ void main() {
         expect(find.byIcon(MdiIcons.flag), findsOneWidget);
         expect(find.byIcon(MdiIcons.security), findsOneWidget);
         expect(find.byIcon(MdiIcons.star), findsOneWidget);
+      });
+    });
+
+    group('Labels display', () {
+      // Override for labelsStreamProvider to avoid real database access
+      final labelsOverride = labelsStreamProvider
+          .overrideWith((ref) => Stream.value(<LabelDefinition>[]));
+
+      testWidgets('renders labels when labelIds are present', (tester) async {
+        // Arrange labels in the cache
+        final labelA = LabelDefinition(
+          id: 'label-a',
+          name: 'Bug',
+          color: '#FF0000',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+        );
+        final labelB = LabelDefinition(
+          id: 'label-b',
+          name: 'Feature',
+          color: '#00FF00',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+        );
+
+        when(() => mockEntitiesCacheService.getLabelById('label-a'))
+            .thenReturn(labelA);
+        when(() => mockEntitiesCacheService.getLabelById('label-b'))
+            .thenReturn(labelB);
+        when(() => mockEntitiesCacheService.showPrivateEntries)
+            .thenReturn(false);
+
+        // Build entry with two labels
+        final entryWithLabels = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            labelIds: ['label-a', 'label-b'],
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: entryWithLabels),
+            overrides: [labelsOverride],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Two LabelChips should be rendered
+        expect(find.byType(LabelChip), findsNWidgets(2));
+        expect(find.text('Bug'), findsOneWidget);
+        expect(find.text('Feature'), findsOneWidget);
+      });
+
+      testWidgets('does not render labels for tasks', (tester) async {
+        // Tasks use ModernTaskCard for their own label display
+        final labelA = LabelDefinition(
+          id: 'label-a',
+          name: 'Bug',
+          color: '#FF0000',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+        );
+
+        when(() => mockEntitiesCacheService.getLabelById('label-a'))
+            .thenReturn(labelA);
+        when(() => mockEntitiesCacheService.showPrivateEntries)
+            .thenReturn(false);
+
+        final taskWithLabels = testTask.copyWith(
+          meta: testTask.meta.copyWith(
+            labelIds: ['label-a'],
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: taskWithLabels),
+            overrides: [labelsOverride],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // No LabelChip from ModernJournalCard's _buildLabelsWrap
+        // (tasks are skipped in that method)
+        expect(find.byType(LabelChip), findsNothing);
+      });
+
+      testWidgets('filters out private labels when showPrivate is false',
+          (tester) async {
+        final publicLabel = LabelDefinition(
+          id: 'label-public',
+          name: 'Public',
+          color: '#FF0000',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+        );
+        final privateLabel = LabelDefinition(
+          id: 'label-private',
+          name: 'Private',
+          color: '#00FF00',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: true,
+        );
+
+        when(() => mockEntitiesCacheService.getLabelById('label-public'))
+            .thenReturn(publicLabel);
+        when(() => mockEntitiesCacheService.getLabelById('label-private'))
+            .thenReturn(privateLabel);
+        when(() => mockEntitiesCacheService.showPrivateEntries)
+            .thenReturn(false);
+
+        final entryWithLabels = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            labelIds: ['label-public', 'label-private'],
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: entryWithLabels),
+            overrides: [labelsOverride],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Only public label should be shown
+        expect(find.byType(LabelChip), findsOneWidget);
+        expect(find.text('Public'), findsOneWidget);
+        expect(find.text('Private'), findsNothing);
+      });
+
+      testWidgets('shows private labels when showPrivate is true',
+          (tester) async {
+        final privateLabel = LabelDefinition(
+          id: 'label-private',
+          name: 'Private',
+          color: '#00FF00',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: true,
+        );
+
+        when(() => mockEntitiesCacheService.getLabelById('label-private'))
+            .thenReturn(privateLabel);
+        when(() => mockEntitiesCacheService.showPrivateEntries)
+            .thenReturn(true);
+
+        final entryWithLabels = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            labelIds: ['label-private'],
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: entryWithLabels),
+            overrides: [labelsOverride],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LabelChip), findsOneWidget);
+        expect(find.text('Private'), findsOneWidget);
+      });
+
+      testWidgets('displays labels sorted alphabetically', (tester) async {
+        final labelZ = LabelDefinition(
+          id: 'label-z',
+          name: 'Zebra',
+          color: '#FF0000',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+        );
+        final labelA = LabelDefinition(
+          id: 'label-a',
+          name: 'Apple',
+          color: '#00FF00',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+        );
+
+        when(() => mockEntitiesCacheService.getLabelById('label-z'))
+            .thenReturn(labelZ);
+        when(() => mockEntitiesCacheService.getLabelById('label-a'))
+            .thenReturn(labelA);
+        when(() => mockEntitiesCacheService.showPrivateEntries)
+            .thenReturn(false);
+
+        final entryWithLabels = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            labelIds: ['label-z', 'label-a'],
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: entryWithLabels),
+            overrides: [labelsOverride],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final chips = tester.widgetList<LabelChip>(find.byType(LabelChip));
+        final names = chips.map((c) => c.label.name).toList();
+
+        // Labels should be sorted alphabetically
+        expect(names, equals(['Apple', 'Zebra']));
+      });
+
+      testWidgets('does not render labels when entry has no labelIds',
+          (tester) async {
+        when(() => mockEntitiesCacheService.showPrivateEntries)
+            .thenReturn(false);
+
+        final entryWithoutLabels = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            labelIds: null,
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: entryWithoutLabels),
+            overrides: [labelsOverride],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(LabelChip), findsNothing);
+      });
+
+      testWidgets('handles cache returning null for unknown label IDs',
+          (tester) async {
+        final knownLabel = LabelDefinition(
+          id: 'label-known',
+          name: 'Known',
+          color: '#FF0000',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+        );
+
+        when(() => mockEntitiesCacheService.getLabelById('label-known'))
+            .thenReturn(knownLabel);
+        when(() => mockEntitiesCacheService.getLabelById('label-unknown'))
+            .thenReturn(null);
+        when(() => mockEntitiesCacheService.showPrivateEntries)
+            .thenReturn(false);
+
+        final entryWithMixedLabels = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            labelIds: ['label-known', 'label-unknown'],
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: entryWithMixedLabels),
+            overrides: [labelsOverride],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Only the known label should be rendered
+        expect(find.byType(LabelChip), findsOneWidget);
+        expect(find.text('Known'), findsOneWidget);
       });
     });
   });

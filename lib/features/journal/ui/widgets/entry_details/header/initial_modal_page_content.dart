@@ -34,6 +34,7 @@ class InitialModalPageContent extends StatelessWidget {
         ModernToggleStarredItem(entryId: entryId),
         ModernTogglePrivateItem(entryId: entryId),
         ModernToggleFlaggedItem(entryId: entryId),
+        ModernLabelsItem(entryId: entryId),
         ModernCopyEntryTextItem(entryId: entryId, markdown: false),
         ModernCopyEntryTextItem(entryId: entryId, markdown: true),
         ModernToggleMapItem(entryId: entryId),

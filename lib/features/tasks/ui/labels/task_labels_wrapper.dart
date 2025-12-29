@@ -7,13 +7,11 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_assignment_event_provider.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
-import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
+import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/search/index.dart';
 
 class TaskLabelsWrapper extends ConsumerWidget {
   const TaskLabelsWrapper({
@@ -213,8 +211,6 @@ class TaskLabelsWrapper extends ConsumerWidget {
     WidgetRef ref,
     List<String> assignedIds,
   ) async {
-    final applyController = ValueNotifier<Future<bool> Function()?>(null);
-    final searchNotifier = ValueNotifier<String>('');
     final selectedCategoryId = ref
         .read(entryControllerProvider(id: taskId))
         .value
@@ -222,85 +218,12 @@ class TaskLabelsWrapper extends ConsumerWidget {
         ?.meta
         .categoryId;
 
-    await ModalUtils.showSinglePageModal<List<String>>(
+    await LabelSelectionModalUtils.openLabelSelector(
       context: context,
-      titleWidget: Padding(
-        padding: const EdgeInsets.only(top: 8, left: 20, right: 20, bottom: 8),
-        child: LottiSearchBar(
-          hintText: context.messages.tasksLabelsSheetSearchHint,
-          controller: TextEditingController(),
-          useGradientInDark: false,
-          onChanged: (value) => searchNotifier.value = value,
-          onClear: () => searchNotifier.value = '',
-          textCapitalization: TextCapitalization.words,
-        ),
-      ),
-      navBarHeight: 80,
-      stickyActionBar: SafeArea(
-        top: false,
-        child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              border: Border(
-                top: BorderSide(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .outline
-                      .withValues(alpha: 0.12),
-                ),
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(context.messages.cancelButton),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () async {
-                      final fn = applyController.value;
-                      final ok = fn != null && await fn();
-                      if (!context.mounted) return;
-                      if (ok) {
-                        Navigator.of(context).pop();
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content:
-                                Text(context.messages.tasksLabelsUpdateFailed),
-                          ),
-                        );
-                      }
-                    },
-                    child: Text(context.messages.tasksLabelsSheetApply),
-                  ),
-                ),
-              ],
-            )),
-      ),
-      // Let list items span full width; header/footer have their own padding.
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
-      builder: (ctx) {
-        final minHeight = MediaQuery.of(ctx).size.height * 0.5;
-        return ConstrainedBox(
-          constraints: BoxConstraints(minHeight: minHeight),
-          child: LabelSelectionModalContent(
-            taskId: taskId,
-            initialLabelIds: assignedIds,
-            categoryId: selectedCategoryId,
-            applyController: applyController,
-            searchQuery: searchNotifier,
-          ),
-        );
-      },
+      entryId: taskId,
+      initialLabelIds: assignedIds,
+      categoryId: selectedCategoryId,
     );
-    // Result handled inside sheet; we only show a snackbar if labels updated
-    // No-op: sheet handles messaging when persistence fails.
   }
 
   bool _hasDescription(LabelDefinition label) =>

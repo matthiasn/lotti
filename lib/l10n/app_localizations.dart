@@ -5140,6 +5140,36 @@ abstract class AppLocalizations {
   /// **'unassigned'**
   String get taskLabelUnassignedLabel;
 
+  /// No description provided for @entryLabelsHeaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get entryLabelsHeaderTitle;
+
+  /// No description provided for @entryLabelsEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit labels'**
+  String get entryLabelsEditTooltip;
+
+  /// No description provided for @entryLabelsNoLabels.
+  ///
+  /// In en, this message translates to:
+  /// **'No labels assigned'**
+  String get entryLabelsNoLabels;
+
+  /// No description provided for @entryLabelsActionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get entryLabelsActionTitle;
+
+  /// No description provided for @entryLabelsActionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign labels to organize this entry'**
+  String get entryLabelsActionSubtitle;
+
   /// No description provided for @tasksPriorityTitle.
   ///
   /// In en, this message translates to:

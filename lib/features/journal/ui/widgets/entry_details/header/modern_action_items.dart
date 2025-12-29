@@ -4,6 +4,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -429,6 +430,54 @@ class ModernCopyEntryTextItem extends ConsumerWidget {
           await Navigator.of(context).maybePop();
         }
       },
+    );
+  }
+}
+
+/// Modern styled labels action item for non-task entries.
+/// Opens a dedicated single-page modal for label selection.
+class ModernLabelsItem extends ConsumerWidget {
+  const ModernLabelsItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final entryState = ref.watch(provider).value;
+    final entry = entryState?.entry;
+
+    // Only show for non-task entries (tasks have their own labels UI)
+    if (entry == null || entry is Task) {
+      return const SizedBox.shrink();
+    }
+
+    return ModernModalActionItem(
+      icon: MdiIcons.labelOutline,
+      title: context.messages.entryLabelsActionTitle,
+      subtitle: context.messages.entryLabelsActionSubtitle,
+      onTap: () async {
+        // Close the multi-page modal first
+        Navigator.of(context).pop();
+        if (!context.mounted) return;
+        // Open dedicated labels modal
+        await _openLabelsModal(context, entry);
+      },
+    );
+  }
+
+  Future<void> _openLabelsModal(
+    BuildContext context,
+    JournalEntity entry,
+  ) async {
+    await LabelSelectionModalUtils.openLabelSelector(
+      context: context,
+      entryId: entryId,
+      initialLabelIds: entry.meta.labelIds ?? <String>[],
+      categoryId: entry.meta.categoryId,
     );
   }
 }

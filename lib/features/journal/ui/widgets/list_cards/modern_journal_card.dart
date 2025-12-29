@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -14,6 +16,8 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.
 import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
@@ -75,12 +79,21 @@ class ModernJournalCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    // Tasks have their own labels display in ModernTaskCard
+    final showLabels = item is! Task &&
+        item.meta.labelIds != null &&
+        item.meta.labelIds!.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context),
         const SizedBox(height: 5),
         _buildBody(context),
+        if (showLabels) ...[
+          const SizedBox(height: 6),
+          _JournalCardLabelsRow(labelIds: item.meta.labelIds!),
+        ],
         const SizedBox(height: 5),
         TagsViewWidget(item: item),
       ],
@@ -410,5 +423,39 @@ class ModernJournalCard extends StatelessWidget {
     return category != null
         ? colorFromCssHex(category.color)
         : context.colorScheme.onSurfaceVariant;
+  }
+}
+
+/// Internal widget that listens to label updates to rebuild when labels change.
+class _JournalCardLabelsRow extends ConsumerWidget {
+  const _JournalCardLabelsRow({required this.labelIds});
+
+  final List<String> labelIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch label stream to rebuild when labels change globally
+    ref.watch(labelsStreamProvider);
+
+    final cache = getIt<EntitiesCacheService>();
+    final showPrivate = cache.showPrivateEntries;
+
+    // Use cache for fast label lookups
+    final labels = labelIds
+        .map(cache.getLabelById)
+        .whereType<LabelDefinition>()
+        .where((label) => showPrivate || !(label.private ?? false))
+        .toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    if (labels.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: labels.map((label) => LabelChip(label: label)).toList(),
+    );
   }
 }

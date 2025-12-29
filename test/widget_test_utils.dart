@@ -12,21 +12,25 @@ const phoneMediaQueryData = MediaQueryData(
 Widget makeTestableWidget(
   Widget child, {
   MediaQueryData? mediaQueryData,
+  List<Override> overrides = const [],
 }) {
   final mq = mediaQueryData ?? phoneMediaQueryData;
 
-  return MediaQuery(
-    data: mq,
-    child: MaterialApp(
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        FormBuilderLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: SingleChildScrollView(child: child),
+  return ProviderScope(
+    overrides: overrides,
+    child: MediaQuery(
+      data: mq,
+      child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          FormBuilderLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SingleChildScrollView(child: child),
+      ),
     ),
   );
 }

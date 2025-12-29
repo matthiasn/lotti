@@ -19,6 +19,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
+import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
@@ -425,6 +426,9 @@ class EntryDetailsContent extends ConsumerWidget {
       _ => null,
     };
 
+    // Show labels for non-event, non-task entries (chips only, no header/edit button)
+    final showLabels = item is! JournalEvent && item is! Task;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -435,6 +439,8 @@ class EntryDetailsContent extends ConsumerWidget {
           link: link,
         ),
         TagsListWidget(entryId: itemId, parentTags: parentTags),
+        // Labels display (chips only - editing via triple-dot menu)
+        if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
         if (item is JournalImage) EntryImageWidget(item),
         if (!shouldHideEditor) EditorWidget(entryId: itemId),
         if (detailSection != null) detailSection,

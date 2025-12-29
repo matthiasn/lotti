@@ -415,5 +415,11 @@
   "imagePromptGenerationCopyButton": "Copier Prompt",
   "imagePromptGenerationCopiedSnackbar": "Prompt d'image copié dans le presse-papiers",
   "imagePromptGenerationExpandTooltip": "Afficher le prompt complet",
-  "imagePromptGenerationFullPromptLabel": "Prompt Image Complet:"
+  "imagePromptGenerationFullPromptLabel": "Prompt Image Complet:",
+
+  "entryLabelsHeaderTitle": "Étiquettes",
+  "entryLabelsEditTooltip": "Modifier les étiquettes",
+  "entryLabelsNoLabels": "Aucune étiquette assignée",
+  "entryLabelsActionTitle": "Étiquettes",
+  "entryLabelsActionSubtitle": "Assigner des étiquettes pour organiser cette entrée"
 }

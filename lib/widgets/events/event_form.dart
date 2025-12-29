@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
+import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/events/event_status.dart';
@@ -137,6 +138,12 @@ class _EventFormState extends ConsumerState<EventForm> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                EntryLabelsDisplay(
+                  entryId: entryId,
+                  showEditButton: true,
+                  showHeader: true,
                 ),
                 const SizedBox(height: 20),
               ],
