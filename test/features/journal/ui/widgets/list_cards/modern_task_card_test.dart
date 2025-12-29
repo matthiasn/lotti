@@ -359,4 +359,137 @@ void main() {
     );
     expect(textFinder, findsNothing);
   });
+
+  group('showCreationDate', () {
+    testWidgets('does not show creation date when showCreationDate is false',
+        (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The date "Nov 3, 2025" should NOT be present
+      expect(find.text('Nov 3, 2025'), findsNothing);
+    });
+
+    testWidgets('shows creation date when showCreationDate is true',
+        (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showCreationDate: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The date "Nov 3, 2025" should be present (from dateFrom in buildTask)
+      expect(find.text('Nov 3, 2025'), findsOneWidget);
+    });
+
+    testWidgets('creation date is aligned to bottom right', (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showCreationDate: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the Align widget containing the date
+      final alignFinder = find.ancestor(
+        of: find.text('Nov 3, 2025'),
+        matching: find.byType(Align),
+      );
+      expect(alignFinder, findsOneWidget);
+
+      final alignWidget = tester.widget<Align>(alignFinder);
+      expect(alignWidget.alignment, Alignment.bottomRight);
+    });
+
+    testWidgets('showCreationDate defaults to false', (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Default should be false, so no date displayed
+      expect(find.text('Nov 3, 2025'), findsNothing);
+    });
+
+    testWidgets('creation date uses correct date format (yMMMd)',
+        (tester) async {
+      // Create a task with a specific date to verify format
+      final now = DateTime(2024, 12, 25, 10); // Dec 25, 2024
+      final meta = Metadata(
+        id: 'task-date-format',
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      );
+      final data = TaskData(
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+        dateFrom: now,
+        dateTo: now,
+        statusHistory: const [],
+        title: 'Date Format Test',
+      );
+      final task = Task(meta: meta, data: data);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showCreationDate: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Format should be "Dec 25, 2024" (yMMMd format)
+      expect(find.text('Dec 25, 2024'), findsOneWidget);
+    });
+  });
 }

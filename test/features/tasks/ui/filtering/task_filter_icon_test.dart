@@ -9,8 +9,10 @@ import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_date_display_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_sort_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -177,6 +179,8 @@ void main() {
 
       // Verify the modal contains the expected components
       expect(find.byType(JournalFilter), findsOneWidget);
+      expect(find.byType(TaskSortFilter), findsOneWidget);
+      expect(find.byType(TaskDateDisplayToggle), findsOneWidget);
       expect(find.byType(TaskStatusFilter), findsOneWidget);
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
       expect(find.byType(TaskPriorityFilter), findsOneWidget);

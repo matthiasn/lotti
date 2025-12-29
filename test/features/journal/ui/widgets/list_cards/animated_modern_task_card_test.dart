@@ -403,5 +403,42 @@ void main() {
       // Verify the card renders in light theme
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
     });
+
+    testWidgets('passes showCreationDate to ModernTaskCard',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: AnimatedModernTaskCard(
+            task: testTask,
+            showCreationDate: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify ModernTaskCard receives showCreationDate: true
+      final modernTaskCard = tester.widget<ModernTaskCard>(
+        find.byType(ModernTaskCard),
+      );
+      expect(modernTaskCard.showCreationDate, isTrue);
+    });
+
+    testWidgets('showCreationDate defaults to false',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: AnimatedModernTaskCard(
+            task: testTask,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify ModernTaskCard receives showCreationDate: false by default
+      final modernTaskCard = tester.widget<ModernTaskCard>(
+        find.byType(ModernTaskCard),
+      );
+      expect(modernTaskCard.showCreationDate, isFalse);
+    });
   });
 }
