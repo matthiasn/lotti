@@ -254,21 +254,20 @@ class TaskDateDisplayToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<JournalPageCubit, JournalPageState>(
       builder: (context, state) {
-        return Row(
-          children: [
-            Expanded(
-              child: Text(
-                context.messages.tasksShowCreationDate,
-                style: context.textTheme.bodySmall,
-              ),
-            ),
-            Switch(
-              value: state.showCreationDate,
-              onChanged: (value) {
-                context.read<JournalPageCubit>().setShowCreationDate(value);
-              },
-            ),
-          ],
+        final cubit = context.read<JournalPageCubit>();
+
+        // Use SwitchListTile for proper accessibility (label bound to control)
+        return SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            context.messages.tasksShowCreationDate,
+            style: context.textTheme.bodySmall,
+          ),
+          value: state.showCreationDate,
+          onChanged: (value) {
+            cubit.setShowCreationDate(show: value);
+            HapticFeedback.selectionClick();
+          },
         );
       },
     );
@@ -321,12 +320,14 @@ bool _showCreationDate = false;
 // Setter methods
 Future<void> setSortOption(TaskSortOption option) async {
   _sortOption = option;
-  await persistTasksFilter();
+  await persistTasksFilter();  // Triggers query refresh (sort affects data order)
 }
 
-Future<void> setShowCreationDate(bool show) async {
+// Visual-only setting - no query refresh needed
+Future<void> setShowCreationDate({required bool show}) async {
   _showCreationDate = show;
-  await persistTasksFilter();
+  emitState();
+  await _persistTasksFilterWithoutRefresh();  // Persist without query refresh
 }
 
 // Update emitState() to include new fields
@@ -341,7 +342,30 @@ void emitState() {
 }
 
 // Update _loadPersistedFilters() to restore sort option and date display
-// Update persistTasksFilter() to save new fields
+
+// Helper to persist without query refresh (for visual-only settings)
+Future<void> _persistTasksFilterWithoutRefresh() async {
+  final settingsDb = getIt<SettingsDb>();
+  final filter = TasksFilter(
+    selectedCategoryIds: _selectedCategoryIds,
+    selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
+    selectedLabelIds: showTasks ? _selectedLabelIds : {},
+    selectedPriorities: showTasks ? _selectedPriorities : {},
+    sortOption: showTasks ? _sortOption : TaskSortOption.byPriority,
+    showCreationDate: showTasks && _showCreationDate,
+  );
+  final encodedFilter = jsonEncode(filter);
+  await settingsDb.saveSettingsItem(_getCategoryFiltersKey(), encodedFilter);
+  if (showTasks) {
+    await settingsDb.saveSettingsItem(taskFiltersKey, encodedFilter);
+  }
+}
+
+// Update persistTasksFilter() to use the helper
+Future<void> persistTasksFilter() async {
+  await refreshQuery();
+  await _persistTasksFilterWithoutRefresh();
+}
 ```
 
 ### TasksFilter Updates
