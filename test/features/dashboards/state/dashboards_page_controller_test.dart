@@ -411,5 +411,66 @@ void main() {
         });
       });
     });
+
+    group('dashboardCategoriesProvider', () {
+      late StreamController<List<CategoryDefinition>> categoryStreamController;
+
+      setUp(() {
+        categoryStreamController =
+            StreamController<List<CategoryDefinition>>.broadcast();
+
+        when(() => mockDb.watchCategories())
+            .thenAnswer((_) => categoryStreamController.stream);
+      });
+
+      tearDown(() async {
+        await categoryStreamController.close();
+      });
+
+      test('initial state is loading', () {
+        final state = container.read(dashboardCategoriesProvider);
+        expect(state, const AsyncValue<List<CategoryDefinition>>.loading());
+      });
+
+      test('emits categories from database stream', () {
+        fakeAsync((async) {
+          final states = <AsyncValue<List<CategoryDefinition>>>[];
+          container.listen(
+            dashboardCategoriesProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.flushMicrotasks();
+
+          categoryStreamController.add([categoryMindfulness]);
+          async.flushMicrotasks();
+
+          expect(states.last.hasValue, isTrue);
+          expect(states.last.value, [categoryMindfulness]);
+        });
+      });
+
+      test('handles stream errors', () async {
+        final error = Exception('Categories error');
+        final completer = Completer<void>();
+
+        container.listen(
+          dashboardCategoriesProvider,
+          (_, next) {
+            if (next.hasError && !completer.isCompleted) {
+              completer.complete();
+            }
+          },
+        );
+
+        categoryStreamController.addError(error);
+
+        await completer.future.timeout(const Duration(milliseconds: 100));
+
+        final state = container.read(dashboardCategoriesProvider);
+        expect(state.hasError, isTrue);
+      });
+    });
   });
 }

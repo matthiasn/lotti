@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.780" date="2025-12-29">
+      <description>
+        <p>Dashboard State Management Refactor: Migrated dashboard list state from Bloc to Riverpod for consistency with the codebase. Dashboard filtering and sorting now uses dedicated Riverpod providers, with improved case-insensitive sorting for better UX.</p>
+      </description>
+    </release>
     <release version="0.9.779" date="2025-12-29">
       <description>
         <p>Labels for All Entry Types: Labels can now be assigned to any journal entry, not just tasks. Features include labels display on journal cards, edit capability in detail views, a new "Labels" action in the triple-dot menu, and a unified label selection modal with search and create functionality.</p>

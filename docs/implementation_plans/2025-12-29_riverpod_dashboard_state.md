@@ -6,8 +6,11 @@ All tasks completed successfully:
 - Created Riverpod providers in `lib/features/dashboards/state/dashboards_page_controller.dart`
 - Updated all UI components to use Riverpod instead of Bloc
 - Deleted old Bloc files from `lib/blocs/dashboards/`
-- Added comprehensive unit tests (17 test cases covering all providers)
-- All 19 dashboard-related tests pass
+- Fixed `ref.watch` inside StreamBuilder issue by adding `dashboardCategoriesProvider`
+- Added comprehensive unit tests (20 test cases covering all providers)
+- Added widget tests for filter modal behavior and list rendering (6 tests)
+- All 26 dashboard-related tests pass
+- Added CHANGELOG entry for the refactoring
 
 ## Overview
 Migrate the dashboards page state management from Bloc (`lib/blocs/dashboards/`) to Riverpod (`lib/features/dashboards/state/`), following established Riverpod patterns used throughout the codebase.
