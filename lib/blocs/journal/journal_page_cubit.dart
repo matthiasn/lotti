@@ -258,6 +258,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
   Set<String> _selectedCategoryIds = {};
   Set<String> _selectedLabelIds = {};
   Set<String> _selectedPriorities = {};
+  TaskSortOption _sortOption = TaskSortOption.byPriority;
+  bool _showCreationDate = false;
 
   Set<String> _fullTextMatches = {};
   Set<String> _lastIds = {};
@@ -288,6 +290,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         selectedCategoryIds: _selectedCategoryIds,
         selectedLabelIds: _selectedLabelIds,
         selectedPriorities: _selectedPriorities,
+        sortOption: _sortOption,
+        showCreationDate: _showCreationDate,
       ),
     );
   }
@@ -395,6 +399,18 @@ class JournalPageCubit extends Cubit<JournalPageState> {
     await persistTasksFilter();
   }
 
+  // Sort option handlers
+  Future<void> setSortOption(TaskSortOption option) async {
+    _sortOption = option;
+    await persistTasksFilter();
+  }
+
+  // Creation date display toggle
+  Future<void> setShowCreationDate({required bool show}) async {
+    _showCreationDate = show;
+    await persistTasksFilter();
+  }
+
   /// Loads persisted filters with migration from legacy key
   Future<void> _loadPersistedFilters() async {
     final settingsDb = getIt<SettingsDb>();
@@ -419,6 +435,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
         _selectedLabelIds = tasksFilter.selectedLabelIds;
         _selectedPriorities = tasksFilter.selectedPriorities;
+        _sortOption = tasksFilter.sortOption;
+        _showCreationDate = tasksFilter.showCreationDate;
       } else {
         _selectedLabelIds = {};
         _selectedPriorities = {};
@@ -447,6 +465,8 @@ class JournalPageCubit extends Cubit<JournalPageState> {
       selectedTaskStatuses: showTasks ? _selectedTaskStatuses : {},
       selectedLabelIds: showTasks ? _selectedLabelIds : {},
       selectedPriorities: showTasks ? _selectedPriorities : {},
+      sortOption: showTasks ? _sortOption : TaskSortOption.byPriority,
+      showCreationDate: showTasks && _showCreationDate,
     );
     final encodedFilter = jsonEncode(filter);
 
@@ -569,6 +589,7 @@ class JournalPageCubit extends Cubit<JournalPageState> {
         categoryIds: categoryIds.toList(),
         labelIds: labelIds.toList(),
         priorities: priorities.toList(),
+        sortByDate: _sortOption == TaskSortOption.byDate,
         limit: _pageSize,
         offset: pageKey,
       );

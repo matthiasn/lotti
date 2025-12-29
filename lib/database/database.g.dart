@@ -5843,6 +5843,116 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> filteredTasksByDate(
+      List<String> types,
+      List<bool> starredStatuses,
+      List<String?> taskStatuses,
+      List<String> categories,
+      bool filterByLabels,
+      int labelFilterCount,
+      List<String> labelIds,
+      bool includeUnlabeled,
+      bool filterByPriorities,
+      int priorityFilterCount,
+      List<String?> priorities,
+      int limit,
+      int offset) {
+    var $arrayStartIndex = 8;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedstarredStatuses =
+        $expandVar($arrayStartIndex, starredStatuses.length);
+    $arrayStartIndex += starredStatuses.length;
+    final expandedtaskStatuses =
+        $expandVar($arrayStartIndex, taskStatuses.length);
+    $arrayStartIndex += taskStatuses.length;
+    final expandedcategories = $expandVar($arrayStartIndex, categories.length);
+    $arrayStartIndex += categories.length;
+    final expandedlabelIds = $expandVar($arrayStartIndex, labelIds.length);
+    $arrayStartIndex += labelIds.length;
+    final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
+    $arrayStartIndex += priorities.length;
+    return customSelect(
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC LIMIT ?6 OFFSET ?7',
+        variables: [
+          Variable<bool>(filterByLabels),
+          Variable<int>(labelFilterCount),
+          Variable<bool>(includeUnlabeled),
+          Variable<bool>(filterByPriorities),
+          Variable<int>(priorityFilterCount),
+          Variable<int>(limit),
+          Variable<int>(offset),
+          for (var $ in types) Variable<String>($),
+          for (var $ in starredStatuses) Variable<bool>($),
+          for (var $ in taskStatuses) Variable<String>($),
+          for (var $ in categories) Variable<String>($),
+          for (var $ in labelIds) Variable<String>($),
+          for (var $ in priorities) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+          labeled,
+        }).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> filteredTasksByDate2(
+      List<String> types,
+      List<String> ids,
+      List<bool> starredStatuses,
+      List<String?> taskStatuses,
+      List<String> categories,
+      bool filterByLabels,
+      int labelFilterCount,
+      List<String> labelIds,
+      bool includeUnlabeled,
+      bool filterByPriorities,
+      int priorityFilterCount,
+      List<String?> priorities,
+      int limit,
+      int offset) {
+    var $arrayStartIndex = 8;
+    final expandedtypes = $expandVar($arrayStartIndex, types.length);
+    $arrayStartIndex += types.length;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    final expandedstarredStatuses =
+        $expandVar($arrayStartIndex, starredStatuses.length);
+    $arrayStartIndex += starredStatuses.length;
+    final expandedtaskStatuses =
+        $expandVar($arrayStartIndex, taskStatuses.length);
+    $arrayStartIndex += taskStatuses.length;
+    final expandedcategories = $expandVar($arrayStartIndex, categories.length);
+    $arrayStartIndex += categories.length;
+    final expandedlabelIds = $expandVar($arrayStartIndex, labelIds.length);
+    $arrayStartIndex += labelIds.length;
+    final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
+    $arrayStartIndex += priorities.length;
+    return customSelect(
+        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC LIMIT ?6 OFFSET ?7',
+        variables: [
+          Variable<bool>(filterByLabels),
+          Variable<int>(labelFilterCount),
+          Variable<bool>(includeUnlabeled),
+          Variable<bool>(filterByPriorities),
+          Variable<int>(priorityFilterCount),
+          Variable<int>(limit),
+          Variable<int>(offset),
+          for (var $ in types) Variable<String>($),
+          for (var $ in ids) Variable<String>($),
+          for (var $ in starredStatuses) Variable<bool>($),
+          for (var $ in taskStatuses) Variable<String>($),
+          for (var $ in categories) Variable<String>($),
+          for (var $ in labelIds) Variable<String>($),
+          for (var $ in priorities) Variable<String>($)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+          labeled,
+        }).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<String> filteredTaskIds(
       List<String> types,
       List<bool> starredStatuses,

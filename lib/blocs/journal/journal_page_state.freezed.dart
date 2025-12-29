@@ -27,6 +27,8 @@ mixin _$JournalPageState {
   Set<String?> get selectedCategoryIds;
   Set<String> get selectedLabelIds;
   Set<String> get selectedPriorities;
+  TaskSortOption get sortOption;
+  bool get showCreationDate;
 
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -63,7 +65,11 @@ mixin _$JournalPageState {
             const DeepCollectionEquality()
                 .equals(other.selectedLabelIds, selectedLabelIds) &&
             const DeepCollectionEquality()
-                .equals(other.selectedPriorities, selectedPriorities));
+                .equals(other.selectedPriorities, selectedPriorities) &&
+            (identical(other.sortOption, sortOption) ||
+                other.sortOption == sortOption) &&
+            (identical(other.showCreationDate, showCreationDate) ||
+                other.showCreationDate == showCreationDate));
   }
 
   @override
@@ -81,11 +87,13 @@ mixin _$JournalPageState {
       const DeepCollectionEquality().hash(selectedTaskStatuses),
       const DeepCollectionEquality().hash(selectedCategoryIds),
       const DeepCollectionEquality().hash(selectedLabelIds),
-      const DeepCollectionEquality().hash(selectedPriorities));
+      const DeepCollectionEquality().hash(selectedPriorities),
+      sortOption,
+      showCreationDate);
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate)';
   }
 }
 
@@ -108,7 +116,9 @@ abstract mixin class $JournalPageStateCopyWith<$Res> {
       Set<String> selectedTaskStatuses,
       Set<String?> selectedCategoryIds,
       Set<String> selectedLabelIds,
-      Set<String> selectedPriorities});
+      Set<String> selectedPriorities,
+      TaskSortOption sortOption,
+      bool showCreationDate});
 }
 
 /// @nodoc
@@ -137,6 +147,8 @@ class _$JournalPageStateCopyWithImpl<$Res>
     Object? selectedCategoryIds = null,
     Object? selectedLabelIds = null,
     Object? selectedPriorities = null,
+    Object? sortOption = null,
+    Object? showCreationDate = null,
   }) {
     return _then(_self.copyWith(
       match: null == match
@@ -191,6 +203,14 @@ class _$JournalPageStateCopyWithImpl<$Res>
           ? _self.selectedPriorities
           : selectedPriorities // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      sortOption: null == sortOption
+          ? _self.sortOption
+          : sortOption // ignore: cast_nullable_to_non_nullable
+              as TaskSortOption,
+      showCreationDate: null == showCreationDate
+          ? _self.showCreationDate
+          : showCreationDate // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -301,7 +321,9 @@ extension JournalPageStatePatterns on JournalPageState {
             Set<String> selectedTaskStatuses,
             Set<String?> selectedCategoryIds,
             Set<String> selectedLabelIds,
-            Set<String> selectedPriorities)?
+            Set<String> selectedPriorities,
+            TaskSortOption sortOption,
+            bool showCreationDate)?
         $default, {
     required TResult orElse(),
   }) {
@@ -321,7 +343,9 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.selectedTaskStatuses,
             _that.selectedCategoryIds,
             _that.selectedLabelIds,
-            _that.selectedPriorities);
+            _that.selectedPriorities,
+            _that.sortOption,
+            _that.showCreationDate);
       case _:
         return orElse();
     }
@@ -355,7 +379,9 @@ extension JournalPageStatePatterns on JournalPageState {
             Set<String> selectedTaskStatuses,
             Set<String?> selectedCategoryIds,
             Set<String> selectedLabelIds,
-            Set<String> selectedPriorities)
+            Set<String> selectedPriorities,
+            TaskSortOption sortOption,
+            bool showCreationDate)
         $default,
   ) {
     final _that = this;
@@ -374,7 +400,9 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.selectedTaskStatuses,
             _that.selectedCategoryIds,
             _that.selectedLabelIds,
-            _that.selectedPriorities);
+            _that.selectedPriorities,
+            _that.sortOption,
+            _that.showCreationDate);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -407,7 +435,9 @@ extension JournalPageStatePatterns on JournalPageState {
             Set<String> selectedTaskStatuses,
             Set<String?> selectedCategoryIds,
             Set<String> selectedLabelIds,
-            Set<String> selectedPriorities)?
+            Set<String> selectedPriorities,
+            TaskSortOption sortOption,
+            bool showCreationDate)?
         $default,
   ) {
     final _that = this;
@@ -426,7 +456,9 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.selectedTaskStatuses,
             _that.selectedCategoryIds,
             _that.selectedLabelIds,
-            _that.selectedPriorities);
+            _that.selectedPriorities,
+            _that.sortOption,
+            _that.showCreationDate);
       case _:
         return null;
     }
@@ -449,7 +481,9 @@ class _JournalPageState implements JournalPageState {
       required final Set<String> selectedTaskStatuses,
       required final Set<String?> selectedCategoryIds,
       required final Set<String> selectedLabelIds,
-      final Set<String> selectedPriorities = const <String>{}})
+      final Set<String> selectedPriorities = const <String>{},
+      this.sortOption = TaskSortOption.byPriority,
+      this.showCreationDate = false})
       : _tagIds = tagIds,
         _filters = filters,
         _selectedEntryTypes = selectedEntryTypes,
@@ -545,6 +579,13 @@ class _JournalPageState implements JournalPageState {
     return EqualUnmodifiableSetView(_selectedPriorities);
   }
 
+  @override
+  @JsonKey()
+  final TaskSortOption sortOption;
+  @override
+  @JsonKey()
+  final bool showCreationDate;
+
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
   @override
@@ -580,7 +621,11 @@ class _JournalPageState implements JournalPageState {
             const DeepCollectionEquality()
                 .equals(other._selectedLabelIds, _selectedLabelIds) &&
             const DeepCollectionEquality()
-                .equals(other._selectedPriorities, _selectedPriorities));
+                .equals(other._selectedPriorities, _selectedPriorities) &&
+            (identical(other.sortOption, sortOption) ||
+                other.sortOption == sortOption) &&
+            (identical(other.showCreationDate, showCreationDate) ||
+                other.showCreationDate == showCreationDate));
   }
 
   @override
@@ -598,11 +643,13 @@ class _JournalPageState implements JournalPageState {
       const DeepCollectionEquality().hash(_selectedTaskStatuses),
       const DeepCollectionEquality().hash(_selectedCategoryIds),
       const DeepCollectionEquality().hash(_selectedLabelIds),
-      const DeepCollectionEquality().hash(_selectedPriorities));
+      const DeepCollectionEquality().hash(_selectedPriorities),
+      sortOption,
+      showCreationDate);
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate)';
   }
 }
 
@@ -627,7 +674,9 @@ abstract mixin class _$JournalPageStateCopyWith<$Res>
       Set<String> selectedTaskStatuses,
       Set<String?> selectedCategoryIds,
       Set<String> selectedLabelIds,
-      Set<String> selectedPriorities});
+      Set<String> selectedPriorities,
+      TaskSortOption sortOption,
+      bool showCreationDate});
 }
 
 /// @nodoc
@@ -656,6 +705,8 @@ class __$JournalPageStateCopyWithImpl<$Res>
     Object? selectedCategoryIds = null,
     Object? selectedLabelIds = null,
     Object? selectedPriorities = null,
+    Object? sortOption = null,
+    Object? showCreationDate = null,
   }) {
     return _then(_JournalPageState(
       match: null == match
@@ -710,6 +761,14 @@ class __$JournalPageStateCopyWithImpl<$Res>
           ? _self._selectedPriorities
           : selectedPriorities // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      sortOption: null == sortOption
+          ? _self.sortOption
+          : sortOption // ignore: cast_nullable_to_non_nullable
+              as TaskSortOption,
+      showCreationDate: null == showCreationDate
+          ? _self.showCreationDate
+          : showCreationDate // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -720,6 +779,8 @@ mixin _$TasksFilter {
   Set<String> get selectedTaskStatuses;
   Set<String> get selectedLabelIds;
   Set<String> get selectedPriorities;
+  TaskSortOption get sortOption;
+  bool get showCreationDate;
 
   /// Create a copy of TasksFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -743,7 +804,11 @@ mixin _$TasksFilter {
             const DeepCollectionEquality()
                 .equals(other.selectedLabelIds, selectedLabelIds) &&
             const DeepCollectionEquality()
-                .equals(other.selectedPriorities, selectedPriorities));
+                .equals(other.selectedPriorities, selectedPriorities) &&
+            (identical(other.sortOption, sortOption) ||
+                other.sortOption == sortOption) &&
+            (identical(other.showCreationDate, showCreationDate) ||
+                other.showCreationDate == showCreationDate));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -753,11 +818,13 @@ mixin _$TasksFilter {
       const DeepCollectionEquality().hash(selectedCategoryIds),
       const DeepCollectionEquality().hash(selectedTaskStatuses),
       const DeepCollectionEquality().hash(selectedLabelIds),
-      const DeepCollectionEquality().hash(selectedPriorities));
+      const DeepCollectionEquality().hash(selectedPriorities),
+      sortOption,
+      showCreationDate);
 
   @override
   String toString() {
-    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities)';
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate)';
   }
 }
 
@@ -771,7 +838,9 @@ abstract mixin class $TasksFilterCopyWith<$Res> {
       {Set<String> selectedCategoryIds,
       Set<String> selectedTaskStatuses,
       Set<String> selectedLabelIds,
-      Set<String> selectedPriorities});
+      Set<String> selectedPriorities,
+      TaskSortOption sortOption,
+      bool showCreationDate});
 }
 
 /// @nodoc
@@ -790,6 +859,8 @@ class _$TasksFilterCopyWithImpl<$Res> implements $TasksFilterCopyWith<$Res> {
     Object? selectedTaskStatuses = null,
     Object? selectedLabelIds = null,
     Object? selectedPriorities = null,
+    Object? sortOption = null,
+    Object? showCreationDate = null,
   }) {
     return _then(_self.copyWith(
       selectedCategoryIds: null == selectedCategoryIds
@@ -808,6 +879,14 @@ class _$TasksFilterCopyWithImpl<$Res> implements $TasksFilterCopyWith<$Res> {
           ? _self.selectedPriorities
           : selectedPriorities // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      sortOption: null == sortOption
+          ? _self.sortOption
+          : sortOption // ignore: cast_nullable_to_non_nullable
+              as TaskSortOption,
+      showCreationDate: null == showCreationDate
+          ? _self.showCreationDate
+          : showCreationDate // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -909,15 +988,22 @@ extension TasksFilterPatterns on TasksFilter {
             Set<String> selectedCategoryIds,
             Set<String> selectedTaskStatuses,
             Set<String> selectedLabelIds,
-            Set<String> selectedPriorities)?
+            Set<String> selectedPriorities,
+            TaskSortOption sortOption,
+            bool showCreationDate)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _TasksFilter() when $default != null:
-        return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses,
-            _that.selectedLabelIds, _that.selectedPriorities);
+        return $default(
+            _that.selectedCategoryIds,
+            _that.selectedTaskStatuses,
+            _that.selectedLabelIds,
+            _that.selectedPriorities,
+            _that.sortOption,
+            _that.showCreationDate);
       case _:
         return orElse();
     }
@@ -942,14 +1028,21 @@ extension TasksFilterPatterns on TasksFilter {
             Set<String> selectedCategoryIds,
             Set<String> selectedTaskStatuses,
             Set<String> selectedLabelIds,
-            Set<String> selectedPriorities)
+            Set<String> selectedPriorities,
+            TaskSortOption sortOption,
+            bool showCreationDate)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _TasksFilter():
-        return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses,
-            _that.selectedLabelIds, _that.selectedPriorities);
+        return $default(
+            _that.selectedCategoryIds,
+            _that.selectedTaskStatuses,
+            _that.selectedLabelIds,
+            _that.selectedPriorities,
+            _that.sortOption,
+            _that.showCreationDate);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -973,14 +1066,21 @@ extension TasksFilterPatterns on TasksFilter {
             Set<String> selectedCategoryIds,
             Set<String> selectedTaskStatuses,
             Set<String> selectedLabelIds,
-            Set<String> selectedPriorities)?
+            Set<String> selectedPriorities,
+            TaskSortOption sortOption,
+            bool showCreationDate)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _TasksFilter() when $default != null:
-        return $default(_that.selectedCategoryIds, _that.selectedTaskStatuses,
-            _that.selectedLabelIds, _that.selectedPriorities);
+        return $default(
+            _that.selectedCategoryIds,
+            _that.selectedTaskStatuses,
+            _that.selectedLabelIds,
+            _that.selectedPriorities,
+            _that.sortOption,
+            _that.showCreationDate);
       case _:
         return null;
     }
@@ -994,7 +1094,9 @@ class _TasksFilter implements TasksFilter {
       {final Set<String> selectedCategoryIds = const <String>{},
       final Set<String> selectedTaskStatuses = const <String>{},
       final Set<String> selectedLabelIds = const <String>{},
-      final Set<String> selectedPriorities = const <String>{}})
+      final Set<String> selectedPriorities = const <String>{},
+      this.sortOption = TaskSortOption.byPriority,
+      this.showCreationDate = false})
       : _selectedCategoryIds = selectedCategoryIds,
         _selectedTaskStatuses = selectedTaskStatuses,
         _selectedLabelIds = selectedLabelIds,
@@ -1041,6 +1143,13 @@ class _TasksFilter implements TasksFilter {
     return EqualUnmodifiableSetView(_selectedPriorities);
   }
 
+  @override
+  @JsonKey()
+  final TaskSortOption sortOption;
+  @override
+  @JsonKey()
+  final bool showCreationDate;
+
   /// Create a copy of TasksFilter
   /// with the given fields replaced by the non-null parameter values.
   @override
@@ -1068,7 +1177,11 @@ class _TasksFilter implements TasksFilter {
             const DeepCollectionEquality()
                 .equals(other._selectedLabelIds, _selectedLabelIds) &&
             const DeepCollectionEquality()
-                .equals(other._selectedPriorities, _selectedPriorities));
+                .equals(other._selectedPriorities, _selectedPriorities) &&
+            (identical(other.sortOption, sortOption) ||
+                other.sortOption == sortOption) &&
+            (identical(other.showCreationDate, showCreationDate) ||
+                other.showCreationDate == showCreationDate));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1078,11 +1191,13 @@ class _TasksFilter implements TasksFilter {
       const DeepCollectionEquality().hash(_selectedCategoryIds),
       const DeepCollectionEquality().hash(_selectedTaskStatuses),
       const DeepCollectionEquality().hash(_selectedLabelIds),
-      const DeepCollectionEquality().hash(_selectedPriorities));
+      const DeepCollectionEquality().hash(_selectedPriorities),
+      sortOption,
+      showCreationDate);
 
   @override
   String toString() {
-    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities)';
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate)';
   }
 }
 
@@ -1098,7 +1213,9 @@ abstract mixin class _$TasksFilterCopyWith<$Res>
       {Set<String> selectedCategoryIds,
       Set<String> selectedTaskStatuses,
       Set<String> selectedLabelIds,
-      Set<String> selectedPriorities});
+      Set<String> selectedPriorities,
+      TaskSortOption sortOption,
+      bool showCreationDate});
 }
 
 /// @nodoc
@@ -1117,6 +1234,8 @@ class __$TasksFilterCopyWithImpl<$Res> implements _$TasksFilterCopyWith<$Res> {
     Object? selectedTaskStatuses = null,
     Object? selectedLabelIds = null,
     Object? selectedPriorities = null,
+    Object? sortOption = null,
+    Object? showCreationDate = null,
   }) {
     return _then(_TasksFilter(
       selectedCategoryIds: null == selectedCategoryIds
@@ -1135,6 +1254,14 @@ class __$TasksFilterCopyWithImpl<$Res> implements _$TasksFilterCopyWith<$Res> {
           ? _self._selectedPriorities
           : selectedPriorities // ignore: cast_nullable_to_non_nullable
               as Set<String>,
+      sortOption: null == sortOption
+          ? _self.sortOption
+          : sortOption // ignore: cast_nullable_to_non_nullable
+              as TaskSortOption,
+      showCreationDate: null == showCreationDate
+          ? _self.showCreationDate
+          : showCreationDate // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }

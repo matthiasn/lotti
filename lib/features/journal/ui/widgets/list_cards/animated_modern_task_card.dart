@@ -12,10 +12,12 @@ import 'package:lotti/widgets/modal/animated_modal_item.dart';
 class AnimatedModernTaskCard extends StatelessWidget {
   const AnimatedModernTaskCard({
     required this.task,
+    this.showCreationDate = false,
     super.key,
   });
 
   final Task task;
+  final bool showCreationDate;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +30,10 @@ class AnimatedModernTaskCard extends StatelessWidget {
       hoverElevation: 2, // Less elevation for list items
       margin: EdgeInsets.zero, // ModernTaskCard already has its own margins
       disableShadow: true, // ModernTaskCard already has its own shadow
-      child: ModernTaskCard(task: task),
+      child: ModernTaskCard(
+        task: task,
+        showCreationDate: showCreationDate,
+      ),
     );
   }
 }

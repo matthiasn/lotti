@@ -4990,6 +4990,30 @@ abstract class AppLocalizations {
   /// **'Tasks Filter'**
   String get tasksFilterTitle;
 
+  /// No description provided for @tasksSortByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get tasksSortByLabel;
+
+  /// No description provided for @tasksSortByPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get tasksSortByPriority;
+
+  /// No description provided for @tasksSortByDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get tasksSortByDate;
+
+  /// No description provided for @tasksShowCreationDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Show creation date on cards'**
+  String get tasksShowCreationDate;
+
   /// No description provided for @timeByCategoryChartTitle.
   ///
   /// In en, this message translates to:

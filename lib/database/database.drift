@@ -402,6 +402,82 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
+-- Date-sorted variants (newest first, no priority ordering)
+filteredTasksByDate:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND (
+    CASE
+      WHEN :filterByLabels THEN
+        CASE
+          WHEN :labelFilterCount > 0 AND id IN (
+            SELECT journal_id FROM labeled WHERE label_id IN :labelIds
+          ) THEN 1
+          WHEN :includeUnlabeled AND id NOT IN (SELECT journal_id FROM labeled) THEN 1
+          ELSE 0
+        END
+      ELSE 1
+    END
+  ) = 1
+  AND (
+    CASE
+      WHEN :filterByPriorities THEN
+        CASE
+          WHEN :priorityFilterCount = 0 THEN 1
+          WHEN task_priority IN :priorities THEN 1
+          ELSE 0
+        END
+      ELSE 1
+    END
+  ) = 1
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksByDate2:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND id IN :ids
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND (
+    CASE
+      WHEN :filterByLabels THEN
+        CASE
+          WHEN :labelFilterCount > 0 AND id IN (
+            SELECT journal_id FROM labeled WHERE label_id IN :labelIds
+          ) THEN 1
+          WHEN :includeUnlabeled AND id NOT IN (SELECT journal_id FROM labeled) THEN 1
+          ELSE 0
+        END
+      ELSE 1
+    END
+  ) = 1
+  AND (
+    CASE
+      WHEN :filterByPriorities THEN
+        CASE
+          WHEN :priorityFilterCount = 0 THEN 1
+          WHEN task_priority IN :priorities THEN 1
+          ELSE 0
+        END
+      ELSE 1
+    END
+  ) = 1
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
 filteredTaskIds:
 SELECT id FROM journal
   WHERE type IN :types
