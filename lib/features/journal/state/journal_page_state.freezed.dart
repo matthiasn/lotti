@@ -21,6 +21,7 @@ mixin _$JournalPageState {
   bool get showTasks;
   List<String> get selectedEntryTypes;
   Set<String> get fullTextMatches;
+  @JsonKey(includeFromJson: false, includeToJson: false)
   PagingController<int, JournalEntity>? get pagingController;
   List<String> get taskStatuses;
   Set<String> get selectedTaskStatuses;
@@ -111,6 +112,7 @@ abstract mixin class $JournalPageStateCopyWith<$Res> {
       bool showTasks,
       List<String> selectedEntryTypes,
       Set<String> fullTextMatches,
+      @JsonKey(includeFromJson: false, includeToJson: false)
       PagingController<int, JournalEntity>? pagingController,
       List<String> taskStatuses,
       Set<String> selectedTaskStatuses,
@@ -316,6 +318,7 @@ extension JournalPageStatePatterns on JournalPageState {
             bool showTasks,
             List<String> selectedEntryTypes,
             Set<String> fullTextMatches,
+            @JsonKey(includeFromJson: false, includeToJson: false)
             PagingController<int, JournalEntity>? pagingController,
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
@@ -374,6 +377,7 @@ extension JournalPageStatePatterns on JournalPageState {
             bool showTasks,
             List<String> selectedEntryTypes,
             Set<String> fullTextMatches,
+            @JsonKey(includeFromJson: false, includeToJson: false)
             PagingController<int, JournalEntity>? pagingController,
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
@@ -430,6 +434,7 @@ extension JournalPageStatePatterns on JournalPageState {
             bool showTasks,
             List<String> selectedEntryTypes,
             Set<String> fullTextMatches,
+            @JsonKey(includeFromJson: false, includeToJson: false)
             PagingController<int, JournalEntity>? pagingController,
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
@@ -468,19 +473,20 @@ extension JournalPageStatePatterns on JournalPageState {
 /// @nodoc
 
 class _JournalPageState implements JournalPageState {
-  _JournalPageState(
-      {required this.match,
-      required final Set<String> tagIds,
-      required final Set<DisplayFilter> filters,
-      required this.showPrivateEntries,
-      required this.showTasks,
-      required final List<String> selectedEntryTypes,
-      required final Set<String> fullTextMatches,
-      required this.pagingController,
-      required final List<String> taskStatuses,
-      required final Set<String> selectedTaskStatuses,
-      required final Set<String?> selectedCategoryIds,
-      required final Set<String> selectedLabelIds,
+  const _JournalPageState(
+      {this.match = '',
+      final Set<String> tagIds = const <String>{},
+      final Set<DisplayFilter> filters = const <DisplayFilter>{},
+      this.showPrivateEntries = false,
+      this.showTasks = false,
+      final List<String> selectedEntryTypes = const [],
+      final Set<String> fullTextMatches = const <String>{},
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      this.pagingController,
+      final List<String> taskStatuses = const [],
+      final Set<String> selectedTaskStatuses = const <String>{},
+      final Set<String?> selectedCategoryIds = const <String?>{},
+      final Set<String> selectedLabelIds = const <String>{},
       final Set<String> selectedPriorities = const <String>{},
       this.sortOption = TaskSortOption.byPriority,
       this.showCreationDate = false})
@@ -495,9 +501,11 @@ class _JournalPageState implements JournalPageState {
         _selectedPriorities = selectedPriorities;
 
   @override
+  @JsonKey()
   final String match;
   final Set<String> _tagIds;
   @override
+  @JsonKey()
   Set<String> get tagIds {
     if (_tagIds is EqualUnmodifiableSetView) return _tagIds;
     // ignore: implicit_dynamic_type
@@ -506,6 +514,7 @@ class _JournalPageState implements JournalPageState {
 
   final Set<DisplayFilter> _filters;
   @override
+  @JsonKey()
   Set<DisplayFilter> get filters {
     if (_filters is EqualUnmodifiableSetView) return _filters;
     // ignore: implicit_dynamic_type
@@ -513,11 +522,14 @@ class _JournalPageState implements JournalPageState {
   }
 
   @override
+  @JsonKey()
   final bool showPrivateEntries;
   @override
+  @JsonKey()
   final bool showTasks;
   final List<String> _selectedEntryTypes;
   @override
+  @JsonKey()
   List<String> get selectedEntryTypes {
     if (_selectedEntryTypes is EqualUnmodifiableListView)
       return _selectedEntryTypes;
@@ -527,6 +539,7 @@ class _JournalPageState implements JournalPageState {
 
   final Set<String> _fullTextMatches;
   @override
+  @JsonKey()
   Set<String> get fullTextMatches {
     if (_fullTextMatches is EqualUnmodifiableSetView) return _fullTextMatches;
     // ignore: implicit_dynamic_type
@@ -534,9 +547,11 @@ class _JournalPageState implements JournalPageState {
   }
 
   @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final PagingController<int, JournalEntity>? pagingController;
   final List<String> _taskStatuses;
   @override
+  @JsonKey()
   List<String> get taskStatuses {
     if (_taskStatuses is EqualUnmodifiableListView) return _taskStatuses;
     // ignore: implicit_dynamic_type
@@ -545,6 +560,7 @@ class _JournalPageState implements JournalPageState {
 
   final Set<String> _selectedTaskStatuses;
   @override
+  @JsonKey()
   Set<String> get selectedTaskStatuses {
     if (_selectedTaskStatuses is EqualUnmodifiableSetView)
       return _selectedTaskStatuses;
@@ -554,6 +570,7 @@ class _JournalPageState implements JournalPageState {
 
   final Set<String?> _selectedCategoryIds;
   @override
+  @JsonKey()
   Set<String?> get selectedCategoryIds {
     if (_selectedCategoryIds is EqualUnmodifiableSetView)
       return _selectedCategoryIds;
@@ -563,6 +580,7 @@ class _JournalPageState implements JournalPageState {
 
   final Set<String> _selectedLabelIds;
   @override
+  @JsonKey()
   Set<String> get selectedLabelIds {
     if (_selectedLabelIds is EqualUnmodifiableSetView) return _selectedLabelIds;
     // ignore: implicit_dynamic_type
@@ -669,6 +687,7 @@ abstract mixin class _$JournalPageStateCopyWith<$Res>
       bool showTasks,
       List<String> selectedEntryTypes,
       Set<String> fullTextMatches,
+      @JsonKey(includeFromJson: false, includeToJson: false)
       PagingController<int, JournalEntity>? pagingController,
       List<String> taskStatuses,
       Set<String> selectedTaskStatuses,
@@ -1090,7 +1109,7 @@ extension TasksFilterPatterns on TasksFilter {
 /// @nodoc
 @JsonSerializable()
 class _TasksFilter implements TasksFilter {
-  _TasksFilter(
+  const _TasksFilter(
       {final Set<String> selectedCategoryIds = const <String>{},
       final Set<String> selectedTaskStatuses = const <String>{},
       final Set<String> selectedLabelIds = const <String>{},

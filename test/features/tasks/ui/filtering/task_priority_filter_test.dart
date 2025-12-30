@@ -1,16 +1,37 @@
-import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
-import 'package:mocktail/mocktail.dart';
+// ignore_for_file: avoid_redundant_argument_values
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
 import '../../../../widget_test_utils.dart';
 
-class _MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+  final List<String> toggledPriorities = [];
+  int clearSelectedPrioritiesCalled = 0;
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> toggleSelectedPriority(String priority) async {
+    toggledPriorities.add(priority);
+  }
+
+  @override
+  Future<void> clearSelectedPriorities() async {
+    clearSelectedPrioritiesCalled++;
+  }
+}
 
 JournalPageState _baseState({
   Set<String> selectedPriorities = const <String>{},
@@ -33,24 +54,20 @@ JournalPageState _baseState({
 }
 
 void main() {
-  late _MockJournalPageCubit cubit;
+  late FakeJournalPageController fakeController;
 
   setUp(() async {
-    cubit = _MockJournalPageCubit();
-    // Stub async cubit APIs used by the widget
-    when(() => cubit.toggleSelectedPriority(any())).thenAnswer((_) async {});
-    when(() => cubit.clearSelectedPriorities()).thenAnswer((_) async {});
+    // Stub async controller APIs used by the widget
   });
 
   Widget wrap(Widget child, JournalPageState state) {
-    when(() => cubit.state).thenReturn(state);
-    whenListen(
-      cubit,
-      Stream<JournalPageState>.fromIterable([state]),
-    );
+    fakeController = FakeJournalPageController(state);
 
-    return BlocProvider<JournalPageCubit>.value(
-      value: cubit,
+    return ProviderScope(
+      overrides: [
+        journalPageScopeProvider.overrideWithValue(true),
+        journalPageControllerProvider(true).overrideWith(() => fakeController),
+      ],
       child: makeTestableWidgetWithScaffold(child),
     );
   }
@@ -62,10 +79,10 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('P0'));
-    verify(() => cubit.toggleSelectedPriority('P0')).called(1);
+    expect(fakeController.toggledPriorities, contains('P0'));
 
     await tester.tap(find.text('P2'));
-    verify(() => cubit.toggleSelectedPriority('P2')).called(1);
+    expect(fakeController.toggledPriorities, contains('P2'));
   });
 
   testWidgets('All chip clears selected priorities', (tester) async {
@@ -78,6 +95,6 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('All'));
-    verify(() => cubit.clearSelectedPriorities()).called(1);
+    expect(fakeController.clearSelectedPrioritiesCalled, 1);
   });
 }

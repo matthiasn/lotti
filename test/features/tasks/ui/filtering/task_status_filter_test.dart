@@ -1,26 +1,61 @@
-import 'package:bloc_test/bloc_test.dart';
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_helper.dart';
 
-class MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+  final List<String> toggledStatuses = [];
+  final List<String> singleSelectedStatuses = [];
+  int clearSelectedTaskStatusesCalled = 0;
+  int selectAllTaskStatusesCalled = 0;
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> toggleSelectedTaskStatus(String status) async {
+    toggledStatuses.add(status);
+  }
+
+  @override
+  Future<void> selectSingleTaskStatus(String status) async {
+    singleSelectedStatuses.add(status);
+  }
+
+  @override
+  Future<void> clearSelectedTaskStatuses() async {
+    clearSelectedTaskStatusesCalled++;
+  }
+
+  @override
+  Future<void> selectAllTaskStatuses() async {
+    selectAllTaskStatusesCalled++;
+  }
+}
 
 class MockPagingController extends Mock
     implements PagingController<int, JournalEntity> {}
 
 void main() {
-  late MockJournalPageCubit mockCubit;
+  late FakeJournalPageController fakeController;
   late JournalPageState mockState;
   late MockPagingController mockPagingController;
 
@@ -35,7 +70,6 @@ void main() {
       return null;
     });
 
-    mockCubit = MockJournalPageCubit();
     mockPagingController = MockPagingController();
     mockState = JournalPageState(
       match: '',
@@ -51,22 +85,41 @@ void main() {
       selectedCategoryIds: {},
       selectedLabelIds: const {},
     );
-
-    when(() => mockCubit.state).thenReturn(mockState);
   });
 
-  group('TaskStatusFilter', () {
-    Widget buildSubject() {
-      return WidgetTestBench(
-        child: BlocProvider<JournalPageCubit>.value(
-          value: mockCubit,
-          child: const TaskStatusFilter(),
-        ),
-      );
-    }
+  Widget buildWithState(JournalPageState state) {
+    fakeController = FakeJournalPageController(state);
 
+    return WidgetTestBench(
+      child: ProviderScope(
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(true)
+              .overrideWith(() => fakeController),
+        ],
+        child: const TaskStatusFilter(),
+      ),
+    );
+  }
+
+  Widget buildChipWithState(JournalPageState state, Widget child) {
+    fakeController = FakeJournalPageController(state);
+
+    return WidgetTestBench(
+      child: ProviderScope(
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(true)
+              .overrideWith(() => fakeController),
+        ],
+        child: child,
+      ),
+    );
+  }
+
+  group('TaskStatusFilter', () {
     testWidgets('renders correctly with all statuses', (tester) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Verify the widget is rendered
@@ -108,13 +161,11 @@ void main() {
       const selectedStatus = 'OPEN';
 
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusChip(
-              selectedStatus,
-              onlySelected: false,
-            ),
+        buildChipWithState(
+          mockState,
+          const TaskStatusChip(
+            selectedStatus,
+            onlySelected: false,
           ),
         ),
       );
@@ -135,13 +186,11 @@ void main() {
       const nonSelectedStatus = 'GROOMED';
 
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusChip(
-              nonSelectedStatus,
-              onlySelected: false,
-            ),
+        buildChipWithState(
+          mockState,
+          const TaskStatusChip(
+            nonSelectedStatus,
+            onlySelected: false,
           ),
         ),
       );
@@ -163,13 +212,11 @@ void main() {
       const nonSelectedStatus = 'GROOMED';
 
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusChip(
-              nonSelectedStatus,
-              onlySelected: true,
-            ),
+        buildChipWithState(
+          mockState,
+          const TaskStatusChip(
+            nonSelectedStatus,
+            onlySelected: true,
           ),
         ),
       );
@@ -183,18 +230,12 @@ void main() {
       // Set up a status
       const status = 'GROOMED';
 
-      // Set up the mock to allow the toggleSelectedTaskStatus call
-      when(() => mockCubit.toggleSelectedTaskStatus(status))
-          .thenAnswer((_) async {});
-
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusChip(
-              status,
-              onlySelected: false,
-            ),
+        buildChipWithState(
+          mockState,
+          const TaskStatusChip(
+            status,
+            onlySelected: false,
           ),
         ),
       );
@@ -205,7 +246,7 @@ void main() {
       await tester.pump();
 
       // Verify that toggleSelectedTaskStatus was called
-      verify(() => mockCubit.toggleSelectedTaskStatus(status)).called(1);
+      expect(fakeController.toggledStatuses, contains(status));
     });
 
     testWidgets('calls selectSingleTaskStatus when long pressed',
@@ -213,18 +254,12 @@ void main() {
       // Set up a status
       const status = 'GROOMED';
 
-      // Set up the mock to allow the selectSingleTaskStatus call
-      when(() => mockCubit.selectSingleTaskStatus(status))
-          .thenAnswer((_) async {});
-
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusChip(
-              status,
-              onlySelected: false,
-            ),
+        buildChipWithState(
+          mockState,
+          const TaskStatusChip(
+            status,
+            onlySelected: false,
           ),
         ),
       );
@@ -235,7 +270,7 @@ void main() {
       await tester.pump();
 
       // Verify that selectSingleTaskStatus was called
-      verify(() => mockCubit.selectSingleTaskStatus(status)).called(1);
+      expect(fakeController.singleSelectedStatuses, contains(status));
     });
   });
 
@@ -243,7 +278,7 @@ void main() {
     testWidgets('renders correctly when all statuses are selected',
         (tester) async {
       // Set all statuses to be selected
-      mockState = JournalPageState(
+      final allSelectedState = JournalPageState(
         match: '',
         tagIds: <String>{},
         filters: {},
@@ -257,15 +292,9 @@ void main() {
         selectedCategoryIds: {},
         selectedLabelIds: const {},
       );
-      when(() => mockCubit.state).thenReturn(mockState);
 
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusAllChip(),
-          ),
-        ),
+        buildChipWithState(allSelectedState, const TaskStatusAllChip()),
       );
       await tester.pumpAndSettle();
 
@@ -283,12 +312,7 @@ void main() {
       // Only some statuses are selected (default in setUp)
 
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusAllChip(),
-          ),
-        ),
+        buildChipWithState(mockState, const TaskStatusAllChip()),
       );
       await tester.pumpAndSettle();
 
@@ -305,7 +329,7 @@ void main() {
         'calls clearSelectedTaskStatuses when tapped and all are selected',
         (tester) async {
       // Set all statuses to be selected
-      mockState = JournalPageState(
+      final allSelectedState = JournalPageState(
         match: '',
         tagIds: <String>{},
         filters: {},
@@ -319,19 +343,9 @@ void main() {
         selectedCategoryIds: {},
         selectedLabelIds: const {},
       );
-      when(() => mockCubit.state).thenReturn(mockState);
-
-      // Set up the mock to allow the clearSelectedTaskStatuses call
-      when(() => mockCubit.clearSelectedTaskStatuses())
-          .thenAnswer((_) async {});
 
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusAllChip(),
-          ),
-        ),
+        buildChipWithState(allSelectedState, const TaskStatusAllChip()),
       );
       await tester.pumpAndSettle();
 
@@ -340,7 +354,7 @@ void main() {
       await tester.pump();
 
       // Verify that clearSelectedTaskStatuses was called
-      verify(() => mockCubit.clearSelectedTaskStatuses()).called(1);
+      expect(fakeController.clearSelectedTaskStatusesCalled, 1);
     });
 
     testWidgets(
@@ -348,16 +362,8 @@ void main() {
         (tester) async {
       // Only some statuses are selected (default in setUp)
 
-      // Set up the mock to allow the selectAllTaskStatuses call
-      when(() => mockCubit.selectAllTaskStatuses()).thenAnswer((_) async {});
-
       await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const TaskStatusAllChip(),
-          ),
-        ),
+        buildChipWithState(mockState, const TaskStatusAllChip()),
       );
       await tester.pumpAndSettle();
 
@@ -366,7 +372,7 @@ void main() {
       await tester.pump();
 
       // Verify that selectAllTaskStatuses was called
-      verify(() => mockCubit.selectAllTaskStatuses()).called(1);
+      expect(fakeController.selectAllTaskStatusesCalled, 1);
     });
   });
 }

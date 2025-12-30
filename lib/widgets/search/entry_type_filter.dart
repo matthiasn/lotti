@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -47,23 +46,19 @@ class EntryTypeFilter extends ConsumerWidget {
       dashboards: enableDashboards,
     );
 
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        return Wrap(
-          runSpacing: 10,
-          spacing: 5,
-          children: [
-            ...filteredEntryTypes.map(EntryTypeChip.new),
-            EntryTypeAllChip(filteredEntryTypes: filteredEntryTypes),
-            const SizedBox(width: 5),
-          ],
-        );
-      },
+    return Wrap(
+      runSpacing: 10,
+      spacing: 5,
+      children: [
+        ...filteredEntryTypes.map(EntryTypeChip.new),
+        EntryTypeAllChip(filteredEntryTypes: filteredEntryTypes),
+        const SizedBox(width: 5),
+      ],
     );
   }
 }
 
-class EntryTypeChip extends StatelessWidget {
+class EntryTypeChip extends ConsumerWidget {
   const EntryTypeChip(
     this.entryType, {
     super.key,
@@ -72,36 +67,35 @@ class EntryTypeChip extends StatelessWidget {
   final String entryType;
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        final cubit = context.read<JournalPageCubit>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showTasks = ref.watch(journalPageScopeProvider);
+    final state = ref.watch(journalPageControllerProvider(showTasks));
+    final controller =
+        ref.read(journalPageControllerProvider(showTasks).notifier);
 
-        final isSelected = snapshot.selectedEntryTypes.contains(entryType);
+    final isSelected = state.selectedEntryTypes.contains(entryType);
 
-        void onTap() {
-          cubit.toggleSelectedEntryTypes(entryType);
-          HapticFeedback.heavyImpact();
-        }
+    void onTap() {
+      controller.toggleSelectedEntryTypes(entryType);
+      HapticFeedback.heavyImpact();
+    }
 
-        void onLongPress() {
-          cubit.selectSingleEntryType(entryType);
-          HapticFeedback.heavyImpact();
-        }
+    void onLongPress() {
+      controller.selectSingleEntryType(entryType);
+      HapticFeedback.heavyImpact();
+    }
 
-        return FilterChoiceChip(
-          label: _entryTypeLabel(context, entryType),
-          isSelected: isSelected,
-          onTap: onTap,
-          onLongPress: onLongPress,
-          selectedColor: context.colorScheme.secondary,
-        );
-      },
+    return FilterChoiceChip(
+      label: _entryTypeLabel(context, entryType),
+      isSelected: isSelected,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      selectedColor: context.colorScheme.secondary,
     );
   }
 }
 
-class EntryTypeAllChip extends StatelessWidget {
+class EntryTypeAllChip extends ConsumerWidget {
   const EntryTypeAllChip({
     required this.filteredEntryTypes,
     super.key,
@@ -110,32 +104,31 @@ class EntryTypeAllChip extends StatelessWidget {
   final List<String> filteredEntryTypes;
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        final cubit = context.read<JournalPageCubit>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showTasks = ref.watch(journalPageScopeProvider);
+    final state = ref.watch(journalPageControllerProvider(showTasks));
+    final controller =
+        ref.read(journalPageControllerProvider(showTasks).notifier);
 
-        final isSelected = setsEqual(
-          snapshot.selectedEntryTypes.toSet(),
-          filteredEntryTypes.toSet(),
-        );
+    final isSelected = setsEqual(
+      state.selectedEntryTypes.toSet(),
+      filteredEntryTypes.toSet(),
+    );
 
-        void onTap() {
-          if (isSelected) {
-            cubit.clearSelectedEntryTypes();
-          } else {
-            cubit.selectAllEntryTypes(filteredEntryTypes);
-          }
-          HapticFeedback.heavyImpact();
-        }
+    void onTap() {
+      if (isSelected) {
+        controller.clearSelectedEntryTypes();
+      } else {
+        controller.selectAllEntryTypes(filteredEntryTypes);
+      }
+      HapticFeedback.heavyImpact();
+    }
 
-        return FilterChoiceChip(
-          label: context.messages.taskStatusAll,
-          isSelected: isSelected,
-          onTap: onTap,
-          selectedColor: context.colorScheme.secondary,
-        );
-      },
+    return FilterChoiceChip(
+      label: context.messages.taskStatusAll,
+      isSelected: isSelected,
+      onTap: onTap,
+      selectedColor: context.colorScheme.secondary,
     );
   }
 }

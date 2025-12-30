@@ -1,11 +1,13 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
@@ -15,53 +17,33 @@ import '../../widget_test_utils.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-class MockJournalPageCubit extends Mock implements JournalPageCubit {}
+/// Mock controller for testing
+class MockJournalPageController extends JournalPageController {
+  @override
+  JournalPageState build(bool showTasks) {
+    return const JournalPageState(
+      selectedEntryTypes: [],
+      match: '',
+      tagIds: {},
+      filters: {},
+      showPrivateEntries: true,
+      showTasks: false,
+      fullTextMatches: {},
+      pagingController: null,
+      taskStatuses: [],
+      selectedTaskStatuses: {},
+      selectedCategoryIds: {},
+      selectedLabelIds: {},
+    );
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late MockJournalDb mockDb;
-  late MockJournalPageCubit mockCubit;
 
   setUp(() {
     mockDb = MockJournalDb();
-    mockCubit = MockJournalPageCubit();
-
-    // Mock the cubit state
-    when(() => mockCubit.state).thenReturn(
-      JournalPageState(
-        selectedEntryTypes: const [],
-        match: '',
-        tagIds: const {},
-        filters: const {},
-        showPrivateEntries: true,
-        showTasks: true,
-        fullTextMatches: const {},
-        pagingController: null,
-        taskStatuses: const [],
-        selectedTaskStatuses: const {},
-        selectedCategoryIds: const {},
-        selectedLabelIds: const {},
-      ),
-    );
-
-    when(() => mockCubit.stream).thenAnswer(
-      (_) => Stream<JournalPageState>.fromIterable([
-        JournalPageState(
-          selectedEntryTypes: const [],
-          match: '',
-          tagIds: const {},
-          filters: const {},
-          showPrivateEntries: true,
-          showTasks: true,
-          fullTextMatches: const {},
-          pagingController: null,
-          taskStatuses: const [],
-          selectedTaskStatuses: const {},
-          selectedCategoryIds: const {},
-          selectedLabelIds: const {},
-        ),
-      ]),
-    );
   });
 
   tearDown(() async {
@@ -88,12 +70,12 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
+          const EntryTypeFilter(),
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -127,12 +109,12 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
+          const EntryTypeFilter(),
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -158,12 +140,12 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
+          const EntryTypeFilter(),
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -187,12 +169,12 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
+          const EntryTypeFilter(),
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -243,11 +225,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 
@@ -276,11 +260,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 
@@ -310,11 +296,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 
@@ -344,11 +332,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 
@@ -370,11 +360,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 
@@ -417,11 +409,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 
@@ -457,11 +451,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 
@@ -497,11 +493,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 
@@ -527,11 +525,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const EntryTypeFilter(),
-          ),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          const EntryTypeFilter(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(false)
+                .overrideWith(MockJournalPageController.new),
+          ],
         ),
       );
 

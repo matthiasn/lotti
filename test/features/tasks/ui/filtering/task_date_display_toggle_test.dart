@@ -1,26 +1,43 @@
-import 'package:bloc_test/bloc_test.dart';
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_date_display_toggle.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_helper.dart';
 
-class MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+  final List<bool> showCreationDateCalls = [];
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> setShowCreationDate({required bool show}) async {
+    showCreationDateCalls.add(show);
+  }
+}
 
 class MockPagingController extends Mock
     implements PagingController<int, JournalEntity> {}
 
 void main() {
-  late MockJournalPageCubit mockCubit;
   late MockPagingController mockPagingController;
+  late FakeJournalPageController fakeController;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +49,6 @@ void main() {
       return null;
     });
 
-    mockCubit = MockJournalPageCubit();
     mockPagingController = MockPagingController();
   });
 
@@ -56,10 +72,16 @@ void main() {
     );
   }
 
-  Widget buildSubject() {
+  Widget buildSubject(JournalPageState state) {
+    fakeController = FakeJournalPageController(state);
+
     return WidgetTestBench(
-      child: BlocProvider<JournalPageCubit>.value(
-        value: mockCubit,
+      child: ProviderScope(
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(true)
+              .overrideWith(() => fakeController),
+        ],
         child: const TaskDateDisplayToggle(),
       ),
     );
@@ -68,9 +90,7 @@ void main() {
   group('TaskDateDisplayToggle', () {
     testWidgets('renders correctly with SwitchListTile and label',
         (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       // Verify the widget is rendered
@@ -84,9 +104,7 @@ void main() {
     });
 
     testWidgets('Switch is off when showCreationDate is false', (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
@@ -94,10 +112,8 @@ void main() {
     });
 
     testWidgets('Switch is on when showCreationDate is true', (tester) async {
-      when(() => mockCubit.state)
-          .thenReturn(createState(showCreationDate: true));
-
-      await tester.pumpWidget(buildSubject());
+      await tester
+          .pumpWidget(buildSubject(createState(showCreationDate: true)));
       await tester.pumpAndSettle();
 
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
@@ -107,42 +123,32 @@ void main() {
     testWidgets(
         'calls setShowCreationDate(show: true) when Switch is turned on',
         (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-      when(() => mockCubit.setShowCreationDate(show: true))
-          .thenAnswer((_) async {});
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       // Tap on the Switch to turn it on
       await tester.tap(find.byType(Switch));
       await tester.pump();
 
-      verify(() => mockCubit.setShowCreationDate(show: true)).called(1);
+      expect(fakeController.showCreationDateCalls, contains(true));
     });
 
     testWidgets(
         'calls setShowCreationDate(show: false) when Switch is turned off',
         (tester) async {
-      when(() => mockCubit.state)
-          .thenReturn(createState(showCreationDate: true));
-      when(() => mockCubit.setShowCreationDate(show: false))
-          .thenAnswer((_) async {});
-
-      await tester.pumpWidget(buildSubject());
+      await tester
+          .pumpWidget(buildSubject(createState(showCreationDate: true)));
       await tester.pumpAndSettle();
 
       // Tap on the Switch to turn it off
       await tester.tap(find.byType(Switch));
       await tester.pump();
 
-      verify(() => mockCubit.setShowCreationDate(show: false)).called(1);
+      expect(fakeController.showCreationDateCalls, contains(false));
     });
 
     testWidgets('SwitchListTile contains label and switch', (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       // Verify SwitchListTile contains both label and switch

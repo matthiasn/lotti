@@ -22,7 +22,7 @@ This feature powers task creation, editing, filtering and list/grid rendering.
 ## Developer Notes
 
 - Model helpers live in `lib/classes/task.dart` (priority enum, rank/short/color mapping)
-- Filter state lives in `JournalPageCubit`/`JournalPageState`; TasksFilter JSON is used for persistence
+- Filter state lives in `JournalPageController`/`JournalPageState` (Riverpod) at `lib/features/journal/state/`; TasksFilter JSON is used for persistence
 - Do not modify generated code; run `make build_runner` when model changes are made
 
 The Tasks feature provides comprehensive task management with checklists, time tracking, and AI-powered assistance.

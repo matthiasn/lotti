@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';

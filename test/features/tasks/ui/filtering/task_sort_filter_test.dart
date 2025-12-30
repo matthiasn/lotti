@@ -1,26 +1,43 @@
-import 'package:bloc_test/bloc_test.dart';
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_sort_filter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_helper.dart';
 
-class MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+  final List<TaskSortOption> sortOptionCalls = [];
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> setSortOption(TaskSortOption sortOption) async {
+    sortOptionCalls.add(sortOption);
+  }
+}
 
 class MockPagingController extends Mock
     implements PagingController<int, JournalEntity> {}
 
 void main() {
-  late MockJournalPageCubit mockCubit;
   late MockPagingController mockPagingController;
+  late FakeJournalPageController fakeController;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +49,6 @@ void main() {
       return null;
     });
 
-    mockCubit = MockJournalPageCubit();
     mockPagingController = MockPagingController();
   });
 
@@ -56,10 +72,16 @@ void main() {
     );
   }
 
-  Widget buildSubject() {
+  Widget buildSubject(JournalPageState state) {
+    fakeController = FakeJournalPageController(state);
+
     return WidgetTestBench(
-      child: BlocProvider<JournalPageCubit>.value(
-        value: mockCubit,
+      child: ProviderScope(
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(true)
+              .overrideWith(() => fakeController),
+        ],
         child: const TaskSortFilter(),
       ),
     );
@@ -67,9 +89,7 @@ void main() {
 
   group('TaskSortFilter', () {
     testWidgets('renders correctly with SegmentedButton', (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       // Verify the widget is rendered
@@ -85,9 +105,7 @@ void main() {
 
     testWidgets('shows Priority selected when sortOption is byPriority',
         (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       final segmentedButton = tester.widget<SegmentedButton<TaskSortOption>>(
@@ -99,10 +117,8 @@ void main() {
 
     testWidgets('shows Date selected when sortOption is byDate',
         (tester) async {
-      when(() => mockCubit.state)
-          .thenReturn(createState(sortOption: TaskSortOption.byDate));
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(
+          buildSubject(createState(sortOption: TaskSortOption.byDate)));
       await tester.pumpAndSettle();
 
       final segmentedButton = tester.widget<SegmentedButton<TaskSortOption>>(
@@ -114,42 +130,34 @@ void main() {
 
     testWidgets('calls setSortOption when Priority segment is tapped',
         (tester) async {
-      when(() => mockCubit.state)
-          .thenReturn(createState(sortOption: TaskSortOption.byDate));
-      when(() => mockCubit.setSortOption(TaskSortOption.byPriority))
-          .thenAnswer((_) async {});
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(
+          buildSubject(createState(sortOption: TaskSortOption.byDate)));
       await tester.pumpAndSettle();
 
       // Tap on Priority segment
       await tester.tap(find.text('Priority'));
       await tester.pump();
 
-      verify(() => mockCubit.setSortOption(TaskSortOption.byPriority))
-          .called(1);
+      expect(
+        fakeController.sortOptionCalls,
+        contains(TaskSortOption.byPriority),
+      );
     });
 
     testWidgets('calls setSortOption when Date segment is tapped',
         (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-      when(() => mockCubit.setSortOption(TaskSortOption.byDate))
-          .thenAnswer((_) async {});
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       // Tap on Date segment
       await tester.tap(find.text('Date'));
       await tester.pump();
 
-      verify(() => mockCubit.setSortOption(TaskSortOption.byDate)).called(1);
+      expect(fakeController.sortOptionCalls, contains(TaskSortOption.byDate));
     });
 
     testWidgets('displays sort by label', (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       // Verify label is shown
@@ -157,9 +165,7 @@ void main() {
     });
 
     testWidgets('SegmentedButton has two segments', (tester) async {
-      when(() => mockCubit.state).thenReturn(createState());
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       // Verify SegmentedButton has exactly 2 segments

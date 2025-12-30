@@ -1,13 +1,25 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/features/ai_chat/ui/pages/chat_modal_page.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/ai_chat_icon.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 
-class _MockJournalPageCubit extends Mock implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+}
 
 void main() {
   // Helper to build a minimal app hosting the AiChatIcon in the AppBar.
@@ -23,29 +35,11 @@ void main() {
   }
 
   group('AiChatIcon', () {
-    late _MockJournalPageCubit mockJournalPageCubit;
+    late FakeJournalPageController fakeController;
 
     setUp(() {
-      mockJournalPageCubit = _MockJournalPageCubit();
-    });
-
-    testWidgets('renders icon and tooltip', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          icon: const AiChatIcon(),
-          body: const SizedBox.shrink(),
-        ),
-      );
-
-      expect(find.byIcon(Icons.psychology_outlined), findsOneWidget);
-      expect(find.byTooltip('AI Chat Assistant'), findsOneWidget);
-    });
-
-    testWidgets('opens modal bottom sheet with ChatModalPage on tap',
-        (tester) async {
-      // Provide a minimal state where no category is selected,
-      // so ChatModalPage shows the selection prompt (no Riverpod needed).
-      final state = JournalPageState(
+      // Create a minimal state where no category is selected
+      const state = JournalPageState(
         match: '',
         tagIds: <String>{},
         filters: <DisplayFilter>{},
@@ -59,14 +53,37 @@ void main() {
         selectedCategoryIds: <String?>{},
         selectedLabelIds: <String>{},
       );
+      fakeController = FakeJournalPageController(state);
+    });
 
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream<JournalPageState>.value(state));
-      when(() => mockJournalPageCubit.state).thenReturn(state);
-
+    testWidgets('renders icon and tooltip', (tester) async {
       await tester.pumpWidget(
-        BlocProvider<JournalPageCubit>.value(
-          value: mockJournalPageCubit,
+        ProviderScope(
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true)
+                .overrideWith(() => fakeController),
+          ],
+          child: buildTestApp(
+            icon: const AiChatIcon(),
+            body: const SizedBox.shrink(),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.psychology_outlined), findsOneWidget);
+      expect(find.byTooltip('AI Chat Assistant'), findsOneWidget);
+    });
+
+    testWidgets('opens modal bottom sheet with ChatModalPage on tap',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true)
+                .overrideWith(() => fakeController),
+          ],
           child: buildTestApp(
             icon: const AiChatIcon(),
             body: const SizedBox.shrink(),

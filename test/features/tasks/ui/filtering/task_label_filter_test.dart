@@ -1,13 +1,12 @@
 // ignore_for_file: avoid_redundant_argument_values
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/get_it.dart';
@@ -16,8 +15,29 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
 
-class _MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+  final List<String> toggledLabelIds = [];
+  int clearSelectedLabelIdsCalled = 0;
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> toggleSelectedLabelId(String id) async {
+    toggledLabelIds.add(id);
+  }
+
+  @override
+  Future<void> clearSelectedLabelIds() async {
+    clearSelectedLabelIdsCalled++;
+  }
+}
 
 class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
@@ -55,12 +75,11 @@ LabelDefinition buildTestLabel(int index) {
 }
 
 void main() {
-  late _MockJournalPageCubit cubit;
+  late FakeJournalPageController fakeController;
   late _MockEntitiesCacheService cacheService;
   late List<LabelDefinition> labels;
 
   setUp(() async {
-    cubit = _MockJournalPageCubit();
     cacheService = _MockEntitiesCacheService();
     labels = List.generate(10, buildTestLabel);
 
@@ -72,9 +91,6 @@ void main() {
       when(() => cacheService.getLabelById(label.id)).thenReturn(label);
     }
     when(() => cacheService.showPrivateEntries).thenReturn(true);
-    // Stub async cubit APIs used by the widgets
-    when(() => cubit.toggleSelectedLabelId(any())).thenAnswer((_) async {});
-    when(() => cubit.clearSelectedLabelIds()).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -87,17 +103,14 @@ void main() {
       isTrue,
       reason: 'EntitiesCacheService must be registered before building widgets',
     );
-    when(() => cubit.state).thenReturn(state);
-    whenListen(
-      cubit,
-      Stream<JournalPageState>.fromIterable([state]),
-    );
+    fakeController = FakeJournalPageController(state);
 
     return ProviderScope(
-      child: BlocProvider<JournalPageCubit>.value(
-        value: cubit,
-        child: makeTestableWidgetWithScaffold(child),
-      ),
+      overrides: [
+        journalPageScopeProvider.overrideWithValue(true),
+        journalPageControllerProvider(true).overrideWith(() => fakeController),
+      ],
+      child: makeTestableWidgetWithScaffold(child),
     );
   }
 
@@ -109,7 +122,7 @@ void main() {
 
     await tester.tap(find.text('Label 0'));
 
-    verify(() => cubit.toggleSelectedLabelId('label-0')).called(1);
+    expect(fakeController.toggledLabelIds, contains('label-0'));
   });
 
   testWidgets('shows more labels after tapping ellipsis chip', (tester) async {
@@ -126,7 +139,7 @@ void main() {
     expect(find.text('Label 9'), findsOneWidget);
   });
 
-  testWidgets('Clear and Unlabeled chips trigger cubit actions',
+  testWidgets('Clear and Unlabeled chips trigger controller actions',
       (tester) async {
     final state = _baseState(selectedLabelIds: {'label-1'});
     final widget = wrapFilter(const TaskLabelFilter(), state);
@@ -135,31 +148,24 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('All'));
-    verify(() => cubit.clearSelectedLabelIds()).called(1);
+    expect(fakeController.clearSelectedLabelIdsCalled, 1);
 
     await tester.tap(find.text('Unlabeled'));
-    verify(() => cubit.toggleSelectedLabelId('')).called(1);
+    expect(fakeController.toggledLabelIds, contains(''));
   });
 
   testWidgets('quick filter lists active labels and clears selections',
       (tester) async {
-    when(() => cubit.state)
-        .thenReturn(_baseState(selectedLabelIds: {'label-0', ''}));
-    whenListen(
-      cubit,
-      Stream<JournalPageState>.fromIterable(
-        [
-          _baseState(selectedLabelIds: {'label-0', ''})
-        ],
-      ),
-    );
+    final state = _baseState(selectedLabelIds: {'label-0', ''});
+    fakeController = FakeJournalPageController(state);
 
     final widget = ProviderScope(
-      child: BlocProvider<JournalPageCubit>.value(
-        value: cubit,
-        child: makeTestableWidgetWithScaffold(
-          const TaskLabelQuickFilter(),
-        ),
+      overrides: [
+        journalPageScopeProvider.overrideWithValue(true),
+        journalPageControllerProvider(true).overrideWith(() => fakeController),
+      ],
+      child: makeTestableWidgetWithScaffold(
+        const TaskLabelQuickFilter(),
       ),
     );
 
@@ -171,9 +177,9 @@ void main() {
     expect(find.text('Unassigned'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.close).first);
-    verify(() => cubit.toggleSelectedLabelId('label-0')).called(1);
+    expect(fakeController.toggledLabelIds, contains('label-0'));
 
     await tester.tap(find.text('Clear'));
-    verify(() => cubit.clearSelectedLabelIds()).called(1);
+    expect(fakeController.clearSelectedLabelIdsCalled, 1);
   });
 }

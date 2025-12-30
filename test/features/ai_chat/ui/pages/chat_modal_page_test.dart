@@ -1,12 +1,9 @@
-import 'dart:async';
+// ignore_for_file: avoid_redundant_argument_values
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
@@ -14,14 +11,39 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.da
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/features/ai_chat/ui/pages/chat_modal_page.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
-
-class MockJournalPageCubit extends Mock implements JournalPageCubit {}
 
 class MockChatRepository extends Mock implements ChatRepository {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+/// Mock controller that returns a specific state based on selectedCategoryIds
+class _MockJournalPageController extends JournalPageController {
+  _MockJournalPageController(this._selectedCategoryIds);
+  final Set<String?> _selectedCategoryIds;
+
+  @override
+  JournalPageState build(bool showTasks) {
+    return JournalPageState(
+      selectedEntryTypes: const [],
+      match: '',
+      tagIds: const {},
+      filters: const {},
+      showPrivateEntries: false,
+      showTasks: true,
+      fullTextMatches: const {},
+      pagingController: null,
+      taskStatuses: const [],
+      selectedTaskStatuses: const {},
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedLabelIds: const {},
+    );
+  }
+}
 
 void main() {
   // Helper to set up test environment with adequate size
@@ -33,12 +55,10 @@ void main() {
   }
 
   group('ChatModalPage', () {
-    late MockJournalPageCubit mockJournalPageCubit;
     late MockChatRepository mockChatRepository;
     late MockLoggingService mockLoggingService;
 
     setUp(() {
-      mockJournalPageCubit = MockJournalPageCubit();
       mockChatRepository = MockChatRepository();
       mockLoggingService = MockLoggingService();
 
@@ -54,37 +74,19 @@ void main() {
 
     testWidgets('displays category selection prompt when no category selected',
         (tester) async {
-      final state = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: <DisplayFilter>{},
-        showPrivateEntries: false,
-        showTasks: true,
-        selectedEntryTypes: <String>[],
-        fullTextMatches: <String>{},
-        pagingController: null,
-        taskStatuses: <String>[],
-        selectedTaskStatuses: <String>{},
-        selectedCategoryIds: <String?>{}, // No categories selected
-        selectedLabelIds: <String>{},
-      );
-
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream.value(state));
-      when(() => mockJournalPageCubit.state).thenReturn(state);
-
       await setupTestWidget(
         tester,
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{}),
+            ),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(
-                body: ChatModalPage(),
-              ),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ChatModalPage(),
             ),
           ),
         ),
@@ -104,40 +106,19 @@ void main() {
     testWidgets(
         'displays category selection prompt when multiple categories selected',
         (tester) async {
-      final state = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: <DisplayFilter>{},
-        showPrivateEntries: false,
-        showTasks: true,
-        selectedEntryTypes: <String>[],
-        fullTextMatches: <String>{},
-        pagingController: null,
-        taskStatuses: <String>[],
-        selectedTaskStatuses: <String>{},
-        selectedCategoryIds: <String?>{
-          'cat1',
-          'cat2'
-        }, // Multiple categories selected
-        selectedLabelIds: <String>{},
-      );
-
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream.value(state));
-      when(() => mockJournalPageCubit.state).thenReturn(state);
-
       await setupTestWidget(
         tester,
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{'cat1', 'cat2'}),
+            ),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(
-                body: ChatModalPage(),
-              ),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ChatModalPage(),
             ),
           ),
         ),
@@ -153,27 +134,6 @@ void main() {
     testWidgets(
         'displays RefactoredChatInterface when single category selected',
         (tester) async {
-      final state = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: <DisplayFilter>{},
-        showPrivateEntries: false,
-        showTasks: true,
-        selectedEntryTypes: <String>[],
-        fullTextMatches: <String>{},
-        pagingController: null,
-        taskStatuses: <String>[],
-        selectedTaskStatuses: <String>{},
-        selectedCategoryIds: <String?>{
-          'single-category-id'
-        }, // Single category selected
-        selectedLabelIds: <String>{},
-      );
-
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream.value(state));
-      when(() => mockJournalPageCubit.state).thenReturn(state);
-
       when(() => mockChatRepository.createSession(
               categoryId: 'single-category-id'))
           .thenAnswer((_) async => ChatSession(
@@ -189,13 +149,14 @@ void main() {
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{'single-category-id'}),
+            ),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(
-                body: ChatModalPage(),
-              ),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ChatModalPage(),
             ),
           ),
         ),
@@ -214,24 +175,6 @@ void main() {
     testWidgets('passes correct categoryId to RefactoredChatInterface',
         (tester) async {
       const categoryId = 'test-category-123';
-      final state = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: <DisplayFilter>{},
-        showPrivateEntries: false,
-        showTasks: true,
-        selectedEntryTypes: <String>[],
-        fullTextMatches: <String>{},
-        pagingController: null,
-        taskStatuses: <String>[],
-        selectedTaskStatuses: <String>{},
-        selectedCategoryIds: <String?>{categoryId},
-        selectedLabelIds: <String>{},
-      );
-
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream.value(state));
-      when(() => mockJournalPageCubit.state).thenReturn(state);
 
       when(() => mockChatRepository.createSession(categoryId: categoryId))
           .thenAnswer((_) async => ChatSession(
@@ -247,13 +190,14 @@ void main() {
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{categoryId}),
+            ),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(
-                body: ChatModalPage(),
-              ),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ChatModalPage(),
             ),
           ),
         ),
@@ -272,25 +216,6 @@ void main() {
 
     testWidgets('uses SizedBox with 85% screen height constraint',
         (tester) async {
-      final state = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: <DisplayFilter>{},
-        showPrivateEntries: false,
-        showTasks: true,
-        selectedEntryTypes: <String>[],
-        fullTextMatches: <String>{},
-        pagingController: null,
-        taskStatuses: <String>[],
-        selectedTaskStatuses: <String>{},
-        selectedCategoryIds: <String?>{'single-category-id'},
-        selectedLabelIds: <String>{},
-      );
-
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream.value(state));
-      when(() => mockJournalPageCubit.state).thenReturn(state);
-
       when(() => mockChatRepository.createSession(
               categoryId: 'single-category-id'))
           .thenAnswer((_) async => ChatSession(
@@ -306,13 +231,14 @@ void main() {
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{'single-category-id'}),
+            ),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(
-                body: ChatModalPage(),
-              ),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ChatModalPage(),
             ),
           ),
         ),
@@ -335,37 +261,19 @@ void main() {
 
     testWidgets('responds to category selection changes', (tester) async {
       // Test initial state with no categories
-      final noCategories = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: <DisplayFilter>{},
-        showPrivateEntries: false,
-        showTasks: true,
-        selectedEntryTypes: <String>[],
-        fullTextMatches: <String>{},
-        pagingController: null,
-        taskStatuses: <String>[],
-        selectedTaskStatuses: <String>{},
-        selectedCategoryIds: <String?>{}, // No categories
-        selectedLabelIds: <String>{},
-      );
-
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream.value(noCategories));
-      when(() => mockJournalPageCubit.state).thenReturn(noCategories);
-
       await setupTestWidget(
         tester,
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{}),
+            ),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(
-                body: ChatModalPage(),
-              ),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ChatModalPage(),
             ),
           ),
         ),
@@ -381,25 +289,6 @@ void main() {
     testWidgets('shows chat interface with single category selected',
         (tester) async {
       // Test state with single category selected
-      final singleCategory = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: <DisplayFilter>{},
-        showPrivateEntries: false,
-        showTasks: true,
-        selectedEntryTypes: <String>[],
-        fullTextMatches: <String>{},
-        pagingController: null,
-        taskStatuses: <String>[],
-        selectedTaskStatuses: <String>{},
-        selectedCategoryIds: <String?>{'test-category'}, // Single category
-        selectedLabelIds: <String>{},
-      );
-
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream.value(singleCategory));
-      when(() => mockJournalPageCubit.state).thenReturn(singleCategory);
-
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
           .thenAnswer((_) async => ChatSession(
                 id: 'test-session',
@@ -414,13 +303,14 @@ void main() {
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{'test-category'}),
+            ),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(
-                body: ChatModalPage(),
-              ),
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ChatModalPage(),
             ),
           ),
         ),
@@ -440,40 +330,20 @@ void main() {
         GetIt.instance.registerSingleton<LoggingService>(LoggingService());
       }
 
-      // Controllers are defined at file scope below
-
-      final state = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: <DisplayFilter>{},
-        showPrivateEntries: false,
-        showTasks: true,
-        selectedEntryTypes: <String>[],
-        fullTextMatches: <String>{},
-        pagingController: null,
-        taskStatuses: <String>[],
-        selectedTaskStatuses: <String>{},
-        selectedCategoryIds: <String?>{'cat'},
-        selectedLabelIds: <String>{},
-      );
-
-      when(() => mockJournalPageCubit.stream)
-          .thenAnswer((_) => Stream.value(state));
-      when(() => mockJournalPageCubit.state).thenReturn(state);
-
       // First with streaming=true
       await setupTestWidget(
         tester,
         ProviderScope(
           overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{'cat'}),
+            ),
             chatSessionControllerProvider('cat')
                 .overrideWith(_StreamingChatController.new),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(body: ChatModalPage()),
-            ),
+          child: const MaterialApp(
+            home: Scaffold(body: ChatModalPage()),
           ),
         ),
       );
@@ -497,14 +367,15 @@ void main() {
         tester,
         ProviderScope(
           overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true).overrideWith(
+              () => _MockJournalPageController(<String?>{'cat'}),
+            ),
             chatSessionControllerProvider('cat')
                 .overrideWith(_IdleChatController.new),
           ],
-          child: MaterialApp(
-            home: BlocProvider<JournalPageCubit>.value(
-              value: mockJournalPageCubit,
-              child: const Scaffold(body: ChatModalPage()),
-            ),
+          child: const MaterialApp(
+            home: Scaffold(body: ChatModalPage()),
           ),
         ),
       );

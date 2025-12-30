@@ -1,21 +1,37 @@
-import 'package:bloc_test/bloc_test.dart';
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-class MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> refreshQuery() async {}
+
+  @override
+  void updateVisibility(VisibilityInfo info) {}
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -31,46 +47,41 @@ void main() {
   tearDown(getIt.reset);
 
   testWidgets('adds 100px bottom spacer sliver', (tester) async {
-    final mockCubit = MockJournalPageCubit();
-    final state = JournalPageState(
+    const state = JournalPageState(
       match: '',
       tagIds: <String>{},
       filters: <DisplayFilter>{},
       showPrivateEntries: false,
       showTasks: false, // simpler app bar
-      selectedEntryTypes: const <String>[],
+      selectedEntryTypes: <String>[],
       fullTextMatches: <String>{},
       pagingController: null, // triggers loading branch
-      taskStatuses: const <String>[],
+      taskStatuses: <String>[],
       selectedTaskStatuses: <String>{},
       selectedCategoryIds: <String?>{},
       selectedLabelIds: <String>{},
       selectedPriorities: <String>{},
     );
 
-    when(mockCubit.refreshQuery).thenAnswer((_) async {});
-
-    whenListen<JournalPageState>(
-      mockCubit,
-      const Stream<JournalPageState>.empty(),
-      initialState: state,
-    );
-    // Also ensure direct state getter returns our state when read.
-    when(() => mockCubit.state).thenReturn(state);
+    final fakeController = FakeJournalPageController(state);
 
     await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+      ProviderScope(
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(false),
+          journalPageControllerProvider(false)
+              .overrideWith(() => fakeController),
         ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const InfiniteJournalPageBody(showTasks: false),
+        child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: InfiniteJournalPageBody(showTasks: false),
           ),
         ),
       ),
@@ -115,28 +126,25 @@ void main() {
       selectedPriorities: <String>{},
     );
 
-    final mockCubit = MockJournalPageCubit();
-    when(mockCubit.refreshQuery).thenAnswer((_) async {});
-    when(() => mockCubit.state).thenReturn(state);
-    whenListen<JournalPageState>(
-      mockCubit,
-      const Stream<JournalPageState>.empty(),
-      initialState: state,
-    );
+    final fakeController = FakeJournalPageController(state);
 
     await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+      ProviderScope(
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(false),
+          journalPageControllerProvider(false)
+              .overrideWith(() => fakeController),
         ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<JournalPageCubit>.value(
-            value: mockCubit,
-            child: const InfiniteJournalPageBody(showTasks: false),
+        child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: InfiniteJournalPageBody(showTasks: false),
           ),
         ),
       ),
