@@ -45,7 +45,8 @@ void main() {
       [categoryMindfulness],
     );
 
-    when(() => mockEntitiesCacheService.getCategoryById(any())).thenReturn(null);
+    when(() => mockEntitiesCacheService.getCategoryById(any()))
+        .thenReturn(null);
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)

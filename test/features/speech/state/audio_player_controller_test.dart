@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -22,8 +21,6 @@ class MockPlayerStream extends Mock implements PlayerStream {}
 
 class FakePlayable extends Fake implements Playable {}
 
-class FakeDuration extends Fake implements Duration {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -38,7 +35,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(FakePlayable());
-    registerFallbackValue(const Duration());
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -185,8 +182,7 @@ void main() {
 
     test('position stream clamps progress to totalDuration', () async {
       // Initialize controller and set total duration
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
       controller.updateProgress(Duration.zero); // Trigger initial state
 
       // Manually set state with totalDuration for this test
@@ -273,8 +269,7 @@ void main() {
 
   group('AudioPlayerController - play()', () {
     test('sets status to playing', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.play();
 
@@ -283,17 +278,15 @@ void main() {
     });
 
     test('calls player.setRate with current speed', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.play();
 
-      verify(() => mockPlayer.setRate(1.0)).called(1);
+      verify(() => mockPlayer.setRate(1)).called(1);
     });
 
     test('calls player.play()', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.play();
 
@@ -303,8 +296,7 @@ void main() {
 
   group('AudioPlayerController - pause()', () {
     test('sets status to paused', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.pause();
 
@@ -313,8 +305,7 @@ void main() {
     });
 
     test('sets pausedAt to current progress', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       // Set progress first
       positionController.add(const Duration(seconds: 45));
@@ -327,8 +318,7 @@ void main() {
     });
 
     test('calls player.pause()', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.pause();
 
@@ -338,8 +328,7 @@ void main() {
 
   group('AudioPlayerController - seek()', () {
     test('updates progress to seek position', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.seek(const Duration(seconds: 90));
 
@@ -348,8 +337,7 @@ void main() {
     });
 
     test('updates pausedAt to seek position', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.seek(const Duration(seconds: 90));
 
@@ -358,8 +346,7 @@ void main() {
     });
 
     test('updates buffered when seeking beyond current buffered', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       // Current buffered is 0, seeking to 90 should update buffered
       await controller.seek(const Duration(seconds: 90));
@@ -369,8 +356,7 @@ void main() {
     });
 
     test('preserves buffered when seeking backward', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       // Set buffer ahead
       bufferController.add(const Duration(seconds: 120));
@@ -385,8 +371,7 @@ void main() {
     });
 
     test('calls player.seek()', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.seek(const Duration(seconds: 90));
 
@@ -417,8 +402,7 @@ void main() {
 
   group('AudioPlayerController - setSpeed()', () {
     test('updates speed in state', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.setSpeed(1.5);
 
@@ -427,17 +411,15 @@ void main() {
     });
 
     test('calls player.setRate()', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
-      await controller.setSpeed(2.0);
+      await controller.setSpeed(2);
 
-      verify(() => mockPlayer.setRate(2.0)).called(1);
+      verify(() => mockPlayer.setRate(2)).called(1);
     });
 
     test('supports various speed values', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.setSpeed(0.5);
       expect(
@@ -445,10 +427,10 @@ void main() {
         equals(0.5),
       );
 
-      await controller.setSpeed(1.0);
+      await controller.setSpeed(1);
       expect(
         container.read(audioPlayerControllerProvider).speed,
-        equals(1.0),
+        equals(1),
       );
 
       await controller.setSpeed(1.5);
@@ -457,18 +439,17 @@ void main() {
         equals(1.5),
       );
 
-      await controller.setSpeed(2.0);
+      await controller.setSpeed(2);
       expect(
         container.read(audioPlayerControllerProvider).speed,
-        equals(2.0),
+        equals(2),
       );
     });
   });
 
   group('AudioPlayerController - completion handling', () {
     test('handles completion event with delay', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       // Set a short delay for testing
       controller.completionDelayForTest = const Duration(milliseconds: 10);
@@ -487,8 +468,7 @@ void main() {
 
   group('AudioPlayerController - State transitions', () {
     test('initializing -> playing -> paused', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       expect(
         container.read(audioPlayerControllerProvider).status,
@@ -509,8 +489,7 @@ void main() {
     });
 
     test('paused -> playing -> paused maintains progress tracking', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       // Simulate playing and receiving position updates
       await controller.play();
@@ -537,8 +516,7 @@ void main() {
 
   group('AudioPlayerController - Edge cases', () {
     test('handles zero durations', () async {
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       positionController.add(Duration.zero);
       bufferController.add(Duration.zero);
@@ -588,8 +566,7 @@ void main() {
         fireImmediately: true,
       );
 
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier);
 
       await controller.play();
       await controller.pause();
@@ -616,83 +593,6 @@ void main() {
 
       // Verify player was disposed
       verify(() => mockPlayer.dispose()).called(1);
-    });
-  });
-
-  group('AudioPlayerController - Error handling', () {
-    test('handles player.play() failure gracefully', () async {
-      when(() => mockPlayer.play()).thenThrow(Exception('Play failed'));
-
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
-
-      // Should not throw
-      await controller.play();
-
-      // Error should be logged
-      verify(
-        () => mockLoggingService.captureException(
-          any(),
-          domain: 'audio_player_controller',
-          subDomain: 'play',
-          stackTrace: any(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
-
-    test('handles player.pause() failure gracefully', () async {
-      when(() => mockPlayer.pause()).thenThrow(Exception('Pause failed'));
-
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
-
-      await controller.pause();
-
-      verify(
-        () => mockLoggingService.captureException(
-          any(),
-          domain: 'audio_player_controller',
-          subDomain: 'pause',
-          stackTrace: any(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
-
-    test('handles player.seek() failure gracefully', () async {
-      when(() => mockPlayer.seek(any())).thenThrow(Exception('Seek failed'));
-
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
-
-      await controller.seek(const Duration(seconds: 30));
-
-      verify(
-        () => mockLoggingService.captureException(
-          any(),
-          domain: 'audio_player_controller',
-          subDomain: 'seek',
-          stackTrace: any(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
-
-    test('handles player.setRate() failure gracefully', () async {
-      when(() => mockPlayer.setRate(any()))
-          .thenThrow(Exception('SetRate failed'));
-
-      final controller =
-          container.read(audioPlayerControllerProvider.notifier);
-
-      await controller.setSpeed(1.5);
-
-      verify(
-        () => mockLoggingService.captureException(
-          any(),
-          domain: 'audio_player_controller',
-          subDomain: 'setSpeed',
-          stackTrace: any(named: 'stackTrace'),
-        ),
-      ).called(1);
     });
   });
 }

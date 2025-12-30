@@ -20,7 +20,6 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -33,6 +32,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 import 'package:uuid/uuid.dart';
@@ -50,13 +50,13 @@ class MockEditorStateService extends Mock implements EditorStateService {}
 
 class MockNavService extends Mock implements NavService {}
 
-/// Test controller for AudioPlayerController
-class TestAudioPlayerController extends AudioPlayerController {
-  @override
-  AudioPlayerState build() => const AudioPlayerState(
-        status: AudioPlayerStatus.stopped,
-      );
-}
+class MockPlayer extends Mock implements Player {}
+
+class MockPlayerState extends Mock implements PlayerState {}
+
+class MockPlayerStream extends Mock implements PlayerStream {}
+
+class FakePlayable extends Fake implements Playable {}
 
 // Note: _TestNavigatorObserver removed - navigation testing is handled
 // through integration tests in the main test suite
@@ -221,6 +221,17 @@ void main() {
   late MockUpdateNotifications mockUpdateNotifications;
   late MockTimeService mockTimeService;
   late MockNavService mockNavService;
+  late MockPlayer mockPlayer;
+  late MockPlayerState mockPlayerState;
+  late MockPlayerStream mockPlayerStream;
+  late StreamController<Duration> positionController;
+  late StreamController<Duration> bufferController;
+  late StreamController<bool> completedController;
+
+  setUpAll(() {
+    registerFallbackValue(FakePlayable());
+    registerFallbackValue(Duration.zero);
+  });
 
   setUp(() {
     mockLoggingService = MockLoggingService();
@@ -232,6 +243,30 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     mockTimeService = MockTimeService();
     mockNavService = MockNavService();
+    mockPlayer = MockPlayer();
+    mockPlayerState = MockPlayerState();
+    mockPlayerStream = MockPlayerStream();
+    positionController = StreamController<Duration>.broadcast();
+    bufferController = StreamController<Duration>.broadcast();
+    completedController = StreamController<bool>.broadcast();
+
+    // Setup mock player
+    when(() => mockPlayer.state).thenReturn(mockPlayerState);
+    when(() => mockPlayerState.duration).thenReturn(const Duration(minutes: 5));
+    when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
+    when(() => mockPlayerStream.position)
+        .thenAnswer((_) => positionController.stream);
+    when(() => mockPlayerStream.buffer)
+        .thenAnswer((_) => bufferController.stream);
+    when(() => mockPlayerStream.completed)
+        .thenAnswer((_) => completedController.stream);
+    when(() => mockPlayer.dispose()).thenAnswer((_) async {});
+    when(() => mockPlayer.open(any(), play: any(named: 'play')))
+        .thenAnswer((_) async {});
+    when(() => mockPlayer.play()).thenAnswer((_) async {});
+    when(() => mockPlayer.pause()).thenAnswer((_) async {});
+    when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
+    when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
 
     // Setup default mock behavior for AudioRecorderRepository
     when(() => mockAudioRecorderRepository.amplitudeStream).thenAnswer(
@@ -263,7 +298,12 @@ void main() {
       ..registerSingleton<NavService>(mockNavService);
   });
 
-  tearDown(getIt.reset);
+  tearDown(() async {
+    await positionController.close();
+    await bufferController.close();
+    await completedController.close();
+    await getIt.reset();
+  });
 
   group('AudioRecordingModal.show() - Static Method Coverage', () {
     testWidgets('should set modal visible and category when show() is called',
@@ -281,8 +321,7 @@ void main() {
             ),
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
-            audioPlayerControllerProvider
-                .overrideWith(TestAudioPlayerController.new),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
           ],
           child: MaterialApp(
             home: Builder(
@@ -339,8 +378,7 @@ void main() {
             ),
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
-            audioPlayerControllerProvider
-                .overrideWith(TestAudioPlayerController.new),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
           ],
           child: MaterialApp(
             home: Builder(
@@ -392,8 +430,7 @@ void main() {
             ),
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
-            audioPlayerControllerProvider
-                .overrideWith(TestAudioPlayerController.new),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
           ],
           child: MaterialApp(
             home: Builder(
@@ -451,8 +488,7 @@ void main() {
             ),
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
-            audioPlayerControllerProvider
-                .overrideWith(TestAudioPlayerController.new),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
             // Override the provider to return recording state directly
             audioRecorderControllerProvider.overrideWith(
                 () => TestAudioRecorderController(recordingState)),
@@ -525,8 +561,7 @@ void main() {
             ),
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
-            audioPlayerControllerProvider
-                .overrideWith(TestAudioPlayerController.new),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
             audioRecorderControllerProvider
                 .overrideWith(() => TestAudioRecorderController(pausedState)),
           ],
@@ -666,8 +701,7 @@ void main() {
             ),
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
-            audioPlayerControllerProvider
-                .overrideWith(TestAudioPlayerController.new),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
             entryControllerProvider(id: 'task-123').overrideWith(
               () => FakeEntryController(
                 mockEntry: createMockTask('task-123'),
@@ -740,8 +774,7 @@ void main() {
             ),
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
-            audioPlayerControllerProvider
-                .overrideWith(TestAudioPlayerController.new),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
             entryControllerProvider(id: 'task-456').overrideWith(
               () => FakeEntryController(
                 mockEntry: createMockTask('task-456'),

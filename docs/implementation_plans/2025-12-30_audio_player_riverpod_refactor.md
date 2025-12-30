@@ -275,10 +275,12 @@ class AudioPlayerWidget extends ConsumerWidget {
 
 **File:** `lib/features/speech/state/recorder_controller.dart`
 
-**Decision:** Inject ProviderContainer for testability.
+**Decision:** Use `ref.read()` directly since RecorderController is already a Riverpod notifier.
+
+> **Note:** The original plan suggested injecting `ProviderContainer`, but the actual implementation is cleaner. Since `AudioRecorderController` extends `_$AudioRecorderController` (a Riverpod notifier), it has direct access to `ref` and can use `ref.read()` to access other providers. This is the idiomatic Riverpod approach and avoids the anti-pattern of passing containers around.
 
 ```dart
-// Before
+// Before (BLoC pattern with GetIt)
 AudioPlayerCubit? _audioPlayerCubit;
 
 Future<void> record({String? linkedId}) async {
@@ -293,23 +295,31 @@ Future<void> record({String? linkedId}) async {
   }
 }
 
-// After
-class RecorderController {
-  RecorderController({ProviderContainer? container})
-    : _container = container;
-
-  final ProviderContainer? _container;
-
-  Future<void> record({String? linkedId}) async {
-    if (_container != null) {
-      final playerState = _container!.read(audioPlayerControllerProvider);
-      if (playerState.status == AudioPlayerStatus.playing) {
-        await _container!.read(audioPlayerControllerProvider.notifier).pause();
-      }
+// After (Riverpod pattern - actual implementation)
+Future<void> record({String? linkedId}) async {
+  try {
+    // Pause any playing audio first using Riverpod provider
+    final playerState = ref.read(audioPlayerControllerProvider);
+    if (playerState.status == AudioPlayerStatus.playing) {
+      await ref.read(audioPlayerControllerProvider.notifier).pause();
     }
+  } catch (e) {
+    // Audio player not available, continue without it
+    _loggingService.captureEvent(
+      'Audio player not available, continuing without audio pause: $e',
+      domain: 'recorder_controller',
+      subDomain: 'record',
+    );
   }
+  // ... rest of record logic
 }
 ```
+
+This approach:
+- Uses idiomatic Riverpod patterns (`ref.read()`)
+- Avoids passing `ProviderContainer` around (anti-pattern)
+- Is automatically testable via provider overrides in tests
+- Maintains clean separation of concerns
 
 ### Step 5: Remove BlocProvider from BeamerApp
 
@@ -678,9 +688,14 @@ Verify `lib/features/speech/state/audio_player_controller.dart` has ≥90% cover
 
 ### Files Created
 - `lib/features/speech/model/audio_player_state.dart` - New immutable state model
-- `lib/features/speech/state/audio_player_controller.dart` - New Riverpod controller
+- `lib/features/speech/state/audio_player_controller.dart` - New Riverpod controller with `PlayerFactory` provider for dependency injection
 - `lib/features/speech/state/audio_player_controller.g.dart` - Generated code
-- `test/features/speech/state/audio_player_controller_test.dart` - Comprehensive test file
+- `test/features/speech/state/audio_player_controller_test.dart` - Comprehensive test file with mocked Player streams
+
+### Key Implementation Details
+- Added `PlayerFactory` typedef and `playerFactoryProvider` for testability
+- Tests mock the actual `media_kit` Player and its streams instead of duplicating controller logic
+- Uses `ref.read()` for inter-provider communication (idiomatic Riverpod pattern)
 
 ### Files Modified
 - `lib/features/speech/ui/widgets/audio_player.dart` - BlocBuilder → Consumer

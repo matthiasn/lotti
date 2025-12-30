@@ -6,7 +6,7 @@ part of 'audio_player_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$playerFactoryHash() => r'9a4d2eab410bb6538a834d2463d9eda80fe4a642';
+String _$playerFactoryHash() => r'97fc3a12db5c97e405602b8ed38fdb574808a6ca';
 
 /// Provider for the player factory, can be overridden in tests.
 ///
