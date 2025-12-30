@@ -116,8 +116,8 @@ List<HabitDefinition> activeBy(
   }
   final activeHabits = habitDefinitions.where((habitDefinition) {
     final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
-    return DateTime(activeFrom.year, activeFrom.month, activeFrom.day)
-        .isBefore(DateTime.parse(ymd));
+    return !DateTime(activeFrom.year, activeFrom.month, activeFrom.day)
+        .isAfter(DateTime.parse(ymd));
   }).toList();
 
   return activeHabits;

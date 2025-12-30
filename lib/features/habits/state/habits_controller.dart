@@ -86,8 +86,8 @@ class HabitsController extends _$HabitsController {
   }
 
   void _determineHabitSuccessByDays() {
-    var completedToday = <String>{};
-    var successfulToday = <String>{};
+    final completedToday = <String>{};
+    final successfulToday = <String>{};
     final successfulByDay = <String, Set<String>>{};
     final skippedByDay = <String, Set<String>>{};
     final failedByDay = <String, Set<String>>{};
@@ -112,7 +112,7 @@ class HabitsController extends _$HabitsController {
         final habitId = item.data.habitId;
 
         if (day == today) {
-          completedToday = {...completedToday, item.data.habitId};
+          completedToday.add(item.data.habitId);
         }
 
         addId(allByDay, day, habitId);
@@ -123,7 +123,7 @@ class HabitsController extends _$HabitsController {
           removeId(failedByDay, day, habitId);
 
           if (day == today) {
-            successfulToday = {...successfulToday, item.data.habitId};
+            successfulToday.add(item.data.habitId);
           }
         }
 
@@ -133,7 +133,7 @@ class HabitsController extends _$HabitsController {
           removeId(failedByDay, day, habitId);
 
           if (day == today) {
-            successfulToday = {...successfulToday, item.data.habitId};
+            successfulToday.add(item.data.habitId);
           }
         }
 
