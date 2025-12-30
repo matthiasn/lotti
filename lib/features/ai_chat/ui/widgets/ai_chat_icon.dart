@@ -9,6 +9,8 @@ class AiChatIcon extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
+    // Get the parent container to share with the modal
+    final container = ProviderScope.containerOf(context);
 
     return Padding(
       padding: const EdgeInsets.only(right: 5),
@@ -20,13 +22,18 @@ class AiChatIcon extends ConsumerWidget {
             backgroundColor: Colors.transparent,
             barrierColor: Colors.black.withValues(alpha: 0.8),
             builder: (BuildContext modalContext) {
-              return ProviderScope(
-                overrides: [
-                  journalPageScopeProvider.overrideWithValue(showTasks),
-                ],
-                child: Material(
-                  color: Theme.of(modalContext).colorScheme.surface,
-                  child: const ChatModalPage(),
+              // Use UncontrolledProviderScope to share the parent container
+              // with overrides for the modal-specific scope value
+              return UncontrolledProviderScope(
+                container: container,
+                child: ProviderScope(
+                  overrides: [
+                    journalPageScopeProvider.overrideWithValue(showTasks),
+                  ],
+                  child: Material(
+                    color: Theme.of(modalContext).colorScheme.surface,
+                    child: const ChatModalPage(),
+                  ),
                 ),
               );
             },
