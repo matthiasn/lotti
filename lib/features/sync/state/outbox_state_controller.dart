@@ -16,9 +16,8 @@ enum OutboxStatus {
 }
 
 /// Enum representing the outbox connectivity state.
-/// Replaces the freezed OutboxState from the old Bloc implementation.
+/// The loading state is handled by Riverpod's AsyncValue.loading.
 enum OutboxConnectionState {
-  initial,
   online,
   disabled,
 }

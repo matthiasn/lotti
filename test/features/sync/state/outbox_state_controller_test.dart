@@ -10,9 +10,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockSyncDatabase extends Mock implements SyncDatabase {}
+import '../../../mocks/mocks.dart';
+import '../../../mocks/sync_config_test_mocks.dart';
 
 void main() {
   group('OutboxStateController', () {
@@ -275,11 +274,10 @@ void main() {
 
     group('OutboxConnectionState enum', () {
       test('has all expected values', () {
-        expect(OutboxConnectionState.values.length, 3);
+        expect(OutboxConnectionState.values.length, 2);
         expect(
           OutboxConnectionState.values,
           containsAll([
-            OutboxConnectionState.initial,
             OutboxConnectionState.online,
             OutboxConnectionState.disabled,
           ]),

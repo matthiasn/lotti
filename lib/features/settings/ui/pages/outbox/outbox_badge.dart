@@ -5,6 +5,15 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:matrix/matrix.dart';
 
+/// Grayscale color filter matrix using luminance weights (ITU-R BT.709).
+/// Converts color to grayscale while preserving perceived brightness.
+const grayscaleColorMatrix = ColorFilter.matrix(<double>[
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0, 0, 0, 1, 0, //
+]);
+
 class OutboxBadgeIcon extends ConsumerWidget {
   const OutboxBadgeIcon({
     required this.icon,
@@ -36,28 +45,7 @@ class OutboxBadgeIcon extends ConsumerWidget {
 
     final effectiveIcon = dimmed
         ? ColorFiltered(
-            colorFilter: const ColorFilter.matrix(<double>[
-              0.2126,
-              0.7152,
-              0.0722,
-              0,
-              0,
-              0.2126,
-              0.7152,
-              0.0722,
-              0,
-              0,
-              0.2126,
-              0.7152,
-              0.0722,
-              0,
-              0,
-              0,
-              0,
-              0,
-              1,
-              0,
-            ]),
+            colorFilter: grayscaleColorMatrix,
             child: Opacity(opacity: 0.5, child: icon),
           )
         : icon;

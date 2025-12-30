@@ -43,7 +43,7 @@
     </release>
     <release version="0.9.780" date="2025-12-29">
       <description>
-        <p>State Management Refactor: Migrated dashboard and sync outbox state from Bloc to Riverpod for consistency with the codebase. Dashboard filtering and sorting now uses dedicated Riverpod providers with case-insensitive sorting. OutboxCubit replaced with Riverpod stream providers for connection state and pending count.</p>
+        <p>Dashboard State Refactor: Migrated dashboard list state from Bloc to Riverpod for consistency with the codebase. Dashboard filtering and sorting now uses dedicated Riverpod providers with case-insensitive sorting for better UX.</p>
       </description>
     </release>
     <release version="0.9.779" date="2025-12-29">
