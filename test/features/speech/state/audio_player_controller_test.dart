@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -403,6 +404,9 @@ void main() {
     });
   });
 
+  // Note: setAudioNote tests are in the widget tests since they require
+  // real file paths that AudioUtils.getFullAudioPath can resolve
+
   group('AudioPlayerController - setSpeed()', () {
     test('updates speed in state', () async {
       final controller = container.read(audioPlayerControllerProvider.notifier);
@@ -619,6 +623,119 @@ void main() {
       final state = container.read(audioPlayerControllerProvider);
       expect(state.progress, equals(Duration.zero));
     });
+
+    test('completion timer fires and updates progress to duration', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      // Set a very short delay for testing
+      controller.completionDelayForTest = const Duration(milliseconds: 10);
+
+      // Set state with an audioNote that has duration using test helper
+      controller.stateForTest = AudioPlayerState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: const Duration(minutes: 5),
+        audioNote: JournalAudio(
+          meta: Metadata(
+            id: 'test-audio-id',
+            createdAt: DateTime(2024, 1, 15),
+            updatedAt: DateTime(2024, 1, 15),
+            dateFrom: DateTime(2024, 1, 15),
+            dateTo: DateTime(2024, 1, 15),
+          ),
+          data: AudioData(
+            audioFile: 'test.m4a',
+            audioDirectory: '/test/path',
+            duration: const Duration(minutes: 3),
+            dateTo: DateTime(2024, 1, 15),
+            dateFrom: DateTime(2024, 1, 15),
+          ),
+        ),
+      );
+
+      // Trigger completion
+      controller.handleCompletedForTest(isCompleted: true);
+
+      // Wait for timer to fire
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Progress should be updated to the audio duration
+      final state = container.read(audioPlayerControllerProvider);
+      expect(state.progress, equals(const Duration(minutes: 3)));
+    });
+  });
+
+  group('AudioPlayerController - Clamping with totalDuration', () {
+    test('clamps progress when exceeding totalDuration', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      // Set state with totalDuration using test helper
+      controller.stateForTest = const AudioPlayerState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: Duration(minutes: 5),
+      );
+
+      // Emit a position that exceeds totalDuration
+      positionController.add(const Duration(minutes: 10));
+      await Future<void>.delayed(Duration.zero);
+
+      // Progress should be clamped to totalDuration
+      final state = container.read(audioPlayerControllerProvider);
+      expect(state.progress, equals(const Duration(minutes: 5)));
+    });
+
+    test('clamps buffer when exceeding totalDuration', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      // Set state with totalDuration using test helper
+      controller.stateForTest = const AudioPlayerState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: Duration(minutes: 5),
+      );
+
+      // Emit a buffer that exceeds totalDuration
+      bufferController.add(const Duration(minutes: 10));
+      await Future<void>.delayed(Duration.zero);
+
+      // Buffer should be clamped to totalDuration
+      final state = container.read(audioPlayerControllerProvider);
+      expect(state.buffered, equals(const Duration(minutes: 5)));
+    });
+
+    test('does not clamp progress when within totalDuration', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      // Set state with totalDuration using test helper
+      controller.stateForTest = const AudioPlayerState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: Duration(minutes: 5),
+      );
+
+      // Emit a position within totalDuration
+      positionController.add(const Duration(minutes: 3));
+      await Future<void>.delayed(Duration.zero);
+
+      // Progress should not be clamped
+      final state = container.read(audioPlayerControllerProvider);
+      expect(state.progress, equals(const Duration(minutes: 3)));
+    });
+
+    test('does not clamp buffer when within totalDuration', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      // Set state with totalDuration using test helper
+      controller.stateForTest = const AudioPlayerState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: Duration(minutes: 5),
+      );
+
+      // Emit a buffer within totalDuration
+      bufferController.add(const Duration(minutes: 3));
+      await Future<void>.delayed(Duration.zero);
+
+      // Buffer should not be clamped
+      final state = container.read(audioPlayerControllerProvider);
+      expect(state.buffered, equals(const Duration(minutes: 3)));
+    });
   });
 
   group('AudioPlayerController - Error Handling', () {
@@ -695,6 +812,247 @@ void main() {
       // Note: The exception is caught silently since _loggingService may be null
       // before it's initialized. This is expected behavior.
       errorContainer.dispose();
+    });
+
+    test('pause catches and logs exceptions', () async {
+      // Create isolated mocks for this test
+      final localLoggingService = MockLoggingService();
+      final localPlayer = MockPlayer();
+      final localPlayerState = MockPlayerState();
+      final localPlayerStream = MockPlayerStream();
+      final localPositionController = StreamController<Duration>.broadcast();
+      final localBufferController = StreamController<Duration>.broadcast();
+      final localCompletedController = StreamController<bool>.broadcast();
+
+      // Setup isolated mocks
+      when(() => localPlayer.state).thenReturn(localPlayerState);
+      when(() => localPlayerState.duration)
+          .thenReturn(const Duration(minutes: 5));
+      when(() => localPlayer.stream).thenReturn(localPlayerStream);
+      when(() => localPlayerStream.position)
+          .thenAnswer((_) => localPositionController.stream);
+      when(() => localPlayerStream.buffer)
+          .thenAnswer((_) => localBufferController.stream);
+      when(() => localPlayerStream.completed)
+          .thenAnswer((_) => localCompletedController.stream);
+      when(localPlayer.dispose).thenAnswer((_) async {});
+      when(localPlayer.pause).thenThrow(Exception('Pause failed'));
+
+      // Register local logging service
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+      getIt.registerSingleton<LoggingService>(localLoggingService);
+
+      final localContainer = ProviderContainer(
+        overrides: [
+          playerFactoryProvider.overrideWithValue(() => localPlayer),
+        ],
+      );
+
+      final controller =
+          localContainer.read(audioPlayerControllerProvider.notifier);
+      await controller.pause();
+
+      verify(
+        () => localLoggingService.captureException(
+          any<Object>(),
+          domain: 'audio_player_controller',
+          subDomain: 'pause',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      await localPositionController.close();
+      await localBufferController.close();
+      await localCompletedController.close();
+      localContainer.dispose();
+    });
+
+    test('seek catches and logs exceptions', () async {
+      // Create isolated mocks for this test
+      final localLoggingService = MockLoggingService();
+      final localPlayer = MockPlayer();
+      final localPlayerState = MockPlayerState();
+      final localPlayerStream = MockPlayerStream();
+      final localPositionController = StreamController<Duration>.broadcast();
+      final localBufferController = StreamController<Duration>.broadcast();
+      final localCompletedController = StreamController<bool>.broadcast();
+
+      // Setup isolated mocks
+      when(() => localPlayer.state).thenReturn(localPlayerState);
+      when(() => localPlayerState.duration)
+          .thenReturn(const Duration(minutes: 5));
+      when(() => localPlayer.stream).thenReturn(localPlayerStream);
+      when(() => localPlayerStream.position)
+          .thenAnswer((_) => localPositionController.stream);
+      when(() => localPlayerStream.buffer)
+          .thenAnswer((_) => localBufferController.stream);
+      when(() => localPlayerStream.completed)
+          .thenAnswer((_) => localCompletedController.stream);
+      when(localPlayer.dispose).thenAnswer((_) async {});
+      when(() => localPlayer.seek(any()))
+          .thenThrow(Exception('Seek failed'));
+
+      // Register local logging service
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+      getIt.registerSingleton<LoggingService>(localLoggingService);
+
+      final localContainer = ProviderContainer(
+        overrides: [
+          playerFactoryProvider.overrideWithValue(() => localPlayer),
+        ],
+      );
+
+      final controller =
+          localContainer.read(audioPlayerControllerProvider.notifier);
+      await controller.seek(const Duration(seconds: 30));
+
+      verify(
+        () => localLoggingService.captureException(
+          any<Object>(),
+          domain: 'audio_player_controller',
+          subDomain: 'seek',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      await localPositionController.close();
+      await localBufferController.close();
+      await localCompletedController.close();
+      localContainer.dispose();
+    });
+
+    test('setSpeed catches and logs exceptions', () async {
+      // Create isolated mocks for this test
+      final localLoggingService = MockLoggingService();
+      final localPlayer = MockPlayer();
+      final localPlayerState = MockPlayerState();
+      final localPlayerStream = MockPlayerStream();
+      final localPositionController = StreamController<Duration>.broadcast();
+      final localBufferController = StreamController<Duration>.broadcast();
+      final localCompletedController = StreamController<bool>.broadcast();
+
+      // Setup isolated mocks
+      when(() => localPlayer.state).thenReturn(localPlayerState);
+      when(() => localPlayerState.duration)
+          .thenReturn(const Duration(minutes: 5));
+      when(() => localPlayer.stream).thenReturn(localPlayerStream);
+      when(() => localPlayerStream.position)
+          .thenAnswer((_) => localPositionController.stream);
+      when(() => localPlayerStream.buffer)
+          .thenAnswer((_) => localBufferController.stream);
+      when(() => localPlayerStream.completed)
+          .thenAnswer((_) => localCompletedController.stream);
+      when(localPlayer.dispose).thenAnswer((_) async {});
+      when(() => localPlayer.setRate(any()))
+          .thenThrow(Exception('SetRate failed'));
+
+      // Register local logging service
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+      getIt.registerSingleton<LoggingService>(localLoggingService);
+
+      final localContainer = ProviderContainer(
+        overrides: [
+          playerFactoryProvider.overrideWithValue(() => localPlayer),
+        ],
+      );
+
+      final controller =
+          localContainer.read(audioPlayerControllerProvider.notifier);
+      await controller.setSpeed(1.5);
+
+      verify(
+        () => localLoggingService.captureException(
+          any<Object>(),
+          domain: 'audio_player_controller',
+          subDomain: 'setSpeed',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      await localPositionController.close();
+      await localBufferController.close();
+      await localCompletedController.close();
+      localContainer.dispose();
+    });
+
+    test('setAudioNote catches and logs exceptions', () async {
+      // Create isolated mocks for this test
+      final localLoggingService = MockLoggingService();
+      final localPlayer = MockPlayer();
+      final localPlayerState = MockPlayerState();
+      final localPlayerStream = MockPlayerStream();
+      final localPositionController = StreamController<Duration>.broadcast();
+      final localBufferController = StreamController<Duration>.broadcast();
+      final localCompletedController = StreamController<bool>.broadcast();
+
+      // Setup isolated mocks
+      when(() => localPlayer.state).thenReturn(localPlayerState);
+      when(() => localPlayerState.duration)
+          .thenReturn(const Duration(minutes: 5));
+      when(() => localPlayer.stream).thenReturn(localPlayerStream);
+      when(() => localPlayerStream.position)
+          .thenAnswer((_) => localPositionController.stream);
+      when(() => localPlayerStream.buffer)
+          .thenAnswer((_) => localBufferController.stream);
+      when(() => localPlayerStream.completed)
+          .thenAnswer((_) => localCompletedController.stream);
+      when(localPlayer.dispose).thenAnswer((_) async {});
+      when(() => localPlayer.open(any(), play: any(named: 'play')))
+          .thenThrow(Exception('Open failed'));
+
+      // Register local logging service
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+      getIt.registerSingleton<LoggingService>(localLoggingService);
+
+      final localContainer = ProviderContainer(
+        overrides: [
+          playerFactoryProvider.overrideWithValue(() => localPlayer),
+        ],
+      );
+
+      final controller =
+          localContainer.read(audioPlayerControllerProvider.notifier);
+
+      final audioNote = JournalAudio(
+        meta: Metadata(
+          id: 'test-audio-id',
+          createdAt: DateTime(2024, 1, 15),
+          updatedAt: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+          dateTo: DateTime(2024, 1, 15),
+        ),
+        data: AudioData(
+          audioFile: 'test.m4a',
+          audioDirectory: '/test/path',
+          duration: const Duration(minutes: 3),
+          dateTo: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+        ),
+      );
+
+      await controller.setAudioNote(audioNote);
+
+      verify(
+        () => localLoggingService.captureException(
+          any<Object>(),
+          domain: 'audio_player_controller',
+          subDomain: 'setAudioNote',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      await localPositionController.close();
+      await localBufferController.close();
+      await localCompletedController.close();
+      localContainer.dispose();
     });
   });
 

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_setters_without_getters
+
 import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
@@ -269,5 +271,11 @@ class AudioPlayerController extends _$AudioPlayerController {
   @visibleForTesting
   set completionDelayForTest(Duration delay) {
     _completionDelay = delay;
+  }
+
+  /// Sets the state directly for testing purposes.
+  @visibleForTesting
+  set stateForTest(AudioPlayerState newState) {
+    state = newState;
   }
 }
