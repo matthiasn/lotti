@@ -662,6 +662,68 @@ void main() {
       final state = container.read(audioPlayerControllerProvider);
       expect(state.progress, equals(const Duration(minutes: 3)));
     });
+
+    test('completion timer skips update when audio note has changed', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      // Set a longer delay so we can change the audio note before timer fires
+      controller.completionDelayForTest = const Duration(milliseconds: 50);
+
+      // Set initial audio note
+      controller.stateForTest = AudioPlayerState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: const Duration(minutes: 5),
+        audioNote: JournalAudio(
+          meta: Metadata(
+            id: 'first-audio-id',
+            createdAt: DateTime(2024, 1, 15),
+            updatedAt: DateTime(2024, 1, 15),
+            dateFrom: DateTime(2024, 1, 15),
+            dateTo: DateTime(2024, 1, 15),
+          ),
+          data: AudioData(
+            audioFile: 'first.m4a',
+            audioDirectory: '/test/path',
+            duration: const Duration(minutes: 3),
+            dateTo: DateTime(2024, 1, 15),
+            dateFrom: DateTime(2024, 1, 15),
+          ),
+        ),
+      );
+
+      // Trigger completion - timer starts with captured id 'first-audio-id'
+      controller.handleCompletedForTest(isCompleted: true);
+
+      // Change to a different audio note before timer fires
+      controller.stateForTest = AudioPlayerState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: const Duration(minutes: 10),
+        audioNote: JournalAudio(
+          meta: Metadata(
+            id: 'second-audio-id',
+            createdAt: DateTime(2024, 1, 16),
+            updatedAt: DateTime(2024, 1, 16),
+            dateFrom: DateTime(2024, 1, 16),
+            dateTo: DateTime(2024, 1, 16),
+          ),
+          data: AudioData(
+            audioFile: 'second.m4a',
+            audioDirectory: '/test/path',
+            duration: const Duration(minutes: 7),
+            dateTo: DateTime(2024, 1, 16),
+            dateFrom: DateTime(2024, 1, 16),
+          ),
+        ),
+      );
+
+      // Wait for timer to fire
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Progress should NOT be updated because audio note changed
+      final state = container.read(audioPlayerControllerProvider);
+      expect(state.progress, equals(Duration.zero));
+      expect(state.audioNote?.meta.id, equals('second-audio-id'));
+    });
   });
 
   group('AudioPlayerController - Clamping with totalDuration', () {
@@ -891,8 +953,7 @@ void main() {
       when(() => localPlayerStream.completed)
           .thenAnswer((_) => localCompletedController.stream);
       when(localPlayer.dispose).thenAnswer((_) async {});
-      when(() => localPlayer.seek(any()))
-          .thenThrow(Exception('Seek failed'));
+      when(() => localPlayer.seek(any())).thenThrow(Exception('Seek failed'));
 
       // Register local logging service
       if (getIt.isRegistered<LoggingService>()) {

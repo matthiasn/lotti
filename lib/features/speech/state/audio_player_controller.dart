@@ -126,6 +126,10 @@ class AudioPlayerController extends _$AudioPlayerController {
         return;
       }
 
+      // Cancel any pending completion timer from previous audio note
+      _completionTimer?.cancel();
+      _completionTimer = null;
+
       final player = _audioPlayer;
       if (player == null) return;
 
@@ -244,16 +248,23 @@ class AudioPlayerController extends _$AudioPlayerController {
     if (_completionTimer?.isActive ?? false) {
       return;
     }
-    final duration = state.audioNote?.data.duration;
-    if (duration == null) {
+    final audioNote = state.audioNote;
+    final duration = audioNote?.data.duration;
+    if (duration == null || audioNote == null) {
       return;
     }
+
+    // Capture the audio note id to verify it hasn't changed when timer fires
+    final capturedId = audioNote.meta.id;
 
     _completionTimer = Timer(
       _completionDelay,
       () {
         _completionTimer = null;
-        state = state.copyWith(progress: duration);
+        // Verify the audio note hasn't been replaced before updating progress
+        if (state.audioNote?.meta.id == capturedId) {
+          state = state.copyWith(progress: duration);
+        }
       },
     );
   }
