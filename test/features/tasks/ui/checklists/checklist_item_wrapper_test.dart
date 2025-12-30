@@ -22,16 +22,21 @@ class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockChecklistItemController extends ChecklistItemController {
   MockChecklistItemController({
-    required this.item,
+    ChecklistItem? item,
+    Map<String, ChecklistItem?>? itemsMap,
     this.shouldDelete = false,
-  });
+  }) : _itemsMap = itemsMap ?? (item != null ? {item.meta.id: item} : {});
 
-  ChecklistItem? item;
+  final Map<String, ChecklistItem?> _itemsMap;
+  String? _currentId;
   final bool shouldDelete;
   bool deleteWasCalled = false;
 
   @override
-  Future<ChecklistItem?> build(ChecklistItemParams arg) async => item;
+  Future<ChecklistItem?> build(ChecklistItemParams arg) async {
+    _currentId = arg.id;
+    return _itemsMap[arg.id];
+  }
 
   @override
   Future<bool> delete() async {
@@ -44,7 +49,9 @@ class MockChecklistItemController extends ChecklistItemController {
 
   @override
   void updateChecked({required bool checked}) {
-    final current = item;
+    final currentId = _currentId;
+    if (currentId == null) return;
+    final current = _itemsMap[currentId];
     if (current == null) return;
 
     final data = current.data;
@@ -52,7 +59,7 @@ class MockChecklistItemController extends ChecklistItemController {
       data: data.copyWith(isChecked: checked),
     );
 
-    item = updated;
+    _itemsMap[currentId] = updated;
     state = AsyncValue.data(updated);
   }
 
@@ -189,7 +196,7 @@ void main() {
     });
 
     testWidgets('renders empty when item is null', (tester) async {
-      final mockItemController = MockChecklistItemController(item: null);
+      final mockItemController = MockChecklistItemController();
 
       await tester.pumpWidget(
         ProviderScope(

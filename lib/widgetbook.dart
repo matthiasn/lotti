@@ -81,7 +81,12 @@ class WidgetbookApp extends StatelessWidget {
                     overrides: [
                       checklistItemControllerProvider.overrideWith(
                         () => MockChecklistItemControllerProvider(
-                          value: Future.value(checklistItem1),
+                          itemsMap: {
+                            checklistItem1.meta.id: checklistItem1,
+                            checklistItem2.meta.id: checklistItem2,
+                            checklistItem3.meta.id: checklistItem3,
+                            checklistItem4.meta.id: checklistItem4,
+                          },
                         ),
                       ),
                     ],

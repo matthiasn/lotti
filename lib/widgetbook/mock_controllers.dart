@@ -3,16 +3,13 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 
 class MockChecklistItemControllerProvider extends ChecklistItemController {
   MockChecklistItemControllerProvider({
-    required this.value,
+    required this.itemsMap,
   });
 
-  final Future<ChecklistItem?> value;
+  final Map<String, ChecklistItem?> itemsMap;
 
   @override
-  Future<ChecklistItem?> build(ChecklistItemParams arg) {
-    return value;
+  Future<ChecklistItem?> build(ChecklistItemParams arg) async {
+    return itemsMap[arg.id];
   }
-
-  @override
-  Future<ChecklistItem?> get future => value;
 }
