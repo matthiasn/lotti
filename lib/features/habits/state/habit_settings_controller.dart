@@ -91,8 +91,13 @@ class HabitSettingsController
 
   @override
   HabitSettingsState build(String habitId) {
+    // Check if habit data is already available (for edit case)
+    // Use ref.read() to get current value without causing rebuilds on stream updates
+    final habitAsync = ref.read(habitByIdProvider(habitId));
+    final existingHabit = habitAsync.valueOrNull;
+
+    // Watch for future habit updates from DB and story tags
     ref
-      // Watch for habit updates from DB (for edit case)
       ..listen<AsyncValue<HabitDefinition?>>(
         habitByIdProvider(habitId),
         (_, next) {
@@ -105,7 +110,6 @@ class HabitSettingsController
           });
         },
       )
-      // Watch for story tags
       ..listen<AsyncValue<List<TagEntity>>>(
         storyTagsStreamProvider,
         (_, next) {
@@ -116,6 +120,13 @@ class HabitSettingsController
           });
         },
       );
+
+    // Return initial state with existing habit data if available
+    if (existingHabit != null) {
+      return HabitSettingsState.initial(habitId).copyWith(
+        habitDefinition: existingHabit,
+      );
+    }
 
     return HabitSettingsState.initial(habitId);
   }

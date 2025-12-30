@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.787] - 2025-12-30
+### Fixed
+- Fixed habit settings page opening empty for existing habits
+  - Changed `ref.watch()` to `ref.read()` for `habitByIdProvider` in controller build
+  - Prevents controller rebuilds when stream data changes, preserving form state
+  - Edit flow now loads cached habit data synchronously from `EditHabitPage`
+
 ## [0.9.786] - 2025-12-30
 ### Changed
 - Migrated habits page state management from Bloc to Riverpod
