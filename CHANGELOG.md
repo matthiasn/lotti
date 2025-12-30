@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.784] - 2025-12-30
+### Changed
+- Migrated habit settings state management from Bloc to Riverpod
+  - Replaced `HabitSettingsCubit` with `HabitSettingsController` notifier
+  - Uses family provider pattern with `habitId` as key for per-habit state management
+  - Added `habitByIdProvider` for watching habit by ID from database
+  - Added `habitDashboardsProvider` for dashboards in habit settings
+  - Updated `HabitDetailsPage`, `CreateHabitPage`, `EditHabitPage` to use Riverpod
+  - Updated category and dashboard selection widgets to use Riverpod providers
+
 ## [0.9.783] - 2025-12-30
 ### Changed
 - Migrated theming state management from Bloc to Riverpod

@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'habit_settings_state.dart';
+part of 'habit_settings_controller.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -157,12 +157,12 @@ extension HabitSettingsStatePatterns on HabitSettingsState {
 
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>(
-    TResult Function(_HabitSettingsStateSaved value)? $default, {
+    TResult Function(_HabitSettingsState value)? $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
-      case _HabitSettingsStateSaved() when $default != null:
+      case _HabitSettingsState() when $default != null:
         return $default(_that);
       case _:
         return orElse();
@@ -184,11 +184,11 @@ extension HabitSettingsStatePatterns on HabitSettingsState {
 
   @optionalTypeArgs
   TResult map<TResult extends Object?>(
-    TResult Function(_HabitSettingsStateSaved value) $default,
+    TResult Function(_HabitSettingsState value) $default,
   ) {
     final _that = this;
     switch (_that) {
-      case _HabitSettingsStateSaved():
+      case _HabitSettingsState():
         return $default(_that);
       case _:
         throw StateError('Unexpected subclass');
@@ -209,11 +209,11 @@ extension HabitSettingsStatePatterns on HabitSettingsState {
 
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>(
-    TResult? Function(_HabitSettingsStateSaved value)? $default,
+    TResult? Function(_HabitSettingsState value)? $default,
   ) {
     final _that = this;
     switch (_that) {
-      case _HabitSettingsStateSaved() when $default != null:
+      case _HabitSettingsState() when $default != null:
         return $default(_that);
       case _:
         return null;
@@ -246,7 +246,7 @@ extension HabitSettingsStatePatterns on HabitSettingsState {
   }) {
     final _that = this;
     switch (_that) {
-      case _HabitSettingsStateSaved() when $default != null:
+      case _HabitSettingsState() when $default != null:
         return $default(_that.habitDefinition, _that.dirty, _that.formKey,
             _that.storyTags, _that.autoCompleteRule, _that.defaultStory);
       case _:
@@ -280,7 +280,7 @@ extension HabitSettingsStatePatterns on HabitSettingsState {
   ) {
     final _that = this;
     switch (_that) {
-      case _HabitSettingsStateSaved():
+      case _HabitSettingsState():
         return $default(_that.habitDefinition, _that.dirty, _that.formKey,
             _that.storyTags, _that.autoCompleteRule, _that.defaultStory);
       case _:
@@ -313,7 +313,7 @@ extension HabitSettingsStatePatterns on HabitSettingsState {
   ) {
     final _that = this;
     switch (_that) {
-      case _HabitSettingsStateSaved() when $default != null:
+      case _HabitSettingsState() when $default != null:
         return $default(_that.habitDefinition, _that.dirty, _that.formKey,
             _that.storyTags, _that.autoCompleteRule, _that.defaultStory);
       case _:
@@ -324,8 +324,8 @@ extension HabitSettingsStatePatterns on HabitSettingsState {
 
 /// @nodoc
 
-class _HabitSettingsStateSaved implements HabitSettingsState {
-  _HabitSettingsStateSaved(
+class _HabitSettingsState implements HabitSettingsState {
+  const _HabitSettingsState(
       {required this.habitDefinition,
       required this.dirty,
       required this.formKey,
@@ -358,15 +358,14 @@ class _HabitSettingsStateSaved implements HabitSettingsState {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  _$HabitSettingsStateSavedCopyWith<_HabitSettingsStateSaved> get copyWith =>
-      __$HabitSettingsStateSavedCopyWithImpl<_HabitSettingsStateSaved>(
-          this, _$identity);
+  _$HabitSettingsStateCopyWith<_HabitSettingsState> get copyWith =>
+      __$HabitSettingsStateCopyWithImpl<_HabitSettingsState>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _HabitSettingsStateSaved &&
+            other is _HabitSettingsState &&
             const DeepCollectionEquality()
                 .equals(other.habitDefinition, habitDefinition) &&
             (identical(other.dirty, dirty) || other.dirty == dirty) &&
@@ -396,11 +395,11 @@ class _HabitSettingsStateSaved implements HabitSettingsState {
 }
 
 /// @nodoc
-abstract mixin class _$HabitSettingsStateSavedCopyWith<$Res>
+abstract mixin class _$HabitSettingsStateCopyWith<$Res>
     implements $HabitSettingsStateCopyWith<$Res> {
-  factory _$HabitSettingsStateSavedCopyWith(_HabitSettingsStateSaved value,
-          $Res Function(_HabitSettingsStateSaved) _then) =
-      __$HabitSettingsStateSavedCopyWithImpl;
+  factory _$HabitSettingsStateCopyWith(
+          _HabitSettingsState value, $Res Function(_HabitSettingsState) _then) =
+      __$HabitSettingsStateCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -416,12 +415,12 @@ abstract mixin class _$HabitSettingsStateSavedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$HabitSettingsStateSavedCopyWithImpl<$Res>
-    implements _$HabitSettingsStateSavedCopyWith<$Res> {
-  __$HabitSettingsStateSavedCopyWithImpl(this._self, this._then);
+class __$HabitSettingsStateCopyWithImpl<$Res>
+    implements _$HabitSettingsStateCopyWith<$Res> {
+  __$HabitSettingsStateCopyWithImpl(this._self, this._then);
 
-  final _HabitSettingsStateSaved _self;
-  final $Res Function(_HabitSettingsStateSaved) _then;
+  final _HabitSettingsState _self;
+  final $Res Function(_HabitSettingsState) _then;
 
   /// Create a copy of HabitSettingsState
   /// with the given fields replaced by the non-null parameter values.
@@ -435,7 +434,7 @@ class __$HabitSettingsStateSavedCopyWithImpl<$Res>
     Object? autoCompleteRule = freezed,
     Object? defaultStory = freezed,
   }) {
-    return _then(_HabitSettingsStateSaved(
+    return _then(_HabitSettingsState(
       habitDefinition: freezed == habitDefinition
           ? _self.habitDefinition
           : habitDefinition // ignore: cast_nullable_to_non_nullable

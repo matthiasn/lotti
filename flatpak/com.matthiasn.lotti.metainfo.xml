@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.784" date="2025-12-30">
+      <description>
+        <p>Habit Settings State Refactor: Migrated habit settings state management from Bloc to Riverpod. HabitSettingsCubit replaced with HabitSettingsController notifier using family provider pattern with habitId as key. Added habitByIdProvider and habitDashboardsProvider. Updated HabitDetailsPage, CreateHabitPage, and related widgets to use Riverpod providers.</p>
+      </description>
+    </release>
     <release version="0.9.783" date="2025-12-30">
       <description>
         <p>Theming State Refactor: Migrated theming state management from Bloc to Riverpod. ThemingCubit replaced with ThemingController notifier and enableTooltipsProvider. Theme state now uses keepAlive for app-wide persistence. MyBeamerApp updated to ConsumerStatefulWidget pattern.</p>

@@ -17,8 +17,8 @@ void main() {
       // The loading screen renders "Loading..." text
       await tester.pumpWidget(
         MaterialApp(
-          theme:
-              ThemeData.dark().copyWith(scaffoldBackgroundColor: Colors.black87),
+          theme: ThemeData.dark()
+              .copyWith(scaffoldBackgroundColor: Colors.black87),
           home: const Scaffold(
             body: Center(child: Text('Loading...')),
           ),
