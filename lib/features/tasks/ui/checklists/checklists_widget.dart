@@ -66,10 +66,10 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
               for (final id in ids) {
                 final value = ref
                     .watch(
-                      checklistControllerProvider(
+                      checklistControllerProvider((
                         id: id,
                         taskId: widget.task.id,
-                      ),
+                      )),
                     )
                     .value;
                 if (value != null) count++;
@@ -113,10 +113,10 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                 builder: (context, ref, _) {
                   final checklist = ref
                       .watch(
-                        checklistControllerProvider(
+                        checklistControllerProvider((
                           id: checklistId,
                           taskId: widget.task.id,
-                        ),
+                        )),
                       )
                       .value;
                   // Don't render card for deleted or stale checklists

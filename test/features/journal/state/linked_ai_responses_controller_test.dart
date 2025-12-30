@@ -150,7 +150,7 @@ void main() {
   }) async {
     final completer = Completer<List<AiResponseEntry>>();
     final sub = container.listen(
-      linkedAiResponsesControllerProvider(entryId: testAudioEntryId),
+      linkedAiResponsesControllerProvider(testAudioEntryId),
       (_, next) {
         if (!completer.isCompleted && next.hasValue && predicate(next.value!)) {
           completer.complete(next.value);
@@ -189,7 +189,7 @@ void main() {
       );
 
       final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       // Should only have non-deleted AI responses
@@ -228,7 +228,7 @@ void main() {
       );
 
       final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       expect(result, isEmpty);
@@ -261,7 +261,7 @@ void main() {
       );
 
       final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       expect(result, isEmpty);
@@ -280,7 +280,7 @@ void main() {
       );
 
       final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       expect(result, isEmpty);
@@ -324,7 +324,7 @@ void main() {
       );
 
       final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       // Newest should be first
@@ -387,7 +387,7 @@ void main() {
 
       // Initial load
       final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
       expect(initialResult.length, equals(1));
 
@@ -428,7 +428,7 @@ void main() {
       );
 
       final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       expect(result, isEmpty);
@@ -484,7 +484,7 @@ void main() {
 
       // Initial load
       final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
       expect(initialResult.length, equals(1));
       expect(
@@ -538,7 +538,7 @@ void main() {
 
       // Initial load
       await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
       expect(fetchCount, equals(1));
 
@@ -625,7 +625,7 @@ void main() {
       );
 
       final result = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       expect(result.length, equals(2));
@@ -644,7 +644,7 @@ void main() {
       );
 
       await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       // Dispose should not throw
@@ -688,7 +688,7 @@ void main() {
 
       // Initial load - should have 1 item
       final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
       expect(initialResult.length, equals(1));
 
@@ -745,7 +745,7 @@ void main() {
 
       // Initial load
       final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
       expect(initialResult[0].meta.id, equals(testAiResponseEntry1.meta.id));
 
@@ -793,7 +793,7 @@ void main() {
 
       // Initial load - empty
       final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
       expect(initialResult, isEmpty);
 
@@ -837,14 +837,14 @@ void main() {
       // Track state changes
       final states = <AsyncValue<List<AiResponseEntry>>>[];
       container.listen(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId),
+        linkedAiResponsesControllerProvider(testAudioEntryId),
         (_, next) => states.add(next),
         fireImmediately: true,
       );
 
       // Wait for initial load
       await container.read(
-        linkedAiResponsesControllerProvider(entryId: testAudioEntryId).future,
+        linkedAiResponsesControllerProvider(testAudioEntryId).future,
       );
 
       // Verify we got loading then data states

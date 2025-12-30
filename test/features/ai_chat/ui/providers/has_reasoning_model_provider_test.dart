@@ -50,7 +50,7 @@ void main() {
           .thenAnswer((_) async => [provider]);
 
       final result = await container.read(
-        hasReasoningModelForCategoryProvider(categoryId: 'cat').future,
+        hasReasoningModelForCategoryProvider('cat').future,
       );
       expect(result, isTrue);
     });
@@ -82,7 +82,7 @@ void main() {
           .thenAnswer((_) async => [provider]);
 
       final result = await container.read(
-        hasReasoningModelForCategoryProvider(categoryId: 'cat').future,
+        hasReasoningModelForCategoryProvider('cat').future,
       );
       expect(result, isFalse);
     });

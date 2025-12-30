@@ -586,10 +586,11 @@ void main() {
       // Track if triggerNewInferenceProvider was called
       var inferenceTriggered = false;
       container.listen(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: testId,
           promptId: 'prompt-1',
-        ),
+          linkedEntityId: null,
+        )),
         (_, __) {
           inferenceTriggered = true;
         },
@@ -955,10 +956,11 @@ void main() {
       // Track if inference was triggered
       var inferenceTriggered = false;
       container.listen(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: testId,
           promptId: 'prompt-1',
-        ),
+          linkedEntityId: null,
+        )),
         (_, __) {
           inferenceTriggered = true;
         },

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -10,15 +11,21 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:riverpod/riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-part 'time_by_category_controller.g.dart';
+/// Typedef for the complex return type.
+typedef TimeByCategoryData = Map<DateTime, Map<CategoryDefinition?, Duration>>;
 
-@riverpod
-class TimeByCategoryController extends _$TimeByCategoryController {
+final AutoDisposeAsyncNotifierProvider<TimeByCategoryController,
+        TimeByCategoryData> timeByCategoryControllerProvider =
+    AsyncNotifierProvider.autoDispose<TimeByCategoryController,
+        TimeByCategoryData>(
+  TimeByCategoryController.new,
+);
+
+class TimeByCategoryController
+    extends AutoDisposeAsyncNotifier<TimeByCategoryData> {
   StreamSubscription<Set<String>>? _updateSubscription;
   bool _isVisible = false;
 
@@ -54,7 +61,7 @@ class TimeByCategoryController extends _$TimeByCategoryController {
   }
 
   @override
-  Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> build() async {
+  Future<TimeByCategoryData> build() async {
     ref
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
@@ -65,7 +72,7 @@ class TimeByCategoryController extends _$TimeByCategoryController {
     return data;
   }
 
-  Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> _fetch(
+  Future<TimeByCategoryData> _fetch(
     int timeSpanDays,
   ) async {
     final now = DateTime.now();
@@ -136,8 +143,13 @@ class TimeByCategoryController extends _$TimeByCategoryController {
   }
 }
 
-@riverpod
-class TimeFrameController extends _$TimeFrameController {
+final AutoDisposeNotifierProvider<TimeFrameController, int>
+    timeFrameControllerProvider =
+    NotifierProvider.autoDispose<TimeFrameController, int>(
+  TimeFrameController.new,
+);
+
+class TimeFrameController extends AutoDisposeNotifier<int> {
   int _timeSpanDays = 30;
 
   @override
@@ -151,11 +163,12 @@ class TimeFrameController extends _$TimeFrameController {
   }
 }
 
-@riverpod
-Future<List<TimeByDayAndCategory>> timeByDayChart(Ref ref) async {
+final AutoDisposeFutureProvider<List<TimeByDayAndCategory>>
+    timeByDayChartProvider =
+    FutureProvider.autoDispose<List<TimeByDayAndCategory>>((ref) async {
   final timeByCategoryAndDay = ref.watch(timeByCategoryControllerProvider);
   return _convertTimeByCategory(timeByCategoryAndDay.value);
-}
+});
 
 class TimeByDayAndCategory {
   TimeByDayAndCategory({
@@ -215,8 +228,8 @@ List<DateTime> getDaysAtNoon(int rangeDays, DateTime rangeEnd) {
   );
 }
 
-@riverpod
-Future<int> maxCategoriesCount(Ref ref) async {
+final AutoDisposeFutureProvider<int> maxCategoriesCountProvider =
+    FutureProvider.autoDispose<int>((ref) async {
   final events = ref.watch(timeByDayChartProvider).value;
   final categoryIdsByDay = <DateTime, Set<String>>{};
   final nonZeroEvents = events?.where((e) => e.duration > Duration.zero);
@@ -225,4 +238,4 @@ Future<int> maxCategoriesCount(Ref ref) async {
     categoryIdsByDay[e.date]?.add(e.categoryId);
   });
   return categoryIdsByDay.values.map((e) => e.length).toList().maxOrNull ?? 0;
-}
+});

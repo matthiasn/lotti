@@ -27,7 +27,7 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasPromptsAsync = ref.watch(
-      hasAvailablePromptsProvider(entityId: journalEntity.id),
+      hasAvailablePromptsProvider(journalEntity.id),
     );
 
     // Use hasValue to preserve the icon during refresh states.
@@ -80,11 +80,11 @@ class UnifiedAiModal {
           // Trigger inference in the background
           unawaited(
             ref.read(
-              triggerNewInferenceProvider(
+              triggerNewInferenceProvider((
                 entityId: journalEntity.id,
                 promptId: prompt.id,
                 linkedEntityId: targetLinkedEntityId,
-              ).future,
+              )).future,
             ),
           );
 
@@ -125,7 +125,7 @@ class UnifiedAiPromptsList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final prompts = ref
             .watch(
-              availablePromptsProvider(entityId: journalEntity.id),
+              availablePromptsProvider(journalEntity.id),
             )
             .valueOrNull ??
         [];

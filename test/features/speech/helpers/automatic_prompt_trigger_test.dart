@@ -458,10 +458,11 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: entryId,
               promptId: promptId,
-            ).overrideWith((ref) async {
+              linkedEntityId: null,
+            )).overrideWith((ref) async {
               inferenceTriggered = true;
             }),
           ],
@@ -526,11 +527,11 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: checklistPromptId,
               linkedEntityId: entryId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               inferenceTriggered = true;
             }),
           ],
@@ -601,20 +602,20 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: entryId,
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               await Future<void>.delayed(Duration.zero);
               transcriptionCompleted = true;
               transcriptionCompleter.complete();
             }),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: checklistPromptId,
               linkedEntityId: entryId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               // Verify transcription completed before checklist
               expect(transcriptionCompleted, isTrue,
                   reason: 'Checklist updates should wait for transcription');
@@ -694,19 +695,20 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: checklistPromptId,
               linkedEntityId: entryId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               await Future<void>(() {});
               checklistCompleted = true;
               checklistCompleter.complete();
             }),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: taskSummaryPromptId,
-            ).overrideWith((ref) async {
+              linkedEntityId: null,
+            )).overrideWith((ref) async {
               // Verify checklist completed before task summary
               expect(checklistCompleted, isTrue,
                   reason: 'Task summary should wait for checklist updates');
@@ -789,31 +791,32 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: entryId,
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               executionOrder.add('transcription-start');
               await Future<void>.delayed(Duration.zero);
               transcriptionCompleted = true;
               executionOrder.add('transcription-end');
             }),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: checklistPromptId,
               linkedEntityId: entryId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               executionOrder.add('checklist-start');
               expect(transcriptionCompleted, isTrue);
               await Future<void>.delayed(Duration.zero);
               checklistCompleted = true;
               executionOrder.add('checklist-end');
             }),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: taskSummaryPromptId,
-            ).overrideWith((ref) async {
+              linkedEntityId: null,
+            )).overrideWith((ref) async {
               executionOrder.add('summary-start');
               expect(checklistCompleted, isTrue);
               await Future<void>.delayed(Duration.zero);
@@ -900,10 +903,11 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: entryId,
               promptId: promptId,
-            ).overrideWith((ref) async {
+              linkedEntityId: null,
+            )).overrideWith((ref) async {
               inferenceTriggered = true;
               capturedEntityId = entryId;
               capturedPromptId = promptId;
@@ -976,10 +980,11 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: taskSummaryPromptId,
-            ).overrideWith((ref) async {
+              linkedEntityId: null,
+            )).overrideWith((ref) async {
               inferenceTriggered = true;
               capturedEntityId = taskId;
               capturedPromptId = taskSummaryPromptId;
@@ -1101,11 +1106,11 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: checklistPromptId,
               linkedEntityId: entryId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               checklistTriggered = true;
             }),
           ],
@@ -1238,11 +1243,11 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: entryId,
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               await Future<void>(() {});
               transcriptionCompleted = true;
             }),
@@ -1338,19 +1343,19 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: entryId,
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               await Future<void>(() {});
               transcriptionCompleted = true;
             }),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: checklistPromptId,
               linkedEntityId: entryId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               await Future<void>(() {});
               checklistCompleted = true;
             }),
@@ -1472,25 +1477,26 @@ void main() {
                 .overrideWithValue(mockCategoryRepository),
             promptCapabilityFilterProvider
                 .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: entryId,
               promptId: transcriptionPromptId,
               linkedEntityId: taskId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               await Future<void>(() {});
             }),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: checklistPromptId,
               linkedEntityId: entryId,
-            ).overrideWith((ref) async {
+            )).overrideWith((ref) async {
               await Future<void>(() {});
               checklistCompleted = true;
             }),
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: taskSummaryPromptId,
-            ).overrideWith((ref) async {
+              linkedEntityId: null,
+            )).overrideWith((ref) async {
               // Task summary should only start after checklist completes
               expect(checklistCompleted, isTrue);
               taskSummaryStarted = true;

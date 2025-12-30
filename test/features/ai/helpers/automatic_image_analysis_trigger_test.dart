@@ -101,10 +101,11 @@ void main() {
         promptCapabilityFilterProvider
             .overrideWithValue(mockPromptCapabilityFilter),
         // Override the trigger provider to capture calls
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: '',
           promptId: '',
-        ).overrideWith((ref) async {}),
+          linkedEntityId: null,
+        )).overrideWith((ref) async {}),
       ],
     );
   });
@@ -151,11 +152,11 @@ void main() {
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           promptCapabilityFilterProvider
               .overrideWithValue(mockPromptCapabilityFilter),
-          triggerNewInferenceProvider(
+          triggerNewInferenceProvider((
             entityId: imageEntryId,
             promptId: promptId,
             linkedEntityId: linkedTaskId,
-          ).overrideWith((ref) async {
+          )).overrideWith((ref) async {
             inferenceCalled = true;
             capturedEntityId = imageEntryId;
             capturedPromptId = promptId;
@@ -440,11 +441,12 @@ void main() {
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           promptCapabilityFilterProvider
               .overrideWithValue(mockPromptCapabilityFilter),
-          triggerNewInferenceProvider(
+          triggerNewInferenceProvider((
             entityId: imageEntryId,
             promptId: promptId,
             // Note: linkedEntityId is null
-          ).overrideWith((ref) async {
+            linkedEntityId: null,
+          )).overrideWith((ref) async {
             inferenceCalled = true;
           }),
         ],
@@ -500,11 +502,11 @@ void main() {
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           promptCapabilityFilterProvider
               .overrideWithValue(mockPromptCapabilityFilter),
-          triggerNewInferenceProvider(
+          triggerNewInferenceProvider((
             entityId: imageEntryId,
             promptId: promptId,
             linkedEntityId: linkedTaskId,
-          ).overrideWith((ref) async {
+          )).overrideWith((ref) async {
             capturedEntityId = imageEntryId;
             capturedPromptId = promptId;
             capturedLinkedId = linkedTaskId;

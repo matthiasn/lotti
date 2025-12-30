@@ -163,10 +163,11 @@ void main() {
       final inferenceTriggered = ValueNotifier(false);
 
       container.listen(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: testTaskId,
           promptId: testPromptId,
-        ),
+          linkedEntityId: null,
+        )),
         (previous, next) {
           inferenceTriggered.value = true;
         },

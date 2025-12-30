@@ -112,10 +112,11 @@ void main() {
           )
           // Override the trigger provider to count calls
           ..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: 'test-task-1',
               promptId: 'auto-task-summary',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {},
           );
 
@@ -181,10 +182,11 @@ void main() {
             fireImmediately: true,
           )
           ..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: 'test-task-batch',
               promptId: 'auto-task-summary',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {},
           );
 
@@ -235,10 +237,11 @@ void main() {
             fireImmediately: true,
           )
           ..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: 'task-1',
               promptId: 'auto-task-summary',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {},
           )
           // Setup for task 2
@@ -251,10 +254,11 @@ void main() {
             fireImmediately: true,
           )
           ..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: 'task-2',
               promptId: 'auto-task-summary',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {},
           );
 
@@ -348,10 +352,11 @@ void main() {
             fireImmediately: true,
           )
           ..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: 'cancel-test',
               promptId: 'auto-task-summary',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {},
           );
 
@@ -435,10 +440,11 @@ void main() {
                 () => MockInferenceStatusController(InferenceStatus.idle)),
           ],
         )..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: 'immediate-test',
               promptId: 'valid-prompt-id',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {
               inferenceCallCount++;
             },
@@ -542,10 +548,11 @@ void main() {
             fireImmediately: true,
           )
           ..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: 'dispose-test',
               promptId: 'auto-task-summary',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {},
           );
 
@@ -613,10 +620,11 @@ void main() {
         )
           // Listen to the trigger provider to capture calls
           ..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: 'valid-prompt-test',
               promptId: 'valid-prompt-id',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {
               inferenceTriggered = true;
             },
@@ -794,10 +802,11 @@ void main() {
             fireImmediately: true,
           )
           ..listen(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: 'auto-task-summary',
-            ),
+              linkedEntityId: null,
+            )),
             (previous, next) {},
           );
 

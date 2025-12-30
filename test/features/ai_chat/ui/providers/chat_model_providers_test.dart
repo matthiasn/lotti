@@ -96,8 +96,8 @@ void main() {
       when(() => mockRepo.getConfigsByType(AiConfigType.inferenceProvider))
           .thenAnswer((_) async => [geminiProvider, openaiProvider]);
 
-      final result = await container.read(
-          eligibleChatModelsForCategoryProvider(categoryId: 'cat').future);
+      final result = await container
+          .read(eligibleChatModelsForCategoryProvider('cat').future);
 
       // Should keep only eligible1 and eligible2
       expect(result.map((m) => m.id), ['m2', 'm1']);

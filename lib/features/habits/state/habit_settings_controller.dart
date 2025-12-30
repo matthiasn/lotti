@@ -10,11 +10,8 @@ import 'package:lotti/logic/habits/autocomplete_update.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:riverpod/riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'habit_settings_controller.freezed.dart';
-part 'habit_settings_controller.g.dart';
 
 /// Immutable state for the habit settings form.
 @freezed
@@ -39,19 +36,23 @@ abstract class HabitSettingsState with _$HabitSettingsState {
 
 /// Stream provider for watching a habit by ID.
 /// Uses the repository for data access.
-@riverpod
-Stream<HabitDefinition?> habitById(Ref ref, String habitId) {
-  final repository = ref.watch(habitsRepositoryProvider);
-  return repository.watchHabitById(habitId);
-}
+final AutoDisposeStreamProviderFamily<HabitDefinition?, String>
+    habitByIdProvider =
+    StreamProvider.autoDispose.family<HabitDefinition?, String>(
+  (ref, habitId) {
+    final repository = ref.watch(habitsRepositoryProvider);
+    return repository.watchHabitById(habitId);
+  },
+);
 
 /// Stream provider for dashboards used in habit settings.
 /// Uses the repository for data access.
-@riverpod
-Stream<List<DashboardDefinition>> habitDashboards(Ref ref) {
+final AutoDisposeStreamProvider<List<DashboardDefinition>>
+    habitDashboardsProvider =
+    StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
   final repository = ref.watch(habitsRepositoryProvider);
   return repository.watchDashboards();
-}
+});
 
 /// Creates a new empty HabitDefinition for the create flow.
 HabitDefinition _createEmptyHabitDefinition(String habitId) {
@@ -78,10 +79,10 @@ final AutoDisposeNotifierProviderFamily<HabitSettingsController,
 );
 
 /// Stream provider for story tags.
-@riverpod
-Stream<List<TagEntity>> storyTagsStream(Ref ref) {
+final AutoDisposeStreamProvider<List<TagEntity>> storyTagsStreamProvider =
+    StreamProvider.autoDispose<List<TagEntity>>((ref) {
   return getIt<TagsService>().watchTags();
-}
+});
 
 /// Controller for managing habit settings form state.
 /// Uses habitId as family key - works for both create (new ID) and edit (existing ID).

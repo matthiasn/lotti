@@ -40,10 +40,7 @@ class _TestUnifiedAiController extends UnifiedAiController {
   final UnifiedAiState initialState;
 
   @override
-  UnifiedAiState build({
-    required String entityId,
-    required String promptId,
-  }) {
+  UnifiedAiState build(({String entityId, String promptId}) arg) {
     return initialState;
   }
 }
@@ -589,10 +586,7 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController([gemmaProvider]),
             ),
-            unifiedAiControllerProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith(
+            unifiedAiControllerProvider.overrideWith(
               () => _TestUnifiedAiController(
                 UnifiedAiState(
                   message: '',
@@ -610,10 +604,7 @@ void main() {
             ).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
-            triggerNewInferenceProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith((ref) async {}),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
           ],
         ),
       );
@@ -647,10 +638,7 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController([ollamaProvider]),
             ),
-            unifiedAiControllerProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith(
+            unifiedAiControllerProvider.overrideWith(
               () => _TestUnifiedAiController(
                 const UnifiedAiState(
                   message: '',
@@ -664,10 +652,7 @@ void main() {
             ).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
-            triggerNewInferenceProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith((ref) async {}),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
           ],
         ),
       );
@@ -694,10 +679,7 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
-            unifiedAiControllerProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith(
+            unifiedAiControllerProvider.overrideWith(
               () => _TestUnifiedAiController(
                 const UnifiedAiState(
                   message:
@@ -711,10 +693,7 @@ void main() {
             ).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.error),
             ),
-            triggerNewInferenceProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith((ref) async {}),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
           ],
         ),
       );
@@ -741,13 +720,8 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
-            unifiedAiControllerProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith(
-              () => _TestUnifiedAiController(
-                const UnifiedAiState(message: ''),
-              ),
+            unifiedAiControllerProvider.overrideWith(
+              () => _TestUnifiedAiController(const UnifiedAiState(message: '')),
             ),
             inferenceStatusControllerProvider(
               id: entityId,
@@ -755,10 +729,7 @@ void main() {
             ).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.running),
             ),
-            triggerNewInferenceProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith((ref) async {}),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
           ],
         ),
       );
@@ -899,10 +870,7 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
-            unifiedAiControllerProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith(
+            unifiedAiControllerProvider.overrideWith(
               () => _TestUnifiedAiController(
                 const UnifiedAiState(
                   message: '''
@@ -920,10 +888,7 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
             ).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.idle),
             ),
-            triggerNewInferenceProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith((ref) async {}),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
           ],
         ),
       );
@@ -965,10 +930,7 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
-            unifiedAiControllerProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith(
+            unifiedAiControllerProvider.overrideWith(
               () => _TestUnifiedAiController(
                 const UnifiedAiState(
                   message: '''
@@ -986,10 +948,7 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
             ).overrideWith(
               () => _TestInferenceStatusController(InferenceStatus.idle),
             ),
-            triggerNewInferenceProvider(
-              entityId: entityId,
-              promptId: promptId,
-            ).overrideWith((ref) async {}),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
           ],
         ),
       );

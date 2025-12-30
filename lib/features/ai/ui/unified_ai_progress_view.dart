@@ -54,10 +54,11 @@ class _UnifiedAiProgressContentState
   void _handleRetry() {
     // Trigger a new inference run
     ref.read(
-      triggerNewInferenceProvider(
+      triggerNewInferenceProvider((
         entityId: widget.entityId,
         promptId: widget.promptId,
-      ).future,
+        linkedEntityId: null,
+      )).future,
     );
   }
 
@@ -75,10 +76,11 @@ class _UnifiedAiProgressContentState
         if (!_hasTriggeredInference) {
           _hasTriggeredInference = true;
           ref.read(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: widget.entityId,
               promptId: widget.promptId,
-            ).future,
+              linkedEntityId: null,
+            )).future,
           );
         }
       });
@@ -138,10 +140,11 @@ class _UnifiedAiProgressContentState
 
       // Trigger a new inference run
       await ref.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: widget.entityId,
           promptId: widget.promptId,
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context
@@ -200,10 +203,10 @@ class _UnifiedAiProgressContentState
         final controllerState = widget.showExisting
             ? null
             : ref.watch(
-                unifiedAiControllerProvider(
+                unifiedAiControllerProvider((
                   entityId: widget.entityId,
                   promptId: widget.promptId,
-                ),
+                )),
               );
 
         final state = widget.showExisting
@@ -247,10 +250,10 @@ class _UnifiedAiProgressContentState
           // For showExisting mode, we need to get the controller state explicitly
           final actualControllerState = widget.showExisting
               ? ref.read(
-                  unifiedAiControllerProvider(
+                  unifiedAiControllerProvider((
                     entityId: widget.entityId,
                     promptId: widget.promptId,
-                  ),
+                  )),
                 )
               : controllerState;
 
@@ -346,10 +349,11 @@ class _UnifiedAiProgressContentState
 
                     // Trigger a new inference run
                     await ref.read(
-                      triggerNewInferenceProvider(
+                      triggerNewInferenceProvider((
                         entityId: widget.entityId,
                         promptId: widget.promptId,
-                      ).future,
+                        linkedEntityId: null,
+                      )).future,
                     );
 
                     // Re-show the progress modal sheet so the user sees the waveform indicator in the correct context

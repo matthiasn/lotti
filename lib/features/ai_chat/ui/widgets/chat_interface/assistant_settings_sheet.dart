@@ -14,7 +14,7 @@ class AssistantSettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final eligibleAsync = ref.watch(
-      eligibleChatModelsForCategoryProvider(categoryId: categoryId),
+      eligibleChatModelsForCategoryProvider(categoryId),
     );
     final sessionController =
         ref.read(chatSessionControllerProvider(categoryId).notifier);

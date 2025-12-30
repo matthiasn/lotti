@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
@@ -12,10 +13,6 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:riverpod/riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'unified_ai_controller.g.dart';
 
 /// State object for unified AI inference
 @immutable
@@ -50,21 +47,31 @@ class UnifiedAiState {
   }
 }
 
+/// Record type for unified AI controller parameters.
+typedef UnifiedAiParams = ({String entityId, String promptId});
+
 /// Controller for running unified AI inference with configurable prompts
 /// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
 /// ensuring error state persists until the widget can read it.
-@Riverpod(keepAlive: true)
-class UnifiedAiController extends _$UnifiedAiController {
+final NotifierProviderFamily<UnifiedAiController, UnifiedAiState,
+        UnifiedAiParams> unifiedAiControllerProvider =
+    NotifierProvider.family<UnifiedAiController, UnifiedAiState,
+        UnifiedAiParams>(
+  UnifiedAiController.new,
+);
+
+class UnifiedAiController
+    extends FamilyNotifier<UnifiedAiState, UnifiedAiParams> {
   Future<void>? _activeInferenceFuture;
   String? _activeLinkedEntityId;
   int _runCounter = 0;
   int? _activeRunId;
 
+  String get entityId => arg.entityId;
+  String get promptId => arg.promptId;
+
   @override
-  UnifiedAiState build({
-    required String entityId,
-    required String promptId,
-  }) {
+  UnifiedAiState build(UnifiedAiParams arg) {
     return const UnifiedAiState(message: '');
   }
 
@@ -345,78 +352,85 @@ class UnifiedAiController extends _$UnifiedAiController {
 
 /// Provider to get available prompts for a given entity.
 /// Uses entityId as key for stable provider identity across entity updates.
-@riverpod
-Future<List<AiConfigPrompt>> availablePrompts(
-  Ref ref, {
-  required String entityId,
-}) async {
-  // Watch the entry controller to get the entity and react to updates
-  final entryState =
-      ref.watch(entryControllerProvider(id: entityId)).valueOrNull;
-  final entity = entryState?.entry;
+final AutoDisposeFutureProviderFamily<List<AiConfigPrompt>, String>
+    availablePromptsProvider =
+    FutureProvider.autoDispose.family<List<AiConfigPrompt>, String>(
+  (ref, entityId) async {
+    // Watch the entry controller to get the entity and react to updates
+    final entryState =
+        ref.watch(entryControllerProvider(id: entityId)).valueOrNull;
+    final entity = entryState?.entry;
 
-  // Return empty list if entity not available yet
-  if (entity == null) {
-    return [];
-  }
+    // Return empty list if entity not available yet
+    if (entity == null) {
+      return [];
+    }
 
-  // Watch for changes in AI prompt configurations
-  // This will trigger a rebuild when any prompt configuration changes
-  await ref.watch(
-    aiConfigByTypeControllerProvider(configType: AiConfigType.prompt).future,
-  );
+    // Watch for changes in AI prompt configurations
+    // This will trigger a rebuild when any prompt configuration changes
+    await ref.watch(
+      aiConfigByTypeControllerProvider(configType: AiConfigType.prompt).future,
+    );
 
-  // If the entity has a category, watch for changes to that specific category
-  final categoryId = entity.meta.categoryId;
-  if (categoryId != null) {
-    // Watch the category - this will trigger rebuilds when the category changes
-    await ref.watch(categoryChangesProvider(categoryId).future);
-  }
+    // If the entity has a category, watch for changes to that specific category
+    final categoryId = entity.meta.categoryId;
+    if (categoryId != null) {
+      // Watch the category - this will trigger rebuilds when the category changes
+      await ref.watch(categoryChangesProvider(categoryId).future);
+    }
 
-  final repository = ref.watch(unifiedAiInferenceRepositoryProvider);
-  return repository.getActivePromptsForContext(entity: entity);
-}
+    final repository = ref.watch(unifiedAiInferenceRepositoryProvider);
+    return repository.getActivePromptsForContext(entity: entity);
+  },
+);
 
 /// Provider to check if there are any prompts available for an entity.
 /// Uses entityId as key for stable provider identity across entity updates.
-@riverpod
-Future<bool> hasAvailablePrompts(
-  Ref ref, {
-  required String entityId,
-}) async {
-  final prompts = await ref.watch(
-    availablePromptsProvider(entityId: entityId).future,
-  );
-  return prompts.isNotEmpty;
-}
+final AutoDisposeFutureProviderFamily<bool, String>
+    hasAvailablePromptsProvider =
+    FutureProvider.autoDispose.family<bool, String>(
+  (ref, entityId) async {
+    final prompts = await ref.watch(
+      availablePromptsProvider(entityId).future,
+    );
+    return prompts.isNotEmpty;
+  },
+);
 
 /// Provider to watch category changes
-@riverpod
-Stream<void> categoryChanges(Ref ref, String categoryId) {
-  final categoryRepo = ref.watch(categoryRepositoryProvider);
-  return categoryRepo.watchCategory(categoryId).map((_) {});
-}
+final AutoDisposeStreamProviderFamily<void, String> categoryChangesProvider =
+    StreamProvider.autoDispose.family<void, String>(
+  (ref, categoryId) {
+    final categoryRepo = ref.watch(categoryRepositoryProvider);
+    return categoryRepo.watchCategory(categoryId).map((_) {});
+  },
+);
+
+/// Record type for trigger new inference parameters.
+typedef TriggerNewInferenceParams = ({
+  String entityId,
+  String promptId,
+  String? linkedEntityId,
+});
 
 /// Provider to trigger a new inference run
-@riverpod
-Future<void> triggerNewInference(
-  Ref ref, {
-  required String entityId,
-  required String promptId,
-  String? linkedEntityId,
-}) async {
-  developer.log(
-    'triggerNewInference called: entityId=$entityId, promptId=$promptId, linkedEntityId=$linkedEntityId',
-    name: 'UnifiedAiController',
-  );
-  // Get the controller instance (this will create it if it doesn't exist)
-  final controller = ref.read(
-    unifiedAiControllerProvider(
-      entityId: entityId,
-      promptId: promptId,
-    ).notifier,
-  );
+final AutoDisposeFutureProviderFamily<void, TriggerNewInferenceParams>
+    triggerNewInferenceProvider =
+    FutureProvider.autoDispose.family<void, TriggerNewInferenceParams>(
+  (ref, params) async {
+    developer.log(
+      'triggerNewInference called: entityId=${params.entityId}, promptId=${params.promptId}, linkedEntityId=${params.linkedEntityId}',
+      name: 'UnifiedAiController',
+    );
+    // Get the controller instance (this will create it if it doesn't exist)
+    final controller = ref.read(
+      unifiedAiControllerProvider((
+        entityId: params.entityId,
+        promptId: params.promptId,
+      )).notifier,
+    );
 
-  // Wait for the inference to complete, passing the linked entity ID
-  await controller.runInference(linkedEntityId: linkedEntityId);
-}
+    // Wait for the inference to complete, passing the linked entity ID
+    await controller.runInference(linkedEntityId: params.linkedEntityId);
+  },
+);
