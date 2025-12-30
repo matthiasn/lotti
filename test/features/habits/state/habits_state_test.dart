@@ -25,7 +25,7 @@ void main() {
       expect(state.failedPercentage, 0);
       expect(state.shortStreakCount, 0);
       expect(state.longStreakCount, 0);
-      expect(state.zeroBased, false);
+      expect(state.zeroBased, true);
       expect(state.minY, 0);
       expect(state.displayFilter, HabitDisplayFilter.openNow);
       expect(state.showSearch, false);

@@ -224,7 +224,11 @@ class HabitsController extends _$HabitsController {
             )
             .toList();
 
-    state = state.copyWith(
+    final days = getHabitDays(state.timeSpanDays);
+
+    // Build intermediate state with all freshly computed fields
+    // so habitMinY can use accurate data from totalForDay
+    final nextState = state.copyWith(
       habitDefinitions: _habitDefinitions,
       habitCompletions: _habitCompletions,
       completedToday: completedToday,
@@ -232,7 +236,7 @@ class HabitsController extends _$HabitsController {
       openNow: filteredOpenNow,
       pendingLater: filteredPendingLater,
       completed: filteredCompleted,
-      days: getHabitDays(state.timeSpanDays),
+      days: days,
       successfulToday: successfulToday,
       successfulByDay: successfulByDay,
       skippedByDay: skippedByDay,
@@ -240,11 +244,11 @@ class HabitsController extends _$HabitsController {
       allByDay: allByDay,
       shortStreakCount: shortStreakCount,
       longStreakCount: longStreakCount,
-      minY: habitMinY(
-        days: getHabitDays(state.timeSpanDays),
-        state: state.copyWith(successfulByDay: successfulByDay),
-      ),
       isVisible: state.isVisible,
+    );
+
+    state = nextState.copyWith(
+      minY: habitMinY(days: days, state: nextState),
     );
   }
 

@@ -68,7 +68,7 @@ abstract class HabitsState with _$HabitsState {
         shortStreakCount: 0,
         longStreakCount: 0,
         timeSpanDays: isDesktop ? 14 : 7,
-        zeroBased: false,
+        zeroBased: true,
         minY: 0,
         displayFilter: HabitDisplayFilter.openNow,
         showSearch: false,

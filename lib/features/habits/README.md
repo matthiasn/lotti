@@ -6,27 +6,99 @@ This module contains the habits feature, including habit display, completion tra
 
 ```
 lib/features/habits/
-├── state/                              # Riverpod state management
-│   ├── habit_completion_controller.dart    # Habit completion tracking
-│   ├── habit_completion_controller.g.dart  # Generated riverpod code
-│   ├── habit_settings_controller.dart      # Habit settings form state
-│   ├── habit_settings_controller.freezed.dart  # Generated freezed code
-│   └── habit_settings_controller.g.dart    # Generated riverpod code
+├── state/                                  # Riverpod state management
+│   ├── habits_controller.dart                 # Main habits page state controller
+│   ├── habits_controller.g.dart               # Generated riverpod code
+│   ├── habits_state.dart                      # Freezed state class with helpers
+│   ├── habits_state.freezed.dart              # Generated freezed code
+│   ├── habit_completion_controller.dart       # Habit completion tracking
+│   ├── habit_completion_controller.g.dart     # Generated riverpod code
+│   ├── habit_settings_controller.dart         # Habit settings form state
+│   ├── habit_settings_controller.freezed.dart # Generated freezed code
+│   └── habit_settings_controller.g.dart       # Generated riverpod code
 └── ui/
-    ├── habits_page.dart                # Main habits list page
+    ├── habits_page.dart                # Main habits list page (ConsumerStatefulWidget)
     └── widgets/                        # Reusable habit widgets
         ├── habit_category.dart             # Category selection for habits
         ├── habit_completion_card.dart      # Habit completion UI card
         ├── habit_completion_color_icon.dart  # Color-coded completion icon
         ├── habit_dashboard.dart            # Dashboard selection for habits
-        ├── habit_page_app_bar.dart         # Habits page app bar
-        ├── habit_streaks.dart              # Streak tracking display
-        ├── habits_filter.dart              # Habit filtering controls
-        ├── habits_search.dart              # Habit search functionality
+        ├── habit_page_app_bar.dart         # Habits page app bar (ConsumerWidget)
+        ├── habit_streaks.dart              # Streak tracking display (ConsumerWidget)
+        ├── habits_filter.dart              # Habit filtering controls (ConsumerWidget)
+        ├── habits_search.dart              # Habit search (ConsumerStatefulWidget)
         └── status_segmented_control.dart   # Status filter control
 ```
 
 ## State Management
+
+### HabitsController
+
+Main controller managing the complete habits page state. Uses `@Riverpod(keepAlive: true)` for app-wide persistence.
+
+**Provider:** `habitsControllerProvider`
+
+- Marked `keepAlive: true` since habits state should persist across navigation
+- Subscribes to `JournalDb.watchHabitDefinitions()` for habit definition updates
+- Listens to `UpdateNotifications` stream for habit completion changes
+- Manages visibility updates via `VisibilityDetector`
+
+**State:** `HabitsState` (freezed)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `habitDefinitions` | `List<HabitDefinition>` | All active habit definitions |
+| `habitCompletions` | `List<JournalEntity>` | Habit completions in time range |
+| `completedToday` | `Set<String>` | Habit IDs completed today |
+| `successfulToday` | `Set<String>` | Habit IDs successful today |
+| `openHabits` | `List<HabitDefinition>` | Habits not yet completed today |
+| `openNow` | `List<HabitDefinition>` | Open habits filtered by category (due now) |
+| `pendingLater` | `List<HabitDefinition>` | Open habits filtered by category (due later) |
+| `completed` | `List<HabitDefinition>` | Completed habits filtered by category |
+| `days` | `List<String>` | Date strings for chart display |
+| `successfulByDay` | `Map<String, Set<String>>` | Habit IDs successful by day |
+| `skippedByDay` | `Map<String, Set<String>>` | Habit IDs skipped by day |
+| `failedByDay` | `Map<String, Set<String>>` | Habit IDs failed by day |
+| `allByDay` | `Map<String, Set<String>>` | All habit IDs by day |
+| `selectedInfoYmd` | `String` | Selected day for chart info display |
+| `successPercentage` | `int` | Success rate for selected day |
+| `skippedPercentage` | `int` | Skip rate for selected day |
+| `failedPercentage` | `int` | Fail rate for selected day |
+| `shortStreakCount` | `int` | Habits with 3+ day streaks |
+| `longStreakCount` | `int` | Habits with 7+ day streaks |
+| `timeSpanDays` | `int` | Chart time span (7 or 14 days) |
+| `minY` | `double` | Chart Y-axis minimum value |
+| `zeroBased` | `bool` | Whether chart starts at 0% |
+| `isVisible` | `bool` | Whether habits page is visible |
+| `showTimeSpan` | `bool` | Show time span selector |
+| `showSearch` | `bool` | Show search input |
+| `searchString` | `String` | Current search filter |
+| `selectedCategoryIds` | `Set<String>` | Selected category filter IDs |
+| `displayFilter` | `HabitDisplayFilter` | Tab filter (openNow/pendingLater/completed/all) |
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `updateVisibility(VisibilityInfo)` | Update visibility state from `VisibilityDetector` |
+| `setTimeSpan(int)` | Set chart time span (refetches completions) |
+| `setDisplayFilter(HabitDisplayFilter?)` | Set tab display filter |
+| `setSearchString(String)` | Set search filter (lowercased) |
+| `toggleZeroBased()` | Toggle chart zero-based mode |
+| `toggleShowSearch()` | Toggle search UI visibility |
+| `toggleShowTimeSpan()` | Toggle time span selector visibility |
+| `toggleSelectedCategoryIds(String)` | Toggle category in filter set |
+| `setInfoYmd(String)` | Set selected day for chart info (auto-clears after 15s) |
+
+**Helper Functions:**
+
+| Function | Description |
+|----------|-------------|
+| `completionRate(HabitsState, Map)` | Calculate completion percentage for selected day |
+| `totalForDay(String, HabitsState)` | Count total habits that should be tracked for a day |
+| `activeBy(List<HabitDefinition>, String)` | Filter habits active by a given date |
+| `habitMinY(List<String>, HabitsState)` | Calculate chart Y-axis minimum |
+| `getHabitDays(int)` | Generate date strings for time span |
 
 ### HabitSettingsController
 
@@ -111,16 +183,39 @@ Habit settings pages are located in `lib/features/settings/ui/pages/habits/`:
 | `habit_create_page.dart` | Create new habit (generates UUID, uses `HabitDetailsPage`) |
 | `habits_page.dart` | List all habits in settings |
 
+Chart widget is located at `lib/widgets/charts/habits/`:
+
+| File | Description |
+|------|-------------|
+| `habit_completion_rate_chart.dart` | Completion rate line chart (ConsumerWidget) |
+
 ## Testing
 
 | Test File | Coverage |
 |-----------|----------|
+| `test/features/habits/state/habits_controller_test.dart` | Unit tests for HabitsController (20 tests) |
 | `test/features/habits/state/habit_settings_controller_test.dart` | Unit tests for HabitSettingsController (16 tests) |
+| `test/features/habits/ui/pages/habits_tab_page_test.dart` | Widget tests for habits page (4 tests) |
+| `test/features/habits/ui/widgets/habits_search_test.dart` | Widget tests for search widget (7 tests) |
+| `test/widgets/charts/habits/habit_completion_rate_chart_test.dart` | Widget tests for chart (4 tests) |
 | `test/features/settings/ui/pages/habits/habit_details_page_test.dart` | Widget tests for habit details UI (5 tests) |
 
 ## Migration Notes
 
-The habit settings state was migrated from BLoC to Riverpod in v0.9.784:
+### v0.9.786 - Habits Page State Migration
+
+The habits page state was migrated from BLoC to Riverpod:
+
+- Replaced `HabitsCubit` with `HabitsController` using `@Riverpod(keepAlive: true)`
+- Created Freezed-based `HabitsState` with helper functions for chart calculations
+- Updated all UI widgets to use Riverpod (`ConsumerWidget` / `ConsumerStatefulWidget`)
+- Fixed `HabitsSearchWidget` TextEditingController lifecycle (proper init/dispose/sync with `ref.listen`)
+- Fixed chart touch handling to defer state modification via `addPostFrameCallback`
+- Added comprehensive test coverage for controller, state helpers, and widgets
+
+### v0.9.784 - Habit Settings State Migration
+
+The habit settings state was migrated from BLoC to Riverpod:
 
 - Replaced `HabitSettingsCubit` with `HabitSettingsController`
 - Uses manual `AutoDisposeNotifierProvider.family` pattern (not `@riverpod` annotation) to avoid code generation issues with complex family parameters
