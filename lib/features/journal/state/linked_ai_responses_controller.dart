@@ -1,24 +1,31 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'linked_ai_responses_controller.g.dart';
 
 /// Controller for fetching AI responses linked to a specific entry (e.g., audio).
 ///
 /// This is used to display nested AI responses under audio entries in the task view,
 /// showing generated prompts and other AI responses directly where they are relevant.
-@riverpod
-class LinkedAiResponsesController extends _$LinkedAiResponsesController {
+final AutoDisposeAsyncNotifierProviderFamily<LinkedAiResponsesController,
+        List<AiResponseEntry>, String> linkedAiResponsesControllerProvider =
+    AsyncNotifierProvider.autoDispose
+        .family<LinkedAiResponsesController, List<AiResponseEntry>, String>(
+  LinkedAiResponsesController.new,
+);
+
+class LinkedAiResponsesController
+    extends AutoDisposeFamilyAsyncNotifier<List<AiResponseEntry>, String> {
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   final _watchedIds = <String>{};
   bool _isDisposed = false;
+
+  String get entryId => arg;
 
   void _listen() {
     _updateSubscription =
@@ -53,9 +60,7 @@ class LinkedAiResponsesController extends _$LinkedAiResponsesController {
   }
 
   @override
-  Future<List<AiResponseEntry>> build({
-    required String entryId,
-  }) async {
+  Future<List<AiResponseEntry>> build(String arg) async {
     ref
       ..onDispose(() {
         _isDisposed = true;

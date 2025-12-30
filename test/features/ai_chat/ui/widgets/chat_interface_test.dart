@@ -40,7 +40,7 @@ void main() {
 
     // Combine default overrides with test-specific ones
     final allOverrides = [
-      eligibleChatModelsForCategoryProvider(categoryId: 'test-category')
+      eligibleChatModelsForCategoryProvider('test-category')
           .overrideWith((_) async => []),
       ...overrides,
     ];
@@ -732,7 +732,7 @@ void main() {
         ProviderScope(
           overrides: [
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            eligibleChatModelsForCategoryProvider(categoryId: 'test-category')
+            eligibleChatModelsForCategoryProvider('test-category')
                 .overrideWith((_) async => []),
           ],
           child: const MaterialApp(
@@ -821,7 +821,7 @@ void main() {
           chatRepositoryProvider.overrideWithValue(mockChatRepository),
           aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
           // Override eligible models to return the test model
-          eligibleChatModelsForCategoryProvider(categoryId: 'test-category')
+          eligibleChatModelsForCategoryProvider('test-category')
               .overrideWith((_) async => [model]),
         ],
       );

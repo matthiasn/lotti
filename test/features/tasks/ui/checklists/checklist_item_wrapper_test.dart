@@ -31,11 +31,7 @@ class MockChecklistItemController extends ChecklistItemController {
   bool deleteWasCalled = false;
 
   @override
-  Future<ChecklistItem?> build({
-    required String id,
-    required String? taskId,
-  }) async =>
-      item;
+  Future<ChecklistItem?> build(ChecklistItemParams arg) async => item;
 
   @override
   Future<bool> delete() async {
@@ -77,11 +73,7 @@ class MockChecklistController extends ChecklistController {
   String? unlinkedItemId;
 
   @override
-  Future<Checklist?> build({
-    required String id,
-    required String? taskId,
-  }) async =>
-      null;
+  Future<Checklist?> build(ChecklistParams arg) async => null;
 
   @override
   Future<void> unlinkItem(String itemId) async {
@@ -173,14 +165,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -206,14 +194,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -254,14 +238,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -287,14 +267,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -335,14 +311,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -390,14 +362,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -425,14 +393,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -476,14 +440,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -519,14 +479,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -557,14 +513,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -595,14 +547,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -643,14 +591,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -712,14 +656,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(
@@ -791,14 +731,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistItemControllerProvider(
-              id: testItemId,
-              taskId: testTaskId,
-            ).overrideWith(() => mockItemController),
-            checklistControllerProvider(
-              id: testChecklistId,
-              taskId: testTaskId,
-            ).overrideWith(MockChecklistController.new),
+            checklistItemControllerProvider
+                .overrideWith(() => mockItemController),
+            checklistControllerProvider
+                .overrideWith(MockChecklistController.new),
           ],
           child: const WidgetTestBench(
             child: ChecklistItemWrapper(

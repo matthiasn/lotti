@@ -34,7 +34,7 @@ class LinkedFromChecklistWidget extends ConsumerWidget {
         ...linkedChecklists.map(
           (id) {
             final checklist = ref
-                .watch(checklistControllerProvider(id: id, taskId: item.id))
+                .watch(checklistControllerProvider((id: id, taskId: item.id)))
                 .value;
 
             if (checklist == null) {

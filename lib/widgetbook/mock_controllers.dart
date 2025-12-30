@@ -9,10 +9,7 @@ class MockChecklistItemControllerProvider extends ChecklistItemController {
   final Future<ChecklistItem?> value;
 
   @override
-  Future<ChecklistItem?> build({
-    required String id,
-    required String? taskId,
-  }) {
+  Future<ChecklistItem?> build(ChecklistItemParams arg) {
     return value;
   }
 

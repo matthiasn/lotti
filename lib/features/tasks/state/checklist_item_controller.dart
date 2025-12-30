@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
@@ -8,13 +9,23 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'checklist_item_controller.g.dart';
+/// Record type for checklist item parameters.
+typedef ChecklistItemParams = ({String id, String? taskId});
 
-@riverpod
-class ChecklistItemController extends _$ChecklistItemController {
+final AutoDisposeAsyncNotifierProviderFamily<ChecklistItemController,
+        ChecklistItem?, ChecklistItemParams> checklistItemControllerProvider =
+    AsyncNotifierProvider.autoDispose
+        .family<ChecklistItemController, ChecklistItem?, ChecklistItemParams>(
+  ChecklistItemController.new,
+);
+
+class ChecklistItemController extends AutoDisposeFamilyAsyncNotifier<
+    ChecklistItem?, ChecklistItemParams> {
   StreamSubscription<Set<String>>? _updateSubscription;
+
+  String get id => arg.id;
+  String? get taskId => arg.taskId;
 
   void listen() {
     _updateSubscription =
@@ -29,10 +40,7 @@ class ChecklistItemController extends _$ChecklistItemController {
   }
 
   @override
-  Future<ChecklistItem?> build({
-    required String id,
-    required String? taskId,
-  }) async {
+  Future<ChecklistItem?> build(ChecklistItemParams arg) async {
     ref
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);

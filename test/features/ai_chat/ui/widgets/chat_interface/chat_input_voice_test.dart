@@ -36,7 +36,7 @@ void main() {
       ),
 
       // No eligible models needed in header for this test
-      eligibleChatModelsForCategoryProvider(categoryId: categoryId)
+      eligibleChatModelsForCategoryProvider(categoryId)
           .overrideWith((_) async => []),
     ];
 
@@ -96,7 +96,7 @@ void main() {
           chatSessionControllerProvider(categoryId).overrideWith(
             () => _FakeChatSessionController(sink: lastSent),
           ),
-          eligibleChatModelsForCategoryProvider(categoryId: categoryId)
+          eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
         ],
         child: const MaterialApp(
@@ -134,7 +134,7 @@ void main() {
             () =>
                 _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
           ),
-          eligibleChatModelsForCategoryProvider(categoryId: categoryId)
+          eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
         ],
         child: const MaterialApp(
@@ -169,7 +169,7 @@ void main() {
           chatSessionControllerProvider(categoryId).overrideWith(
             _NonSendableChatSessionController.new,
           ),
-          eligibleChatModelsForCategoryProvider(categoryId: categoryId)
+          eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
         ],
         child: const MaterialApp(
@@ -205,7 +205,7 @@ void main() {
             () =>
                 _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
           ),
-          eligibleChatModelsForCategoryProvider(categoryId: categoryId)
+          eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
         ],
         child: const MaterialApp(
@@ -248,7 +248,7 @@ void main() {
             () =>
                 _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
           ),
-          eligibleChatModelsForCategoryProvider(categoryId: categoryId)
+          eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
         ],
         child: const MaterialApp(
@@ -281,7 +281,7 @@ void main() {
           // Non-sendable session (no selected model)
           chatSessionControllerProvider(categoryId)
               .overrideWith(_NonSendableChatSessionController.new),
-          eligibleChatModelsForCategoryProvider(categoryId: categoryId)
+          eligibleChatModelsForCategoryProvider(categoryId)
               .overrideWith((_) async => []),
         ],
         child: const MaterialApp(

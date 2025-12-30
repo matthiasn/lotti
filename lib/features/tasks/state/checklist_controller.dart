@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -10,14 +11,24 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'checklist_controller.g.dart';
+/// Record type for checklist parameters.
+typedef ChecklistParams = ({String id, String? taskId});
 
-@riverpod
-class ChecklistController extends _$ChecklistController {
+final AutoDisposeAsyncNotifierProviderFamily<ChecklistController, Checklist?,
+        ChecklistParams> checklistControllerProvider =
+    AsyncNotifierProvider.autoDispose
+        .family<ChecklistController, Checklist?, ChecklistParams>(
+  ChecklistController.new,
+);
+
+class ChecklistController
+    extends AutoDisposeFamilyAsyncNotifier<Checklist?, ChecklistParams> {
   final subscribedIds = <String>{};
   StreamSubscription<Set<String>>? _updateSubscription;
+
+  String get id => arg.id;
+  String? get taskId => arg.taskId;
 
   void listen() {
     _updateSubscription =
@@ -32,10 +43,7 @@ class ChecklistController extends _$ChecklistController {
   }
 
   @override
-  Future<Checklist?> build({
-    required String id,
-    required String? taskId,
-  }) async {
+  Future<Checklist?> build(ChecklistParams arg) async {
     subscribedIds.add(id);
     ref
       ..onDispose(() => _updateSubscription?.cancel())
@@ -139,10 +147,10 @@ class ChecklistController extends _$ChecklistController {
 
       await ref
           .read(
-            checklistItemControllerProvider(
+            checklistItemControllerProvider((
               id: droppedChecklistItemId,
               taskId: taskId,
-            ).notifier,
+            )).notifier,
           )
           .moveToChecklist(
             linkedChecklistId: droppedChecklistItemId,
@@ -162,7 +170,7 @@ class ChecklistController extends _$ChecklistController {
 
       await ref
           .read(
-            checklistControllerProvider(id: fromChecklistId, taskId: taskId)
+            checklistControllerProvider((id: fromChecklistId, taskId: taskId))
                 .notifier,
           )
           .unlinkItem(droppedChecklistItemId);
@@ -272,21 +280,35 @@ class ChecklistController extends _$ChecklistController {
   }
 }
 
-@riverpod
-class ChecklistCompletionController extends _$ChecklistCompletionController {
+/// Record type for completion controller parameters.
+typedef ChecklistCompletionParams = ({String id, String? taskId});
+
+final AutoDisposeAsyncNotifierProviderFamily<
+        ChecklistCompletionController,
+        ({int completedCount, int totalCount}),
+        ChecklistCompletionParams> checklistCompletionControllerProvider =
+    AsyncNotifierProvider.autoDispose.family<ChecklistCompletionController,
+        ({int completedCount, int totalCount}), ChecklistCompletionParams>(
+  ChecklistCompletionController.new,
+);
+
+class ChecklistCompletionController extends AutoDisposeFamilyAsyncNotifier<
+    ({int completedCount, int totalCount}), ChecklistCompletionParams> {
   ChecklistCompletionController();
 
+  String get id => arg.id;
+  String? get taskId => arg.taskId;
+
   @override
-  Future<({int completedCount, int totalCount})> build({
-    required String id,
-    required String? taskId,
-  }) async {
+  Future<({int completedCount, int totalCount})> build(
+    ChecklistCompletionParams arg,
+  ) async {
     final checklistData = ref
         .watch(
-          checklistControllerProvider(
+          checklistControllerProvider((
             id: id,
             taskId: taskId,
-          ),
+          )),
         )
         .value
         ?.data;
@@ -296,10 +318,10 @@ class ChecklistCompletionController extends _$ChecklistCompletionController {
         .map(
           (id) => ref
               .watch(
-                checklistItemControllerProvider(
+                checklistItemControllerProvider((
                   id: id,
                   taskId: taskId,
-                ),
+                )),
               )
               .value,
         )
@@ -317,15 +339,26 @@ class ChecklistCompletionController extends _$ChecklistCompletionController {
   }
 }
 
-@riverpod
+final AutoDisposeAsyncNotifierProviderFamily<
+        ChecklistCompletionRateController,
+        double,
+        ChecklistCompletionParams> checklistCompletionRateControllerProvider =
+    AsyncNotifierProvider.autoDispose.family<ChecklistCompletionRateController,
+        double, ChecklistCompletionParams>(
+  ChecklistCompletionRateController.new,
+);
+
 class ChecklistCompletionRateController
-    extends _$ChecklistCompletionRateController {
+    extends AutoDisposeFamilyAsyncNotifier<double, ChecklistCompletionParams> {
   ChecklistCompletionRateController();
 
+  String get id => arg.id;
+  String? get taskId => arg.taskId;
+
   @override
-  Future<double> build({required String id, required String? taskId}) async {
+  Future<double> build(ChecklistCompletionParams arg) async {
     final res = ref
-        .watch(checklistCompletionControllerProvider(id: id, taskId: taskId))
+        .watch(checklistCompletionControllerProvider((id: id, taskId: taskId)))
         .value;
     final totalCount = res?.totalCount ?? 0;
     final completedCount = res?.completedCount ?? 0;
