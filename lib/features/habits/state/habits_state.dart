@@ -128,12 +128,20 @@ double habitMinY({
   required List<String> days,
   required HabitsState state,
 }) {
-  var lowest = 100.0;
+  double? lowest;
 
   for (final day in days) {
-    final n = state.successfulByDay[day]?.length ?? 0;
     final total = totalForDay(day, state);
-    lowest = total > 0 ? min(lowest, 100 * n / total) : 0;
+    if (total > 0) {
+      final n = state.successfulByDay[day]?.length ?? 0;
+      final rate = 100 * n / total;
+      lowest = lowest == null ? rate : min(lowest, rate);
+    }
+  }
+
+  // Return 0 if no valid days with habits, otherwise apply the -20 offset
+  if (lowest == null) {
+    return 0;
   }
   return max(lowest - 20, 0);
 }

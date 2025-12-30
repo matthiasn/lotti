@@ -96,13 +96,11 @@ class HabitsController extends _$HabitsController {
     final today = DateTime.now().ymd;
 
     void addId(Map<String, Set<String>> byDay, String day, String habitId) {
-      byDay[day] = byDay[day] ?? <String>{}
-        ..add(habitId);
+      byDay.putIfAbsent(day, () => <String>{}).add(habitId);
     }
 
     void removeId(Map<String, Set<String>> byDay, String day, String habitId) {
-      byDay[day] = byDay[day] ?? <String>{}
-        ..remove(habitId);
+      byDay[day]?.remove(habitId);
     }
 
     for (final item in _habitCompletions) {

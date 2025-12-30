@@ -32,11 +32,12 @@ class HabitCompletionRateChart extends ConsumerWidget
     Widget bottomTitleWidgets(double value, TitleMeta meta) {
       var ymd = '';
 
-      if (value.toInt() == 1) {
+      if (value.toInt() == 1 && state.days.length > 1) {
         ymd = state.days[1];
       }
 
-      if (value.toInt() == timeSpanDays - 1) {
+      if (value.toInt() == timeSpanDays - 1 &&
+          state.days.length >= timeSpanDays) {
         ymd = state.days[timeSpanDays - 1];
       }
 
