@@ -1,13 +1,11 @@
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
@@ -15,8 +13,53 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockAudioPlayerCubit extends MockCubit<AudioPlayerState>
-    implements AudioPlayerCubit {}
+class MockAudioPlayerController extends AudioPlayerController {
+  MockAudioPlayerController(this._state);
+
+  AudioPlayerState _state;
+
+  @override
+  AudioPlayerState get state => _state;
+
+  @override
+  set state(AudioPlayerState newState) {
+    _state = newState;
+  }
+
+  bool playWasCalled = false;
+  bool pauseWasCalled = false;
+  Duration? lastSeekPosition;
+  double? lastSpeedSet;
+  JournalAudio? lastAudioNoteSet;
+
+  @override
+  AudioPlayerState build() => _state;
+
+  @override
+  Future<void> play() async {
+    playWasCalled = true;
+  }
+
+  @override
+  Future<void> pause() async {
+    pauseWasCalled = true;
+  }
+
+  @override
+  Future<void> seek(Duration newPosition) async {
+    lastSeekPosition = newPosition;
+  }
+
+  @override
+  Future<void> setSpeed(double speed) async {
+    lastSpeedSet = speed;
+  }
+
+  @override
+  Future<void> setAudioNote(JournalAudio audioNote) async {
+    lastAudioNoteSet = audioNote;
+  }
+}
 
 class _MockLoggingService extends Mock implements LoggingService {}
 
@@ -51,7 +94,7 @@ void main() {
     registerFallbackValue(Duration.zero);
   });
 
-  late MockAudioPlayerCubit cubit;
+  late MockAudioPlayerController controller;
   late _StubAudioWaveformService waveformService;
 
   setUp(() async {
@@ -59,12 +102,6 @@ void main() {
     getIt.registerSingleton<LoggingService>(_MockLoggingService());
     waveformService = _StubAudioWaveformService();
     getIt.registerSingleton<AudioWaveformService>(waveformService);
-    cubit = MockAudioPlayerCubit();
-
-    when(() => cubit.play()).thenAnswer((_) async {});
-    when(() => cubit.pause()).thenAnswer((_) async {});
-    when(() => cubit.seek(any<Duration>())).thenAnswer((_) async {});
-    when(() => cubit.setSpeed(any<double>())).thenAnswer((_) async {});
   });
 
   tearDown(getIt.reset);
@@ -118,21 +155,19 @@ void main() {
     required AudioPlayerState state,
     double width = 420,
   }) async {
-    when(() => cubit.state).thenReturn(state);
-    when(() => cubit.stream)
-        .thenAnswer((_) => Stream<AudioPlayerState>.value(state));
+    controller = MockAudioPlayerController(state);
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          audioPlayerControllerProvider.overrideWith(() => controller),
+        ],
         child: MaterialApp(
           home: Scaffold(
-            body: BlocProvider<AudioPlayerCubit>.value(
-              value: cubit,
-              child: Center(
-                child: SizedBox(
-                  width: width,
-                  child: AudioPlayerWidget(journalAudio),
-                ),
+            body: Center(
+              child: SizedBox(
+                width: width,
+                child: AudioPlayerWidget(journalAudio),
               ),
             ),
           ),
@@ -233,7 +268,7 @@ void main() {
     await tester.tap(find.text('1x'));
     await tester.pump();
 
-    verify(() => cubit.setSpeed(1.25)).called(1);
+    expect(controller.lastSpeedSet, 1.25);
   });
 
   testWidgets('renders waveform scrubber when waveform ready',
@@ -282,14 +317,14 @@ void main() {
     await tester.tap(find.byType(AudioProgressBar));
     await tester.pump();
 
-    final captured = verify(() => cubit.seek(captureAny<Duration>()))
-        .captured
-        .first as Duration;
-    expect(captured.inMilliseconds.toDouble(),
-        closeTo(total.inMilliseconds / 2, 1500));
+    expect(controller.lastSeekPosition, isNotNull);
+    expect(
+      controller.lastSeekPosition!.inMilliseconds.toDouble(),
+      closeTo(total.inMilliseconds / 2, 1500),
+    );
   });
 
-  testWidgets('tapping play arms the cubit with the audio note',
+  testWidgets('tapping play arms the controller with the audio note',
       (WidgetTester tester) async {
     final journalAudio = buildJournalAudio();
     final state = buildState(
@@ -301,8 +336,6 @@ void main() {
       showTranscriptsList: false,
     );
 
-    when(() => cubit.setAudioNote(journalAudio)).thenAnswer((_) async {});
-
     await pumpPlayer(
       tester,
       journalAudio: journalAudio,
@@ -312,8 +345,8 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Play audio'));
     await tester.pump();
 
-    verify(() => cubit.setAudioNote(journalAudio)).called(1);
-    verify(() => cubit.play()).called(1);
+    expect(controller.lastAudioNoteSet?.meta.id, journalAudio.meta.id);
+    expect(controller.playWasCalled, isTrue);
   });
 
   testWidgets('tapping pause button when playing calls pause',
@@ -334,7 +367,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Pause audio'));
     await tester.pump();
 
-    verify(() => cubit.pause()).called(1);
+    expect(controller.pauseWasCalled, isTrue);
   });
 
   testWidgets('tapping play button when paused calls play',
@@ -355,7 +388,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Play audio'));
     await tester.pump();
 
-    verify(() => cubit.play()).called(1);
+    expect(controller.playWasCalled, isTrue);
   });
 
   testWidgets('shows loading indicator when initializing',
@@ -416,7 +449,7 @@ void main() {
     await tester.tap(find.text('1x'));
     await tester.pump();
 
-    verify(() => cubit.setSpeed(1.25)).called(1);
+    expect(controller.lastSpeedSet, 1.25);
   });
 
   testWidgets('speed cycles from 2x to 0.5x (wraps around)',
@@ -437,7 +470,7 @@ void main() {
     await tester.tap(find.text('2x'));
     await tester.pump();
 
-    verify(() => cubit.setSpeed(0.5)).called(1);
+    expect(controller.lastSpeedSet, 0.5);
   });
 
   testWidgets('displays all speed values correctly',
@@ -542,7 +575,7 @@ void main() {
     expect(find.text('1.5x'), findsOneWidget);
     // The speed button should be visible and tappable
     await tester.tap(find.text('1.5x'));
-    verify(() => cubit.setSpeed(1.75)).called(1);
+    expect(controller.lastSpeedSet, 1.75);
   });
 
   testWidgets('shows correct buffered progress', (WidgetTester tester) async {

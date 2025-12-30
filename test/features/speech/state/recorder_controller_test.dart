@@ -6,17 +6,16 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
-
-import '../../../mocks/mocks.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -25,31 +24,59 @@ class MockAudioRecorderRepository extends Mock
 
 class MockAmplitude extends Mock implements Amplitude {}
 
+class MockPlayer extends Mock implements Player {}
+
+class MockPlayerState extends Mock implements PlayerState {}
+
+class MockPlayerStream extends Mock implements PlayerStream {}
+
+class FakePlayable extends Fake implements Playable {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockLoggingService mockLoggingService;
-  late MockAudioPlayerCubit mockAudioPlayerCubit;
   late MockAudioRecorderRepository mockAudioRecorderRepository;
+  late MockPlayer mockPlayer;
+  late MockPlayerState mockPlayerState;
+  late MockPlayerStream mockPlayerStream;
+  late StreamController<Duration> positionController;
+  late StreamController<Duration> bufferController;
+  late StreamController<bool> completedController;
   late ProviderContainer container;
+
+  setUpAll(() {
+    registerFallbackValue(FakePlayable());
+    registerFallbackValue(Duration.zero);
+  });
 
   setUp(() {
     mockLoggingService = MockLoggingService();
-    mockAudioPlayerCubit = MockAudioPlayerCubit();
     mockAudioRecorderRepository = MockAudioRecorderRepository();
+    mockPlayer = MockPlayer();
+    mockPlayerState = MockPlayerState();
+    mockPlayerStream = MockPlayerStream();
+    positionController = StreamController<Duration>.broadcast();
+    bufferController = StreamController<Duration>.broadcast();
+    completedController = StreamController<bool>.broadcast();
 
-    // Setup default mock behavior for AudioPlayerCubit
-    when(() => mockAudioPlayerCubit.state).thenReturn(
-      AudioPlayerState(
-        status: AudioPlayerStatus.stopped,
-        totalDuration: Duration.zero,
-        progress: Duration.zero,
-        pausedAt: Duration.zero,
-        speed: 1,
-        showTranscriptsList: false,
-      ),
-    );
-    when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
+    // Setup mock player
+    when(() => mockPlayer.state).thenReturn(mockPlayerState);
+    when(() => mockPlayerState.duration).thenReturn(const Duration(minutes: 5));
+    when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
+    when(() => mockPlayerStream.position)
+        .thenAnswer((_) => positionController.stream);
+    when(() => mockPlayerStream.buffer)
+        .thenAnswer((_) => bufferController.stream);
+    when(() => mockPlayerStream.completed)
+        .thenAnswer((_) => completedController.stream);
+    when(() => mockPlayer.dispose()).thenAnswer((_) async {});
+    when(() => mockPlayer.open(any(), play: any(named: 'play')))
+        .thenAnswer((_) async {});
+    when(() => mockPlayer.play()).thenAnswer((_) async {});
+    when(() => mockPlayer.pause()).thenAnswer((_) async {});
+    when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
+    when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
 
     // Setup default mock behavior for AudioRecorderRepository
     when(() => mockAudioRecorderRepository.amplitudeStream).thenAnswer(
@@ -69,23 +96,28 @@ void main() {
         .thenAnswer((_) async {});
 
     // Register mocks with GetIt
-    getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
 
-    // Create container with overridden provider
+    // Create container with overridden providers
     container = ProviderContainer(
       overrides: [
         audioRecorderRepositoryProvider.overrideWithValue(
           mockAudioRecorderRepository,
         ),
+        playerFactoryProvider.overrideWithValue(() => mockPlayer),
       ],
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
+    await positionController.close();
+    await bufferController.close();
+    await completedController.close();
     container.dispose();
-    getIt.reset();
+    await getIt.reset();
   });
 
   group('AudioRecorderController - State Management Methods', () {
@@ -784,18 +816,19 @@ void main() {
     });
 
     test('should pause audio player when recording starts', () async {
-      // Arrange
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.playing,
-          // Audio is playing
-          totalDuration: Duration.zero,
-          progress: Duration.zero,
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
+      // Arrange - Set audio player to playing state
+      final audioController =
+          container.read(audioPlayerControllerProvider.notifier);
+      await audioController.play();
+
+      // Verify audio player is playing
+      expect(
+        container.read(audioPlayerControllerProvider).status,
+        equals(AudioPlayerStatus.playing),
       );
+
+      // Clear any previous pause calls but keep stubs
+      clearInteractions(mockPlayer);
 
       final controller =
           container.read(audioRecorderControllerProvider.notifier);
@@ -803,31 +836,26 @@ void main() {
       // Act
       await controller.record(linkedId: 'test-id');
 
-      // Assert
-      verify(() => mockAudioPlayerCubit.pause()).called(1);
+      // Assert - mockPlayer.pause() should have been called
+      verify(() => mockPlayer.pause()).called(1);
     });
 
     test('should not pause audio player when it is not playing', () async {
-      // Arrange - audio player is already stopped
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.stopped,
-          totalDuration: Duration.zero,
-          progress: Duration.zero,
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
+      // Arrange - audio player is stopped (default state - initializing)
+      // Initialize it but don't play
+      container.read(audioPlayerControllerProvider);
 
       final controller =
           container.read(audioRecorderControllerProvider.notifier);
 
+      // Clear any previous pause calls but keep stubs
+      clearInteractions(mockPlayer);
+
       // Act
       await controller.record(linkedId: 'test-id');
 
-      // Assert
-      verifyNever(() => mockAudioPlayerCubit.pause());
+      // Assert - mockPlayer.pause() should NOT have been called
+      verifyNever(() => mockPlayer.pause());
     });
   });
 

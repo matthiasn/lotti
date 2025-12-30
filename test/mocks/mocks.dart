@@ -11,7 +11,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -192,7 +192,7 @@ class MockVectorClockService extends Mock implements VectorClockService {}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
 
-class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
+class MockAudioPlayerController extends Mock implements AudioPlayerController {}
 
 class MockNavService extends Mock implements NavService {}
 

@@ -1,4 +1,3 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -6,8 +5,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -24,8 +21,6 @@ import '../../../../test_data/test_data.dart';
 import '../../../../utils/utils.dart';
 import '../../../../widget_test_utils.dart';
 
-class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -34,7 +29,6 @@ void main() {
   final mockEntitiesCacheService = MockEntitiesCacheService();
 
   group('DashboardPage Widget Tests - ', () {
-    late MockAudioPlayerCubit mockAudioPlayerCubit;
     setUpAll(() {
       registerFallbackValue(FakeMeasurementData());
       ensureMpvInitialized();
@@ -99,20 +93,6 @@ void main() {
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      // Audio player cubit mock to avoid media_kit in tests
-      mockAudioPlayerCubit = MockAudioPlayerCubit();
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.stopped,
-          totalDuration: Duration.zero,
-          progress: Duration.zero,
-          pausedAt: Duration.zero,
-          showTranscriptsList: false,
-          speed: 1,
-        ),
-      );
-      when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
     });
     tearDown(getIt.reset);
 
@@ -128,10 +108,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: DashboardPage(dashboardId: testDashboardConfig.id),
-          ),
+          DashboardPage(dashboardId: testDashboardConfig.id),
         ),
       );
 

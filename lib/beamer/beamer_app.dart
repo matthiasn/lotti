@@ -2,7 +2,6 @@ import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +9,6 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
@@ -272,13 +270,11 @@ class MyBeamerApp extends ConsumerStatefulWidget {
   const MyBeamerApp({
     super.key,
     this.navService,
-    this.audioPlayerCubit,
     this.userActivityService,
     this.journalDb,
   });
 
   final NavService? navService;
-  final AudioPlayerCubit? audioPlayerCubit;
   final UserActivityService? userActivityService;
   final JournalDb? journalDb;
 
@@ -336,40 +332,36 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
       onTap: () {
         FocusManager.instance.primaryFocus?.unfocus();
       },
-      child: BlocProvider<AudioPlayerCubit>(
-        create: (BuildContext context) =>
-            widget.audioPlayerCubit ?? getIt<AudioPlayerCubit>(),
-        child: Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: (event) => updateActivity(),
-          onPointerMove: (event) => updateActivity(),
-          onPointerPanZoomStart: (event) => updateActivity(),
-          onPointerPanZoomEnd: (event) => updateActivity(),
-          onPointerUp: (event) => updateActivity(),
-          onPointerSignal: (event) => updateActivity(),
-          onPointerPanZoomUpdate: (event) => updateActivity(),
-          child: TooltipVisibility(
-            visible: enableTooltips,
-            child: DesktopMenuWrapper(
-              child: MaterialApp.router(
-                supportedLocales: AppLocalizations.supportedLocales,
-                theme: themingState.lightTheme,
-                darkTheme: themingState.darkTheme,
-                themeMode: themingState.themeMode,
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  FormBuilderLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                  FlutterQuillLocalizations.delegate,
-                ],
-                debugShowCheckedModeBanner: false,
-                routerDelegate: routerDelegate,
-                routeInformationParser: BeamerParser(),
-                backButtonDispatcher: BeamerBackButtonDispatcher(
-                  delegate: routerDelegate,
-                ),
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (event) => updateActivity(),
+        onPointerMove: (event) => updateActivity(),
+        onPointerPanZoomStart: (event) => updateActivity(),
+        onPointerPanZoomEnd: (event) => updateActivity(),
+        onPointerUp: (event) => updateActivity(),
+        onPointerSignal: (event) => updateActivity(),
+        onPointerPanZoomUpdate: (event) => updateActivity(),
+        child: TooltipVisibility(
+          visible: enableTooltips,
+          child: DesktopMenuWrapper(
+            child: MaterialApp.router(
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: themingState.lightTheme,
+              darkTheme: themingState.darkTheme,
+              themeMode: themingState.themeMode,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                FormBuilderLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+                FlutterQuillLocalizations.delegate,
+              ],
+              debugShowCheckedModeBanner: false,
+              routerDelegate: routerDelegate,
+              routeInformationParser: BeamerParser(),
+              backButtonDispatcher: BeamerBackButtonDispatcher(
+                delegate: routerDelegate,
               ),
             ),
           ),

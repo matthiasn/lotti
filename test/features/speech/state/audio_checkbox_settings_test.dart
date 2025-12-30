@@ -1,12 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAudioRecorderRepository extends Mock
@@ -14,18 +16,39 @@ class MockAudioRecorderRepository extends Mock
 
 class MockLoggingService extends Mock implements LoggingService {}
 
-class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
+class MockPlayer extends Mock implements Player {}
+
+class MockPlayerState extends Mock implements PlayerState {}
+
+class MockPlayerStream extends Mock implements PlayerStream {}
+
+class FakePlayable extends Fake implements Playable {}
 
 void main() {
   late ProviderContainer container;
   late MockAudioRecorderRepository mockRecorderRepo;
   late MockLoggingService mockLoggingService;
-  late MockAudioPlayerCubit mockAudioPlayerCubit;
+  late MockPlayer mockPlayer;
+  late MockPlayerState mockPlayerState;
+  late MockPlayerStream mockPlayerStream;
+  late StreamController<Duration> positionController;
+  late StreamController<Duration> bufferController;
+  late StreamController<bool> completedController;
+
+  setUpAll(() {
+    registerFallbackValue(FakePlayable());
+    registerFallbackValue(Duration.zero);
+  });
 
   setUp(() {
     mockRecorderRepo = MockAudioRecorderRepository();
     mockLoggingService = MockLoggingService();
-    mockAudioPlayerCubit = MockAudioPlayerCubit();
+    mockPlayer = MockPlayer();
+    mockPlayerState = MockPlayerState();
+    mockPlayerStream = MockPlayerStream();
+    positionController = StreamController<Duration>.broadcast();
+    bufferController = StreamController<Duration>.broadcast();
+    completedController = StreamController<bool>.broadcast();
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -33,23 +56,23 @@ void main() {
     }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
-    if (getIt.isRegistered<AudioPlayerCubit>()) {
-      getIt.unregister<AudioPlayerCubit>();
-    }
-    getIt.registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
-
-    // Set up default mock behavior for AudioPlayerCubit
-    when(() => mockAudioPlayerCubit.state).thenReturn(
-      AudioPlayerState(
-        status: AudioPlayerStatus.stopped,
-        totalDuration: Duration.zero,
-        progress: Duration.zero,
-        pausedAt: Duration.zero,
-        speed: 1,
-        showTranscriptsList: false,
-      ),
-    );
-    when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
+    // Setup mock player
+    when(() => mockPlayer.state).thenReturn(mockPlayerState);
+    when(() => mockPlayerState.duration).thenReturn(const Duration(minutes: 5));
+    when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
+    when(() => mockPlayerStream.position)
+        .thenAnswer((_) => positionController.stream);
+    when(() => mockPlayerStream.buffer)
+        .thenAnswer((_) => bufferController.stream);
+    when(() => mockPlayerStream.completed)
+        .thenAnswer((_) => completedController.stream);
+    when(() => mockPlayer.dispose()).thenAnswer((_) async {});
+    when(() => mockPlayer.open(any(), play: any(named: 'play')))
+        .thenAnswer((_) async {});
+    when(() => mockPlayer.play()).thenAnswer((_) async {});
+    when(() => mockPlayer.pause()).thenAnswer((_) async {});
+    when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
+    when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
 
     // Set up default mock behavior
     when(() => mockRecorderRepo.amplitudeStream)
@@ -58,11 +81,15 @@ void main() {
     container = ProviderContainer(
       overrides: [
         audioRecorderRepositoryProvider.overrideWithValue(mockRecorderRepo),
+        playerFactoryProvider.overrideWithValue(() => mockPlayer),
       ],
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
+    await positionController.close();
+    await bufferController.close();
+    await completedController.close();
     container.dispose();
   });
 

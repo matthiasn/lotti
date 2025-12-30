@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/blocs/journal/journal_page_cubit.dart';
@@ -14,7 +13,6 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -36,8 +34,6 @@ import '../../../../test_data/test_data.dart';
 import '../../../../utils/utils.dart';
 import '../../../../widget_test_utils.dart';
 
-class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -46,7 +42,6 @@ void main() {
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
   final mockUpdateNotifications = MockUpdateNotifications();
-  final mockAudioPlayerCubit = MockAudioPlayerCubit();
 
   final entryTypeStrings = entryTypes.toList();
 
@@ -196,10 +191,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 
@@ -244,10 +236,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 
@@ -281,10 +270,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: true),
-          ),
+          const InfiniteJournalPage(showTasks: true),
         ),
       );
 
@@ -323,10 +309,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 
@@ -418,10 +401,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 
@@ -502,10 +482,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 
@@ -548,10 +525,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 
@@ -578,10 +552,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 
@@ -629,10 +600,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 
@@ -672,10 +640,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: true),
-          ),
+          const InfiniteJournalPage(showTasks: true),
         ),
       );
 
@@ -731,10 +696,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: true),
-          ),
+          const InfiniteJournalPage(showTasks: true),
         ),
       );
 
@@ -765,10 +727,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          BlocProvider<AudioPlayerCubit>.value(
-            value: mockAudioPlayerCubit,
-            child: const InfiniteJournalPage(showTasks: false),
-          ),
+          const InfiniteJournalPage(showTasks: false),
         ),
       );
 

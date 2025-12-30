@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.785] - 2025-12-30
+### Changed
+- Migrated audio player state management from Bloc to Riverpod
+  - Replaced `AudioPlayerCubit` with `AudioPlayerController` notifier
+  - Uses `@Riverpod(keepAlive: true)` for app-wide audio state persistence
+  - Updated `AudioPlayerWidget` to use Consumer pattern
+  - Updated `RecorderController` to use ProviderContainer injection
+  - Removed BlocProvider wrapper from app initialization
+
 ## [0.9.784] - 2025-12-30
 ### Changed
 - Migrated habit settings state management from Bloc to Riverpod
