@@ -7,9 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -80,20 +77,11 @@ class MockPagingController extends Mock
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockSettingsDb extends Mock implements SettingsDb {}
-
-class MockFts5Db extends Mock implements Fts5Db {}
-
 void main() {
   late FakeJournalPageController fakeController;
   late JournalPageState mockState;
   late MockPagingController mockPagingController;
   late MockEntitiesCacheService mockEntitiesCacheService;
-  late MockJournalDb mockJournalDb;
-  late MockSettingsDb mockSettingsDb;
-  late MockFts5Db mockFts5Db;
 
   // Mock categories
   final mockCategories = [
@@ -164,9 +152,6 @@ void main() {
 
     mockPagingController = MockPagingController();
     mockEntitiesCacheService = MockEntitiesCacheService();
-    mockJournalDb = MockJournalDb();
-    mockSettingsDb = MockSettingsDb();
-    mockFts5Db = MockFts5Db();
 
     mockState = JournalPageState(
       match: '',
@@ -190,11 +175,7 @@ void main() {
 
     // Register the mocks with GetIt
     getIt.allowReassignment = true;
-    getIt
-      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<SettingsDb>(mockSettingsDb)
-      ..registerSingleton<Fts5Db>(mockFts5Db);
+    getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
   });
 
   tearDown(getIt.reset);

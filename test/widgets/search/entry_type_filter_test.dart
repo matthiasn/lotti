@@ -799,7 +799,8 @@ void main() {
       await GetIt.I.reset();
     });
 
-    testWidgets('tapping All chip when not all selected calls selectAllEntryTypes',
+    testWidgets(
+        'tapping All chip when not all selected calls selectAllEntryTypes',
         (tester) async {
       const state = JournalPageState(
         taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
@@ -830,7 +831,8 @@ void main() {
       expect(fakeController.selectAllEntryTypesCalled, equals(1));
     });
 
-    testWidgets('tapping All chip when all selected calls clearSelectedEntryTypes',
+    testWidgets(
+        'tapping All chip when all selected calls clearSelectedEntryTypes',
         (tester) async {
       // All entry types that are enabled by the flags
       final allEntryTypes = [
@@ -929,7 +931,8 @@ void main() {
       expect(allChip.isSelected, isTrue);
     });
 
-    testWidgets('All chip shows unselected state when not all types are selected',
+    testWidgets(
+        'All chip shows unselected state when not all types are selected',
         (tester) async {
       const state = JournalPageState(
         taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],

@@ -35,6 +35,7 @@ class FakeJournalPageController extends JournalPageController {
   int selectAllTaskStatusesCalled = 0;
   int clearSelectedPrioritiesCalled = 0;
   int selectAllEntryTypesCalled = 0;
+  List<String>? selectAllEntryTypesParam;
   int clearSelectedEntryTypesCalled = 0;
   int refreshQueryCalled = 0;
 
@@ -125,6 +126,7 @@ class FakeJournalPageController extends JournalPageController {
   @override
   void selectAllEntryTypes([List<String>? types]) {
     selectAllEntryTypesCalled++;
+    selectAllEntryTypesParam = types;
   }
 
   @override
@@ -161,6 +163,7 @@ class FakeJournalPageController extends JournalPageController {
     selectAllTaskStatusesCalled = 0;
     clearSelectedPrioritiesCalled = 0;
     selectAllEntryTypesCalled = 0;
+    selectAllEntryTypesParam = null;
     clearSelectedEntryTypesCalled = 0;
     refreshQueryCalled = 0;
   }

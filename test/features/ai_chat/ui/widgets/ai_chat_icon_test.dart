@@ -163,7 +163,8 @@ void main() {
       expect(find.text('Please select a single category'), findsNothing);
     });
 
-    testWidgets('modal shares controller state with parent (via '
+    testWidgets(
+        'modal shares controller state with parent (via '
         'UncontrolledProviderScope)', (tester) async {
       // This test verifies that the modal uses the same controller instance
       // as the parent, not a fresh one created by a new ProviderScope.
