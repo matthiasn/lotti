@@ -1,6 +1,6 @@
 # Refactor Habit Settings BLoC to Riverpod
 
-## Status: PENDING
+## Status: COMPLETED (2025-12-30)
 
 ## Overview
 
@@ -802,20 +802,55 @@ testWidgets('habit details page is displayed & updated', (tester) async {
 
 ---
 
-## Questions/Decisions
+## Questions/Decisions (RESOLVED)
 
-1. **Family Provider Parameter**: Should we use `habitDefinition` or `habitId` as the family parameter?
-   - **Recommendation**: Use `habitDefinition` directly since CreateHabitPage doesn't have an ID yet.
+1. **Family Provider Parameter**: Use `habitId` (String) as parameter instead of `habitDefinition`. ✅
+   - **Update**: Using `HabitDefinition` as parameter caused `InvalidType` in code generator
+   - **Solution**: Followed `CategoryDetailsController` pattern with manual `AutoDisposeNotifierProvider.family`
+   - For **edit** flow: habitId references existing habit in DB (watched via stream)
+   - For **create** flow: habitId is a new UUID, controller initializes with empty habit
 
-2. **Navigation Handling**: How to handle `maybePop()` after save/delete?
-   - **Recommendation**: Return `bool` from `onSavePressed()` and handle navigation in the widget.
+2. **Navigation Handling**: Return `bool` from `onSavePressed()` and handle navigation in the widget. ✅
 
-3. **Feature Directory**: Should all habit-related files stay in `lib/features/habits/`?
-   - **Recommendation**: Yes, move the controller there. The UI pages in `lib/features/settings/` can import from `lib/features/habits/`.
+3. **Widget Prop Drilling**: Pass `habitId` as a prop to child widgets (`SelectCategoryWidget`, `SelectDashboardWidget`). ✅
+
+4. **Feature Directory**: All habit-related state files go in `lib/features/habits/state/`. UI pages in `lib/features/settings/` can import from there. ✅
+
+## Implementation Notes
+
+### Key Implementation Choices
+
+1. **Manual Provider Definition**: Used `AutoDisposeNotifierProvider.family` instead of `@riverpod` annotation to avoid `InvalidType` code generation issue when using complex types as family parameters.
+
+2. **Freezed State**: Used freezed for immutable state class with `copyWith` support.
+
+3. **DB Watch on Build**: Controller watches `JournalDb.watchHabitById(habitId)` and updates state when habit changes (for edit flow). For create flow, returns null and uses empty habit definition.
+
+4. **Mock Update**: Updated `mockJournalDbWithHabits` to provide fallback for any habit ID (returns null stream for create flow).
+
+### Files Modified
+
+- `lib/features/habits/state/habit_settings_controller.dart` - New controller with freezed state
+- `lib/features/settings/ui/pages/habits/habit_details_page.dart` - Uses habitId, ConsumerWidget
+- `lib/features/settings/ui/pages/habits/habit_create_page.dart` - Generates UUID upfront
+- `lib/features/habits/ui/widgets/habit_category.dart` - Uses habitId
+- `lib/features/habits/ui/widgets/habit_dashboard.dart` - Uses habitId
+- `lib/features/settings/ui/widgets/habits/habit_autocomplete_widget.dart` - Uses habitId
+- `test/mocks/mocks.dart` - Added fallback for any habitId in mock
+
+### Files Deleted
+
+- `lib/blocs/settings/habits/habit_settings_cubit.dart`
+- `lib/blocs/settings/habits/habit_settings_state.dart`
+- `lib/blocs/settings/habits/habit_settings_state.freezed.dart`
+- `lib/blocs/settings/habits/` directory
 
 ## Approval Checklist
 
-- [ ] Implementation plan reviewed
-- [ ] Test strategy approved
-- [ ] File structure approved
-- [ ] Ready to proceed with implementation
+- [x] Implementation plan reviewed
+- [x] Test strategy approved
+- [x] File structure approved
+- [x] Ready to proceed with implementation
+- [x] All tests pass (10/10)
+- [x] Analyzer clean
+- [x] Formatter clean

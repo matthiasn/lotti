@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -83,6 +81,7 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService);
     });
     tearDown(getIt.reset);
+
     testWidgets('habit details page is displayed & updated', (tester) async {
       when(
         () => mockPersistenceLogic.upsertEntityDefinition(any()),
@@ -95,10 +94,7 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: BlocProvider(
-              create: (_) => HabitSettingsCubit(habitFlossing),
-              child: const HabitDetailsPage(),
-            ),
+            child: HabitDetailsPage(habitId: habitFlossing.id),
           ),
         ),
       );
@@ -146,10 +142,7 @@ void main() {
               maxHeight: 1000,
               maxWidth: 1000,
             ),
-            child: BlocProvider(
-              create: (_) => HabitSettingsCubit(habitFlossing),
-              child: const HabitDetailsPage(),
-            ),
+            child: HabitDetailsPage(habitId: habitFlossing.id),
           ),
         ),
       );
@@ -194,7 +187,7 @@ void main() {
       verify(mockUpsertEntity).called(1);
     });
 
-    testWidgets('habit details page is displayed & updated', (tester) async {
+    testWidgets('create habit page is displayed & updated', (tester) async {
       when(
         () => mockPersistenceLogic.upsertEntityDefinition(any()),
       ).thenAnswer((_) async => 1);

@@ -2,11 +2,10 @@
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intersperse/intersperse.dart';
-import 'package:lotti/blocs/settings/habits/habit_settings_cubit.dart';
-import 'package:lotti/blocs/settings/habits/habit_settings_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -82,33 +81,29 @@ const testAutoComplete = AutoCompleteRule.and(
   ],
 );
 
-class HabitAutocompleteWidget extends StatefulWidget {
+class HabitAutocompleteWidget extends ConsumerWidget {
   const HabitAutocompleteWidget(
     this.autoCompleteRule, {
     required this.path,
+    required this.habitId,
     super.key,
   });
 
   final AutoCompleteRule? autoCompleteRule;
   final List<int> path;
+  final String habitId;
 
-  @override
-  State<HabitAutocompleteWidget> createState() =>
-      _HabitAutocompleteWidgetState();
-}
-
-class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
   HabitAutocompleteWidget indexedChild(int idx, AutoCompleteRule rule) {
     return HabitAutocompleteWidget(
       rule,
-      path: [...widget.path, idx],
+      path: [...path, idx],
+      habitId: habitId,
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const spacer = SizedBox(height: 10, width: 15);
-    final cubit = context.read<HabitSettingsCubit>();
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
@@ -118,19 +113,21 @@ class _HabitAutocompleteWidgetState extends State<HabitAutocompleteWidget> {
           children: [
             Row(
               children: [
-                Text('Path ${widget.path}'),
+                Text('Path $path'),
                 IconButton(
                   icon: Icon(MdiIcons.delete),
                   iconSize: settingsIconSize,
                   color: Colors.black38,
                   onPressed: () {
-                    cubit.removeAutoCompleteRuleAt(widget.path);
+                    ref
+                        .read(habitSettingsControllerProvider(habitId).notifier)
+                        .removeAutoCompleteRuleAt(path);
                   },
                 ),
               ],
             ),
-            if (widget.autoCompleteRule != null)
-              switch (widget.autoCompleteRule!) {
+            if (autoCompleteRule != null)
+              switch (autoCompleteRule!) {
                 AutoCompleteRuleHealth(
                   :final title,
                   :final dataType,
@@ -377,30 +374,31 @@ class RuleTitleWidget extends StatelessWidget {
   }
 }
 
-class HabitAutocompleteWrapper extends StatelessWidget {
-  const HabitAutocompleteWrapper({super.key});
+class HabitAutocompleteWrapper extends ConsumerWidget {
+  const HabitAutocompleteWrapper({
+    required this.habitId,
+    super.key,
+  });
+
+  final String habitId;
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<HabitSettingsCubit, HabitSettingsState>(
-      builder: (
-        context,
-        HabitSettingsState state,
-      ) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Column(
-            children: [
-              const Text('AutoCompleteRules editor playground, not saving yet'),
-              const SizedBox(height: 10),
-              HabitAutocompleteWidget(
-                state.autoCompleteRule,
-                path: const <int>[0],
-              ),
-            ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(habitSettingsControllerProvider(habitId));
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Column(
+        children: [
+          const Text('AutoCompleteRules editor playground, not saving yet'),
+          const SizedBox(height: 10),
+          HabitAutocompleteWidget(
+            state.autoCompleteRule,
+            path: const <int>[0],
+            habitId: habitId,
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

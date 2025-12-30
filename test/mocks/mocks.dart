@@ -138,6 +138,12 @@ MockJournalDb mockJournalDbWithHabits(
     (_) => Stream<List<HabitDefinition>>.fromIterable([habitDefinitions]),
   );
 
+  // Default fallback for any habit ID - returns empty stream (for create flow)
+  when(() => mock.watchHabitById(any())).thenAnswer(
+    (_) => Stream<HabitDefinition?>.fromIterable([null]),
+  );
+
+  // Override with specific stubs for known habits
   for (final habitDefinition in habitDefinitions) {
     when(() => mock.watchHabitById(habitDefinition.id)).thenAnswer(
       (_) => Stream<HabitDefinition>.fromIterable([habitDefinition]),
