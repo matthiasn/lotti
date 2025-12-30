@@ -24,7 +24,7 @@ class MockLoggingService extends Mock implements LoggingService {}
 /// Mock controller that returns a specific state based on selectedCategoryIds
 class _MockJournalPageController extends JournalPageController {
   _MockJournalPageController(this._selectedCategoryIds);
-  final Set<String?> _selectedCategoryIds;
+  final Set<String> _selectedCategoryIds;
 
   @override
   JournalPageState build(bool showTasks) {
@@ -81,7 +81,7 @@ void main() {
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{}),
+              () => _MockJournalPageController(<String>{}),
             ),
           ],
           child: const MaterialApp(
@@ -113,7 +113,7 @@ void main() {
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{'cat1', 'cat2'}),
+              () => _MockJournalPageController(<String>{'cat1', 'cat2'}),
             ),
           ],
           child: const MaterialApp(
@@ -151,7 +151,7 @@ void main() {
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{'single-category-id'}),
+              () => _MockJournalPageController(<String>{'single-category-id'}),
             ),
           ],
           child: const MaterialApp(
@@ -192,7 +192,7 @@ void main() {
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{categoryId}),
+              () => _MockJournalPageController(<String>{categoryId}),
             ),
           ],
           child: const MaterialApp(
@@ -233,7 +233,7 @@ void main() {
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{'single-category-id'}),
+              () => _MockJournalPageController(<String>{'single-category-id'}),
             ),
           ],
           child: const MaterialApp(
@@ -268,7 +268,7 @@ void main() {
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{}),
+              () => _MockJournalPageController(<String>{}),
             ),
           ],
           child: const MaterialApp(
@@ -305,7 +305,7 @@ void main() {
             chatRepositoryProvider.overrideWithValue(mockChatRepository),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{'test-category'}),
+              () => _MockJournalPageController(<String>{'test-category'}),
             ),
           ],
           child: const MaterialApp(
@@ -337,7 +337,7 @@ void main() {
           overrides: [
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{'cat'}),
+              () => _MockJournalPageController(<String>{'cat'}),
             ),
             chatSessionControllerProvider('cat')
                 .overrideWith(_StreamingChatController.new),
@@ -369,7 +369,7 @@ void main() {
           overrides: [
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String?>{'cat'}),
+              () => _MockJournalPageController(<String>{'cat'}),
             ),
             chatSessionControllerProvider('cat')
                 .overrideWith(_IdleChatController.new),

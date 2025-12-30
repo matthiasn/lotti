@@ -1,5 +1,3 @@
-// ignore_for_file: cascade_invocations
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -98,11 +96,9 @@ class JournalPageController extends _$JournalPageController {
     }
 
     // Create pagination controller with custom key logic
-    final controller = _createPagingController();
-
     // CRITICAL: Trigger initial load immediately after controller creation
     // (matches cubit behavior at journal_page_cubit.dart:124-125)
-    controller.fetchNextPage();
+    final controller = _createPagingController()..fetchNextPage();
 
     // Set up subscriptions
     _setupSubscriptions(showTasks);

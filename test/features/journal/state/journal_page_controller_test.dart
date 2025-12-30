@@ -180,7 +180,7 @@ void main() {
           final state = container.read(journalPageControllerProvider(false));
 
           // Verify state does not have unassigned selected
-          expect(state.selectedCategoryIds, equals(<String?>{}));
+          expect(state.selectedCategoryIds, equals(<String>{}));
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -206,7 +206,7 @@ void main() {
           final state = container.read(journalPageControllerProvider(true));
 
           // Verify state does not have unassigned selected
-          expect(state.selectedCategoryIds, equals(<String?>{}));
+          expect(state.selectedCategoryIds, equals(<String>{}));
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();

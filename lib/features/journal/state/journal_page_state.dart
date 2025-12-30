@@ -36,7 +36,7 @@ abstract class JournalPageState with _$JournalPageState {
     PagingController<int, JournalEntity>? pagingController,
     @Default([]) List<String> taskStatuses,
     @Default(<String>{}) Set<String> selectedTaskStatuses,
-    @Default(<String?>{}) Set<String?> selectedCategoryIds,
+    @Default(<String>{}) Set<String> selectedCategoryIds,
     @Default(<String>{}) Set<String> selectedLabelIds,
     @Default(<String>{}) Set<String> selectedPriorities,
     @Default(TaskSortOption.byPriority) TaskSortOption sortOption,

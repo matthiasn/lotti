@@ -25,7 +25,7 @@ mixin _$JournalPageState {
   PagingController<int, JournalEntity>? get pagingController;
   List<String> get taskStatuses;
   Set<String> get selectedTaskStatuses;
-  Set<String?> get selectedCategoryIds;
+  Set<String> get selectedCategoryIds;
   Set<String> get selectedLabelIds;
   Set<String> get selectedPriorities;
   TaskSortOption get sortOption;
@@ -116,7 +116,7 @@ abstract mixin class $JournalPageStateCopyWith<$Res> {
       PagingController<int, JournalEntity>? pagingController,
       List<String> taskStatuses,
       Set<String> selectedTaskStatuses,
-      Set<String?> selectedCategoryIds,
+      Set<String> selectedCategoryIds,
       Set<String> selectedLabelIds,
       Set<String> selectedPriorities,
       TaskSortOption sortOption,
@@ -196,7 +196,7 @@ class _$JournalPageStateCopyWithImpl<$Res>
       selectedCategoryIds: null == selectedCategoryIds
           ? _self.selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
-              as Set<String?>,
+              as Set<String>,
       selectedLabelIds: null == selectedLabelIds
           ? _self.selectedLabelIds
           : selectedLabelIds // ignore: cast_nullable_to_non_nullable
@@ -322,7 +322,7 @@ extension JournalPageStatePatterns on JournalPageState {
             PagingController<int, JournalEntity>? pagingController,
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
-            Set<String?> selectedCategoryIds,
+            Set<String> selectedCategoryIds,
             Set<String> selectedLabelIds,
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
@@ -381,7 +381,7 @@ extension JournalPageStatePatterns on JournalPageState {
             PagingController<int, JournalEntity>? pagingController,
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
-            Set<String?> selectedCategoryIds,
+            Set<String> selectedCategoryIds,
             Set<String> selectedLabelIds,
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
@@ -438,7 +438,7 @@ extension JournalPageStatePatterns on JournalPageState {
             PagingController<int, JournalEntity>? pagingController,
             List<String> taskStatuses,
             Set<String> selectedTaskStatuses,
-            Set<String?> selectedCategoryIds,
+            Set<String> selectedCategoryIds,
             Set<String> selectedLabelIds,
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
@@ -485,7 +485,7 @@ class _JournalPageState implements JournalPageState {
       this.pagingController,
       final List<String> taskStatuses = const [],
       final Set<String> selectedTaskStatuses = const <String>{},
-      final Set<String?> selectedCategoryIds = const <String?>{},
+      final Set<String> selectedCategoryIds = const <String>{},
       final Set<String> selectedLabelIds = const <String>{},
       final Set<String> selectedPriorities = const <String>{},
       this.sortOption = TaskSortOption.byPriority,
@@ -568,10 +568,10 @@ class _JournalPageState implements JournalPageState {
     return EqualUnmodifiableSetView(_selectedTaskStatuses);
   }
 
-  final Set<String?> _selectedCategoryIds;
+  final Set<String> _selectedCategoryIds;
   @override
   @JsonKey()
-  Set<String?> get selectedCategoryIds {
+  Set<String> get selectedCategoryIds {
     if (_selectedCategoryIds is EqualUnmodifiableSetView)
       return _selectedCategoryIds;
     // ignore: implicit_dynamic_type
@@ -691,7 +691,7 @@ abstract mixin class _$JournalPageStateCopyWith<$Res>
       PagingController<int, JournalEntity>? pagingController,
       List<String> taskStatuses,
       Set<String> selectedTaskStatuses,
-      Set<String?> selectedCategoryIds,
+      Set<String> selectedCategoryIds,
       Set<String> selectedLabelIds,
       Set<String> selectedPriorities,
       TaskSortOption sortOption,
@@ -771,7 +771,7 @@ class __$JournalPageStateCopyWithImpl<$Res>
       selectedCategoryIds: null == selectedCategoryIds
           ? _self._selectedCategoryIds
           : selectedCategoryIds // ignore: cast_nullable_to_non_nullable
-              as Set<String?>,
+              as Set<String>,
       selectedLabelIds: null == selectedLabelIds
           ? _self._selectedLabelIds
           : selectedLabelIds // ignore: cast_nullable_to_non_nullable

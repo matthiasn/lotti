@@ -58,7 +58,7 @@ void main() {
       pagingController: null, // triggers loading branch
       taskStatuses: <String>[],
       selectedTaskStatuses: <String>{},
-      selectedCategoryIds: <String?>{},
+      selectedCategoryIds: <String>{},
       selectedLabelIds: <String>{},
       selectedPriorities: <String>{},
     );
@@ -121,7 +121,7 @@ void main() {
       pagingController: controller,
       taskStatuses: const <String>[],
       selectedTaskStatuses: <String>{},
-      selectedCategoryIds: <String?>{},
+      selectedCategoryIds: <String>{},
       selectedLabelIds: <String>{},
       selectedPriorities: <String>{},
     );
