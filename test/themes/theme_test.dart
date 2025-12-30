@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/theming/theming_state.dart';
+import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 
 void main() {

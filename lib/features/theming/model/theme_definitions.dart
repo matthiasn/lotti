@@ -1,8 +1,5 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'theming_state.freezed.dart';
 
 /// Light mode surface overrides - forces white backgrounds instead of grey
 class LightModeSurfaces {
@@ -16,7 +13,7 @@ class LightModeSurfaces {
   static const Color surfaceContainerHighest = Color(0xFFE8E8E8);
 }
 
-/// Standard FlexScheme themes
+/// Standard FlexScheme themes available for selection.
 final Map<String, FlexScheme> themes = {
   'Material': FlexScheme.material,
   'Material High Contrast': FlexScheme.materialHc,
@@ -41,14 +38,5 @@ final Map<String, FlexScheme> themes = {
   'Money': FlexScheme.money,
 };
 
-@freezed
-abstract class ThemingState with _$ThemingState {
-  factory ThemingState({
-    required bool enableTooltips,
-    ThemeData? darkTheme,
-    ThemeData? lightTheme,
-    String? darkThemeName,
-    String? lightThemeName,
-    ThemeMode? themeMode,
-  }) = _ThemingState;
-}
+/// Default theme name used when no theme is configured.
+const String defaultThemeName = 'Grey Law';

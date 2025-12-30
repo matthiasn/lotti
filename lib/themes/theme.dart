@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:lotti/blocs/theming/theming_state.dart';
+import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 

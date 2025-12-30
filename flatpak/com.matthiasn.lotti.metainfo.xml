@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.783" date="2025-12-30">
+      <description>
+        <p>Theming State Refactor: Migrated theming state management from Bloc to Riverpod. ThemingCubit replaced with ThemingController notifier and enableTooltipsProvider. Theme state now uses keepAlive for app-wide persistence. MyBeamerApp updated to ConsumerStatefulWidget pattern.</p>
+      </description>
+    </release>
     <release version="0.9.782" date="2025-12-30">
       <description>
         <p>Sync Outbox State Refactor: Migrated sync outbox state management from Bloc to Riverpod. OutboxCubit replaced with outboxConnectionStateProvider and outboxPendingCountProvider. OutboxBadgeIcon now uses Riverpod providers for consistency with the codebase.</p>
