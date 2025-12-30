@@ -1,10 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/sync/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_list_item.dart';
@@ -12,8 +9,8 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/sync_config_test_mocks.dart';
-import '../../widget_test_utils.dart';
+import '../../../../mocks/sync_config_test_mocks.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   var syncDatabaseMock = MockSyncDatabase();
@@ -66,18 +63,12 @@ void main() {
 
       getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
 
-      final outboxCubitMock = mockOutboxCubit(OutboxState.online());
-
       await tester.pumpWidget(
-        BlocProvider<OutboxCubit>(
-          lazy: false,
-          create: (BuildContext context) => outboxCubitMock,
-          child: makeTestableWidget(
-            const SizedBox(
-              width: 500,
-              height: 1000,
-              child: OutboxMonitorPage(),
-            ),
+        makeTestableWidget(
+          const SizedBox(
+            width: 500,
+            height: 1000,
+            child: OutboxMonitorPage(),
           ),
         ),
       );
@@ -142,18 +133,12 @@ void main() {
 
       getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
 
-      final outboxCubitMock = mockOutboxCubit(OutboxState.online());
-
       await tester.pumpWidget(
-        BlocProvider<OutboxCubit>(
-          lazy: false,
-          create: (BuildContext context) => outboxCubitMock,
-          child: makeTestableWidget(
-            const SizedBox(
-              width: 500,
-              height: 1000,
-              child: OutboxMonitorPage(),
-            ),
+        makeTestableWidget(
+          const SizedBox(
+            width: 500,
+            height: 1000,
+            child: OutboxMonitorPage(),
           ),
         ),
       );
@@ -189,18 +174,12 @@ void main() {
 
       getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
 
-      final outboxCubitMock = mockOutboxCubit(OutboxState.online());
-
       await tester.pumpWidget(
-        BlocProvider<OutboxCubit>(
-          lazy: false,
-          create: (BuildContext context) => outboxCubitMock,
-          child: makeTestableWidget(
-            const SizedBox(
-              width: 500,
-              height: 1000,
-              child: OutboxMonitorPage(),
-            ),
+        makeTestableWidget(
+          const SizedBox(
+            width: 500,
+            height: 1000,
+            child: OutboxMonitorPage(),
           ),
         ),
       );
@@ -220,18 +199,12 @@ void main() {
 
       getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
 
-      final outboxCubitMock = mockOutboxCubit(OutboxState.online());
-
       await tester.pumpWidget(
-        BlocProvider<OutboxCubit>(
-          lazy: false,
-          create: (BuildContext context) => outboxCubitMock,
-          child: makeTestableWidget(
-            const SizedBox(
-              width: 500,
-              height: 1000,
-              child: OutboxMonitorPage(),
-            ),
+        makeTestableWidget(
+          const SizedBox(
+            width: 500,
+            height: 1000,
+            child: OutboxMonitorPage(),
           ),
         ),
       );

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.782" date="2025-12-30">
+      <description>
+        <p>Sync Outbox State Refactor: Migrated sync outbox state management from Bloc to Riverpod. OutboxCubit replaced with outboxConnectionStateProvider and outboxPendingCountProvider. OutboxBadgeIcon now uses Riverpod providers for consistency with the codebase.</p>
+      </description>
+    </release>
     <release version="0.9.781" date="2025-12-29">
       <description>
         <p>Task Sorting and Date Display: Tasks can now be sorted by date (newest first) or by priority using a new segmented button in the filter modal. Optionally display creation dates on task cards with a subtle bottom-right placement. Both preferences persist across sessions.</p>
@@ -38,7 +43,7 @@
     </release>
     <release version="0.9.780" date="2025-12-29">
       <description>
-        <p>Dashboard State Management Refactor: Migrated dashboard list state from Bloc to Riverpod for consistency with the codebase. Dashboard filtering and sorting now uses dedicated Riverpod providers, with improved case-insensitive sorting for better UX.</p>
+        <p>Dashboard State Refactor: Migrated dashboard list state from Bloc to Riverpod for consistency with the codebase. Dashboard filtering and sorting now uses dedicated Riverpod providers with case-insensitive sorting for better UX.</p>
       </description>
     </release>
     <release version="0.9.779" date="2025-12-29">

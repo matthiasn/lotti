@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.782] - 2025-12-30
+### Changed
+- Migrated sync outbox state management from Bloc to Riverpod
+  - Replaced `OutboxCubit` with `outboxConnectionStateProvider` and `outboxPendingCountProvider`
+  - Updated `OutboxBadgeIcon` to use Riverpod providers for consistency
+  - Removed BlocProvider wrapper from app initialization
+  - Moved `OutboxStatus` enum to new provider file
+
 ## [0.9.781] - 2025-12-29
 ### Added
 - Task Sorting Options: Tasks can now be sorted by date (newest first) or by priority

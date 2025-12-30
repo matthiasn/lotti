@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -38,6 +39,14 @@ final loggingDbProvider = Provider<LoggingDb>(
     'loggingDbProvider must be overridden before use.',
   ),
   name: 'loggingDbProvider',
+);
+
+/// Provides the shared [SyncDatabase] instance. Must be overridden in [ProviderScope].
+final syncDatabaseProvider = Provider<SyncDatabase>(
+  (ref) => throw UnimplementedError(
+    'syncDatabaseProvider must be overridden before use.',
+  ),
+  name: 'syncDatabaseProvider',
 );
 
 /// Provides the shared [LoggingService]. Must be overridden in [ProviderScope].

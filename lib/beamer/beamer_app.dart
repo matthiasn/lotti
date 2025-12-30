@@ -8,7 +8,6 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/theming/theming_cubit.dart';
 import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -31,7 +31,6 @@ import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
-import 'package:lotti/widgets/sync/matrix/incoming_verification_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 
@@ -226,8 +225,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 createNavBarItem(
                   semanticLabel: 'Calendar Tab',
                   icon: const Icon(Ionicons.calendar_outline),
-                  activeIcon: OutboxBadgeIcon(
-                    icon: const Icon(Ionicons.calendar),
+                  activeIcon: const OutboxBadgeIcon(
+                    icon: Icon(Ionicons.calendar),
                   ),
                   label: context.messages.navTabTitleCalendar,
                 ),
@@ -253,11 +252,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               ),
               createNavBarItem(
                 semanticLabel: 'Settings Tab',
-                icon: OutboxBadgeIcon(
-                  icon: const Icon(Ionicons.settings_outline),
+                icon: const OutboxBadgeIcon(
+                  icon: Icon(Ionicons.settings_outline),
                 ),
-                activeIcon: OutboxBadgeIcon(
-                  icon: const Icon(Ionicons.settings),
+                activeIcon: const OutboxBadgeIcon(
+                  icon: Icon(Ionicons.settings),
                 ),
                 label: context.messages.navTabTitleSettings,
               ),
@@ -275,7 +274,6 @@ class MyBeamerApp extends StatefulWidget {
     super.key,
     this.navService,
     this.themingCubit,
-    this.outboxCubit,
     this.audioPlayerCubit,
     this.userActivityService,
     this.journalDb,
@@ -283,7 +281,6 @@ class MyBeamerApp extends StatefulWidget {
 
   final NavService? navService;
   final ThemingCubit? themingCubit;
-  final OutboxCubit? outboxCubit;
   final AudioPlayerCubit? audioPlayerCubit;
   final UserActivityService? userActivityService;
   final JournalDb? journalDb;
@@ -325,11 +322,6 @@ class _MyBeamerAppState extends State<MyBeamerApp> {
       },
       child: MultiBlocProvider(
         providers: [
-          BlocProvider<OutboxCubit>(
-            lazy: false,
-            create: (BuildContext context) =>
-                widget.outboxCubit ?? OutboxCubit(),
-          ),
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) =>
                 widget.audioPlayerCubit ?? getIt<AudioPlayerCubit>(),
