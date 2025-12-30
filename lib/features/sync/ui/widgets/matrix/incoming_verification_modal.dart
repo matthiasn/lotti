@@ -1,71 +1,61 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/sync/matrix/verification_emojis_row.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:matrix/matrix.dart';
+import 'package:matrix/encryption.dart';
 
-class VerificationModal extends ConsumerStatefulWidget {
-  const VerificationModal(
-    this.deviceKeys, {
+class IncomingVerificationModal extends ConsumerStatefulWidget {
+  const IncomingVerificationModal(
+    this.keyVerification, {
     super.key,
   });
 
-  final DeviceKeys deviceKeys;
+  final KeyVerification keyVerification;
 
   @override
-  ConsumerState<VerificationModal> createState() => _VerificationModalState();
+  ConsumerState<IncomingVerificationModal> createState() =>
+      _IncomingVerificationModalState();
 }
 
-class _VerificationModalState extends ConsumerState<VerificationModal> {
+class _IncomingVerificationModalState
+    extends ConsumerState<IncomingVerificationModal> {
   MatrixService get _matrixService => ref.read(matrixServiceProvider);
-  KeyVerificationRunner? _runner;
-
-  @override
-  void dispose() {
-    _runner?.stopTimer();
-    super.dispose();
-  }
-
-  void startVerification() => _matrixService.verifyDevice(widget.deviceKeys);
-
-  @override
-  void initState() {
-    startVerification();
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
     final pop = Navigator.of(context).pop;
 
+    void closeModal() {
+      Navigator.of(context).pop();
+    }
+
+    final unverifiedDevices = _matrixService.getUnverifiedDevices();
+    final requestingDevice = unverifiedDevices.firstWhereOrNull(
+      (deviceKeys) => deviceKeys.deviceId == widget.keyVerification.deviceId,
+    );
+
+    final displayName = requestingDevice?.deviceDisplayName ??
+        widget.keyVerification.deviceId ??
+        'device name not found';
+
     return StreamBuilder<KeyVerificationRunner>(
-      stream: _matrixService.keyVerificationStream,
+      stream: _matrixService.incomingKeyVerificationRunnerStream,
       builder: (context, snapshot) {
         final runner = snapshot.data;
-        _runner = runner;
         final lastStep = runner?.lastStep;
         final emojis = runner?.emojis;
-        final isLastStepKey = lastStep == 'm.key.verification.key';
         final isLastStepDone = lastStep == 'm.key.verification.done';
-        final isLastStepCancel = lastStep == 'm.key.verification.cancel';
 
         final isDone =
             isLastStepDone || (runner?.keyVerification.isDone ?? false);
-
-        if (isLastStepCancel) {
-          Timer(const Duration(seconds: 30), pop);
-        }
-
-        if (isLastStepDone) {
-          Timer(const Duration(seconds: 30), pop);
-        }
 
         return SingleChildScrollView(
           child: Padding(
@@ -78,49 +68,22 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                   children: [
                     Flexible(
                       child: Text(
-                        widget.deviceKeys.deviceDisplayName ??
-                            widget.deviceKeys.deviceId ??
-                            '',
+                        displayName,
                         style: context.textTheme.titleLarge,
                         softWrap: true,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Opacity(
-                  opacity: 0.5,
-                  child: Text(
-                    widget.deviceKeys.userId,
-                    style: context.textTheme.bodySmall,
-                  ),
-                ),
                 const SizedBox(height: 20),
-                if (runner == null)
+                if (!isDone && emojis == null)
                   LottiPrimaryButton(
-                    key: const Key('matrix_start_verify'),
-                    onPressed: startVerification,
-                    label:
-                        context.messages.settingsMatrixStartVerificationLabel,
-                  ),
-                if (lastStep?.isEmpty ?? false)
-                  Text(
-                    context.messages.settingsMatrixContinueVerificationLabel,
-                  ),
-                if (isLastStepCancel)
-                  Text(
-                    context.messages.settingsMatrixVerificationCancelledLabel,
-                  ),
-                if (isLastStepKey && emojis == null)
-                  LottiPrimaryButton(
-                    key: const Key('matrix_accept_verify'),
-                    onPressed: runner?.acceptEmojiVerification,
-                    label:
-                        context.messages.settingsMatrixAcceptVerificationLabel,
+                    onPressed: runner?.acceptVerification,
+                    label: 'Verify Session',
                   ),
                 if (!isDone && emojis != null) ...[
                   Text(
-                    context.messages.settingsMatrixVerifyConfirm,
+                    context.messages.settingsMatrixVerifyIncomingConfirm,
                     style: context.textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
@@ -135,8 +98,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                         child: LottiPrimaryButton(
                           key: const Key('matrix_cancel_verification'),
                           onPressed: () async {
-                            await runner?.cancelVerification();
-                            pop();
+                            closeModal();
                           },
                           label: context
                               .messages.settingsMatrixCancelVerificationLabel,
@@ -157,8 +119,8 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                 if (isDone) ...[
                   Text(
                     context.messages.settingsMatrixVerificationSuccessLabel(
-                      widget.deviceKeys.deviceDisplayName ?? '',
-                      widget.deviceKeys.deviceId ?? '',
+                      '',
+                      runner?.keyVerification.deviceId ?? '',
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -188,5 +150,48 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
         );
       },
     );
+  }
+}
+
+class IncomingVerificationWrapper extends ConsumerStatefulWidget {
+  const IncomingVerificationWrapper({super.key});
+
+  @override
+  ConsumerState<IncomingVerificationWrapper> createState() =>
+      _IncomingVerificationWrapperState();
+}
+
+class _IncomingVerificationWrapperState
+    extends ConsumerState<IncomingVerificationWrapper> {
+  StreamSubscription<KeyVerification>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _subscription = ref
+        .read(matrixServiceProvider)
+        .getIncomingKeyVerificationStream()
+        .listen((keyVerification) {
+      if (mounted) {
+        showModalBottomSheet<void>(
+          context: context,
+          builder: (context) {
+            return IncomingVerificationModal(keyVerification);
+          },
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox.shrink();
   }
 }

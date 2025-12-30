@@ -3,10 +3,8 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -33,18 +31,18 @@ void main() {
       when(() => mockSyncDb.watchOutboxCount())
           .thenAnswer((_) => countStreamController.stream);
 
-      getIt
-        ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<SyncDatabase>(mockSyncDb);
-
-      container = ProviderContainer();
+      container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(mockDb),
+          syncDatabaseProvider.overrideWithValue(mockSyncDb),
+        ],
+      );
     });
 
     tearDown(() async {
       await flagStreamController.close();
       await countStreamController.close();
       container.dispose();
-      await getIt.reset();
     });
 
     group('outboxConnectionStateProvider', () {

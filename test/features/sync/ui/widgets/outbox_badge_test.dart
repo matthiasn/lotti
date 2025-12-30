@@ -1,29 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/mocks.dart';
-import '../../mocks/sync_config_test_mocks.dart';
-import '../../widget_test_utils.dart';
+import '../../../../mocks/mocks.dart';
+import '../../../../mocks/sync_config_test_mocks.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   group('OutboxBadge Widget Tests - ', () {
-    setUp(() {});
-    tearDown(getIt.reset);
-
     testWidgets('Badge shows count 999 when logged in', (tester) async {
       const testCount = 999;
       final syncDbMock = mockSyncDatabaseWithCount(testCount);
       final dbMock = mockJournalDbWithSyncFlag(enabled: true);
-      getIt
-        ..registerSingleton<SyncDatabase>(syncDbMock)
-        ..registerSingleton<JournalDb>(dbMock);
 
       const testIcon = Icons.settings_outlined;
 
@@ -31,6 +23,8 @@ void main() {
         makeTestableWidgetWithScaffold(
           const OutboxBadgeIcon(icon: Icon(testIcon)),
           overrides: [
+            journalDbProvider.overrideWithValue(dbMock),
+            syncDatabaseProvider.overrideWithValue(syncDbMock),
             loginStateStreamProvider.overrideWith(
                 (ref) => Stream<LoginState>.value(LoginState.loggedIn)),
           ],
@@ -50,9 +44,6 @@ void main() {
       const testCount = 5;
       final syncDbMock = mockSyncDatabaseWithCount(testCount);
       final dbMock = mockJournalDbWithSyncFlag(enabled: true);
-      getIt
-        ..registerSingleton<SyncDatabase>(syncDbMock)
-        ..registerSingleton<JournalDb>(dbMock);
 
       const testIcon = Icons.settings_outlined;
 
@@ -60,6 +51,8 @@ void main() {
         makeTestableWidgetWithScaffold(
           const OutboxBadgeIcon(icon: Icon(testIcon)),
           overrides: [
+            journalDbProvider.overrideWithValue(dbMock),
+            syncDatabaseProvider.overrideWithValue(syncDbMock),
             loginStateStreamProvider.overrideWith(
               (ref) => Stream<LoginState>.value(LoginState.loggedOut),
             ),
@@ -82,9 +75,6 @@ void main() {
     testWidgets('returns plain icon when sync is disabled', (tester) async {
       final syncDbMock = mockSyncDatabaseWithCount(5);
       final dbMock = mockJournalDbWithSyncFlag(enabled: false);
-      getIt
-        ..registerSingleton<SyncDatabase>(syncDbMock)
-        ..registerSingleton<JournalDb>(dbMock);
 
       const testIcon = Icons.settings_outlined;
 
@@ -92,6 +82,8 @@ void main() {
         makeTestableWidgetWithScaffold(
           const OutboxBadgeIcon(icon: Icon(testIcon)),
           overrides: [
+            journalDbProvider.overrideWithValue(dbMock),
+            syncDatabaseProvider.overrideWithValue(syncDbMock),
             loginStateStreamProvider.overrideWith(
               (ref) => Stream<LoginState>.value(LoginState.loggedIn),
             ),
@@ -112,9 +104,6 @@ void main() {
     testWidgets('badge label hidden when count is 0', (tester) async {
       final syncDbMock = mockSyncDatabaseWithCount(0);
       final dbMock = mockJournalDbWithSyncFlag(enabled: true);
-      getIt
-        ..registerSingleton<SyncDatabase>(syncDbMock)
-        ..registerSingleton<JournalDb>(dbMock);
 
       const testIcon = Icons.settings_outlined;
 
@@ -122,6 +111,8 @@ void main() {
         makeTestableWidgetWithScaffold(
           const OutboxBadgeIcon(icon: Icon(testIcon)),
           overrides: [
+            journalDbProvider.overrideWithValue(dbMock),
+            syncDatabaseProvider.overrideWithValue(syncDbMock),
             loginStateStreamProvider.overrideWith(
               (ref) => Stream<LoginState>.value(LoginState.loggedIn),
             ),
@@ -144,9 +135,6 @@ void main() {
       // Don't emit any values - stream stays in loading state
       when(() => dbMock.watchConfigFlag(any()))
           .thenAnswer((_) => const Stream<bool>.empty());
-      getIt
-        ..registerSingleton<SyncDatabase>(syncDbMock)
-        ..registerSingleton<JournalDb>(dbMock);
 
       const testIcon = Icons.settings_outlined;
 
@@ -154,6 +142,8 @@ void main() {
         makeTestableWidgetWithScaffold(
           const OutboxBadgeIcon(icon: Icon(testIcon)),
           overrides: [
+            journalDbProvider.overrideWithValue(dbMock),
+            syncDatabaseProvider.overrideWithValue(syncDbMock),
             loginStateStreamProvider.overrideWith(
               (ref) => Stream<LoginState>.value(LoginState.loggedIn),
             ),
@@ -176,9 +166,6 @@ void main() {
       // Emit an error
       when(() => dbMock.watchConfigFlag(any()))
           .thenAnswer((_) => Stream<bool>.error(Exception('test error')));
-      getIt
-        ..registerSingleton<SyncDatabase>(syncDbMock)
-        ..registerSingleton<JournalDb>(dbMock);
 
       const testIcon = Icons.settings_outlined;
 
@@ -186,6 +173,8 @@ void main() {
         makeTestableWidgetWithScaffold(
           const OutboxBadgeIcon(icon: Icon(testIcon)),
           overrides: [
+            journalDbProvider.overrideWithValue(dbMock),
+            syncDatabaseProvider.overrideWithValue(syncDbMock),
             loginStateStreamProvider.overrideWith(
               (ref) => Stream<LoginState>.value(LoginState.loggedIn),
             ),

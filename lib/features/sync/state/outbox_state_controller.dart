@@ -1,6 +1,4 @@
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -26,7 +24,7 @@ enum OutboxConnectionState {
 /// Replaces OutboxCubit's config flag watching.
 @riverpod
 Stream<OutboxConnectionState> outboxConnectionState(Ref ref) {
-  final db = getIt<JournalDb>();
+  final db = ref.watch(journalDbProvider);
   return db.watchConfigFlag(enableMatrixFlag).map(
         (enabled) => enabled
             ? OutboxConnectionState.online
@@ -37,6 +35,6 @@ Stream<OutboxConnectionState> outboxConnectionState(Ref ref) {
 /// Stream provider for outbox pending count (for badge display).
 @riverpod
 Stream<int> outboxPendingCount(Ref ref) {
-  final syncDb = getIt<SyncDatabase>();
+  final syncDb = ref.watch(syncDatabaseProvider);
   return syncDb.watchOutboxCount();
 }
