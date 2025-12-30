@@ -1565,6 +1565,193 @@ void main() {
         });
       });
     });
+
+    group('Error Handling', () {
+      test('handles malformed JSON in persisted filters gracefully', () {
+        fakeAsync((async) {
+          // Set up malformed JSON that will fail to parse
+          when(
+            () => mockSettingsDb
+                .itemByKey(JournalPageController.tasksCategoryFiltersKey),
+          ).thenAnswer((_) async => 'not valid json {{{');
+
+          when(
+            () =>
+                mockSettingsDb.itemByKey(JournalPageController.taskFiltersKey),
+          ).thenAnswer((_) async => null);
+
+          // Controller should initialize without throwing
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // State should still be valid with defaults
+          expect(controller.state, isNotNull);
+          expect(controller.state.showTasks, isTrue);
+        });
+      });
+
+      test('handles missing pagingController gracefully in refreshQuery', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // This should not throw even if pagingController state is complex
+          expect(controller.refreshQuery, returnsNormally);
+        });
+      });
+    });
+
+    group('Visibility Edge Cases', () {
+      test('does not refresh when transitioning from visible to invisible', () {
+        fakeAsync((async) {
+          var queryCount = 0;
+          when(() => mockJournalDb.getJournalEntities(
+                types: any(named: 'types'),
+                starredStatuses: any(named: 'starredStatuses'),
+                privateStatuses: any(named: 'privateStatuses'),
+                flaggedStatuses: any(named: 'flaggedStatuses'),
+                ids: any(named: 'ids'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                categoryIds: any(named: 'categoryIds'),
+              )).thenAnswer((_) async {
+            queryCount++;
+            return [];
+          });
+
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Make visible first
+          controller.updateVisibility(
+            const MockVisibilityInfo(
+              visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
+            ),
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final visibleCount = queryCount;
+
+          // Now make invisible
+          controller.updateVisibility(
+            const MockVisibilityInfo(visibleBounds: Rect.zero),
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Query count should not increase when becoming invisible
+          expect(queryCount, equals(visibleCount));
+          expect(controller.isVisible, isFalse);
+        });
+      });
+
+      test('isVisible stays false when called with zero bounds repeatedly', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Multiple calls with zero bounds
+          controller.updateVisibility(
+            const MockVisibilityInfo(visibleBounds: Rect.zero),
+          );
+          controller.updateVisibility(
+            const MockVisibilityInfo(visibleBounds: Rect.zero),
+          );
+          controller.updateVisibility(
+            const MockVisibilityInfo(visibleBounds: Rect.zero),
+          );
+
+          expect(controller.isVisible, isFalse);
+        });
+      });
+    });
+
+    group('Entry Type Selection Edge Cases', () {
+      test('selectSingleEntryType clears other selections', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // First select all
+          controller.selectAllEntryTypes(entryTypes);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(
+              controller.selectedEntryTypesInternal.length, entryTypes.length);
+
+          // Then select single
+          controller.selectSingleEntryType('Task');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(controller.selectedEntryTypesInternal, equals({'Task'}));
+        });
+      });
+
+      test('clearSelectedEntryTypes results in empty set', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.clearSelectedEntryTypes();
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(controller.selectedEntryTypesInternal, isEmpty);
+        });
+      });
+    });
+
+    group('Task Status Selection Edge Cases', () {
+      test('selectSingleTaskStatus clears other statuses', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // First select all
+          controller.selectAllTaskStatuses();
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Then select single
+          controller.selectSingleTaskStatus('DONE');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(controller.state.selectedTaskStatuses, equals({'DONE'}));
+        });
+      });
+    });
   });
 }
 

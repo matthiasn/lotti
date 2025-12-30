@@ -125,6 +125,8 @@ class JournalFilterIcon extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
+    // Get the parent container to share with the modal
+    final container = ProviderScope.containerOf(context);
 
     return Padding(
       padding: const EdgeInsets.only(right: AppTheme.spacingSmall),
@@ -134,11 +136,16 @@ class JournalFilterIcon extends ConsumerWidget {
             context: context,
             title: context.messages.journalSearchHint,
             modalDecorator: (child) {
-              return ProviderScope(
-                overrides: [
-                  journalPageScopeProvider.overrideWithValue(showTasks),
-                ],
-                child: child,
+              // Use UncontrolledProviderScope to share the parent container
+              // with overrides for the modal-specific scope value
+              return UncontrolledProviderScope(
+                container: container,
+                child: ProviderScope(
+                  overrides: [
+                    journalPageScopeProvider.overrideWithValue(showTasks),
+                  ],
+                  child: child,
+                ),
               );
             },
             builder: (_) => const Column(
