@@ -177,9 +177,9 @@ class HabitsController extends _$HabitsController {
               item.data.completionType == HabitCompletionType.skip ||
               item.data.completionType == null)) {
         final day = item.meta.dateFrom.ymd;
-        final successDays = habitSuccessDays[item.data.habitId] ?? <String>{}
-          ..add(day);
-        habitSuccessDays[item.data.habitId] = successDays;
+        habitSuccessDays
+            .putIfAbsent(item.data.habitId, () => <String>{})
+            .add(day);
       }
     }
 

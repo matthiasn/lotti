@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:pie_chart/pie_chart.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -102,8 +103,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should have an IconButton
+      // Should have an IconButton containing the PieChart
       expect(find.byType(IconButton), findsOneWidget);
+      expect(find.byType(PieChart), findsOneWidget);
     });
 
     testWidgets('opens modal when tapped', (tester) async {
@@ -130,10 +132,13 @@ void main() {
     });
 
     testWidgets('toggles category when chip is tapped', (tester) async {
+      // Reset the recorded category id before the test
+      _TrackingController.lastToggledCategoryId = null;
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            habitsControllerProvider.overrideWith(_WithHabitsController.new),
+            habitsControllerProvider.overrideWith(_TrackingController.new),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -154,6 +159,12 @@ void main() {
 
       await tester.tap(chipFinder.first);
       await tester.pumpAndSettle();
+
+      // Verify toggleSelectedCategoryIds was called with the correct category
+      expect(
+        _TrackingController.lastToggledCategoryId,
+        categoryMindfulness.id,
+      );
     });
   });
 }
@@ -179,4 +190,22 @@ class _WithHabitsController extends HabitsController {
 
   @override
   void toggleSelectedCategoryIds(String categoryId) {}
+}
+
+/// Controller that tracks the last toggled category id for testing
+class _TrackingController extends HabitsController {
+  static String? lastToggledCategoryId;
+
+  @override
+  HabitsState build() {
+    return HabitsState.initial().copyWith(
+      openNow: [habitFlossing],
+      habitDefinitions: [habitFlossing],
+    );
+  }
+
+  @override
+  void toggleSelectedCategoryIds(String categoryId) {
+    lastToggledCategoryId = categoryId;
+  }
 }

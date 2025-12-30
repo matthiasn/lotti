@@ -87,12 +87,18 @@ class HabitCompletionRateChart extends ConsumerWidget
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipColor: (_) => Colors.transparent,
                     getTooltipItems: (List<LineBarSpot> spots) {
-                      final ymd = state.days[spots.first.x.toInt()];
-                      // Defer state modification until after the current frame
-                      // to avoid modifying provider state during paint
-                      SchedulerBinding.instance.addPostFrameCallback((_) {
-                        controller.setInfoYmd(ymd);
-                      });
+                      // Guard against empty spots or out-of-bounds index
+                      if (spots.isNotEmpty) {
+                        final index = spots.first.x.toInt();
+                        if (index >= 0 && index < state.days.length) {
+                          final ymd = state.days[index];
+                          // Defer state modification until after the current frame
+                          // to avoid modifying provider state during paint
+                          SchedulerBinding.instance.addPostFrameCallback((_) {
+                            controller.setInfoYmd(ymd);
+                          });
+                        }
+                      }
                       // Return null for each spot to hide tooltips
                       // (we display info in our own widget above the chart)
                       return spots.map((_) => null).toList();
