@@ -2700,6 +2700,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksShowCreationDate => 'Mostrar fecha de creación en tarjetas';
 
   @override
+  String get tasksShowDueDate => 'Mostrar fecha de vencimiento en tarjetas';
+
+  @override
+  String get taskDueToday => 'Vence hoy';
+
+  @override
+  String get taskDueDateLabel => 'Fecha de vencimiento';
+
+  @override
+  String get taskNoDueDateLabel => 'Sin fecha de vencimiento';
+
+  @override
+  String get clearButton => 'Borrar';
+
+  @override
   String get timeByCategoryChartTitle => 'Tiempo por categoría';
 
   @override

@@ -8,11 +8,13 @@ class CardWrapperWidget extends StatelessWidget {
   const CardWrapperWidget({
     required this.item,
     this.showCreationDate = false,
+    this.showDueDate = true,
     super.key,
   });
 
   final JournalEntity item;
   final bool showCreationDate;
+  final bool showDueDate;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +27,7 @@ class CardWrapperWidget extends StatelessWidget {
           return AnimatedModernTaskCard(
             task: task,
             showCreationDate: showCreationDate,
+            showDueDate: showDueDate,
           );
         },
         orElse: () => ModernJournalCard(item: item),

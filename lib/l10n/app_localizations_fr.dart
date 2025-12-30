@@ -2702,6 +2702,21 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la date de création sur les cartes';
 
   @override
+  String get tasksShowDueDate => 'Afficher la date d\'échéance sur les cartes';
+
+  @override
+  String get taskDueToday => 'Échéance aujourd\'hui';
+
+  @override
+  String get taskDueDateLabel => 'Date d\'échéance';
+
+  @override
+  String get taskNoDueDateLabel => 'Pas de date d\'échéance';
+
+  @override
+  String get clearButton => 'Effacer';
+
+  @override
   String get timeByCategoryChartTitle => 'Temps par catégorie';
 
   @override

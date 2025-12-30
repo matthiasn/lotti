@@ -191,6 +191,8 @@ class EntryController extends _$EntryController {
   Future<void> save({
     Duration? estimate,
     String? title,
+    DateTime? dueDate,
+    bool clearDueDate = false,
     bool stopRecording = false,
   }) async {
     final entry = state.value?.entry;
@@ -206,6 +208,7 @@ class EntryController extends _$EntryController {
         taskData: task.data.copyWith(
           title: title ?? task.data.title,
           estimate: estimate ?? task.data.estimate,
+          due: clearDueDate ? null : (dueDate ?? task.data.due),
         ),
       );
 

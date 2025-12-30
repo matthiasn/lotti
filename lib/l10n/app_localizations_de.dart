@@ -2699,6 +2699,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksShowCreationDate => 'Erstellungsdatum auf Karten anzeigen';
 
   @override
+  String get tasksShowDueDate => 'Fälligkeitsdatum auf Karten anzeigen';
+
+  @override
+  String get taskDueToday => 'Heute fällig';
+
+  @override
+  String get taskDueDateLabel => 'Fälligkeitsdatum';
+
+  @override
+  String get taskNoDueDateLabel => 'Kein Fälligkeitsdatum';
+
+  @override
+  String get clearButton => 'Löschen';
+
+  @override
   String get timeByCategoryChartTitle => 'Zeit nach Kategorie';
 
   @override

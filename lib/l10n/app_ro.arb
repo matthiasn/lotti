@@ -425,5 +425,10 @@
   "tasksSortByLabel": "Sortare după",
   "tasksSortByPriority": "Prioritate",
   "tasksSortByDate": "Dată",
-  "tasksShowCreationDate": "Afișează data creării pe carduri"
+  "tasksShowCreationDate": "Afișează data creării pe carduri",
+  "tasksShowDueDate": "Afișează data scadenței pe carduri",
+  "taskDueToday": "Scadent astăzi",
+  "taskDueDateLabel": "Data scadenței",
+  "taskNoDueDateLabel": "Fără dată scadentă",
+  "clearButton": "Șterge"
 }

@@ -2679,6 +2679,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksShowCreationDate => 'Show creation date on cards';
 
   @override
+  String get tasksShowDueDate => 'Show due date on cards';
+
+  @override
+  String get taskDueToday => 'Due Today';
+
+  @override
+  String get taskDueDateLabel => 'Due Date';
+
+  @override
+  String get taskNoDueDateLabel => 'No due date';
+
+  @override
+  String get clearButton => 'Clear';
+
+  @override
   String get timeByCategoryChartTitle => 'Time by Category';
 
   @override

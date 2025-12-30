@@ -41,6 +41,7 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(<String>{}) Set<String> selectedPriorities,
     @Default(TaskSortOption.byPriority) TaskSortOption sortOption,
     @Default(false) bool showCreationDate,
+    @Default(true) bool showDueDate,
   }) = _JournalPageState;
 }
 
@@ -58,6 +59,7 @@ abstract class TasksFilter with _$TasksFilter {
     @Default(<String>{}) Set<String> selectedPriorities,
     @Default(TaskSortOption.byPriority) TaskSortOption sortOption,
     @Default(false) bool showCreationDate,
+    @Default(true) bool showDueDate,
   }) = _TasksFilter;
 
   factory TasksFilter.fromJson(Map<String, dynamic> json) =>

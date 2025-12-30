@@ -139,6 +139,7 @@ class _InfiniteJournalPageBodyState
                         return CardWrapperWidget(
                           item: item,
                           showCreationDate: state.showCreationDate,
+                          showDueDate: state.showDueDate,
                           key: ValueKey(item.meta.id),
                         );
                       },

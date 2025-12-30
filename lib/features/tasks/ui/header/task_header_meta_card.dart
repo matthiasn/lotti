@@ -5,6 +5,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_wrapper.dart';
+import 'package:lotti/features/tasks/ui/header/task_due_date_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_language_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_priority_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_wrapper.dart';
@@ -63,6 +64,7 @@ class _TaskMetadataRow extends StatelessWidget {
                 taskId: taskId,
                 showLabel: false,
               ),
+              TaskDueDateWrapper(taskId: taskId),
               TaskCategoryWrapper(taskId: taskId),
               TaskLanguageWrapper(taskId: taskId),
             ],

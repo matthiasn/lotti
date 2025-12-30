@@ -2691,6 +2691,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksShowCreationDate => 'Afișează data creării pe carduri';
 
   @override
+  String get tasksShowDueDate => 'Afișează data scadenței pe carduri';
+
+  @override
+  String get taskDueToday => 'Scadent astăzi';
+
+  @override
+  String get taskDueDateLabel => 'Data scadenței';
+
+  @override
+  String get taskNoDueDateLabel => 'Fără dată scadentă';
+
+  @override
+  String get clearButton => 'Șterge';
+
+  @override
   String get timeByCategoryChartTitle => 'Timp pe categorie';
 
   @override

@@ -5014,6 +5014,36 @@ abstract class AppLocalizations {
   /// **'Show creation date on cards'**
   String get tasksShowCreationDate;
 
+  /// No description provided for @tasksShowDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Show due date on cards'**
+  String get tasksShowDueDate;
+
+  /// No description provided for @taskDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Today'**
+  String get taskDueToday;
+
+  /// No description provided for @taskDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Date'**
+  String get taskDueDateLabel;
+
+  /// No description provided for @taskNoDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get taskNoDueDateLabel;
+
+  /// No description provided for @clearButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearButton;
+
   /// No description provided for @timeByCategoryChartTitle.
   ///
   /// In en, this message translates to:

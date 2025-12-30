@@ -13,11 +13,13 @@ class AnimatedModernTaskCard extends StatelessWidget {
   const AnimatedModernTaskCard({
     required this.task,
     this.showCreationDate = false,
+    this.showDueDate = true,
     super.key,
   });
 
   final Task task;
   final bool showCreationDate;
+  final bool showDueDate;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,7 @@ class AnimatedModernTaskCard extends StatelessWidget {
       child: ModernTaskCard(
         task: task,
         showCreationDate: showCreationDate,
+        showDueDate: showDueDate,
       ),
     );
   }
