@@ -5,9 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -27,10 +26,12 @@ class HabitsController extends _$HabitsController {
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<JournalEntity> _habitCompletions = [];
 
-  final JournalDb _journalDb = getIt<JournalDb>();
+  late HabitsRepository _repository;
 
   @override
   HabitsState build() {
+    _repository = ref.read(habitsRepositoryProvider);
+
     ref.onDispose(_cleanup);
     // Schedule initialization after build() completes to avoid
     // reading state before it's initialized
@@ -46,7 +47,7 @@ class HabitsController extends _$HabitsController {
 
   Future<void> _init() async {
     _definitionsSubscription =
-        _journalDb.watchHabitDefinitions().listen((habitDefinitions) {
+        _repository.watchHabitDefinitions().listen((habitDefinitions) {
       _habitDefinitions =
           habitDefinitions.where((habit) => habit.active).toList();
 
@@ -66,8 +67,7 @@ class HabitsController extends _$HabitsController {
     await _fetchHabitCompletions();
     _determineHabitSuccessByDays();
 
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+    _updateSubscription = _repository.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(habitCompletionNotification)) {
         await _fetchHabitCompletions();
         await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -80,7 +80,7 @@ class HabitsController extends _$HabitsController {
     final rangeStart = DateTime.now().dayAtMidnight.subtract(
           Duration(days: state.timeSpanDays),
         );
-    _habitCompletions = await _journalDb.getHabitCompletionsInRange(
+    _habitCompletions = await _repository.getHabitCompletionsInRange(
       rangeStart: rangeStart,
     );
   }

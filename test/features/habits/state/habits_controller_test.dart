@@ -5,21 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart';
+class MockHabitsRepository extends Mock implements HabitsRepository {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockJournalDb mockJournalDb;
-  late MockUpdateNotifications mockUpdateNotifications;
+  late MockHabitsRepository mockRepository;
   late StreamController<List<HabitDefinition>> definitionsController;
   late StreamController<Set<String>> updateController;
   late ProviderContainer container;
@@ -98,35 +96,33 @@ void main() {
   }
 
   setUp(() {
-    mockJournalDb = MockJournalDb();
-    mockUpdateNotifications = MockUpdateNotifications();
+    mockRepository = MockHabitsRepository();
     definitionsController = StreamController.broadcast();
     updateController = StreamController.broadcast();
 
-    when(mockJournalDb.watchHabitDefinitions)
+    when(mockRepository.watchHabitDefinitions)
         .thenAnswer((_) => definitionsController.stream);
 
     when(
-      () => mockJournalDb.getHabitCompletionsInRange(
+      () => mockRepository.getHabitCompletionsInRange(
         rangeStart: any(named: 'rangeStart'),
       ),
     ).thenAnswer((_) async => []);
 
-    when(() => mockUpdateNotifications.updateStream)
+    when(() => mockRepository.updateStream)
         .thenAnswer((_) => updateController.stream);
 
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-
-    container = ProviderContainer();
+    container = ProviderContainer(
+      overrides: [
+        habitsRepositoryProvider.overrideWithValue(mockRepository),
+      ],
+    );
   });
 
   tearDown(() async {
     await definitionsController.close();
     await updateController.close();
     container.dispose();
-    await getIt.reset();
   });
 
   group('HabitsController', () {
@@ -265,7 +261,7 @@ void main() {
       ];
 
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => completions);
@@ -309,7 +305,7 @@ void main() {
       ];
 
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => completions);
@@ -344,7 +340,7 @@ void main() {
       }
 
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => completions);
@@ -373,9 +369,9 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Reset mock to track new calls
-      clearInteractions(mockJournalDb);
+      clearInteractions(mockRepository);
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => []);
@@ -386,7 +382,7 @@ void main() {
 
       // Verify getHabitCompletionsInRange was called again
       verify(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).called(greaterThanOrEqualTo(1));
@@ -399,9 +395,9 @@ void main() {
       definitionsController.add([testHabit1]);
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      clearInteractions(mockJournalDb);
+      clearInteractions(mockRepository);
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => []);
@@ -412,7 +408,7 @@ void main() {
 
       // Should not trigger refetch
       verifyNever(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       );
@@ -441,7 +437,7 @@ void main() {
       ];
 
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => completions);
@@ -476,7 +472,7 @@ void main() {
       ];
 
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => completions);
@@ -521,7 +517,7 @@ void main() {
   group('Category filtering', () {
     test('filters openNow by selected category', () async {
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => []);
@@ -566,7 +562,7 @@ void main() {
       ];
 
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => completions);
@@ -592,7 +588,7 @@ void main() {
 
     test('filters pendingLater by selected category', () async {
       when(
-        () => mockJournalDb.getHabitCompletionsInRange(
+        () => mockRepository.getHabitCompletionsInRange(
           rangeStart: any(named: 'rangeStart'),
         ),
       ).thenAnswer((_) async => []);

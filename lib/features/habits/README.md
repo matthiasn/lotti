@@ -2,10 +2,43 @@
 
 This module contains the habits feature, including habit display, completion tracking, and settings management.
 
+## Architecture
+
+The habits module follows a repository pattern with three layers:
+
+1. **Repository Layer** - Abstracts data access from the database
+2. **State Layer** - Riverpod controllers managing UI state
+3. **UI Layer** - Flutter widgets consuming state
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         UI Layer                            │
+│     (ConsumerWidget, ConsumerStatefulWidget)                │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ ref.watch / ref.read
+┌──────────────────────────▼──────────────────────────────────┐
+│                       State Layer                           │
+│  (HabitsController, HabitSettingsController, etc.)          │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ ref.read(habitsRepositoryProvider)
+┌──────────────────────────▼──────────────────────────────────┐
+│                    Repository Layer                         │
+│               (HabitsRepository)                            │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────┐
+│                    Database Layer                           │
+│         (JournalDb, UpdateNotifications)                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## Directory Structure
 
 ```
 lib/features/habits/
+├── repository/                             # Data access layer
+│   ├── habits_repository.dart                 # Repository interface and implementation
+│   └── habits_repository.g.dart               # Generated riverpod code
 ├── state/                                  # Riverpod state management
 │   ├── habits_controller.dart                 # Main habits page state controller
 │   ├── habits_controller.g.dart               # Generated riverpod code
@@ -30,6 +63,41 @@ lib/features/habits/
         └── status_segmented_control.dart   # Status filter control
 ```
 
+## Repository Layer
+
+### HabitsRepository
+
+Abstracts all habit-related database operations, making controllers easier to test and more modular.
+
+**Provider:** `habitsRepositoryProvider`
+
+- Uses `@Riverpod(keepAlive: true)` for app-wide persistence
+- Bridges `getIt` service locator and Riverpod for dependency injection
+- Can be easily overridden in tests with `ProviderScope` overrides
+
+**Interface Methods:**
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `watchHabitDefinitions()` | `Stream<List<HabitDefinition>>` | Watch all habit definitions |
+| `watchHabitById(id)` | `Stream<HabitDefinition?>` | Watch a specific habit by ID |
+| `getHabitCompletionsInRange(rangeStart)` | `Future<List<JournalEntity>>` | Get completions from date to now |
+| `getHabitCompletionsByHabitId(...)` | `Future<List<JournalEntity>>` | Get completions for specific habit |
+| `upsertHabitDefinition(habit)` | `Future<int>` | Save or update a habit |
+| `watchDashboards()` | `Stream<List<DashboardDefinition>>` | Watch all dashboards |
+| `updateStream` | `Stream<Set<String>>` | Stream of notification IDs |
+
+**Testing:**
+
+```dart
+// Override repository in tests
+final container = ProviderContainer(
+  overrides: [
+    habitsRepositoryProvider.overrideWithValue(mockRepository),
+  ],
+);
+```
+
 ## State Management
 
 ### HabitsController
@@ -39,8 +107,8 @@ Main controller managing the complete habits page state. Uses `@Riverpod(keepAli
 **Provider:** `habitsControllerProvider`
 
 - Marked `keepAlive: true` since habits state should persist across navigation
-- Subscribes to `JournalDb.watchHabitDefinitions()` for habit definition updates
-- Listens to `UpdateNotifications` stream for habit completion changes
+- Uses `HabitsRepository` for all data access (no direct `getIt` usage)
+- Subscribes to habit definitions and completion notifications via repository
 - Manages visibility updates via `VisibilityDetector`
 
 **State:** `HabitsState` (freezed)
@@ -108,7 +176,7 @@ Manages habit settings form state for create/edit flows.
 
 - Uses `AutoDisposeNotifierProvider.family` with `habitId` (String) as key
 - For **create flow**: new UUID is generated upfront, controller initializes with empty habit
-- For **edit flow**: watches habit from database via `JournalDb.watchHabitById()`
+- For **edit flow**: watches habit from database via `habitByIdProvider` (uses repository)
 - Watches `TagsService.watchTags()` for story tag updates
 - Does not update from DB when form is dirty (prevents overwriting user changes)
 
@@ -146,7 +214,8 @@ Fetches and caches habit completion data for a date range. Uses `@riverpod` anno
 
 - Family provider with three parameters: `habitId`, `rangeStart`, `rangeEnd`
 - Returns `AsyncValue<List<HabitResult>>`
-- Listens to `UpdateNotifications` stream to refresh when habit is modified
+- Uses `HabitsRepository` for data access
+- Listens to `UpdateNotifications` stream (via repository) to refresh when habit is modified
 - Uses `cacheFor(entryCacheDuration)` for performance
 
 **Usage:**
@@ -169,9 +238,9 @@ completionsAsync.when(
 
 ### Supporting Providers
 
-**`habitByIdProvider(habitId)`** - Stream provider for watching a habit by ID from database.
+**`habitByIdProvider(habitId)`** - Stream provider for watching a habit by ID. Uses repository.
 
-**`habitDashboardsProvider`** - Stream provider for watching all dashboards (used in dashboard selection).
+**`habitDashboardsProvider`** - Stream provider for watching all dashboards. Uses repository.
 
 ## Related UI Pages
 
@@ -193,6 +262,7 @@ Chart widget is located at `lib/widgets/charts/habits/`:
 
 | Test File | Coverage |
 |-----------|----------|
+| `test/features/habits/repository/habits_repository_test.dart` | Unit tests for HabitsRepository (13 tests) |
 | `test/features/habits/state/habits_controller_test.dart` | Unit tests for HabitsController (20 tests) |
 | `test/features/habits/state/habit_settings_controller_test.dart` | Unit tests for HabitSettingsController (16 tests) |
 | `test/features/habits/ui/pages/habits_tab_page_test.dart` | Widget tests for habits page (4 tests) |
@@ -200,9 +270,25 @@ Chart widget is located at `lib/widgets/charts/habits/`:
 | `test/widgets/charts/habits/habit_completion_rate_chart_test.dart` | Widget tests for chart (4 tests) |
 | `test/features/settings/ui/pages/habits/habit_details_page_test.dart` | Widget tests for habit details UI (5 tests) |
 
+**Testing with Repository Overrides:**
+
+```dart
+// Create mock repository
+final mockRepository = MockHabitsRepository();
+when(mockRepository.watchHabitDefinitions())
+    .thenAnswer((_) => definitionsController.stream);
+
+// Use provider override instead of getIt registration
+final container = ProviderContainer(
+  overrides: [
+    habitsRepositoryProvider.overrideWithValue(mockRepository),
+  ],
+);
+```
+
 ## Migration Notes
 
-### v0.9.786 - Habits Page State Migration
+### v0.9.786 - Habits Page State Migration & Repository Layer
 
 The habits page state was migrated from BLoC to Riverpod:
 
@@ -212,6 +298,14 @@ The habits page state was migrated from BLoC to Riverpod:
 - Fixed `HabitsSearchWidget` TextEditingController lifecycle (proper init/dispose/sync with `ref.listen`)
 - Fixed chart touch handling to defer state modification via `addPostFrameCallback`
 - Added comprehensive test coverage for controller, state helpers, and widgets
+
+Added repository layer to separate data access from state management:
+
+- Created `HabitsRepository` interface and `HabitsRepositoryImpl`
+- All controllers now use repository via `ref.read(habitsRepositoryProvider)` instead of direct `getIt`
+- Repository provider bridges `getIt` service locator with Riverpod DI
+- Tests updated to use `habitsRepositoryProvider.overrideWithValue()` instead of `getIt` registration
+- Improves testability - mock repository instead of individual database/notification services
 
 ### v0.9.784 - Habit Settings State Migration
 

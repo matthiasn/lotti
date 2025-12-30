@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -23,6 +24,8 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockNotificationService extends Mock implements NotificationService {}
 
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
 class FakeHabitDefinitionLocal extends Fake implements HabitDefinition {}
 
 void main() {
@@ -35,16 +38,20 @@ void main() {
     late MockTagsService mockTagsService;
     late MockPersistenceLogic mockPersistenceLogic;
     late MockNotificationService mockNotificationService;
+    late MockUpdateNotifications mockUpdateNotifications;
     late StreamController<HabitDefinition?> habitStreamController;
     late StreamController<List<TagEntity>> tagsStreamController;
+    late StreamController<Set<String>> updateStreamController;
 
     setUp(() {
       mockJournalDb = MockJournalDb();
       mockTagsService = MockTagsService();
       mockPersistenceLogic = MockPersistenceLogic();
       mockNotificationService = MockNotificationService();
+      mockUpdateNotifications = MockUpdateNotifications();
       habitStreamController = StreamController<HabitDefinition?>.broadcast();
       tagsStreamController = StreamController<List<TagEntity>>.broadcast();
+      updateStreamController = StreamController<Set<String>>.broadcast();
 
       when(() => mockJournalDb.watchHabitById(any())).thenAnswer(
         (_) => habitStreamController.stream,
@@ -56,17 +63,21 @@ void main() {
           .thenAnswer((_) async => 1);
       when(() => mockNotificationService.scheduleHabitNotification(any()))
           .thenAnswer((_) async {});
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => updateStreamController.stream);
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NotificationService>(mockNotificationService);
+        ..registerSingleton<NotificationService>(mockNotificationService)
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
     });
 
     tearDown(() async {
       await habitStreamController.close();
       await tagsStreamController.close();
+      await updateStreamController.close();
       await getIt.reset();
     });
 

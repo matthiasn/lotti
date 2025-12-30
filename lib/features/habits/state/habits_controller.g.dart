@@ -6,7 +6,7 @@ part of 'habits_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$habitsControllerHash() => r'5f14ee62ec009620071348f14b98154309b5db15';
+String _$habitsControllerHash() => r'19ded8e9f41c4476de7b5d94ff45565a887c4ccf';
 
 /// Notifier managing the complete habits page state.
 /// Marked as keepAlive since habits state should persist across navigation.
