@@ -87,7 +87,7 @@ void main() {
       ..registerSingleton<SyncDatabase>(syncDb)
       ..registerSingleton<SettingsDb>(settingsDb);
 
-    // ThemingCubit reads tooltip flag
+    // ThemingController reads tooltip flag
     when(() => db.watchConfigFlag(enableTooltipFlag))
         .thenAnswer((_) => Stream<bool>.value(false));
 

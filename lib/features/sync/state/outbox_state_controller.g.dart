@@ -7,7 +7,7 @@ part of 'outbox_state_controller.dart';
 // **************************************************************************
 
 String _$outboxConnectionStateHash() =>
-    r'6e63b20da40066f9d8622abe203a3193133677a4';
+    r'888d8440f2775583844ad409954e7cabf8a08e2f';
 
 /// Stream provider watching the Matrix sync enable flag.
 /// Replaces OutboxCubit's config flag watching.
@@ -30,7 +30,7 @@ final outboxConnectionStateProvider =
 typedef OutboxConnectionStateRef
     = AutoDisposeStreamProviderRef<OutboxConnectionState>;
 String _$outboxPendingCountHash() =>
-    r'c5f07052116a563b639e1e6f481b95f17ec9d719';
+    r'd1063a52cfb2ee4fc2c937a96f1d8f71ff2211cd';
 
 /// Stream provider for outbox pending count (for badge display).
 ///

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.783] - 2025-12-30
+### Changed
+- Migrated theming state management from Bloc to Riverpod
+  - Replaced `ThemingCubit` with `ThemingController` notifier and `enableTooltipsProvider`
+  - Theme state now managed via `themingControllerProvider` with keepAlive for app-wide persistence
+  - Moved theme definitions (`themes` map, `LightModeSurfaces`) to `lib/features/theming/model/`
+  - Updated `MyBeamerApp` to use `ConsumerStatefulWidget` with Riverpod providers
+  - Updated `ThemingPage` to use `ConsumerWidget` pattern
+
 ## [0.9.782] - 2025-12-30
 ### Changed
 - Migrated sync outbox state management from Bloc to Riverpod

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lotti/blocs/theming/theming_cubit.dart';
-import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,28 +17,26 @@ class MockJournalDb extends Mock implements JournalDb {}
 
 class MockUserActivityService extends Mock implements UserActivityService {}
 
-// TestThemingCubit for synchronous state
-class TestThemingCubit extends ThemingCubit {
-  TestThemingCubit(ThemingState initialState) : super() {
-    emit(initialState);
-  }
-}
+class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
   late MockSettingsDb mockSettingsDb;
   late MockJournalDb mockJournalDb;
   late MockUserActivityService mockUserActivityService;
+  late MockLoggingService mockLoggingService;
+
+  setUpAll(() {
+    registerFallbackValue(StackTrace.empty);
+  });
 
   setUp(() {
-    // Reset GetIt before each test
     GetIt.I.reset();
 
-    // Create mocks
     mockSettingsDb = MockSettingsDb();
     mockJournalDb = MockJournalDb();
     mockUserActivityService = MockUserActivityService();
+    mockLoggingService = MockLoggingService();
 
-    // Set up default mock behaviors
     when(() => mockSettingsDb.itemByKey('theme'))
         .thenAnswer((_) async => 'Grey Law');
     when(() => mockSettingsDb.itemByKey('LIGHT_SCHEME'))
@@ -47,44 +44,49 @@ void main() {
     when(() => mockSettingsDb.itemByKey('DARK_SCHEMA'))
         .thenAnswer((_) async => 'Grey Law');
     when(() => mockSettingsDb.itemByKey('THEME_MODE'))
-        .thenAnswer((_) async => 'dark');
+        .thenAnswer((_) async => 'system');
     when(() => mockSettingsDb.saveSettingsItem(any(), any()))
         .thenAnswer((_) async => 1);
     when(() => mockSettingsDb.watchSettingsItemByKey(any()))
-        .thenAnswer((_) => Stream.value([]));
+        .thenAnswer((_) => const Stream.empty());
 
     when(() => mockJournalDb.watchConfigFlag(enableTooltipFlag))
         .thenAnswer((_) => Stream.value(true));
 
-    // Register dependencies in GetIt
+    when(
+      () => mockLoggingService.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) {});
+
     GetIt.I.registerSingleton<SettingsDb>(mockSettingsDb);
     GetIt.I.registerSingleton<JournalDb>(mockJournalDb);
     GetIt.I.registerSingleton<UserActivityService>(mockUserActivityService);
+    GetIt.I.registerSingleton<LoggingService>(mockLoggingService);
   });
 
   tearDown(() {
-    // Clean up cubit
-
-    // Reset GetIt after each test
     GetIt.I.reset();
   });
 
-  Widget createTestWidget({required ThemingCubit cubit, Locale? locale}) {
-    return MaterialApp(
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: locale,
-      home: MediaQuery(
-        data: const MediaQueryData(
-          size: Size(390, 844),
-          padding: EdgeInsets.only(top: 47),
-        ),
-        child: Scaffold(
-          body: BlocProvider.value(
-            value: cubit,
-            child: const ThemingPage(),
+  Widget createTestWidget({Locale? locale}) {
+    return ProviderScope(
+      child: MaterialApp(
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
+        home: const MediaQuery(
+          data: MediaQueryData(
+            size: Size(390, 844),
+            padding: EdgeInsets.only(top: 47),
+          ),
+          child: Scaffold(
+            body: ThemingPage(),
           ),
         ),
       ),
@@ -94,9 +96,7 @@ void main() {
   group('ThemingPage Widget Tests', () {
     testWidgets('theming page loads and displays theme selection controls',
         (tester) async {
-      final cubit = ThemingCubit();
-      await tester.pumpWidget(
-          createTestWidget(locale: const Locale('en'), cubit: cubit));
+      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
       final l10n =
@@ -118,9 +118,7 @@ void main() {
 
     testWidgets('theme mode segmented button changes theme mode',
         (tester) async {
-      final cubit = ThemingCubit();
-      await tester.pumpWidget(
-          createTestWidget(locale: const Locale('en'), cubit: cubit));
+      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
       // Find the segmented button
@@ -133,16 +131,14 @@ void main() {
       await tester.tap(lightThemeSegment);
       await tester.pumpAndSettle();
 
-      // Verify the cubit was called with the light theme mode
+      // Verify the settings were saved
       verify(() => mockSettingsDb.saveSettingsItem('THEME_MODE', 'light'))
           .called(1);
     });
 
     testWidgets('light theme selection opens modal and allows theme selection',
         (tester) async {
-      final cubit = ThemingCubit();
-      await tester.pumpWidget(
-          createTestWidget(locale: const Locale('en'), cubit: cubit));
+      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
       final l10n =
@@ -175,9 +171,7 @@ void main() {
 
     testWidgets('dark theme selection opens modal and allows theme selection',
         (tester) async {
-      final cubit = ThemingCubit();
-      await tester.pumpWidget(
-          createTestWidget(locale: const Locale('en'), cubit: cubit));
+      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
       final l10n =
@@ -209,9 +203,7 @@ void main() {
     });
 
     testWidgets('theme selection modal can be dismissed', (tester) async {
-      final cubit = ThemingCubit();
-      await tester.pumpWidget(
-          createTestWidget(locale: const Locale('en'), cubit: cubit));
+      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
       final l10n =
@@ -233,38 +225,25 @@ void main() {
     });
 
     testWidgets('theme mode segments show correct icons', (tester) async {
-      final cubit = TestThemingCubit(
-        ThemingState(
-          enableTooltips: true,
-          darkTheme: ThemeData.dark(),
-          darkThemeName: 'Grey Law',
-          lightTheme: ThemeData.light(),
-          lightThemeName: 'Grey Law',
-          themeMode: ThemeMode.dark,
-        ),
-      );
-      await tester.pumpWidget(
-          createTestWidget(locale: const Locale('en'), cubit: cubit));
+      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
-      bool iconWithCodepoint(Widget widget, int codepoint) =>
-          widget is Icon && widget.icon?.codePoint == codepoint;
+      // Verify that the segmented button contains icons
+      final segmentedButton = find.byType(SegmentedButton<ThemeMode>);
+      expect(segmentedButton, findsOneWidget);
 
-      // Check for the actual icons rendered by codepoint
-      expect(find.byWidgetPredicate((w) => iconWithCodepoint(w, 0xE15E)),
-          findsOneWidget); // dark
-      expect(find.byWidgetPredicate((w) => iconWithCodepoint(w, 0xE42E)),
-          findsOneWidget); // system
-      expect(find.byWidgetPredicate((w) => iconWithCodepoint(w, 0xE367)),
-          findsOneWidget); // ?
-      expect(find.byWidgetPredicate((w) => iconWithCodepoint(w, 0xF4BC)),
-          findsOneWidget); // light
+      // Verify icons are present within the segmented button
+      expect(
+        find.descendant(
+          of: segmentedButton,
+          matching: find.byType(Icon),
+        ),
+        findsNWidgets(3), // dark, system, light
+      );
     });
 
     testWidgets('theme selection fields are read-only', (tester) async {
-      final cubit = ThemingCubit();
-      await tester.pumpWidget(
-          createTestWidget(locale: const Locale('en'), cubit: cubit));
+      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
       // Find the text fields

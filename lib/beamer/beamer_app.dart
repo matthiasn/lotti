@@ -8,8 +8,6 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:lotti/blocs/theming/theming_cubit.dart';
-import 'package:lotti/blocs/theming/theming_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/state/player_cubit.dart';
@@ -17,6 +15,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indic
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -269,27 +268,25 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   }
 }
 
-class MyBeamerApp extends StatefulWidget {
+class MyBeamerApp extends ConsumerStatefulWidget {
   const MyBeamerApp({
     super.key,
     this.navService,
-    this.themingCubit,
     this.audioPlayerCubit,
     this.userActivityService,
     this.journalDb,
   });
 
   final NavService? navService;
-  final ThemingCubit? themingCubit;
   final AudioPlayerCubit? audioPlayerCubit;
   final UserActivityService? userActivityService;
   final JournalDb? journalDb;
 
   @override
-  State<MyBeamerApp> createState() => _MyBeamerAppState();
+  ConsumerState<MyBeamerApp> createState() => _MyBeamerAppState();
 }
 
-class _MyBeamerAppState extends State<MyBeamerApp> {
+class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   late final BeamerDelegate routerDelegate;
   late final NavService effectiveNavService;
 
@@ -316,74 +313,66 @@ class _MyBeamerAppState extends State<MyBeamerApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themingState = ref.watch(themingControllerProvider);
+    final enableTooltips =
+        ref.watch(enableTooltipsProvider).valueOrNull ?? true;
+
+    if (themingState.darkTheme == null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme:
+            ThemeData.dark().copyWith(scaffoldBackgroundColor: Colors.black87),
+        home: const EmptyScaffoldWithTitle(
+          'Loading...',
+        ),
+      );
+    }
+
+    final updateActivity =
+        (widget.userActivityService ?? getIt<UserActivityService>())
+            .updateActivity;
+
     return GestureDetector(
       onTap: () {
         FocusManager.instance.primaryFocus?.unfocus();
       },
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) =>
-                widget.audioPlayerCubit ?? getIt<AudioPlayerCubit>(),
-          ),
-          BlocProvider<ThemingCubit>(
-            create: (BuildContext context) =>
-                widget.themingCubit ?? ThemingCubit(),
-          ),
-        ],
-        child: BlocBuilder<ThemingCubit, ThemingState>(
-          builder: (context, themingSnapshot) {
-            if (themingSnapshot.darkTheme == null) {
-              return MaterialApp(
+      child: BlocProvider<AudioPlayerCubit>(
+        create: (BuildContext context) =>
+            widget.audioPlayerCubit ?? getIt<AudioPlayerCubit>(),
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (event) => updateActivity(),
+          onPointerMove: (event) => updateActivity(),
+          onPointerPanZoomStart: (event) => updateActivity(),
+          onPointerPanZoomEnd: (event) => updateActivity(),
+          onPointerUp: (event) => updateActivity(),
+          onPointerSignal: (event) => updateActivity(),
+          onPointerPanZoomUpdate: (event) => updateActivity(),
+          child: TooltipVisibility(
+            visible: enableTooltips,
+            child: DesktopMenuWrapper(
+              child: MaterialApp.router(
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: themingState.lightTheme,
+                darkTheme: themingState.darkTheme,
+                themeMode: themingState.themeMode,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  FormBuilderLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                  FlutterQuillLocalizations.delegate,
+                ],
                 debugShowCheckedModeBanner: false,
-                theme: ThemeData.dark()
-                    .copyWith(scaffoldBackgroundColor: Colors.black87),
-                home: const EmptyScaffoldWithTitle(
-                  'Loading...',
-                ),
-              );
-            }
-
-            final updateActivity =
-                (widget.userActivityService ?? getIt<UserActivityService>())
-                    .updateActivity;
-
-            return Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (event) => updateActivity(),
-              onPointerMove: (event) => updateActivity(),
-              onPointerPanZoomStart: (event) => updateActivity(),
-              onPointerPanZoomEnd: (event) => updateActivity(),
-              onPointerUp: (event) => updateActivity(),
-              onPointerSignal: (event) => updateActivity(),
-              onPointerPanZoomUpdate: (event) => updateActivity(),
-              child: TooltipVisibility(
-                visible: themingSnapshot.enableTooltips,
-                child: DesktopMenuWrapper(
-                  child: MaterialApp.router(
-                    supportedLocales: AppLocalizations.supportedLocales,
-                    theme: themingSnapshot.lightTheme,
-                    darkTheme: themingSnapshot.darkTheme,
-                    themeMode: themingSnapshot.themeMode,
-                    localizationsDelegates: const [
-                      AppLocalizations.delegate,
-                      FormBuilderLocalizations.delegate,
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                      GlobalCupertinoLocalizations.delegate,
-                      FlutterQuillLocalizations.delegate,
-                    ],
-                    debugShowCheckedModeBanner: false,
-                    routerDelegate: routerDelegate,
-                    routeInformationParser: BeamerParser(),
-                    backButtonDispatcher: BeamerBackButtonDispatcher(
-                      delegate: routerDelegate,
-                    ),
-                  ),
+                routerDelegate: routerDelegate,
+                routeInformationParser: BeamerParser(),
+                backButtonDispatcher: BeamerBackButtonDispatcher(
+                  delegate: routerDelegate,
                 ),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
