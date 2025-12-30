@@ -126,6 +126,63 @@ void main() {
       expect(find.textContaining('% skipped'), findsOneWidget);
       expect(find.textContaining('% recorded fails'), findsOneWidget);
     });
+
+    testWidgets('handles empty days list without throwing', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider.overrideWith(_EmptyDaysController.new),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: HabitCompletionRateChart(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should render without errors
+      expect(find.byType(LineChart), findsOneWidget);
+    });
+
+    testWidgets('handles single day list without throwing', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider.overrideWith(_SingleDayController.new),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: HabitCompletionRateChart(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should render without errors - bounds checks prevent RangeError
+      expect(find.byType(LineChart), findsOneWidget);
+    });
+
+    testWidgets('renders with zeroBased mode', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider.overrideWith(_ZeroBasedController.new),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: HabitCompletionRateChart(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should render without errors
+      expect(find.byType(LineChart), findsOneWidget);
+    });
   });
 }
 
@@ -138,6 +195,39 @@ class _TestHabitsController extends HabitsController {
       successPercentage: 75,
       skippedPercentage: 10,
       failedPercentage: 15,
+    );
+  }
+}
+
+/// Test controller with minimal days to test bounds checking
+class _EmptyDaysController extends HabitsController {
+  @override
+  HabitsState build() {
+    return HabitsState.initial().copyWith(
+      days: [], // Empty days list
+      timeSpanDays: 7,
+    );
+  }
+}
+
+/// Test controller with only one day to test bounds checking
+class _SingleDayController extends HabitsController {
+  @override
+  HabitsState build() {
+    return HabitsState.initial().copyWith(
+      days: ['2025-12-30'], // Only one day
+      timeSpanDays: 7,
+    );
+  }
+}
+
+/// Test controller with zeroBased state
+class _ZeroBasedController extends HabitsController {
+  @override
+  HabitsState build() {
+    return HabitsState.initial().copyWith(
+      zeroBased: true,
+      minY: 50,
     );
   }
 }
