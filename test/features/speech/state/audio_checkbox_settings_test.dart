@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -14,42 +14,28 @@ class MockAudioRecorderRepository extends Mock
 
 class MockLoggingService extends Mock implements LoggingService {}
 
-class MockAudioPlayerCubit extends Mock implements AudioPlayerCubit {}
+/// Test controller for AudioPlayerController
+class TestAudioPlayerController extends AudioPlayerController {
+  @override
+  AudioPlayerState build() => const AudioPlayerState(
+        status: AudioPlayerStatus.stopped,
+      );
+}
 
 void main() {
   late ProviderContainer container;
   late MockAudioRecorderRepository mockRecorderRepo;
   late MockLoggingService mockLoggingService;
-  late MockAudioPlayerCubit mockAudioPlayerCubit;
 
   setUp(() {
     mockRecorderRepo = MockAudioRecorderRepository();
     mockLoggingService = MockLoggingService();
-    mockAudioPlayerCubit = MockAudioPlayerCubit();
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
-
-    if (getIt.isRegistered<AudioPlayerCubit>()) {
-      getIt.unregister<AudioPlayerCubit>();
-    }
-    getIt.registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
-
-    // Set up default mock behavior for AudioPlayerCubit
-    when(() => mockAudioPlayerCubit.state).thenReturn(
-      AudioPlayerState(
-        status: AudioPlayerStatus.stopped,
-        totalDuration: Duration.zero,
-        progress: Duration.zero,
-        pausedAt: Duration.zero,
-        speed: 1,
-        showTranscriptsList: false,
-      ),
-    );
-    when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
 
     // Set up default mock behavior
     when(() => mockRecorderRepo.amplitudeStream)
@@ -58,6 +44,8 @@ void main() {
     container = ProviderContainer(
       overrides: [
         audioRecorderRepositoryProvider.overrideWithValue(mockRecorderRepo),
+        audioPlayerControllerProvider
+            .overrideWith(TestAudioPlayerController.new),
       ],
     );
   });

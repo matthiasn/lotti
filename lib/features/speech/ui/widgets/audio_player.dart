@@ -2,12 +2,11 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/speech/model/audio_player_state.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
 import 'package:lotti/themes/theme.dart';
@@ -34,48 +33,44 @@ class AudioPlayerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
-      builder: (BuildContext context, AudioPlayerState state) {
-        final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
-        final cubit = context.read<AudioPlayerCubit>();
-        final theme = Theme.of(context);
-        final isDark = theme.brightness == Brightness.dark;
-        final subtleShadows = <BoxShadow>[
-          BoxShadow(
-            color: theme.colorScheme.shadow.withValues(
-              alpha: isDark ? 0.22 : 0.12,
-            ),
-            blurRadius: isDark ? 14 : 10,
-            offset: const Offset(0, 6),
-          ),
-        ];
+    final state = ref.watch(audioPlayerControllerProvider);
+    final controller = ref.read(audioPlayerControllerProvider.notifier);
+    final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final subtleShadows = <BoxShadow>[
+      BoxShadow(
+        color: theme.colorScheme.shadow.withValues(
+          alpha: isDark ? 0.22 : 0.12,
+        ),
+        blurRadius: isDark ? 14 : 10,
+        offset: const Offset(0, 6),
+      ),
+    ];
 
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: AppTheme.animationDuration),
-          curve: AppTheme.animationCurve,
-          margin: const EdgeInsets.only(top: AppTheme.cardPadding),
-          child: ModernBaseCard(
-            gradient: isDark ? GradientThemes.cardGradient(context) : null,
-            backgroundColor: isDark
-                ? null
-                : theme.colorScheme.surfaceContainerHigh
-                    .withValues(alpha: 0.92),
-            borderColor: context.colorScheme.primary.withValues(alpha: 0.18),
-            isEnhanced: true,
-            customShadows: subtleShadows,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.cardPadding,
-              vertical: AppTheme.cardPadding * 0.4,
-            ),
-            child: _AudioPlayerCardShell(
-              journalAudio: journalAudio,
-              state: state,
-              cubit: cubit,
-              isActive: isActive,
-            ),
-          ),
-        );
-      },
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: AppTheme.animationDuration),
+      curve: AppTheme.animationCurve,
+      margin: const EdgeInsets.only(top: AppTheme.cardPadding),
+      child: ModernBaseCard(
+        gradient: isDark ? GradientThemes.cardGradient(context) : null,
+        backgroundColor: isDark
+            ? null
+            : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.92),
+        borderColor: context.colorScheme.primary.withValues(alpha: 0.18),
+        isEnhanced: true,
+        customShadows: subtleShadows,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardPadding,
+          vertical: AppTheme.cardPadding * 0.4,
+        ),
+        child: _AudioPlayerCardShell(
+          journalAudio: journalAudio,
+          state: state,
+          controller: controller,
+          isActive: isActive,
+        ),
+      ),
     );
   }
 }
@@ -85,13 +80,13 @@ class _AudioPlayerCardShell extends StatelessWidget {
   const _AudioPlayerCardShell({
     required this.journalAudio,
     required this.state,
-    required this.cubit,
+    required this.controller,
     required this.isActive,
   });
 
   final JournalAudio journalAudio;
   final AudioPlayerState state;
-  final AudioPlayerCubit cubit;
+  final AudioPlayerController controller;
   final bool isActive;
 
   @override
@@ -100,7 +95,7 @@ class _AudioPlayerCardShell extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final isCompact = constraints.maxWidth < 360;
         return _PlayerBody(
-          cubit: cubit,
+          controller: controller,
           journalAudio: journalAudio,
           state: state,
           isActive: isActive,
@@ -114,14 +109,14 @@ class _AudioPlayerCardShell extends StatelessWidget {
 /// Horizontal row containing play control, progress bar, timestamps, and speed toggle.
 class _PlayerBody extends StatelessWidget {
   const _PlayerBody({
-    required this.cubit,
+    required this.controller,
     required this.journalAudio,
     required this.state,
     required this.isActive,
     required this.isCompact,
   });
 
-  final AudioPlayerCubit cubit;
+  final AudioPlayerController controller;
   final JournalAudio journalAudio;
   final AudioPlayerState state;
   final bool isActive;
@@ -142,18 +137,18 @@ class _PlayerBody extends StatelessWidget {
 
     void handleTap() {
       if (!isActive) {
-        cubit
+        controller
           ..setAudioNote(journalAudio)
           ..play();
         return;
       }
 
       if (state.status == AudioPlayerStatus.playing) {
-        cubit.pause();
+        controller.pause();
         return;
       }
 
-      cubit.play();
+      controller.play();
     }
 
     final timeStyle = monoTabularStyle(
@@ -186,7 +181,7 @@ class _PlayerBody extends StatelessWidget {
                 totalDuration: totalDuration,
                 isActive: isActive,
                 isCompact: isCompact,
-                onSeek: cubit.seek,
+                onSeek: controller.seek,
               ),
               Row(
                 children: <Widget>[
@@ -194,7 +189,7 @@ class _PlayerBody extends StatelessWidget {
                   Expanded(
                     child: Align(
                       child: _SpeedButton(
-                        cubit: cubit,
+                        controller: controller,
                         currentSpeed: state.speed,
                         isActive: isActive,
                       ),
@@ -407,12 +402,12 @@ class _PlayButton extends StatelessWidget {
 /// Displays the current playback speed and cycles through presets on tap.
 class _SpeedButton extends StatelessWidget {
   const _SpeedButton({
-    required this.cubit,
+    required this.controller,
     required this.currentSpeed,
     required this.isActive,
   });
 
-  final AudioPlayerCubit cubit;
+  final AudioPlayerController controller;
   final double currentSpeed;
   final bool isActive;
 
@@ -455,7 +450,7 @@ class _SpeedButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           splashColor: scheme.primary.withValues(alpha: 0.08),
           highlightColor: scheme.primary.withValues(alpha: 0.04),
-          onTap: () => cubit.setSpeed(nextSpeed),
+          onTap: () => controller.setSpeed(nextSpeed),
           child: child,
         ),
       ),

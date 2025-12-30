@@ -19,7 +19,6 @@ import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
@@ -322,12 +321,6 @@ Future<void> registerSingletons() async {
   _registerLazyServiceSafely<NotificationService>(
     NotificationService.new,
     'NotificationService',
-  );
-
-  // Register AudioPlayerCubit with MediaKit error handling
-  _registerLazyServiceSafely<AudioPlayerCubit>(
-    AudioPlayerCubit.new,
-    'AudioPlayerCubit',
   );
 
   _registerLazyServiceSafely<AudioWaveformService>(

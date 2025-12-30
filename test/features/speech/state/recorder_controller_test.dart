@@ -6,17 +6,15 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
-
-import '../../../mocks/mocks.dart';
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -25,31 +23,41 @@ class MockAudioRecorderRepository extends Mock
 
 class MockAmplitude extends Mock implements Amplitude {}
 
+/// Test controller that allows setting initial state
+class TestAudioPlayerController extends AudioPlayerController {
+  TestAudioPlayerController(this._initialState, this._pauseCalled);
+
+  final AudioPlayerState _initialState;
+  final void Function() _pauseCalled;
+
+  @override
+  AudioPlayerState build() => _initialState;
+
+  @override
+  Future<void> pause() async {
+    _pauseCalled();
+    state = state.copyWith(status: AudioPlayerStatus.paused);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockLoggingService mockLoggingService;
-  late MockAudioPlayerCubit mockAudioPlayerCubit;
   late MockAudioRecorderRepository mockAudioRecorderRepository;
   late ProviderContainer container;
+  late AudioPlayerState audioPlayerState;
+  var pauseWasCalled = false;
 
   setUp(() {
     mockLoggingService = MockLoggingService();
-    mockAudioPlayerCubit = MockAudioPlayerCubit();
     mockAudioRecorderRepository = MockAudioRecorderRepository();
+    pauseWasCalled = false;
 
-    // Setup default mock behavior for AudioPlayerCubit
-    when(() => mockAudioPlayerCubit.state).thenReturn(
-      AudioPlayerState(
-        status: AudioPlayerStatus.stopped,
-        totalDuration: Duration.zero,
-        progress: Duration.zero,
-        pausedAt: Duration.zero,
-        speed: 1,
-        showTranscriptsList: false,
-      ),
+    // Setup default audio player state
+    audioPlayerState = const AudioPlayerState(
+      status: AudioPlayerStatus.stopped,
     );
-    when(() => mockAudioPlayerCubit.pause()).thenAnswer((_) async {});
 
     // Setup default mock behavior for AudioRecorderRepository
     when(() => mockAudioRecorderRepository.amplitudeStream).thenAnswer(
@@ -69,15 +77,19 @@ void main() {
         .thenAnswer((_) async {});
 
     // Register mocks with GetIt
-    getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<AudioPlayerCubit>(mockAudioPlayerCubit);
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
 
-    // Create container with overridden provider
+    // Create container with overridden providers
     container = ProviderContainer(
       overrides: [
         audioRecorderRepositoryProvider.overrideWithValue(
           mockAudioRecorderRepository,
+        ),
+        audioPlayerControllerProvider.overrideWith(
+          () => TestAudioPlayerController(
+            audioPlayerState,
+            () => pauseWasCalled = true,
+          ),
         ),
       ],
     );
@@ -784,17 +796,21 @@ void main() {
     });
 
     test('should pause audio player when recording starts', () async {
-      // Arrange
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.playing,
-          // Audio is playing
-          totalDuration: Duration.zero,
-          progress: Duration.zero,
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
+      // Arrange - Create container with playing audio player
+      container.dispose();
+      pauseWasCalled = false;
+      container = ProviderContainer(
+        overrides: [
+          audioRecorderRepositoryProvider.overrideWithValue(
+            mockAudioRecorderRepository,
+          ),
+          audioPlayerControllerProvider.overrideWith(
+            () => TestAudioPlayerController(
+              const AudioPlayerState(status: AudioPlayerStatus.playing),
+              () => pauseWasCalled = true,
+            ),
+          ),
+        ],
       );
 
       final controller =
@@ -804,22 +820,11 @@ void main() {
       await controller.record(linkedId: 'test-id');
 
       // Assert
-      verify(() => mockAudioPlayerCubit.pause()).called(1);
+      expect(pauseWasCalled, isTrue);
     });
 
     test('should not pause audio player when it is not playing', () async {
-      // Arrange - audio player is already stopped
-      when(() => mockAudioPlayerCubit.state).thenReturn(
-        AudioPlayerState(
-          status: AudioPlayerStatus.stopped,
-          totalDuration: Duration.zero,
-          progress: Duration.zero,
-          pausedAt: Duration.zero,
-          speed: 1,
-          showTranscriptsList: false,
-        ),
-      );
-
+      // Arrange - audio player is already stopped (default state)
       final controller =
           container.read(audioRecorderControllerProvider.notifier);
 
@@ -827,7 +832,7 @@ void main() {
       await controller.record(linkedId: 'test-id');
 
       // Assert
-      verifyNever(() => mockAudioPlayerCubit.pause());
+      expect(pauseWasCalled, isFalse);
     });
   });
 

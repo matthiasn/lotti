@@ -4,10 +4,10 @@ import 'dart:math' as math;
 
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
+import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
-import 'package:lotti/features/speech/state/player_cubit.dart';
-import 'package:lotti/features/speech/state/player_state.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -40,7 +40,6 @@ class AudioRecorderController extends _$AudioRecorderController {
   late final AudioRecorderRepository _recorderRepository;
   StreamSubscription<Amplitude>? _amplitudeSub;
   late final LoggingService _loggingService;
-  AudioPlayerCubit? _audioPlayerCubit;
   String? _linkedId;
   String? _categoryId;
   AudioNote? _audioNote;
@@ -184,30 +183,19 @@ class AudioRecorderController extends _$AudioRecorderController {
     _linkedId = linkedId;
 
     try {
-      // Pause any playing audio first - but safely handle if MediaKit isn't available
-      if (_audioPlayerCubit == null && getIt.isRegistered<AudioPlayerCubit>()) {
-        try {
-          _audioPlayerCubit = getIt<AudioPlayerCubit>();
-        } catch (e) {
-          // Audio player not available, continue without it
-          _loggingService.captureEvent(
-            'Audio player not available, continuing without audio pause: $e',
-            domain: 'recorder_controller',
-            subDomain: 'record',
-          );
+      // Pause any playing audio first using Riverpod provider
+      try {
+        final playerState = ref.read(audioPlayerControllerProvider);
+        if (playerState.status == AudioPlayerStatus.playing) {
+          await ref.read(audioPlayerControllerProvider.notifier).pause();
         }
-      }
-
-      if (_audioPlayerCubit?.state.status == AudioPlayerStatus.playing) {
-        try {
-          await _audioPlayerCubit!.pause();
-        } catch (e) {
-          _loggingService.captureEvent(
-            'Failed to pause audio player: $e',
-            domain: 'recorder_controller',
-            subDomain: 'record',
-          );
-        }
+      } catch (e) {
+        // Audio player not available, continue without it
+        _loggingService.captureEvent(
+          'Audio player not available, continuing without audio pause: $e',
+          domain: 'recorder_controller',
+          subDomain: 'record',
+        );
       }
 
       if (await _recorderRepository.hasPermission()) {
