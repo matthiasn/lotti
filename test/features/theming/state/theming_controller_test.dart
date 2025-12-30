@@ -434,6 +434,288 @@ void main() {
           // Test passes if no exception is thrown
         });
       });
+
+      test('handles error in theme prefs stream and logs it', () {
+        fakeAsync((async) {
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Emit error through stream
+          themePrefsController.addError(Exception('Stream error'));
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Verify error was logged
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'THEMING_CONTROLLER',
+              subDomain: 'theme_prefs_stream',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('handles error during theme reload from sync and logs it', () {
+        fakeAsync((async) {
+          var callCount = 0;
+          when(() => settingsDb.itemByKey(lightSchemeNameKey))
+              .thenAnswer((_) async {
+            callCount++;
+            if (callCount > 1) {
+              throw Exception('Reload error');
+            }
+            return 'Grey Law';
+          });
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Emit change through stream to trigger reload
+          themePrefsController.add([
+            SettingsItem(
+              configKey: themePrefsUpdatedAtKey,
+              value: '12345',
+              updatedAt: DateTime.now(),
+            ),
+          ]);
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          // Verify error was logged
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'THEMING_CONTROLLER',
+              subDomain: 'theme_prefs_reload',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+
+          // Controller should still be in valid state
+          final state = container.read(themingControllerProvider);
+          expect(state, isNotNull);
+        });
+      });
+
+      test('handles error in enqueueMessage and logs it', () {
+        fakeAsync((async) {
+          when(() => outboxService.enqueueMessage(any<SyncMessage>()))
+              .thenThrow(Exception('Enqueue error'));
+
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          controller.setLightTheme('Indigo');
+
+          // Wait for debounce
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          // Verify error was logged
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'THEMING_SYNC',
+              subDomain: 'enqueue',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('does not enqueue sync message when applying synced changes', () {
+        fakeAsync((async) {
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          clearInteractions(outboxService);
+
+          // Emit sync update (simulates receiving changes from another device)
+          themePrefsController.add([
+            SettingsItem(
+              configKey: themePrefsUpdatedAtKey,
+              value: DateTime.now().millisecondsSinceEpoch.toString(),
+              updatedAt: DateTime.now(),
+            ),
+          ]);
+
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          // Verify NO sync message was enqueued during sync application
+          verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+        });
+      });
+
+      test('handles null theme mode string gracefully', () {
+        fakeAsync((async) {
+          when(() => settingsDb.itemByKey(themeModeKey))
+              .thenAnswer((_) async => null);
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Should default to system theme mode
+          expect(states.last.themeMode, equals(ThemeMode.system));
+        });
+      });
+
+      test('handles invalid theme mode string gracefully', () {
+        fakeAsync((async) {
+          when(() => settingsDb.itemByKey(themeModeKey))
+              .thenAnswer((_) async => 'invalid_mode');
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Should default to system theme mode
+          expect(states.last.themeMode, equals(ThemeMode.system));
+        });
+      });
+
+      test('handles null theme names gracefully', () {
+        fakeAsync((async) {
+          when(() => settingsDb.itemByKey(lightSchemeNameKey))
+              .thenAnswer((_) async => null);
+          when(() => settingsDb.itemByKey(darkSchemeNameKey))
+              .thenAnswer((_) async => null);
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Should default to Grey Law
+          expect(states.last.lightThemeName, equals('Grey Law'));
+          expect(states.last.darkThemeName, equals('Grey Law'));
+        });
+      });
+
+      test('invalid dark theme name is ignored', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final originalState = container.read(themingControllerProvider);
+
+          controller.setDarkTheme('NonExistentTheme');
+
+          final newState = container.read(themingControllerProvider);
+          expect(newState.darkThemeName, equals(originalState.darkThemeName));
+        });
+      });
+
+      test('empty theme prefs update is ignored', () {
+        fakeAsync((async) {
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Emit empty list (should be ignored)
+          themePrefsController.add([]);
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          // State should not have changed significantly
+          // (no new load triggered)
+          verify(() => settingsDb.itemByKey(lightSchemeNameKey)).called(1);
+        });
+      });
+    });
+
+    group('ThemingState', () {
+      test('copyWith preserves all values when no arguments provided', () {
+        final original = ThemingState(
+          darkTheme: ThemeData.dark(),
+          lightTheme: ThemeData.light(),
+          darkThemeName: 'Shark',
+          lightThemeName: 'Indigo',
+          themeMode: ThemeMode.dark,
+        );
+
+        final copy = original.copyWith();
+
+        expect(copy.darkThemeName, equals('Shark'));
+        expect(copy.lightThemeName, equals('Indigo'));
+        expect(copy.themeMode, equals(ThemeMode.dark));
+      });
+
+      test('copyWith can update individual theme fields', () {
+        final original = ThemingState(
+          darkTheme: ThemeData.dark(),
+          lightTheme: ThemeData.light(),
+          darkThemeName: 'Grey Law',
+          lightThemeName: 'Grey Law',
+        );
+
+        final newDarkTheme = ThemeData.dark();
+        final newLightTheme = ThemeData.light();
+
+        final copy = original.copyWith(
+          darkTheme: newDarkTheme,
+          lightTheme: newLightTheme,
+        );
+
+        expect(copy.darkTheme, equals(newDarkTheme));
+        expect(copy.lightTheme, equals(newLightTheme));
+        expect(copy.darkThemeName, equals('Grey Law'));
+        expect(copy.lightThemeName, equals('Grey Law'));
+      });
     });
   });
 }
