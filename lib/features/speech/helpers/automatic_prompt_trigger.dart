@@ -102,11 +102,11 @@ class AutomaticPromptTrigger {
 
             // Store the transcription future so we can wait for it if needed
             transcriptionFuture = ref.read(
-              triggerNewInferenceProvider(
+              triggerNewInferenceProvider((
                 entityId: entryId,
                 promptId: promptId,
                 linkedEntityId: linkedTaskId,
-              ).future,
+              )).future,
             );
 
             final shouldAwaitTranscriptionImmediately = linkedTaskId == null ||
@@ -168,11 +168,11 @@ class AutomaticPromptTrigger {
 
             // Trigger checklist updates on the task entity, but pass the audio entry as linkedEntityId
             checklistUpdatesFuture = ref.read(
-              triggerNewInferenceProvider(
+              triggerNewInferenceProvider((
                 entityId: linkedTaskId,
                 promptId: promptId,
                 linkedEntityId: entryId,
-              ).future,
+              )).future,
             );
 
             // If task summary is not needed, await checklist updates
@@ -243,10 +243,11 @@ class AutomaticPromptTrigger {
 
           // Trigger task summary on the task entity, not the audio entry
           await ref.read(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: linkedTaskId,
               promptId: promptId,
-            ).future,
+              linkedEntityId: null,
+            )).future,
           );
         }
       }

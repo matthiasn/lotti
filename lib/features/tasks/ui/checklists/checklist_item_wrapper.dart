@@ -29,10 +29,10 @@ class ChecklistItemWrapper extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final provider = checklistItemControllerProvider(
+    final provider = checklistItemControllerProvider((
       id: itemId,
       taskId: taskId,
-    );
+    ));
     final item = ref.watch(provider);
 
     return item.map(
@@ -44,10 +44,10 @@ class ChecklistItemWrapper extends ConsumerWidget {
 
         // Capture notifiers before widget disposal
         final itemNotifier = ref.read(provider.notifier);
-        final checklistNotifier = ref.read(checklistControllerProvider(
+        final checklistNotifier = ref.read(checklistControllerProvider((
           id: checklistId,
           taskId: taskId,
-        ).notifier);
+        )).notifier);
 
         final child = DragItemWidget(
           dragItemProvider: (request) async {

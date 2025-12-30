@@ -79,48 +79,11 @@ class WidgetbookApp extends StatelessWidget {
                   name: 'CheckboxItemsList',
                   builder: (context) => ProviderScope(
                     overrides: [
-                      checklistItemControllerProvider
-                          .getProviderOverride(
-                            ChecklistItemControllerProvider(
-                              id: checklistItem1.meta.id,
-                              taskId: null,
-                            ),
-                          )
-                          .overrideWith(
-                            () => MockChecklistItemControllerProvider(
-                              value: Future.value(
-                                checklistItem1,
-                              ),
-                            ),
-                          ),
-                      checklistItemControllerProvider
-                          .getProviderOverride(
-                            ChecklistItemControllerProvider(
-                              id: checklistItem2.meta.id,
-                              taskId: null,
-                            ),
-                          )
-                          .overrideWith(
-                            () => MockChecklistItemControllerProvider(
-                              value: Future.value(
-                                checklistItem2,
-                              ),
-                            ),
-                          ),
-                      checklistItemControllerProvider
-                          .getProviderOverride(
-                            ChecklistItemControllerProvider(
-                              id: checklistItem3.meta.id,
-                              taskId: null,
-                            ),
-                          )
-                          .overrideWith(
-                            () => MockChecklistItemControllerProvider(
-                              value: Future.value(
-                                checklistItem3,
-                              ),
-                            ),
-                          ),
+                      checklistItemControllerProvider.overrideWith(
+                        () => MockChecklistItemControllerProvider(
+                          value: Future.value(checklistItem1),
+                        ),
+                      ),
                     ],
                     child: ChecklistWidget(
                       id: '1',

@@ -37,10 +37,10 @@ class _LatestAiResponseSummaryState
   @override
   Widget build(BuildContext context) {
     final latestSummaryAsync = ref.watch(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: widget.id,
         aiResponseType: widget.aiResponseType,
-      ),
+      )),
     );
 
     final inferenceStatus = ref.watch(
@@ -63,10 +63,11 @@ class _LatestAiResponseSummaryState
       // Just trigger the inference without showing a modal
       // The animation at the bottom will be shown automatically
       await ref.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: widget.id,
           promptId: promptId,
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
     }
 

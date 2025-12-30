@@ -54,10 +54,10 @@ class SmartTaskSummaryTrigger {
     try {
       // Check if task already has a summary
       final latestSummary = await ref.read(
-        latestSummaryControllerProvider(
+        latestSummaryControllerProvider((
           id: taskId,
           aiResponseType: AiResponseType.taskSummary,
-        ).future,
+        )).future,
       );
 
       final hasSummary = latestSummary != null;
@@ -116,10 +116,11 @@ class SmartTaskSummaryTrigger {
 
         if (availablePrompt != null) {
           await ref.read(
-            triggerNewInferenceProvider(
+            triggerNewInferenceProvider((
               entityId: taskId,
               promptId: availablePrompt.id,
-            ).future,
+              linkedEntityId: null,
+            )).future,
           );
         } else {
           loggingService.captureEvent(

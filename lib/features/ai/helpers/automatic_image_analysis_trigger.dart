@@ -75,11 +75,11 @@ class AutomaticImageAnalysisTrigger {
       );
 
       await ref.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: imageEntryId,
           promptId: availablePrompt.id,
           linkedEntityId: linkedTaskId,
-        ).future,
+        )).future,
       );
     } catch (exception, stackTrace) {
       loggingService.captureException(

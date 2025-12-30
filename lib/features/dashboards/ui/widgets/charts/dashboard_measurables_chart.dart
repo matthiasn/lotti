@@ -34,7 +34,7 @@ class MeasurablesBarChart extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final measurableDataType = ref
-        .watch(measurableDataTypeControllerProvider(id: measurableDataTypeId))
+        .watch(measurableDataTypeControllerProvider(measurableDataTypeId))
         .valueOrNull;
 
     if (measurableDataType == null) {
@@ -43,22 +43,22 @@ class MeasurablesBarChart extends ConsumerWidget {
 
     final chartAggregationType = ref
             .watch(
-              aggregationTypeControllerProvider(
+              aggregationTypeControllerProvider((
                 measurableDataTypeId: measurableDataTypeId,
                 dashboardDefinedAggregationType: aggregationType,
-              ),
+              )),
             )
             .valueOrNull ??
         AggregationType.none;
 
     final data = ref
             .watch(
-              measurableObservationsControllerProvider(
+              measurableObservationsControllerProvider((
                 measurableDataTypeId: measurableDataTypeId,
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
                 dashboardDefinedAggregationType: chartAggregationType,
-              ),
+              )),
             )
             .valueOrNull ??
         [];

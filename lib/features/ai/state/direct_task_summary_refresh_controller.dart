@@ -229,10 +229,10 @@ class DirectTaskSummaryRefreshController
     try {
       // Get the latest summary to find the prompt ID
       final latestSummary = await ref.read(
-        latestSummaryControllerProvider(
+        latestSummaryControllerProvider((
           id: taskId,
           aiResponseType: AiResponseType.taskSummary,
-        ).future,
+        )).future,
       );
 
       final promptId = latestSummary?.data.promptId;
@@ -256,10 +256,11 @@ class DirectTaskSummaryRefreshController
         );
 
         await ref.read(
-          triggerNewInferenceProvider(
+          triggerNewInferenceProvider((
             entityId: taskId,
             promptId: promptId,
-          ).future,
+            linkedEntityId: null,
+          )).future,
         );
 
         developer.log(

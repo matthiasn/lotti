@@ -122,20 +122,20 @@ void main() {
 
     // Act
     container.listen(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ),
+      )),
       listener.call,
       fireImmediately: true,
     );
 
     // Wait for the future to complete
     await container.read(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ).future,
+      )).future,
     );
 
     // Assert
@@ -144,10 +144,10 @@ void main() {
     verify(() => listener.call(any(), any())).called(2);
 
     final state = container.read(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ),
+      )),
     );
     expect(state.value, equals(testEntry));
   });
@@ -198,20 +198,20 @@ void main() {
 
     // Act
     container.listen(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ),
+      )),
       listener.call,
       fireImmediately: true,
     );
 
     // Wait for initial state
     await container.read(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ).future,
+      )).future,
     );
 
     // Update mock to return new entry
@@ -224,10 +224,10 @@ void main() {
     // Wait deterministically for the provider to reflect the updated entry
     final updatedCompleter = Completer<void>();
     final sub = container.listen(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ),
+      )),
       (_, next) {
         if (!updatedCompleter.isCompleted &&
             next.value?.data.thoughts == 'updated-thoughts') {
@@ -250,10 +250,10 @@ void main() {
     verify(() => listener.call(any(), any())).called(3);
 
     final state = container.read(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ),
+      )),
     );
     expect(state.value, equals(updatedEntry));
   });
@@ -284,20 +284,20 @@ void main() {
 
     // Act
     container.listen(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ),
+      )),
       listener.call,
       fireImmediately: true,
     );
 
     // Wait for initial state
     await container.read(
-      latestSummaryControllerProvider(
+      latestSummaryControllerProvider((
         id: testId,
         aiResponseType: testAiResponseType,
-      ).future,
+      )).future,
     );
 
     // Dispose the container

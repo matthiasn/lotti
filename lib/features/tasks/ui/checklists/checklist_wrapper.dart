@@ -46,7 +46,7 @@ class ChecklistWrapper extends ConsumerWidget {
         checklist.data.linkedChecklistItems.map<Future<ChecklistItem?>>(
       (id) => ref
           .read(
-            checklistItemControllerProvider(id: id, taskId: taskId).future,
+            checklistItemControllerProvider((id: id, taskId: taskId)).future,
           )
           .catchError((Object _, StackTrace __) => null),
     );
@@ -55,25 +55,25 @@ class ChecklistWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = checklistControllerProvider(id: entryId, taskId: taskId);
+    final provider = checklistControllerProvider((id: entryId, taskId: taskId));
     final notifier = ref.read(provider.notifier);
     final checklist = ref.watch(provider).value;
 
     final completionRate = ref
         .watch(
-          checklistCompletionRateControllerProvider(
+          checklistCompletionRateControllerProvider((
             id: entryId,
             taskId: taskId,
-          ),
+          )),
         )
         .value;
 
     final completionCounts = ref
         .watch(
-          checklistCompletionControllerProvider(
+          checklistCompletionControllerProvider((
             id: entryId,
             taskId: taskId,
-          ),
+          )),
         )
         .value;
 

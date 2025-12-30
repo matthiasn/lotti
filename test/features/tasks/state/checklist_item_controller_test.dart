@@ -133,12 +133,12 @@ void main() {
 
         // Read the controller to trigger build
         await container.read(
-          checklistItemControllerProvider(id: 'item-1', taskId: 'task-1')
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider(id: 'item-1', taskId: 'task-1')
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .notifier,
         );
 
@@ -189,12 +189,12 @@ void main() {
         addTearDown(container.dispose);
 
         await container.read(
-          checklistItemControllerProvider(id: 'item-1', taskId: 'task-1')
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider(id: 'item-1', taskId: 'task-1')
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .notifier,
         );
 
@@ -240,12 +240,12 @@ void main() {
         addTearDown(container.dispose);
 
         await container.read(
-          checklistItemControllerProvider(id: 'item-no-cat', taskId: 'task-1')
+          checklistItemControllerProvider((id: 'item-no-cat', taskId: 'task-1'))
               .future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider(id: 'item-no-cat', taskId: 'task-1')
+          checklistItemControllerProvider((id: 'item-no-cat', taskId: 'task-1'))
               .notifier,
         );
 
@@ -280,12 +280,12 @@ void main() {
         addTearDown(container.dispose);
 
         await container.read(
-          checklistItemControllerProvider(id: 'item-1', taskId: 'task-1')
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .future,
         );
 
         final notifier = container.read(
-          checklistItemControllerProvider(id: 'item-1', taskId: 'task-1')
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .notifier,
         );
 

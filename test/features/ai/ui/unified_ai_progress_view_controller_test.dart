@@ -130,10 +130,10 @@ void main() {
 
       // Listen to state changes
       ..listen(
-        unifiedAiControllerProvider(
+        unifiedAiControllerProvider((
           entityId: testEntityId,
           promptId: testPromptId,
-        ),
+        )),
         (previous, next) {
           stateChanges.add(next.message);
         },
@@ -141,19 +141,20 @@ void main() {
 
     // Get initial state
     final initialState = container.read(
-      unifiedAiControllerProvider(
+      unifiedAiControllerProvider((
         entityId: testEntityId,
         promptId: testPromptId,
-      ),
+      )),
     );
     expect(initialState.message, '');
 
     // Trigger inference
     await container.read(
-      triggerNewInferenceProvider(
+      triggerNewInferenceProvider((
         entityId: testEntityId,
         promptId: testPromptId,
-      ).future,
+        linkedEntityId: null,
+      )).future,
     );
 
     // Wait for completion
@@ -161,10 +162,10 @@ void main() {
 
     // Get final state
     final finalState = container.read(
-      unifiedAiControllerProvider(
+      unifiedAiControllerProvider((
         entityId: testEntityId,
         promptId: testPromptId,
-      ),
+      )),
     );
 
     // Verify state changes

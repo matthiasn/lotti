@@ -152,11 +152,11 @@ void main() {
 
       // Act
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: audioEntryId,
           promptId: asrPromptId,
           linkedEntityId: linkedTaskId,
-        ).future,
+        )).future,
       );
 
       // Assert
@@ -247,11 +247,11 @@ void main() {
         var finished = false;
         container
             .read(
-              triggerNewInferenceProvider(
+              triggerNewInferenceProvider((
                 entityId: audioEntryId,
                 promptId: asrPromptId,
                 linkedEntityId: linkedTaskId,
-              ).future,
+              )).future,
             )
             .then((_) => finished = true);
 
@@ -333,11 +333,11 @@ void main() {
 
       // Act
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: audioEntryId,
           promptId: asrPromptId,
           linkedEntityId: linkedTaskId,
-        ).future,
+        )).future,
       );
 
       await Future<void>(() {});
@@ -414,11 +414,11 @@ void main() {
       // Act - simulate the sequential flow
       // First, trigger ASR with linked task ID
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: audioEntryId,
           promptId: asrPromptId,
           linkedEntityId: taskId,
-        ).future,
+        )).future,
       );
 
       // Wait for ASR to complete
@@ -426,10 +426,11 @@ void main() {
 
       // Then trigger task summary
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: taskId,
           promptId: taskSummaryPromptId,
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       // Assert - verify sequential execution
@@ -510,11 +511,11 @@ void main() {
       // Act
       // Start ASR
       final asrFuture = container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: audioEntryId,
           promptId: asrPromptId,
           linkedEntityId: taskId,
-        ).future,
+        )).future,
       );
 
       // Wait for ASR to complete
@@ -523,10 +524,11 @@ void main() {
 
       // Then start task summary
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: taskId,
           promptId: taskSummaryPromptId,
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       // Assert - task summary should start after ASR ends
@@ -627,21 +629,22 @@ void main() {
       // Act
       // Trigger ASR with linked task
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: audioEntryId,
           promptId: asrPromptId,
           linkedEntityId: taskId,
-        ).future,
+        )).future,
       );
 
       await asrCompleter.future;
 
       // Trigger task summary
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: taskId,
           promptId: taskSummaryPromptId,
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       await Future<void>.delayed(const Duration(milliseconds: 100));

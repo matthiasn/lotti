@@ -24,9 +24,7 @@ class MeasurementSuggestions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final popularValues = ref
         .watch(
-          measurableSuggestionsControllerProvider(
-            measurableDataTypeId: measurableDataType.id,
-          ),
+          measurableSuggestionsControllerProvider(measurableDataType.id),
         )
         .valueOrNull;
 

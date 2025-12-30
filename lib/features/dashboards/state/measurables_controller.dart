@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -10,18 +11,42 @@ import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/measurable_utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'measurables_controller.g.dart';
+// Record types for multi-param providers
+typedef AggregationTypeParams = ({
+  String measurableDataTypeId,
+  AggregationType? dashboardDefinedAggregationType,
+});
 
-@riverpod
-class MeasurableDataTypeController extends _$MeasurableDataTypeController {
+typedef MeasurableChartDataParams = ({
+  String measurableDataTypeId,
+  DateTime rangeStart,
+  DateTime rangeEnd,
+});
+
+typedef MeasurableObservationsParams = ({
+  String measurableDataTypeId,
+  DateTime rangeStart,
+  DateTime rangeEnd,
+  AggregationType? dashboardDefinedAggregationType,
+});
+
+// MeasurableDataTypeController - single param
+final AutoDisposeAsyncNotifierProviderFamily<MeasurableDataTypeController,
+        MeasurableDataType?, String> measurableDataTypeControllerProvider =
+    AsyncNotifierProvider.autoDispose
+        .family<MeasurableDataTypeController, MeasurableDataType?, String>(
+  MeasurableDataTypeController.new,
+);
+
+class MeasurableDataTypeController
+    extends AutoDisposeFamilyAsyncNotifier<MeasurableDataType?, String> {
   final JournalDb _journalDb = getIt<JournalDb>();
 
+  String get id => arg;
+
   @override
-  Future<MeasurableDataType?> build({
-    required String id,
-  }) async {
+  Future<MeasurableDataType?> build(String arg) async {
     ref
       ..onDispose(() {})
       ..cacheFor(dashboardCacheDuration);
@@ -35,16 +60,27 @@ class MeasurableDataTypeController extends _$MeasurableDataTypeController {
   }
 }
 
-@riverpod
-class AggregationTypeController extends _$AggregationTypeController {
+// AggregationTypeController - two params
+final AutoDisposeAsyncNotifierProviderFamily<
+        AggregationTypeController,
+        AggregationType,
+        AggregationTypeParams> aggregationTypeControllerProvider =
+    AsyncNotifierProvider.autoDispose.family<AggregationTypeController,
+        AggregationType, AggregationTypeParams>(
+  AggregationTypeController.new,
+);
+
+class AggregationTypeController extends AutoDisposeFamilyAsyncNotifier<
+    AggregationType, AggregationTypeParams> {
+  String get measurableDataTypeId => arg.measurableDataTypeId;
+  AggregationType? get dashboardDefinedAggregationType =>
+      arg.dashboardDefinedAggregationType;
+
   @override
-  Future<AggregationType> build({
-    required String measurableDataTypeId,
-    AggregationType? dashboardDefinedAggregationType,
-  }) async {
+  Future<AggregationType> build(AggregationTypeParams arg) async {
     ref.cacheFor(dashboardCacheDuration);
     final measurableDataType = ref
-        .watch(measurableDataTypeControllerProvider(id: measurableDataTypeId))
+        .watch(measurableDataTypeControllerProvider(measurableDataTypeId))
         .valueOrNull;
 
     return dashboardDefinedAggregationType ??
@@ -53,12 +89,26 @@ class AggregationTypeController extends _$AggregationTypeController {
   }
 }
 
-@riverpod
-class MeasurableChartDataController extends _$MeasurableChartDataController {
+// MeasurableChartDataController - three params
+final AutoDisposeAsyncNotifierProviderFamily<
+        MeasurableChartDataController,
+        List<JournalEntity>,
+        MeasurableChartDataParams> measurableChartDataControllerProvider =
+    AsyncNotifierProvider.autoDispose.family<MeasurableChartDataController,
+        List<JournalEntity>, MeasurableChartDataParams>(
+  MeasurableChartDataController.new,
+);
+
+class MeasurableChartDataController extends AutoDisposeFamilyAsyncNotifier<
+    List<JournalEntity>, MeasurableChartDataParams> {
   final JournalDb _journalDb = getIt<JournalDb>();
 
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
+
+  String get measurableDataTypeId => arg.measurableDataTypeId;
+  DateTime get rangeStart => arg.rangeStart;
+  DateTime get rangeEnd => arg.rangeEnd;
 
   void listen() {
     _updateSubscription =
@@ -73,11 +123,7 @@ class MeasurableChartDataController extends _$MeasurableChartDataController {
   }
 
   @override
-  Future<List<JournalEntity>> build({
-    required String measurableDataTypeId,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) async {
+  Future<List<JournalEntity>> build(MeasurableChartDataParams arg) async {
     ref
       ..onDispose(() {
         _updateSubscription?.cancel();
@@ -98,36 +144,46 @@ class MeasurableChartDataController extends _$MeasurableChartDataController {
   }
 }
 
-@riverpod
-class MeasurableObservationsController
-    extends _$MeasurableObservationsController {
+// MeasurableObservationsController - four params
+final AutoDisposeAsyncNotifierProviderFamily<
+        MeasurableObservationsController,
+        List<Observation>,
+        MeasurableObservationsParams> measurableObservationsControllerProvider =
+    AsyncNotifierProvider.autoDispose.family<MeasurableObservationsController,
+        List<Observation>, MeasurableObservationsParams>(
+  MeasurableObservationsController.new,
+);
+
+class MeasurableObservationsController extends AutoDisposeFamilyAsyncNotifier<
+    List<Observation>, MeasurableObservationsParams> {
+  String get measurableDataTypeId => arg.measurableDataTypeId;
+  DateTime get rangeStart => arg.rangeStart;
+  DateTime get rangeEnd => arg.rangeEnd;
+  AggregationType? get dashboardDefinedAggregationType =>
+      arg.dashboardDefinedAggregationType;
+
   @override
-  Future<List<Observation>> build({
-    required String measurableDataTypeId,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-    AggregationType? dashboardDefinedAggregationType,
-  }) async {
+  Future<List<Observation>> build(MeasurableObservationsParams arg) async {
     ref.cacheFor(dashboardCacheDuration);
 
     final measurements = ref
             .watch(
-              measurableChartDataControllerProvider(
+              measurableChartDataControllerProvider((
                 measurableDataTypeId: measurableDataTypeId,
                 rangeStart: rangeStart,
                 rangeEnd: rangeEnd,
-              ),
+              )),
             )
             .valueOrNull ??
         [];
 
     final aggregationType = ref
             .watch(
-              aggregationTypeControllerProvider(
+              aggregationTypeControllerProvider((
                 measurableDataTypeId: measurableDataTypeId,
                 dashboardDefinedAggregationType:
                     dashboardDefinedAggregationType,
-              ),
+              )),
             )
             .valueOrNull ??
         AggregationType.dailySum;
@@ -155,13 +211,20 @@ class MeasurableObservationsController
   }
 }
 
-@riverpod
+// MeasurableSuggestionsController - single param
+final AutoDisposeAsyncNotifierProviderFamily<MeasurableSuggestionsController,
+        List<num>?, String> measurableSuggestionsControllerProvider =
+    AsyncNotifierProvider.autoDispose
+        .family<MeasurableSuggestionsController, List<num>?, String>(
+  MeasurableSuggestionsController.new,
+);
+
 class MeasurableSuggestionsController
-    extends _$MeasurableSuggestionsController {
+    extends AutoDisposeFamilyAsyncNotifier<List<num>?, String> {
+  String get measurableDataTypeId => arg;
+
   @override
-  Future<List<num>?> build({
-    required String measurableDataTypeId,
-  }) async {
+  Future<List<num>?> build(String arg) async {
     ref.cacheFor(dashboardCacheDuration);
 
     final rangeStart =
@@ -171,11 +234,11 @@ class MeasurableSuggestionsController
     return rankedByPopularity(
       measurements: ref
           .watch(
-            measurableChartDataControllerProvider(
+            measurableChartDataControllerProvider((
               measurableDataTypeId: measurableDataTypeId,
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ),
+            )),
           )
           .valueOrNull,
     );

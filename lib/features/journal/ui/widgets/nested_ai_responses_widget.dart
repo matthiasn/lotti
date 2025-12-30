@@ -94,7 +94,7 @@ class _NestedAiResponsesWidgetState
   @override
   Widget build(BuildContext context) {
     final asyncAiResponses = ref.watch(
-      linkedAiResponsesControllerProvider(entryId: widget.parentEntryId),
+      linkedAiResponsesControllerProvider(widget.parentEntryId),
     );
 
     return asyncAiResponses.when(

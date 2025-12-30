@@ -212,10 +212,10 @@ void main() {
 
       // Listen to the provider to capture state updates
       final subscription = testContainer.listen(
-        unifiedAiControllerProvider(
+        unifiedAiControllerProvider((
           entityId: 'test-entity',
           promptId: 'prompt-1',
-        ),
+        )),
         (previous, next) {
           stateUpdates.add(next.message);
         },
@@ -224,10 +224,11 @@ void main() {
 
       // Trigger inference explicitly since it no longer runs automatically
       await testContainer.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: 'test-entity',
           promptId: 'prompt-1',
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       // Wait for async operations
@@ -313,17 +314,19 @@ void main() {
       });
 
       final future1 = testContainer.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: 'test-entity',
           promptId: 'prompt-1',
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       final future2 = testContainer.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: 'test-entity',
           promptId: 'prompt-1',
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       expect(future1, same(future2));
@@ -390,10 +393,10 @@ void main() {
 
       // Listen to the provider to capture state updates
       final subscription = container.listen(
-        unifiedAiControllerProvider(
+        unifiedAiControllerProvider((
           entityId: 'test-entity',
           promptId: 'prompt-1',
-        ),
+        )),
         (previous, next) {
           stateUpdates.add(next.message);
         },
@@ -402,10 +405,11 @@ void main() {
 
       // Trigger inference explicitly since it no longer runs automatically
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: 'test-entity',
           promptId: 'prompt-1',
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       // Wait for async operations
@@ -496,7 +500,7 @@ void main() {
           .read(entryControllerProvider(id: taskEntity.id).future);
 
       final prompts = await testContainer.read(
-        availablePromptsProvider(entityId: taskEntity.id).future,
+        availablePromptsProvider(taskEntity.id).future,
       );
 
       expect(prompts, expectedPrompts);
@@ -571,7 +575,7 @@ void main() {
           .read(entryControllerProvider(id: taskEntity.id).future);
 
       final hasPrompts = await testContainer.read(
-        hasAvailablePromptsProvider(entityId: taskEntity.id).future,
+        hasAvailablePromptsProvider(taskEntity.id).future,
       );
 
       expect(hasPrompts, true);
@@ -615,7 +619,7 @@ void main() {
           .read(entryControllerProvider(id: journalEntry.id).future);
 
       final hasPrompts = await testContainer.read(
-        hasAvailablePromptsProvider(entityId: journalEntry.id).future,
+        hasAvailablePromptsProvider(journalEntry.id).future,
       );
 
       expect(hasPrompts, false);
@@ -666,10 +670,11 @@ void main() {
 
       // Trigger inference
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: 'test-entity',
           promptId: 'prompt-1',
-        ).future,
+          linkedEntityId: null,
+        )).future,
       );
 
       // Verify inference was called
@@ -763,11 +768,11 @@ void main() {
 
       // Trigger inference with linkedEntityId
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: 'audio-entry-id',
           promptId: 'prompt-1',
           linkedEntityId: 'linked-task-id',
-        ).future,
+        )).future,
       );
 
       // Wait for async operations
@@ -856,11 +861,11 @@ void main() {
 
       // Trigger inference with linkedEntityId
       await container.read(
-        triggerNewInferenceProvider(
+        triggerNewInferenceProvider((
           entityId: 'audio-entry-id',
           promptId: 'prompt-1',
           linkedEntityId: 'linked-task-id',
-        ).future,
+        )).future,
       );
 
       // Wait for async operations
@@ -1000,7 +1005,7 @@ void main() {
 
       // Read the provider
       final prompts = await testContainer.read(
-        availablePromptsProvider(entityId: taskEntity.id).future,
+        availablePromptsProvider(taskEntity.id).future,
       );
 
       expect(prompts, expectedPrompts);
@@ -1074,7 +1079,7 @@ void main() {
 
       // Read the provider
       final prompts = await testContainer.read(
-        availablePromptsProvider(entityId: taskEntity.id).future,
+        availablePromptsProvider(taskEntity.id).future,
       );
 
       expect(prompts, expectedPrompts);

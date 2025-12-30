@@ -7,7 +7,7 @@ part of 'journal_page_controller.dart';
 // **************************************************************************
 
 String _$journalPageControllerHash() =>
-    r'4bbafb33f63228c13db0ad66940d5a0085ed47ec';
+    r'9058926c3a9b9ca0aa8527e265ba8b5de2c8425b';
 
 /// Copied from Dart SDK
 class _SystemHash {
