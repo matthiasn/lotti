@@ -144,6 +144,57 @@ void main() {
       expect(updated.progress, equals(const Duration(seconds: 30)));
       expect(updated.speed, equals(1.5));
     });
+
+    test('copyWith can explicitly set audioNote to null', () {
+      final audioNote = JournalAudio(
+        meta: Metadata(
+          id: 'test-id',
+          createdAt: DateTime(2024, 1, 15),
+          updatedAt: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+          dateTo: DateTime(2024, 1, 15),
+        ),
+        data: AudioData(
+          audioFile: 'test.m4a',
+          audioDirectory: '/test/path',
+          duration: const Duration(minutes: 3),
+          dateTo: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+        ),
+      );
+
+      final stateWithAudio = AudioPlayerState(audioNote: audioNote);
+      expect(stateWithAudio.audioNote, isNotNull);
+
+      // Explicitly set audioNote to null
+      final cleared = stateWithAudio.copyWith(audioNote: null);
+      expect(cleared.audioNote, isNull);
+    });
+
+    test('copyWith preserves audioNote when not provided', () {
+      final audioNote = JournalAudio(
+        meta: Metadata(
+          id: 'test-id',
+          createdAt: DateTime(2024, 1, 15),
+          updatedAt: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+          dateTo: DateTime(2024, 1, 15),
+        ),
+        data: AudioData(
+          audioFile: 'test.m4a',
+          audioDirectory: '/test/path',
+          duration: const Duration(minutes: 3),
+          dateTo: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+        ),
+      );
+
+      final stateWithAudio = AudioPlayerState(audioNote: audioNote);
+      final updated = stateWithAudio.copyWith(status: AudioPlayerStatus.playing);
+
+      expect(updated.audioNote, equals(audioNote));
+      expect(updated.status, equals(AudioPlayerStatus.playing));
+    });
   });
 
   group('AudioPlayerController - Initialization', () {

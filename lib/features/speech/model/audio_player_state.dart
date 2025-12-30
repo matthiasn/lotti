@@ -4,6 +4,9 @@ import 'package:lotti/classes/journal_entities.dart';
 /// Playback status for the audio player
 enum AudioPlayerStatus { initializing, playing, paused, stopped }
 
+/// Sentinel value to distinguish between "not provided" and "explicitly null"
+const Object _undefined = Object();
+
 /// Immutable state representing audio playback configuration.
 @immutable
 class AudioPlayerState {
@@ -27,6 +30,10 @@ class AudioPlayerState {
   final Duration buffered;
   final JournalAudio? audioNote;
 
+  /// Creates a copy of this state with the given fields replaced.
+  ///
+  /// Note: [audioNote] uses a sentinel pattern to allow explicitly setting
+  /// it to null. Pass `audioNote: null` to clear the audio note.
   AudioPlayerState copyWith({
     AudioPlayerStatus? status,
     Duration? totalDuration,
@@ -35,7 +42,7 @@ class AudioPlayerState {
     double? speed,
     bool? showTranscriptsList,
     Duration? buffered,
-    JournalAudio? audioNote,
+    Object? audioNote = _undefined,
   }) {
     return AudioPlayerState(
       status: status ?? this.status,
@@ -45,7 +52,9 @@ class AudioPlayerState {
       speed: speed ?? this.speed,
       showTranscriptsList: showTranscriptsList ?? this.showTranscriptsList,
       buffered: buffered ?? this.buffered,
-      audioNote: audioNote ?? this.audioNote,
+      audioNote: audioNote == _undefined
+          ? this.audioNote
+          : audioNote as JournalAudio?,
     );
   }
 }
