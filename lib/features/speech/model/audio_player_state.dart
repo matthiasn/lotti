@@ -52,9 +52,8 @@ class AudioPlayerState {
       speed: speed ?? this.speed,
       showTranscriptsList: showTranscriptsList ?? this.showTranscriptsList,
       buffered: buffered ?? this.buffered,
-      audioNote: audioNote == _undefined
-          ? this.audioNote
-          : audioNote as JournalAudio?,
+      audioNote:
+          audioNote == _undefined ? this.audioNote : audioNote as JournalAudio?,
     );
   }
 }

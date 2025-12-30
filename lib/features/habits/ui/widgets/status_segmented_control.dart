@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/blocs/habits/habits_state.dart';
+import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/segmented_button.dart';
 

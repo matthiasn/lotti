@@ -3,17 +3,18 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/habits/habits_cubit.dart';
-import 'package:lotti/blocs/habits/habits_state.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
-class HabitCompletionRateChart extends StatelessWidget
+class HabitCompletionRateChart extends ConsumerWidget
     implements PreferredSizeWidget {
   const HabitCompletionRateChart({
     super.key,
@@ -23,166 +24,169 @@ class HabitCompletionRateChart extends StatelessWidget
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<HabitsCubit, HabitsState>(
-      builder: (context, HabitsState state) {
-        final cubit = context.read<HabitsCubit>();
-        final timeSpanDays = state.timeSpanDays;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(habitsControllerProvider);
+    final controller = ref.read(habitsControllerProvider.notifier);
+    final timeSpanDays = state.timeSpanDays;
 
-        Widget bottomTitleWidgets(double value, TitleMeta meta) {
-          var ymd = '';
+    Widget bottomTitleWidgets(double value, TitleMeta meta) {
+      var ymd = '';
 
-          if (value.toInt() == 1) {
-            ymd = state.days[1];
-          }
+      if (value.toInt() == 1) {
+        ymd = state.days[1];
+      }
 
-          if (value.toInt() == timeSpanDays - 1) {
-            ymd = state.days[timeSpanDays - 1];
-          }
+      if (value.toInt() == timeSpanDays - 1) {
+        ymd = state.days[timeSpanDays - 1];
+      }
 
-          return SideTitleWidget(
-            meta: meta,
-            child: ChartLabel(chartDateFormatter(ymd)),
-          );
-        }
+      return SideTitleWidget(
+        meta: meta,
+        child: ChartLabel(chartDateFormatter(ymd)),
+      );
+    }
 
-        return Column(
-          children: [
-            SizedBox(
-              height: 25,
-              child: state.selectedInfoYmd.isNotEmpty
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        InfoLabel('${state.selectedInfoYmd}:'),
-                        InfoLabel('${state.successPercentage}% successful'),
-                        InfoLabel('${state.skippedPercentage}% skipped'),
-                        InfoLabel('${state.failedPercentage}% recorded fails'),
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        InfoLabel(
-                          '${state.habitDefinitions.length} active habits.'
-                          ' Tap chart for daily breakdown.',
-                        ),
-                      ],
+    return Column(
+      children: [
+        SizedBox(
+          height: 25,
+          child: state.selectedInfoYmd.isNotEmpty
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    InfoLabel('${state.selectedInfoYmd}:'),
+                    InfoLabel('${state.successPercentage}% successful'),
+                    InfoLabel('${state.skippedPercentage}% skipped'),
+                    InfoLabel('${state.failedPercentage}% recorded fails'),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    InfoLabel(
+                      '${state.habitDefinitions.length} active habits.'
+                      ' Tap chart for daily breakdown.',
                     ),
-            ),
-            SizedBox(
-              height: 150,
-              width: MediaQuery.of(context).size.width,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  right: 25,
-                  left: 20,
+                  ],
                 ),
-                child: LineChart(
-                  LineChartData(
-                    lineTouchData: LineTouchData(
-                      touchTooltipData: LineTouchTooltipData(
-                        getTooltipItems: (List<LineBarSpot> spots) {
-                          final ymd = state.days[spots.first.x.toInt()];
-                          cubit.setInfoYmd(ymd);
-                          return [];
-                        },
-                      ),
-                    ),
-                    gridData: FlGridData(
-                      horizontalInterval: 20,
-                      verticalInterval: 1,
-                      getDrawingHorizontalLine: (value) {
-                        if (value == 80.0) {
-                          return gridLineEmphasized;
-                        }
-
-                        return gridLine;
-                      },
-                      getDrawingVerticalLine: (value) => gridLine,
-                    ),
-                    titlesData: FlTitlesData(
-                      rightTitles: const AxisTitles(),
-                      topTitles: const AxisTitles(),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 30,
-                          interval: 1,
-                          getTitlesWidget: bottomTitleWidgets,
-                        ),
-                      ),
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          interval: 20,
-                          getTitlesWidget: leftTitleWidgets,
-                          reservedSize: 35,
-                        ),
-                      ),
-                    ),
-                    borderData: FlBorderData(
-                      show: true,
-                      border: Border.all(
-                        color: chartTextColor
-                            .withAlpha((labelOpacity * 255).floor()),
-                      ),
-                    ),
-                    minX: 0,
-                    maxX: timeSpanDays.toDouble(),
-                    minY: state.zeroBased ? 0 : state.minY,
-                    maxY: 100,
-                    lineBarsData: [
-                      barData(
-                        days: state.days,
-                        state: state,
-                        successfulByDay: state.successfulByDay,
-                        skippedByDay: state.skippedByDay,
-                        failedByDay: state.failedByDay,
-                        showSkipped: true,
-                        showSuccessful: true,
-                        showFailed: true,
-                        habitDefinitions: state.habitDefinitions,
-                        aboveColor:
-                            failColor.lighten().desaturate().withAlpha(127),
-                        color: failColor.withAlpha(204),
-                      ),
-                      barData(
-                        days: state.days,
-                        state: state,
-                        successfulByDay: state.successfulByDay,
-                        skippedByDay: state.skippedByDay,
-                        failedByDay: state.failedByDay,
-                        showSkipped: true,
-                        showSuccessful: true,
-                        showFailed: false,
-                        habitDefinitions: state.habitDefinitions,
-                        color: habitSkipColor,
-                      ),
-                      barData(
-                        days: state.days,
-                        state: state,
-                        successfulByDay: state.successfulByDay,
-                        skippedByDay: state.skippedByDay,
-                        failedByDay: state.failedByDay,
-                        showSkipped: false,
-                        showSuccessful: true,
-                        showFailed: false,
-                        habitDefinitions: state.habitDefinitions,
-                        alpha: 230,
-                        color: successColor,
-                      ),
-                    ],
+        ),
+        SizedBox(
+          height: 150,
+          width: MediaQuery.of(context).size.width,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              right: 25,
+              left: 20,
+            ),
+            child: LineChart(
+              LineChartData(
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => Colors.transparent,
+                    getTooltipItems: (List<LineBarSpot> spots) {
+                      final ymd = state.days[spots.first.x.toInt()];
+                      // Defer state modification until after the current frame
+                      // to avoid modifying provider state during paint
+                      SchedulerBinding.instance.addPostFrameCallback((_) {
+                        controller.setInfoYmd(ymd);
+                      });
+                      // Return null for each spot to hide tooltips
+                      // (we display info in our own widget above the chart)
+                      return spots.map((_) => null).toList();
+                    },
                   ),
-                  curve: Curves.easeInOut,
                 ),
+                gridData: FlGridData(
+                  horizontalInterval: 20,
+                  verticalInterval: 1,
+                  getDrawingHorizontalLine: (value) {
+                    if (value == 80.0) {
+                      return gridLineEmphasized;
+                    }
+
+                    return gridLine;
+                  },
+                  getDrawingVerticalLine: (value) => gridLine,
+                ),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(),
+                  topTitles: const AxisTitles(),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: 1,
+                      getTitlesWidget: bottomTitleWidgets,
+                    ),
+                  ),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 20,
+                      getTitlesWidget: leftTitleWidgets,
+                      reservedSize: 35,
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(
+                    color:
+                        chartTextColor.withAlpha((labelOpacity * 255).floor()),
+                  ),
+                ),
+                minX: 0,
+                maxX: timeSpanDays.toDouble(),
+                minY: state.zeroBased ? 0 : state.minY,
+                maxY: 100,
+                lineBarsData: [
+                  barData(
+                    days: state.days,
+                    state: state,
+                    successfulByDay: state.successfulByDay,
+                    skippedByDay: state.skippedByDay,
+                    failedByDay: state.failedByDay,
+                    showSkipped: true,
+                    showSuccessful: true,
+                    showFailed: true,
+                    habitDefinitions: state.habitDefinitions,
+                    aboveColor: failColor.lighten().desaturate().withAlpha(127),
+                    color: failColor.withAlpha(204),
+                  ),
+                  barData(
+                    days: state.days,
+                    state: state,
+                    successfulByDay: state.successfulByDay,
+                    skippedByDay: state.skippedByDay,
+                    failedByDay: state.failedByDay,
+                    showSkipped: true,
+                    showSuccessful: true,
+                    showFailed: false,
+                    habitDefinitions: state.habitDefinitions,
+                    color: habitSkipColor,
+                  ),
+                  barData(
+                    days: state.days,
+                    state: state,
+                    successfulByDay: state.successfulByDay,
+                    skippedByDay: state.skippedByDay,
+                    failedByDay: state.failedByDay,
+                    showSkipped: false,
+                    showSuccessful: true,
+                    showFailed: false,
+                    habitDefinitions: state.habitDefinitions,
+                    alpha: 230,
+                    color: successColor,
+                  ),
+                ],
               ),
+              curve: Curves.easeInOut,
             ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 }

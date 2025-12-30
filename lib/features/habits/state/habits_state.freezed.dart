@@ -358,12 +358,12 @@ extension HabitsStatePatterns on HabitsState {
 
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>(
-    TResult Function(_HabitsStateSaved value)? $default, {
+    TResult Function(_HabitsState value)? $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
-      case _HabitsStateSaved() when $default != null:
+      case _HabitsState() when $default != null:
         return $default(_that);
       case _:
         return orElse();
@@ -385,11 +385,11 @@ extension HabitsStatePatterns on HabitsState {
 
   @optionalTypeArgs
   TResult map<TResult extends Object?>(
-    TResult Function(_HabitsStateSaved value) $default,
+    TResult Function(_HabitsState value) $default,
   ) {
     final _that = this;
     switch (_that) {
-      case _HabitsStateSaved():
+      case _HabitsState():
         return $default(_that);
       case _:
         throw StateError('Unexpected subclass');
@@ -410,11 +410,11 @@ extension HabitsStatePatterns on HabitsState {
 
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>(
-    TResult? Function(_HabitsStateSaved value)? $default,
+    TResult? Function(_HabitsState value)? $default,
   ) {
     final _that = this;
     switch (_that) {
-      case _HabitsStateSaved() when $default != null:
+      case _HabitsState() when $default != null:
         return $default(_that);
       case _:
         return null;
@@ -469,7 +469,7 @@ extension HabitsStatePatterns on HabitsState {
   }) {
     final _that = this;
     switch (_that) {
-      case _HabitsStateSaved() when $default != null:
+      case _HabitsState() when $default != null:
         return $default(
             _that.habitDefinitions,
             _that.openHabits,
@@ -552,7 +552,7 @@ extension HabitsStatePatterns on HabitsState {
   ) {
     final _that = this;
     switch (_that) {
-      case _HabitsStateSaved():
+      case _HabitsState():
         return $default(
             _that.habitDefinitions,
             _that.openHabits,
@@ -634,7 +634,7 @@ extension HabitsStatePatterns on HabitsState {
   ) {
     final _that = this;
     switch (_that) {
-      case _HabitsStateSaved() when $default != null:
+      case _HabitsState() when $default != null:
         return $default(
             _that.habitDefinitions,
             _that.openHabits,
@@ -672,8 +672,8 @@ extension HabitsStatePatterns on HabitsState {
 
 /// @nodoc
 
-class _HabitsStateSaved implements HabitsState {
-  _HabitsStateSaved(
+class _HabitsState implements HabitsState {
+  const _HabitsState(
       {required final List<HabitDefinition> habitDefinitions,
       required final List<HabitDefinition> openHabits,
       required final List<HabitDefinition> openNow,
@@ -866,14 +866,14 @@ class _HabitsStateSaved implements HabitsState {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
-  _$HabitsStateSavedCopyWith<_HabitsStateSaved> get copyWith =>
-      __$HabitsStateSavedCopyWithImpl<_HabitsStateSaved>(this, _$identity);
+  _$HabitsStateCopyWith<_HabitsState> get copyWith =>
+      __$HabitsStateCopyWithImpl<_HabitsState>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _HabitsStateSaved &&
+            other is _HabitsState &&
             const DeepCollectionEquality()
                 .equals(other._habitDefinitions, _habitDefinitions) &&
             const DeepCollectionEquality()
@@ -968,11 +968,11 @@ class _HabitsStateSaved implements HabitsState {
 }
 
 /// @nodoc
-abstract mixin class _$HabitsStateSavedCopyWith<$Res>
+abstract mixin class _$HabitsStateCopyWith<$Res>
     implements $HabitsStateCopyWith<$Res> {
-  factory _$HabitsStateSavedCopyWith(
-          _HabitsStateSaved value, $Res Function(_HabitsStateSaved) _then) =
-      __$HabitsStateSavedCopyWithImpl;
+  factory _$HabitsStateCopyWith(
+          _HabitsState value, $Res Function(_HabitsState) _then) =
+      __$HabitsStateCopyWithImpl;
   @override
   @useResult
   $Res call(
@@ -1007,12 +1007,11 @@ abstract mixin class _$HabitsStateSavedCopyWith<$Res>
 }
 
 /// @nodoc
-class __$HabitsStateSavedCopyWithImpl<$Res>
-    implements _$HabitsStateSavedCopyWith<$Res> {
-  __$HabitsStateSavedCopyWithImpl(this._self, this._then);
+class __$HabitsStateCopyWithImpl<$Res> implements _$HabitsStateCopyWith<$Res> {
+  __$HabitsStateCopyWithImpl(this._self, this._then);
 
-  final _HabitsStateSaved _self;
-  final $Res Function(_HabitsStateSaved) _then;
+  final _HabitsState _self;
+  final $Res Function(_HabitsState) _then;
 
   /// Create a copy of HabitsState
   /// with the given fields replaced by the non-null parameter values.
@@ -1048,7 +1047,7 @@ class __$HabitsStateSavedCopyWithImpl<$Res>
     Object? searchString = null,
     Object? displayFilter = null,
   }) {
-    return _then(_HabitsStateSaved(
+    return _then(_HabitsState(
       habitDefinitions: null == habitDefinitions
           ? _self._habitDefinitions
           : habitDefinitions // ignore: cast_nullable_to_non_nullable

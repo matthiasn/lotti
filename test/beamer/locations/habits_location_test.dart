@@ -1,9 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
-import 'package:lotti/blocs/habits/habits_cubit.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -33,9 +31,7 @@ void main() {
       );
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
-      expect(pages[0].child, isA<BlocProvider<HabitsCubit>>());
-      final blocProvider = pages[0].child as BlocProvider<HabitsCubit>;
-      expect(blocProvider.child, isA<HabitsTabPage>());
+      expect(pages[0].child, isA<HabitsTabPage>());
     });
   });
 }
