@@ -1,13 +1,15 @@
-import 'package:bloc_test/bloc_test.dart';
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_date_display_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
@@ -22,8 +24,53 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_helper.dart';
 
-class MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> toggleSelectedCategoryIds(String categoryId) async {}
+
+  @override
+  Future<void> selectedAllCategories() async {}
+
+  @override
+  Future<void> toggleSelectedTaskStatus(String status) async {}
+
+  @override
+  Future<void> selectAllTaskStatuses() async {}
+
+  @override
+  Future<void> clearSelectedTaskStatuses() async {}
+
+  @override
+  Future<void> setSortOption(TaskSortOption sortOption) async {}
+
+  @override
+  Future<void> setShowCreationDate({required bool show}) async {}
+
+  @override
+  Future<void> toggleSelectedPriority(String priority) async {}
+
+  @override
+  Future<void> clearSelectedPriorities() async {}
+
+  @override
+  Future<void> toggleSelectedLabelId(String labelId) async {}
+
+  @override
+  Future<void> clearSelectedLabelIds() async {}
+
+  @override
+  void setFilters(Set<DisplayFilter> filters) {}
+}
 
 class MockPagingController extends Mock
     implements PagingController<int, JournalEntity> {}
@@ -31,7 +78,7 @@ class MockPagingController extends Mock
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
-  late MockJournalPageCubit mockCubit;
+  late FakeJournalPageController fakeController;
   late JournalPageState mockState;
   late MockPagingController mockPagingController;
   late MockEntitiesCacheService mockEntitiesCacheService;
@@ -103,7 +150,6 @@ void main() {
       return null;
     });
 
-    mockCubit = MockJournalPageCubit();
     mockPagingController = MockPagingController();
     mockEntitiesCacheService = MockEntitiesCacheService();
 
@@ -122,14 +168,12 @@ void main() {
       selectedLabelIds: const {},
     );
 
-    when(() => mockCubit.state).thenReturn(mockState);
-
     // Set up EntitiesCacheService mock
     when(() => mockEntitiesCacheService.sortedCategories)
         .thenReturn(mockCategories);
     when(() => mockEntitiesCacheService.sortedLabels).thenReturn(mockLabels);
 
-    // Register the mock with GetIt
+    // Register the mocks with GetIt
     getIt.allowReassignment = true;
     getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
   });
@@ -138,9 +182,15 @@ void main() {
 
   group('TaskFilterIcon', () {
     Widget buildSubject() {
+      fakeController = FakeJournalPageController(mockState);
+
       return WidgetTestBench(
-        child: BlocProvider<JournalPageCubit>.value(
-          value: mockCubit,
+        child: ProviderScope(
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(true)
+                .overrideWith(() => fakeController),
+          ],
           child: const Scaffold(
             body: TaskFilterIcon(),
           ),

@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/calendar/state/day_view_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -197,7 +197,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       // Now set visibility filter - only 'visible-category' selected
-      final filter = TasksFilter(
+      const filter = TasksFilter(
         selectedCategoryIds: {'visible-category'},
       );
       settingsStreamController.add([
@@ -336,7 +336,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       // Set visibility filter - only specific category selected (not unassigned)
-      final filter = TasksFilter(
+      const filter = TasksFilter(
         selectedCategoryIds: {'some-category'},
       );
       settingsStreamController.add([
@@ -397,7 +397,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       // Set visibility filter - include unassigned marker ''
-      final filter = TasksFilter(
+      const filter = TasksFilter(
         selectedCategoryIds: {'some-category', ''},
       );
       settingsStreamController.add([

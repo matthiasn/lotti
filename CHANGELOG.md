@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.788] - 2025-12-30
+### Changed
+- Migrated journal/tasks page state management from Bloc to Riverpod
+  - Replaced `JournalPageCubit` with `JournalPageController` notifier using `@Riverpod(keepAlive: true)`
+  - Uses family provider pattern with `showTasks` boolean for journal vs tasks page state
+  - Created `journalPageScopeProvider` for scoped access to `showTasks` value in widget tree
+  - Updated `InfiniteJournalPage`, `JournalSliverAppBar`, filter widgets to use Riverpod
+  - Fixed modal state sharing in `JournalFilterIcon` and `AiChatIcon` using `UncontrolledProviderScope`
+  - Added comprehensive test coverage for controller, state, and widget interactions
+
 ## [0.9.787] - 2025-12-30
 ### Fixed
 - Fixed habit settings page opening empty for existing habits

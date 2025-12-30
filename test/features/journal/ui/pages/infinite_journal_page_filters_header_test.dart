@@ -1,12 +1,12 @@
 // ignore_for_file: avoid_redundant_argument_values
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -18,8 +18,35 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../widget_test_utils.dart';
 
-class _MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+  final List<String> toggledLabelIds = [];
+  int clearSelectedLabelIdsCalled = 0;
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> refreshQuery() async {}
+
+  @override
+  void updateVisibility(VisibilityInfo info) {}
+
+  @override
+  Future<void> toggleSelectedLabelId(String id) async {
+    toggledLabelIds.add(id);
+  }
+
+  @override
+  Future<void> clearSelectedLabelIds() async {
+    clearSelectedLabelIdsCalled++;
+  }
+}
 
 class _MockEntitiesCacheService extends mocktail.Mock
     implements EntitiesCacheService {}
@@ -59,7 +86,7 @@ LabelDefinition _buildLabel(String id, String name) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late _MockJournalPageCubit mockCubit;
+  late FakeJournalPageController fakeController;
   late _MockEntitiesCacheService mockCache;
 
   setUpAll(() {
@@ -69,19 +96,10 @@ void main() {
 
   setUp(() async {
     await getIt.reset();
-    mockCubit = _MockJournalPageCubit();
     mockCache = _MockEntitiesCacheService();
     getIt
       ..registerSingleton<EntitiesCacheService>(mockCache)
       ..registerSingleton<UserActivityService>(UserActivityService());
-
-    mocktail.when(() => mockCubit.refreshQuery()).thenAnswer((_) async {});
-    mocktail
-        .when(() => mockCubit.clearSelectedLabelIds())
-        .thenAnswer((_) async {});
-    mocktail
-        .when(() => mockCubit.toggleSelectedLabelId(mocktail.any()))
-        .thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -98,15 +116,13 @@ void main() {
   }
 
   Widget pumpBody(JournalPageState state) {
-    mocktail.when(() => mockCubit.state).thenReturn(state);
-    whenListen(
-      mockCubit,
-      Stream<JournalPageState>.value(state),
-      initialState: state,
-    );
+    fakeController = FakeJournalPageController(state);
 
-    return BlocProvider<JournalPageCubit>.value(
-      value: mockCubit,
+    return ProviderScope(
+      overrides: [
+        journalPageScopeProvider.overrideWithValue(true),
+        journalPageControllerProvider(true).overrideWith(() => fakeController),
+      ],
       child: makeTestableWidgetWithScaffold(
         const InfiniteJournalPageBody(showTasks: true),
       ),
@@ -159,7 +175,7 @@ void main() {
 
     await tester.tap(find.text('Clear'));
     await tester.pump();
-    mocktail.verify(() => mockCubit.clearSelectedLabelIds()).called(1);
+    expect(fakeController.clearSelectedLabelIdsCalled, 1);
   });
 
   testWidgets('quick filter section hidden when no labels selected',

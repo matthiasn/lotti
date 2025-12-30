@@ -1,51 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
-class TaskStatusFilter extends StatelessWidget {
+class TaskStatusFilter extends ConsumerWidget {
   const TaskStatusFilter({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showTasks = ref.watch(journalPageScopeProvider);
+    final state = ref.watch(journalPageControllerProvider(showTasks));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        //const Divider(),
+        Text(
+          context.messages.taskStatusLabel,
+          style: context.textTheme.bodySmall,
+        ),
+        const SizedBox(height: 5),
+        Wrap(
+          runSpacing: 8,
+          spacing: 8,
           children: [
-            //const Divider(),
-            Text(
-              context.messages.taskStatusLabel,
-              style: context.textTheme.bodySmall,
+            ...state.taskStatuses.map(
+              (status) => TaskStatusChip(
+                status,
+                onlySelected: false,
+              ),
             ),
-            const SizedBox(height: 5),
-            Wrap(
-              runSpacing: 8,
-              spacing: 8,
-              children: [
-                ...snapshot.taskStatuses.map(
-                  (status) => TaskStatusChip(
-                    status,
-                    onlySelected: false,
-                  ),
-                ),
-                const TaskStatusAllChip(),
-              ],
-            ),
+            const TaskStatusAllChip(),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 }
 
-class TaskStatusChip extends StatelessWidget {
+class TaskStatusChip extends ConsumerWidget {
   const TaskStatusChip(
     this.status, {
     required this.onlySelected,
@@ -56,71 +55,69 @@ class TaskStatusChip extends StatelessWidget {
   final bool onlySelected;
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        final cubit = context.read<JournalPageCubit>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showTasks = ref.watch(journalPageScopeProvider);
+    final state = ref.watch(journalPageControllerProvider(showTasks));
+    final controller =
+        ref.read(journalPageControllerProvider(showTasks).notifier);
 
-        void onTap() {
-          cubit.toggleSelectedTaskStatus(status);
-          HapticFeedback.heavyImpact();
-        }
+    void onTap() {
+      controller.toggleSelectedTaskStatus(status);
+      HapticFeedback.heavyImpact();
+    }
 
-        void onLongPress() {
-          cubit.selectSingleTaskStatus(status);
-          HapticFeedback.heavyImpact();
-        }
+    void onLongPress() {
+      controller.selectSingleTaskStatus(status);
+      HapticFeedback.heavyImpact();
+    }
 
-        final isSelected = snapshot.selectedTaskStatuses.contains(status);
+    final isSelected = state.selectedTaskStatuses.contains(status);
 
-        if (onlySelected && !isSelected) {
-          return const SizedBox.shrink();
-        }
+    if (onlySelected && !isSelected) {
+      return const SizedBox.shrink();
+    }
 
-        final backgroundColor = taskColorFromStatusString(status);
+    final backgroundColor = taskColorFromStatusString(status);
 
-        return FilterChoiceChip(
-          label: taskLabelFromStatusString(status, context),
-          isSelected: isSelected,
-          onTap: onTap,
-          onLongPress: onLongPress,
-          selectedColor: backgroundColor,
-        );
-      },
+    return FilterChoiceChip(
+      label: taskLabelFromStatusString(status, context),
+      isSelected: isSelected,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      selectedColor: backgroundColor,
     );
   }
 }
 
-class TaskStatusAllChip extends StatelessWidget {
+class TaskStatusAllChip extends ConsumerWidget {
   const TaskStatusAllChip({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, snapshot) {
-        final cubit = context.read<JournalPageCubit>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showTasks = ref.watch(journalPageScopeProvider);
+    final state = ref.watch(journalPageControllerProvider(showTasks));
+    final controller =
+        ref.read(journalPageControllerProvider(showTasks).notifier);
 
-        final isSelected = setsEqual(
-          snapshot.selectedTaskStatuses,
-          snapshot.taskStatuses.toSet(),
-        );
+    final isSelected = setsEqual(
+      state.selectedTaskStatuses,
+      state.taskStatuses.toSet(),
+    );
 
-        void onTap() {
-          if (isSelected) {
-            cubit.clearSelectedTaskStatuses();
-          } else {
-            cubit.selectAllTaskStatuses();
-          }
-          HapticFeedback.heavyImpact();
-        }
+    void onTap() {
+      if (isSelected) {
+        controller.clearSelectedTaskStatuses();
+      } else {
+        controller.selectAllTaskStatuses();
+      }
+      HapticFeedback.heavyImpact();
+    }
 
-        return FilterChoiceChip(
-          label: context.messages.taskStatusAll,
-          isSelected: isSelected,
-          selectedColor: context.colorScheme.secondary,
-          onTap: onTap,
-        );
-      },
+    return FilterChoiceChip(
+      label: context.messages.taskStatusAll,
+      isSelected: isSelected,
+      selectedColor: context.colorScheme.secondary,
+      onTap: onTap,
     );
   }
 }

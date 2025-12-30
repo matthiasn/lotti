@@ -1,13 +1,15 @@
-import 'package:bloc_test/bloc_test.dart';
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -16,8 +18,30 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_helper.dart';
 
-class MockJournalPageCubit extends MockCubit<JournalPageState>
-    implements JournalPageCubit {}
+class FakeJournalPageController extends JournalPageController {
+  FakeJournalPageController(this._initialState);
+
+  final JournalPageState _initialState;
+  final List<String> toggledCategoryIds = [];
+  int selectAllCategoriesCalled = 0;
+
+  @override
+  JournalPageState build(bool showTasks) => _initialState;
+
+  /// Update state for testing - this updates Riverpod's internal state
+  // ignore: use_setters_to_change_properties
+  void updateState(JournalPageState newState) => state = newState;
+
+  @override
+  Future<void> toggleSelectedCategoryIds(String categoryId) async {
+    toggledCategoryIds.add(categoryId);
+  }
+
+  @override
+  Future<void> selectedAllCategories() async {
+    selectAllCategoriesCalled++;
+  }
+}
 
 class MockPagingController extends Mock
     implements PagingController<int, JournalEntity> {}
@@ -25,7 +49,7 @@ class MockPagingController extends Mock
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
-  late MockJournalPageCubit mockCubit;
+  late FakeJournalPageController fakeController;
   late JournalPageState mockState;
   late MockPagingController mockPagingController;
   late MockEntitiesCacheService mockEntitiesCacheService;
@@ -77,7 +101,6 @@ void main() {
       return null;
     });
 
-    mockCubit = MockJournalPageCubit();
     mockPagingController = MockPagingController();
     mockEntitiesCacheService = MockEntitiesCacheService();
 
@@ -97,8 +120,6 @@ void main() {
       selectedLabelIds: const {},
     );
 
-    when(() => mockCubit.state).thenReturn(mockState);
-
     // Set up EntitiesCacheService mock
     when(() => mockEntitiesCacheService.sortedCategories)
         .thenReturn(mockCategories);
@@ -110,18 +131,24 @@ void main() {
 
   tearDown(getIt.reset);
 
-  group('TaskCategoryFilter', () {
-    Widget buildSubject() {
-      return WidgetTestBench(
-        child: BlocProvider<JournalPageCubit>.value(
-          value: mockCubit,
-          child: const TaskCategoryFilter(),
-        ),
-      );
-    }
+  Widget buildWithState(JournalPageState state) {
+    fakeController = FakeJournalPageController(state);
 
+    return WidgetTestBench(
+      child: ProviderScope(
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(true)
+              .overrideWith(() => fakeController),
+        ],
+        child: const TaskCategoryFilter(),
+      ),
+    );
+  }
+
+  group('TaskCategoryFilter', () {
     testWidgets('renders correctly with categories', (tester) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Verify the widget is rendered
@@ -147,7 +174,7 @@ void main() {
 
     testWidgets('toggles between showing favorites and all categories',
         (tester) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Initially, we should see only favorites (2) + unassigned + all + "..." button = 5 chips
@@ -169,7 +196,7 @@ void main() {
 
     testWidgets('calls toggleSelectedCategoryIds when category chip is tapped',
         (tester) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Find a category chip and tap it
@@ -178,27 +205,20 @@ void main() {
       );
       expect(workChip, findsOneWidget);
 
-      // Set up the mock for toggleSelectedCategoryIds call
-      when(() => mockCubit.toggleSelectedCategoryIds('cat1'))
-          .thenAnswer((_) async {});
-
       await tester.tap(workChip);
       await tester.pump();
 
       // Verify that toggleSelectedCategoryIds was called
-      verify(() => mockCubit.toggleSelectedCategoryIds('cat1')).called(1);
+      expect(fakeController.toggledCategoryIds, contains('cat1'));
     });
 
     testWidgets(
         'calls toggleSelectedCategoryIds when unassigned chip is tapped',
         (tester) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Find the unassigned chip by looking for an empty string ID
-      when(() => mockCubit.toggleSelectedCategoryIds(''))
-          .thenAnswer((_) async {});
-
       // Find the unassigned chip - it will be labeled "Unassigned" or similar
       // Since we don't know the exact translation, we'll find it by checking all chips
       final chips =
@@ -222,16 +242,13 @@ void main() {
       await tester.pump();
 
       // Verify that toggleSelectedCategoryIds was called with empty string
-      verify(() => mockCubit.toggleSelectedCategoryIds('')).called(1);
+      expect(fakeController.toggledCategoryIds, contains(''));
     });
 
     testWidgets('calls selectedAllCategories when all chip is tapped',
         (tester) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
-
-      // Set up the mock for selectedAllCategories call
-      when(() => mockCubit.selectedAllCategories()).thenAnswer((_) async {});
 
       // Find the "All" chip
       final allChip = find.byWidgetPredicate(
@@ -245,7 +262,7 @@ void main() {
       await tester.pump();
 
       // Verify that selectedAllCategories was called
-      verify(() => mockCubit.selectedAllCategories()).called(1);
+      expect(fakeController.selectAllCategoriesCalled, 1);
     });
 
     testWidgets('renders unassigned and all chips when no categories',
@@ -253,7 +270,7 @@ void main() {
       // Set up EntitiesCacheService mock to return empty categories
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Verify that the widget is rendered
@@ -294,9 +311,7 @@ void main() {
         selectedLabelIds: const {},
       );
 
-      when(() => mockCubit.state).thenReturn(stateWithUnassigned);
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(stateWithUnassigned));
       await tester.pumpAndSettle();
 
       // Find the unassigned chip
@@ -332,9 +347,7 @@ void main() {
         selectedLabelIds: const {},
       );
 
-      when(() => mockCubit.state).thenReturn(stateWithMultiple);
-
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(stateWithMultiple));
       await tester.pumpAndSettle();
 
       // Find selected chips
@@ -348,7 +361,7 @@ void main() {
     });
 
     testWidgets('displays category colors correctly', (tester) async {
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Find the Work category chip
@@ -384,7 +397,7 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories)
           .thenReturn(allCategories);
 
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Should not find the Hidden category
@@ -398,7 +411,7 @@ void main() {
 
     testWidgets('all chip shows correct selection state', (tester) async {
       // First state - some categories selected
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       var allChip = find.byWidgetPredicate(
@@ -411,7 +424,7 @@ void main() {
       expect(
           tester.widget<FilterChoiceChip>(allChip).isSelected, equals(false));
 
-      // Update state to no categories selected
+      // Update state to no categories selected using the controller
       final stateNoneSelected = JournalPageState(
         match: '',
         tagIds: <String>{},
@@ -427,19 +440,8 @@ void main() {
         selectedLabelIds: const {},
       );
 
-      // Create a new mock cubit with the new state
-      final mockCubitNoSelection = MockJournalPageCubit();
-      when(() => mockCubitNoSelection.state).thenReturn(stateNoneSelected);
-
-      // Rebuild with new cubit
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: BlocProvider<JournalPageCubit>.value(
-            value: mockCubitNoSelection,
-            child: const TaskCategoryFilter(),
-          ),
-        ),
-      );
+      // Update state through the controller (not rebuilding widget tree)
+      fakeController.updateState(stateNoneSelected);
       await tester.pumpAndSettle();
 
       allChip = find.byWidgetPredicate(
@@ -458,7 +460,7 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories)
           .thenReturn(mockCategories);
 
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Initially, only favorites should be visible (Work and Health)
@@ -512,7 +514,7 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories)
           .thenReturn(favoriteCategories);
 
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildWithState(mockState));
       await tester.pumpAndSettle();
 
       // Even with only favorites, ellipsis is shown initially

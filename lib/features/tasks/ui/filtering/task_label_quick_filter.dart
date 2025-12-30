@@ -1,95 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 
-class TaskLabelQuickFilter extends StatelessWidget {
+class TaskLabelQuickFilter extends ConsumerWidget {
   const TaskLabelQuickFilter({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cache = getIt<EntitiesCacheService>();
-    return BlocBuilder<JournalPageCubit, JournalPageState>(
-      builder: (context, state) {
-        final selected = state.selectedLabelIds;
-        if (!state.showTasks || selected.isEmpty) {
-          return const SizedBox.shrink();
-        }
+    final showTasks = ref.watch(journalPageScopeProvider);
+    final state = ref.watch(journalPageControllerProvider(showTasks));
+    final controller =
+        ref.read(journalPageControllerProvider(showTasks).notifier);
 
-        final chips = <Widget>[];
-        for (final labelId in selected) {
-          if (labelId.isEmpty) {
-            chips.add(
-              _QuickFilterChip(
-                label: context.messages.tasksQuickFilterUnassignedLabel,
-                color: Theme.of(context).colorScheme.outlineVariant,
-                onDeleted: () =>
-                    context.read<JournalPageCubit>().toggleSelectedLabelId(''),
-              ),
-            );
-            continue;
-          }
+    final selected = state.selectedLabelIds;
+    if (!state.showTasks || selected.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-          final label = cache.getLabelById(labelId);
-          if (label == null) continue;
-          final color =
-              colorFromCssHex(label.color, substitute: Colors.blueGrey);
-          chips.add(
-            _QuickFilterChip(
-              label: label.name,
-              color: color,
-              onDeleted: () => context
-                  .read<JournalPageCubit>()
-                  .toggleSelectedLabelId(label.id),
-            ),
-          );
-        }
+    final chips = <Widget>[];
+    for (final labelId in selected) {
+      if (labelId.isEmpty) {
+        chips.add(
+          _QuickFilterChip(
+            label: context.messages.tasksQuickFilterUnassignedLabel,
+            color: Theme.of(context).colorScheme.outlineVariant,
+            onDeleted: () => controller.toggleSelectedLabelId(''),
+          ),
+        );
+        continue;
+      }
 
-        final theme = Theme.of(context);
-        final count = selected.length;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      final label = cache.getLabelById(labelId);
+      if (label == null) continue;
+      final color = colorFromCssHex(label.color, substitute: Colors.blueGrey);
+      chips.add(
+        _QuickFilterChip(
+          label: label.name,
+          color: color,
+          onDeleted: () => controller.toggleSelectedLabelId(label.id),
+        ),
+      );
+    }
+
+    final theme = Theme.of(context);
+    final count = selected.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.filter_alt_outlined,
-                  size: 16,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '${context.messages.tasksQuickFilterLabelsActiveTitle} ($count)',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed:
-                      context.read<JournalPageCubit>().clearSelectedLabelIds,
-                  icon: const Icon(Icons.backspace_outlined, size: 16),
-                  label: Text(context.messages.tasksQuickFilterClear),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    textStyle: theme.textTheme.labelSmall,
-                  ),
-                ),
-              ],
+            Icon(
+              Icons.filter_alt_outlined,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: chips,
+            const SizedBox(width: 6),
+            Text(
+              '${context.messages.tasksQuickFilterLabelsActiveTitle} ($count)',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: controller.clearSelectedLabelIds,
+              icon: const Icon(Icons.backspace_outlined, size: 16),
+              label: Text(context.messages.tasksQuickFilterClear),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                textStyle: theme.textTheme.labelSmall,
+              ),
             ),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: chips,
+        ),
+      ],
     );
   }
 }

@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_date_display_toggle.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_label_filter.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_sort_filter.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_filter_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class TaskFilterIcon extends StatelessWidget {
+class TaskFilterIcon extends ConsumerWidget {
   const TaskFilterIcon({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showTasks = ref.watch(journalPageScopeProvider);
+    // Get the parent container to share with the modal
+    final container = ProviderScope.containerOf(context);
+
     return Padding(
       padding: const EdgeInsets.only(right: AppTheme.spacingSmall),
       child: IconButton(
@@ -25,35 +23,18 @@ class TaskFilterIcon extends StatelessWidget {
           ModalUtils.showSinglePageModal<void>(
             context: context,
             title: context.messages.tasksFilterTitle,
-            builder: (_) => const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    JournalFilter(),
-                    SizedBox(width: 10),
-                  ],
-                ),
-                SizedBox(height: 10),
-                TaskSortFilter(),
-                SizedBox(height: 10),
-                TaskDateDisplayToggle(),
-                SizedBox(height: 10),
-                TaskStatusFilter(),
-                TaskPriorityFilter(),
-                TaskCategoryFilter(),
-                TaskLabelFilter(),
-              ],
-            ),
+            builder: (_) => const TaskFilterContent(),
             modalDecorator: (child) {
-              return MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(
-                    value: context.read<JournalPageCubit>(),
-                  ),
-                ],
-                child: child,
+              // Use UncontrolledProviderScope to share the parent container
+              // with overrides for the modal-specific scope value
+              return UncontrolledProviderScope(
+                container: container,
+                child: ProviderScope(
+                  overrides: [
+                    journalPageScopeProvider.overrideWithValue(showTasks),
+                  ],
+                  child: child,
+                ),
               );
             },
           );

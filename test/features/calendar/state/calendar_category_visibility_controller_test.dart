@@ -1,11 +1,13 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/journal/journal_page_state.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/calendar/state/calendar_category_visibility_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -64,7 +66,7 @@ void main() {
         fireImmediately: true,
       );
 
-      final filter = TasksFilter(
+      const filter = TasksFilter(
         selectedCategoryIds: {'category-1', 'category-2'},
       );
 
@@ -140,7 +142,7 @@ void main() {
         fireImmediately: true,
       );
 
-      final filter = TasksFilter(
+      const filter = TasksFilter(
         selectedCategoryIds: {
           'work',
           'personal',
@@ -175,7 +177,7 @@ void main() {
       );
 
       // First update
-      final filter1 = TasksFilter(selectedCategoryIds: {'category-a'});
+      const filter1 = TasksFilter(selectedCategoryIds: {'category-a'});
       settingsStreamController.add([
         SettingsItem(
           configKey: 'TASKS_CATEGORY_FILTERS',
@@ -191,7 +193,7 @@ void main() {
       );
 
       // Second update
-      final filter2 = TasksFilter(selectedCategoryIds: {'category-b'});
+      const filter2 = TasksFilter(selectedCategoryIds: {'category-b'});
       settingsStreamController.add([
         SettingsItem(
           configKey: 'TASKS_CATEGORY_FILTERS',
@@ -207,7 +209,7 @@ void main() {
       );
 
       // Third update - clear selection
-      final filter3 = TasksFilter(selectedCategoryIds: {});
+      const filter3 = TasksFilter(selectedCategoryIds: {});
       settingsStreamController.add([
         SettingsItem(
           configKey: 'TASKS_CATEGORY_FILTERS',
@@ -239,7 +241,7 @@ void main() {
 
     test('returns true for selected categories', () async {
       // Arrange
-      final filter = TasksFilter(
+      const filter = TasksFilter(
         selectedCategoryIds: {'selected-1', 'selected-2'},
       );
       settingsStreamController.add([
@@ -267,7 +269,7 @@ void main() {
         fireImmediately: true,
       );
 
-      final filter = TasksFilter(
+      const filter = TasksFilter(
         selectedCategoryIds: {'selected-category'},
       );
       settingsStreamController.add([
@@ -296,7 +298,7 @@ void main() {
         fireImmediately: true,
       );
 
-      final filterWithUnassigned = TasksFilter(
+      const filterWithUnassigned = TasksFilter(
         selectedCategoryIds: {'category-1', ''},
       );
       settingsStreamController.add([
@@ -326,7 +328,7 @@ void main() {
         fireImmediately: true,
       );
 
-      final filterWithoutUnassigned = TasksFilter(
+      const filterWithoutUnassigned = TasksFilter(
         selectedCategoryIds: {'category-1'},
       );
       settingsStreamController.add([
@@ -349,7 +351,7 @@ void main() {
 
     test('handles empty string categoryId same as null', () async {
       // Arrange
-      final filter = TasksFilter(selectedCategoryIds: {'category-a', ''});
+      const filter = TasksFilter(selectedCategoryIds: {'category-a', ''});
       settingsStreamController.add([
         SettingsItem(
           configKey: 'TASKS_CATEGORY_FILTERS',
@@ -377,7 +379,7 @@ void main() {
         fireImmediately: true,
       );
 
-      final filter = TasksFilter(selectedCategoryIds: {'persistent'});
+      const filter = TasksFilter(selectedCategoryIds: {'persistent'});
       settingsStreamController.add([
         SettingsItem(
           configKey: 'TASKS_CATEGORY_FILTERS',

@@ -1,4 +1,4 @@
-import 'package:lotti/blocs/journal/journal_page_cubit.dart';
+import 'package:lotti/features/journal/utils/entry_types.dart';
 
 /// Computes the allowed entry types based on feature flags.
 ///
