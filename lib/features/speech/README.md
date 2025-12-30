@@ -59,15 +59,28 @@ Immutable state model using Freezed for the recording feature.
 - `language`: Selected language for transcription
 - `linkedId`: Optional ID to link recording to existing entry
 
-#### AudioPlayerCubit (`state/player_cubit.dart`)
-Bloc wrapper around `media_kit` playback. It keeps audio progress, buffering, speed, and play state
+#### AudioPlayerController (`state/audio_player_controller.dart`)
+Riverpod controller wrapping `media_kit` playback. It keeps audio progress, buffering, speed, and play state
 in sync with the UI.
 
 **Responsibilities:**
-- Loads the selected `JournalAudio` asset (`setAudioNote`) and hydrates total duration
+- Loads audio files via `setAudioNote()` and manages playback lifecycle
 - Drives playback (`play`, `pause`, `seek`, `setSpeed`) while clamping progress updates
 - Exposes buffer progress for the custom progress bar
+- Uses `PlayerFactory` provider for dependency injection, enabling testability
 - Emits robust error logging through `LoggingService`
+
+**Key Methods:**
+```dart
+// Load an audio file for playback
+Future<void> setAudioNote(JournalAudio? audio)
+
+// Playback controls
+Future<void> play()
+Future<void> pause()
+Future<void> seek(Duration position)
+Future<void> setSpeed(double speed)
+```
 
 ### Repositories
 
@@ -131,14 +144,13 @@ surface color instead of the dark-mode gradient to keep the card feeling clean.
 
 ### Dependencies
 - **GetIt**: Service locator for dependency injection
-- **Riverpod**: State management
+- **Riverpod**: State management (both recorder and player use Riverpod)
 - **record**: Audio recording functionality
-- **media_kit**: Audio playback (via AudioPlayerCubit)
-- **AudioPlayerRepository**: Audio playback management
+- **media_kit**: Audio playback (via AudioPlayerController)
 
 ### Services Used
 - `LoggingService`: Error and event logging
-- `AudioPlayerCubit`: Pauses playback when recording starts
+- `AudioPlayerController`: Pauses playback when recording starts (via `ref.read()`)
 - `AsrService`: Automatic speech recognition
 - `PersistenceLogic`: Journal entry persistence
 
@@ -159,16 +171,43 @@ surface color instead of the dark-mode gradient to keep the card feeling clean.
 
 ## Testing
 
-The feature has comprehensive test coverage:
+The feature has comprehensive test coverage with Riverpod best practices.
+
+### Testing Architecture
+
+**Dependency Injection for Testability:**
+The `AudioPlayerController` uses a `PlayerFactory` provider for dependency injection, allowing tests to mock the underlying `media_kit` `Player` instance:
+
+```dart
+// In production: creates real Player
+@Riverpod(keepAlive: true)
+PlayerFactory playerFactory(Ref ref) => Player.new;
+
+// In tests: override with mock
+container = ProviderContainer(
+  overrides: [
+    playerFactoryProvider.overrideWithValue(() => mockPlayer),
+  ],
+);
+```
+
+This approach:
+- Tests the **actual production controller**, not a test double
+- Mocks at the **dependency level** (Player), not the controller level
+- Follows Riverpod best practices for provider testing
+- Enables verification of real controller behavior
 
 ### Unit Tests
-- `recorder_controller_test.dart`: State management and recording logic
+- `audio_player_controller_test.dart`: Player state management, playback controls, speed adjustment
+- `recorder_controller_test.dart`: Recording lifecycle, audio player integration
+- `audio_checkbox_settings_test.dart`: Speech recognition and task summary preferences
 - `audio_recorder_repository_test.dart`: Repository functionality
 - `speech_repository_test.dart`: Data persistence and transcription
 - `audio_waveform_service_test.dart`: Waveform extraction, caching lifecycle, cache pruning, and filesystem resilience
 
 ### Widget Tests
 - `audio_recording_modal_test.dart`: Modal UI and interactions
+- `audio_recording_modal_coverage_test.dart`: Additional coverage for buttons and callbacks
 - `audio_recording_indicator_test.dart`: Indicator behavior
 - `analog_vu_meter_test.dart`: VU meter rendering and animations
 - `audio_player_widget_test.dart`: Compact/wide layout, semantics, speed cycling, and scrub-to-seek
