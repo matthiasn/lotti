@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_dashboard.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -17,12 +18,15 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
 
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
 void main() {
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockNotificationService mockNotificationService;
   late MockTagsService mockTagsService;
+  late MockUpdateNotifications mockUpdateNotifications;
 
   setUpAll(() {
     registerFallbackValue(FakeHabitDefinition());
@@ -34,6 +38,7 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockNotificationService = MockNotificationService();
     mockTagsService = mockTagsServiceWithTags([]);
+    mockUpdateNotifications = MockUpdateNotifications();
 
     when(mockJournalDb.watchDashboards).thenAnswer(
       (_) => Stream<List<DashboardDefinition>>.fromIterable([
@@ -47,12 +52,16 @@ void main() {
 
     when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => const Stream<Set<String>>.empty());
+
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<NotificationService>(mockNotificationService)
-      ..registerSingleton<TagsService>(mockTagsService);
+      ..registerSingleton<TagsService>(mockTagsService)
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
   });
 
   tearDown(getIt.reset);

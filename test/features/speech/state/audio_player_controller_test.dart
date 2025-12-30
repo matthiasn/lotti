@@ -190,7 +190,8 @@ void main() {
       );
 
       final stateWithAudio = AudioPlayerState(audioNote: audioNote);
-      final updated = stateWithAudio.copyWith(status: AudioPlayerStatus.playing);
+      final updated =
+          stateWithAudio.copyWith(status: AudioPlayerStatus.playing);
 
       expect(updated.audioNote, equals(audioNote));
       expect(updated.status, equals(AudioPlayerStatus.playing));

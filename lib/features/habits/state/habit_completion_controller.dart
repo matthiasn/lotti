@@ -1,8 +1,7 @@
 import 'dart:async';
 
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
@@ -17,12 +16,10 @@ class HabitCompletionController extends _$HabitCompletionController {
   late final DateTime _rangeEnd;
 
   StreamSubscription<Set<String>>? _updateSubscription;
-  final JournalDb _journalDb = getIt<JournalDb>();
-  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
+  late HabitsRepository _repository;
 
   void listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) async {
+    _updateSubscription = _repository.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(_habitId)) {
         final latest = await _fetch();
         if (latest != state.value) {
@@ -41,6 +38,7 @@ class HabitCompletionController extends _$HabitCompletionController {
     _habitId = habitId;
     _rangeStart = rangeStart;
     _rangeEnd = rangeEnd;
+    _repository = ref.read(habitsRepositoryProvider);
 
     ref
       ..onDispose(() => _updateSubscription?.cancel())
@@ -52,7 +50,7 @@ class HabitCompletionController extends _$HabitCompletionController {
   }
 
   Future<List<HabitResult>> _fetch() async {
-    final entities = await _journalDb.getHabitCompletionsByHabitId(
+    final entities = await _repository.getHabitCompletionsByHabitId(
       habitId: _habitId,
       rangeStart: _rangeStart,
       rangeEnd: _rangeEnd,

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/blocs/habits/habits_cubit.dart';
-import 'package:lotti/blocs/habits/habits_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -16,6 +17,38 @@ import 'package:visibility_detector/visibility_detector.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+
+class MockHabitsController extends HabitsController {
+  MockHabitsController(this._state);
+
+  final HabitsState _state;
+  bool setTimeSpanCalled = false;
+  int? lastTimeSpan;
+
+  @override
+  HabitsState build() => _state;
+
+  @override
+  void setDisplayFilter(HabitDisplayFilter? displayFilter) {}
+
+  @override
+  void toggleShowSearch() {}
+
+  @override
+  void toggleShowTimeSpan() {}
+
+  @override
+  void toggleSelectedCategoryIds(String categoryId) {}
+
+  @override
+  void toggleZeroBased() {}
+
+  @override
+  Future<void> setTimeSpan(int timeSpanDays) async {
+    setTimeSpanCalled = true;
+    lastTimeSpan = timeSpanDays;
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -85,14 +118,21 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('habits page is rendered', (tester) async {
-      final cubit = HabitsCubit()..setDisplayFilter(HabitDisplayFilter.all);
+      final testState = HabitsState.initial().copyWith(
+        habitDefinitions: [habitFlossing, habitFlossingDueLater],
+        openNow: [habitFlossing],
+        pendingLater: [habitFlossingDueLater],
+        displayFilter: HabitDisplayFilter.all,
+      );
 
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BlocProvider<HabitsCubit>(
-            lazy: false,
-            create: (_) => cubit,
-            child: const HabitsTabPage(),
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider
+                .overrideWith(() => MockHabitsController(testState)),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const HabitsTabPage(),
           ),
         ),
       );
@@ -122,6 +162,124 @@ void main() {
 
       await tester.tap(habitCategoryFilterFinder);
       await tester.pumpAndSettle(const Duration(seconds: 2));
+    });
+
+    testWidgets(
+        'renders HabitCompletionCard for openNow habits with openNow filter',
+        (tester) async {
+      final testState = HabitsState.initial().copyWith(
+        habitDefinitions: [habitFlossing, habitFlossingDueLater],
+        openNow: [habitFlossing],
+        pendingLater: [habitFlossingDueLater],
+        completed: [],
+        displayFilter: HabitDisplayFilter.openNow,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider
+                .overrideWith(() => MockHabitsController(testState)),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const HabitsTabPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should have exactly 1 HabitCompletionCard for openNow habit
+      expect(find.byType(HabitCompletionCard), findsOneWidget);
+      // Verify the correct habit card by key
+      expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+    });
+
+    testWidgets(
+        'renders HabitCompletionCard for completed habits with completed filter',
+        (tester) async {
+      final testState = HabitsState.initial().copyWith(
+        habitDefinitions: [habitFlossing, habitFlossingDueLater],
+        openNow: [],
+        pendingLater: [],
+        completed: [habitFlossing],
+        displayFilter: HabitDisplayFilter.completed,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider
+                .overrideWith(() => MockHabitsController(testState)),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const HabitsTabPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should have exactly 1 HabitCompletionCard for completed habit
+      expect(find.byType(HabitCompletionCard), findsOneWidget);
+      expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+    });
+
+    testWidgets(
+        'renders HabitCompletionCard for pendingLater habits with pendingLater filter',
+        (tester) async {
+      final testState = HabitsState.initial().copyWith(
+        habitDefinitions: [habitFlossing, habitFlossingDueLater],
+        openNow: [],
+        pendingLater: [habitFlossingDueLater],
+        completed: [],
+        displayFilter: HabitDisplayFilter.pendingLater,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider
+                .overrideWith(() => MockHabitsController(testState)),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const HabitsTabPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should have exactly 1 HabitCompletionCard for pendingLater habit
+      expect(find.byType(HabitCompletionCard), findsOneWidget);
+      expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
+    });
+
+    testWidgets('does not render cards for empty lists', (tester) async {
+      final testState = HabitsState.initial().copyWith(
+        habitDefinitions: [],
+        openNow: [],
+        pendingLater: [],
+        completed: [],
+        displayFilter: HabitDisplayFilter.all,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider
+                .overrideWith(() => MockHabitsController(testState)),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const HabitsTabPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // No HabitCompletionCards when all lists are empty
+      expect(find.byType(HabitCompletionCard), findsNothing);
     });
   });
 }

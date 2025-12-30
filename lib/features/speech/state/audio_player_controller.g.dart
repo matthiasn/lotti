@@ -26,7 +26,7 @@ final playerFactoryProvider = Provider<PlayerFactory>.internal(
 // ignore: unused_element
 typedef PlayerFactoryRef = ProviderRef<PlayerFactory>;
 String _$audioPlayerControllerHash() =>
-    r'3a2da4d03ef25f519b6fb8e715115ae9b73a6da2';
+    r'cb019704a519d254bd2eae4d6c8426dd101e28cf';
 
 /// Notifier managing audio player state.
 /// Marked as keepAlive since audio state should persist for the entire app

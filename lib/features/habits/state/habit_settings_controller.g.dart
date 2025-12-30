@@ -6,7 +6,7 @@ part of 'habit_settings_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$habitByIdHash() => r'b2fecd5e5320f9a48221af203927cc3d0808a2e6';
+String _$habitByIdHash() => r'404bbb27038f321f68afdede8d5fd13664b47edb';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,21 +30,25 @@ class _SystemHash {
 }
 
 /// Stream provider for watching a habit by ID.
+/// Uses the repository for data access.
 ///
 /// Copied from [habitById].
 @ProviderFor(habitById)
 const habitByIdProvider = HabitByIdFamily();
 
 /// Stream provider for watching a habit by ID.
+/// Uses the repository for data access.
 ///
 /// Copied from [habitById].
 class HabitByIdFamily extends Family<AsyncValue<HabitDefinition?>> {
   /// Stream provider for watching a habit by ID.
+  /// Uses the repository for data access.
   ///
   /// Copied from [habitById].
   const HabitByIdFamily();
 
   /// Stream provider for watching a habit by ID.
+  /// Uses the repository for data access.
   ///
   /// Copied from [habitById].
   HabitByIdProvider call(
@@ -80,10 +84,12 @@ class HabitByIdFamily extends Family<AsyncValue<HabitDefinition?>> {
 }
 
 /// Stream provider for watching a habit by ID.
+/// Uses the repository for data access.
 ///
 /// Copied from [habitById].
 class HabitByIdProvider extends AutoDisposeStreamProvider<HabitDefinition?> {
   /// Stream provider for watching a habit by ID.
+  /// Uses the repository for data access.
   ///
   /// Copied from [habitById].
   HabitByIdProvider(
@@ -169,9 +175,10 @@ class _HabitByIdProviderElement
   String get habitId => (origin as HabitByIdProvider).habitId;
 }
 
-String _$habitDashboardsHash() => r'1ca36922087ac2502d2ca26c2c48e683797cd4d7';
+String _$habitDashboardsHash() => r'0231230b97a64e4b2f299c4eb9cbefca60acf227';
 
 /// Stream provider for dashboards used in habit settings.
+/// Uses the repository for data access.
 ///
 /// Copied from [habitDashboards].
 @ProviderFor(habitDashboards)

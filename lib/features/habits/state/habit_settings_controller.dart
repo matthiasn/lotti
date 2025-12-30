@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/habits/autocomplete_update.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -38,15 +38,19 @@ abstract class HabitSettingsState with _$HabitSettingsState {
 }
 
 /// Stream provider for watching a habit by ID.
+/// Uses the repository for data access.
 @riverpod
 Stream<HabitDefinition?> habitById(Ref ref, String habitId) {
-  return getIt<JournalDb>().watchHabitById(habitId);
+  final repository = ref.watch(habitsRepositoryProvider);
+  return repository.watchHabitById(habitId);
 }
 
 /// Stream provider for dashboards used in habit settings.
+/// Uses the repository for data access.
 @riverpod
 Stream<List<DashboardDefinition>> habitDashboards(Ref ref) {
-  return getIt<JournalDb>().watchDashboards();
+  final repository = ref.watch(habitsRepositoryProvider);
+  return repository.watchDashboards();
 }
 
 /// Creates a new empty HabitDefinition for the create flow.

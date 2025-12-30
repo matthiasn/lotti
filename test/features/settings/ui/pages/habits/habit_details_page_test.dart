@@ -7,6 +7,7 @@ import 'package:lotti/features/settings/ui/pages/habits/habit_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -16,6 +17,8 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +31,7 @@ void main() {
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
   final mockNotificationService = MockNotificationService();
+  final mockUpdateNotifications = MockUpdateNotifications();
 
   group('HabitDetailsPage Widget Tests - ', () {
     setUpAll(() {
@@ -59,6 +63,9 @@ void main() {
         ]),
       );
 
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream<Set<String>>.empty());
+
       mockPersistenceLogic = MockPersistenceLogic();
 
       final mockTagsService = mockTagsServiceWithTags([]);
@@ -78,7 +85,8 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<NotificationService>(mockNotificationService)
-        ..registerSingleton<TagsService>(mockTagsService);
+        ..registerSingleton<TagsService>(mockTagsService)
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
     });
     tearDown(getIt.reset);
 
