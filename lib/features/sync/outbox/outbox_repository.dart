@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 
 abstract class OutboxRepository {
   Future<List<OutboxItem>> fetchPending({int limit = 10});

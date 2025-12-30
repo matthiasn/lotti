@@ -28,7 +28,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          OutboxBadgeIcon(icon: const Icon(testIcon)),
+          const OutboxBadgeIcon(icon: Icon(testIcon)),
           overrides: [
             loginStateStreamProvider.overrideWith(
                 (ref) => Stream<LoginState>.value(LoginState.loggedIn)),
@@ -57,7 +57,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          OutboxBadgeIcon(icon: const Icon(testIcon)),
+          const OutboxBadgeIcon(icon: Icon(testIcon)),
           overrides: [
             loginStateStreamProvider.overrideWith(
               (ref) => Stream<LoginState>.value(LoginState.loggedOut),
