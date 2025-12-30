@@ -483,5 +483,78 @@ void main() {
       habitStreamController.add(null);
       tagsStreamController.add([]);
     });
+
+    test('clears defaultStory when defaultStoryId is removed', () async {
+      // Start with a habit that has a defaultStoryId
+      final habitWithStory = habitFlossing.copyWith(
+        defaultStoryId: testStoryTag1.id,
+      );
+      final completer = Completer<void>();
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        habitSettingsControllerProvider(habitWithStory.id),
+        (_, next) {
+          if (next.defaultStory != null && !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      container.read(
+        habitSettingsControllerProvider(habitWithStory.id).notifier,
+      );
+
+      // Set up habit with story
+      habitStreamController.add(habitWithStory);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      tagsStreamController.add([testStoryTag1]);
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      // Verify defaultStory is set
+      var state = container.read(
+        habitSettingsControllerProvider(habitWithStory.id),
+      );
+      expect(state.defaultStory, isNotNull);
+
+      // Now emit a habit without defaultStoryId
+      final habitWithoutStory = habitFlossing.copyWith(defaultStoryId: null);
+      habitStreamController.add(habitWithoutStory);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Verify defaultStory is cleared
+      state = container.read(
+        habitSettingsControllerProvider(habitWithStory.id),
+      );
+      expect(state.defaultStory, isNull);
+
+      subscription.close();
+    });
+
+    test('removeAutoCompleteRuleAt handles null rule gracefully', () {
+      const testHabitId = 'test-habit-id';
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        habitSettingsControllerProvider(testHabitId).notifier,
+      );
+
+      // Initial state has autoCompleteRule set to null
+      var state = container.read(habitSettingsControllerProvider(testHabitId));
+      expect(state.autoCompleteRule, isNull);
+
+      // Remove at path [0] - calling on null should be safe (no-op)
+      controller.removeAutoCompleteRuleAt([0]);
+
+      state = container.read(habitSettingsControllerProvider(testHabitId));
+      // Should still be null
+      expect(state.autoCompleteRule, isNull);
+    });
   });
 }
