@@ -14,6 +14,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -1749,6 +1750,235 @@ void main() {
           async.flushMicrotasks();
 
           expect(controller.state.selectedTaskStatuses, equals({'DONE'}));
+        });
+      });
+    });
+
+    group('Feature Flag Selection Semantics', () {
+      test('empty selection repopulates with all allowed types on flag change',
+          () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Clear selection to make it empty
+          controller.clearSelectedEntryTypes();
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(controller.selectedEntryTypesInternal, isEmpty);
+
+          // Emit config flags with events enabled
+          configFlagsController.add({enableEventsFlag});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Should repopulate with all allowed types (events enabled)
+          final expectedTypes = computeAllowedEntryTypes(
+            events: true,
+            habits: false,
+            dashboards: false,
+          ).toSet();
+
+          expect(controller.selectedEntryTypesInternal, equals(expectedTypes));
+        });
+      });
+
+      test(
+          'selection with all previously selected adopts new allowed types '
+          'when flags change', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // First emit with no flags - get initial allowed types
+          configFlagsController.add(<String>{});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final initialAllowed = computeAllowedEntryTypes(
+            events: false,
+            habits: false,
+            dashboards: false,
+          ).toSet();
+
+          // Select all allowed types
+          controller.selectAllEntryTypes(initialAllowed.toList());
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(controller.selectedEntryTypesInternal, equals(initialAllowed));
+
+          // Now enable events flag
+          configFlagsController.add({enableEventsFlag});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Should adopt new allowed types (including JournalEvent)
+          final newAllowed = computeAllowedEntryTypes(
+            events: true,
+            habits: false,
+            dashboards: false,
+          ).toSet();
+
+          expect(controller.selectedEntryTypesInternal, equals(newAllowed));
+          expect(
+            controller.selectedEntryTypesInternal,
+            contains('JournalEvent'),
+          );
+        });
+      });
+
+      test('partial selection intersects with new allowed types on flag change',
+          () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // First emit with all flags enabled
+          configFlagsController.add({
+            enableEventsFlag,
+            enableHabitsPageFlag,
+            enableDashboardsPageFlag,
+          });
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Select a partial set including some gated types
+          // JournalEvent (gated by events), HabitCompletionEntry (gated by habits)
+          // Task (always allowed)
+          controller.selectAllEntryTypes([
+            'Task',
+            'JournalEvent',
+            'HabitCompletionEntry',
+          ]);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(
+            controller.selectedEntryTypesInternal,
+            equals({'Task', 'JournalEvent', 'HabitCompletionEntry'}),
+          );
+
+          // Now disable events and habits flags
+          configFlagsController.add(<String>{});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Should intersect - only Task remains (JournalEvent and
+          // HabitCompletionEntry are no longer allowed)
+          expect(controller.selectedEntryTypesInternal, equals({'Task'}));
+          expect(
+            controller.selectedEntryTypesInternal,
+            isNot(contains('JournalEvent')),
+          );
+          expect(
+            controller.selectedEntryTypesInternal,
+            isNot(contains('HabitCompletionEntry')),
+          );
+        });
+      });
+
+      test('enabling new flag adds types when user had all selected', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Start with events only
+          configFlagsController.add({enableEventsFlag});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final eventsAllowed = computeAllowedEntryTypes(
+            events: true,
+            habits: false,
+            dashboards: false,
+          ).toSet();
+
+          // Select all currently allowed types
+          controller.selectAllEntryTypes(eventsAllowed.toList());
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(controller.selectedEntryTypesInternal, equals(eventsAllowed));
+          expect(
+            controller.selectedEntryTypesInternal,
+            isNot(contains('HabitCompletionEntry')),
+          );
+
+          // Now also enable habits
+          configFlagsController.add({enableEventsFlag, enableHabitsPageFlag});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Should include HabitCompletionEntry now
+          expect(
+            controller.selectedEntryTypesInternal,
+            contains('HabitCompletionEntry'),
+          );
+        });
+      });
+
+      test('disabling flag removes types from partial selection', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(false).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Start with dashboards enabled
+          configFlagsController.add({enableDashboardsPageFlag});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Select only dashboard-gated types plus Task
+          controller.selectAllEntryTypes([
+            'Task',
+            'MeasurementEntry',
+            'QuantitativeEntry',
+          ]);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          expect(
+            controller.selectedEntryTypesInternal,
+            equals({'Task', 'MeasurementEntry', 'QuantitativeEntry'}),
+          );
+
+          // Disable dashboards
+          configFlagsController.add(<String>{});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Only Task should remain
+          expect(controller.selectedEntryTypesInternal, equals({'Task'}));
         });
       });
     });

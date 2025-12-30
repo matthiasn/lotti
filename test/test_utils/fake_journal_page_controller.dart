@@ -23,6 +23,7 @@ class FakeJournalPageController extends JournalPageController {
   final List<String> toggledTaskStatuses = [];
   final List<String> toggledPriorities = [];
   final List<String> toggledEntryTypes = [];
+  final List<String> singleEntryTypeCalls = [];
   final List<TaskSortOption> sortOptionCalls = [];
   final List<bool> showCreationDateCalls = [];
   final List<Set<DisplayFilter>> filtersCalls = [];
@@ -117,6 +118,11 @@ class FakeJournalPageController extends JournalPageController {
   }
 
   @override
+  void selectSingleEntryType(String entryType) {
+    singleEntryTypeCalls.add(entryType);
+  }
+
+  @override
   void selectAllEntryTypes([List<String>? types]) {
     selectAllEntryTypesCalled++;
   }
@@ -144,6 +150,7 @@ class FakeJournalPageController extends JournalPageController {
     toggledTaskStatuses.clear();
     toggledPriorities.clear();
     toggledEntryTypes.clear();
+    singleEntryTypeCalls.clear();
     sortOptionCalls.clear();
     showCreationDateCalls.clear();
     filtersCalls.clear();
