@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 class TaskSliverAppBar extends ConsumerWidget {
@@ -61,19 +62,71 @@ class TaskSliverAppBar extends ConsumerWidget {
 
     return SliverAppBar(
       expandedHeight: expandedHeight,
-      leadingWidth: 100,
+      leadingWidth: 52,
       titleSpacing: 0,
       toolbarHeight: 45,
       scrolledUnderElevation: 0,
       elevation: 10,
-      leading: const BackWidget(),
-      actions: _buildActions(context, task),
+      leading: _buildGlassBackButton(context),
+      actions: _buildGlassActions(context, task),
       pinned: true,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
         background: CoverArtBackground(imageId: coverArtId),
       ),
     );
+  }
+
+  Widget _buildGlassBackButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        splashRadius: 20,
+        onPressed: () => Navigator.of(context).maybePop(),
+        icon: const GlassIconContainer(
+          child: Icon(
+            Icons.chevron_left,
+            size: 26,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildGlassActions(BuildContext context, Task task) {
+    return [
+      GlassIconContainer(
+        child: UnifiedAiPopUpMenu(
+          journalEntity: task,
+          linkedFromId: null,
+          iconColor: Colors.white,
+        ),
+      ),
+      const SizedBox(width: 8),
+      IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        splashRadius: 20,
+        onPressed: () => ExtendedHeaderModal.show(
+          context: context,
+          entryId: taskId,
+          linkedFromId: null,
+          link: null,
+          inLinkedEntries: false,
+        ),
+        icon: const GlassIconContainer(
+          child: Icon(
+            Icons.more_horiz,
+            size: 26,
+            color: Colors.white,
+          ),
+        ),
+      ),
+      const SizedBox(width: 10),
+    ];
   }
 
   List<Widget> _buildActions(BuildContext context, Task task) {

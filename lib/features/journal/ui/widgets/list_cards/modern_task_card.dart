@@ -69,15 +69,16 @@ class ModernTaskCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Cover art thumbnail with rounded left corners
-        ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(AppTheme.cardBorderRadius),
-            bottomLeft: Radius.circular(AppTheme.cardBorderRadius),
-          ),
-          child: CoverArtThumbnail(
-            imageId: coverArtId,
-            size: _thumbnailSize,
-            cropX: task.data.coverArtCropX,
+        Padding(
+          padding: const EdgeInsets.only(top: AppTheme.cardPadding * 1.25),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(
+                Radius.circular(AppTheme.cardBorderRadius / 2)),
+            child: CoverArtThumbnail(
+              imageId: coverArtId,
+              size: _thumbnailSize,
+              cropX: task.data.coverArtCropX,
+            ),
           ),
         ),
         const SizedBox(width: 12),

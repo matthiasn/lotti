@@ -18,11 +18,15 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
   const UnifiedAiPopUpMenu({
     required this.journalEntity,
     required this.linkedFromId,
+    this.iconColor,
     super.key,
   });
 
   final JournalEntity journalEntity;
   final String? linkedFromId;
+
+  /// Optional icon color. Defaults to the theme's outline color.
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,7 +41,7 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
       return IconButton(
         icon: Icon(
           Icons.assistant_rounded,
-          color: context.colorScheme.outline,
+          color: iconColor ?? context.colorScheme.outline,
         ),
         onPressed: () => UnifiedAiModal.show<void>(
           context: context,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -8,7 +9,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 export 'package:lotti/features/journal/state/entry_controller.dart'
     show entryControllerProvider;
 
-/// Fake EntryController that returns a fixed entity state.
+/// Fake EntryController that returns a fixed entity state synchronously.
 /// Used for testing providers that depend on entryControllerProvider.
 class FakeEntryController extends EntryController {
   FakeEntryController(this._entity);
@@ -16,14 +17,17 @@ class FakeEntryController extends EntryController {
   final JournalEntity _entity;
 
   @override
-  Future<EntryState?> build({required String id}) async {
-    return EntryState.saved(
-      entryId: id,
-      entry: _entity,
-      showMap: false,
-      isFocused: false,
-      shouldShowEditorToolBar: false,
-      formKey: GlobalKey<FormBuilderState>(),
+  Future<EntryState?> build({required String id}) {
+    // Use SynchronousFuture to ensure the value is available immediately
+    return SynchronousFuture(
+      EntryState.saved(
+        entryId: id,
+        entry: _entity,
+        showMap: false,
+        isFocused: false,
+        shouldShowEditorToolBar: false,
+        formKey: GlobalKey<FormBuilderState>(),
+      ),
     );
   }
 }
