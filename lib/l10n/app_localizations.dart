@@ -5026,6 +5026,30 @@ abstract class AppLocalizations {
   /// **'Due Today'**
   String get taskDueToday;
 
+  /// No description provided for @taskDueTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Tomorrow'**
+  String get taskDueTomorrow;
+
+  /// No description provided for @taskDueYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Yesterday'**
+  String get taskDueYesterday;
+
+  /// No description provided for @taskDueInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Due in {days} days'**
+  String taskDueInDays(int days);
+
+  /// No description provided for @taskOverdueByDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue by {days} days'**
+  String taskOverdueByDays(int days);
+
   /// No description provided for @taskDueDateLabel.
   ///
   /// In en, this message translates to:

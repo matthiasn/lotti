@@ -11,6 +11,7 @@ import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -545,9 +546,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Due date should be shown with event icon
+      // Due date should be shown with event icon and "Due:" prefix
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
-      expect(find.text(DateFormat.MMMd().format(dueDate)), findsOneWidget);
+      expect(
+        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('showDueDate defaults to true', (tester) async {
@@ -567,8 +571,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Default should show due date
-      expect(find.text(DateFormat.MMMd().format(dueDate)), findsOneWidget);
+      // Default should show due date with "Due:" prefix
+      expect(
+        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('does not show due date row when due is null', (tester) async {
@@ -629,7 +636,7 @@ void main() {
 
       // Verify both dates are present
       final creationDateText = DateFormat.yMMMd().format(creationDate);
-      final dueDateText = DateFormat.MMMd().format(dueDate);
+      final dueDateText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
 
       expect(find.text(creationDateText), findsOneWidget);
       expect(find.text(dueDateText), findsOneWidget);
@@ -639,6 +646,51 @@ void main() {
       final dueDateOffset = tester.getTopLeft(find.text(dueDateText));
 
       expect(creationDateOffset.dx, lessThan(dueDateOffset.dx));
+    });
+
+    testWidgets(
+        'tapping due date toggles between absolute and relative display',
+        (tester) async {
+      // Use a date 5 days in the future for testing relative display
+      final now = DateTime.now();
+      final dueDate = DateTime(now.year, now.month, now.day).add(
+        const Duration(days: 5),
+      );
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(due: dueDate),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially shows absolute date
+      final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+      expect(find.text(absoluteText), findsOneWidget);
+
+      // Tap to toggle to relative display
+      await tester.tap(find.byIcon(Icons.event_rounded));
+      await tester.pumpAndSettle();
+
+      // Now shows relative date ("Due in 5 days")
+      expect(find.text(absoluteText), findsNothing);
+      expect(find.textContaining('5'), findsOneWidget);
+
+      // Tap again to toggle back to absolute
+      await tester.tap(find.byIcon(Icons.event_rounded));
+      await tester.pumpAndSettle();
+
+      // Back to absolute
+      expect(find.text(absoluteText), findsOneWidget);
     });
   });
 }

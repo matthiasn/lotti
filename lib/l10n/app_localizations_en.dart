@@ -2685,6 +2685,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskDueToday => 'Due Today';
 
   @override
+  String get taskDueTomorrow => 'Due Tomorrow';
+
+  @override
+  String get taskDueYesterday => 'Due Yesterday';
+
+  @override
+  String taskDueInDays(int days) {
+    return 'Due in $days days';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    return 'Overdue by $days days';
+  }
+
+  @override
   String get taskDueDateLabel => 'Due Date';
 
   @override

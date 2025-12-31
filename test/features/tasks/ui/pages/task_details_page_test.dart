@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -159,9 +159,9 @@ void main() {
 
       // TODO: test that entry text is rendered
 
-      // test entry displays expected date
+      // test entry displays expected date (date only, no time)
       expect(
-        find.text(dfShorter.format(testTask.meta.dateFrom)),
+        find.text(DateFormat.yMMMd().format(testTask.meta.dateFrom)),
         findsOneWidget,
       );
 

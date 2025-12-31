@@ -2705,6 +2705,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskDueToday => 'Heute fällig';
 
   @override
+  String get taskDueTomorrow => 'Morgen fällig';
+
+  @override
+  String get taskDueYesterday => 'Gestern fällig';
+
+  @override
+  String taskDueInDays(int days) {
+    return 'Fällig in $days Tagen';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    return '$days Tage überfällig';
+  }
+
+  @override
   String get taskDueDateLabel => 'Fälligkeitsdatum';
 
   @override

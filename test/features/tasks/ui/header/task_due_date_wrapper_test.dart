@@ -95,8 +95,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify the due date is displayed in MMMd format
-      expect(find.text(DateFormat.MMMd().format(dueDate)), findsOneWidget);
+      // Verify the due date is displayed in yMMMd format (with year)
+      expect(find.text(DateFormat.yMMMd().format(dueDate)), findsOneWidget);
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
     });
 

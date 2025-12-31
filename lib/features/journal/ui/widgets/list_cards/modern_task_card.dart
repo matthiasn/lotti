@@ -38,6 +38,12 @@ class ModernTaskCard extends StatelessWidget {
         horizontal: 12,
         vertical: AppTheme.cardSpacing / 2,
       ),
+      padding: const EdgeInsets.only(
+        left: AppTheme.cardPadding,
+        top: AppTheme.cardPadding,
+        right: AppTheme.cardPadding,
+        bottom: 10,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -65,19 +71,31 @@ class ModernTaskCard extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(top: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // LEFT: Creation date
+          // LEFT: Creation date with icon for alignment
           if (hasCreationDate)
-            Text(
-              DateFormat.yMMMd().format(task.meta.dateFrom),
-              style: context.textTheme.bodySmall?.copyWith(
-                fontSize: fontSizeSmall,
-                color:
-                    context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: AppTheme.statusIndicatorFontSize,
+                  color: context.colorScheme.onSurfaceVariant
+                      .withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  DateFormat.yMMMd().format(task.meta.dateFrom),
+                  style: context.textTheme.bodySmall?.copyWith(
+                    fontSize: AppTheme.statusIndicatorFontSize,
+                    color: context.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
             )
           else
             const SizedBox.shrink(),
@@ -187,16 +205,29 @@ class ModernTaskCard extends StatelessWidget {
   }
 }
 
-/// Widget to display due date with color coding for overdue/today status
-class _DueDateText extends StatelessWidget {
+/// Widget to display due date with color coding for overdue/today status.
+/// Supports tapping to toggle between absolute (e.g., "Dec 24, 2025") and
+/// relative (e.g., "Due in 5 days") date display.
+class _DueDateText extends StatefulWidget {
   const _DueDateText({required this.dueDate});
 
   final DateTime dueDate;
 
+  @override
+  State<_DueDateText> createState() => _DueDateTextState();
+}
+
+class _DueDateTextState extends State<_DueDateText> {
+  bool _showRelative = false;
+
   Color _getColor(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final dueDateDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    final dueDateDay = DateTime(
+      widget.dueDate.year,
+      widget.dueDate.month,
+      widget.dueDate.day,
+    );
 
     if (dueDateDay.isBefore(today)) {
       return taskStatusRed; // Overdue
@@ -207,38 +238,74 @@ class _DueDateText extends StatelessWidget {
     return context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
   }
 
-  String _getText(BuildContext context) {
+  String _getAbsoluteText(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final dueDateDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    final dueDateDay = DateTime(
+      widget.dueDate.year,
+      widget.dueDate.month,
+      widget.dueDate.day,
+    );
 
     if (dueDateDay == today) {
       return context.messages.taskDueToday;
     }
-    return DateFormat.MMMd().format(dueDate);
+    // Include year for clarity, with "Due:" prefix
+    return 'Due: ${DateFormat.yMMMd().format(widget.dueDate)}';
+  }
+
+  String _getRelativeText(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDateDay = DateTime(
+      widget.dueDate.year,
+      widget.dueDate.month,
+      widget.dueDate.day,
+    );
+
+    final difference = dueDateDay.difference(today).inDays;
+
+    if (difference == 0) {
+      return context.messages.taskDueToday;
+    } else if (difference == 1) {
+      return context.messages.taskDueTomorrow;
+    } else if (difference == -1) {
+      return context.messages.taskDueYesterday;
+    } else if (difference > 1) {
+      return context.messages.taskDueInDays(difference);
+    } else {
+      // Overdue by multiple days
+      return context.messages.taskOverdueByDays(-difference);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final color = _getColor(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.event_rounded,
-          size: fontSizeSmall,
-          color: color,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          _getText(context),
-          style: context.textTheme.bodySmall?.copyWith(
-            fontSize: fontSizeSmall,
+    final text =
+        _showRelative ? _getRelativeText(context) : _getAbsoluteText(context);
+
+    return GestureDetector(
+      onTap: () => setState(() => _showRelative = !_showRelative),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.event_rounded,
+            size: AppTheme.statusIndicatorFontSize,
             color: color,
-            fontWeight: FontWeight.w500,
           ),
-        ),
-      ],
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: context.textTheme.bodySmall?.copyWith(
+              fontSize: AppTheme.statusIndicatorFontSize,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

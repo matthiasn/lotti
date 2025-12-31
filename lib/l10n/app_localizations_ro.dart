@@ -2697,6 +2697,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskDueToday => 'Scadent astăzi';
 
   @override
+  String get taskDueTomorrow => 'Scadent mâine';
+
+  @override
+  String get taskDueYesterday => 'Scadent ieri';
+
+  @override
+  String taskDueInDays(int days) {
+    return 'Scadent în $days zile';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    return 'Întârziat cu $days zile';
+  }
+
+  @override
   String get taskDueDateLabel => 'Data scadenței';
 
   @override

@@ -429,6 +429,24 @@
   "tasksShowCreationDate": "Afficher la date de création sur les cartes",
   "tasksShowDueDate": "Afficher la date d'échéance sur les cartes",
   "taskDueToday": "Échéance aujourd'hui",
+  "taskDueTomorrow": "Échéance demain",
+  "taskDueYesterday": "Échéance hier",
+  "taskDueInDays": "Échéance dans {days} jours",
+  "@taskDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskOverdueByDays": "En retard de {days} jours",
+  "@taskOverdueByDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "taskDueDateLabel": "Date d'échéance",
   "taskNoDueDateLabel": "Pas de date d'échéance",
   "clearButton": "Effacer"

@@ -2708,6 +2708,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskDueToday => 'Échéance aujourd\'hui';
 
   @override
+  String get taskDueTomorrow => 'Échéance demain';
+
+  @override
+  String get taskDueYesterday => 'Échéance hier';
+
+  @override
+  String taskDueInDays(int days) {
+    return 'Échéance dans $days jours';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    return 'En retard de $days jours';
+  }
+
+  @override
   String get taskDueDateLabel => 'Date d\'échéance';
 
   @override

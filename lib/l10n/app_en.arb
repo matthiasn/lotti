@@ -981,6 +981,24 @@
   "tasksShowCreationDate": "Show creation date on cards",
   "tasksShowDueDate": "Show due date on cards",
   "taskDueToday": "Due Today",
+  "taskDueTomorrow": "Due Tomorrow",
+  "taskDueYesterday": "Due Yesterday",
+  "taskDueInDays": "Due in {days} days",
+  "@taskDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskOverdueByDays": "Overdue by {days} days",
+  "@taskOverdueByDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "taskDueDateLabel": "Due Date",
   "taskNoDueDateLabel": "No due date",
   "clearButton": "Clear",

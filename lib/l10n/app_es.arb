@@ -428,6 +428,24 @@
   "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas",
   "tasksShowDueDate": "Mostrar fecha de vencimiento en tarjetas",
   "taskDueToday": "Vence hoy",
+  "taskDueTomorrow": "Vence mañana",
+  "taskDueYesterday": "Venció ayer",
+  "taskDueInDays": "Vence en {days} días",
+  "@taskDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskOverdueByDays": "Atrasado {days} días",
+  "@taskOverdueByDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "taskDueDateLabel": "Fecha de vencimiento",
   "taskNoDueDateLabel": "Sin fecha de vencimiento",
   "clearButton": "Borrar"
