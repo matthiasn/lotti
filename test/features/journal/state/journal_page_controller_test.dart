@@ -1031,6 +1031,33 @@ void main() {
         });
       });
 
+      test('loads persisted filters with byDueDate sort option', () {
+        fakeAsync((async) {
+          final persistedFilter = jsonEncode({
+            'selectedCategoryIds': ['cat1'],
+            'selectedTaskStatuses': ['OPEN'],
+            'selectedLabelIds': <String>[],
+            'selectedPriorities': <String>[],
+            'sortOption': 'byDueDate',
+            'showCreationDate': false,
+            'showDueDate': true,
+          });
+
+          when(
+            () => mockSettingsDb
+                .itemByKey(JournalPageController.tasksCategoryFiltersKey),
+          ).thenAnswer((_) async => persistedFilter);
+
+          container.read(journalPageControllerProvider(true));
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.sortOption, equals(TaskSortOption.byDueDate));
+        });
+      });
+
       test('loads persisted filters from journal per-tab key', () {
         fakeAsync((async) {
           final persistedFilter = jsonEncode({
@@ -2203,6 +2230,90 @@ void main() {
           final items = state.pagingController?.value.items ?? [];
 
           // Task with due date should be first
+          expect(items.length, 2);
+          expect((items[0] as Task).meta.id, 'task-with-due');
+          expect((items[1] as Task).meta.id, 'task-without-due');
+        });
+      });
+
+      test(
+          'byDueDate keeps task with due date first when already in correct order',
+          () {
+        fakeAsync((async) {
+          // This test ensures the else if (aHasDue) branch is covered
+          // by providing input where task with due date comes first
+          final taskWithDue = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_1',
+                createdAt: DateTime(2024, 1, 1),
+                utcOffset: 0,
+              ),
+              title: 'Task with due date',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 1, 1),
+              dateTo: DateTime(2024, 1, 1),
+              due: DateTime(2024, 6, 15),
+            ),
+            meta: Metadata(
+              id: 'task-with-due',
+              createdAt: DateTime(2024, 1, 1),
+              dateFrom: DateTime(2024, 1, 1),
+              dateTo: DateTime(2024, 1, 1),
+              updatedAt: DateTime(2024, 1, 1),
+            ),
+          );
+
+          final taskWithoutDue = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_2',
+                createdAt: DateTime(2024, 1, 2),
+                utcOffset: 0,
+              ),
+              title: 'Task without due date',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 1, 2),
+              dateTo: DateTime(2024, 1, 2),
+            ),
+            meta: Metadata(
+              id: 'task-without-due',
+              createdAt: DateTime(2024, 1, 2),
+              dateFrom: DateTime(2024, 1, 2),
+              dateTo: DateTime(2024, 1, 2),
+              updatedAt: DateTime(2024, 1, 2),
+            ),
+          );
+
+          // Return tasks already in correct order (with due first)
+          // This exercises the comparison when a has due and b doesn't
+          when(() => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              )).thenAnswer((_) async => [taskWithDue, taskWithoutDue]);
+
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setSortOption(TaskSortOption.byDueDate);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          final items = state.pagingController?.value.items ?? [];
+
+          // Order should remain: task with due date first
           expect(items.length, 2);
           expect((items[0] as Task).meta.id, 'task-with-due');
           expect((items[1] as Task).meta.id, 'task-without-due');
