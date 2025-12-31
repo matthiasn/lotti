@@ -133,7 +133,8 @@ class TaskSliverAppBar extends ConsumerWidget {
 
   List<Widget> _buildActions(BuildContext context, Task task) {
     return [
-      UnifiedAiPopUpMenu(journalEntity: task, linkedFromId: null),
+      GlassIconContainer(
+          child: UnifiedAiPopUpMenu(journalEntity: task, linkedFromId: null)),
       IconButton(
         icon: Icon(
           Icons.more_horiz,

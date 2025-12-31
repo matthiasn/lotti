@@ -120,9 +120,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // When the file doesn't exist, it should show a Container instead
-      expect(find.byType(Container), findsOneWidget);
-      expect(find.byType(SizedBox), findsNothing);
+      // When the file doesn't exist, it should show a SizedBox.shrink
+      expect(find.byType(SizedBox), findsOneWidget);
     });
 
     testWidgets('uses provided BoxFit parameter', (WidgetTester tester) async {

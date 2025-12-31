@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -32,14 +33,58 @@ class CoverArtThumbnail extends ConsumerStatefulWidget {
 }
 
 class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail> {
-  int retries = 0;
+  StreamSubscription<FileSystemEvent>? _watcher;
+  String? _watchedPath;
+  bool _fileExists = false;
+
+  void _setupWatcher(String path) {
+    // Skip in tests where file watching isn't needed
+    if (isTestEnv) {
+      _fileExists = File(path).existsSync();
+      return;
+    }
+
+    // Already watching this path
+    if (_watchedPath == path) return;
+
+    // Clean up previous watcher
+    _watcher?.cancel();
+    _watcher = null;
+    _watchedPath = path;
+
+    final file = File(path);
+    if (file.existsSync()) {
+      _fileExists = true;
+      return;
+    }
+
+    _fileExists = false;
+
+    // Watch parent directory for file creation
+    final dir = file.parent;
+    if (!dir.existsSync()) return;
+
+    _watcher = dir.watch().listen((event) {
+      if (event.path == path && mounted) {
+        _watcher?.cancel();
+        _watcher = null;
+        setState(() => _fileExists = true);
+      }
+    });
+  }
 
   @override
   void didUpdateWidget(CoverArtThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageId != widget.imageId) {
-      retries = 0;
+      _watchedPath = null; // Force re-setup on next build
     }
+  }
+
+  @override
+  void dispose() {
+    _watcher?.cancel();
+    super.dispose();
   }
 
   @override
@@ -51,19 +96,10 @@ class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail> {
       return SizedBox(width: widget.size, height: widget.size);
     }
 
-    final file = File(getFullImagePath(entry));
+    final path = getFullImagePath(entry);
+    _setupWatcher(path);
 
-    if (!isTestEnv && retries < 10 && !file.existsSync()) {
-      Future<void>.delayed(const Duration(milliseconds: 200)).then((_) {
-        if (mounted) {
-          setState(() {
-            retries++;
-          });
-        }
-      });
-    }
-
-    if (!file.existsSync()) {
+    if (!_fileExists) {
       return SizedBox(width: widget.size, height: widget.size);
     }
 
@@ -79,8 +115,7 @@ class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail> {
           fit: BoxFit.cover,
           alignment: Alignment(alignmentX, 0),
           child: Image.file(
-            file,
-            key: Key('${file.path}-$retries'),
+            File(path),
             cacheHeight: (widget.size * 3).toInt(),
           ),
         ),

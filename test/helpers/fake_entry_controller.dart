@@ -51,7 +51,9 @@ class CoverArtCallTracker {
 /// Fake EntryController that tracks setCoverArt calls and updates state.
 /// Used for behavioral testing of cover art functionality.
 class TrackingFakeEntryController extends FakeEntryController {
-  TrackingFakeEntryController(super.entity, this._tracker);
+  // ignore: use_super_parameters, parent uses private `_entity` field
+  TrackingFakeEntryController(JournalEntity entity, this._tracker)
+      : super(entity);
 
   final CoverArtCallTracker _tracker;
   JournalEntity? _currentEntity;
