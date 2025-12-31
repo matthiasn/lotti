@@ -59,119 +59,112 @@ class AiInputRepository {
   }
 
   Future<AiInputTaskObject?> generate(String id) async {
-    // Keep provider alive during the generation operation
-    final keepAliveLink = ref.keepAlive();
+    // Provider is keepAlive, so ref is always valid - no keepAlive() needed
+    final progressRepository = ref.read(taskProgressRepositoryProvider);
 
-    try {
-      // Capture dependencies upfront before any async gaps
-      final progressRepository = ref.read(taskProgressRepositoryProvider);
+    final entry = await getEntity(id);
 
-      final entry = await getEntity(id);
-
-      if (entry is! Task) {
-        return null;
-      }
-
-      final task = entry;
-      final timeSpent =
-          await _calculateTimeSpentWithRepo(task.id, progressRepository);
-
-      final logEntries = <AiInputLogEntryObject>[];
-      final linkedEntities = await _db.getLinkedEntities(id);
-
-      for (final linked in linkedEntities) {
-        if (linked is JournalEntry ||
-            linked is JournalImage ||
-            linked is JournalAudio) {
-          String? audioTranscript;
-          String? transcriptLanguage;
-          String? entryType;
-          final editedText = linked.entryText?.plainText;
-          // An explicit edit (even to empty string) takes precedence over transcript
-          final hasEditedText = editedText != null;
-
-          if (linked is JournalAudio) {
-            entryType = 'audio';
-            // Only include original transcript if user hasn't edited the text.
-            // When entryText exists, it represents the user's corrections and
-            // should take precedence over the raw transcript.
-            if (!hasEditedText) {
-              final transcripts = linked.data.transcripts;
-              if (transcripts != null && transcripts.isNotEmpty) {
-                final latestTranscript = transcripts.last;
-                audioTranscript = latestTranscript.transcript;
-                transcriptLanguage = latestTranscript.detectedLanguage;
-              }
-            }
-          } else if (linked is JournalImage) {
-            entryType = 'image';
-          } else if (linked is JournalEntry) {
-            entryType = 'text';
-          }
-
-          logEntries.add(
-            AiInputLogEntryObject(
-              creationTimestamp: linked.meta.dateFrom,
-              loggedDuration: formatHhMm(entryDuration(linked)),
-              text: editedText ?? '',
-              audioTranscript: audioTranscript,
-              transcriptLanguage: transcriptLanguage,
-              entryType: entryType,
-            ),
-          );
-        }
-      }
-
-      final checklistIds = task.data.checklistIds ?? [];
-
-      final checklistItems = <ChecklistItemData>[];
-      for (final checklistId in checklistIds) {
-        final checklist = await _db.journalEntityById(checklistId);
-        if (checklist != null && checklist is Checklist) {
-          final checklistItemIds = checklist.data.linkedChecklistItems;
-          for (final checklistItemId in checklistItemIds) {
-            final checklistItem = await _db.journalEntityById(checklistItemId);
-            if (checklistItem != null && checklistItem is ChecklistItem) {
-              final data = checklistItem.data.copyWith(id: checklistItemId);
-              checklistItems.add(data);
-            }
-          }
-        }
-      }
-
-      final actionItems = checklistItems
-          .map(
-            (item) => AiActionItem(
-              title: item.title,
-              completed: item.isChecked,
-              id: item.id,
-            ),
-          )
-          .toList();
-
-      final aiInput = AiInputTaskObject(
-        title: task.data.title,
-        status: task.data.status.map(
-          open: (_) => 'OPEN',
-          groomed: (_) => 'GROOMED',
-          inProgress: (_) => 'IN PROGRESS',
-          blocked: (_) => 'BLOCKED',
-          onHold: (_) => 'ON HOLD',
-          done: (_) => 'DONE',
-          rejected: (_) => 'REJECTED',
-        ),
-        creationDate: task.meta.createdAt,
-        actionItems: actionItems,
-        logEntries: logEntries,
-        estimatedDuration: formatHhMm(task.data.estimate ?? Duration.zero),
-        timeSpent: formatHhMm(timeSpent),
-        languageCode: task.data.languageCode,
-      );
-
-      return aiInput;
-    } finally {
-      keepAliveLink.close();
+    if (entry is! Task) {
+      return null;
     }
+
+    final task = entry;
+    final timeSpent =
+        await _calculateTimeSpentWithRepo(task.id, progressRepository);
+
+    final logEntries = <AiInputLogEntryObject>[];
+    final linkedEntities = await _db.getLinkedEntities(id);
+
+    for (final linked in linkedEntities) {
+      if (linked is JournalEntry ||
+          linked is JournalImage ||
+          linked is JournalAudio) {
+        String? audioTranscript;
+        String? transcriptLanguage;
+        String? entryType;
+        final editedText = linked.entryText?.plainText;
+        // An explicit edit (even to empty string) takes precedence over transcript
+        final hasEditedText = editedText != null;
+
+        if (linked is JournalAudio) {
+          entryType = 'audio';
+          // Only include original transcript if user hasn't edited the text.
+          // When entryText exists, it represents the user's corrections and
+          // should take precedence over the raw transcript.
+          if (!hasEditedText) {
+            final transcripts = linked.data.transcripts;
+            if (transcripts != null && transcripts.isNotEmpty) {
+              final latestTranscript = transcripts.last;
+              audioTranscript = latestTranscript.transcript;
+              transcriptLanguage = latestTranscript.detectedLanguage;
+            }
+          }
+        } else if (linked is JournalImage) {
+          entryType = 'image';
+        } else if (linked is JournalEntry) {
+          entryType = 'text';
+        }
+
+        logEntries.add(
+          AiInputLogEntryObject(
+            creationTimestamp: linked.meta.dateFrom,
+            loggedDuration: formatHhMm(entryDuration(linked)),
+            text: editedText ?? '',
+            audioTranscript: audioTranscript,
+            transcriptLanguage: transcriptLanguage,
+            entryType: entryType,
+          ),
+        );
+      }
+    }
+
+    final checklistIds = task.data.checklistIds ?? [];
+
+    final checklistItems = <ChecklistItemData>[];
+    for (final checklistId in checklistIds) {
+      final checklist = await _db.journalEntityById(checklistId);
+      if (checklist != null && checklist is Checklist) {
+        final checklistItemIds = checklist.data.linkedChecklistItems;
+        for (final checklistItemId in checklistItemIds) {
+          final checklistItem = await _db.journalEntityById(checklistItemId);
+          if (checklistItem != null && checklistItem is ChecklistItem) {
+            final data = checklistItem.data.copyWith(id: checklistItemId);
+            checklistItems.add(data);
+          }
+        }
+      }
+    }
+
+    final actionItems = checklistItems
+        .map(
+          (item) => AiActionItem(
+            title: item.title,
+            completed: item.isChecked,
+            id: item.id,
+          ),
+        )
+        .toList();
+
+    final aiInput = AiInputTaskObject(
+      title: task.data.title,
+      status: task.data.status.map(
+        open: (_) => 'OPEN',
+        groomed: (_) => 'GROOMED',
+        inProgress: (_) => 'IN PROGRESS',
+        blocked: (_) => 'BLOCKED',
+        onHold: (_) => 'ON HOLD',
+        done: (_) => 'DONE',
+        rejected: (_) => 'REJECTED',
+      ),
+      creationDate: task.meta.createdAt,
+      actionItems: actionItems,
+      logEntries: logEntries,
+      estimatedDuration: formatHhMm(task.data.estimate ?? Duration.zero),
+      timeSpent: formatHhMm(timeSpent),
+      languageCode: task.data.languageCode,
+    );
+
+    return aiInput;
   }
 
   Future<String?> buildTaskDetailsJson({required String id}) async {
@@ -396,7 +389,7 @@ class AiInputRepository {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 AiInputRepository aiInputRepository(Ref ref) {
   return AiInputRepository(ref);
 }

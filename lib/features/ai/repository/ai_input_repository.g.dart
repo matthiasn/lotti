@@ -22,7 +22,7 @@ final class AiInputRepositoryProvider extends $FunctionalProvider<
           argument: null,
           retry: null,
           name: r'aiInputRepositoryProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -50,4 +50,4 @@ final class AiInputRepositoryProvider extends $FunctionalProvider<
   }
 }
 
-String _$aiInputRepositoryHash() => r'72356d962f33b02c178cb29e53700721881021e1';
+String _$aiInputRepositoryHash() => r'e51003db310e1baa103851d163173a2acf68976c';
