@@ -6,7 +6,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/cards/subtle_action_chip.dart';
 
 class TaskDueDateWrapper extends ConsumerWidget {
   const TaskDueDateWrapper({
@@ -16,19 +16,20 @@ class TaskDueDateWrapper extends ConsumerWidget {
 
   final String taskId;
 
-  Color _getDueDateColor(BuildContext context, DateTime? dueDate) {
-    if (dueDate == null) return context.colorScheme.outline;
+  /// Returns (isUrgent, urgentColor) based on due date status
+  (bool, Color?) _getDueDateStatus(BuildContext context, DateTime? dueDate) {
+    if (dueDate == null) return (false, null);
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final dueDateDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
 
     if (dueDateDay.isBefore(today)) {
-      return taskStatusRed; // Overdue
+      return (true, taskStatusRed); // Overdue
     } else if (dueDateDay == today) {
-      return taskStatusOrange; // Due today
+      return (true, taskStatusOrange); // Due today
     }
-    return context.colorScheme.outline;
+    return (false, null);
   }
 
   @override
@@ -41,9 +42,13 @@ class TaskDueDateWrapper extends ConsumerWidget {
     if (task is! Task) return const SizedBox.shrink();
 
     final dueDate = task.data.due;
-    final color = _getDueDateColor(context, dueDate);
+    final (isUrgent, urgentColor) = _getDueDateStatus(context, dueDate);
 
-    return InkWell(
+    final label = dueDate != null
+        ? 'Due: ${DateFormat.yMMMd().format(dueDate)}'
+        : context.messages.taskNoDueDateLabel;
+
+    return GestureDetector(
       onTap: () async {
         await showDueDatePicker(
           context: context,
@@ -57,25 +62,11 @@ class TaskDueDateWrapper extends ConsumerWidget {
           },
         );
       },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.event_rounded,
-            size: AppTheme.statusIndicatorIconSizeCompact,
-            color: color,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            dueDate != null
-                ? 'Due: ${DateFormat.yMMMd().format(dueDate)}'
-                : context.messages.taskNoDueDateLabel,
-            style: context.textTheme.titleSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+      child: SubtleActionChip(
+        label: label,
+        icon: Icons.event_rounded,
+        isUrgent: isUrgent,
+        urgentColor: urgentColor,
       ),
     );
   }

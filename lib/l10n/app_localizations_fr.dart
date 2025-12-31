@@ -2769,6 +2769,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksLabelsHeaderEditTooltip => 'Edit labels';
 
   @override
+  String get tasksAddLabelButton => 'Add Label';
+
+  @override
   String get tasksLabelsNoLabels => 'No labels';
 
   @override

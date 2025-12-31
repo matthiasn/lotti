@@ -1014,6 +1014,7 @@
   "editorInsertDivider": "Insert divider",
   "tasksLabelsHeaderTitle": "Labels",
   "tasksLabelsHeaderEditTooltip": "Edit labels",
+  "tasksAddLabelButton": "Add Label",
   "tasksLabelsNoLabels": "No labels",
   "tasksLabelsDialogClose": "Close",
   "tasksLabelsSheetTitle": "Select labels",

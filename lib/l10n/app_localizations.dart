@@ -5140,6 +5140,12 @@ abstract class AppLocalizations {
   /// **'Edit labels'**
   String get tasksLabelsHeaderEditTooltip;
 
+  /// No description provided for @tasksAddLabelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Label'**
+  String get tasksAddLabelButton;
+
   /// No description provided for @tasksLabelsNoLabels.
   ///
   /// In en, this message translates to:

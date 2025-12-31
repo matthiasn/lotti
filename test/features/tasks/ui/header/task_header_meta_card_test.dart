@@ -150,5 +150,4 @@ void main() {
     expect(find.byType(TaskCategoryWrapper), findsOneWidget);
     expect(find.byType(TaskLanguageWrapper), findsOneWidget);
   });
-
 }

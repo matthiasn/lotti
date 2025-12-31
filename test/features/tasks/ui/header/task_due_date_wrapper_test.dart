@@ -146,9 +146,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify icon has red color
+      // Verify icon has red-tinted color (SubtleActionChip applies alpha)
       final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
-      expect(icon.color, taskStatusRed);
+      expect(icon.color?.r, taskStatusRed.r);
+      expect(icon.color?.g, taskStatusRed.g);
+      expect(icon.color?.b, taskStatusRed.b);
     });
 
     testWidgets('shows orange color for tasks due today', (tester) async {
@@ -171,9 +173,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify icon has orange color
+      // Verify icon has orange-tinted color (SubtleActionChip applies alpha)
       final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
-      expect(icon.color, taskStatusOrange);
+      expect(icon.color?.r, taskStatusOrange.r);
+      expect(icon.color?.g, taskStatusOrange.g);
+      expect(icon.color?.b, taskStatusOrange.b);
     });
 
     testWidgets('shows outline color for future due dates', (tester) async {

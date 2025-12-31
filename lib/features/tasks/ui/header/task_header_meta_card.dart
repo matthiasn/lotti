@@ -20,15 +20,18 @@ class TaskHeaderMetaCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Row 1: Primary Status (High Visibility Chips)
+        _TaskMetadataRow(taskId: taskId),
+        const SizedBox(height: 12),
+        // Row 2: Dates (Subtle Action Chips)
         Row(
+          spacing: 8,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TaskCreationDateWidget(taskId: taskId),
             TaskDueDateWrapper(taskId: taskId),
           ],
         ),
-        const SizedBox(height: 12),
-        _TaskMetadataRow(taskId: taskId),
       ],
     );
   }

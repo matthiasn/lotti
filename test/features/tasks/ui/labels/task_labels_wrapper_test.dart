@@ -279,7 +279,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    expect(find.text('Labels'), findsOneWidget);
+    expect(find.text('Add Label'), findsOneWidget);
     expect(find.text('Urgent'), findsOneWidget);
   });
 
@@ -295,7 +295,7 @@ void main() {
     expect(find.text('Requires immediate attention'), findsOneWidget);
   });
 
-  testWidgets('opens selector sheet from edit icon', (tester) async {
+  testWidgets('opens selector sheet from add label button', (tester) async {
     final task = taskWithLabels(['label-1']);
     when(
       () => repository.setLabels(
@@ -307,7 +307,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     // Verify modal opened by checking for the sticky action bar button
@@ -322,7 +322,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     final content = tester.widget<LabelSelectionModalContent>(
@@ -338,7 +338,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     final content = tester.widget<LabelSelectionModalContent>(
@@ -354,8 +354,8 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    // Tap edit to open selector
-    await tester.tap(find.byTooltip('Edit labels'));
+    // Tap add label button to open selector
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     // Verify modal content receives the task's categoryId
@@ -372,7 +372,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    expect(find.text('Labels'), findsNothing);
+    expect(find.text('Add Label'), findsNothing);
   });
 
   testWidgets('shows wrapper when labels available even if none assigned',
@@ -384,7 +384,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    expect(find.text('Labels'), findsOneWidget);
+    expect(find.text('Add Label'), findsOneWidget);
   });
 
   testWidgets('does not show long-press dialog when no description',
@@ -424,7 +424,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
@@ -448,7 +448,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
@@ -501,7 +501,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     // Enter search text in the LottiSearchBar
@@ -524,7 +524,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     // Enter and then clear search
@@ -556,7 +556,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Edit labels'));
+    await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
     // Select a label
