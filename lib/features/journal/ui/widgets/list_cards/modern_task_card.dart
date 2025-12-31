@@ -18,7 +18,7 @@ import 'package:lotti/widgets/cards/index.dart';
 /// A modern task card with gradient styling matching the settings page design.
 ///
 /// When [showCoverArt] is true and the task has a cover art image set,
-/// displays an 80x80 thumbnail on the left side of the card.
+/// displays an 120x120 thumbnail on the left side of the card.
 class ModernTaskCard extends StatelessWidget {
   const ModernTaskCard({
     required this.task,
