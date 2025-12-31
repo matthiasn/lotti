@@ -426,6 +426,8 @@
   "tasksSortByLabel": "Trier par",
   "tasksSortByPriority": "Priorité",
   "tasksSortByDate": "Date",
+  "tasksSortByDueDate": "Échéance",
+  "tasksSortByCreationDate": "Création",
   "tasksShowCreationDate": "Afficher la date de création sur les cartes",
   "tasksShowDueDate": "Afficher la date d'échéance sur les cartes",
   "taskDueToday": "Échéance aujourd'hui",

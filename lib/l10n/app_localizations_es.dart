@@ -2697,6 +2697,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksSortByDate => 'Fecha';
 
   @override
+  String get tasksSortByDueDate => 'Vencimiento';
+
+  @override
+  String get tasksSortByCreationDate => 'Creación';
+
+  @override
   String get tasksShowCreationDate => 'Mostrar fecha de creación en tarjetas';
 
   @override

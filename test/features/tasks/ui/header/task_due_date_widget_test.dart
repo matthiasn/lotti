@@ -287,7 +287,8 @@ void main() {
       expect(resultDate, isNot(equals(initialDate)));
     });
 
-    testWidgets('Done does not set date when opening with null and not interacting',
+    testWidgets(
+        'Done does not set date when opening with null and not interacting',
         (tester) async {
       var callbackCalled = false;
 

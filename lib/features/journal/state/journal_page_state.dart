@@ -19,6 +19,9 @@ enum TaskSortOption {
 
   /// Sort by creation date (newest first)
   byDate,
+
+  /// Sort by due date (soonest first, then tasks without due dates)
+  byDueDate,
 }
 
 /// Immutable state for the journal page controller.

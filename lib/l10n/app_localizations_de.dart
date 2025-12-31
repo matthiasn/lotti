@@ -2696,6 +2696,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSortByDate => 'Datum';
 
   @override
+  String get tasksSortByDueDate => 'Fälligkeit';
+
+  @override
+  String get tasksSortByCreationDate => 'Erstellt';
+
+  @override
   String get tasksShowCreationDate => 'Erstellungsdatum auf Karten anzeigen';
 
   @override

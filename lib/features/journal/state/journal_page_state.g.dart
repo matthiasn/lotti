@@ -44,4 +44,5 @@ Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
 const _$TaskSortOptionEnumMap = {
   TaskSortOption.byPriority: 'byPriority',
   TaskSortOption.byDate: 'byDate',
+  TaskSortOption.byDueDate: 'byDueDate',
 };

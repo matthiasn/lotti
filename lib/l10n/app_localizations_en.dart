@@ -2676,6 +2676,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSortByDate => 'Date';
 
   @override
+  String get tasksSortByDueDate => 'Due Date';
+
+  @override
+  String get tasksSortByCreationDate => 'Created';
+
+  @override
   String get tasksShowCreationDate => 'Show creation date on cards';
 
   @override

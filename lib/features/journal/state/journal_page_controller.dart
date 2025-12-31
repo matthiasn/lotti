@@ -615,6 +615,12 @@ class JournalPageController extends _$JournalPageController {
       final labelIds = _selectedLabelIds;
       final priorities = _selectedPriorities;
 
+      // For due date sorting, we need to fetch and sort in memory since
+      // due dates are stored in serialized JSON, not a database column.
+      // Use date ordering as a fallback base query.
+      final sortByDateInDb = _sortOption == TaskSortOption.byDate ||
+          _sortOption == TaskSortOption.byDueDate;
+
       final res = await _db.getTasks(
         ids: ids,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
@@ -622,10 +628,15 @@ class JournalPageController extends _$JournalPageController {
         categoryIds: categoryIds.toList(),
         labelIds: labelIds.toList(),
         priorities: priorities.toList(),
-        sortByDate: _sortOption == TaskSortOption.byDate,
+        sortByDate: sortByDateInDb,
         limit: pageSize,
         offset: pageKey,
       );
+
+      // Apply in-memory due date sorting if needed
+      if (_sortOption == TaskSortOption.byDueDate) {
+        return _sortByDueDate(res);
+      }
 
       return res;
     } else {
@@ -641,6 +652,37 @@ class JournalPageController extends _$JournalPageController {
         offset: pageKey,
       );
     }
+  }
+
+  /// Sorts tasks by due date (soonest first, tasks without due dates at end).
+  /// Preserves creation date order for tasks with the same due date or no due date.
+  List<JournalEntity> _sortByDueDate(List<JournalEntity> entities) {
+    return List<JournalEntity>.from(entities)
+      ..sort((a, b) {
+        // Extract due dates from Task entities
+        DateTime? dueA;
+        DateTime? dueB;
+
+        if (a case Task(data: final dataA)) {
+          dueA = dataA.due;
+        }
+        if (b case Task(data: final dataB)) {
+          dueB = dataB.due;
+        }
+
+        // Tasks with due dates come before tasks without
+        if (dueA != null && dueB == null) return -1;
+        if (dueA == null && dueB != null) return 1;
+
+        // Both have due dates: sort by due date ascending (soonest first)
+        if (dueA != null && dueB != null) {
+          final comparison = dueA.compareTo(dueB);
+          if (comparison != 0) return comparison;
+        }
+
+        // Same due date or both null: preserve creation date order (newest first)
+        return b.meta.dateFrom.compareTo(a.meta.dateFrom);
+      });
   }
 
   // Getters for testing

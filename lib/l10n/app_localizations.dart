@@ -5008,6 +5008,18 @@ abstract class AppLocalizations {
   /// **'Date'**
   String get tasksSortByDate;
 
+  /// No description provided for @tasksSortByDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Date'**
+  String get tasksSortByDueDate;
+
+  /// No description provided for @tasksSortByCreationDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get tasksSortByCreationDate;
+
   /// No description provided for @tasksShowCreationDate.
   ///
   /// In en, this message translates to:
