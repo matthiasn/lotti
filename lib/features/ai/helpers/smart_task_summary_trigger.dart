@@ -147,7 +147,11 @@ class SmartTaskSummaryTrigger {
 }
 
 /// Provider for the smart task summary trigger.
-@riverpod
+///
+/// Uses keepAlive to prevent disposal during async operations.
+/// The trigger stores a Ref and uses it in async operations, so it must
+/// remain valid throughout the inference lifecycle.
+@Riverpod(keepAlive: true)
 SmartTaskSummaryTrigger smartTaskSummaryTrigger(Ref ref) {
   return SmartTaskSummaryTrigger(
     ref: ref,
