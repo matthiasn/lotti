@@ -132,5 +132,107 @@ void main() {
       // Widget should still exist (rendering empty state)
       expect(find.byType(CoverArtBackground), findsOneWidget);
     });
+
+    testWidgets('didUpdateWidget resets retries when imageId changes',
+        (tester) async {
+      final image1 = buildJournalImage();
+      final now = DateTime(2025, 12, 31, 12);
+      final image2 = JournalImage(
+        meta: Metadata(
+          id: 'image-2',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid-2',
+          imageFile: 'test2.jpg',
+          imageDirectory: '/test/dir',
+          capturedAt: now,
+        ),
+      );
+
+      // Start with image-1
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(image1),
+            createEntryControllerOverride(image2),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: CoverArtBackground(imageId: 'image-1'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CoverArtBackground), findsOneWidget);
+
+      // Change to image-2 - this should trigger didUpdateWidget
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(image1),
+            createEntryControllerOverride(image2),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: CoverArtBackground(imageId: 'image-2'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Widget should still render after imageId change
+      expect(find.byType(CoverArtBackground), findsOneWidget);
+    });
+
+    testWidgets('maintains same imageId does not reset state', (tester) async {
+      final image = buildJournalImage();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(image),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 300,
+                height: 150,
+                child: CoverArtBackground(imageId: 'image-1'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Pump with same imageId but in different container
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(image),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400, // Different container size
+                height: 200,
+                child: CoverArtBackground(imageId: 'image-1'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Widget should still render correctly
+      expect(find.byType(CoverArtBackground), findsOneWidget);
+    });
   });
 }

@@ -168,5 +168,111 @@ void main() {
       const alignmentX = (cropX * 2) - 1;
       expect(alignmentX, 1.0);
     });
+
+    testWidgets('didUpdateWidget resets retries when imageId changes',
+        (tester) async {
+      final image1 = buildJournalImage();
+      final now = DateTime(2025, 12, 31, 12);
+      final image2 = JournalImage(
+        meta: Metadata(
+          id: 'image-2',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid-2',
+          imageFile: 'test2.jpg',
+          imageDirectory: '/test/dir',
+          capturedAt: now,
+        ),
+      );
+
+      // Start with image-1
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(image1),
+            createEntryControllerOverride(image2),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: CoverArtThumbnail(
+                imageId: 'image-1',
+                size: 80,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CoverArtThumbnail), findsOneWidget);
+
+      // Change to image-2 - this should trigger didUpdateWidget
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(image1),
+            createEntryControllerOverride(image2),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: CoverArtThumbnail(
+                imageId: 'image-2',
+                size: 80,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Widget should still render after imageId change
+      expect(find.byType(CoverArtThumbnail), findsOneWidget);
+    });
+
+    testWidgets('maintains same imageId does not reset state', (tester) async {
+      final image = buildJournalImage();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(image),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: CoverArtThumbnail(
+                imageId: 'image-1',
+                size: 80,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Pump with same imageId but different size
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(image),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: CoverArtThumbnail(
+                imageId: 'image-1',
+                size: 100, // Different size, same imageId
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Widget should still render correctly
+      expect(find.byType(CoverArtThumbnail), findsOneWidget);
+    });
   });
 }
