@@ -52,7 +52,6 @@ class TaskSliverAppBar extends ConsumerWidget {
     );
   }
 
-  // coverage:ignore-start - Expandable app bar requires full widget rendering
   Widget _buildExpandableAppBar(
     BuildContext context,
     Task task,
@@ -131,9 +130,7 @@ class TaskSliverAppBar extends ConsumerWidget {
       const SizedBox(width: 10),
     ];
   }
-  // coverage:ignore-end
 
-  // coverage:ignore-start - Actions require AI popup menu dependencies
   List<Widget> _buildActions(BuildContext context, Task task) {
     return [
       GlassIconContainer(
@@ -154,5 +151,4 @@ class TaskSliverAppBar extends ConsumerWidget {
       const SizedBox(width: 10),
     ];
   }
-  // coverage:ignore-end
 }

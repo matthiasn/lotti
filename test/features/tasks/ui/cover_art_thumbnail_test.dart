@@ -23,7 +23,7 @@ void main() {
       data: ImageData(
         imageId: 'img-uuid',
         imageFile: 'test.jpg',
-        imageDirectory: '/test/dir',
+        imageDirectory: '/images/',
         capturedAt: now,
       ),
     );
@@ -274,5 +274,6 @@ void main() {
       // Widget should still render correctly
       expect(find.byType(CoverArtThumbnail), findsOneWidget);
     });
+
   });
 }

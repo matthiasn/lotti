@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:path/path.dart' as p;
 
 /// Mixin that provides file watching functionality for widgets that need to
 /// display images that may not exist yet (e.g., still being written to disk).
@@ -31,7 +32,6 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
       return;
     }
 
-    // coverage:ignore-start - Runtime file watching, not testable
     // Already watching this path
     if (!forceReset && _watchedPath == path) return;
 
@@ -52,12 +52,11 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
     if (!dir.existsSync()) return;
 
     _fileWatcher = dir.watch().listen((event) {
-      if (event.path == path && mounted) {
+      if (pathsEqual(event.path, path) && mounted) {
         _disposeWatcher();
         setState(() => _fileExists = true);
       }
     });
-    // coverage:ignore-end
   }
 
   /// Resets the file watcher state. Call when the source ID changes.
@@ -74,4 +73,18 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
     _fileWatcher?.cancel();
     _fileWatcher = null;
   }
+}
+
+/// Compares two file paths for equality, handling platform differences.
+///
+/// On Windows, paths are compared case-insensitively and with normalized
+/// separators. On other platforms, paths are compared case-sensitively.
+bool pathsEqual(String path1, String path2) {
+  final normalized1 = p.normalize(p.absolute(path1));
+  final normalized2 = p.normalize(p.absolute(path2));
+
+  if (Platform.isWindows) {
+    return normalized1.toLowerCase() == normalized2.toLowerCase();
+  }
+  return normalized1 == normalized2;
 }

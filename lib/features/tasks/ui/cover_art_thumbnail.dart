@@ -58,7 +58,6 @@ class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail>
       return SizedBox(width: widget.size, height: widget.size);
     }
 
-    // coverage:ignore-start - Image.file requires actual file at runtime
     final alignmentX = (widget.cropX * 2) - 1;
 
     return SizedBox(
@@ -75,6 +74,5 @@ class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail>
         ),
       ),
     );
-    // coverage:ignore-end
   }
 }

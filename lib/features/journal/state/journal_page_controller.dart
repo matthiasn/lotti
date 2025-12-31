@@ -260,7 +260,6 @@ class JournalPageController extends _$JournalPageController {
     });
   }
 
-  // coverage:ignore-start - Desktop-only hotkey registration
   void _registerHotkeys() {
     if (isDesktop) {
       hotKeyManager.register(
@@ -273,7 +272,6 @@ class JournalPageController extends _$JournalPageController {
       );
     }
   }
-  // coverage:ignore-end
 
   void _dispose(PagingController<int, JournalEntity> controller) {
     _configFlagsSub?.cancel();
