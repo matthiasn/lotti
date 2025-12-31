@@ -26,23 +26,28 @@ class TaskCreationDateWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final base = context.textTheme.titleSmall;
-    final style = base != null
-        ? base.withTabularFigures.copyWith(
-            color: context.colorScheme.outline,
-            fontSize: AppTheme.statusIndicatorFontSize,
-          )
-        : monoTabularStyle(
-            fontSize: AppTheme.statusIndicatorFontSize,
-            color: context.colorScheme.outline,
-          );
+    final style = context.textTheme.titleSmall?.copyWith(
+      color: context.colorScheme.outline,
+      fontWeight: FontWeight.w600,
+    );
 
     return GestureDetector(
       onTap: () =>
           EntryDateTimeMultiPageModal.show(entry: entry, context: context),
-      child: Text(
-        DateFormat.yMMMd().format(entry.meta.dateFrom),
-        style: style,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.calendar_today_rounded,
+            size: AppTheme.statusIndicatorIconSizeCompact,
+            color: context.colorScheme.outline,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            DateFormat.yMMMd().format(entry.meta.dateFrom),
+            style: style,
+          ),
+        ],
       ),
     );
   }

@@ -68,7 +68,7 @@ class TaskDueDateWrapper extends ConsumerWidget {
           const SizedBox(width: 6),
           Text(
             dueDate != null
-                ? DateFormat.yMMMd().format(dueDate)
+                ? 'Due: ${DateFormat.yMMMd().format(dueDate)}'
                 : context.messages.taskNoDueDateLabel,
             style: context.textTheme.titleSmall?.copyWith(
               color: color,

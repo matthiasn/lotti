@@ -8,10 +8,13 @@ import 'package:lotti/features/labels/state/label_assignment_event_provider.dart
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
+import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
+import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/themes/theme.dart';
 
 class TaskLabelsWrapper extends ConsumerWidget {
   const TaskLabelsWrapper({
@@ -158,11 +161,13 @@ class TaskLabelsWrapper extends ConsumerWidget {
       color: colorScheme.outline,
     );
 
+    final estimate = task.data.estimate;
+    final hasEstimate = estimate != null && estimate != Duration.zero;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               context.messages.tasksLabelsHeaderTitle,
@@ -177,16 +182,15 @@ class TaskLabelsWrapper extends ConsumerWidget {
                 color: colorScheme.outline,
               ),
             ),
+            const Spacer(),
+            _EditableTaskProgress(
+              taskId: taskId,
+              hasEstimate: hasEstimate,
+              estimate: estimate,
+            ),
           ],
         ),
-        if (assignedLabels.isEmpty)
-          Text(
-            context.messages.tasksLabelsNoLabels,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-            ),
-          )
-        else
+        if (assignedLabels.isNotEmpty)
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -250,6 +254,65 @@ class TaskLabelsWrapper extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EditableTaskProgress extends ConsumerWidget {
+  const _EditableTaskProgress({
+    required this.taskId,
+    required this.hasEstimate,
+    this.estimate,
+  });
+
+  final String taskId;
+  final bool hasEstimate;
+  final Duration? estimate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: taskId);
+    final notifier = ref.read(provider.notifier);
+
+    Future<void> onTap() async {
+      await showEstimatePicker(
+        context: context,
+        initialDuration: estimate ?? Duration.zero,
+        onEstimateChanged: (newDuration) async {
+          await notifier.save(estimate: newDuration);
+        },
+      );
+    }
+
+    final Widget child;
+    if (hasEstimate) {
+      child = CompactTaskProgress(
+        taskId: taskId,
+        showTimeText: true,
+      );
+    } else {
+      child = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timer_outlined,
+            size: AppTheme.statusIndicatorIconSizeCompact,
+            color: context.colorScheme.outline,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            context.messages.taskNoEstimateLabel,
+            style: context.textTheme.titleSmall?.copyWith(
+              color: context.colorScheme.outline,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return InkWell(
+      onTap: onTap,
+      child: child,
     );
   }
 }

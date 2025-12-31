@@ -41,22 +41,11 @@ class CompactTaskProgress extends ConsumerWidget {
         : 0.0;
 
     final base = context.textTheme.titleSmall;
-    final textStyle = (base != null
-            ? base.withTabularFigures
-            : monoTabularStyle(
-                fontSize: AppTheme.statusIndicatorFontSize,
-                fontWeight: FontWeight.w600,
-                color: context.colorScheme.onSurfaceVariant.withValues(
-                  alpha: AppTheme.alphaSurfaceVariant,
-                ),
-              ))
-        .copyWith(
-      color: context.colorScheme.onSurfaceVariant.withValues(
-        alpha: AppTheme.alphaSurfaceVariant,
-      ),
-      fontWeight: FontWeight.w600,
-      fontSize: AppTheme.statusIndicatorFontSize,
-    );
+    final textStyle = base?.withTabularFigures.copyWith(
+            color: context.colorScheme.onSurfaceVariant.withValues(
+              alpha: AppTheme.alphaSurfaceVariant,
+            ),
+          );
 
     final shouldShowTimeText = isDesktop || showTimeText;
 
@@ -67,7 +56,7 @@ class CompactTaskProgress extends ConsumerWidget {
           // Time display
           Text(
             '${_formatDurationHoursMinutes(progress)} / ${_formatDurationHoursMinutes(estimate)}',
-            style: textStyle.copyWith(
+            style: textStyle?.copyWith(
               color: isOvertime
                   ? context.colorScheme.error.withValues(alpha: 0.8)
                   : context.colorScheme.outline,
