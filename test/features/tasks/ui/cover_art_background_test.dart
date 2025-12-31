@@ -100,7 +100,7 @@ void main() {
           overrides: [
             createEntryControllerOverride(image),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: CustomScrollView(
                 slivers: [
@@ -110,7 +110,7 @@ void main() {
                       background: CoverArtBackground(imageId: 'image-1'),
                     ),
                   ),
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: SizedBox(height: 500),
                   ),
                 ],

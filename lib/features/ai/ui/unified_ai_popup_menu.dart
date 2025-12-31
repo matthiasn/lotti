@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 import 'package:lotti/widgets/modal/index.dart';
 
 /// Unified AI popup menu that shows available prompts for the current entity
@@ -39,9 +40,11 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
     // the same entry will reuse the provider and maintain previous value.
     if (hasPromptsAsync.hasValue && hasPromptsAsync.value!) {
       return IconButton(
-        icon: Icon(
-          Icons.assistant_rounded,
-          color: iconColor ?? context.colorScheme.outline,
+        icon: GlassIconContainer(
+          child: Icon(
+            Icons.assistant_rounded,
+            color: iconColor ?? context.colorScheme.outline,
+          ),
         ),
         onPressed: () => UnifiedAiModal.show<void>(
           context: context,

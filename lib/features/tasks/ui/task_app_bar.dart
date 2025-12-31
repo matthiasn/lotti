@@ -80,16 +80,18 @@ class TaskSliverAppBar extends ConsumerWidget {
   Widget _buildGlassBackButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        splashRadius: 20,
-        onPressed: () => Navigator.of(context).maybePop(),
-        icon: const GlassIconContainer(
-          child: Icon(
-            Icons.chevron_left,
-            size: 26,
-            color: Colors.white,
+      child: Material(
+        type: MaterialType.transparency,
+        clipBehavior: Clip.hardEdge,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: () => Navigator.of(context).maybePop(),
+          child: const GlassIconContainer(
+            child: Icon(
+              Icons.chevron_left,
+              size: 26,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -106,22 +108,24 @@ class TaskSliverAppBar extends ConsumerWidget {
         ),
       ),
       const SizedBox(width: 8),
-      IconButton(
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        splashRadius: 20,
-        onPressed: () => ExtendedHeaderModal.show(
-          context: context,
-          entryId: taskId,
-          linkedFromId: null,
-          link: null,
-          inLinkedEntries: false,
-        ),
-        icon: const GlassIconContainer(
-          child: Icon(
-            Icons.more_horiz,
-            size: 26,
-            color: Colors.white,
+      Material(
+        type: MaterialType.transparency,
+        clipBehavior: Clip.hardEdge,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: () => ExtendedHeaderModal.show(
+            context: context,
+            entryId: taskId,
+            linkedFromId: null,
+            link: null,
+            inLinkedEntries: false,
+          ),
+          child: const GlassIconContainer(
+            child: Icon(
+              Icons.more_horiz,
+              size: 26,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
