@@ -16,17 +16,24 @@ class TaskDueDateDisplayToggle extends ConsumerWidget {
     final controller =
         ref.read(journalPageControllerProvider(showTasks).notifier);
 
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        context.messages.tasksShowDueDate,
-        style: context.textTheme.bodySmall,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
       ),
-      value: state.showDueDate,
-      onChanged: (value) {
-        controller.setShowDueDate(show: value);
-        HapticFeedback.selectionClick();
-      },
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          context.messages.tasksShowDueDate,
+          style: context.textTheme.bodySmall,
+        ),
+        value: state.showDueDate,
+        onChanged: (value) {
+          controller.setShowDueDate(show: value);
+          HapticFeedback.selectionClick();
+        },
+      ),
     );
   }
 }
