@@ -143,6 +143,14 @@ abstract class TaskData with _$TaskData {
     /// Stored as a Set in memory; serialized as an array in JSON.
     Set<String>? aiSuppressedLabelIds,
     @Default(TaskPriority.p2Medium) TaskPriority priority,
+
+    /// ID of a linked JournalImage to use as visual mnemonic / cover art.
+    /// Displayed in task list thumbnails and detail view SliverAppBar.
+    String? coverArtId,
+
+    /// Horizontal offset for square thumbnail crop from 2:1 cover art.
+    /// 0.0 = left edge, 0.5 = center (default), 1.0 = right edge.
+    @Default(0.5) double coverArtCropX,
   }) = _TaskData;
 
   factory TaskData.fromJson(Map<String, dynamic> json) =>

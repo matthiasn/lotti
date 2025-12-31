@@ -1532,6 +1532,14 @@ mixin _$TaskData {
   Set<String>? get aiSuppressedLabelIds;
   TaskPriority get priority;
 
+  /// ID of a linked JournalImage to use as visual mnemonic / cover art.
+  /// Displayed in task list thumbnails and detail view SliverAppBar.
+  String? get coverArtId;
+
+  /// Horizontal offset for square thumbnail crop from 2:1 cover art.
+  /// 0.0 = left edge, 0.5 = center (default), 1.0 = right edge.
+  double get coverArtCropX;
+
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1564,7 +1572,11 @@ mixin _$TaskData {
             const DeepCollectionEquality()
                 .equals(other.aiSuppressedLabelIds, aiSuppressedLabelIds) &&
             (identical(other.priority, priority) ||
-                other.priority == priority));
+                other.priority == priority) &&
+            (identical(other.coverArtId, coverArtId) ||
+                other.coverArtId == coverArtId) &&
+            (identical(other.coverArtCropX, coverArtCropX) ||
+                other.coverArtCropX == coverArtCropX));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1581,11 +1593,13 @@ mixin _$TaskData {
       const DeepCollectionEquality().hash(checklistIds),
       languageCode,
       const DeepCollectionEquality().hash(aiSuppressedLabelIds),
-      priority);
+      priority,
+      coverArtId,
+      coverArtCropX);
 
   @override
   String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority)';
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
   }
 }
 
@@ -1605,7 +1619,9 @@ abstract mixin class $TaskDataCopyWith<$Res> {
       List<String>? checklistIds,
       String? languageCode,
       Set<String>? aiSuppressedLabelIds,
-      TaskPriority priority});
+      TaskPriority priority,
+      String? coverArtId,
+      double coverArtCropX});
 
   $TaskStatusCopyWith<$Res> get status;
 }
@@ -1633,6 +1649,8 @@ class _$TaskDataCopyWithImpl<$Res> implements $TaskDataCopyWith<$Res> {
     Object? languageCode = freezed,
     Object? aiSuppressedLabelIds = freezed,
     Object? priority = null,
+    Object? coverArtId = freezed,
+    Object? coverArtCropX = null,
   }) {
     return _then(_self.copyWith(
       status: null == status
@@ -1679,6 +1697,14 @@ class _$TaskDataCopyWithImpl<$Res> implements $TaskDataCopyWith<$Res> {
           ? _self.priority
           : priority // ignore: cast_nullable_to_non_nullable
               as TaskPriority,
+      coverArtId: freezed == coverArtId
+          ? _self.coverArtId
+          : coverArtId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      coverArtCropX: null == coverArtCropX
+          ? _self.coverArtCropX
+          : coverArtCropX // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 
@@ -1797,7 +1823,9 @@ extension TaskDataPatterns on TaskData {
             List<String>? checklistIds,
             String? languageCode,
             Set<String>? aiSuppressedLabelIds,
-            TaskPriority priority)?
+            TaskPriority priority,
+            String? coverArtId,
+            double coverArtCropX)?
         $default, {
     required TResult orElse(),
   }) {
@@ -1815,7 +1843,9 @@ extension TaskDataPatterns on TaskData {
             _that.checklistIds,
             _that.languageCode,
             _that.aiSuppressedLabelIds,
-            _that.priority);
+            _that.priority,
+            _that.coverArtId,
+            _that.coverArtCropX);
       case _:
         return orElse();
     }
@@ -1847,7 +1877,9 @@ extension TaskDataPatterns on TaskData {
             List<String>? checklistIds,
             String? languageCode,
             Set<String>? aiSuppressedLabelIds,
-            TaskPriority priority)
+            TaskPriority priority,
+            String? coverArtId,
+            double coverArtCropX)
         $default,
   ) {
     final _that = this;
@@ -1864,7 +1896,9 @@ extension TaskDataPatterns on TaskData {
             _that.checklistIds,
             _that.languageCode,
             _that.aiSuppressedLabelIds,
-            _that.priority);
+            _that.priority,
+            _that.coverArtId,
+            _that.coverArtCropX);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -1895,7 +1929,9 @@ extension TaskDataPatterns on TaskData {
             List<String>? checklistIds,
             String? languageCode,
             Set<String>? aiSuppressedLabelIds,
-            TaskPriority priority)?
+            TaskPriority priority,
+            String? coverArtId,
+            double coverArtCropX)?
         $default,
   ) {
     final _that = this;
@@ -1912,7 +1948,9 @@ extension TaskDataPatterns on TaskData {
             _that.checklistIds,
             _that.languageCode,
             _that.aiSuppressedLabelIds,
-            _that.priority);
+            _that.priority,
+            _that.coverArtId,
+            _that.coverArtCropX);
       case _:
         return null;
     }
@@ -1933,7 +1971,9 @@ class _TaskData implements TaskData {
       final List<String>? checklistIds,
       this.languageCode,
       final Set<String>? aiSuppressedLabelIds,
-      this.priority = TaskPriority.p2Medium})
+      this.priority = TaskPriority.p2Medium,
+      this.coverArtId,
+      this.coverArtCropX = 0.5})
       : _statusHistory = statusHistory,
         _checklistIds = checklistIds,
         _aiSuppressedLabelIds = aiSuppressedLabelIds;
@@ -1993,6 +2033,17 @@ class _TaskData implements TaskData {
   @JsonKey()
   final TaskPriority priority;
 
+  /// ID of a linked JournalImage to use as visual mnemonic / cover art.
+  /// Displayed in task list thumbnails and detail view SliverAppBar.
+  @override
+  final String? coverArtId;
+
+  /// Horizontal offset for square thumbnail crop from 2:1 cover art.
+  /// 0.0 = left edge, 0.5 = center (default), 1.0 = right edge.
+  @override
+  @JsonKey()
+  final double coverArtCropX;
+
   /// Create a copy of TaskData
   /// with the given fields replaced by the non-null parameter values.
   @override
@@ -2030,7 +2081,11 @@ class _TaskData implements TaskData {
             const DeepCollectionEquality()
                 .equals(other._aiSuppressedLabelIds, _aiSuppressedLabelIds) &&
             (identical(other.priority, priority) ||
-                other.priority == priority));
+                other.priority == priority) &&
+            (identical(other.coverArtId, coverArtId) ||
+                other.coverArtId == coverArtId) &&
+            (identical(other.coverArtCropX, coverArtCropX) ||
+                other.coverArtCropX == coverArtCropX));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2047,11 +2102,13 @@ class _TaskData implements TaskData {
       const DeepCollectionEquality().hash(_checklistIds),
       languageCode,
       const DeepCollectionEquality().hash(_aiSuppressedLabelIds),
-      priority);
+      priority,
+      coverArtId,
+      coverArtCropX);
 
   @override
   String toString() {
-    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority)';
+    return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
   }
 }
 
@@ -2073,7 +2130,9 @@ abstract mixin class _$TaskDataCopyWith<$Res>
       List<String>? checklistIds,
       String? languageCode,
       Set<String>? aiSuppressedLabelIds,
-      TaskPriority priority});
+      TaskPriority priority,
+      String? coverArtId,
+      double coverArtCropX});
 
   @override
   $TaskStatusCopyWith<$Res> get status;
@@ -2102,6 +2161,8 @@ class __$TaskDataCopyWithImpl<$Res> implements _$TaskDataCopyWith<$Res> {
     Object? languageCode = freezed,
     Object? aiSuppressedLabelIds = freezed,
     Object? priority = null,
+    Object? coverArtId = freezed,
+    Object? coverArtCropX = null,
   }) {
     return _then(_TaskData(
       status: null == status
@@ -2148,6 +2209,14 @@ class __$TaskDataCopyWithImpl<$Res> implements _$TaskDataCopyWith<$Res> {
           ? _self.priority
           : priority // ignore: cast_nullable_to_non_nullable
               as TaskPriority,
+      coverArtId: freezed == coverArtId
+          ? _self.coverArtId
+          : coverArtId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      coverArtCropX: null == coverArtCropX
+          ? _self.coverArtCropX
+          : coverArtCropX // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 

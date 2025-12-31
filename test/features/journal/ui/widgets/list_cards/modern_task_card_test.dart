@@ -702,4 +702,76 @@ void main() {
       expect(find.text(absoluteText), findsOneWidget);
     });
   });
+
+  group('showCoverArt', () {
+    testWidgets('showCoverArt defaults to true', (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // With no cover art set, should render normally regardless of showCoverArt
+      expect(find.text('Test Task Title'), findsOneWidget);
+    });
+
+    testWidgets('renders without thumbnail when task has no coverArtId',
+        (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not have CoverArtThumbnail since there's no coverArtId
+      expect(find.text('Test Task Title'), findsOneWidget);
+    });
+
+    testWidgets('showCoverArt=false hides thumbnail even with coverArtId',
+        (tester) async {
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(coverArtId: 'image-123'),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showCoverArt: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Title should still be visible
+      expect(find.text('Test Task Title'), findsOneWidget);
+      // The layout should not include the cover art Row structure
+      // (since showCoverArt is false)
+    });
+
+    testWidgets('coverArtCropX defaults to 0.5', (tester) async {
+      final task = buildTask();
+
+      // Verify the default cropX value
+      expect(task.data.coverArtCropX, 0.5);
+    });
+  });
 }

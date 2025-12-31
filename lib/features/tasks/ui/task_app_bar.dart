@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
+import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
@@ -25,6 +26,18 @@ class TaskSliverAppBar extends ConsumerWidget {
       return JournalSliverAppBar(entryId: taskId);
     }
 
+    final coverArtId = item.data.coverArtId;
+
+    // If no cover art, use compact app bar
+    if (coverArtId == null) {
+      return _buildCompactAppBar(context, item);
+    }
+
+    // Expandable app bar with cover art (2:1 aspect ratio)
+    return _buildExpandableAppBar(context, item, coverArtId);
+  }
+
+  Widget _buildCompactAppBar(BuildContext context, Task task) {
     return SliverAppBar(
       leadingWidth: 100,
       titleSpacing: 0,
@@ -32,25 +45,54 @@ class TaskSliverAppBar extends ConsumerWidget {
       scrolledUnderElevation: 0,
       elevation: 10,
       leading: const BackWidget(),
-      actions: [
-        UnifiedAiPopUpMenu(journalEntity: item, linkedFromId: null),
-        IconButton(
-          icon: Icon(
-            Icons.more_horiz,
-            color: context.colorScheme.outline,
-          ),
-          onPressed: () => ExtendedHeaderModal.show(
-            context: context,
-            entryId: taskId,
-            linkedFromId: null,
-            link: null,
-            inLinkedEntries: false,
-          ),
-        ),
-        const SizedBox(width: 10),
-      ],
+      actions: _buildActions(context, task),
       pinned: true,
       automaticallyImplyLeading: false,
     );
+  }
+
+  Widget _buildExpandableAppBar(
+    BuildContext context,
+    Task task,
+    String coverArtId,
+  ) {
+    // 2:1 cinematic aspect ratio: height = width / 2
+    final expandedHeight = MediaQuery.of(context).size.width / 2;
+
+    return SliverAppBar(
+      expandedHeight: expandedHeight,
+      leadingWidth: 100,
+      titleSpacing: 0,
+      toolbarHeight: 45,
+      scrolledUnderElevation: 0,
+      elevation: 10,
+      leading: const BackWidget(),
+      actions: _buildActions(context, task),
+      pinned: true,
+      automaticallyImplyLeading: false,
+      flexibleSpace: FlexibleSpaceBar(
+        background: CoverArtBackground(imageId: coverArtId),
+      ),
+    );
+  }
+
+  List<Widget> _buildActions(BuildContext context, Task task) {
+    return [
+      UnifiedAiPopUpMenu(journalEntity: task, linkedFromId: null),
+      IconButton(
+        icon: Icon(
+          Icons.more_horiz,
+          color: context.colorScheme.outline,
+        ),
+        onPressed: () => ExtendedHeaderModal.show(
+          context: context,
+          entryId: taskId,
+          linkedFromId: null,
+          link: null,
+          inLinkedEntries: false,
+        ),
+      ),
+      const SizedBox(width: 10),
+    ];
   }
 }

@@ -2688,6 +2688,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksShowDueDate => 'Show due date on cards';
 
   @override
+  String get tasksShowCoverArt => 'Show cover art on cards';
+
+  @override
+  String get coverArtChipSet => 'Set cover';
+
+  @override
+  String get coverArtChipActive => 'Cover';
+
+  @override
+  String get coverArtAssign => 'Set as cover art';
+
+  @override
+  String get coverArtRemove => 'Remove as cover art';
+
+  @override
   String get taskDueToday => 'Due Today';
 
   @override

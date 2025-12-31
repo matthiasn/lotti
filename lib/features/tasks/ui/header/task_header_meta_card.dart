@@ -5,6 +5,7 @@ import 'package:lotti/features/tasks/ui/header/task_due_date_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_language_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_priority_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_wrapper.dart';
+import 'package:lotti/features/tasks/ui/remove_cover_art_chip.dart';
 import 'package:lotti/themes/theme.dart';
 
 class TaskHeaderMetaCard extends StatelessWidget {
@@ -63,6 +64,7 @@ class _TaskMetadataRow extends StatelessWidget {
               ),
               TaskCategoryWrapper(taskId: taskId),
               TaskLanguageWrapper(taskId: taskId),
+              RemoveCoverArtChip(taskId: taskId),
             ],
           ),
         ),

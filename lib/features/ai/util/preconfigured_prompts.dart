@@ -623,15 +623,23 @@ STYLE OPTIONS (choose based on task context):
 - **Minimalist**: Clean lines, limited palette, conceptual
 - **Isometric**: 3D-like diagrams, game-style, technical
 
+COMPOSITION FOR TASK COVER ART:
+When generating images intended as task cover art (visual mnemonics), follow these composition guidelines:
+- **Aspect Ratio**: Use 2:1 wide format (e.g., 1024x512 or 2048x1024)
+- **Center-Weighted Safe Zone**: Place the main subject in the center half of the image width. This ensures the key visual remains visible when the image is cropped to a 1:1 square for thumbnails.
+- **Avoid Edge-Heavy Composition**: Don't place important elements in the left or right quarter of the image, as these will be cropped in thumbnail views.
+- **Strong Central Focus**: The center 50% of the image should tell the complete story on its own.
+- **Cinematic Feel**: The 2:1 ratio allows for dramatic, widescreen compositions while still working as a square thumbnail.
+
 IMPORTANT GUIDELINES:
 - Be specific about visual details - vague prompts produce poor results
 - Include color palette suggestions that match the task mood
 - Reference specific art styles or artists when appropriate
-- Consider the intended use (social media, presentation, personal motivation)
+- Consider the intended use (task cover art, social media, presentation)
 - Make the prompt self-contained - no external context needed
 - Generate in English (image generators work best with English prompts)
 - Aim for prompts between 100-300 words for optimal results
-- Include aspect ratio suggestions (16:9 for presentations, 1:1 for social media)
+- Default to 2:1 aspect ratio for task cover art; use other ratios only if specifically requested
 
 RELATED TASKS CONTEXT:
 You will receive a `linked_tasks` object containing:

@@ -2700,6 +2700,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksShowDueDate => 'Afișează data scadenței pe carduri';
 
   @override
+  String get tasksShowCoverArt => 'Show cover art on cards';
+
+  @override
+  String get coverArtChipSet => 'Set cover';
+
+  @override
+  String get coverArtChipActive => 'Cover';
+
+  @override
+  String get coverArtAssign => 'Set as cover art';
+
+  @override
+  String get coverArtRemove => 'Remove as cover art';
+
+  @override
   String get taskDueToday => 'Scadent astăzi';
 
   @override

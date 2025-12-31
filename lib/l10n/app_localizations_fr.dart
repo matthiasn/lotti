@@ -2711,6 +2711,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksShowDueDate => 'Afficher la date d\'échéance sur les cartes';
 
   @override
+  String get tasksShowCoverArt => 'Show cover art on cards';
+
+  @override
+  String get coverArtChipSet => 'Set cover';
+
+  @override
+  String get coverArtChipActive => 'Cover';
+
+  @override
+  String get coverArtAssign => 'Set as cover art';
+
+  @override
+  String get coverArtRemove => 'Remove as cover art';
+
+  @override
   String get taskDueToday => 'Échéance aujourd\'hui';
 
   @override

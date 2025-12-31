@@ -14,6 +14,10 @@ Add cover art support to tasks, allowing users to designate any linked image as 
 3. **Easy Removal**: Add "Remove cover" chip in task header meta card when cover art is set
 4. **Smart Image Composition**: Update image prompt generation to include composition guidance for multi-aspect-ratio cropping (center-weighted "safe zone" for square thumbnails, horizontal margins for cinematic atmosphere)
 
+## Implementation Notes
+- **Smart cropping**: Only apply horizontal cropping for wide images (aspect ratio > 1.1). Square or near-square images should be displayed without cropping.
+- **Crop calculation**: For wide images, use `coverArtCropX` to determine the horizontal position of the square crop window.
+
 ## Future Improvements
 - **Custom crop offset UI**: The data model includes `coverArtCropX` (normalized 0.0-1.0, defaulting to 0.5/center). A future UI could allow users to slide the square crop window left/right along the 2:1 image for better framing.
 

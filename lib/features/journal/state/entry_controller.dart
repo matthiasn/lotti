@@ -541,6 +541,27 @@ class EntryController extends _$EntryController {
     }
   }
 
+  /// Sets or removes the cover art for a task.
+  /// Pass null to remove the cover art.
+  Future<void> setCoverArt(String? imageId) async {
+    final entry = state.value?.entry;
+    if (entry is! Task) return;
+
+    // Optimistically update local state for immediate UI feedback
+    final optimistic = entry.copyWith(
+      data: entry.data.copyWith(coverArtId: imageId),
+    );
+    state = AsyncData(state.value?.copyWith(entry: optimistic));
+
+    // Persist change
+    await _persistenceLogic.updateTask(
+      journalEntityId: id,
+      taskData: optimistic.data,
+    );
+
+    await HapticFeedback.selectionClick();
+  }
+
   /// Looks up if this entry is linked to a task and triggers smart
   /// task summary if so. This is called after saving non-task entries
   /// that have meaningful content.

@@ -28,6 +28,7 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
               TaskSortOption.byPriority,
       showCreationDate: json['showCreationDate'] as bool? ?? false,
       showDueDate: json['showDueDate'] as bool? ?? true,
+      showCoverArt: json['showCoverArt'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
@@ -39,6 +40,7 @@ Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
       'sortOption': _$TaskSortOptionEnumMap[instance.sortOption]!,
       'showCreationDate': instance.showCreationDate,
       'showDueDate': instance.showDueDate,
+      'showCoverArt': instance.showCoverArt,
     };
 
 const _$TaskSortOptionEnumMap = {
