@@ -52,6 +52,7 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
       return const SizedBox.shrink();
     }
 
+    // coverage:ignore-start - Image.file requires actual file at runtime
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -75,5 +76,6 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
         ),
       ],
     );
+    // coverage:ignore-end
   }
 }

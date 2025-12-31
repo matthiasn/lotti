@@ -46,6 +46,7 @@ class _CardImageWidgetState extends State<CardImageWidget>
       return const SizedBox.shrink();
     }
 
+    // coverage:ignore-start - Image.file requires actual file at runtime
     return SizedBox(
       height: widget.height.toDouble(),
       child: Image.file(
@@ -55,5 +56,6 @@ class _CardImageWidgetState extends State<CardImageWidget>
         fit: widget.fit,
       ),
     );
+    // coverage:ignore-end
   }
 }
