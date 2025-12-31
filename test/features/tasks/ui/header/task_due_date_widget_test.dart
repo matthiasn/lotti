@@ -288,9 +288,9 @@ void main() {
     });
 
     testWidgets(
-        'Done does not set date when opening with null and not interacting',
+        'Done sets date when opening with null - user is explicitly confirming',
         (tester) async {
-      var callbackCalled = false;
+      DateTime? resultDate;
 
       await tester.pumpWidget(
         WidgetTestBench(
@@ -301,8 +301,8 @@ void main() {
                   showDueDatePicker(
                     context: context,
                     initialDate: null, // No existing due date
-                    onDueDateChanged: (_) async {
-                      callbackCalled = true;
+                    onDueDateChanged: (date) async {
+                      resultDate = date;
                     },
                   );
                 },
@@ -320,9 +320,11 @@ void main() {
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      // Callback should NOT be called - user didn't interact with picker
-      // This verifies the fix for the Gemini review comment
-      expect(callbackCalled, isFalse);
+      // Callback SHOULD be called - when there's no existing due date and user
+      // opens the picker and clicks Done, they're explicitly confirming they
+      // want to set a due date. This fixes the bug where selecting "Today" on
+      // a task with no due date didn't save.
+      expect(resultDate, isNotNull);
     });
 
     testWidgets('modal has proper layout with three buttons', (tester) async {

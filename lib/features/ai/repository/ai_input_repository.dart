@@ -59,108 +59,119 @@ class AiInputRepository {
   }
 
   Future<AiInputTaskObject?> generate(String id) async {
-    final entry = await getEntity(id);
+    // Keep provider alive during the generation operation
+    final keepAliveLink = ref.keepAlive();
 
-    if (entry is! Task) {
-      return null;
-    }
+    try {
+      // Capture dependencies upfront before any async gaps
+      final progressRepository = ref.read(taskProgressRepositoryProvider);
 
-    final task = entry;
-    final timeSpent = await _calculateTimeSpent(task.id);
+      final entry = await getEntity(id);
 
-    final logEntries = <AiInputLogEntryObject>[];
-    final linkedEntities = await _db.getLinkedEntities(id);
+      if (entry is! Task) {
+        return null;
+      }
 
-    for (final linked in linkedEntities) {
-      if (linked is JournalEntry ||
-          linked is JournalImage ||
-          linked is JournalAudio) {
-        String? audioTranscript;
-        String? transcriptLanguage;
-        String? entryType;
-        final editedText = linked.entryText?.plainText;
-        // An explicit edit (even to empty string) takes precedence over transcript
-        final hasEditedText = editedText != null;
+      final task = entry;
+      final timeSpent =
+          await _calculateTimeSpentWithRepo(task.id, progressRepository);
 
-        if (linked is JournalAudio) {
-          entryType = 'audio';
-          // Only include original transcript if user hasn't edited the text.
-          // When entryText exists, it represents the user's corrections and
-          // should take precedence over the raw transcript.
-          if (!hasEditedText) {
-            final transcripts = linked.data.transcripts;
-            if (transcripts != null && transcripts.isNotEmpty) {
-              final latestTranscript = transcripts.last;
-              audioTranscript = latestTranscript.transcript;
-              transcriptLanguage = latestTranscript.detectedLanguage;
+      final logEntries = <AiInputLogEntryObject>[];
+      final linkedEntities = await _db.getLinkedEntities(id);
+
+      for (final linked in linkedEntities) {
+        if (linked is JournalEntry ||
+            linked is JournalImage ||
+            linked is JournalAudio) {
+          String? audioTranscript;
+          String? transcriptLanguage;
+          String? entryType;
+          final editedText = linked.entryText?.plainText;
+          // An explicit edit (even to empty string) takes precedence over transcript
+          final hasEditedText = editedText != null;
+
+          if (linked is JournalAudio) {
+            entryType = 'audio';
+            // Only include original transcript if user hasn't edited the text.
+            // When entryText exists, it represents the user's corrections and
+            // should take precedence over the raw transcript.
+            if (!hasEditedText) {
+              final transcripts = linked.data.transcripts;
+              if (transcripts != null && transcripts.isNotEmpty) {
+                final latestTranscript = transcripts.last;
+                audioTranscript = latestTranscript.transcript;
+                transcriptLanguage = latestTranscript.detectedLanguage;
+              }
+            }
+          } else if (linked is JournalImage) {
+            entryType = 'image';
+          } else if (linked is JournalEntry) {
+            entryType = 'text';
+          }
+
+          logEntries.add(
+            AiInputLogEntryObject(
+              creationTimestamp: linked.meta.dateFrom,
+              loggedDuration: formatHhMm(entryDuration(linked)),
+              text: editedText ?? '',
+              audioTranscript: audioTranscript,
+              transcriptLanguage: transcriptLanguage,
+              entryType: entryType,
+            ),
+          );
+        }
+      }
+
+      final checklistIds = task.data.checklistIds ?? [];
+
+      final checklistItems = <ChecklistItemData>[];
+      for (final checklistId in checklistIds) {
+        final checklist = await _db.journalEntityById(checklistId);
+        if (checklist != null && checklist is Checklist) {
+          final checklistItemIds = checklist.data.linkedChecklistItems;
+          for (final checklistItemId in checklistItemIds) {
+            final checklistItem = await _db.journalEntityById(checklistItemId);
+            if (checklistItem != null && checklistItem is ChecklistItem) {
+              final data = checklistItem.data.copyWith(id: checklistItemId);
+              checklistItems.add(data);
             }
           }
-        } else if (linked is JournalImage) {
-          entryType = 'image';
-        } else if (linked is JournalEntry) {
-          entryType = 'text';
-        }
-
-        logEntries.add(
-          AiInputLogEntryObject(
-            creationTimestamp: linked.meta.dateFrom,
-            loggedDuration: formatHhMm(entryDuration(linked)),
-            text: editedText ?? '',
-            audioTranscript: audioTranscript,
-            transcriptLanguage: transcriptLanguage,
-            entryType: entryType,
-          ),
-        );
-      }
-    }
-
-    final checklistIds = task.data.checklistIds ?? [];
-
-    final checklistItems = <ChecklistItemData>[];
-    for (final checklistId in checklistIds) {
-      final checklist = await _db.journalEntityById(checklistId);
-      if (checklist != null && checklist is Checklist) {
-        final checklistItemIds = checklist.data.linkedChecklistItems;
-        for (final checklistItemId in checklistItemIds) {
-          final checklistItem = await _db.journalEntityById(checklistItemId);
-          if (checklistItem != null && checklistItem is ChecklistItem) {
-            final data = checklistItem.data.copyWith(id: checklistItemId);
-            checklistItems.add(data);
-          }
         }
       }
+
+      final actionItems = checklistItems
+          .map(
+            (item) => AiActionItem(
+              title: item.title,
+              completed: item.isChecked,
+              id: item.id,
+            ),
+          )
+          .toList();
+
+      final aiInput = AiInputTaskObject(
+        title: task.data.title,
+        status: task.data.status.map(
+          open: (_) => 'OPEN',
+          groomed: (_) => 'GROOMED',
+          inProgress: (_) => 'IN PROGRESS',
+          blocked: (_) => 'BLOCKED',
+          onHold: (_) => 'ON HOLD',
+          done: (_) => 'DONE',
+          rejected: (_) => 'REJECTED',
+        ),
+        creationDate: task.meta.createdAt,
+        actionItems: actionItems,
+        logEntries: logEntries,
+        estimatedDuration: formatHhMm(task.data.estimate ?? Duration.zero),
+        timeSpent: formatHhMm(timeSpent),
+        languageCode: task.data.languageCode,
+      );
+
+      return aiInput;
+    } finally {
+      keepAliveLink.close();
     }
-
-    final actionItems = checklistItems
-        .map(
-          (item) => AiActionItem(
-            title: item.title,
-            completed: item.isChecked,
-            id: item.id,
-          ),
-        )
-        .toList();
-
-    final aiInput = AiInputTaskObject(
-      title: task.data.title,
-      status: task.data.status.map(
-        open: (_) => 'OPEN',
-        groomed: (_) => 'GROOMED',
-        inProgress: (_) => 'IN PROGRESS',
-        blocked: (_) => 'BLOCKED',
-        onHold: (_) => 'ON HOLD',
-        done: (_) => 'DONE',
-        rejected: (_) => 'REJECTED',
-      ),
-      creationDate: task.meta.createdAt,
-      actionItems: actionItems,
-      logEntries: logEntries,
-      estimatedDuration: formatHhMm(task.data.estimate ?? Duration.zero),
-      timeSpent: formatHhMm(timeSpent),
-      languageCode: task.data.languageCode,
-    );
-
-    return aiInput;
   }
 
   Future<String?> buildTaskDetailsJson({required String id}) async {
@@ -215,11 +226,16 @@ class AiInputRepository {
     }).toList();
   }
 
-  /// Calculate the time spent on a task.
+  /// Calculate the time spent on a task using the provided repository.
+  ///
+  /// The repository is passed as a parameter to avoid accessing [ref] after
+  /// async gaps, which could fail if the provider has been disposed.
   ///
   /// Returns the total duration of work logged against this task.
-  Future<Duration> _calculateTimeSpent(String taskId) async {
-    final progressRepository = ref.read(taskProgressRepositoryProvider);
+  Future<Duration> _calculateTimeSpentWithRepo(
+    String taskId,
+    TaskProgressRepository progressRepository,
+  ) async {
     final progressData = await progressRepository.getTaskProgressData(
       id: taskId,
     );
