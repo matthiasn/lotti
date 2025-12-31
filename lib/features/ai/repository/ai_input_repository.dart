@@ -59,6 +59,9 @@ class AiInputRepository {
   }
 
   Future<AiInputTaskObject?> generate(String id) async {
+    // Provider is keepAlive, so ref is always valid - no keepAlive() needed
+    final progressRepository = ref.read(taskProgressRepositoryProvider);
+
     final entry = await getEntity(id);
 
     if (entry is! Task) {
@@ -66,7 +69,8 @@ class AiInputRepository {
     }
 
     final task = entry;
-    final timeSpent = await _calculateTimeSpent(task.id);
+    final timeSpent =
+        await _calculateTimeSpentWithRepo(task.id, progressRepository);
 
     final logEntries = <AiInputLogEntryObject>[];
     final linkedEntities = await _db.getLinkedEntities(id);
@@ -215,11 +219,16 @@ class AiInputRepository {
     }).toList();
   }
 
-  /// Calculate the time spent on a task.
+  /// Calculate the time spent on a task using the provided repository.
+  ///
+  /// The repository is passed as a parameter to avoid accessing [ref] after
+  /// async gaps, which could fail if the provider has been disposed.
   ///
   /// Returns the total duration of work logged against this task.
-  Future<Duration> _calculateTimeSpent(String taskId) async {
-    final progressRepository = ref.read(taskProgressRepositoryProvider);
+  Future<Duration> _calculateTimeSpentWithRepo(
+    String taskId,
+    TaskProgressRepository progressRepository,
+  ) async {
     final progressData = await progressRepository.getTaskProgressData(
       id: taskId,
     );
@@ -380,7 +389,7 @@ class AiInputRepository {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 AiInputRepository aiInputRepository(Ref ref) {
   return AiInputRepository(ref);
 }

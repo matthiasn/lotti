@@ -34,10 +34,11 @@ Future<void> showDueDatePicker({
       },
       onDone: () async {
         Navigator.of(context).pop();
-        // Only update if user actually interacted with the picker
-        // or if there was an existing date that's now different
-        if (userHasChangedDate ||
-            (initialDate != null && selectedDate != initialDate)) {
+        // Update if:
+        // 1. User interacted with the picker (scrolled/selected), OR
+        // 2. There was no initial date (user is explicitly setting a date for
+        //    the first time by clicking Done).
+        if (userHasChangedDate || initialDate == null) {
           await onDueDateChanged(selectedDate);
         }
       },

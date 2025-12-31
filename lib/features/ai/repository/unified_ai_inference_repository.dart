@@ -234,20 +234,28 @@ class UnifiedAiInferenceRepository {
     JournalEntity? entity, // Optional entity to avoid redundant fetches
     String? linkedEntityId,
   }) async {
+    // Keep the provider alive during the entire inference operation
+    // This prevents disposal when the user navigates away
+    final keepAliveLink = ref.keepAlive();
+
     final start = DateTime.now();
 
     try {
       onStatusChange(InferenceStatus.running);
 
+      // Capture all needed repositories upfront before any async gaps
+      // This ensures we have valid references throughout the operation
+      final aiInputRepo = ref.read(aiInputRepositoryProvider);
+      final aiConfigRepo = ref.read(aiConfigRepositoryProvider);
+
       // Get the entity if not provided
-      entity ??= await ref.read(aiInputRepositoryProvider).getEntity(entityId);
+      entity ??= await aiInputRepo.getEntity(entityId);
       if (entity == null) {
         throw Exception('Entity not found: $entityId');
       }
 
       // Get the model configuration
-      final model = await ref
-          .read(aiConfigRepositoryProvider)
+      final model = await aiConfigRepo
           .getConfigById(promptConfig.defaultModelId) as AiConfigModel?;
 
       if (model == null) {
@@ -255,10 +263,9 @@ class UnifiedAiInferenceRepository {
       }
 
       // Get the inference provider
-      final provider = await ref
-              .read(aiConfigRepositoryProvider)
-              .getConfigById(model.inferenceProviderId)
-          as AiConfigInferenceProvider?;
+      final provider =
+          await aiConfigRepo.getConfigById(model.inferenceProviderId)
+              as AiConfigInferenceProvider?;
 
       if (provider == null) {
         throw Exception('Provider not found: ${model.inferenceProviderId}');
@@ -443,6 +450,10 @@ class UnifiedAiInferenceRepository {
       );
 
       rethrow;
+    } finally {
+      // Release the keepAlive link now that the operation is complete
+      // This allows the provider to be disposed if no longer needed
+      keepAliveLink.close();
     }
   }
 
