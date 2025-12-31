@@ -68,22 +68,16 @@ class TrackingFakeEntryController extends FakeEntryController {
   Future<void> setCoverArt(String? imageId) async {
     _tracker.calls.add(imageId);
 
-    // Update state if it's a task
+    // Update state if it's a task, preserving existing form state
     final entity = _currentEntity ?? super._entity;
     if (entity is Task) {
       _currentEntity = entity.copyWith(
         data: entity.data.copyWith(coverArtId: imageId),
       );
-      state = AsyncData(
-        EntryState.saved(
-          entryId: id,
-          entry: _currentEntity,
-          showMap: false,
-          isFocused: false,
-          shouldShowEditorToolBar: false,
-          formKey: GlobalKey<FormBuilderState>(),
-        ),
-      );
+      final currentState = state.value;
+      if (currentState != null) {
+        state = AsyncData(currentState.copyWith(entry: _currentEntity));
+      }
     }
   }
 }

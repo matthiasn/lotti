@@ -6,6 +6,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
@@ -776,5 +778,115 @@ void main() {
       // Verify the default cropX value
       expect(task.data.coverArtCropX, 0.5);
     });
+
+    testWidgets(
+        'renders CoverArtThumbnail when showCoverArt=true with coverArtId',
+        (tester) async {
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(coverArtId: 'image-123'),
+      );
+
+      // Create a fake image entry for the thumbnail
+      final now = DateTime(2025, 11, 3, 12);
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'image-123',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid',
+          imageFile: 'test.jpg',
+          imageDirectory: '/test/dir',
+          capturedAt: now,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: 'image-123').overrideWith(
+              () => _FakeImageController(image),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should have CoverArtThumbnail since showCoverArt defaults to true
+      expect(find.byType(CoverArtThumbnail), findsOneWidget);
+    });
+
+    testWidgets('cover art layout has correct structure', (tester) async {
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(coverArtId: 'image-123'),
+      );
+
+      final now = DateTime(2025, 11, 3, 12);
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'image-123',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid',
+          imageFile: 'test.jpg',
+          imageDirectory: '/test/dir',
+          capturedAt: now,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: 'image-123').overrideWith(
+              () => _FakeImageController(image),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Title should still be visible
+      expect(find.text('Test Task Title'), findsOneWidget);
+
+      // Should have ClipRRect for rounded corners on thumbnail
+      expect(find.byType(ClipRRect), findsWidgets);
+    });
   });
+}
+
+/// Simple fake controller for image entries
+class _FakeImageController extends EntryController {
+  _FakeImageController(this._image);
+
+  final JournalImage _image;
+
+  @override
+  Future<EntryState?> build({required String id}) async {
+    final value = EntryState.saved(
+      entryId: id,
+      entry: _image,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+    state = AsyncData(value);
+    return value;
+  }
 }
