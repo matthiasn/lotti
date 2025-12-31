@@ -656,31 +656,29 @@ class JournalPageController extends _$JournalPageController {
 
   /// Sorts tasks by due date (soonest first, tasks without due dates at end).
   /// Preserves creation date order for tasks with the same due date or no due date.
+  ///
+  /// Note: This sorting is applied per-page after database fetch. Due dates are
+  /// stored in serialized JSON, not as an indexed column, so global cross-page
+  /// ordering is not guaranteed. Tasks are correctly sorted within each page.
   List<JournalEntity> _sortByDueDate(List<JournalEntity> entities) {
     return List<JournalEntity>.from(entities)
       ..sort((a, b) {
-        // Extract due dates from Task entities
-        DateTime? dueA;
-        DateTime? dueB;
+        final dueA = a is Task ? a.data.due : null;
+        final dueB = b is Task ? b.data.due : null;
 
-        if (a case Task(data: final dataA)) {
-          dueA = dataA.due;
-        }
-        if (b case Task(data: final dataB)) {
-          dueB = dataB.due;
-        }
+        final aHasDue = dueA != null;
+        final bHasDue = dueB != null;
 
-        // Tasks with due dates come before tasks without
-        if (dueA != null && dueB == null) return -1;
-        if (dueA == null && dueB != null) return 1;
-
-        // Both have due dates: sort by due date ascending (soonest first)
-        if (dueA != null && dueB != null) {
+        if (aHasDue && bHasDue) {
           final comparison = dueA.compareTo(dueB);
           if (comparison != 0) return comparison;
+        } else if (aHasDue) {
+          return -1; // a has due date, b doesn't -> a comes first
+        } else if (bHasDue) {
+          return 1; // b has due date, a doesn't -> b comes first
         }
 
-        // Same due date or both null: preserve creation date order (newest first)
+        // Fallback: same due date or both null -> newest creation date first
         return b.meta.dateFrom.compareTo(a.meta.dateFrom);
       });
   }
