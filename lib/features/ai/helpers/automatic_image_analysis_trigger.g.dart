@@ -9,12 +9,20 @@ part of 'automatic_image_analysis_trigger.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider for the automatic image analysis trigger helper.
+///
+/// Uses keepAlive to prevent disposal during async operations.
+/// The trigger stores a Ref and uses it in async operations, so it must
+/// remain valid throughout the inference lifecycle.
 
 @ProviderFor(automaticImageAnalysisTrigger)
 final automaticImageAnalysisTriggerProvider =
     AutomaticImageAnalysisTriggerProvider._();
 
 /// Provider for the automatic image analysis trigger helper.
+///
+/// Uses keepAlive to prevent disposal during async operations.
+/// The trigger stores a Ref and uses it in async operations, so it must
+/// remain valid throughout the inference lifecycle.
 
 final class AutomaticImageAnalysisTriggerProvider extends $FunctionalProvider<
         AutomaticImageAnalysisTrigger,
@@ -22,13 +30,17 @@ final class AutomaticImageAnalysisTriggerProvider extends $FunctionalProvider<
         AutomaticImageAnalysisTrigger>
     with $Provider<AutomaticImageAnalysisTrigger> {
   /// Provider for the automatic image analysis trigger helper.
+  ///
+  /// Uses keepAlive to prevent disposal during async operations.
+  /// The trigger stores a Ref and uses it in async operations, so it must
+  /// remain valid throughout the inference lifecycle.
   AutomaticImageAnalysisTriggerProvider._()
       : super(
           from: null,
           argument: null,
           retry: null,
           name: r'automaticImageAnalysisTriggerProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -58,4 +70,4 @@ final class AutomaticImageAnalysisTriggerProvider extends $FunctionalProvider<
 }
 
 String _$automaticImageAnalysisTriggerHash() =>
-    r'37a87e5fe419127f846a61fbb5f42d5beff09b1c';
+    r'25e5e327a02460f5fb1425b4474c64d8e0991c01';

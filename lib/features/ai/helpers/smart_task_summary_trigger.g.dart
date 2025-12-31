@@ -9,24 +9,36 @@ part of 'smart_task_summary_trigger.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider for the smart task summary trigger.
+///
+/// Uses keepAlive to prevent disposal during async operations.
+/// The trigger stores a Ref and uses it in async operations, so it must
+/// remain valid throughout the inference lifecycle.
 
 @ProviderFor(smartTaskSummaryTrigger)
 final smartTaskSummaryTriggerProvider = SmartTaskSummaryTriggerProvider._();
 
 /// Provider for the smart task summary trigger.
+///
+/// Uses keepAlive to prevent disposal during async operations.
+/// The trigger stores a Ref and uses it in async operations, so it must
+/// remain valid throughout the inference lifecycle.
 
 final class SmartTaskSummaryTriggerProvider extends $FunctionalProvider<
     SmartTaskSummaryTrigger,
     SmartTaskSummaryTrigger,
     SmartTaskSummaryTrigger> with $Provider<SmartTaskSummaryTrigger> {
   /// Provider for the smart task summary trigger.
+  ///
+  /// Uses keepAlive to prevent disposal during async operations.
+  /// The trigger stores a Ref and uses it in async operations, so it must
+  /// remain valid throughout the inference lifecycle.
   SmartTaskSummaryTriggerProvider._()
       : super(
           from: null,
           argument: null,
           retry: null,
           name: r'smartTaskSummaryTriggerProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -55,4 +67,4 @@ final class SmartTaskSummaryTriggerProvider extends $FunctionalProvider<
 }
 
 String _$smartTaskSummaryTriggerHash() =>
-    r'49172b201584ca70f5f32c6770a6c2815baa416b';
+    r'614d7cb6a692b179339247dc8f501df362a236d1';

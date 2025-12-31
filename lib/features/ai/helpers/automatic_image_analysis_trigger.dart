@@ -92,7 +92,11 @@ class AutomaticImageAnalysisTrigger {
 }
 
 /// Provider for the automatic image analysis trigger helper.
-@riverpod
+///
+/// Uses keepAlive to prevent disposal during async operations.
+/// The trigger stores a Ref and uses it in async operations, so it must
+/// remain valid throughout the inference lifecycle.
+@Riverpod(keepAlive: true)
 AutomaticImageAnalysisTrigger automaticImageAnalysisTrigger(Ref ref) {
   return AutomaticImageAnalysisTrigger(
     ref: ref,
