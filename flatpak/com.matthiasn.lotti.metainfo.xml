@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.793" date="2025-12-31">
+      <description>
+        <p>Visual Mnemonics: Tasks can now have cover art images for memorable visual representation. Set any linked image as a task's cover art via the action menu. Features include cover art thumbnails on task cards (with filter toggle), a cinematic 2:1 collapsible SliverAppBar in task details, glass effect overlay buttons, and horizontal crop adjustment for positioning.</p>
+      </description>
+    </release>
     <release version="0.9.792" date="2025-12-31">
       <description>
         <p>Riverpod 3 Migration: Upgraded to Riverpod 3.x with comprehensive codebase migration. Updated all providers to new syntax, added ref.mounted checks after async gaps, converted family providers to constructor-based parameters, and added ref.onDispose cleanup handlers. Fixed disposed ref access errors in autoDispose providers and checklist item resolution.</p>

@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.793] - 2025-12-31
+### Added
+- Visual Mnemonics: Tasks can now have cover art images for memorable visual representation
+  - Set any linked image as a task's cover art via the image action menu
+  - Cover art thumbnails displayed on task cards (toggle in filter modal)
+  - Cinematic 2:1 collapsible SliverAppBar with cover art in task details
+  - Glass effect icon containers for overlay buttons on cover art
+  - Horizontal crop adjustment for cover art positioning
+
+### Changed
+- Task detail app bar adapts between compact (no cover) and expandable (with cover) modes
+- Added comprehensive test coverage for cover art widgets
+
 ## [0.9.792] - 2025-12-31
 ### Changed
 - Upgraded to Riverpod 3.x with comprehensive codebase migration
