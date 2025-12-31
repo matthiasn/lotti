@@ -19,7 +19,7 @@ class SubtleActionChip extends StatelessWidget {
     super.key,
   }) : assert(
           label != null || child != null,
-          'Either label or child must be provided',
+          'Provide either label or child, not neither',
         );
 
   final String? label;

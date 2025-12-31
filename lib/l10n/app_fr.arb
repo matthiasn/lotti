@@ -431,7 +431,7 @@
   "taskDueToday": "Échéance aujourd'hui",
   "taskDueTomorrow": "Échéance demain",
   "taskDueYesterday": "Échéance hier",
-  "taskDueInDays": "Échéance dans {days} jours",
+  "taskDueInDays": "Échéance dans {days, plural, =1{1 jour} other{{days} jours}}",
   "@taskDueInDays": {
     "placeholders": {
       "days": {
@@ -439,7 +439,7 @@
       }
     }
   },
-  "taskOverdueByDays": "En retard de {days} jours",
+  "taskOverdueByDays": "En retard de {days, plural, =1{1 jour} other{{days} jours}}",
   "@taskOverdueByDays": {
     "placeholders": {
       "days": {
@@ -449,5 +449,13 @@
   },
   "taskDueDateLabel": "Date d'échéance",
   "taskNoDueDateLabel": "Pas de date d'échéance",
+  "taskDueDateWithDate": "Échéance : {date}",
+  "@taskDueDateWithDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "clearButton": "Effacer"
 }

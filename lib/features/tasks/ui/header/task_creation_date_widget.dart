@@ -19,12 +19,10 @@ class TaskCreationDateWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: taskId);
-    final entryState = ref.watch(provider).value;
+    final entryState = ref.watch(provider).valueOrNull;
     final entry = entryState?.entry;
 
-    if (entry == null || entry is! Task) {
-      return const SizedBox.shrink();
-    }
+    if (entry is! Task) return const SizedBox.shrink();
 
     return GestureDetector(
       onTap: () =>

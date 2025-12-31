@@ -448,5 +448,13 @@
   },
   "taskDueDateLabel": "Data scadenței",
   "taskNoDueDateLabel": "Fără dată scadentă",
+  "taskDueDateWithDate": "Scadent: {date}",
+  "@taskDueDateWithDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "clearButton": "Șterge"
 }

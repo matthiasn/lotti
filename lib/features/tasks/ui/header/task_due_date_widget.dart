@@ -10,15 +10,18 @@ Future<void> showDueDatePicker({
   required DateTime? initialDate,
   required Future<void> Function(DateTime? newDate) onDueDateChanged,
 }) async {
-  var selectedDate = initialDate ?? DateTime.now();
+  final effectiveInitialDate = initialDate ?? DateTime.now();
+  var selectedDate = effectiveInitialDate;
+  var userHasChangedDate = false;
 
   await ModalUtils.showSinglePageModal<void>(
     context: context,
     builder: (modalContext) {
       return _DueDatePicker(
-        initialDate: selectedDate,
+        initialDate: effectiveInitialDate,
         onDateChanged: (date) {
           selectedDate = date;
+          userHasChangedDate = true;
         },
       );
     },
@@ -31,7 +34,10 @@ Future<void> showDueDatePicker({
       },
       onDone: () async {
         Navigator.of(context).pop();
-        if (selectedDate != initialDate) {
+        // Only update if user actually interacted with the picker
+        // or if there was an existing date that's now different
+        if (userHasChangedDate ||
+            (initialDate != null && selectedDate != initialDate)) {
           await onDueDateChanged(selectedDate);
         }
       },
@@ -61,10 +67,8 @@ class _DueDatePickerState extends State<_DueDatePicker> {
   void initState() {
     super.initState();
     _selectedDate = widget.initialDate;
-    // Pass initial value to callback
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.onDateChanged(_selectedDate);
-    });
+    // Note: We no longer call onDateChanged here to avoid triggering
+    // userHasChangedDate when the widget initializes
   }
 
   @override

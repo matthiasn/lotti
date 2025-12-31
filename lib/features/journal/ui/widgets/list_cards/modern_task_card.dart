@@ -6,12 +6,11 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
+import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
@@ -101,7 +100,7 @@ class ModernTaskCard extends StatelessWidget {
             const SizedBox.shrink(),
           // RIGHT: Due date with color logic
           if (hasDueDate)
-            _DueDateText(
+            DueDateText(
               dueDate: task.data.due!,
             )
           else
@@ -201,111 +200,6 @@ class ModernTaskCard extends StatelessWidget {
       onHold: (_) => Icons.pause_circle_outline_rounded,
       done: (_) => Icons.check_circle_rounded,
       rejected: (_) => Icons.cancel_rounded,
-    );
-  }
-}
-
-/// Widget to display due date with color coding for overdue/today status.
-/// Supports tapping to toggle between absolute (e.g., "Dec 24, 2025") and
-/// relative (e.g., "Due in 5 days") date display.
-class _DueDateText extends StatefulWidget {
-  const _DueDateText({required this.dueDate});
-
-  final DateTime dueDate;
-
-  @override
-  State<_DueDateText> createState() => _DueDateTextState();
-}
-
-class _DueDateTextState extends State<_DueDateText> {
-  bool _showRelative = false;
-
-  Color _getColor(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDateDay = DateTime(
-      widget.dueDate.year,
-      widget.dueDate.month,
-      widget.dueDate.day,
-    );
-
-    if (dueDateDay.isBefore(today)) {
-      return taskStatusRed; // Overdue
-    }
-    if (dueDateDay == today) {
-      return taskStatusOrange; // Due today
-    }
-    return context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
-  }
-
-  String _getAbsoluteText(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDateDay = DateTime(
-      widget.dueDate.year,
-      widget.dueDate.month,
-      widget.dueDate.day,
-    );
-
-    if (dueDateDay == today) {
-      return context.messages.taskDueToday;
-    }
-    // Include year for clarity, with "Due:" prefix
-    return 'Due: ${DateFormat.yMMMd().format(widget.dueDate)}';
-  }
-
-  String _getRelativeText(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDateDay = DateTime(
-      widget.dueDate.year,
-      widget.dueDate.month,
-      widget.dueDate.day,
-    );
-
-    final difference = dueDateDay.difference(today).inDays;
-
-    if (difference == 0) {
-      return context.messages.taskDueToday;
-    } else if (difference == 1) {
-      return context.messages.taskDueTomorrow;
-    } else if (difference == -1) {
-      return context.messages.taskDueYesterday;
-    } else if (difference > 1) {
-      return context.messages.taskDueInDays(difference);
-    } else {
-      // Overdue by multiple days
-      return context.messages.taskOverdueByDays(-difference);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _getColor(context);
-    final text =
-        _showRelative ? _getRelativeText(context) : _getAbsoluteText(context);
-
-    return GestureDetector(
-      onTap: () => setState(() => _showRelative = !_showRelative),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.event_rounded,
-            size: AppTheme.statusIndicatorFontSize,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: context.textTheme.bodySmall?.copyWith(
-              fontSize: AppTheme.statusIndicatorFontSize,
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

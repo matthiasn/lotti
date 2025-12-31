@@ -2727,6 +2727,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskNoDueDateLabel => 'Kein Fälligkeitsdatum';
 
   @override
+  String taskDueDateWithDate(String date) {
+    return 'Fällig: $date';
+  }
+
+  @override
   String get clearButton => 'Löschen';
 
   @override

@@ -2719,6 +2719,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskNoDueDateLabel => 'Fără dată scadentă';
 
   @override
+  String taskDueDateWithDate(String date) {
+    return 'Scadent: $date';
+  }
+
+  @override
   String get clearButton => 'Șterge';
 
   @override

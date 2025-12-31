@@ -368,6 +368,14 @@
   },
   "taskDueDateLabel": "Fälligkeitsdatum",
   "taskNoDueDateLabel": "Kein Fälligkeitsdatum",
+  "taskDueDateWithDate": "Fällig: {date}",
+  "@taskDueDateWithDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "clearButton": "Löschen",
   "taskStatusAll": "Alle",
   "taskStatusBlocked": "Blockiert",

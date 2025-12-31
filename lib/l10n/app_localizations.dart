@@ -5041,13 +5041,13 @@ abstract class AppLocalizations {
   /// No description provided for @taskDueInDays.
   ///
   /// In en, this message translates to:
-  /// **'Due in {days} days'**
+  /// **'Due in {days, plural, =1{1 day} other{{days} days}}'**
   String taskDueInDays(int days);
 
   /// No description provided for @taskOverdueByDays.
   ///
   /// In en, this message translates to:
-  /// **'Overdue by {days} days'**
+  /// **'Overdue by {days, plural, =1{1 day} other{{days} days}}'**
   String taskOverdueByDays(int days);
 
   /// No description provided for @taskDueDateLabel.
@@ -5061,6 +5061,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No due date'**
   String get taskNoDueDateLabel;
+
+  /// No description provided for @taskDueDateWithDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due: {date}'**
+  String taskDueDateWithDate(String date);
 
   /// No description provided for @clearButton.
   ///

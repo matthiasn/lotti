@@ -2715,12 +2715,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String taskDueInDays(int days) {
-    return 'Échéance dans $days jours';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours',
+      one: '1 jour',
+    );
+    return 'Échéance dans $_temp0';
   }
 
   @override
   String taskOverdueByDays(int days) {
-    return 'En retard de $days jours';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours',
+      one: '1 jour',
+    );
+    return 'En retard de $_temp0';
   }
 
   @override
@@ -2728,6 +2740,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get taskNoDueDateLabel => 'Pas de date d\'échéance';
+
+  @override
+  String taskDueDateWithDate(String date) {
+    return 'Échéance : $date';
+  }
 
   @override
   String get clearButton => 'Effacer';

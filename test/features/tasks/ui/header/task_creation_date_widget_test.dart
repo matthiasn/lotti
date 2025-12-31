@@ -83,11 +83,12 @@ void main() {
       expect(
           find.text(DateFormat.yMMMd().format(creationDate)), findsOneWidget);
 
-      // Verify time is NOT displayed
-      expect(find.textContaining('14:30'), findsNothing);
+      // Verify time is NOT displayed (using same format used by the widget)
+      final timeStr = DateFormat.Hm().format(creationDate);
+      expect(find.textContaining(timeStr), findsNothing);
     });
 
-    testWidgets('returns empty widget for non-Task entries', (tester) async {
+    testWidgets('renders for Task entries', (tester) async {
       final task = testTask;
 
       final overrides = <Override>[

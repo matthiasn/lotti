@@ -2692,12 +2692,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String taskDueInDays(int days) {
-    return 'Due in $days days';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'Due in $_temp0';
   }
 
   @override
   String taskOverdueByDays(int days) {
-    return 'Overdue by $days days';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'Overdue by $_temp0';
   }
 
   @override
@@ -2705,6 +2717,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskNoDueDateLabel => 'No due date';
+
+  @override
+  String taskDueDateWithDate(String date) {
+    return 'Due: $date';
+  }
 
   @override
   String get clearButton => 'Clear';
