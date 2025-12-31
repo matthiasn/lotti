@@ -98,9 +98,10 @@ void main() {
       // Verify SegmentedButton is present
       expect(find.byType(SegmentedButton<TaskSortOption>), findsOneWidget);
 
-      // Verify both segment labels are present
+      // Verify all segment labels are present
+      expect(find.text('Due Date'), findsOneWidget);
+      expect(find.text('Created'), findsOneWidget);
       expect(find.text('Priority'), findsOneWidget);
-      expect(find.text('Date'), findsOneWidget);
     });
 
     testWidgets('shows Priority selected when sortOption is byPriority',
@@ -144,16 +145,31 @@ void main() {
       );
     });
 
-    testWidgets('calls setSortOption when Date segment is tapped',
+    testWidgets('calls setSortOption when Created segment is tapped',
         (tester) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
-      // Tap on Date segment
-      await tester.tap(find.text('Date'));
+      // Tap on Created segment
+      await tester.tap(find.text('Created'));
       await tester.pump();
 
       expect(fakeController.sortOptionCalls, contains(TaskSortOption.byDate));
+    });
+
+    testWidgets('calls setSortOption when Due Date segment is tapped',
+        (tester) async {
+      await tester.pumpWidget(buildSubject(createState()));
+      await tester.pumpAndSettle();
+
+      // Tap on Due Date segment
+      await tester.tap(find.text('Due Date'));
+      await tester.pump();
+
+      expect(
+        fakeController.sortOptionCalls,
+        contains(TaskSortOption.byDueDate),
+      );
     });
 
     testWidgets('displays sort by label', (tester) async {
@@ -164,17 +180,32 @@ void main() {
       expect(find.text('Sort by'), findsOneWidget);
     });
 
-    testWidgets('SegmentedButton has two segments', (tester) async {
+    testWidgets('SegmentedButton has three segments', (tester) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
-      // Verify SegmentedButton has exactly 2 segments
+      // Verify SegmentedButton has exactly 3 segments
       final segmentedButton = tester.widget<SegmentedButton<TaskSortOption>>(
         find.byType(SegmentedButton<TaskSortOption>),
       );
-      expect(segmentedButton.segments.length, 2);
-      expect(segmentedButton.segments[0].value, TaskSortOption.byPriority);
+      expect(segmentedButton.segments.length, 3);
+      // Order: Due Date, Created, Priority
+      expect(segmentedButton.segments[0].value, TaskSortOption.byDueDate);
       expect(segmentedButton.segments[1].value, TaskSortOption.byDate);
+      expect(segmentedButton.segments[2].value, TaskSortOption.byPriority);
+    });
+
+    testWidgets('shows Due Date selected when sortOption is byDueDate',
+        (tester) async {
+      await tester.pumpWidget(
+          buildSubject(createState(sortOption: TaskSortOption.byDueDate)));
+      await tester.pumpAndSettle();
+
+      final segmentedButton = tester.widget<SegmentedButton<TaskSortOption>>(
+        find.byType(SegmentedButton<TaskSortOption>),
+      );
+
+      expect(segmentedButton.selected, {TaskSortOption.byDueDate});
     });
   });
 }

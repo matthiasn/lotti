@@ -425,6 +425,8 @@
   "tasksSortByLabel": "Ordenar por",
   "tasksSortByPriority": "Prioridad",
   "tasksSortByDate": "Fecha",
+  "tasksSortByDueDate": "Vencimiento",
+  "tasksSortByCreationDate": "Creación",
   "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas",
   "tasksShowDueDate": "Mostrar fecha de vencimiento en tarjetas",
   "taskDueToday": "Vence hoy",

@@ -615,6 +615,12 @@ class JournalPageController extends _$JournalPageController {
       final labelIds = _selectedLabelIds;
       final priorities = _selectedPriorities;
 
+      // For due date sorting, we need to fetch and sort in memory since
+      // due dates are stored in serialized JSON, not a database column.
+      // Use date ordering as a fallback base query.
+      final sortByDateInDb = _sortOption == TaskSortOption.byDate ||
+          _sortOption == TaskSortOption.byDueDate;
+
       final res = await _db.getTasks(
         ids: ids,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
@@ -622,10 +628,15 @@ class JournalPageController extends _$JournalPageController {
         categoryIds: categoryIds.toList(),
         labelIds: labelIds.toList(),
         priorities: priorities.toList(),
-        sortByDate: _sortOption == TaskSortOption.byDate,
+        sortByDate: sortByDateInDb,
         limit: pageSize,
         offset: pageKey,
       );
+
+      // Apply in-memory due date sorting if needed
+      if (_sortOption == TaskSortOption.byDueDate) {
+        return _sortByDueDate(res);
+      }
 
       return res;
     } else {
@@ -641,6 +652,35 @@ class JournalPageController extends _$JournalPageController {
         offset: pageKey,
       );
     }
+  }
+
+  /// Sorts tasks by due date (soonest first, tasks without due dates at end).
+  /// Preserves creation date order for tasks with the same due date or no due date.
+  ///
+  /// Note: This sorting is applied per-page after database fetch. Due dates are
+  /// stored in serialized JSON, not as an indexed column, so global cross-page
+  /// ordering is not guaranteed. Tasks are correctly sorted within each page.
+  List<JournalEntity> _sortByDueDate(List<JournalEntity> entities) {
+    return List<JournalEntity>.from(entities)
+      ..sort((a, b) {
+        final dueA = a is Task ? a.data.due : null;
+        final dueB = b is Task ? b.data.due : null;
+
+        final aHasDue = dueA != null;
+        final bHasDue = dueB != null;
+
+        if (aHasDue && bHasDue) {
+          final comparison = dueA.compareTo(dueB);
+          if (comparison != 0) return comparison;
+        } else if (aHasDue) {
+          return -1; // a has due date, b doesn't -> a comes first
+        } else if (bHasDue) {
+          return 1; // b has due date, a doesn't -> b comes first
+        }
+
+        // Fallback: same due date or both null -> newest creation date first
+        return b.meta.dateFrom.compareTo(a.meta.dateFrom);
+      });
   }
 
   // Getters for testing

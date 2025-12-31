@@ -2688,6 +2688,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSortByDate => 'Dată';
 
   @override
+  String get tasksSortByDueDate => 'Scadență';
+
+  @override
+  String get tasksSortByCreationDate => 'Creație';
+
+  @override
   String get tasksShowCreationDate => 'Afișează data creării pe carduri';
 
   @override

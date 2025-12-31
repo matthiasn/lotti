@@ -345,6 +345,8 @@
   "tasksSortByLabel": "Sortieren nach",
   "tasksSortByPriority": "Priorität",
   "tasksSortByDate": "Datum",
+  "tasksSortByDueDate": "Fälligkeit",
+  "tasksSortByCreationDate": "Erstellt",
   "tasksShowCreationDate": "Erstellungsdatum auf Karten anzeigen",
   "tasksShowDueDate": "Fälligkeitsdatum auf Karten anzeigen",
   "taskDueToday": "Heute fällig",

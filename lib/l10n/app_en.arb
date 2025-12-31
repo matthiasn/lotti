@@ -978,6 +978,8 @@
   "tasksSortByLabel": "Sort by",
   "tasksSortByPriority": "Priority",
   "tasksSortByDate": "Date",
+  "tasksSortByDueDate": "Due Date",
+  "tasksSortByCreationDate": "Created",
   "tasksShowCreationDate": "Show creation date on cards",
   "tasksShowDueDate": "Show due date on cards",
   "taskDueToday": "Due Today",

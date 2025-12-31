@@ -28,14 +28,19 @@ class TaskSortFilter extends ConsumerWidget {
         SegmentedButton<TaskSortOption>(
           segments: [
             ButtonSegment(
-              value: TaskSortOption.byPriority,
-              label: Text(context.messages.tasksSortByPriority),
-              icon: const Icon(Icons.priority_high_rounded, size: 18),
+              value: TaskSortOption.byDueDate,
+              label: Text(context.messages.tasksSortByDueDate),
+              icon: const Icon(Icons.event_rounded, size: 18),
             ),
             ButtonSegment(
               value: TaskSortOption.byDate,
-              label: Text(context.messages.tasksSortByDate),
+              label: Text(context.messages.tasksSortByCreationDate),
               icon: const Icon(Icons.calendar_today_rounded, size: 18),
+            ),
+            ButtonSegment(
+              value: TaskSortOption.byPriority,
+              label: Text(context.messages.tasksSortByPriority),
+              icon: const Icon(Icons.priority_high_rounded, size: 18),
             ),
           ],
           selected: {state.sortOption},

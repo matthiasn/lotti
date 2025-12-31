@@ -2698,6 +2698,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksSortByDate => 'Date';
 
   @override
+  String get tasksSortByDueDate => 'Échéance';
+
+  @override
+  String get tasksSortByCreationDate => 'Création';
+
+  @override
   String get tasksShowCreationDate =>
       'Afficher la date de création sur les cartes';
 
