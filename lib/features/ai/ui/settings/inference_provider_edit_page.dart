@@ -44,7 +44,7 @@ class _InferenceProviderEditPageState
     final formState = ref
         .watch(
             inferenceProviderFormControllerProvider(configId: widget.configId))
-        .valueOrNull;
+        .value;
 
     final isFormValid = formState != null &&
         formState.isValid &&

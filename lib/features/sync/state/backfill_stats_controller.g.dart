@@ -6,22 +6,55 @@ part of 'backfill_stats_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$backfillStatsControllerHash() =>
-    r'772bd42791a2edc3214b6b91fed7be05e77cbea2';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [BackfillStatsController].
 @ProviderFor(BackfillStatsController)
-final backfillStatsControllerProvider = AutoDisposeNotifierProvider<
-    BackfillStatsController, BackfillStatsState>.internal(
-  BackfillStatsController.new,
-  name: r'backfillStatsControllerProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$backfillStatsControllerHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final backfillStatsControllerProvider = BackfillStatsControllerProvider._();
 
-typedef _$BackfillStatsController = AutoDisposeNotifier<BackfillStatsState>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class BackfillStatsControllerProvider
+    extends $NotifierProvider<BackfillStatsController, BackfillStatsState> {
+  BackfillStatsControllerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'backfillStatsControllerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$backfillStatsControllerHash();
+
+  @$internal
+  @override
+  BackfillStatsController create() => BackfillStatsController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BackfillStatsState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BackfillStatsState>(value),
+    );
+  }
+}
+
+String _$backfillStatsControllerHash() =>
+    r'b5960cacbaceec5f213b97669b7c30cbb45cad29';
+
+abstract class _$BackfillStatsController extends $Notifier<BackfillStatsState> {
+  BackfillStatsState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<BackfillStatsState, BackfillStatsState>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<BackfillStatsState, BackfillStatsState>,
+        BackfillStatsState,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

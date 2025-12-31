@@ -303,6 +303,30 @@ class _CompactProviderName extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final providerAsync = ref.watch(aiConfigByIdProvider(providerId));
 
+    // Handle error state first (including errors during loading/retrying)
+    if (providerAsync.hasError) {
+      return Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.statusIndicatorPaddingHorizontal,
+          vertical: AppTheme.statusIndicatorPaddingVertical,
+        ),
+        decoration: BoxDecoration(
+          color: context.colorScheme.errorContainer
+              .withValues(alpha: AppTheme.alphaErrorContainer),
+          borderRadius:
+              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall),
+        ),
+        child: Text(
+          context.messages.commonError,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.error
+                .withValues(alpha: AppTheme.alphaErrorText),
+            fontSize: AppTheme.statusIndicatorFontSizeCompact,
+          ),
+        ),
+      );
+    }
+
     return providerAsync.when(
       data: (provider) {
         final providerName = provider?.name ?? context.messages.commonUnknown;
@@ -364,26 +388,8 @@ class _CompactProviderName extends ConsumerWidget {
           ),
         ),
       ),
-      error: (_, __) => Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.statusIndicatorPaddingHorizontal,
-          vertical: AppTheme.statusIndicatorPaddingVertical,
-        ),
-        decoration: BoxDecoration(
-          color: context.colorScheme.errorContainer
-              .withValues(alpha: AppTheme.alphaErrorContainer),
-          borderRadius:
-              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall),
-        ),
-        child: Text(
-          context.messages.commonError,
-          style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.error
-                .withValues(alpha: AppTheme.alphaErrorText),
-            fontSize: AppTheme.statusIndicatorFontSizeCompact,
-          ),
-        ),
-      ),
+      // Error is handled above with hasError check
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

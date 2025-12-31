@@ -6,23 +6,52 @@ part of 'checklist_completion_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(ChecklistCompletionService)
+final checklistCompletionServiceProvider =
+    ChecklistCompletionServiceProvider._();
+
+final class ChecklistCompletionServiceProvider extends $AsyncNotifierProvider<
+    ChecklistCompletionService, List<ChecklistCompletionSuggestion>> {
+  ChecklistCompletionServiceProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'checklistCompletionServiceProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$checklistCompletionServiceHash();
+
+  @$internal
+  @override
+  ChecklistCompletionService create() => ChecklistCompletionService();
+}
+
 String _$checklistCompletionServiceHash() =>
     r'325f3b15abd863d11de14f0d5386023a9ee14ef9';
 
-/// See also [ChecklistCompletionService].
-@ProviderFor(ChecklistCompletionService)
-final checklistCompletionServiceProvider = AutoDisposeAsyncNotifierProvider<
-    ChecklistCompletionService, List<ChecklistCompletionSuggestion>>.internal(
-  ChecklistCompletionService.new,
-  name: r'checklistCompletionServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$checklistCompletionServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef _$ChecklistCompletionService
-    = AutoDisposeAsyncNotifier<List<ChecklistCompletionSuggestion>>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+abstract class _$ChecklistCompletionService
+    extends $AsyncNotifier<List<ChecklistCompletionSuggestion>> {
+  FutureOr<List<ChecklistCompletionSuggestion>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<
+        AsyncValue<List<ChecklistCompletionSuggestion>>,
+        List<ChecklistCompletionSuggestion>>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<List<ChecklistCompletionSuggestion>>,
+            List<ChecklistCompletionSuggestion>>,
+        AsyncValue<List<ChecklistCompletionSuggestion>>,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -38,10 +39,17 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() => tester.view.reset());
 
-    // Combine default overrides with test-specific ones
+    // Check if test already provides an eligibleChatModelsForCategoryProvider override
+    // The toString() of provider overrides includes 'AiConfigModel' for this provider type
+    final hasModelsOverride = overrides.any(
+      (o) => o.toString().contains('AiConfigModel'),
+    );
+
+    // Only add default empty models override if test doesn't provide one
     final allOverrides = [
-      eligibleChatModelsForCategoryProvider('test-category')
-          .overrideWith((_) async => []),
+      if (!hasModelsOverride)
+        eligibleChatModelsForCategoryProvider('test-category')
+            .overrideWith((_) async => []),
       ...overrides,
     ];
 
@@ -115,56 +123,57 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('shows "No eligible models" inside settings sheet when none',
-        (tester) async {
-      final mockAiRepo = MockAiConfigRepository();
-      when(() => mockAiRepo.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => []);
-      when(() => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => []);
+    testWidgets(
+      'shows "No eligible models" inside settings sheet when none',
+      (tester) async {
+        final mockAiRepo = MockAiConfigRepository();
+        when(() => mockAiRepo.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => []);
+        when(() => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => []);
 
-      final session = ChatSession(
-        id: 'test-session',
-        title: 'New Chat',
-        createdAt: DateTime(2024),
-        lastMessageAt: DateTime(2024),
-        messages: [],
-        metadata: const {'selectedModelId': 'test-model'},
-      );
+        final session = ChatSession(
+          id: 'test-session',
+          title: 'New Chat',
+          createdAt: DateTime(2024),
+          lastMessageAt: DateTime(2024),
+          messages: [],
+          metadata: const {'selectedModelId': 'test-model'},
+        );
 
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => session);
-      when(() => mockChatRepository.getSession('test-session'))
-          .thenAnswer((_) async => session);
-      when(() => mockChatRepository.getSession(any()))
-          .thenAnswer((_) async => session);
-      when(() => mockChatRepository.saveSession(any()))
-          .thenAnswer((_) async => session);
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => session);
+        when(() => mockChatRepository.getSession('test-session'))
+            .thenAnswer((_) async => session);
+        when(() => mockChatRepository.getSession(any()))
+            .thenAnswer((_) async => session);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => session);
 
-      await setupTestWidget(
-        tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
-          ],
-          child: const MaterialApp(
+        await setupTestWidget(
+          tester,
+          const MaterialApp(
             home: Scaffold(
               body: ChatInterface(categoryId: 'test-category'),
             ),
           ),
-        ),
-      );
+          overrides: [
+            chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
+          ],
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Open Assistant Settings via header button
-      await tester.tap(find.byTooltip('Assistant settings'));
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(find.text('Assistant Settings'), findsOneWidget);
-      expect(find.text('No eligible models'), findsOneWidget);
-    });
+        // Open Assistant Settings via header button
+        await tester.tap(find.byTooltip('Assistant settings'));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.text('Assistant Settings'), findsOneWidget);
+        expect(find.text('No eligible models'), findsOneWidget);
+      },
+    );
 
     testWidgets('input disabled and settings action when no model selected',
         (tester) async {
@@ -237,6 +246,131 @@ void main() {
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.error_outline), findsNothing);
+    });
+
+    testWidgets('error banner retry calls retryLastMessage', (tester) async {
+      // Create a session with a message so retry has something to retry
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'Test Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [
+          ChatMessage.user('Hello'),
+        ],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
+      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+
+      // First sendMessage call fails to trigger error state
+      var sendCallCount = 0;
+      when(() => mockChatRepository.sendMessage(
+            message: any(named: 'message'),
+            conversationHistory: any(named: 'conversationHistory'),
+            categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
+          )).thenAnswer((_) {
+        sendCallCount++;
+        if (sendCallCount == 1) {
+          // First call throws to trigger error
+          return Stream<String>.error(Exception('Network error'));
+        }
+        // Subsequent calls succeed
+        return Stream.value('Response');
+      });
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
+
+      await setupTestWidget(
+        tester,
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
+          ),
+        ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      // Send a message to trigger the error
+      await tester.enterText(find.byType(TextField), 'Test message');
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      // Error banner should be visible
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+
+      // Tap retry button
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+
+      // sendMessage should have been called twice (original + retry)
+      expect(sendCallCount, 2);
+    });
+
+    testWidgets('clear chat button clears the conversation', (tester) async {
+      final sessionWithMessages = ChatSession(
+        id: 'test-session',
+        title: 'Test Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [
+          ChatMessage.user('Hello'),
+          ChatMessage.assistant('Hi there!'),
+        ],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
+      final emptySession = ChatSession(
+        id: 'new-session',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
+      var createCallCount = 0;
+      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
+          .thenAnswer((_) async {
+        createCallCount++;
+        // First call returns session with messages, subsequent calls return empty
+        return createCallCount == 1 ? sessionWithMessages : emptySession;
+      });
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => sessionWithMessages);
+
+      await setupTestWidget(
+        tester,
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
+          ),
+        ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify messages exist
+      expect(find.text('Hello'), findsOneWidget);
+
+      // Find and tap clear button
+      await tester.tap(find.byIcon(Icons.clear_all));
+      await tester.pumpAndSettle();
+
+      // createSession should have been called twice (initial + clear)
+      expect(createCallCount, 2);
     });
 
     testWidgets('displays empty state with helper text', (tester) async {
@@ -755,137 +889,143 @@ void main() {
     });
 
     testWidgets(
-        'model selection disabled during streaming (via settings sheet)',
-        (tester) async {
-      final mockAiRepo = MockAiConfigRepository();
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        name: 'P',
-        baseUrl: 'https://',
-        apiKey: 'k',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.openAi,
-      );
-      final model = AiConfigModel(
-        id: 'm1',
-        name: 'Model 1',
-        providerModelId: 'm1',
-        inferenceProviderId: provider.id,
-        createdAt: DateTime(2024),
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-        supportsFunctionCalling: true,
-      );
-
-      when(() => mockAiRepo.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => [model]);
-      when(() => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [provider]);
-
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => ChatSession(
-                id: 's1',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: const [],
-                metadata: const {'selectedModelId': 'm1'},
-              ));
-
-      final streamController = StreamController<String>();
-      when(() => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          )).thenAnswer((_) => streamController.stream);
-      when(() => mockChatRepository.saveSession(any()))
-          .thenAnswer((_) async => ChatSession(
-                id: 's1',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: const [],
-                metadata: const {'selectedModelId': 'm1'},
-              ));
-
-      await setupTestWidget(
-        tester,
-        const MaterialApp(
-          home: Scaffold(
-            body: ChatInterface(categoryId: 'test-category'),
-          ),
-        ),
-        overrides: [
-          chatRepositoryProvider.overrideWithValue(mockChatRepository),
-          aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
-          // Override eligible models to return the test model
-          eligibleChatModelsForCategoryProvider('test-category')
-              .overrideWith((_) async => [model]),
-        ],
-      );
-
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField), 'Hi');
-      await tester.pump(); // Let UI update after text entry
-      await tester.tap(find.byIcon(Icons.send));
-      await tester.pump();
-
-      // Open Assistant Settings
-      await tester.tap(find.byTooltip('Assistant settings'));
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(find.text('Assistant Settings'), findsOneWidget);
-      // DropdownFormField should be disabled while streaming
-      final ddFinder = find.byType(DropdownButtonFormField<String>);
-      final dd = tester.widget<DropdownButtonFormField<String>>(ddFinder);
-      expect(dd.onChanged, isNull);
-
-      // Cleanup timers and stream
-      await streamController.close();
-      await tester.pump(const Duration(milliseconds: 250));
-    });
-
-    testWidgets('new chat button triggers session creation', (tester) async {
-      var callCount = 0;
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async {
-        callCount++;
-        return ChatSession(
-          id: 's-new-$callCount',
-          title: 'New Chat $callCount',
+      'model selection disabled during streaming (via settings sheet)',
+      (tester) async {
+        final mockAiRepo = MockAiConfigRepository();
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          name: 'P',
+          baseUrl: 'https://',
+          apiKey: 'k',
           createdAt: DateTime(2024),
-          lastMessageAt: DateTime(2024),
-          messages: const [],
-          metadata: const {'selectedModelId': 'test-model'},
+          inferenceProviderType: InferenceProviderType.openAi,
         );
-      });
+        final model = AiConfigModel(
+          id: 'm1',
+          name: 'Model 1',
+          providerModelId: 'm1',
+          inferenceProviderId: provider.id,
+          createdAt: DateTime(2024),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+          supportsFunctionCalling: true,
+        );
 
-      await setupTestWidget(
-        tester,
-        const MaterialApp(
-          home: Scaffold(
-            body: ChatInterface(categoryId: 'test-category'),
+        when(() => mockAiRepo.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => [model]);
+        when(() => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [provider]);
+
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                  metadata: const {'selectedModelId': 'm1'},
+                ));
+
+        final streamController = StreamController<String>();
+        when(() => mockChatRepository.sendMessage(
+              message: any(named: 'message'),
+              conversationHistory: any(named: 'conversationHistory'),
+              categoryId: any(named: 'categoryId'),
+              modelId: any(named: 'modelId'),
+            )).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any()))
+            .thenAnswer((_) async => ChatSession(
+                  id: 's1',
+                  title: 'New Chat',
+                  createdAt: DateTime(2024),
+                  lastMessageAt: DateTime(2024),
+                  messages: const [],
+                  metadata: const {'selectedModelId': 'm1'},
+                ));
+
+        await setupTestWidget(
+          tester,
+          const MaterialApp(
+            home: Scaffold(
+              body: ChatInterface(categoryId: 'test-category'),
+            ),
           ),
-        ),
-        overrides: [
-          chatRepositoryProvider.overrideWithValue(mockChatRepository),
-        ],
-      );
-      await tester.pumpAndSettle();
+          overrides: [
+            chatRepositoryProvider.overrideWithValue(mockChatRepository),
+            aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
+            // Override eligible models to return the test model
+            eligibleChatModelsForCategoryProvider('test-category')
+                .overrideWith((_) async => [model]),
+          ],
+        );
 
-      // Initial session creation should have been called
-      expect(callCount, 1);
+        await tester.pumpAndSettle();
 
-      // Tap new chat button
-      await tester.tap(find.byIcon(Icons.add_comment_outlined));
-      await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'Hi');
+        await tester.pump(); // Let UI update after text entry
+        await tester.tap(find.byIcon(Icons.send));
+        await tester.pump();
 
-      // Another session should have been created
-      expect(callCount, 2);
-    });
+        // Open Assistant Settings
+        await tester.tap(find.byTooltip('Assistant settings'));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.text('Assistant Settings'), findsOneWidget);
+        // DropdownFormField should be disabled while streaming
+        final ddFinder = find.byType(DropdownButtonFormField<String>);
+        final dd = tester.widget<DropdownButtonFormField<String>>(ddFinder);
+        expect(dd.onChanged, isNull);
+
+        // Cleanup timers and stream
+        await streamController.close();
+        await tester.pump(const Duration(milliseconds: 250));
+      },
+    );
+
+    testWidgets(
+      'new chat button triggers session creation',
+      (tester) async {
+        var callCount = 0;
+        when(() =>
+                mockChatRepository.createSession(categoryId: 'test-category'))
+            .thenAnswer((_) async {
+          callCount++;
+          return ChatSession(
+            id: 's-new-$callCount',
+            title: 'New Chat $callCount',
+            createdAt: DateTime(2024),
+            lastMessageAt: DateTime(2024),
+            messages: const [],
+            metadata: const {'selectedModelId': 'test-model'},
+          );
+        });
+
+        await setupTestWidget(
+          tester,
+          const MaterialApp(
+            home: Scaffold(
+              body: ChatInterface(categoryId: 'test-category'),
+            ),
+          ),
+          overrides: [
+            chatRepositoryProvider.overrideWithValue(mockChatRepository),
+          ],
+        );
+        await tester.pumpAndSettle();
+
+        // Initial session creation should have been called
+        expect(callCount, 1);
+
+        // Tap new chat button
+        await tester.tap(find.byIcon(Icons.add_comment_outlined));
+        await tester.pumpAndSettle();
+
+        // Another session should have been created
+        expect(callCount, 2);
+      },
+    );
 
     testWidgets('shows mic button when input is empty', (tester) async {
       final session = ChatSession(

@@ -16,13 +16,13 @@ import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../test_utils.dart';
+
 class MockOpenAIClient extends Mock implements OpenAIClient {}
 
 class MockHttpClient extends Mock implements http.Client {}
 
 class MockStreamedResponse extends Mock implements http.StreamedResponse {}
-
-class MockRef extends Mock implements Ref<Object?> {}
 
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
@@ -68,21 +68,18 @@ void main() {
     setUp(() {
       mockClient = MockOpenAIClient();
       mockHttpClient = MockHttpClient();
-      container = ProviderContainer();
-
-      // Create and configure the mock ref
-      final mockRef = MockRef();
       final mockOllamaRepo = MockOllamaInferenceRepository();
       final mockGeminiRepo = MockGeminiInferenceRepository();
 
-      // Configure the mock ref to return the mocked OllamaInferenceRepository
-      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
-          .thenReturn(mockOllamaRepo);
-      when(() => mockRef.read(geminiInferenceRepositoryProvider))
-          .thenReturn(mockGeminiRepo);
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+        ],
+      );
 
-      repository =
-          CloudInferenceRepository(mockRef, httpClient: mockHttpClient);
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
       testProvider = AiConfig.inferenceProvider(
         id: 'test-provider-id',
         name: 'Test Provider',
@@ -1280,23 +1277,27 @@ void main() {
     test('constructor with custom httpClient parameter', () {
       final customHttpClient = MockHttpClient();
 
-      // Create and configure a new mock ref for this test
-      final mockRef = MockRef();
+      // Create a container with required provider overrides
       final mockOllamaRepo = MockOllamaInferenceRepository();
       final mockGeminiRepo = MockGeminiInferenceRepository();
 
-      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
-          .thenReturn(mockOllamaRepo);
-      when(() => mockRef.read(geminiInferenceRepositoryProvider))
-          .thenReturn(mockGeminiRepo);
+      final testContainer = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+        ],
+      );
+
+      final ref = testContainer.read(testRefProvider);
 
       final customRepository = CloudInferenceRepository(
-        mockRef,
+        ref,
         httpClient: customHttpClient,
       );
 
       expect(customRepository, isA<CloudInferenceRepository>());
       expect(customRepository.ref, isA<Ref>());
+      testContainer.dispose();
     });
 
     test('generateWithAudio creates proper response structure for Whisper',
@@ -1756,28 +1757,31 @@ void main() {
 
   group('CloudInferenceRepository - Gemini Provider', () {
     late MockHttpClient mockHttpClient;
-    late MockRef mockRef;
+    late ProviderContainer container;
     late MockGeminiInferenceRepository mockGeminiRepo;
     late CloudInferenceRepository repository;
 
     setUp(() {
       mockHttpClient = MockHttpClient();
-      mockRef = MockRef();
       mockGeminiRepo = MockGeminiInferenceRepository();
 
-      when(() => mockRef.read(geminiInferenceRepositoryProvider))
-          .thenReturn(mockGeminiRepo);
-      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
-          .thenReturn(MockOllamaInferenceRepository());
-      // Mock the thoughts toggle provider - default to true for testing
-      when(() => mockRef.read(geminiIncludeThoughtsProvider)).thenReturn(true);
+      container = ProviderContainer(
+        overrides: [
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+          ollamaInferenceRepositoryProvider
+              .overrideWithValue(MockOllamaInferenceRepository()),
+          // Mock the thoughts toggle provider - default to true for testing
+          geminiIncludeThoughtsProvider.overrideWithValue(true),
+        ],
+      );
 
-      repository =
-          CloudInferenceRepository(mockRef, httpClient: mockHttpClient);
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
     });
 
     tearDown(() {
       mockHttpClient.close();
+      container.dispose();
     });
 
     AiConfigInferenceProvider createGeminiProvider() {
@@ -2342,23 +2346,29 @@ void main() {
 
   group('CloudInferenceRepository - generateWithMessages for other providers',
       () {
-    late MockRef mockRef;
+    late ProviderContainer container;
     late CloudInferenceRepository repository;
     late MockOllamaInferenceRepository mockOllamaRepo;
     late MockGeminiInferenceRepository mockGeminiRepo;
 
     setUp(() {
-      mockRef = MockRef();
       mockOllamaRepo = MockOllamaInferenceRepository();
       mockGeminiRepo = MockGeminiInferenceRepository();
 
-      when(() => mockRef.read(geminiInferenceRepositoryProvider))
-          .thenReturn(mockGeminiRepo);
-      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
-          .thenReturn(mockOllamaRepo);
-      when(() => mockRef.read(geminiIncludeThoughtsProvider)).thenReturn(true);
+      container = ProviderContainer(
+        overrides: [
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+          geminiIncludeThoughtsProvider.overrideWithValue(true),
+        ],
+      );
 
-      repository = CloudInferenceRepository(mockRef);
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref);
+    });
+
+    tearDown(() {
+      container.dispose();
     });
 
     test('routes to Ollama repository for Ollama provider', () async {

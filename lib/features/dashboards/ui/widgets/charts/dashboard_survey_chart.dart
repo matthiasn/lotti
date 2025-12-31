@@ -33,7 +33,7 @@ class DashboardSurveyChart extends ConsumerWidget {
       rangeEnd: rangeEnd,
     );
 
-    final items = ref.watch(provider).valueOrNull ?? [];
+    final items = ref.watch(provider).value ?? [];
 
     void onTapAdd() {
       if (chartConfig.surveyType == cfq11SurveyTaskName) {

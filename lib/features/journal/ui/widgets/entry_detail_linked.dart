@@ -27,7 +27,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
     WidgetRef ref,
   ) {
     final provider = linkedEntriesControllerProvider(id: item.id);
-    final entryLinks = ref.watch(provider).valueOrNull ?? [];
+    final entryLinks = ref.watch(provider).value ?? [];
 
     final includeAiEntries =
         ref.watch(includeAiEntriesControllerProvider(id: item.id));

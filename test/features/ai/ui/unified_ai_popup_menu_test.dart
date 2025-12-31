@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -702,11 +703,10 @@ void main() {
           ),
           overrides: [
             availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value([testPrompts.first])),
+                .overrideWith((ref) async => [testPrompts.first]),
             unifiedAiInferenceRepositoryProvider
                 .overrideWithValue(mockInferenceRepository),
-            aiConfigByIdProvider(testPrompts.first.id)
-                .overrideWith((ref) => testPrompts.first),
+            // Note: aiConfigByIdProvider is already overridden in defaultOverrides
           ],
         ),
       );

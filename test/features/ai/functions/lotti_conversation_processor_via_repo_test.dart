@@ -15,7 +15,6 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -25,7 +24,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
-class MockRef extends Mock implements Ref {}
+import '../test_utils.dart';
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
@@ -35,8 +34,75 @@ class MockJournalDb extends Mock implements JournalDb {}
 
 class MockInferenceRepo extends Mock implements InferenceRepositoryInterface {}
 
-class MockConversationRepository extends Mock
-    implements ConversationRepository {}
+/// Mock ConversationRepository that extends the real class.
+/// In Riverpod 3, Notifier classes can't be mocked with `Mock implements`
+/// because they have internal state that's accessed during initialization.
+class MockConversationRepository extends ConversationRepository {
+  MockConversationRepository(this._mockManager);
+
+  final MockConversationManager _mockManager;
+  final List<String> deletedConversationIds = [];
+
+  /// Delegate for sendMessage - set this in tests to control behavior
+  Future<void> Function({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    double temperature,
+    ConversationStrategy? strategy,
+  })? sendMessageDelegate;
+
+  @override
+  void build() {
+    // No-op for mock
+  }
+
+  @override
+  String createConversation({
+    String? systemMessage,
+    int maxTurns = 20,
+  }) {
+    return 'test-conv';
+  }
+
+  @override
+  ConversationManager? getConversation(String conversationId) {
+    return _mockManager;
+  }
+
+  @override
+  void deleteConversation(String conversationId) {
+    deletedConversationIds.add(conversationId);
+  }
+
+  @override
+  Future<void> sendMessage({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    double temperature = 0.7,
+    ConversationStrategy? strategy,
+  }) async {
+    if (sendMessageDelegate != null) {
+      await sendMessageDelegate!(
+        conversationId: conversationId,
+        message: message,
+        model: model,
+        provider: provider,
+        inferenceRepo: inferenceRepo,
+        tools: tools,
+        temperature: temperature,
+        strategy: strategy,
+      );
+    }
+  }
+}
 
 class MockSelectable<T> extends Mock implements Selectable<T> {}
 
@@ -151,7 +217,6 @@ void main() {
   late ProviderContainer container;
   late MockConversationRepository mockConversationRepo;
   late MockConversationManager mockConversationManager;
-  late MockRef mockRef;
   late MockChecklistRepository mockChecklistRepo;
   late MockJournalRepository mockJournalRepo;
   late MockJournalDb mockJournalDb;
@@ -186,55 +251,35 @@ void main() {
   });
 
   // Helper: stub sendMessage to directly invoke the provided strategy
+  // Uses delegate pattern since MockConversationRepository extends the real class
   void stubSendMessageToInvokeStrategy({
-    required ConversationRepository repo,
+    required MockConversationRepository repo,
     required ConversationManager manager,
     required List<ChatCompletionMessageToolCall> toolCalls,
   }) {
-    when(() => repo.sendMessage(
-          conversationId: any(named: 'conversationId'),
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-          tools: any(named: 'tools'),
-          temperature: any(named: 'temperature'),
-          strategy: any(named: 'strategy'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
+    repo.sendMessageDelegate = ({
+      required String conversationId,
+      required String message,
+      required String model,
+      required AiConfigInferenceProvider provider,
+      required InferenceRepositoryInterface inferenceRepo,
+      List<ChatCompletionTool>? tools,
+      double temperature = 0.7,
+      ConversationStrategy? strategy,
+    }) async {
       if (strategy != null) {
         await strategy.processToolCalls(
           toolCalls: toolCalls,
           manager: manager,
         );
       }
-    });
-
-    // Looser matcher in case optional named args differ
-    when(() => repo.sendMessage(
-          conversationId: any(named: 'conversationId'),
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
-      if (strategy != null) {
-        await strategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: manager,
-        );
-      }
-    });
+    };
   }
 
   setUp(() {
-    container = ProviderContainer();
-    mockConversationRepo = MockConversationRepository();
+    // Create mocks in correct order (MockConversationManager first since MockConversationRepository needs it)
     mockConversationManager = MockConversationManager();
-    mockRef = MockRef();
+    mockConversationRepo = MockConversationRepository(mockConversationManager);
     mockChecklistRepo = MockChecklistRepository();
     mockJournalRepo = MockJournalRepository();
     mockJournalDb = MockJournalDb();
@@ -246,24 +291,19 @@ void main() {
       ..registerSingleton<LoggingService>(LoggingService())
       ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true));
 
-    // Ref wiring: use mock ConversationRepository
-    when(() => mockRef.read(conversationRepositoryProvider.notifier))
-        .thenReturn(mockConversationRepo);
-    when(() => mockRef.read(checklistRepositoryProvider))
-        .thenReturn(mockChecklistRepo);
-    when(() => mockRef.read(journalRepositoryProvider))
-        .thenReturn(mockJournalRepo);
+    // Set up container with provider overrides
+    container = ProviderContainer(
+      overrides: [
+        conversationRepositoryProvider.overrideWith(() => mockConversationRepo),
+        checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
+        journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+      ],
+    );
 
-    processor = LottiConversationProcessor(ref: mockRef);
+    final ref = container.read(testRefProvider);
+    processor = LottiConversationProcessor(ref: ref);
 
-    // Conversation wiring
-    when(() => mockConversationRepo.createConversation(
-          systemMessage: any(named: 'systemMessage'),
-          maxTurns: any(named: 'maxTurns'),
-        )).thenReturn('test-conv');
-    when(() => mockConversationRepo.getConversation(any()))
-        .thenReturn(mockConversationManager);
-    when(() => mockConversationRepo.deleteConversation(any())).thenReturn(null);
+    // Conversation wiring - only mock the manager methods now
     when(() => mockConversationManager.messages).thenReturn([]);
     when(() => mockConversationManager.events)
         .thenAnswer((_) => StreamController<ConversationEvent>().stream);

@@ -60,7 +60,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: null),
             )
-            .valueOrNull;
+            .value;
 
         expect(state, isNotNull);
         expect(state!.name.value, equals(template.name));
@@ -119,7 +119,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: null),
             )
-            .valueOrNull;
+            .value;
 
         expect(state!.defaultVariables,
             equals({'key1': 'value1', 'key2': 'value2'}));
@@ -166,7 +166,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: testConfigId),
             )
-            .valueOrNull;
+            .value;
 
         expect(state!.trackPreconfigured, isTrue);
         expect(state.preconfiguredPromptId, equals('task_summary'));
@@ -226,7 +226,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: testConfigId),
             )
-            .valueOrNull;
+            .value;
 
         expect(state!.trackPreconfigured, isFalse);
         // preconfiguredPromptId should still be present
@@ -274,7 +274,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: testConfigId),
             )
-            .valueOrNull;
+            .value;
 
         // Tracking should NOT be enabled since template not found
         expect(state!.trackPreconfigured, isFalse);
@@ -320,7 +320,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: testConfigId),
             )
-            .valueOrNull;
+            .value;
 
         // Tracking flag should NOT be updated since preconfiguredPromptId is null
         expect(state!.trackPreconfigured, isFalse);
@@ -374,7 +374,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: testConfigId),
             )
-            .valueOrNull;
+            .value;
 
         expect(state!.systemMessage.isPure, isFalse);
         expect(state.userMessage.isPure, isFalse);
@@ -413,7 +413,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: null),
             )
-            .valueOrNull;
+            .value;
 
         final config = state!.toAiConfig() as AiConfigPrompt;
         await controller.addConfig(config);
@@ -466,7 +466,7 @@ void main() {
             .read(
               promptFormControllerProvider(configId: testConfigId),
             )
-            .valueOrNull;
+            .value;
 
         final config = state!.toAiConfig() as AiConfigPrompt;
         await controller.updateConfig(config);

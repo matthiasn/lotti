@@ -16,7 +16,6 @@ import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -29,6 +28,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../labels/label_assignment_processor_test.dart' as label_test
     show MockLabelsRepository;
+import '../test_utils.dart';
 
 // Mocks
 class MockAiInputRepository extends Mock implements AiInputRepository {}
@@ -36,8 +36,6 @@ class MockAiInputRepository extends Mock implements AiInputRepository {}
 class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockRef extends Mock implements Ref {}
 
 class MockTaskSummaryRefreshService extends Mock
     implements TaskSummaryRefreshService {}
@@ -467,6 +465,8 @@ void main() {
       late Task task;
       late ChecklistRepository checklistRepository;
 
+      late ProviderContainer container;
+
       setUp(() async {
         journalDb = JournalDb(inMemoryDatabase: true);
         getIt.registerSingleton<JournalDb>(journalDb);
@@ -475,15 +475,10 @@ void main() {
         final mockPersistenceLogic = MockPersistenceLogic();
         final mockLoggingService = MockLoggingService();
         final mockTaskSummaryRefreshService = MockTaskSummaryRefreshService();
-        final mockRef = MockRef();
 
         getIt
           ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
           ..registerSingleton<LoggingService>(mockLoggingService);
-
-        // Configure MockRef to return the mock TaskSummaryRefreshService
-        when(() => mockRef.read(taskSummaryRefreshServiceProvider))
-            .thenReturn(mockTaskSummaryRefreshService);
 
         // Set up default behavior for the triggerTaskSummaryRefreshForChecklist method
         when(
@@ -494,8 +489,17 @@ void main() {
           ),
         ).thenAnswer((_) async => {});
 
-        // Create a real ChecklistRepository with the mocked dependencies
-        checklistRepository = ChecklistRepository(mockRef);
+        // Create ProviderContainer with mocked dependencies
+        container = ProviderContainer(
+          overrides: [
+            taskSummaryRefreshServiceProvider
+                .overrideWithValue(mockTaskSummaryRefreshService),
+          ],
+        );
+        final ref = container.read(testRefProvider);
+
+        // Create a real ChecklistRepository with the ref
+        checklistRepository = ChecklistRepository(ref);
 
         // Override the promptBuilder for this test group to use the real repository
         promptBuilder = PromptBuilderHelper(

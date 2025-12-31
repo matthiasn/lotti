@@ -6,173 +6,104 @@ part of 'journal_focus_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$journalFocusControllerHash() =>
-    r'229387822c8a304890ec00a6ea68319248a5594d';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
-abstract class _$JournalFocusController
-    extends BuildlessAutoDisposeNotifier<JournalFocusIntent?> {
-  late final String id;
-
-  JournalFocusIntent? build({
-    required String id,
-  });
-}
-
-/// See also [JournalFocusController].
 @ProviderFor(JournalFocusController)
-const journalFocusControllerProvider = JournalFocusControllerFamily();
+final journalFocusControllerProvider = JournalFocusControllerFamily._();
 
-/// See also [JournalFocusController].
-class JournalFocusControllerFamily extends Family<JournalFocusIntent?> {
-  /// See also [JournalFocusController].
-  const JournalFocusControllerFamily();
-
-  /// See also [JournalFocusController].
-  JournalFocusControllerProvider call({
-    required String id,
-  }) {
-    return JournalFocusControllerProvider(
-      id: id,
-    );
-  }
-
-  @override
-  JournalFocusControllerProvider getProviderOverride(
-    covariant JournalFocusControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'journalFocusControllerProvider';
-}
-
-/// See also [JournalFocusController].
-class JournalFocusControllerProvider extends AutoDisposeNotifierProviderImpl<
-    JournalFocusController, JournalFocusIntent?> {
-  /// See also [JournalFocusController].
-  JournalFocusControllerProvider({
-    required String id,
-  }) : this._internal(
-          () => JournalFocusController()..id = id,
-          from: journalFocusControllerProvider,
+final class JournalFocusControllerProvider
+    extends $NotifierProvider<JournalFocusController, JournalFocusIntent?> {
+  JournalFocusControllerProvider._(
+      {required JournalFocusControllerFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
           name: r'journalFocusControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$journalFocusControllerHash,
-          dependencies: JournalFocusControllerFamily._dependencies,
-          allTransitiveDependencies:
-              JournalFocusControllerFamily._allTransitiveDependencies,
-          id: id,
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  JournalFocusControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-  }) : super.internal();
-
-  final String id;
+  @override
+  String debugGetCreateSourceHash() => _$journalFocusControllerHash();
 
   @override
-  JournalFocusIntent? runNotifierBuild(
-    covariant JournalFocusController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-    );
+  String toString() {
+    return r'journalFocusControllerProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  Override overrideWith(JournalFocusController Function() create) {
-    return ProviderOverride(
+  JournalFocusController create() => JournalFocusController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(JournalFocusIntent? value) {
+    return $ProviderOverride(
       origin: this,
-      override: JournalFocusControllerProvider._internal(
-        () => create()..id = id,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-      ),
+      providerOverride: $SyncValueProvider<JournalFocusIntent?>(value),
     );
-  }
-
-  @override
-  AutoDisposeNotifierProviderElement<JournalFocusController,
-      JournalFocusIntent?> createElement() {
-    return _JournalFocusControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is JournalFocusControllerProvider && other.id == id;
+    return other is JournalFocusControllerProvider &&
+        other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin JournalFocusControllerRef
-    on AutoDisposeNotifierProviderRef<JournalFocusIntent?> {
-  /// The parameter `id` of this provider.
-  String get id;
-}
+String _$journalFocusControllerHash() =>
+    r'229387822c8a304890ec00a6ea68319248a5594d';
 
-class _JournalFocusControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<JournalFocusController,
-        JournalFocusIntent?> with JournalFocusControllerRef {
-  _JournalFocusControllerProviderElement(super.provider);
+final class JournalFocusControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<JournalFocusController, JournalFocusIntent?,
+            JournalFocusIntent?, JournalFocusIntent?, String> {
+  JournalFocusControllerFamily._()
+      : super(
+          retry: null,
+          name: r'journalFocusControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  JournalFocusControllerProvider call({
+    required String id,
+  }) =>
+      JournalFocusControllerProvider._(argument: id, from: this);
 
   @override
-  String get id => (origin as JournalFocusControllerProvider).id;
+  String toString() => r'journalFocusControllerProvider';
 }
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+
+abstract class _$JournalFocusController extends $Notifier<JournalFocusIntent?> {
+  late final _$args = ref.$arg as String;
+  String get id => _$args;
+
+  JournalFocusIntent? build({
+    required String id,
+  });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<JournalFocusIntent?, JournalFocusIntent?>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<JournalFocusIntent?, JournalFocusIntent?>,
+        JournalFocusIntent?,
+        Object?,
+        Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              id: _$args,
+            ));
+  }
+}

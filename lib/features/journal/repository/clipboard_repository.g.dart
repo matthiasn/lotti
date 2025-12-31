@@ -6,24 +6,48 @@ part of 'clipboard_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(clipboardRepository)
+final clipboardRepositoryProvider = ClipboardRepositoryProvider._();
+
+final class ClipboardRepositoryProvider extends $FunctionalProvider<
+    SystemClipboard?,
+    SystemClipboard?,
+    SystemClipboard?> with $Provider<SystemClipboard?> {
+  ClipboardRepositoryProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'clipboardRepositoryProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$clipboardRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<SystemClipboard?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  SystemClipboard? create(Ref ref) {
+    return clipboardRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SystemClipboard? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SystemClipboard?>(value),
+    );
+  }
+}
+
 String _$clipboardRepositoryHash() =>
     r'eb05e5d6d99885a2f58405d5da7a86fa23c54c12';
-
-/// See also [clipboardRepository].
-@ProviderFor(clipboardRepository)
-final clipboardRepositoryProvider =
-    AutoDisposeProvider<SystemClipboard?>.internal(
-  clipboardRepository,
-  name: r'clipboardRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$clipboardRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef ClipboardRepositoryRef = AutoDisposeProviderRef<SystemClipboard?>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

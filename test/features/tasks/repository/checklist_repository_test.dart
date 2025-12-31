@@ -26,9 +26,11 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockTaskSummaryRefreshService extends Mock
     implements TaskSummaryRefreshService {}
 
-class MockRef extends Mock implements Ref {}
-
 class _MockSelectable<T> extends Mock implements Selectable<T> {}
+
+/// Provider to capture a real Ref for testing.
+/// In Riverpod 3.x, Ref is sealed and cannot be mocked directly.
+final testRefProvider = Provider<Ref>((ref) => ref);
 
 void main() {
   late ChecklistRepository repository;
@@ -36,6 +38,7 @@ void main() {
   late MockPersistenceLogic mockPersistenceLogic;
   late MockLoggingService mockLoggingService;
   late MockTaskSummaryRefreshService mockTaskSummaryRefreshService;
+  late ProviderContainer container;
 
   setUpAll(() {
     registerFallbackValue(fallbackJournalEntity);
@@ -86,12 +89,6 @@ void main() {
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<LoggingService>(mockLoggingService);
 
-    final mockRef = MockRef();
-
-    // Configure MockRef to return the mock TaskSummaryRefreshService
-    when(() => mockRef.read(taskSummaryRefreshServiceProvider))
-        .thenReturn(mockTaskSummaryRefreshService);
-
     // Set up default behavior for the triggerTaskSummaryRefreshForChecklist method
     when(() =>
         mockTaskSummaryRefreshService.triggerTaskSummaryRefreshForChecklist(
@@ -99,10 +96,21 @@ void main() {
           callingDomain: any(named: 'callingDomain'),
         )).thenAnswer((_) async => {});
 
-    repository = ChecklistRepository(mockRef);
+    // Create ProviderContainer with the mock service override
+    container = ProviderContainer(
+      overrides: [
+        taskSummaryRefreshServiceProvider
+            .overrideWithValue(mockTaskSummaryRefreshService),
+      ],
+    );
+    final ref = container.read(testRefProvider);
+    repository = ChecklistRepository(ref);
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    container.dispose();
+    getIt.reset();
+  });
 
   group('createChecklist', () {
     test('returns null checklist when taskId is null', () async {

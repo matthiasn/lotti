@@ -6,22 +6,47 @@ part of 'login_form_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$loginFormControllerHash() =>
-    r'68dffd05971a1b5c984cab92c0243767d46cf8d7';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [LoginFormController].
 @ProviderFor(LoginFormController)
-final loginFormControllerProvider = AutoDisposeAsyncNotifierProvider<
-    LoginFormController, LoginFormState?>.internal(
-  LoginFormController.new,
-  name: r'loginFormControllerProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$loginFormControllerHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final loginFormControllerProvider = LoginFormControllerProvider._();
 
-typedef _$LoginFormController = AutoDisposeAsyncNotifier<LoginFormState?>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class LoginFormControllerProvider
+    extends $AsyncNotifierProvider<LoginFormController, LoginFormState?> {
+  LoginFormControllerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'loginFormControllerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$loginFormControllerHash();
+
+  @$internal
+  @override
+  LoginFormController create() => LoginFormController();
+}
+
+String _$loginFormControllerHash() =>
+    r'8259e4871396354bb4d513a1a7410f31d4f56f83';
+
+abstract class _$LoginFormController extends $AsyncNotifier<LoginFormState?> {
+  FutureOr<LoginFormState?> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<LoginFormState?>, LoginFormState?>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<LoginFormState?>, LoginFormState?>,
+        AsyncValue<LoginFormState?>,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

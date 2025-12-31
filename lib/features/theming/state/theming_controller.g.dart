@@ -6,43 +6,101 @@ part of 'theming_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$enableTooltipsHash() => r'd4ffad68f2eb7a43301add99bb014fa3fe0d2898';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Stream provider watching the tooltip enable flag from config.
+
+@ProviderFor(enableTooltips)
+final enableTooltipsProvider = EnableTooltipsProvider._();
 
 /// Stream provider watching the tooltip enable flag from config.
-///
-/// Copied from [enableTooltips].
-@ProviderFor(enableTooltips)
-final enableTooltipsProvider = AutoDisposeStreamProvider<bool>.internal(
-  enableTooltips,
-  name: r'enableTooltipsProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$enableTooltipsHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef EnableTooltipsRef = AutoDisposeStreamProviderRef<bool>;
+final class EnableTooltipsProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
+    with $FutureModifier<bool>, $StreamProvider<bool> {
+  /// Stream provider watching the tooltip enable flag from config.
+  EnableTooltipsProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'enableTooltipsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$enableTooltipsHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<bool> create(Ref ref) {
+    return enableTooltips(ref);
+  }
+}
+
+String _$enableTooltipsHash() => r'd4ffad68f2eb7a43301add99bb014fa3fe0d2898';
+
+/// Notifier managing the complete theming state.
+/// Marked as keepAlive since theme state should persist for the entire app lifecycle.
+
+@ProviderFor(ThemingController)
+final themingControllerProvider = ThemingControllerProvider._();
+
+/// Notifier managing the complete theming state.
+/// Marked as keepAlive since theme state should persist for the entire app lifecycle.
+final class ThemingControllerProvider
+    extends $NotifierProvider<ThemingController, ThemingState> {
+  /// Notifier managing the complete theming state.
+  /// Marked as keepAlive since theme state should persist for the entire app lifecycle.
+  ThemingControllerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'themingControllerProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$themingControllerHash();
+
+  @$internal
+  @override
+  ThemingController create() => ThemingController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ThemingState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ThemingState>(value),
+    );
+  }
+}
+
 String _$themingControllerHash() => r'f81327e92953d43be12b831636904cab67990811';
 
 /// Notifier managing the complete theming state.
 /// Marked as keepAlive since theme state should persist for the entire app lifecycle.
-///
-/// Copied from [ThemingController].
-@ProviderFor(ThemingController)
-final themingControllerProvider =
-    NotifierProvider<ThemingController, ThemingState>.internal(
-  ThemingController.new,
-  name: r'themingControllerProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$themingControllerHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
 
-typedef _$ThemingController = Notifier<ThemingState>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+abstract class _$ThemingController extends $Notifier<ThemingState> {
+  ThemingState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<ThemingState, ThemingState>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<ThemingState, ThemingState>,
+        ThemingState,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

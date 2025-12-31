@@ -19,12 +19,12 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-class TestTimeFrameController extends TimeFrameController {
-  TestTimeFrameController(this.initialValue);
-  final int initialValue;
+class _TestTimeFrameController extends TimeFrameController {
+  _TestTimeFrameController(this._initialValue);
+  final int _initialValue;
 
   @override
-  int build() => initialValue;
+  int build() => _initialValue;
 }
 
 class TestDaySelectionController extends DaySelectionController {
@@ -41,8 +41,11 @@ class TestTimeChartSelectedData extends TimeChartSelectedData {
 }
 
 class TestTimeByCategoryController extends TimeByCategoryController {
+  TestTimeByCategoryController();
+
   @override
-  Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> build() async {
+  Future<TimeByCategoryData> build() async {
+    // Set initial state with test data
     final now = DateTime(2025);
     return {
       now: {
@@ -182,7 +185,7 @@ void main() {
             (ref) async => data ?? testData,
           ),
           timeFrameControllerProvider.overrideWith(
-            () => TestTimeFrameController(timeFrameDays),
+            () => _TestTimeFrameController(timeFrameDays),
           ),
           timeChartSelectedDataProvider.overrideWith(
             TestTimeChartSelectedData.new,

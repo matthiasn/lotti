@@ -495,9 +495,21 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
+      // Keep aiConfigByTypeController alive during the test
+      final configSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
+        (_, __) {},
+      );
+
       // Wait for entry controller to be ready
       await testContainer
           .read(entryControllerProvider(id: taskEntity.id).future);
+
+      // Wait for config provider to be ready
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
+            .future,
+      );
 
       final prompts = await testContainer.read(
         availablePromptsProvider(taskEntity.id).future,
@@ -509,6 +521,8 @@ void main() {
           entity: any(named: 'entity'),
         ),
       ).called(1);
+
+      configSub.close();
     });
   });
 
@@ -570,15 +584,28 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
+      // Keep aiConfigByTypeController alive during the test
+      final configSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
+        (_, __) {},
+      );
+
       // Wait for entry controller to be ready
       await testContainer
           .read(entryControllerProvider(id: taskEntity.id).future);
+
+      // Wait for config provider to be ready
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
+            .future,
+      );
 
       final hasPrompts = await testContainer.read(
         hasAvailablePromptsProvider(taskEntity.id).future,
       );
 
       expect(hasPrompts, true);
+      configSub.close();
     });
 
     test('returns false when no prompts are available', () async {
@@ -614,15 +641,28 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
+      // Keep aiConfigByTypeController alive during the test
+      final configSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
+        (_, __) {},
+      );
+
       // Wait for entry controller to be ready
       await testContainer
           .read(entryControllerProvider(id: journalEntry.id).future);
+
+      // Wait for config provider to be ready
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
+            .future,
+      );
 
       final hasPrompts = await testContainer.read(
         hasAvailablePromptsProvider(journalEntry.id).future,
       );
 
       expect(hasPrompts, false);
+      configSub.close();
     });
   });
 
@@ -989,9 +1029,21 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
+      // Keep aiConfigByTypeController alive during the test
+      final configSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
+        (_, __) {},
+      );
+
       // Wait for entry controller to be ready
       await testContainer
           .read(entryControllerProvider(id: taskEntity.id).future);
+
+      // Wait for config provider to be ready
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
+            .future,
+      );
 
       // Track if categoryChangesProvider was accessed
       var categoryChangesProviderAccessed = false;
@@ -1013,6 +1065,7 @@ void main() {
       // Verify that categoryChangesProvider was accessed (which triggers category watching)
       expect(categoryChangesProviderAccessed, true);
       verify(() => mockCategoryRepository.watchCategory(categoryId)).called(1);
+      configSub.close();
     });
 
     test('does not watch category when entity has no categoryId', () async {
@@ -1073,9 +1126,21 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
+      // Keep aiConfigByTypeController alive during the test
+      final configSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
+        (_, __) {},
+      );
+
       // Wait for entry controller to be ready
       await testContainer
           .read(entryControllerProvider(id: taskEntity.id).future);
+
+      // Wait for config provider to be ready
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
+            .future,
+      );
 
       // Read the provider
       final prompts = await testContainer.read(
@@ -1086,6 +1151,7 @@ void main() {
 
       // Verify that category watching was NOT triggered
       verifyNever(() => mockCategoryRepository.watchCategory(any()));
+      configSub.close();
     });
   });
 }

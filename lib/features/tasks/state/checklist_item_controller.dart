@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,21 +15,33 @@ import 'package:lotti/utils/cache_extension.dart';
 /// Record type for checklist item parameters.
 typedef ChecklistItemParams = ({String id, String? taskId});
 
-final AutoDisposeAsyncNotifierProviderFamily<ChecklistItemController,
-        ChecklistItem?, ChecklistItemParams> checklistItemControllerProvider =
-    AsyncNotifierProvider.autoDispose
-        .family<ChecklistItemController, ChecklistItem?, ChecklistItemParams>(
+final checklistItemControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<ChecklistItemController, ChecklistItem?, ChecklistItemParams>(
   ChecklistItemController.new,
 );
 
-class ChecklistItemController extends AutoDisposeFamilyAsyncNotifier<
-    ChecklistItem?, ChecklistItemParams> {
+class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
+  ChecklistItemController(this.params);
+
+  final ChecklistItemParams params;
   StreamSubscription<Set<String>>? _updateSubscription;
 
-  String get id => arg.id;
-  String? get taskId => arg.taskId;
+  String get id => params.id;
+  String? get taskId => params.taskId;
 
-  void listen() {
+  @override
+  Future<ChecklistItem?> build() async {
+    ref
+      ..cacheFor(entryCacheDuration)
+      ..onDispose(() {
+        _updateSubscription?.cancel();
+      });
+
+    _listen();
+    return _fetch();
+  }
+
+  void _listen() {
     _updateSubscription =
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
       if (affectedIds.contains(id)) {
@@ -37,17 +51,6 @@ class ChecklistItemController extends AutoDisposeFamilyAsyncNotifier<
         }
       }
     });
-  }
-
-  @override
-  Future<ChecklistItem?> build(ChecklistItemParams arg) async {
-    ref
-      ..onDispose(() => _updateSubscription?.cancel())
-      ..cacheFor(entryCacheDuration);
-
-    final item = await _fetch();
-    listen();
-    return item;
   }
 
   Future<ChecklistItem?> _fetch() async {

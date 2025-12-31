@@ -6,368 +6,242 @@ part of 'inference_status_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$inferenceStatusControllerHash() =>
-    r'42c736c8fcb9f21c98683e879518cfda4ab88120';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
-abstract class _$InferenceStatusController
-    extends BuildlessAutoDisposeNotifier<InferenceStatus> {
-  late final String id;
-  late final AiResponseType aiResponseType;
-
-  InferenceStatus build({
-    required String id,
-    required AiResponseType aiResponseType,
-  });
-}
-
-/// See also [InferenceStatusController].
 @ProviderFor(InferenceStatusController)
-const inferenceStatusControllerProvider = InferenceStatusControllerFamily();
+final inferenceStatusControllerProvider = InferenceStatusControllerFamily._();
 
-/// See also [InferenceStatusController].
-class InferenceStatusControllerFamily extends Family<InferenceStatus> {
-  /// See also [InferenceStatusController].
-  const InferenceStatusControllerFamily();
-
-  /// See also [InferenceStatusController].
-  InferenceStatusControllerProvider call({
-    required String id,
-    required AiResponseType aiResponseType,
-  }) {
-    return InferenceStatusControllerProvider(
-      id: id,
-      aiResponseType: aiResponseType,
-    );
-  }
-
-  @override
-  InferenceStatusControllerProvider getProviderOverride(
-    covariant InferenceStatusControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-      aiResponseType: provider.aiResponseType,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'inferenceStatusControllerProvider';
-}
-
-/// See also [InferenceStatusController].
-class InferenceStatusControllerProvider extends AutoDisposeNotifierProviderImpl<
-    InferenceStatusController, InferenceStatus> {
-  /// See also [InferenceStatusController].
-  InferenceStatusControllerProvider({
-    required String id,
-    required AiResponseType aiResponseType,
-  }) : this._internal(
-          () => InferenceStatusController()
-            ..id = id
-            ..aiResponseType = aiResponseType,
-          from: inferenceStatusControllerProvider,
+final class InferenceStatusControllerProvider
+    extends $NotifierProvider<InferenceStatusController, InferenceStatus> {
+  InferenceStatusControllerProvider._(
+      {required InferenceStatusControllerFamily super.from,
+      required ({
+        String id,
+        AiResponseType aiResponseType,
+      })
+          super.argument})
+      : super(
+          retry: null,
           name: r'inferenceStatusControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$inferenceStatusControllerHash,
-          dependencies: InferenceStatusControllerFamily._dependencies,
-          allTransitiveDependencies:
-              InferenceStatusControllerFamily._allTransitiveDependencies,
-          id: id,
-          aiResponseType: aiResponseType,
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  InferenceStatusControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-    required this.aiResponseType,
-  }) : super.internal();
-
-  final String id;
-  final AiResponseType aiResponseType;
+  @override
+  String debugGetCreateSourceHash() => _$inferenceStatusControllerHash();
 
   @override
-  InferenceStatus runNotifierBuild(
-    covariant InferenceStatusController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-      aiResponseType: aiResponseType,
-    );
+  String toString() {
+    return r'inferenceStatusControllerProvider'
+        ''
+        '$argument';
   }
 
+  @$internal
   @override
-  Override overrideWith(InferenceStatusController Function() create) {
-    return ProviderOverride(
+  InferenceStatusController create() => InferenceStatusController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(InferenceStatus value) {
+    return $ProviderOverride(
       origin: this,
-      override: InferenceStatusControllerProvider._internal(
-        () => create()
-          ..id = id
-          ..aiResponseType = aiResponseType,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-        aiResponseType: aiResponseType,
-      ),
+      providerOverride: $SyncValueProvider<InferenceStatus>(value),
     );
-  }
-
-  @override
-  AutoDisposeNotifierProviderElement<InferenceStatusController, InferenceStatus>
-      createElement() {
-    return _InferenceStatusControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
     return other is InferenceStatusControllerProvider &&
-        other.id == id &&
-        other.aiResponseType == aiResponseType;
+        other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-    hash = _SystemHash.combine(hash, aiResponseType.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin InferenceStatusControllerRef
-    on AutoDisposeNotifierProviderRef<InferenceStatus> {
-  /// The parameter `id` of this provider.
-  String get id;
+String _$inferenceStatusControllerHash() =>
+    r'42c736c8fcb9f21c98683e879518cfda4ab88120';
 
-  /// The parameter `aiResponseType` of this provider.
-  AiResponseType get aiResponseType;
-}
-
-class _InferenceStatusControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<InferenceStatusController,
-        InferenceStatus> with InferenceStatusControllerRef {
-  _InferenceStatusControllerProviderElement(super.provider);
-
-  @override
-  String get id => (origin as InferenceStatusControllerProvider).id;
-  @override
-  AiResponseType get aiResponseType =>
-      (origin as InferenceStatusControllerProvider).aiResponseType;
-}
-
-String _$inferenceRunningControllerHash() =>
-    r'98e6bb2372af2115718976c3eb9f9651da5ec5f1';
-
-abstract class _$InferenceRunningController
-    extends BuildlessAutoDisposeNotifier<bool> {
-  late final String id;
-  late final Set<AiResponseType> responseTypes;
-
-  bool build({
-    required String id,
-    required Set<AiResponseType> responseTypes,
-  });
-}
-
-/// See also [InferenceRunningController].
-@ProviderFor(InferenceRunningController)
-const inferenceRunningControllerProvider = InferenceRunningControllerFamily();
-
-/// See also [InferenceRunningController].
-class InferenceRunningControllerFamily extends Family<bool> {
-  /// See also [InferenceRunningController].
-  const InferenceRunningControllerFamily();
-
-  /// See also [InferenceRunningController].
-  InferenceRunningControllerProvider call({
-    required String id,
-    required Set<AiResponseType> responseTypes,
-  }) {
-    return InferenceRunningControllerProvider(
-      id: id,
-      responseTypes: responseTypes,
-    );
-  }
-
-  @override
-  InferenceRunningControllerProvider getProviderOverride(
-    covariant InferenceRunningControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-      responseTypes: provider.responseTypes,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'inferenceRunningControllerProvider';
-}
-
-/// See also [InferenceRunningController].
-class InferenceRunningControllerProvider
-    extends AutoDisposeNotifierProviderImpl<InferenceRunningController, bool> {
-  /// See also [InferenceRunningController].
-  InferenceRunningControllerProvider({
-    required String id,
-    required Set<AiResponseType> responseTypes,
-  }) : this._internal(
-          () => InferenceRunningController()
-            ..id = id
-            ..responseTypes = responseTypes,
-          from: inferenceRunningControllerProvider,
-          name: r'inferenceRunningControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$inferenceRunningControllerHash,
-          dependencies: InferenceRunningControllerFamily._dependencies,
-          allTransitiveDependencies:
-              InferenceRunningControllerFamily._allTransitiveDependencies,
-          id: id,
-          responseTypes: responseTypes,
+final class InferenceStatusControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+            InferenceStatusController,
+            InferenceStatus,
+            InferenceStatus,
+            InferenceStatus,
+            ({
+              String id,
+              AiResponseType aiResponseType,
+            })> {
+  InferenceStatusControllerFamily._()
+      : super(
+          retry: null,
+          name: r'inferenceStatusControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
         );
 
-  InferenceRunningControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-    required this.responseTypes,
-  }) : super.internal();
-
-  final String id;
-  final Set<AiResponseType> responseTypes;
-
-  @override
-  bool runNotifierBuild(
-    covariant InferenceRunningController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-      responseTypes: responseTypes,
-    );
-  }
-
-  @override
-  Override overrideWith(InferenceRunningController Function() create) {
-    return ProviderOverride(
-      origin: this,
-      override: InferenceRunningControllerProvider._internal(
-        () => create()
-          ..id = id
-          ..responseTypes = responseTypes,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
+  InferenceStatusControllerProvider call({
+    required String id,
+    required AiResponseType aiResponseType,
+  }) =>
+      InferenceStatusControllerProvider._(argument: (
         id: id,
-        responseTypes: responseTypes,
-      ),
-    );
-  }
+        aiResponseType: aiResponseType,
+      ), from: this);
 
   @override
-  AutoDisposeNotifierProviderElement<InferenceRunningController, bool>
-      createElement() {
-    return _InferenceRunningControllerProviderElement(this);
+  String toString() => r'inferenceStatusControllerProvider';
+}
+
+abstract class _$InferenceStatusController extends $Notifier<InferenceStatus> {
+  late final _$args = ref.$arg as ({
+    String id,
+    AiResponseType aiResponseType,
+  });
+  String get id => _$args.id;
+  AiResponseType get aiResponseType => _$args.aiResponseType;
+
+  InferenceStatus build({
+    required String id,
+    required AiResponseType aiResponseType,
+  });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<InferenceStatus, InferenceStatus>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<InferenceStatus, InferenceStatus>,
+        InferenceStatus,
+        Object?,
+        Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              id: _$args.id,
+              aiResponseType: _$args.aiResponseType,
+            ));
+  }
+}
+
+@ProviderFor(InferenceRunningController)
+final inferenceRunningControllerProvider = InferenceRunningControllerFamily._();
+
+final class InferenceRunningControllerProvider
+    extends $NotifierProvider<InferenceRunningController, bool> {
+  InferenceRunningControllerProvider._(
+      {required InferenceRunningControllerFamily super.from,
+      required ({
+        String id,
+        Set<AiResponseType> responseTypes,
+      })
+          super.argument})
+      : super(
+          retry: null,
+          name: r'inferenceRunningControllerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$inferenceRunningControllerHash();
+
+  @override
+  String toString() {
+    return r'inferenceRunningControllerProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  InferenceRunningController create() => InferenceRunningController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
   }
 
   @override
   bool operator ==(Object other) {
     return other is InferenceRunningControllerProvider &&
-        other.id == id &&
-        other.responseTypes == responseTypes;
+        other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-    hash = _SystemHash.combine(hash, responseTypes.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin InferenceRunningControllerRef on AutoDisposeNotifierProviderRef<bool> {
-  /// The parameter `id` of this provider.
-  String get id;
+String _$inferenceRunningControllerHash() =>
+    r'98e6bb2372af2115718976c3eb9f9651da5ec5f1';
 
-  /// The parameter `responseTypes` of this provider.
-  Set<AiResponseType> get responseTypes;
-}
+final class InferenceRunningControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+            InferenceRunningController,
+            bool,
+            bool,
+            bool,
+            ({
+              String id,
+              Set<AiResponseType> responseTypes,
+            })> {
+  InferenceRunningControllerFamily._()
+      : super(
+          retry: null,
+          name: r'inferenceRunningControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
 
-class _InferenceRunningControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<InferenceRunningController, bool>
-    with InferenceRunningControllerRef {
-  _InferenceRunningControllerProviderElement(super.provider);
+  InferenceRunningControllerProvider call({
+    required String id,
+    required Set<AiResponseType> responseTypes,
+  }) =>
+      InferenceRunningControllerProvider._(argument: (
+        id: id,
+        responseTypes: responseTypes,
+      ), from: this);
 
   @override
-  String get id => (origin as InferenceRunningControllerProvider).id;
-  @override
-  Set<AiResponseType> get responseTypes =>
-      (origin as InferenceRunningControllerProvider).responseTypes;
+  String toString() => r'inferenceRunningControllerProvider';
 }
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+
+abstract class _$InferenceRunningController extends $Notifier<bool> {
+  late final _$args = ref.$arg as ({
+    String id,
+    Set<AiResponseType> responseTypes,
+  });
+  String get id => _$args.id;
+  Set<AiResponseType> get responseTypes => _$args.responseTypes;
+
+  bool build({
+    required String id,
+    required Set<AiResponseType> responseTypes,
+  });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<bool, bool>, bool, Object?, Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              id: _$args.id,
+              responseTypes: _$args.responseTypes,
+            ));
+  }
+}

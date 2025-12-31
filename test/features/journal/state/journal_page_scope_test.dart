@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:riverpod/misc.dart';
 
 void main() {
   group('journalPageScopeProvider', () {
@@ -8,9 +9,16 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
+      // In Riverpod 3, errors are wrapped in ProviderException
       expect(
         () => container.read(journalPageScopeProvider),
-        throwsA(isA<UnimplementedError>()),
+        throwsA(
+          isA<ProviderException>().having(
+            (e) => e.exception,
+            'exception',
+            isA<UnimplementedError>(),
+          ),
+        ),
       );
     });
 
@@ -18,11 +26,12 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
+      // In Riverpod 3, errors are wrapped in ProviderException
       expect(
         () => container.read(journalPageScopeProvider),
         throwsA(
-          isA<UnimplementedError>().having(
-            (e) => e.message,
+          isA<ProviderException>().having(
+            (e) => (e.exception as UnimplementedError).message,
             'message',
             contains('journalPageScopeProvider must be overridden'),
           ),

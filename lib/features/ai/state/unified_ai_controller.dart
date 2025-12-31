@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
@@ -53,27 +55,25 @@ typedef UnifiedAiParams = ({String entityId, String promptId});
 /// Controller for running unified AI inference with configurable prompts
 /// Note: keepAlive prevents auto-dispose during async operations in catch blocks,
 /// ensuring error state persists until the widget can read it.
-final NotifierProviderFamily<UnifiedAiController, UnifiedAiState,
-        UnifiedAiParams> unifiedAiControllerProvider =
-    NotifierProvider.family<UnifiedAiController, UnifiedAiState,
-        UnifiedAiParams>(
+final unifiedAiControllerProvider = NotifierProvider.family<UnifiedAiController,
+    UnifiedAiState, UnifiedAiParams>(
   UnifiedAiController.new,
 );
 
-class UnifiedAiController
-    extends FamilyNotifier<UnifiedAiState, UnifiedAiParams> {
+class UnifiedAiController extends Notifier<UnifiedAiState> {
+  UnifiedAiController(this._params);
+
+  final UnifiedAiParams _params;
+
+  @override
+  UnifiedAiState build() => const UnifiedAiState(message: '');
   Future<void>? _activeInferenceFuture;
   String? _activeLinkedEntityId;
   int _runCounter = 0;
   int? _activeRunId;
 
-  String get entityId => arg.entityId;
-  String get promptId => arg.promptId;
-
-  @override
-  UnifiedAiState build(UnifiedAiParams arg) {
-    return const UnifiedAiState(message: '');
-  }
+  String get entityId => _params.entityId;
+  String get promptId => _params.promptId;
 
   // Helper method to update inference status for both entities
   void _updateInferenceStatus(
@@ -352,13 +352,11 @@ class UnifiedAiController
 
 /// Provider to get available prompts for a given entity.
 /// Uses entityId as key for stable provider identity across entity updates.
-final AutoDisposeFutureProviderFamily<List<AiConfigPrompt>, String>
-    availablePromptsProvider =
+final availablePromptsProvider =
     FutureProvider.autoDispose.family<List<AiConfigPrompt>, String>(
   (ref, entityId) async {
     // Watch the entry controller to get the entity and react to updates
-    final entryState =
-        ref.watch(entryControllerProvider(id: entityId)).valueOrNull;
+    final entryState = ref.watch(entryControllerProvider(id: entityId)).value;
     final entity = entryState?.entry;
 
     // Return empty list if entity not available yet
@@ -386,8 +384,7 @@ final AutoDisposeFutureProviderFamily<List<AiConfigPrompt>, String>
 
 /// Provider to check if there are any prompts available for an entity.
 /// Uses entityId as key for stable provider identity across entity updates.
-final AutoDisposeFutureProviderFamily<bool, String>
-    hasAvailablePromptsProvider =
+final hasAvailablePromptsProvider =
     FutureProvider.autoDispose.family<bool, String>(
   (ref, entityId) async {
     final prompts = await ref.watch(
@@ -398,8 +395,7 @@ final AutoDisposeFutureProviderFamily<bool, String>
 );
 
 /// Provider to watch category changes
-final AutoDisposeStreamProviderFamily<void, String> categoryChangesProvider =
-    StreamProvider.autoDispose.family<void, String>(
+final categoryChangesProvider = StreamProvider.autoDispose.family<void, String>(
   (ref, categoryId) {
     final categoryRepo = ref.watch(categoryRepositoryProvider);
     return categoryRepo.watchCategory(categoryId).map((_) {});
@@ -414,8 +410,7 @@ typedef TriggerNewInferenceParams = ({
 });
 
 /// Provider to trigger a new inference run
-final AutoDisposeFutureProviderFamily<void, TriggerNewInferenceParams>
-    triggerNewInferenceProvider =
+final triggerNewInferenceProvider =
     FutureProvider.autoDispose.family<void, TriggerNewInferenceParams>(
   (ref, params) async {
     developer.log(

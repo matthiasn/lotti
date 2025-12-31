@@ -43,9 +43,11 @@ class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 
-class MockRef extends Mock implements Ref {}
-
 class MockTimeService extends Mock implements TimeService {}
+
+/// Provider to capture a real Ref for testing.
+/// In Riverpod 3.x, Ref is sealed and cannot be mocked directly.
+final testRefProvider = Provider<Ref>((ref) => ref);
 
 class MockSelectableLinkedDbEntry extends Mock
     implements drift.Selectable<LinkedDbEntry> {}
@@ -65,6 +67,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   late MockTimeService mockTimeService;
   late JournalRepository repository;
+  late ProviderContainer container;
 
   setUp(() {
     mockJournalDb = MockJournalDb();
@@ -87,9 +90,10 @@ void main() {
       ..registerSingleton<OutboxService>(mockOutboxService)
       ..registerSingleton<TimeService>(mockTimeService);
 
-    // Create repository instance with mock ref
-    final mockRef = MockRef();
-    repository = JournalRepository(mockRef);
+    // Create ProviderContainer and get a real Ref for testing
+    container = ProviderContainer();
+    final ref = container.read(testRefProvider);
+    repository = JournalRepository(ref);
 
     // Register fallback values for any complex types
     registerFallbackValue(
@@ -147,7 +151,10 @@ void main() {
     );
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    container.dispose();
+    getIt.reset();
+  });
 
   group('JournalRepository', () {
     group('updateCategoryId', () {
@@ -1384,13 +1391,16 @@ void main() {
         // Create mock for task summary refresh service
         final mockTaskSummaryRefreshService = MockTaskSummaryRefreshService();
 
-        // Mock the ref to return the mock service
-        final mockRef = MockRef();
-        when(() => mockRef.read(taskSummaryRefreshServiceProvider))
-            .thenReturn(mockTaskSummaryRefreshService);
-
-        // Create repository with mocked ref
-        final testRepository = JournalRepository(mockRef);
+        // Create a ProviderContainer with the mock service override
+        final testContainer = ProviderContainer(
+          overrides: [
+            taskSummaryRefreshServiceProvider
+                .overrideWithValue(mockTaskSummaryRefreshService),
+          ],
+        );
+        addTearDown(testContainer.dispose);
+        final testRef = testContainer.read(testRefProvider);
+        final testRepository = JournalRepository(testRef);
 
         // Mock the journalEntityById call to return a ChecklistItem
         when(() => mockJournalDb.journalEntityById(journalEntityId))

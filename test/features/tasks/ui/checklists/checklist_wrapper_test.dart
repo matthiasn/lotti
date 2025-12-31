@@ -1,43 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/share_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
-class _MockChecklistController extends ChecklistController {
-  _MockChecklistController(this.value);
-
-  final Checklist? value;
-
-  @override
-  Future<Checklist?> build(ChecklistParams arg) async => value;
+// Helper to create overrides for checklistItemControllerProvider
+// that returns items from a map based on params.id
+Override checklistItemOverride(Map<String, ChecklistItem?> itemsMap) {
+  return checklistItemControllerProvider
+      .overrideWithBuild((ref, params) async => itemsMap[params.id]);
 }
-
-class _MockChecklistItemController extends ChecklistItemController {
-  _MockChecklistItemController(this.itemsMap);
-  final Map<String, ChecklistItem?> itemsMap;
-
-  @override
-  Future<ChecklistItem?> build(ChecklistItemParams arg) async =>
-      itemsMap[arg.id];
-}
-
-// Note: no need for a null-item controller in current tests
 
 void main() {
   const desktopMq = MediaQueryData(size: Size(1280, 1000));
 
   group('ChecklistWrapper', () {
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockJournalDb mockJournalDb;
+
+    setUp(() async {
+      await getIt.reset();
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockJournalDb = MockJournalDb();
+
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+
+      getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<JournalDb>(mockJournalDb);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
     testWidgets('copies markdown and shows success SnackBar', (tester) async {
       const checklistId = 'cl1';
       const taskId = 't1';
@@ -89,6 +104,17 @@ void main() {
         ),
       );
 
+      // Configure JournalDb to return the correct entities
+      reset(mockJournalDb);
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => checklist);
+      when(() => mockJournalDb.journalEntityById(itemId1))
+          .thenAnswer((_) async => item1);
+      when(() => mockJournalDb.journalEntityById(itemId2))
+          .thenAnswer((_) async => item2);
+
       var copied = '';
       final fakeClipboard = AppClipboard(writePlainText: (text) async {
         copied = text;
@@ -98,14 +124,13 @@ void main() {
         ProviderScope(
           overrides: [
             appClipboardProvider.overrideWithValue(fakeClipboard),
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
-            checklistItemControllerProvider.overrideWith(
-              () => _MockChecklistItemController({
-                itemId1: item1,
-                itemId2: item2,
-              }),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => checklist,
             ),
+            checklistItemOverride({
+              itemId1: item1,
+              itemId2: item2,
+            }),
           ],
           child: const WidgetTestBench(
             mediaQueryData: desktopMq,
@@ -180,6 +205,17 @@ void main() {
         ),
       );
 
+      // Configure JournalDb to return the correct entities
+      reset(mockJournalDb);
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => checklist);
+      when(() => mockJournalDb.journalEntityById(itemId1))
+          .thenAnswer((_) async => item1);
+      when(() => mockJournalDb.journalEntityById(itemId2))
+          .thenAnswer((_) async => item2);
+
       String? sharedText;
       String? sharedSubject;
       final oldShare = ShareService.instance;
@@ -193,14 +229,13 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
-            checklistItemControllerProvider.overrideWith(
-              () => _MockChecklistItemController({
-                itemId1: item1,
-                itemId2: item2,
-              }),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => checklist,
             ),
+            checklistItemOverride({
+              itemId1: item1,
+              itemId2: item2,
+            }),
           ],
           child: const WidgetTestBench(
             mediaQueryData: desktopMq,
@@ -246,11 +281,19 @@ void main() {
         ),
       );
 
+      // Configure JournalDb to return the checklist
+      reset(mockJournalDb);
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => checklist);
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => checklist,
+            ),
           ],
           child: const WidgetTestBench(
             mediaQueryData: desktopMq,
@@ -290,6 +333,13 @@ void main() {
         ),
       );
 
+      // Configure JournalDb to return the checklist
+      reset(mockJournalDb);
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => checklist);
+
       var called = false;
       final oldShare = ShareService.instance;
       ShareService.instance = _FakeShareService(
@@ -301,8 +351,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => checklist,
+            ),
           ],
           child: const WidgetTestBench(
             mediaQueryData: desktopMq,
@@ -359,6 +410,15 @@ void main() {
         ),
       );
 
+      // Configure JournalDb to return the correct entities
+      reset(mockJournalDb);
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => checklist);
+      when(() => mockJournalDb.journalEntityById(itemId1))
+          .thenAnswer((_) async => item1);
+
       final oldShare = ShareService.instance;
       ShareService.instance = _FakeShareService(
         onShare: (text, subject) async {
@@ -369,10 +429,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
-            checklistItemControllerProvider.overrideWith(
-                () => _MockChecklistItemController({itemId1: item1})),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => checklist,
+            ),
+            checklistItemOverride({itemId1: item1}),
           ],
           child: const WidgetTestBench(
             mediaQueryData: desktopMq,
@@ -430,6 +490,15 @@ void main() {
         ),
       );
 
+      // Configure JournalDb to return the correct entities
+      reset(mockJournalDb);
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockJournalDb.journalEntityById(checklistId))
+          .thenAnswer((_) async => checklist);
+      when(() => mockJournalDb.journalEntityById(itemId1))
+          .thenAnswer((_) async => item1);
+
       final throwingClipboard = AppClipboard(writePlainText: (text) async {
         throw Exception('copy failed');
       });
@@ -438,10 +507,10 @@ void main() {
         ProviderScope(
           overrides: [
             appClipboardProvider.overrideWithValue(throwingClipboard),
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
-            checklistItemControllerProvider.overrideWith(
-                () => _MockChecklistItemController({itemId1: item1})),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => checklist,
+            ),
+            checklistItemOverride({itemId1: item1}),
           ],
           child: const WidgetTestBench(
             child: ChecklistWrapper(
@@ -469,8 +538,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(null)),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => null,
+            ),
           ],
           child: const WidgetTestBench(
             child: ChecklistWrapper(
@@ -528,10 +598,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
-            checklistItemControllerProvider.overrideWith(
-                () => _MockChecklistItemController({itemId1: item1})),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => checklist,
+            ),
+            checklistItemOverride({itemId1: item1}),
           ],
           child: Consumer(
             builder: (context, ref, child) {
@@ -550,7 +620,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Set a pending correction to trigger snackbar
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: PendingCorrection(
               before: 'test flight',
               after: 'TestFlight',
@@ -608,10 +678,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
-            checklistItemControllerProvider.overrideWith(
-                () => _MockChecklistItemController({itemId1: item1})),
+            checklistControllerProvider.overrideWithBuild(
+              (ref, params) async => checklist,
+            ),
+            checklistItemOverride({itemId1: item1}),
           ],
           child: Consumer(
             builder: (context, ref, child) {
@@ -630,7 +700,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Set a pending correction to trigger snackbar
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: PendingCorrection(
               before: 'test flight',
               after: 'TestFlight',
@@ -649,7 +719,7 @@ void main() {
 
       // Pending correction should exist
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         isNotNull,
       );
 
@@ -657,12 +727,12 @@ void main() {
       // Note: Direct tap on floating snackbar button doesn't work reliably in tests
       // due to hit testing issues, so we call cancel() directly which is what the
       // button's onPressed handler does
-      container.read(correctionCaptureNotifierProvider.notifier).cancel();
+      container.read(correctionCaptureProvider.notifier).cancel();
       await tester.pumpAndSettle();
 
       // Pending correction should be cleared
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         isNull,
       );
     });
@@ -693,7 +763,10 @@ void main() {
         ProviderScope(
           overrides: [
             checklistControllerProvider
-                .overrideWith(() => _MockChecklistController(checklist)),
+.overrideWith(
+              (ref, params) =>
+                  _MockChecklistController(ref, params, value: checklist),
+            ),
           ],
           child: const WidgetTestBench(
             child: ChecklistWrapper(

@@ -26,18 +26,18 @@ class OutboxBadgeIcon extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final connectionStateAsync = ref.watch(outboxConnectionStateProvider);
     final syncEnabled =
-        connectionStateAsync.valueOrNull == OutboxConnectionState.online;
+        connectionStateAsync.value == OutboxConnectionState.online;
 
     if (!syncEnabled) {
       return icon;
     }
 
-    final loginState = ref.watch(loginStateStreamProvider).valueOrNull;
+    final loginState = ref.watch(loginStateStreamProvider).value;
     final isLoggedIn = loginState == LoginState.loggedIn;
     final dimmed = !isLoggedIn;
 
     final countAsync = ref.watch(outboxPendingCountProvider);
-    final count = countAsync.valueOrNull ?? 0;
+    final count = countAsync.value ?? 0;
     final label = '$count';
     final badgeColor = dimmed
         ? context.colorScheme.onSurfaceVariant

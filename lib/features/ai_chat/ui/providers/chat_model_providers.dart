@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 
@@ -10,7 +11,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 ///
 /// The provider does not inspect "reasoning" capability; it is exposed by
 /// `hasReasoningModelForCategoryProvider` below for UX decisions.
-final AutoDisposeFutureProviderFamily<List<AiConfigModel>, String>
+final FutureProviderFamily<List<AiConfigModel>, String>
     eligibleChatModelsForCategoryProvider =
     FutureProvider.autoDispose.family<List<AiConfigModel>, String>(
   (ref, categoryId) async {
@@ -45,8 +46,7 @@ final AutoDisposeFutureProviderFamily<List<AiConfigModel>, String>
 );
 
 /// Whether at least one reasoning-capable eligible model exists for a category.
-final AutoDisposeFutureProviderFamily<bool, String>
-    hasReasoningModelForCategoryProvider =
+final FutureProviderFamily<bool, String> hasReasoningModelForCategoryProvider =
     FutureProvider.autoDispose.family<bool, String>(
   (ref, categoryId) async {
     final models = await ref

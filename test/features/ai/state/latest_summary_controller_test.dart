@@ -131,12 +131,14 @@ void main() {
     );
 
     // Wait for the future to complete
-    await container.read(
-      latestSummaryControllerProvider((
-        id: testId,
-        aiResponseType: testAiResponseType,
-      )).future,
-    );
+    await container
+        .read(
+          latestSummaryControllerProvider((
+            id: testId,
+            aiResponseType: testAiResponseType,
+          )).notifier,
+        )
+        .future;
 
     // Assert
     verify(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
@@ -207,12 +209,14 @@ void main() {
     );
 
     // Wait for initial state
-    await container.read(
-      latestSummaryControllerProvider((
-        id: testId,
-        aiResponseType: testAiResponseType,
-      )).future,
-    );
+    await container
+        .read(
+          latestSummaryControllerProvider((
+            id: testId,
+            aiResponseType: testAiResponseType,
+          )).notifier,
+        )
+        .future;
 
     // Update mock to return new entry
     when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
@@ -293,12 +297,14 @@ void main() {
     );
 
     // Wait for initial state
-    await container.read(
-      latestSummaryControllerProvider((
-        id: testId,
-        aiResponseType: testAiResponseType,
-      )).future,
-    );
+    await container
+        .read(
+          latestSummaryControllerProvider((
+            id: testId,
+            aiResponseType: testAiResponseType,
+          )).notifier,
+        )
+        .future;
 
     // Dispose the container
     container.dispose();

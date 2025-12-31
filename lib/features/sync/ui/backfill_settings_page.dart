@@ -26,7 +26,7 @@ class BackfillSettingsPage extends ConsumerWidget {
           children: [
             // Enable/Disable Toggle Card
             _BackfillToggleCard(
-              isEnabled: configAsync.valueOrNull ?? true,
+              isEnabled: configAsync.value ?? true,
               isLoading: configAsync.isLoading,
               onToggle: () =>
                   ref.read(backfillConfigControllerProvider.notifier).toggle(),

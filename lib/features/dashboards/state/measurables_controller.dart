@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,26 +34,23 @@ typedef MeasurableObservationsParams = ({
 });
 
 // MeasurableDataTypeController - single param
-final AutoDisposeAsyncNotifierProviderFamily<MeasurableDataTypeController,
-        MeasurableDataType?, String> measurableDataTypeControllerProvider =
-    AsyncNotifierProvider.autoDispose
-        .family<MeasurableDataTypeController, MeasurableDataType?, String>(
+final measurableDataTypeControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<MeasurableDataTypeController, MeasurableDataType?, String>(
   MeasurableDataTypeController.new,
 );
 
-class MeasurableDataTypeController
-    extends AutoDisposeFamilyAsyncNotifier<MeasurableDataType?, String> {
+class MeasurableDataTypeController extends AsyncNotifier<MeasurableDataType?> {
+  MeasurableDataTypeController(this._id);
+
+  final String _id;
   final JournalDb _journalDb = getIt<JournalDb>();
 
-  String get id => arg;
+  String get id => _id;
 
   @override
-  Future<MeasurableDataType?> build(String arg) async {
-    ref
-      ..onDispose(() {})
-      ..cacheFor(dashboardCacheDuration);
-    final result = await _fetch();
-    return result;
+  Future<MeasurableDataType?> build() async {
+    ref.cacheFor(dashboardCacheDuration);
+    return _fetch();
   }
 
   Future<MeasurableDataType?> _fetch() async {
@@ -61,27 +60,27 @@ class MeasurableDataTypeController
 }
 
 // AggregationTypeController - two params
-final AutoDisposeAsyncNotifierProviderFamily<
-        AggregationTypeController,
-        AggregationType,
-        AggregationTypeParams> aggregationTypeControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<AggregationTypeController,
-        AggregationType, AggregationTypeParams>(
+final aggregationTypeControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<AggregationTypeController, AggregationType, AggregationTypeParams>(
   AggregationTypeController.new,
 );
 
-class AggregationTypeController extends AutoDisposeFamilyAsyncNotifier<
-    AggregationType, AggregationTypeParams> {
-  String get measurableDataTypeId => arg.measurableDataTypeId;
+class AggregationTypeController extends AsyncNotifier<AggregationType> {
+  AggregationTypeController(this._params);
+
+  final AggregationTypeParams _params;
+
+  String get measurableDataTypeId => _params.measurableDataTypeId;
   AggregationType? get dashboardDefinedAggregationType =>
-      arg.dashboardDefinedAggregationType;
+      _params.dashboardDefinedAggregationType;
 
   @override
-  Future<AggregationType> build(AggregationTypeParams arg) async {
+  Future<AggregationType> build() async {
     ref.cacheFor(dashboardCacheDuration);
-    final measurableDataType = ref
-        .watch(measurableDataTypeControllerProvider(measurableDataTypeId))
-        .valueOrNull;
+
+    // Watch the measurable data type for changes
+    final measurableDataType = await ref.watch(
+        measurableDataTypeControllerProvider(measurableDataTypeId).future);
 
     return dashboardDefinedAggregationType ??
         measurableDataType?.aggregationType ??
@@ -90,49 +89,43 @@ class AggregationTypeController extends AutoDisposeFamilyAsyncNotifier<
 }
 
 // MeasurableChartDataController - three params
-final AutoDisposeAsyncNotifierProviderFamily<
-        MeasurableChartDataController,
-        List<JournalEntity>,
-        MeasurableChartDataParams> measurableChartDataControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<MeasurableChartDataController,
-        List<JournalEntity>, MeasurableChartDataParams>(
+final measurableChartDataControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<MeasurableChartDataController, List<JournalEntity>,
+        MeasurableChartDataParams>(
   MeasurableChartDataController.new,
 );
 
-class MeasurableChartDataController extends AutoDisposeFamilyAsyncNotifier<
-    List<JournalEntity>, MeasurableChartDataParams> {
-  final JournalDb _journalDb = getIt<JournalDb>();
+class MeasurableChartDataController extends AsyncNotifier<List<JournalEntity>> {
+  MeasurableChartDataController(this._params);
 
+  final MeasurableChartDataParams _params;
+  final JournalDb _journalDb = getIt<JournalDb>();
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
-  String get measurableDataTypeId => arg.measurableDataTypeId;
-  DateTime get rangeStart => arg.rangeStart;
-  DateTime get rangeEnd => arg.rangeEnd;
+  String get measurableDataTypeId => _params.measurableDataTypeId;
+  DateTime get rangeStart => _params.rangeStart;
+  DateTime get rangeEnd => _params.rangeEnd;
 
-  void listen() {
+  @override
+  Future<List<JournalEntity>> build() async {
+    ref
+      ..cacheFor(dashboardCacheDuration)
+      ..onDispose(() => _updateSubscription?.cancel());
+    _listen();
+    return _fetch();
+  }
+
+  void _listen() {
     _updateSubscription =
         _updateNotifications.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(measurableDataTypeId)) {
         final latest = await _fetch();
-        if (latest != state.value) {
+        if (ref.mounted && latest != state.value) {
           state = AsyncData(latest);
         }
       }
     });
-  }
-
-  @override
-  Future<List<JournalEntity>> build(MeasurableChartDataParams arg) async {
-    ref
-      ..onDispose(() {
-        _updateSubscription?.cancel();
-      })
-      ..cacheFor(dashboardCacheDuration);
-
-    final data = await _fetch();
-    listen();
-    return data;
   }
 
   Future<List<JournalEntity>> _fetch() async {
@@ -145,48 +138,43 @@ class MeasurableChartDataController extends AutoDisposeFamilyAsyncNotifier<
 }
 
 // MeasurableObservationsController - four params
-final AutoDisposeAsyncNotifierProviderFamily<
-        MeasurableObservationsController,
-        List<Observation>,
-        MeasurableObservationsParams> measurableObservationsControllerProvider =
+final measurableObservationsControllerProvider =
     AsyncNotifierProvider.autoDispose.family<MeasurableObservationsController,
         List<Observation>, MeasurableObservationsParams>(
   MeasurableObservationsController.new,
 );
 
-class MeasurableObservationsController extends AutoDisposeFamilyAsyncNotifier<
-    List<Observation>, MeasurableObservationsParams> {
-  String get measurableDataTypeId => arg.measurableDataTypeId;
-  DateTime get rangeStart => arg.rangeStart;
-  DateTime get rangeEnd => arg.rangeEnd;
+class MeasurableObservationsController
+    extends AsyncNotifier<List<Observation>> {
+  MeasurableObservationsController(this._params);
+
+  final MeasurableObservationsParams _params;
+
+  String get measurableDataTypeId => _params.measurableDataTypeId;
+  DateTime get rangeStart => _params.rangeStart;
+  DateTime get rangeEnd => _params.rangeEnd;
   AggregationType? get dashboardDefinedAggregationType =>
-      arg.dashboardDefinedAggregationType;
+      _params.dashboardDefinedAggregationType;
 
   @override
-  Future<List<Observation>> build(MeasurableObservationsParams arg) async {
+  Future<List<Observation>> build() async {
     ref.cacheFor(dashboardCacheDuration);
 
-    final measurements = ref
-            .watch(
-              measurableChartDataControllerProvider((
-                measurableDataTypeId: measurableDataTypeId,
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              )),
-            )
-            .valueOrNull ??
-        [];
+    // Watch both dependencies - this will rebuild when either changes
+    final measurements = await ref.watch(
+      measurableChartDataControllerProvider((
+        measurableDataTypeId: measurableDataTypeId,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      )).future,
+    );
 
-    final aggregationType = ref
-            .watch(
-              aggregationTypeControllerProvider((
-                measurableDataTypeId: measurableDataTypeId,
-                dashboardDefinedAggregationType:
-                    dashboardDefinedAggregationType,
-              )),
-            )
-            .valueOrNull ??
-        AggregationType.dailySum;
+    final aggregationType = await ref.watch(
+      aggregationTypeControllerProvider((
+        measurableDataTypeId: measurableDataTypeId,
+        dashboardDefinedAggregationType: dashboardDefinedAggregationType,
+      )).future,
+    );
 
     return switch (aggregationType) {
       AggregationType.none => aggregateMeasurementNone(measurements),
@@ -212,35 +200,35 @@ class MeasurableObservationsController extends AutoDisposeFamilyAsyncNotifier<
 }
 
 // MeasurableSuggestionsController - single param
-final AutoDisposeAsyncNotifierProviderFamily<MeasurableSuggestionsController,
-        List<num>?, String> measurableSuggestionsControllerProvider =
-    AsyncNotifierProvider.autoDispose
-        .family<MeasurableSuggestionsController, List<num>?, String>(
+final measurableSuggestionsControllerProvider = AsyncNotifierProvider
+    .autoDispose
+    .family<MeasurableSuggestionsController, List<num>?, String>(
   MeasurableSuggestionsController.new,
 );
 
-class MeasurableSuggestionsController
-    extends AutoDisposeFamilyAsyncNotifier<List<num>?, String> {
-  String get measurableDataTypeId => arg;
+class MeasurableSuggestionsController extends AsyncNotifier<List<num>?> {
+  MeasurableSuggestionsController(this._measurableDataTypeId);
+
+  final String _measurableDataTypeId;
+
+  String get measurableDataTypeId => _measurableDataTypeId;
 
   @override
-  Future<List<num>?> build(String arg) async {
+  Future<List<num>?> build() async {
     ref.cacheFor(dashboardCacheDuration);
 
     final rangeStart =
         DateTime.now().dayAtMidnight.subtract(const Duration(days: 90));
     final rangeEnd = DateTime.now().dayAtMidnight.add(const Duration(days: 1));
 
-    return rankedByPopularity(
-      measurements: ref
-          .watch(
-            measurableChartDataControllerProvider((
-              measurableDataTypeId: measurableDataTypeId,
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-            )),
-          )
-          .valueOrNull,
+    final measurements = await ref.watch(
+      measurableChartDataControllerProvider((
+        measurableDataTypeId: measurableDataTypeId,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      )).future,
     );
+
+    return rankedByPopularity(measurements: measurements);
   }
 }

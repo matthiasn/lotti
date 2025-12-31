@@ -16,7 +16,6 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -29,6 +28,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../test_utils.dart';
 
 /// Integration test to verify that concurrent AI processing and user modifications
 /// work correctly with the Read-Current-Write pattern implementation.
@@ -60,8 +60,6 @@ class MockJournalDb extends Mock implements JournalDb {}
 // unused mock once those tests are implemented.
 class MockLabelsRepository extends Mock implements LabelsRepository {}
 
-class MockRef extends Mock implements Ref {}
-
 class MockDirectory extends Mock implements Directory {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
@@ -79,7 +77,7 @@ class FakeAiResponseData extends Fake implements AiResponseData {}
 
 void main() {
   late UnifiedAiInferenceRepository repository;
-  late MockRef mockRef;
+  late ProviderContainer container;
   late MockAiConfigRepository mockAiConfigRepo;
   late MockAiInputRepository mockAiInputRepo;
   late MockCloudInferenceRepository mockCloudInferenceRepo;
@@ -108,7 +106,6 @@ void main() {
   late List<Directory> overrideTempDirs;
 
   setUp(() {
-    mockRef = MockRef();
     mockAiConfigRepo = MockAiConfigRepository();
     mockAiInputRepo = MockAiInputRepository();
     mockCloudInferenceRepo = MockCloudInferenceRepository();
@@ -142,20 +139,6 @@ void main() {
     overrideTempDirs = <Directory>[];
     when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
-    when(() => mockRef.read(aiConfigRepositoryProvider))
-        .thenReturn(mockAiConfigRepo);
-    when(() => mockRef.read(aiInputRepositoryProvider))
-        .thenReturn(mockAiInputRepo);
-    when(() => mockRef.read(cloudInferenceRepositoryProvider))
-        .thenReturn(mockCloudInferenceRepo);
-    when(() => mockRef.read(journalRepositoryProvider))
-        .thenReturn(mockJournalRepo);
-    when(() => mockRef.read(checklistRepositoryProvider))
-        .thenReturn(mockChecklistRepo);
-    // TODO: Remove when integration tests for labels are added
-    when(() => mockRef.read(labelsRepositoryProvider))
-        .thenReturn(mockLabelsRepo);
-    when(() => mockRef.read(journalDbProvider)).thenReturn(mockJournalDb);
     when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
         .thenAnswer((_) async => false);
 
@@ -164,11 +147,26 @@ void main() {
             mockJournalRepo.getLinkedEntities(linkedTo: any(named: 'linkedTo')))
         .thenAnswer((_) async => <JournalEntity>[]);
 
-    repository = UnifiedAiInferenceRepository(mockRef)
+    container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+        aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
+        cloudInferenceRepositoryProvider
+            .overrideWithValue(mockCloudInferenceRepo),
+        journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+        checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
+        labelsRepositoryProvider.overrideWithValue(mockLabelsRepo),
+        journalDbProvider.overrideWithValue(mockJournalDb),
+      ],
+    );
+
+    final ref = container.read(testRefProvider);
+    repository = UnifiedAiInferenceRepository(ref)
       ..autoChecklistServiceForTesting = mockAutoChecklistService;
   });
 
   tearDown(() {
+    container.dispose();
     // Clean up temp directories created for this test
     try {
       if (baseTempDir != null && baseTempDir!.existsSync()) {

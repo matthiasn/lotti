@@ -104,7 +104,7 @@ void main() {
           (_, next) => next.whenData(captured.add),
         );
         addTearDown(sub.close);
-        final stats = MatrixStats(sentCount: 1, messageCounts: const {});
+        const stats = MatrixStats(sentCount: 1, messageCounts: {});
 
         matrixStatsStreamController.add(stats);
         async.flushMicrotasks();
@@ -113,7 +113,7 @@ void main() {
     });
 
     test('MatrixStatsController falls back to current counters', () async {
-      final fallbackStats = MatrixStats(
+      const fallbackStats = MatrixStats(
         sentCount: 4,
         messageCounts: {'m.text': 3, 'm.image': 1},
       );
@@ -140,7 +140,7 @@ void main() {
 
     test('MatrixStatsController returns latest stream value when available',
         () async {
-      final streamedStats = MatrixStats(
+      const streamedStats = MatrixStats(
         sentCount: 10,
         messageCounts: {'m.text': 7, 'm.image': 3},
       );
@@ -148,20 +148,85 @@ void main() {
       when(() => mockMatrixService.sentCount).thenReturn(0);
       when(() => mockMatrixService.messageCounts).thenReturn(<String, int>{});
 
+      // Use a StreamController that stays open to avoid disposal issues
+      final controller = StreamController<MatrixStats>();
+
       final container = ProviderContainer(
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
           matrixStatsStreamProvider.overrideWith(
-            (ref) => Stream.value(streamedStats),
+            (ref) => controller.stream,
           ),
         ],
       );
-      addTearDown(container.dispose);
+      addTearDown(() {
+        controller.close();
+        container.dispose();
+      });
 
-      await container.read(matrixStatsStreamProvider.future);
+      // First, subscribe to the stream provider to ensure it's active
+      final streamSub = container.listen(
+        matrixStatsStreamProvider,
+        (_, __) {},
+      );
+      addTearDown(streamSub.close);
+
+      // Add value and wait for stream to propagate
+      controller.add(streamedStats);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      // Now read the controller - the stream value should be available
       final result = await container.read(matrixStatsControllerProvider.future);
 
-      expect(result, streamedStats);
+      expect(result.sentCount, streamedStats.sentCount);
+      expect(result.messageCounts, streamedStats.messageCounts);
+    });
+  });
+
+  group('MatrixStats equality', () {
+    test('two MatrixStats with same values are equal', () {
+      const stats1 = MatrixStats(
+        sentCount: 5,
+        messageCounts: {'m.text': 3, 'm.image': 2},
+      );
+      const stats2 = MatrixStats(
+        sentCount: 5,
+        messageCounts: {'m.text': 3, 'm.image': 2},
+      );
+
+      expect(stats1 == stats2, isTrue);
+      expect(stats1.hashCode, stats2.hashCode);
+    });
+
+    test('MatrixStats with different sentCount are not equal', () {
+      const stats1 = MatrixStats(sentCount: 5, messageCounts: {});
+      const stats2 = MatrixStats(sentCount: 10, messageCounts: {});
+
+      expect(stats1 == stats2, isFalse);
+    });
+
+    test('MatrixStats with different messageCounts are not equal', () {
+      const stats1 = MatrixStats(
+        sentCount: 5,
+        messageCounts: {'m.text': 3},
+      );
+      const stats2 = MatrixStats(
+        sentCount: 5,
+        messageCounts: {'m.text': 5},
+      );
+
+      expect(stats1 == stats2, isFalse);
+    });
+
+    test('MatrixStats is equal to itself (identical)', () {
+      const stats = MatrixStats(sentCount: 5, messageCounts: {});
+      expect(stats == stats, isTrue);
+    });
+
+    test('MatrixStats is not equal to non-MatrixStats object', () {
+      const stats = MatrixStats(sentCount: 5, messageCounts: {});
+      expect(stats == Object(), isFalse);
     });
   });
 }

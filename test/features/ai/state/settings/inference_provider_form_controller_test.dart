@@ -189,7 +189,7 @@ void main() {
       controller.nameChanged('New Name');
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.name.value, equals('New Name'));
@@ -207,7 +207,7 @@ void main() {
       controller.apiKeyChanged('new-api-key');
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.apiKey.value, equals('new-api-key'));
@@ -225,7 +225,7 @@ void main() {
       controller.baseUrlChanged('https://new.example.com');
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.baseUrl.value, equals('https://new.example.com'));
@@ -243,7 +243,7 @@ void main() {
       controller.descriptionChanged('New comment');
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.description.value, equals('New comment'));
@@ -262,7 +262,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -283,7 +283,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -330,7 +330,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -360,7 +360,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -390,7 +390,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.openRouter);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -421,7 +421,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(controller.nameController.text, equals('Anthropic'));
@@ -442,7 +442,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.openRouter);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(controller.nameController.text, equals('OpenRouter'));
@@ -466,7 +466,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(controller.nameController.text, equals('My Custom Provider'));
@@ -491,7 +491,7 @@ void main() {
 
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.apiKey.value, isEmpty);
@@ -520,7 +520,7 @@ void main() {
       expect(controller.apiKeyController.text, isEmpty);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
       expect(formState?.apiKey.value, isEmpty);
     });
 
@@ -540,7 +540,7 @@ void main() {
 
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.apiKey.value, isEmpty);
@@ -585,7 +585,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -620,28 +620,28 @@ void main() {
 
       var formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
       expect(formState?.isValid, isFalse); // Invalid without API key
 
       // Add API key
       controller.apiKeyChanged('sk-test-key');
       formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
       expect(formState?.isValid, isTrue); // Now valid with API key
 
       // Switch to Ollama
       controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
       formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
       expect(formState?.isValid, isTrue); // Still valid without API key
 
       // Switch back to OpenAI
       controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
       formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
       expect(formState?.isValid,
           isFalse); // Invalid again because API key was cleared
     });
@@ -661,7 +661,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -694,7 +694,7 @@ void main() {
       controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(controller.nameController.text, equals('Whisper (local)'));
@@ -717,7 +717,7 @@ void main() {
 
       final formState = container
           .read(inferenceProviderFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.apiKey.value, isEmpty);

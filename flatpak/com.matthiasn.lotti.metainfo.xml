@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.792" date="2025-12-31">
+      <description>
+        <p>Riverpod 3 Migration: Upgraded to Riverpod 3.x with comprehensive codebase migration. Updated all providers to new syntax, added ref.mounted checks after async gaps, converted family providers to constructor-based parameters, and added ref.onDispose cleanup handlers. Fixed disposed ref access errors in autoDispose providers and checklist item resolution.</p>
+      </description>
+    </release>
     <release version="0.9.790" date="2025-12-31">
       <description>
         <p>Task Due Dates: Tasks now support due date assignment with a date picker in the details header. Features include color-coded status indicators (red for overdue, orange for due today), due date display on task cards with filter toggle, and tappable text that toggles between absolute and relative date formats. Card layout updated with creation date on left, due date on right.</p>

@@ -93,7 +93,7 @@ class DashboardHealthChart extends ConsumerWidget {
                 rangeEnd: rangeEnd,
               ),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     return DashboardChart(

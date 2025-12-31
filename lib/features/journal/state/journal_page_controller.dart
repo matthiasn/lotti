@@ -111,8 +111,8 @@ class JournalPageController extends _$JournalPageController {
     // Register hotkeys (desktop only)
     _registerHotkeys();
 
-    // Clean up on dispose
-    ref.onDispose(_dispose);
+    // Clean up on dispose - capture controller directly to avoid accessing state
+    ref.onDispose(() => _dispose(controller));
 
     return JournalPageState(
       showTasks: showTasks,
@@ -271,11 +271,11 @@ class JournalPageController extends _$JournalPageController {
     }
   }
 
-  void _dispose() {
+  void _dispose(PagingController<int, JournalEntity> controller) {
     _configFlagsSub?.cancel();
     _privateFlagSub?.cancel();
     _updatesSub?.cancel();
-    state.pagingController?.dispose();
+    controller.dispose();
   }
 
   void _emitState() {

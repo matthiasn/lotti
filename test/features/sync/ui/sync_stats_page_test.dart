@@ -18,7 +18,7 @@ import '../../../widget_test_utils.dart';
 class _ImmediateMatrixStatsController extends MatrixStatsController {
   @override
   Future<MatrixStats> build() async {
-    return MatrixStats(sentCount: 0, messageCounts: <String, int>{});
+    return const MatrixStats(sentCount: 0, messageCounts: <String, int>{});
   }
 }
 

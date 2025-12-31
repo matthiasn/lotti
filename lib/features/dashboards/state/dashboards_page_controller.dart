@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -5,7 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 
 /// Stream provider for all active dashboards from database.
-final AutoDisposeStreamProvider<List<DashboardDefinition>> dashboardsProvider =
+final StreamProvider<List<DashboardDefinition>> dashboardsProvider =
     StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
   final db = getIt<JournalDb>();
   return db.watchDashboards().map(
@@ -14,13 +16,12 @@ final AutoDisposeStreamProvider<List<DashboardDefinition>> dashboardsProvider =
 });
 
 /// Stateful provider for selected category IDs used for filtering dashboards.
-final AutoDisposeNotifierProvider<SelectedCategoryIds, Set<String>>
-    selectedCategoryIdsProvider =
+final selectedCategoryIdsProvider =
     NotifierProvider.autoDispose<SelectedCategoryIds, Set<String>>(
   SelectedCategoryIds.new,
 );
 
-class SelectedCategoryIds extends AutoDisposeNotifier<Set<String>> {
+class SelectedCategoryIds extends Notifier<Set<String>> {
   @override
   Set<String> build() => {};
 
@@ -38,8 +39,7 @@ class SelectedCategoryIds extends AutoDisposeNotifier<Set<String>> {
 }
 
 /// Stream provider for categories from database.
-final AutoDisposeStreamProvider<List<CategoryDefinition>>
-    dashboardCategoriesProvider =
+final StreamProvider<List<CategoryDefinition>> dashboardCategoriesProvider =
     StreamProvider.autoDispose<List<CategoryDefinition>>((ref) {
   final db = getIt<JournalDb>();
   return db.watchCategories();
@@ -47,8 +47,7 @@ final AutoDisposeStreamProvider<List<CategoryDefinition>>
 
 /// Computed provider for dashboards filtered by selected categories and sorted
 /// by name.
-final AutoDisposeProvider<List<DashboardDefinition>>
-    filteredSortedDashboardsProvider =
+final Provider<List<DashboardDefinition>> filteredSortedDashboardsProvider =
     Provider.autoDispose<List<DashboardDefinition>>((ref) {
   final dashboardsAsync = ref.watch(dashboardsProvider);
   final selectedCategories = ref.watch(selectedCategoryIdsProvider);

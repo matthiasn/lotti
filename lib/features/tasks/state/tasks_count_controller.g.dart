@@ -6,22 +6,44 @@ part of 'tasks_count_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(TasksCountController)
+final tasksCountControllerProvider = TasksCountControllerProvider._();
+
+final class TasksCountControllerProvider
+    extends $AsyncNotifierProvider<TasksCountController, int> {
+  TasksCountControllerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'tasksCountControllerProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$tasksCountControllerHash();
+
+  @$internal
+  @override
+  TasksCountController create() => TasksCountController();
+}
+
 String _$tasksCountControllerHash() =>
     r'a7cc57ed4336e653426833adef504cccc9e6033c';
 
-/// See also [TasksCountController].
-@ProviderFor(TasksCountController)
-final tasksCountControllerProvider =
-    AsyncNotifierProvider<TasksCountController, int>.internal(
-  TasksCountController.new,
-  name: r'tasksCountControllerProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$tasksCountControllerHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef _$TasksCountController = AsyncNotifier<int>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+abstract class _$TasksCountController extends $AsyncNotifier<int> {
+  FutureOr<int> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<int>, int>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<int>, int>, AsyncValue<int>, Object?, Object?>;
+    element.handleCreate(ref, build);
+  }
+}

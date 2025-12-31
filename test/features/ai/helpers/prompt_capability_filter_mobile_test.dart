@@ -11,22 +11,9 @@ import '../test_utils.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
-class MockRef extends Mock implements Ref {
-  MockRef(this._mockRepo);
-  final MockAiConfigRepository _mockRepo;
-
-  @override
-  T read<T>(ProviderListenable<T> provider) {
-    if (identical(provider, aiConfigRepositoryProvider)) {
-      return _mockRepo as T;
-    }
-    throw UnimplementedError('Provider $provider not mocked');
-  }
-}
-
 void main() {
   late MockAiConfigRepository mockRepo;
-  late MockRef mockRef;
+  late ProviderContainer container;
   late PromptCapabilityFilter filter;
 
   setUpAll(() {
@@ -41,8 +28,17 @@ void main() {
 
   setUp(() {
     mockRepo = MockAiConfigRepository();
-    mockRef = MockRef(mockRepo);
-    filter = PromptCapabilityFilter(mockRef);
+    container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(mockRepo),
+      ],
+    );
+    final ref = container.read(testRefProvider);
+    filter = PromptCapabilityFilter(ref);
+  });
+
+  tearDown(() {
+    container.dispose();
   });
 
   // These tests will only run correctly on mobile platforms

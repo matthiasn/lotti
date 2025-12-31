@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/utils/string_utils.dart' as string_utils;
@@ -18,7 +17,7 @@ const kCorrectionSaveDelay = Duration(seconds: 5);
 CorrectionCaptureService correctionCaptureService(Ref ref) {
   return CorrectionCaptureService(
     categoryRepository: ref.watch(categoryRepositoryProvider),
-    notifier: ref.read(correctionCaptureNotifierProvider.notifier),
+    notifier: ref.read(correctionCaptureProvider.notifier),
   );
 }
 

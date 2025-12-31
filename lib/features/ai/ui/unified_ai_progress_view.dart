@@ -277,17 +277,19 @@ class _UnifiedAiProgressContentState
             );
 
             // Determine if it's a Gemma model by checking provider configuration
-            // Use FutureBuilder to handle async provider lookup
-            return FutureBuilder<List<AiConfig>>(
-              future: ref.read(aiConfigByTypeControllerProvider(
-                      configType: AiConfigType.inferenceProvider)
-                  .future),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const CircularProgressIndicator();
-                }
+            // In Riverpod 3, use ref.watch with AsyncValue.when to properly
+            // keep the auto-dispose provider alive and handle async states
+            final providersAsync = ref.watch(aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ));
 
-                final providers = snapshot.data!;
+            return providersAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, __) => OllamaModelInstallDialog(
+                modelName: modelName,
+                onModelInstalled: () => _handleModelInstalled('Ollama'),
+              ),
+              data: (providers) {
                 final gemmaProvider = providers
                     .whereType<AiConfigInferenceProvider>()
                     .where((AiConfigInferenceProvider p) =>

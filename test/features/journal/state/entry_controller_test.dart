@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_quill/flutter_quill.dart'; // Import for QuillController
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -1292,9 +1293,11 @@ void main() {
         await container.pump();
 
         final lastEmittedValue =
-            verify(() => listener(captureAny(), captureAny())).captured.last;
-        expect(lastEmittedValue, isA<AsyncError<EntryState?>>());
-        expect((lastEmittedValue as AsyncError).error, exception);
+            verify(() => listener(captureAny(), captureAny())).captured.last
+                as AsyncValue<EntryState?>;
+        // In Riverpod 3, async errors may be in AsyncLoading (retrying) state
+        expect(lastEmittedValue.hasError, isTrue);
+        expect(lastEmittedValue.error, exception);
       });
 
       test(

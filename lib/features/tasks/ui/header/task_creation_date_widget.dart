@@ -19,7 +19,7 @@ class TaskCreationDateWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: taskId);
-    final entryState = ref.watch(provider).valueOrNull;
+    final entryState = ref.watch(provider).value;
     final entry = entryState?.entry;
 
     if (entry is! Task) return const SizedBox.shrink();

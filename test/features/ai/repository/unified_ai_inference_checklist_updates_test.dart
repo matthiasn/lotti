@@ -15,7 +15,6 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -26,6 +25,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+import '../test_utils.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
@@ -45,8 +46,6 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockLabelsRepository extends Mock implements LabelsRepository {}
-
-class MockRef extends Mock implements Ref {}
 
 class FakeAiResponseData extends Fake implements AiResponseData {}
 
@@ -93,7 +92,7 @@ class FakeTaskData extends Fake implements TaskData {
 
 void main() {
   late UnifiedAiInferenceRepository repository;
-  late MockRef mockRef;
+  late ProviderContainer container;
   late MockAiConfigRepository mockAiConfigRepo;
   late MockAiInputRepository mockAiInputRepo;
   late MockCloudInferenceRepository mockCloudRepo;
@@ -113,7 +112,6 @@ void main() {
   });
 
   setUp(() {
-    mockRef = MockRef();
     mockAiConfigRepo = MockAiConfigRepository();
     mockAiInputRepo = MockAiInputRepository();
     mockCloudRepo = MockCloudInferenceRepository();
@@ -131,20 +129,6 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<JournalDb>(mockJournalDb);
 
-    // Setup providers
-    when(() => mockRef.read(aiConfigRepositoryProvider))
-        .thenReturn(mockAiConfigRepo);
-    when(() => mockRef.read(aiInputRepositoryProvider))
-        .thenReturn(mockAiInputRepo);
-    when(() => mockRef.read(cloudInferenceRepositoryProvider))
-        .thenReturn(mockCloudRepo);
-    when(() => mockRef.read(journalRepositoryProvider))
-        .thenReturn(mockJournalRepo);
-    when(() => mockRef.read(checklistRepositoryProvider))
-        .thenReturn(mockChecklistRepo);
-    when(() => mockRef.read(labelsRepositoryProvider))
-        .thenReturn(mockLabelsRepo);
-    when(() => mockRef.read(journalDbProvider)).thenReturn(mockJournalDb);
     when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
         .thenAnswer((_) async => false);
 
@@ -156,11 +140,27 @@ void main() {
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         )).thenReturn(null);
 
-    repository = UnifiedAiInferenceRepository(mockRef)
+    container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+        aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
+        cloudInferenceRepositoryProvider.overrideWithValue(mockCloudRepo),
+        journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+        checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
+        labelsRepositoryProvider.overrideWithValue(mockLabelsRepo),
+        journalDbProvider.overrideWithValue(mockJournalDb),
+      ],
+    );
+
+    final ref = container.read(testRefProvider);
+    repository = UnifiedAiInferenceRepository(ref)
       ..autoChecklistServiceForTesting = mockAutoChecklistService;
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    container.dispose();
+    getIt.reset();
+  });
 
   group('UnifiedAiInferenceRepository - Checklist Updates', () {
     test('should include function tools for checklistUpdates response type',
@@ -236,12 +236,6 @@ void main() {
             invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
         return streamController.stream;
       });
-
-      // Setup inference status controller
-      when(() => mockRef.watch(inferenceStatusControllerProvider(
-            id: 'task-1',
-            aiResponseType: AiResponseType.checklistUpdates,
-          ).notifier)).thenReturn(_MockInferenceStatusController());
 
       // Act
       final future = repository.runInference(
@@ -349,12 +343,6 @@ void main() {
             provider: any(named: 'provider'),
             tools: any(named: 'tools'),
           )).thenAnswer((_) => streamController.stream);
-
-      // Setup inference status controller
-      when(() => mockRef.watch(inferenceStatusControllerProvider(
-            id: 'task-1',
-            aiResponseType: AiResponseType.checklistUpdates,
-          ).notifier)).thenReturn(_MockInferenceStatusController());
 
       // Act
       final future = repository.runInference(
@@ -468,12 +456,6 @@ void main() {
         return streamController.stream;
       });
 
-      // Setup inference status controller
-      when(() => mockRef.watch(inferenceStatusControllerProvider(
-            id: 'task-1',
-            aiResponseType: AiResponseType.taskSummary,
-          ).notifier)).thenReturn(_MockInferenceStatusController());
-
       // Act
       final future = repository.runInference(
         entityId: 'task-1',
@@ -499,12 +481,4 @@ void main() {
       expect(capturedTools, isNull);
     });
   });
-}
-
-class _MockInferenceStatusController extends Mock
-    implements InferenceStatusController {
-  @override
-  void setStatus(InferenceStatus status) {
-    // Mock implementation
-  }
 }

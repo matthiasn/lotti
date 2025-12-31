@@ -13,9 +13,9 @@ import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -25,6 +25,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
+
+import '../test_utils.dart';
 
 // Mocks
 class MockJournalRepository extends Mock implements JournalRepository {}
@@ -36,14 +38,79 @@ class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
 
-class MockConversationRepository extends Mock
-    implements ConversationRepository {}
+/// Mock ConversationRepository that extends the real class.
+/// In Riverpod 3, Notifier classes can't be mocked with `Mock implements`
+/// because they have internal state that's accessed during initialization.
+class MockConversationRepository extends ConversationRepository {
+  MockConversationRepository(this._mockManager);
+
+  final MockConversationManager _mockManager;
+  final List<String> deletedConversationIds = [];
+
+  /// Delegate for sendMessage - set this in tests to control behavior
+  Future<void> Function({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    double temperature,
+    ConversationStrategy? strategy,
+  })? sendMessageDelegate;
+
+  @override
+  void build() {
+    // No-op for mock
+  }
+
+  @override
+  String createConversation({
+    String? systemMessage,
+    int maxTurns = 20,
+  }) {
+    return 'test-conv';
+  }
+
+  @override
+  ConversationManager? getConversation(String conversationId) {
+    return _mockManager;
+  }
+
+  @override
+  void deleteConversation(String conversationId) {
+    deletedConversationIds.add(conversationId);
+  }
+
+  @override
+  Future<void> sendMessage({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    double temperature = 0.7,
+    ConversationStrategy? strategy,
+  }) async {
+    if (sendMessageDelegate != null) {
+      await sendMessageDelegate!(
+        conversationId: conversationId,
+        message: message,
+        model: model,
+        provider: provider,
+        inferenceRepo: inferenceRepo,
+        tools: tools,
+        temperature: temperature,
+        strategy: strategy,
+      );
+    }
+  }
+}
 
 class MockConversationManager extends Mock implements ConversationManager {}
 
 class MockJournalDb extends Mock implements JournalDb {}
-
-class MockRef extends Mock implements Ref {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -199,33 +266,30 @@ class TestDataFactory {
   }
 }
 
-// Test helper: robustly stub ConversationRepository.sendMessage to always
-// invoke the provided strategy with the given tool calls, avoiding brittle
-// named-arg matching.
+// Test helper: set up the sendMessage delegate to invoke the strategy
+// with the given tool calls.
 void stubSendMessageToInvokeStrategy({
-  required ConversationRepository repo,
+  required MockConversationRepository repo,
   required ConversationManager manager,
   required List<ChatCompletionMessageToolCall> toolCalls,
 }) {
-  when(() => repo.sendMessage(
-        conversationId: any(named: 'conversationId'),
-        message: any(named: 'message'),
-        model: any(named: 'model'),
-        provider: any(named: 'provider'),
-        inferenceRepo: any(named: 'inferenceRepo'),
-        tools: any(named: 'tools'),
-        temperature: any(named: 'temperature'),
-        strategy: any(named: 'strategy'),
-      )).thenAnswer((invocation) async {
-    final strategy =
-        invocation.namedArguments[#strategy] as ConversationStrategy?;
+  repo.sendMessageDelegate = ({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    double temperature = 0.7,
+    ConversationStrategy? strategy,
+  }) async {
     if (strategy != null) {
       await strategy.processToolCalls(
         toolCalls: toolCalls,
         manager: manager,
       );
     }
-  });
+  };
 }
 
 void main() {
@@ -235,7 +299,7 @@ void main() {
   late MockConversationRepository mockConversationRepo;
   late MockConversationManager mockConversationManager;
   late MockJournalDb mockJournalDb;
-  late MockRef mockRef;
+  late ProviderContainer container;
   late MockLoggingService mockLoggingService;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockOllamaInferenceRepository mockOllamaRepo;
@@ -264,10 +328,10 @@ void main() {
     mockJournalRepo = MockJournalRepository();
     mockChecklistRepo = MockChecklistRepository();
     mockAutoChecklistService = MockAutoChecklistService();
-    mockConversationRepo = MockConversationRepository();
+    // Create MockConversationManager first since MockConversationRepository needs it
     mockConversationManager = MockConversationManager();
+    mockConversationRepo = MockConversationRepository(mockConversationManager);
     mockJournalDb = MockJournalDb();
-    mockRef = MockRef();
     mockLoggingService = MockLoggingService();
     mockPersistenceLogic = MockPersistenceLogic();
     mockOllamaRepo = MockOllamaInferenceRepository();
@@ -278,18 +342,26 @@ void main() {
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
-    // Set up ref
-    when(() => mockRef.read(journalRepositoryProvider))
-        .thenReturn(mockJournalRepo);
-    when(() => mockRef.read(checklistRepositoryProvider))
-        .thenReturn(mockChecklistRepo);
-    when(() => mockRef.read(conversationRepositoryProvider.notifier))
-        .thenReturn(mockConversationRepo);
+    // Create ProviderContainer with overrides
+    container = ProviderContainer(
+      overrides: [
+        journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+        checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
+        conversationRepositoryProvider.overrideWith(
+          () => mockConversationRepo,
+        ),
+      ],
+    );
 
-    processor = LottiConversationProcessor(ref: mockRef);
+    // Get a real Ref from the container
+    final ref = container.read(testRefProvider);
+    processor = LottiConversationProcessor(ref: ref);
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    container.dispose();
+    getIt.reset();
+  });
 
   group('LottiConversationProcessor - processPromptWithConversation', () {
     test('should process multiple items via batch creation', () async {
@@ -298,18 +370,9 @@ void main() {
       final model = TestDataFactory.createModel();
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add pizza ingredients: cheese, tomatoes, pepperoni';
-      const conversationId = 'test-conversation-id';
       final mockOllamaRepo = MockOllamaInferenceRepository();
 
-      // Mock conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-
-      when(() => mockConversationRepo.getConversation(any()))
-          .thenReturn(mockConversationManager);
-
+      // Mock conversation setup - MockConversationRepository provides createConversation and getConversation
       when(() => mockConversationManager.messages).thenReturn([]);
 
       // Mock Ollama responses - first single items, then batch
@@ -413,9 +476,6 @@ void main() {
         );
       });
 
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
-
       // Act
       final result = await processor.processPromptWithConversation(
         prompt: prompt,
@@ -452,18 +512,9 @@ void main() {
       final model = TestDataFactory.createModel();
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add invalid item';
-      const conversationId = 'test-conversation-id';
       final mockOllamaRepo = MockOllamaInferenceRepository();
 
-      // Mock conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-
-      when(() => mockConversationRepo.getConversation(any()))
-          .thenReturn(mockConversationManager);
-
+      // Mock conversation setup - MockConversationRepository provides createConversation and getConversation
       when(() => mockConversationManager.messages).thenReturn([]);
 
       // Mock Ollama response with invalid JSON
@@ -492,9 +543,6 @@ void main() {
         manager: mockConversationManager,
         toolCalls: const [toolCall],
       );
-
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
 
       // Act
       final result = await processor.processPromptWithConversation(
@@ -529,18 +577,9 @@ void main() {
       final model = TestDataFactory.createModel();
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add timeout test';
-      const conversationId = 'test-conversation-id';
       final mockOllamaRepo = MockOllamaInferenceRepository();
 
-      // Mock conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-
-      when(() => mockConversationRepo.getConversation(conversationId))
-          .thenReturn(mockConversationManager);
-
+      // Mock conversation setup - MockConversationRepository provides createConversation and getConversation
       when(() => mockConversationManager.messages).thenReturn([]);
 
       // Mock conversation flow with timeout
@@ -548,19 +587,19 @@ void main() {
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: conversationId,
-            message: any(named: 'message'),
-            model: any(named: 'model'),
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenThrow(TimeoutException('Request timeout'));
-
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
+      // Set delegate to throw timeout exception
+      mockConversationRepo.sendMessageDelegate = ({
+        required String conversationId,
+        required String message,
+        required String model,
+        required AiConfigInferenceProvider provider,
+        required InferenceRepositoryInterface inferenceRepo,
+        List<ChatCompletionTool>? tools,
+        double temperature = 0.7,
+        ConversationStrategy? strategy,
+      }) async {
+        throw TimeoutException('Request timeout');
+      };
 
       // Act
       final result = await processor.processPromptWithConversation(
@@ -603,18 +642,9 @@ void main() {
       final model = TestDataFactory.createModel();
       final promptConfig = TestDataFactory.createPromptConfig();
       const prompt = 'Add new item to checklist';
-      const conversationId = 'test-conversation-id';
       final mockOllamaRepo = MockOllamaInferenceRepository();
 
-      // Mock conversation setup
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn(conversationId);
-
-      when(() => mockConversationRepo.getConversation(conversationId))
-          .thenReturn(mockConversationManager);
-
+      // Mock conversation setup - MockConversationRepository provides createConversation and getConversation
       when(() => mockConversationManager.messages).thenReturn([]);
 
       // Mock Ollama response
@@ -673,9 +703,6 @@ void main() {
         );
       });
 
-      when(() => mockConversationRepo.deleteConversation(conversationId))
-          .thenReturn(null);
-
       // Act
       final result = await processor.processPromptWithConversation(
         prompt: prompt,
@@ -728,14 +755,7 @@ void main() {
       final provider = TestDataFactory.createProvider();
       final prompt = TestDataFactory.createPromptConfig();
 
-      // Mock conversation creation
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn('test-conversation-id');
-
-      when(() => mockConversationRepo.getConversation('test-conversation-id'))
-          .thenReturn(mockConversationManager);
+      // Mock conversation setup - MockConversationRepository provides createConversation, getConversation, deleteConversation
 
       // Mock no task found
       when(() => mockJournalRepo.getLinkedToEntities(
@@ -745,20 +765,7 @@ void main() {
       when(() => mockConversationManager.events)
           .thenAnswer((_) => StreamController<ConversationEvent>().stream);
 
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: any(named: 'conversationId'),
-            message: any(named: 'message'),
-            model: any(named: 'model'),
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((_) async {});
-
-      when(() =>
-              mockConversationRepo.deleteConversation('test-conversation-id'))
-          .thenReturn(null);
+      // sendMessageDelegate not set means it does nothing (default behavior)
 
       final result = await processor.processPromptWithConversation(
         prompt: 'Analyze image',
@@ -784,30 +791,21 @@ void main() {
       final provider = TestDataFactory.createProvider();
       final prompt = TestDataFactory.createPromptConfig();
 
-      // Mock conversation creation
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn('test-conversation-id');
+      // Mock conversation setup - MockConversationRepository provides createConversation, getConversation, deleteConversation
 
-      when(() => mockConversationRepo.getConversation('test-conversation-id'))
-          .thenReturn(mockConversationManager);
-
-      // Mock conversation error
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: any(named: 'conversationId'),
-            message: any(named: 'message'),
-            model: any(named: 'model'),
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenThrow(Exception('Conversation error'));
-
-      when(() =>
-              mockConversationRepo.deleteConversation('test-conversation-id'))
-          .thenReturn(null);
+      // Set delegate to throw conversation error
+      mockConversationRepo.sendMessageDelegate = ({
+        required String conversationId,
+        required String message,
+        required String model,
+        required AiConfigInferenceProvider provider,
+        required InferenceRepositoryInterface inferenceRepo,
+        List<ChatCompletionTool>? tools,
+        double temperature = 0.7,
+        ConversationStrategy? strategy,
+      }) async {
+        throw Exception('Conversation error');
+      };
 
       final result = await processor.processPromptWithConversation(
         prompt: 'Create items',
@@ -833,33 +831,13 @@ void main() {
       final prompt = TestDataFactory.createPromptConfig();
       final customAutoChecklistService = MockAutoChecklistService();
 
-      // Mock conversation creation
-      when(() => mockConversationRepo.createConversation(
-            systemMessage: any(named: 'systemMessage'),
-            maxTurns: any(named: 'maxTurns'),
-          )).thenReturn('test-conversation-id');
-
-      when(() => mockConversationRepo.getConversation('test-conversation-id'))
-          .thenReturn(mockConversationManager);
+      // Mock conversation setup - MockConversationRepository provides createConversation, getConversation, deleteConversation
 
       // Mock conversation flow
       when(() => mockConversationManager.events)
           .thenAnswer((_) => StreamController<ConversationEvent>().stream);
 
-      when(() => mockConversationRepo.sendMessage(
-            conversationId: any(named: 'conversationId'),
-            message: any(named: 'message'),
-            model: any(named: 'model'),
-            provider: any(named: 'provider'),
-            inferenceRepo: any(named: 'inferenceRepo'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            strategy: any(named: 'strategy'),
-          )).thenAnswer((_) async {});
-
-      when(() =>
-              mockConversationRepo.deleteConversation('test-conversation-id'))
-          .thenReturn(null);
+      // sendMessageDelegate not set means it does nothing (default behavior)
 
       final result = await processor.processPromptWithConversation(
         prompt: 'Create items',
@@ -902,7 +880,7 @@ void main() {
       strategy = LottiChecklistStrategy(
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
-        ref: mockRef,
+        ref: container.read(testRefProvider),
         provider: AiConfigInferenceProvider(
           id: 'test-ollama',
           name: 'Test Ollama',
@@ -1237,14 +1215,16 @@ void main() {
     late MockAutoChecklistService mockAutoChecklistService;
     late MockChecklistRepository mockChecklistRepo;
     late LottiChecklistStrategy strategy;
-    late MockRef mockRef;
+    late ProviderContainer container;
+    late Ref testRef;
     late Task task;
 
     setUp(() {
       mockConversationManager = MockConversationManager();
       mockAutoChecklistService = MockAutoChecklistService();
       mockChecklistRepo = MockChecklistRepository();
-      mockRef = MockRef();
+      container = ProviderContainer();
+      testRef = container.read(testRefProvider);
       task = TestDataFactory.createTask();
 
       checklistHandler = LottiChecklistItemHandler(
@@ -1262,7 +1242,7 @@ void main() {
       strategy = LottiChecklistStrategy(
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
-        ref: mockRef,
+        ref: testRef,
         provider: AiConfigInferenceProvider(
           id: 'ollama',
           name: 'Ollama',
@@ -1277,6 +1257,10 @@ void main() {
             toolCallId: any(named: 'toolCallId'),
             response: any(named: 'response'),
           )).thenAnswer((_) {});
+    });
+
+    tearDown(() {
+      container.dispose();
     });
 
     test(

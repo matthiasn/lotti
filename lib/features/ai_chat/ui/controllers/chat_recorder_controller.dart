@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'dart:async';
 import 'dart:io';
 
@@ -63,7 +65,7 @@ class ChatRecorderState {
   }
 }
 
-class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
+class ChatRecorderController extends Notifier<ChatRecorderState> {
   ChatRecorderController({
     record.AudioRecorder Function()? recorderFactory,
     int Function()? nowMillisProvider,
@@ -85,6 +87,44 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
   final AudioTranscriptionService? _transcriptionServiceOverride;
   late final AudioTranscriptionService _transcriptionService;
 
+  @override
+  ChatRecorderState build() {
+    _transcriptionService = _transcriptionServiceOverride ??
+        ref.read(audioTranscriptionServiceProvider);
+
+    // Clean up resources when the provider is disposed
+    ref.onDispose(() {
+      _maxTimer?.cancel();
+      // Wrap in Future to catch exceptions and prevent them from bubbling up
+      final ampSub = _ampSub;
+      if (ampSub != null) {
+        unawaited(ampSub.cancel().catchError((Object e) {}));
+      }
+      final recorder = _recorder;
+      if (recorder != null) {
+        unawaited(recorder.dispose().catchError((Object e) {}));
+      }
+      // Clean up files asynchronously
+      final filePath = _filePath;
+      final tempDir = _tempDir;
+      if (filePath != null) {
+        unawaited(
+          File(filePath).delete().then((_) {}).catchError((Object e) {}),
+        );
+      }
+      if (tempDir != null) {
+        unawaited(
+          tempDir
+              .delete(recursive: true)
+              .then((_) {})
+              .catchError((Object e) {}),
+        );
+      }
+    });
+
+    return const ChatRecorderState.initial();
+  }
+
   record.AudioRecorder? _recorder;
   StreamSubscription<record.Amplitude>? _ampSub;
   Timer? _maxTimer;
@@ -97,15 +137,8 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
   static const int _cleanupTimeoutSeconds = 2;
   static const int _fileDeleteTimeoutSeconds = 2;
 
-  @override
-  ChatRecorderState build() {
-    _transcriptionService = _transcriptionServiceOverride ??
-        ref.read(audioTranscriptionServiceProvider);
-    ref.onDispose(() => unawaited(_cleanupInternal()));
-    return const ChatRecorderState.initial();
-  }
-
   Future<void> start() async {
+    if (!ref.mounted) return;
     if (_isStarting) {
       state = state.copyWith(
         error: 'Another operation is in progress',
@@ -119,6 +152,10 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
     final recorder = _recorderFactory();
     try {
       final hasPerm = await recorder.hasPermission();
+      if (!ref.mounted) {
+        await recorder.dispose();
+        return;
+      }
       if (!hasPerm) {
         state = state.copyWith(
           error: 'Microphone permission denied. Please enable it in Settings.',
@@ -130,8 +167,16 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
 
       // Use app-scoped temporary directory for better privacy
       final baseTemp = await _tempDirectoryProvider();
+      if (!ref.mounted) {
+        await recorder.dispose();
+        return;
+      }
       _tempDir = await Directory('${baseTemp.path}/lotti_chat_rec')
           .create(recursive: true);
+      if (!ref.mounted) {
+        await recorder.dispose();
+        return;
+      }
       final fileName = 'chat_${_nowMillisProvider()}.m4a';
       _filePath = '${_tempDir!.path}/$fileName';
 
@@ -142,6 +187,11 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
         ),
         path: _filePath!,
       );
+      if (!ref.mounted) {
+        await recorder.stop();
+        await recorder.dispose();
+        return;
+      }
 
       _recorder = recorder;
 
@@ -159,8 +209,9 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
           .onAmplitudeChanged(
               Duration(milliseconds: _config.amplitudeIntervalMs))
           .listen((event) {
-        // Check if this operation is still current
+        // Check if this operation is still current and ref is still valid
         if (currentOpId != _operationId) return;
+        if (!ref.mounted) return;
 
         final dBFS = event.current;
         final history = List<double>.from(state.amplitudeHistory)..add(dBFS);
@@ -174,8 +225,8 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
       // Safety stop after configured max duration
       _maxTimer?.cancel();
       _maxTimer = Timer(Duration(seconds: _config.maxSeconds), () {
-        // Check if this operation is still current
-        if (currentOpId == _operationId) {
+        // Check if this operation is still current and ref is valid
+        if (currentOpId == _operationId && ref.mounted) {
           unawaited(stopAndTranscribe());
         }
       });
@@ -187,10 +238,12 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
         subDomain: 'start',
       );
     } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to start recording: $e',
-        errorType: ChatRecorderErrorType.startFailed,
-      );
+      if (ref.mounted) {
+        state = state.copyWith(
+          error: 'Failed to start recording: $e',
+          errorType: ChatRecorderErrorType.startFailed,
+        );
+      }
       await _cleanupInternal();
     } finally {
       _isStarting = false;
@@ -198,6 +251,7 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
   }
 
   Future<void> stopAndTranscribe() async {
+    if (!ref.mounted) return;
     if (_recorder == null) return;
 
     // Capture current operation ID
@@ -221,8 +275,8 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
     final filePath = _filePath;
     if (filePath == null) {
       await _cleanupInternal();
-      // Only update state if this operation is still current
-      if (currentOpId == _operationId) {
+      // Only update state if this operation is still current and ref is valid
+      if (currentOpId == _operationId && ref.mounted) {
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
           error: 'No audio file available',
@@ -234,14 +288,14 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
 
     try {
       final transcript = await _transcribe(filePath);
-      // Only update state if this operation is still current
-      if (currentOpId == _operationId) {
+      // Only update state if this operation is still current and ref is valid
+      if (currentOpId == _operationId && ref.mounted) {
         state = state.copyWith(
             status: ChatRecorderStatus.idle, transcript: transcript);
       }
     } catch (e) {
-      // Only update state if this operation is still current
-      if (currentOpId == _operationId) {
+      // Only update state if this operation is still current and ref is valid
+      if (currentOpId == _operationId && ref.mounted) {
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
           error: 'Transcription failed: $e',
@@ -255,6 +309,7 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
 
   /// Cancel current recording and discard audio without transcription.
   Future<void> cancel() async {
+    if (!ref.mounted) return;
     if (state.status != ChatRecorderStatus.recording &&
         state.status != ChatRecorderStatus.processing) {
       return;
@@ -285,7 +340,9 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
       );
     }
     await _cleanupInternal();
-    state = state.copyWith(status: ChatRecorderStatus.idle);
+    if (ref.mounted) {
+      state = state.copyWith(status: ChatRecorderStatus.idle);
+    }
   }
 
   // Always Gemini Flash for v1 per requirements
@@ -397,6 +454,7 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
   }
 
   void clearResult() {
+    if (!ref.mounted) return;
     if (state.transcript != null || state.error != null) {
       state = ChatRecorderState(
         status: state.status,
@@ -406,9 +464,8 @@ class ChatRecorderController extends AutoDisposeNotifier<ChatRecorderState> {
   }
 }
 
-final AutoDisposeNotifierProvider<ChatRecorderController, ChatRecorderState>
-    chatRecorderControllerProvider =
-    AutoDisposeNotifierProvider<ChatRecorderController, ChatRecorderState>(
+final chatRecorderControllerProvider =
+    NotifierProvider.autoDispose<ChatRecorderController, ChatRecorderState>(
   ChatRecorderController.new,
 );
 

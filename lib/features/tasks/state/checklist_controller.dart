@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,22 +17,40 @@ import 'package:lotti/utils/cache_extension.dart';
 /// Record type for checklist parameters.
 typedef ChecklistParams = ({String id, String? taskId});
 
-final AutoDisposeAsyncNotifierProviderFamily<ChecklistController, Checklist?,
-        ChecklistParams> checklistControllerProvider =
-    AsyncNotifierProvider.autoDispose
-        .family<ChecklistController, Checklist?, ChecklistParams>(
+final checklistControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<ChecklistController, Checklist?, ChecklistParams>(
   ChecklistController.new,
 );
 
-class ChecklistController
-    extends AutoDisposeFamilyAsyncNotifier<Checklist?, ChecklistParams> {
+class ChecklistController extends AsyncNotifier<Checklist?> {
+  ChecklistController(this.params);
+
+  final ChecklistParams params;
   final subscribedIds = <String>{};
   StreamSubscription<Set<String>>? _updateSubscription;
 
-  String get id => arg.id;
-  String? get taskId => arg.taskId;
+  String get id => params.id;
+  String? get taskId => params.taskId;
 
-  void listen() {
+  @override
+  Future<Checklist?> build() async {
+    subscribedIds.add(id);
+    ref
+      ..cacheFor(entryCacheDuration)
+      ..onDispose(() {
+        _updateSubscription?.cancel();
+      });
+
+    _listen();
+
+    final checklist = await _fetch();
+    if (checklist != null) {
+      subscribedIds.addAll(checklist.data.linkedChecklistItems);
+    }
+    return checklist;
+  }
+
+  void _listen() {
     _updateSubscription =
         getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
       if (affectedIds.intersection(subscribedIds).isNotEmpty) {
@@ -40,24 +60,6 @@ class ChecklistController
         }
       }
     });
-  }
-
-  @override
-  Future<Checklist?> build(ChecklistParams arg) async {
-    subscribedIds.add(id);
-    ref
-      ..onDispose(() => _updateSubscription?.cancel())
-      ..cacheFor(entryCacheDuration);
-
-    final checklist = await _fetch();
-
-    if (checklist != null) {
-      subscribedIds.addAll(checklist.data.linkedChecklistItems);
-    }
-
-    listen();
-
-    return checklist;
   }
 
   Future<Checklist?> _fetch() async {
@@ -283,46 +285,66 @@ class ChecklistController
 /// Record type for completion controller parameters.
 typedef ChecklistCompletionParams = ({String id, String? taskId});
 
-final AutoDisposeAsyncNotifierProviderFamily<
-        ChecklistCompletionController,
-        ({int completedCount, int totalCount}),
-        ChecklistCompletionParams> checklistCompletionControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<ChecklistCompletionController,
-        ({int completedCount, int totalCount}), ChecklistCompletionParams>(
+typedef ChecklistCompletionState = ({int completedCount, int totalCount});
+
+final checklistCompletionControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<ChecklistCompletionController, ChecklistCompletionState,
+        ChecklistCompletionParams>(
   ChecklistCompletionController.new,
 );
 
-class ChecklistCompletionController extends AutoDisposeFamilyAsyncNotifier<
-    ({int completedCount, int totalCount}), ChecklistCompletionParams> {
-  ChecklistCompletionController();
+class ChecklistCompletionController
+    extends AsyncNotifier<ChecklistCompletionState> {
+  ChecklistCompletionController(this.params);
 
-  String get id => arg.id;
-  String? get taskId => arg.taskId;
+  final ChecklistCompletionParams params;
+  ProviderSubscription<AsyncValue<Checklist?>>? _checklistSubscription;
+  final Map<String, ProviderSubscription<AsyncValue<ChecklistItem?>>>
+      _itemSubscriptions = {};
+
+  String get id => params.id;
+  String? get taskId => params.taskId;
 
   @override
-  Future<({int completedCount, int totalCount})> build(
-    ChecklistCompletionParams arg,
-  ) async {
+  Future<ChecklistCompletionState> build() async {
+    ref.onDispose(() {
+      _checklistSubscription?.close();
+      for (final sub in _itemSubscriptions.values) {
+        sub.close();
+      }
+    });
+
+    _checklistSubscription = ref.listen<AsyncValue<Checklist?>>(
+      checklistControllerProvider((id: id, taskId: taskId)),
+      (_, __) => _updateState(),
+    );
+
+    return _computeState();
+  }
+
+  ChecklistCompletionState _computeState() {
     final checklistData = ref
-        .watch(
-          checklistControllerProvider((
-            id: id,
-            taskId: taskId,
-          )),
-        )
+        .read(checklistControllerProvider((id: id, taskId: taskId)))
         .value
         ?.data;
 
     final linkedIds = checklistData?.linkedChecklistItems ?? <String>[];
+
+    // Subscribe to any new item providers
+    for (final itemId in linkedIds) {
+      if (!_itemSubscriptions.containsKey(itemId)) {
+        _itemSubscriptions[itemId] = ref.listen<AsyncValue<ChecklistItem?>>(
+          checklistItemControllerProvider((id: itemId, taskId: taskId)),
+          (_, __) => _updateState(),
+        );
+      }
+    }
+
     final linkedChecklistItems = linkedIds
         .map(
-          (id) => ref
-              .watch(
-                checklistItemControllerProvider((
-                  id: id,
-                  taskId: taskId,
-                )),
-              )
+          (itemId) => ref
+              .read(
+                  checklistItemControllerProvider((id: itemId, taskId: taskId)))
               .value,
         )
         .nonNulls
@@ -332,37 +354,50 @@ class ChecklistCompletionController extends AutoDisposeFamilyAsyncNotifier<
     final completedCount =
         linkedChecklistItems.where((item) => item.data.isChecked).length;
 
-    return (
-      completedCount: completedCount,
-      totalCount: totalCount,
-    );
+    return (completedCount: completedCount, totalCount: totalCount);
+  }
+
+  void _updateState() {
+    state = AsyncData(_computeState());
   }
 }
 
-final AutoDisposeAsyncNotifierProviderFamily<
-        ChecklistCompletionRateController,
-        double,
-        ChecklistCompletionParams> checklistCompletionRateControllerProvider =
+final checklistCompletionRateControllerProvider =
     AsyncNotifierProvider.autoDispose.family<ChecklistCompletionRateController,
         double, ChecklistCompletionParams>(
   ChecklistCompletionRateController.new,
 );
 
-class ChecklistCompletionRateController
-    extends AutoDisposeFamilyAsyncNotifier<double, ChecklistCompletionParams> {
-  ChecklistCompletionRateController();
+class ChecklistCompletionRateController extends AsyncNotifier<double> {
+  ChecklistCompletionRateController(this.params);
 
-  String get id => arg.id;
-  String? get taskId => arg.taskId;
+  final ChecklistCompletionParams params;
+  ProviderSubscription<AsyncValue<ChecklistCompletionState>>? _subscription;
+
+  String get id => params.id;
+  String? get taskId => params.taskId;
 
   @override
-  Future<double> build(ChecklistCompletionParams arg) async {
+  Future<double> build() async {
+    ref.onDispose(() {
+      _subscription?.close();
+    });
+
+    _subscription = ref.listen<AsyncValue<ChecklistCompletionState>>(
+      checklistCompletionControllerProvider((id: id, taskId: taskId)),
+      (_, next) {
+        final res = next.value;
+        final totalCount = res?.totalCount ?? 0;
+        final completedCount = res?.completedCount ?? 0;
+        state = AsyncData(totalCount == 0 ? 0.0 : completedCount / totalCount);
+      },
+    );
+
     final res = ref
-        .watch(checklistCompletionControllerProvider((id: id, taskId: taskId)))
+        .read(checklistCompletionControllerProvider((id: id, taskId: taskId)))
         .value;
     final totalCount = res?.totalCount ?? 0;
     final completedCount = res?.completedCount ?? 0;
-
     return totalCount == 0 ? 0.0 : completedCount / totalCount;
   }
 }

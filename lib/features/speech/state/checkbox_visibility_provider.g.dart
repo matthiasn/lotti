@@ -6,30 +6,8 @@ part of 'checkbox_visibility_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$checkboxVisibilityHash() =>
-    r'faa1ec44653292b3426824a03ced965a2aa006be';
-
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 /// Provider that computes which automatic prompt checkboxes should be visible
 /// in the audio recording modal based on:
 /// - Category configuration (automatic prompts)
@@ -38,10 +16,9 @@ class _SystemHash {
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
-///
-/// Copied from [checkboxVisibility].
+
 @ProviderFor(checkboxVisibility)
-const checkboxVisibilityProvider = CheckboxVisibilityFamily();
+final checkboxVisibilityProvider = CheckboxVisibilityFamily._();
 
 /// Provider that computes which automatic prompt checkboxes should be visible
 /// in the audio recording modal based on:
@@ -51,9 +28,11 @@ const checkboxVisibilityProvider = CheckboxVisibilityFamily();
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
-///
-/// Copied from [checkboxVisibility].
-class CheckboxVisibilityFamily extends Family<AutomaticPromptVisibility> {
+
+final class CheckboxVisibilityProvider extends $FunctionalProvider<
+    AutomaticPromptVisibility,
+    AutomaticPromptVisibility,
+    AutomaticPromptVisibility> with $Provider<AutomaticPromptVisibility> {
   /// Provider that computes which automatic prompt checkboxes should be visible
   /// in the audio recording modal based on:
   /// - Category configuration (automatic prompts)
@@ -62,191 +41,122 @@ class CheckboxVisibilityFamily extends Family<AutomaticPromptVisibility> {
   ///
   /// This extracts the business logic from the widget, making it testable
   /// independently without widget build cycles or timing issues.
-  ///
-  /// Copied from [checkboxVisibility].
-  const CheckboxVisibilityFamily();
-
-  /// Provider that computes which automatic prompt checkboxes should be visible
-  /// in the audio recording modal based on:
-  /// - Category configuration (automatic prompts)
-  /// - Whether a Task is linked (not just any entity)
-  /// - User's speech recognition preference
-  ///
-  /// This extracts the business logic from the widget, making it testable
-  /// independently without widget build cycles or timing issues.
-  ///
-  /// Copied from [checkboxVisibility].
-  CheckboxVisibilityProvider call({
-    required String? categoryId,
-    required String? linkedId,
-    required bool? userSpeechPreference,
-  }) {
-    return CheckboxVisibilityProvider(
-      categoryId: categoryId,
-      linkedId: linkedId,
-      userSpeechPreference: userSpeechPreference,
-    );
-  }
-
-  @override
-  CheckboxVisibilityProvider getProviderOverride(
-    covariant CheckboxVisibilityProvider provider,
-  ) {
-    return call(
-      categoryId: provider.categoryId,
-      linkedId: provider.linkedId,
-      userSpeechPreference: provider.userSpeechPreference,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'checkboxVisibilityProvider';
-}
-
-/// Provider that computes which automatic prompt checkboxes should be visible
-/// in the audio recording modal based on:
-/// - Category configuration (automatic prompts)
-/// - Whether a Task is linked (not just any entity)
-/// - User's speech recognition preference
-///
-/// This extracts the business logic from the widget, making it testable
-/// independently without widget build cycles or timing issues.
-///
-/// Copied from [checkboxVisibility].
-class CheckboxVisibilityProvider
-    extends AutoDisposeProvider<AutomaticPromptVisibility> {
-  /// Provider that computes which automatic prompt checkboxes should be visible
-  /// in the audio recording modal based on:
-  /// - Category configuration (automatic prompts)
-  /// - Whether a Task is linked (not just any entity)
-  /// - User's speech recognition preference
-  ///
-  /// This extracts the business logic from the widget, making it testable
-  /// independently without widget build cycles or timing issues.
-  ///
-  /// Copied from [checkboxVisibility].
-  CheckboxVisibilityProvider({
-    required String? categoryId,
-    required String? linkedId,
-    required bool? userSpeechPreference,
-  }) : this._internal(
-          (ref) => checkboxVisibility(
-            ref as CheckboxVisibilityRef,
-            categoryId: categoryId,
-            linkedId: linkedId,
-            userSpeechPreference: userSpeechPreference,
-          ),
-          from: checkboxVisibilityProvider,
+  CheckboxVisibilityProvider._(
+      {required CheckboxVisibilityFamily super.from,
+      required ({
+        String? categoryId,
+        String? linkedId,
+        bool? userSpeechPreference,
+      })
+          super.argument})
+      : super(
+          retry: null,
           name: r'checkboxVisibilityProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$checkboxVisibilityHash,
-          dependencies: CheckboxVisibilityFamily._dependencies,
-          allTransitiveDependencies:
-              CheckboxVisibilityFamily._allTransitiveDependencies,
-          categoryId: categoryId,
-          linkedId: linkedId,
-          userSpeechPreference: userSpeechPreference,
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  CheckboxVisibilityProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.categoryId,
-    required this.linkedId,
-    required this.userSpeechPreference,
-  }) : super.internal();
-
-  final String? categoryId;
-  final String? linkedId;
-  final bool? userSpeechPreference;
+  @override
+  String debugGetCreateSourceHash() => _$checkboxVisibilityHash();
 
   @override
-  Override overrideWith(
-    AutomaticPromptVisibility Function(CheckboxVisibilityRef provider) create,
-  ) {
-    return ProviderOverride(
-      origin: this,
-      override: CheckboxVisibilityProvider._internal(
-        (ref) => create(ref as CheckboxVisibilityRef),
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        categoryId: categoryId,
-        linkedId: linkedId,
-        userSpeechPreference: userSpeechPreference,
-      ),
+  String toString() {
+    return r'checkboxVisibilityProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<AutomaticPromptVisibility> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AutomaticPromptVisibility create(Ref ref) {
+    final argument = this.argument as ({
+      String? categoryId,
+      String? linkedId,
+      bool? userSpeechPreference,
+    });
+    return checkboxVisibility(
+      ref,
+      categoryId: argument.categoryId,
+      linkedId: argument.linkedId,
+      userSpeechPreference: argument.userSpeechPreference,
     );
   }
 
-  @override
-  AutoDisposeProviderElement<AutomaticPromptVisibility> createElement() {
-    return _CheckboxVisibilityProviderElement(this);
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AutomaticPromptVisibility value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AutomaticPromptVisibility>(value),
+    );
   }
 
   @override
   bool operator ==(Object other) {
-    return other is CheckboxVisibilityProvider &&
-        other.categoryId == categoryId &&
-        other.linkedId == linkedId &&
-        other.userSpeechPreference == userSpeechPreference;
+    return other is CheckboxVisibilityProvider && other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, categoryId.hashCode);
-    hash = _SystemHash.combine(hash, linkedId.hashCode);
-    hash = _SystemHash.combine(hash, userSpeechPreference.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin CheckboxVisibilityRef
-    on AutoDisposeProviderRef<AutomaticPromptVisibility> {
-  /// The parameter `categoryId` of this provider.
-  String? get categoryId;
+String _$checkboxVisibilityHash() =>
+    r'9ff4db5a2e21b5517746b48e71687a621af0beb3';
 
-  /// The parameter `linkedId` of this provider.
-  String? get linkedId;
+/// Provider that computes which automatic prompt checkboxes should be visible
+/// in the audio recording modal based on:
+/// - Category configuration (automatic prompts)
+/// - Whether a Task is linked (not just any entity)
+/// - User's speech recognition preference
+///
+/// This extracts the business logic from the widget, making it testable
+/// independently without widget build cycles or timing issues.
 
-  /// The parameter `userSpeechPreference` of this provider.
-  bool? get userSpeechPreference;
+final class CheckboxVisibilityFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+            AutomaticPromptVisibility,
+            ({
+              String? categoryId,
+              String? linkedId,
+              bool? userSpeechPreference,
+            })> {
+  CheckboxVisibilityFamily._()
+      : super(
+          retry: null,
+          name: r'checkboxVisibilityProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Provider that computes which automatic prompt checkboxes should be visible
+  /// in the audio recording modal based on:
+  /// - Category configuration (automatic prompts)
+  /// - Whether a Task is linked (not just any entity)
+  /// - User's speech recognition preference
+  ///
+  /// This extracts the business logic from the widget, making it testable
+  /// independently without widget build cycles or timing issues.
+
+  CheckboxVisibilityProvider call({
+    required String? categoryId,
+    required String? linkedId,
+    required bool? userSpeechPreference,
+  }) =>
+      CheckboxVisibilityProvider._(argument: (
+        categoryId: categoryId,
+        linkedId: linkedId,
+        userSpeechPreference: userSpeechPreference,
+      ), from: this);
+
+  @override
+  String toString() => r'checkboxVisibilityProvider';
 }
-
-class _CheckboxVisibilityProviderElement
-    extends AutoDisposeProviderElement<AutomaticPromptVisibility>
-    with CheckboxVisibilityRef {
-  _CheckboxVisibilityProviderElement(super.provider);
-
-  @override
-  String? get categoryId => (origin as CheckboxVisibilityProvider).categoryId;
-  @override
-  String? get linkedId => (origin as CheckboxVisibilityProvider).linkedId;
-  @override
-  bool? get userSpeechPreference =>
-      (origin as CheckboxVisibilityProvider).userSpeechPreference;
-}
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

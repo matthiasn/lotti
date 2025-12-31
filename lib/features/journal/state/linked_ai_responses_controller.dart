@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,27 +7,33 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/utils/cache_extension.dart';
 
 /// Controller for fetching AI responses linked to a specific entry (e.g., audio).
 ///
 /// This is used to display nested AI responses under audio entries in the task view,
 /// showing generated prompts and other AI responses directly where they are relevant.
-final AutoDisposeAsyncNotifierProviderFamily<LinkedAiResponsesController,
-        List<AiResponseEntry>, String> linkedAiResponsesControllerProvider =
-    AsyncNotifierProvider.autoDispose
-        .family<LinkedAiResponsesController, List<AiResponseEntry>, String>(
+final linkedAiResponsesControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<LinkedAiResponsesController, List<AiResponseEntry>, String>(
   LinkedAiResponsesController.new,
 );
 
-class LinkedAiResponsesController
-    extends AutoDisposeFamilyAsyncNotifier<List<AiResponseEntry>, String> {
-  StreamSubscription<Set<String>>? _updateSubscription;
-  final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
-  final _watchedIds = <String>{};
-  bool _isDisposed = false;
+class LinkedAiResponsesController extends AsyncNotifier<List<AiResponseEntry>> {
+  LinkedAiResponsesController(this.entryId);
 
-  String get entryId => arg;
+  final String entryId;
+  StreamSubscription<Set<String>>? _updateSubscription;
+  late final UpdateNotifications _updateNotifications;
+  final _watchedIds = <String>{};
+
+  @override
+  Future<List<AiResponseEntry>> build() async {
+    _updateNotifications = getIt<UpdateNotifications>();
+    ref.onDispose(() => _updateSubscription?.cancel());
+    _listen();
+    final results = await _fetch();
+    _watchedIds.add(entryId);
+    return results;
+  }
 
   void _listen() {
     _updateSubscription =
@@ -34,8 +42,6 @@ class LinkedAiResponsesController
           affectedIds.intersection(_watchedIds).isNotEmpty) {
         try {
           final latest = await _fetch();
-          // Guard against updates after disposal
-          if (_isDisposed) return;
           if (!_listEquals(latest, state.value)) {
             state = AsyncData(latest);
           }
@@ -57,21 +63,6 @@ class LinkedAiResponsesController
       }
     }
     return true;
-  }
-
-  @override
-  Future<List<AiResponseEntry>> build(String arg) async {
-    ref
-      ..onDispose(() {
-        _isDisposed = true;
-        _updateSubscription?.cancel();
-      })
-      ..cacheFor(entryCacheDuration);
-
-    final results = await _fetch();
-    _watchedIds.add(entryId);
-    _listen();
-    return results;
   }
 
   Future<List<AiResponseEntry>> _fetch() async {

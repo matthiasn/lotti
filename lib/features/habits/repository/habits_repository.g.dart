@@ -6,27 +6,60 @@ part of 'habits_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$habitsRepositoryHash() => r'a133f820ac786a068e2d5d1fb3ba2257aee6b1bb';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Provides the [HabitsRepository] instance.
+///
+/// This provider bridges the gap between getIt service locator and Riverpod,
+/// allowing the repository to be easily overridden in tests.
+
+@ProviderFor(habitsRepository)
+final habitsRepositoryProvider = HabitsRepositoryProvider._();
 
 /// Provides the [HabitsRepository] instance.
 ///
 /// This provider bridges the gap between getIt service locator and Riverpod,
 /// allowing the repository to be easily overridden in tests.
-///
-/// Copied from [habitsRepository].
-@ProviderFor(habitsRepository)
-final habitsRepositoryProvider = Provider<HabitsRepository>.internal(
-  habitsRepository,
-  name: r'habitsRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$habitsRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef HabitsRepositoryRef = ProviderRef<HabitsRepository>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class HabitsRepositoryProvider extends $FunctionalProvider<
+    HabitsRepository,
+    HabitsRepository,
+    HabitsRepository> with $Provider<HabitsRepository> {
+  /// Provides the [HabitsRepository] instance.
+  ///
+  /// This provider bridges the gap between getIt service locator and Riverpod,
+  /// allowing the repository to be easily overridden in tests.
+  HabitsRepositoryProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'habitsRepositoryProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$habitsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<HabitsRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  HabitsRepository create(Ref ref) {
+    return habitsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(HabitsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<HabitsRepository>(value),
+    );
+  }
+}
+
+String _$habitsRepositoryHash() => r'a133f820ac786a068e2d5d1fb3ba2257aee6b1bb';

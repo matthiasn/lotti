@@ -6,27 +6,54 @@ part of 'provider_prompt_setup_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$providerPromptSetupServiceHash() =>
-    r'7f4934b665d1a00e29f5fc63c6a09310538bebf1';
-
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 /// Provider for [ProviderPromptSetupService].
-///
-/// Copied from [providerPromptSetupService].
+
 @ProviderFor(providerPromptSetupService)
 final providerPromptSetupServiceProvider =
-    AutoDisposeProvider<ProviderPromptSetupService>.internal(
-  providerPromptSetupService,
-  name: r'providerPromptSetupServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$providerPromptSetupServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+    ProviderPromptSetupServiceProvider._();
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef ProviderPromptSetupServiceRef
-    = AutoDisposeProviderRef<ProviderPromptSetupService>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+/// Provider for [ProviderPromptSetupService].
+
+final class ProviderPromptSetupServiceProvider extends $FunctionalProvider<
+    ProviderPromptSetupService,
+    ProviderPromptSetupService,
+    ProviderPromptSetupService> with $Provider<ProviderPromptSetupService> {
+  /// Provider for [ProviderPromptSetupService].
+  ProviderPromptSetupServiceProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'providerPromptSetupServiceProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$providerPromptSetupServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ProviderPromptSetupService> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ProviderPromptSetupService create(Ref ref) {
+    return providerPromptSetupService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProviderPromptSetupService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProviderPromptSetupService>(value),
+    );
+  }
+}
+
+String _$providerPromptSetupServiceHash() =>
+    r'7f4934b665d1a00e29f5fc63c6a09310538bebf1';

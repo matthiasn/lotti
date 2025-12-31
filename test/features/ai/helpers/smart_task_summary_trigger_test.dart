@@ -213,8 +213,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => trackingController),
           // Summary exists
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(existingSummary),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => existingSummary,
           ),
         ],
       );
@@ -262,8 +262,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => trackingController),
           // No summary exists
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(null),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => null,
           ),
           // But inference IS running
           activeInferenceControllerProvider(
@@ -320,8 +320,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => mockRefreshController),
           // No summary exists
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(null),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => null,
           ),
         ],
       );
@@ -368,8 +368,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => mockRefreshController),
           // No summary exists
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(null),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => null,
           ),
         ],
       );
@@ -422,8 +422,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => mockRefreshController),
           // No summary exists
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(null),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => null,
           ),
           // Track inference call
           triggerNewInferenceProvider.overrideWith((ref, arg) async {
@@ -476,8 +476,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => mockRefreshController),
           // No summary exists
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(null),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => null,
           ),
         ],
       );
@@ -513,8 +513,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => mockRefreshController),
           // Summary lookup throws
-          latestSummaryControllerProvider.overrideWith(
-            _ThrowingLatestSummaryController.new,
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => throw Exception('Database error'),
           ),
         ],
       );
@@ -554,8 +554,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => mockRefreshController),
           // No summary exists
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(null),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => null,
           ),
         ],
       );
@@ -599,8 +599,8 @@ void main() {
           directTaskSummaryRefreshControllerProvider
               .overrideWith(() => mockRefreshController),
           // No summary exists
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(null),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => null,
           ),
         ],
       );
@@ -668,8 +668,8 @@ void main() {
             ),
           ),
           // No summary exists yet
-          latestSummaryControllerProvider.overrideWith(
-            () => _MockLatestSummaryController(null),
+          latestSummaryControllerProvider.overrideWithBuild(
+            (ref, params) async => null,
           ),
           // Inference IS running (simulates first trigger already started it)
           activeInferenceControllerProvider(
@@ -706,29 +706,6 @@ void main() {
       testContainer.dispose();
     });
   });
-}
-
-/// Mock controller that returns a fixed value
-class _MockLatestSummaryController extends LatestSummaryController {
-  _MockLatestSummaryController(this._value);
-  final AiResponseEntry? _value;
-
-  @override
-  Future<AiResponseEntry?> build(
-    ({String id, AiResponseType aiResponseType}) arg,
-  ) async {
-    return _value;
-  }
-}
-
-/// Mock controller that throws an exception
-class _ThrowingLatestSummaryController extends LatestSummaryController {
-  @override
-  Future<AiResponseEntry?> build(
-    ({String id, AiResponseType aiResponseType}) arg,
-  ) async {
-    throw Exception('Database error');
-  }
 }
 
 /// Mock refresh controller that tracks method calls

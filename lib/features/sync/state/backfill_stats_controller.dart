@@ -67,12 +67,14 @@ class BackfillStatsController extends _$BackfillStatsController {
     try {
       final sequenceLogService = getIt<SyncSequenceLogService>();
       final stats = await sequenceLogService.getBackfillStats();
+      if (!ref.mounted) return;
       state = state.copyWith(
         stats: stats,
         isLoading: false,
         clearError: true,
       );
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -82,12 +84,14 @@ class BackfillStatsController extends _$BackfillStatsController {
 
   /// Refresh stats from database.
   Future<void> refresh() async {
+    if (!ref.mounted) return;
     state = state.copyWith(isLoading: true, clearError: true);
     await _loadStats();
   }
 
   /// Trigger a full historical backfill request.
   Future<void> triggerFullBackfill() async {
+    if (!ref.mounted) return;
     if (state.isProcessing || state.isReRequesting) return;
 
     state = state.copyWith(
@@ -100,6 +104,7 @@ class BackfillStatsController extends _$BackfillStatsController {
       final backfillService = getIt<BackfillRequestService>();
       final count = await backfillService.processFullBackfill();
 
+      if (!ref.mounted) return;
       state = state.copyWith(
         isProcessing: false,
         lastProcessedCount: count,
@@ -108,6 +113,7 @@ class BackfillStatsController extends _$BackfillStatsController {
       // Refresh stats after processing
       await _loadStats();
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(
         isProcessing: false,
         error: e.toString(),
@@ -117,6 +123,7 @@ class BackfillStatsController extends _$BackfillStatsController {
 
   /// Re-request entries that are in 'requested' status but never received.
   Future<void> triggerReRequest() async {
+    if (!ref.mounted) return;
     if (state.isProcessing || state.isReRequesting) return;
 
     state = state.copyWith(
@@ -129,6 +136,7 @@ class BackfillStatsController extends _$BackfillStatsController {
       final backfillService = getIt<BackfillRequestService>();
       final count = await backfillService.processReRequest();
 
+      if (!ref.mounted) return;
       state = state.copyWith(
         isReRequesting: false,
         lastReRequestedCount: count,
@@ -137,6 +145,7 @@ class BackfillStatsController extends _$BackfillStatsController {
       // Refresh stats after processing
       await _loadStats();
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(
         isReRequesting: false,
         error: e.toString(),

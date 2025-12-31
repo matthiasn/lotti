@@ -122,7 +122,7 @@ void main() {
         // Set up listener to capture the pending correction
         PendingCorrection? capturedPending;
         container.listen<PendingCorrection?>(
-          correctionCaptureNotifierProvider,
+          correctionCaptureProvider,
           (previous, next) {
             if (next != null) {
               capturedPending = next;
@@ -131,7 +131,7 @@ void main() {
           fireImmediately: true,
         );
 
-        // Read the controller to trigger build
+        // Wait for the async build to complete before calling methods
         await container.read(
           checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .future,
@@ -188,6 +188,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
+        // Wait for the async build to complete before calling methods
         await container.read(
           checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .future,
@@ -205,7 +206,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         // Notification should NOT be fired (noChange result)
-        final event = container.read(correctionCaptureNotifierProvider);
+        final event = container.read(correctionCaptureProvider);
         expect(event, isNull);
       });
 
@@ -239,6 +240,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
+        // Wait for the async build to complete before calling methods
         await container.read(
           checklistItemControllerProvider((id: 'item-no-cat', taskId: 'task-1'))
               .future,
@@ -279,6 +281,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
+        // Wait for the async build to complete before calling methods
         await container.read(
           checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
               .future,

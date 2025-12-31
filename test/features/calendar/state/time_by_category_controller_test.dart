@@ -132,7 +132,7 @@ void main() {
     );
 
     // Wait for the future to complete
-    await container.read(timeByCategoryControllerProvider.future);
+    await container.read(timeByCategoryControllerProvider.notifier).future;
 
     // Assert
     verify(
@@ -218,8 +218,8 @@ void main() {
           fireImmediately: true,
         )
 
-        // Wait for initial state
-        ..read(timeByCategoryControllerProvider.future);
+        // Wait for initial state - trigger the read to start loading
+        ..read(timeByCategoryControllerProvider.notifier);
 
       // Reset mocks for update
       final updatedEntry = JournalEntity.journalEntry(
@@ -368,7 +368,7 @@ void main() {
         .thenReturn(category);
 
     // First, load the time data
-    await container.read(timeByCategoryControllerProvider.future);
+    await container.read(timeByCategoryControllerProvider.notifier).future;
 
     // Act - now read the chart data
     final result = await container.read(timeByDayChartProvider.future);

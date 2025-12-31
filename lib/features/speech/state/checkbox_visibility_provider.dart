@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -50,7 +49,8 @@ AutomaticPromptVisibility checkboxVisibility(
           return entry != null && entry is Task;
         },
         loading: () => true, // Optimistic: assume Task while loading
-        orElse: () => false, // Hide on error or if not found
+        error: (_, __) => false, // Hide on error
+        orElse: () => false, // Fallback for any other state
       ) ??
       false;
 

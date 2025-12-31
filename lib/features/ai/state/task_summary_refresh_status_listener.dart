@@ -68,7 +68,6 @@ class TaskSummaryRefreshStatusListener {
           onInferenceComplete(taskId);
         }
       },
-      fireImmediately: false,
     );
 
     _statusListenerCleanups[taskId] = cleanup;

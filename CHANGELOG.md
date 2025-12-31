@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.792] - 2025-12-31
+### Changed
+- Upgraded to Riverpod 3.x with comprehensive codebase migration
+  - Updated all providers to use new Riverpod 3 syntax and patterns
+  - Added `ref.mounted` checks after async gaps to prevent disposed ref access
+  - Converted family providers to use constructor-based parameter passing
+  - Updated notifier classes from `AutoDisposeFamilyAsyncNotifier` to `AsyncNotifier` pattern
+  - Changed callbacks in widgets to use closures for fresh notifier instances at invocation time
+  - Made `MatrixStats` class immutable with `@immutable` annotation and `final` fields
+  - Added `ref.onDispose` cleanup handlers for resource management
+
+### Fixed
+- Fixed "Cannot use Ref after disposed" errors in autoDispose providers
+- Fixed checklist item resolution to properly await async futures instead of reading sync values
+- Fixed provider override conflicts in tests by detecting duplicate overrides
+
 ## [0.9.790] - 2025-12-31
 ### Added
 - Task Due Dates: Tasks now support due date assignment and display

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -29,72 +29,6 @@ import 'package:path_provider/path_provider.dart';
 import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
-
-class _MockBuildContext extends Mock implements BuildContext {}
-
-/// Minimal WidgetRef implementation for unit testing createChecklist().
-///
-/// This fake is needed because createChecklist() requires a WidgetRef parameter
-/// to read checklistRepositoryProvider. In widget tests, ProviderScope should be
-/// used instead, but for unit tests we need this minimal implementation.
-///
-/// Only implements the 'read' method which is actually used by createChecklist.
-/// Other methods throw UnimplementedError to catch any unexpected usage.
-class _FakeWidgetRef implements WidgetRef {
-  _FakeWidgetRef(this._container);
-
-  final ProviderContainer _container;
-
-  @override
-  BuildContext get context => _MockBuildContext();
-
-  /// Only method used by createChecklist - delegates to ProviderContainer
-  @override
-  T read<T>(ProviderListenable<T> provider) {
-    return _container.read(provider);
-  }
-
-  // Unused methods - throw to catch unexpected usage
-  @override
-  T watch<T>(ProviderListenable<T> provider) {
-    throw UnimplementedError('watch() not implemented in test fake');
-  }
-
-  @override
-  ProviderSubscription<T> listenManual<T>(
-    ProviderListenable<T> provider,
-    void Function(T? previous, T next) listener, {
-    void Function(Object error, StackTrace stackTrace)? onError,
-    bool fireImmediately = false,
-  }) {
-    throw UnimplementedError('listenManual() not implemented in test fake');
-  }
-
-  @override
-  bool exists(ProviderBase<Object?> provider) {
-    throw UnimplementedError('exists() not implemented in test fake');
-  }
-
-  @override
-  void invalidate(ProviderOrFamily provider) {
-    throw UnimplementedError('invalidate() not implemented in test fake');
-  }
-
-  @override
-  T refresh<T>(Refreshable<T> provider) {
-    throw UnimplementedError('refresh() not implemented in test fake');
-  }
-
-  @override
-  ProviderSubscription<T> listen<T>(
-    ProviderListenable<T> provider,
-    void Function(T? previous, T next) listener, {
-    void Function(Object error, StackTrace stackTrace)? onError,
-    bool fireImmediately = false,
-  }) {
-    throw UnimplementedError('listen() not implemented in test fake');
-  }
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -303,19 +237,18 @@ void main() {
       final task = await createTask();
       expect(task, isNotNull);
 
-      final container = ProviderContainer(
-        overrides: [],
-      );
+      // Create ProviderContainer and get a real Ref for testing
+      // Note: In Riverpod 3.x, WidgetRef is sealed, so we test the repository directly
+      // using a ProviderContainer instead of calling the createChecklist helper function.
+      final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      // Use a FakeWidgetRef that uses the container
-      final fakeRef = _FakeWidgetRef(container);
-
-      // Create checklist for the task
-      final checklist = await createChecklist(
-        task: task!,
-        ref: fakeRef,
-      );
+      // Call the repository directly using the container
+      // This is equivalent to what createChecklist does with ref.read(checklistRepositoryProvider)
+      final result = await container
+          .read(checklistRepositoryProvider)
+          .createChecklist(taskId: task!.id);
+      final checklist = result.checklist;
 
       expect(checklist, isNotNull);
       expect(checklist, isA<Checklist>());

@@ -42,7 +42,7 @@ class MessageCountsViewState extends ConsumerState<MessageCountsView> {
       },
       fireImmediately: false,
     );
-    final initial = ref.read(matrixStatsControllerProvider).valueOrNull;
+    final initial = ref.read(matrixStatsControllerProvider).value;
     _stats = initial;
     _signature = matrixStatsSignature(initial);
   }

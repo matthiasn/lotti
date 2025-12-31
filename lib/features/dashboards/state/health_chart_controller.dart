@@ -85,7 +85,7 @@ class HealthObservationsController extends _$HealthObservationsController {
                 rangeEnd: rangeEnd,
               ),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     return aggregateByType(items, healthDataType);

@@ -79,10 +79,10 @@ class ChecklistWrapper extends ConsumerWidget {
 
     // Listen for pending correction events and show countdown snackbar
     ref.listen<PendingCorrection?>(
-      correctionCaptureNotifierProvider,
+      correctionCaptureProvider,
       (previous, next) {
         if (next != null && previous != next) {
-          final notifier = ref.read(correctionCaptureNotifierProvider.notifier);
+          final notifier = ref.read(correctionCaptureProvider.notifier);
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(

@@ -10,9 +10,6 @@ class _FakeRecorderController extends ChatRecorderController {
   _FakeRecorderController();
 
   @override
-  ChatRecorderState build() => const ChatRecorderState.initial();
-
-  @override
   List<double> getNormalizedAmplitudeHistory() => const [0.2, 0.6, 0.9];
 }
 

@@ -6,25 +6,50 @@ part of 'unified_ai_inference_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$unifiedAiInferenceRepositoryHash() =>
-    r'af4642cc72b01bec46157b65e5faa2b770993f2f';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [unifiedAiInferenceRepository].
 @ProviderFor(unifiedAiInferenceRepository)
 final unifiedAiInferenceRepositoryProvider =
-    AutoDisposeProvider<UnifiedAiInferenceRepository>.internal(
-  unifiedAiInferenceRepository,
-  name: r'unifiedAiInferenceRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$unifiedAiInferenceRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+    UnifiedAiInferenceRepositoryProvider._();
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef UnifiedAiInferenceRepositoryRef
-    = AutoDisposeProviderRef<UnifiedAiInferenceRepository>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class UnifiedAiInferenceRepositoryProvider extends $FunctionalProvider<
+    UnifiedAiInferenceRepository,
+    UnifiedAiInferenceRepository,
+    UnifiedAiInferenceRepository> with $Provider<UnifiedAiInferenceRepository> {
+  UnifiedAiInferenceRepositoryProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'unifiedAiInferenceRepositoryProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$unifiedAiInferenceRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<UnifiedAiInferenceRepository> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  UnifiedAiInferenceRepository create(Ref ref) {
+    return unifiedAiInferenceRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UnifiedAiInferenceRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UnifiedAiInferenceRepository>(value),
+    );
+  }
+}
+
+String _$unifiedAiInferenceRepositoryHash() =>
+    r'af4642cc72b01bec46157b65e5faa2b770993f2f';

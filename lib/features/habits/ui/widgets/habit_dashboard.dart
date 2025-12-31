@@ -26,7 +26,7 @@ class SelectDashboardWidget extends ConsumerWidget {
     final dashboardsById = <String, DashboardDefinition>{};
 
     final dashboards = filteredSortedDashboards(
-      dashboardsAsync.valueOrNull ?? <DashboardDefinition>[],
+      dashboardsAsync.value ?? <DashboardDefinition>[],
     );
 
     for (final dashboard in dashboards) {

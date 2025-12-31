@@ -24,7 +24,7 @@ class BackfillConfigController extends _$BackfillConfigController {
 
   /// Toggle backfill sync enabled state.
   Future<void> toggle() async {
-    final currentValue = state.valueOrNull ?? true;
+    final currentValue = state.value ?? true;
     await setEnabled(enabled: !currentValue);
   }
 }

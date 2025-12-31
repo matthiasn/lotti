@@ -30,7 +30,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
     // Listen for AI label assignment events to show toast with Undo
     ref
       ..listen(labelAssignmentEventsProvider, (previous, next) async {
-        final event = next.valueOrNull;
+        final event = next.value;
         if (event == null || event.taskId != taskId) return;
         if (!context.mounted) return;
         final cache = getIt<EntitiesCacheService>();
@@ -281,7 +281,7 @@ class _EditableEstimateChip extends ConsumerWidget {
     // Show progress bar when there's an estimate, wrapped in subtle chip
     if (hasEstimate) {
       final progressState =
-          ref.watch(taskProgressControllerProvider(id: taskId)).valueOrNull;
+          ref.watch(taskProgressControllerProvider(id: taskId)).value;
       final isOvertime = progressState != null &&
           progressState.progress > progressState.estimate;
 

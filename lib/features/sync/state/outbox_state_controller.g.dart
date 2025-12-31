@@ -6,48 +6,90 @@ part of 'outbox_state_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$outboxConnectionStateHash() =>
-    r'888d8440f2775583844ad409954e7cabf8a08e2f';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Stream provider watching the Matrix sync enable flag.
+/// Replaces OutboxCubit's config flag watching.
+
+@ProviderFor(outboxConnectionState)
+final outboxConnectionStateProvider = OutboxConnectionStateProvider._();
 
 /// Stream provider watching the Matrix sync enable flag.
 /// Replaces OutboxCubit's config flag watching.
-///
-/// Copied from [outboxConnectionState].
-@ProviderFor(outboxConnectionState)
-final outboxConnectionStateProvider =
-    AutoDisposeStreamProvider<OutboxConnectionState>.internal(
-  outboxConnectionState,
-  name: r'outboxConnectionStateProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$outboxConnectionStateHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef OutboxConnectionStateRef
-    = AutoDisposeStreamProviderRef<OutboxConnectionState>;
-String _$outboxPendingCountHash() =>
-    r'd1063a52cfb2ee4fc2c937a96f1d8f71ff2211cd';
+final class OutboxConnectionStateProvider extends $FunctionalProvider<
+        AsyncValue<OutboxConnectionState>,
+        OutboxConnectionState,
+        Stream<OutboxConnectionState>>
+    with
+        $FutureModifier<OutboxConnectionState>,
+        $StreamProvider<OutboxConnectionState> {
+  /// Stream provider watching the Matrix sync enable flag.
+  /// Replaces OutboxCubit's config flag watching.
+  OutboxConnectionStateProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'outboxConnectionStateProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$outboxConnectionStateHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<OutboxConnectionState> $createElement(
+          $ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<OutboxConnectionState> create(Ref ref) {
+    return outboxConnectionState(ref);
+  }
+}
+
+String _$outboxConnectionStateHash() =>
+    r'888d8440f2775583844ad409954e7cabf8a08e2f';
 
 /// Stream provider for outbox pending count (for badge display).
-///
-/// Copied from [outboxPendingCount].
-@ProviderFor(outboxPendingCount)
-final outboxPendingCountProvider = AutoDisposeStreamProvider<int>.internal(
-  outboxPendingCount,
-  name: r'outboxPendingCountProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$outboxPendingCountHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef OutboxPendingCountRef = AutoDisposeStreamProviderRef<int>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+@ProviderFor(outboxPendingCount)
+final outboxPendingCountProvider = OutboxPendingCountProvider._();
+
+/// Stream provider for outbox pending count (for badge display).
+
+final class OutboxPendingCountProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, Stream<int>>
+    with $FutureModifier<int>, $StreamProvider<int> {
+  /// Stream provider for outbox pending count (for badge display).
+  OutboxPendingCountProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'outboxPendingCountProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$outboxPendingCountHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<int> create(Ref ref) {
+    return outboxPendingCount(ref);
+  }
+}
+
+String _$outboxPendingCountHash() =>
+    r'd1063a52cfb2ee4fc2c937a96f1d8f71ff2211cd';

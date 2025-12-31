@@ -37,19 +37,6 @@ class MockTask extends Mock implements Task {
       );
 }
 
-// Create fake implementations for registerFallbackValue
-// Ignoring sealed class warnings as these are for testing purposes only
-// ignore: subtype_of_sealed_class
-class FakeAsyncLoading extends AsyncLoading<TaskProgressState?> {
-  const FakeAsyncLoading() : super();
-}
-
-// ignore: subtype_of_sealed_class
-class FakeAsyncData extends AsyncData<TaskProgressState?> {
-  // ignore: prefer_const_constructors_in_immutables
-  FakeAsyncData() : super(null);
-}
-
 // Create a fake TaskProgressState for registerFallbackValue
 @immutable // Adding @immutable for equals and hashCode methods
 class FakeTaskProgressState implements TaskProgressState {
@@ -90,8 +77,8 @@ void main() {
 
   setUpAll(() {
     // Register fallback values for Mocktail matchers
-    registerFallbackValue(const FakeAsyncLoading());
-    registerFallbackValue(FakeAsyncData());
+    registerFallbackValue(const AsyncValue<TaskProgressState?>.loading());
+    registerFallbackValue(const AsyncValue<TaskProgressState?>.data(null));
     registerFallbackValue(FakeTaskProgressState());
     registerFallbackValue(<String, Duration>{});
   });

@@ -38,11 +38,9 @@ class CreateEventItem extends ConsumerWidget {
     final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
 
     // Use unwrapPrevious to keep previous value during loading/error states
-    final enableEvents = enableEventsAsync
-            .unwrapPrevious()
-            .whenData((value) => value)
-            .valueOrNull ??
-        false;
+    final enableEvents =
+        enableEventsAsync.unwrapPrevious().whenData((value) => value).value ??
+            false;
 
     if (!enableEvents) {
       return const SizedBox.shrink();
@@ -287,7 +285,7 @@ class PasteImageItem extends ConsumerWidget {
       linkedFromId: linkedFromId,
       categoryId: categoryId,
     );
-    final canPasteImage = ref.watch(provider).valueOrNull ?? false;
+    final canPasteImage = ref.watch(provider).value ?? false;
 
     if (!canPasteImage) {
       return const SizedBox.shrink();
@@ -327,9 +325,8 @@ void _waitForTimerAndScroll({
     attempts++;
 
     // Check if the timer entry is in the linked entries
-    final linkedEntries = container
-        .read(linkedEntriesControllerProvider(id: parentId))
-        .valueOrNull;
+    final linkedEntries =
+        container.read(linkedEntriesControllerProvider(id: parentId)).value;
 
     if (linkedEntries != null &&
         linkedEntries.any((link) => link.toId == timerEntryId)) {

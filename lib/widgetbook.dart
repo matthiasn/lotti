@@ -8,7 +8,6 @@ import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/widgetbook/mock_controllers.dart';
 import 'package:lotti/widgetbook/mock_data.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -79,15 +78,8 @@ class WidgetbookApp extends StatelessWidget {
                   name: 'CheckboxItemsList',
                   builder: (context) => ProviderScope(
                     overrides: [
-                      checklistItemControllerProvider.overrideWith(
-                        () => MockChecklistItemControllerProvider(
-                          itemsMap: {
-                            checklistItem1.meta.id: checklistItem1,
-                            checklistItem2.meta.id: checklistItem2,
-                            checklistItem3.meta.id: checklistItem3,
-                            checklistItem4.meta.id: checklistItem4,
-                          },
-                        ),
+                      checklistItemControllerProvider.overrideWithBuild(
+                        (ref, params) async => checklistItem1,
                       ),
                     ],
                     child: ChecklistWidget(

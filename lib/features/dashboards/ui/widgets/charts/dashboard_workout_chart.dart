@@ -65,7 +65,7 @@ class DashboardWorkoutChart extends ConsumerWidget {
                 rangeEnd: rangeEnd,
               ),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     return DashboardChart(

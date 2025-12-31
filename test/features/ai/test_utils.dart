@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -10,14 +13,26 @@ import 'package:mocktail/mocktail.dart';
 
 export 'package:flutter_localizations/flutter_localizations.dart';
 // Re-export commonly used imports for convenience
-export 'package:flutter_riverpod/flutter_riverpod.dart'
-    show Override, ProviderScope;
+export 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
+export 'package:flutter_riverpod/misc.dart' show Override;
 export 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 export 'package:lotti/features/ai/state/consts.dart';
 export 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart'
     show aiConfigByTypeControllerProvider;
 export 'package:lotti/l10n/app_localizations.dart';
+
+/// Provider to capture a real Ref for testing.
+/// In Riverpod 3.x, Ref is sealed and cannot be mocked directly.
+/// Use this with a ProviderContainer to get a working Ref.
+///
+/// Usage:
+/// ```dart
+/// final container = ProviderContainer(overrides: [...]);
+/// final ref = container.read(testRefProvider);
+/// final processor = LottiConversationProcessor(ref: ref);
+/// ```
+final testRefProvider = Provider<Ref>((ref) => ref);
 
 /// Shared mock classes for AI feature tests
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
@@ -29,7 +44,12 @@ class MockAiConfigByTypeController extends AiConfigByTypeController {
 
   @override
   Stream<List<AiConfig>> build({required AiConfigType configType}) {
-    return Stream.value(_configs);
+    // Use a StreamController that emits the value and stays open.
+    // This mimics the real implementation which watches for changes.
+    final controller = StreamController<List<AiConfig>>()..add(_configs);
+    // Don't close - mimics the real implementation
+    ref.onDispose(controller.close);
+    return controller.stream;
   }
 }
 

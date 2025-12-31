@@ -437,6 +437,13 @@ void main() {
 
     test('updateConfig uses new id if original config id is null', () async {
       // Initialize with no configId
+      // Keep provider alive with a listener (required in Riverpod 3 for auto-dispose)
+      final subscription = container.listen(
+        promptFormControllerProvider(configId: null),
+        (_, __) {},
+      );
+      addTearDown(subscription.close);
+
       // Ensure build is complete before interacting with controller
       await container.read(promptFormControllerProvider(configId: null).future);
       final controller =
@@ -458,6 +465,19 @@ void main() {
         requiredInputData: [],
         aiResponseType: AiResponseType.taskSummary,
       );
+
+      // Mock model config for validation in updateConfig
+      when(() => mockAiConfigRepository.getConfigById('model1'))
+          .thenAnswer((_) async => AiConfig.model(
+                id: 'model1',
+                name: 'Model 1',
+                providerModelId: 'provider-model-1',
+                inferenceProviderId: 'provider-1',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              ));
 
       // Stub the saveConfig method
       when(() => mockAiConfigRepository.saveConfig(any()))

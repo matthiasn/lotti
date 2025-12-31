@@ -6,23 +6,48 @@ part of 'journal_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$journalRepositoryHash() => r'd90bb9234e52f4de0c635ea9f0f9acf903a5a589';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [journalRepository].
 @ProviderFor(journalRepository)
-final journalRepositoryProvider =
-    AutoDisposeProvider<JournalRepository>.internal(
-  journalRepository,
-  name: r'journalRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$journalRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final journalRepositoryProvider = JournalRepositoryProvider._();
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef JournalRepositoryRef = AutoDisposeProviderRef<JournalRepository>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class JournalRepositoryProvider extends $FunctionalProvider<
+    JournalRepository,
+    JournalRepository,
+    JournalRepository> with $Provider<JournalRepository> {
+  JournalRepositoryProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'journalRepositoryProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$journalRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<JournalRepository> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  JournalRepository create(Ref ref) {
+    return journalRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(JournalRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<JournalRepository>(value),
+    );
+  }
+}
+
+String _$journalRepositoryHash() => r'd90bb9234e52f4de0c635ea9f0f9acf903a5a589';

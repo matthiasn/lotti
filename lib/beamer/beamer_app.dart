@@ -310,8 +310,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   @override
   Widget build(BuildContext context) {
     final themingState = ref.watch(themingControllerProvider);
-    final enableTooltips =
-        ref.watch(enableTooltipsProvider).valueOrNull ?? true;
+    final enableTooltips = ref.watch(enableTooltipsProvider).value ?? true;
 
     if (themingState.darkTheme == null) {
       return MaterialApp(

@@ -95,8 +95,8 @@ void main() {
 
         final result = await controller.createNewSession();
 
-        expect(result.id, equals('new-session-id'));
-        expect(result.title, equals('New Chat'));
+        expect(result?.id, equals('new-session-id'));
+        expect(result?.title, equals('New Chat'));
 
         final state = container.read(
           chatSessionsControllerProvider('test-category'),

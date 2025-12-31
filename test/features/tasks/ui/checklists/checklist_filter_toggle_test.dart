@@ -2,11 +2,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
+
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   group('ChecklistWidget filter + header visibility', () {
     const desktopMq = MediaQueryData(size: Size(1280, 1000));
+
+    setUp(() async {
+      await setUpTestGetIt();
+    });
+
+    tearDown(() async {
+      await tearDownTestGetIt();
+    });
 
     testWidgets(
         'segmented control visible when expanded and hidden when collapsed',

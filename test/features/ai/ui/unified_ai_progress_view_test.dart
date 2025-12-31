@@ -34,15 +34,11 @@ class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
-class _TestUnifiedAiController extends UnifiedAiController {
-  _TestUnifiedAiController(this.initialState);
-
-  final UnifiedAiState initialState;
-
-  @override
-  UnifiedAiState build(({String entityId, String promptId}) arg) {
-    return initialState;
-  }
+/// Helper to create override for UnifiedAiController with a specific state.
+Override unifiedAiControllerOverride(UnifiedAiState initialState) {
+  return unifiedAiControllerProvider.overrideWithBuild(
+    (ref, params) => initialState,
+  );
 }
 
 class _TestInferenceStatusController extends InferenceStatusController {
@@ -586,15 +582,13 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController([gemmaProvider]),
             ),
-            unifiedAiControllerProvider.overrideWith(
-              () => _TestUnifiedAiController(
-                UnifiedAiState(
-                  message: '',
-                  error: ModelNotAvailableException(
-                    'Missing model',
-                    modelName: 'gemma-3n-E2B-it',
-                    statusCode: 404,
-                  ),
+            unifiedAiControllerOverride(
+              UnifiedAiState(
+                message: '',
+                error: ModelNotAvailableException(
+                  'Missing model',
+                  modelName: 'gemma-3n-E2B-it',
+                  statusCode: 404,
                 ),
               ),
             ),
@@ -638,12 +632,10 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController([ollamaProvider]),
             ),
-            unifiedAiControllerProvider.overrideWith(
-              () => _TestUnifiedAiController(
-                const UnifiedAiState(
-                  message: '',
-                  error: ModelNotInstalledException('llama3'),
-                ),
+            unifiedAiControllerOverride(
+              const UnifiedAiState(
+                message: '',
+                error: ModelNotInstalledException('llama3'),
               ),
             ),
             inferenceStatusControllerProvider(
@@ -657,6 +649,7 @@ void main() {
         ),
       );
 
+      // Use pumpAndSettle to let FutureBuilder complete
       await tester.pumpAndSettle();
 
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
@@ -679,12 +672,10 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
-            unifiedAiControllerProvider.overrideWith(
-              () => _TestUnifiedAiController(
-                const UnifiedAiState(
-                  message:
-                      'Model "llama3" is not installed. Please install it first.',
-                ),
+            unifiedAiControllerOverride(
+              const UnifiedAiState(
+                message:
+                    'Model "llama3" is not installed. Please install it first.',
               ),
             ),
             inferenceStatusControllerProvider(
@@ -720,8 +711,8 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
-            unifiedAiControllerProvider.overrideWith(
-              () => _TestUnifiedAiController(const UnifiedAiState(message: '')),
+            unifiedAiControllerOverride(
+              const UnifiedAiState(message: ''),
             ),
             inferenceStatusControllerProvider(
               id: entityId,
@@ -870,16 +861,14 @@ void main() {
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
-            unifiedAiControllerProvider.overrideWith(
-              () => _TestUnifiedAiController(
-                const UnifiedAiState(
-                  message: '''
+            unifiedAiControllerOverride(
+              const UnifiedAiState(
+                message: '''
 ## Summary
 A beautiful sunset over mountains.
 
 ## Prompt
 Digital painting of a vibrant sunset over misty mountains, warm orange and purple tones, atmospheric, cinematic lighting, 4K --ar 16:9''',
-                ),
               ),
             ),
             inferenceStatusControllerProvider(
@@ -930,16 +919,14 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
             ).overrideWith(
               () => MockAiConfigByTypeController(const <AiConfig>[]),
             ),
-            unifiedAiControllerProvider.overrideWith(
-              () => _TestUnifiedAiController(
-                const UnifiedAiState(
-                  message: '''
+            unifiedAiControllerOverride(
+              const UnifiedAiState(
+                message: '''
 ## Summary
 Help implement OAuth.
 
 ## Prompt
 Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
-                ),
               ),
             ),
             inferenceStatusControllerProvider(

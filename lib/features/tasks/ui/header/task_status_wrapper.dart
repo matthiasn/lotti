@@ -18,7 +18,7 @@ class TaskStatusWrapper extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = entryControllerProvider(id: taskId);
     final notifier = ref.read(provider.notifier);
-    final entryState = ref.watch(provider).valueOrNull;
+    final entryState = ref.watch(provider).value;
     final task = entryState?.entry;
 
     if (task is! Task) {
