@@ -41,15 +41,16 @@ class ChecklistWrapper extends ConsumerWidget {
   Future<List<ChecklistItem?>> _resolveChecklistItems(
     WidgetRef ref,
     Checklist checklist,
-  ) async {
-    final items = <ChecklistItem?>[];
-    for (final id in checklist.data.linkedChecklistItems) {
-      final itemState = ref.read(
-        checklistItemControllerProvider((id: id, taskId: taskId)),
-      );
-      items.add(itemState.value);
-    }
-    return items;
+  ) {
+    final futures =
+        checklist.data.linkedChecklistItems.map<Future<ChecklistItem?>>(
+      (id) => ref
+          .read(
+            checklistItemControllerProvider((id: id, taskId: taskId)).future,
+          )
+          .catchError((Object _, StackTrace __) => null),
+    );
+    return Future.wait<ChecklistItem?>(futures);
   }
 
   @override
