@@ -39,13 +39,12 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
     // Since the provider is now keyed by entityId (stable), updates to
     // the same entry will reuse the provider and maintain previous value.
     if (hasPromptsAsync.hasValue && hasPromptsAsync.value!) {
+      final icon = Icon(
+        Icons.assistant_rounded,
+        color: iconColor ?? context.colorScheme.outline,
+      );
       return IconButton(
-        icon: GlassIconContainer(
-          child: Icon(
-            Icons.assistant_rounded,
-            color: iconColor ?? context.colorScheme.outline,
-          ),
-        ),
+        icon: iconColor != null ? GlassIconContainer(child: icon) : icon,
         onPressed: () => UnifiedAiModal.show<void>(
           context: context,
           journalEntity: journalEntity,

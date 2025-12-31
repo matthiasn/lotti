@@ -4,21 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
-import 'package:lotti/utils/platform.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  // Set test environment to avoid file system checks
-  setUp(() {
-    isTestEnv = true;
-  });
-
-  tearDown(() {
-    isTestEnv = false;
-  });
 
   JournalImage buildJournalImage() {
     final now = DateTime(2025, 12, 31, 12);

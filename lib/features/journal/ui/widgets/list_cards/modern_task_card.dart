@@ -35,7 +35,7 @@ class ModernTaskCard extends StatelessWidget {
   /// Whether to show the cover art thumbnail when available.
   final bool showCoverArt;
 
-  static const double _thumbnailSize = 160;
+  static const double _thumbnailSize = 120;
 
   @override
   Widget build(BuildContext context) {

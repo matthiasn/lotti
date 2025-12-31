@@ -10,6 +10,7 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.da
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -739,6 +740,7 @@ void main() {
 
       // Should not have CoverArtThumbnail since there's no coverArtId
       expect(find.text('Test Task Title'), findsOneWidget);
+      expect(find.byType(CoverArtThumbnail), findsNothing);
     });
 
     testWidgets('showCoverArt=false hides thumbnail even with coverArtId',
@@ -763,8 +765,9 @@ void main() {
 
       // Title should still be visible
       expect(find.text('Test Task Title'), findsOneWidget);
-      // The layout should not include the cover art Row structure
+      // The layout should not include the cover art thumbnail
       // (since showCoverArt is false)
+      expect(find.byType(CoverArtThumbnail), findsNothing);
     });
 
     testWidgets('coverArtCropX defaults to 0.5', (tester) async {

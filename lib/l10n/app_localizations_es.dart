@@ -2709,19 +2709,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksShowDueDate => 'Mostrar fecha de vencimiento en tarjetas';
 
   @override
-  String get tasksShowCoverArt => 'Show cover art on cards';
+  String get tasksShowCoverArt => 'Mostrar imagen de portada en tarjetas';
 
   @override
-  String get coverArtChipSet => 'Set cover';
+  String get coverArtChipSet => 'Establecer portada';
 
   @override
-  String get coverArtChipActive => 'Cover';
+  String get coverArtChipActive => 'Portada';
 
   @override
-  String get coverArtAssign => 'Set as cover art';
+  String get coverArtAssign => 'Establecer como imagen de portada';
 
   @override
-  String get coverArtRemove => 'Remove as cover art';
+  String get coverArtRemove => 'Eliminar imagen de portada';
 
   @override
   String get taskDueToday => 'Vence hoy';

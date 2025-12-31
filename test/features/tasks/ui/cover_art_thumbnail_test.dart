@@ -4,21 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
-import 'package:lotti/utils/platform.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  // Set test environment to avoid file system checks
-  setUp(() {
-    isTestEnv = true;
-  });
-
-  tearDown(() {
-    isTestEnv = false;
-  });
 
   JournalImage buildJournalImage() {
     final now = DateTime(2025, 12, 31, 12);
@@ -152,7 +142,7 @@ void main() {
       expect(find.byType(SizedBox), findsWidgets);
     });
 
-    testWidgets('cropX 0.0 maps to left alignment', (tester) async {
+    test('cropX 0.0 maps to left alignment', () {
       // Verify the math: cropX 0.0 should map to alignment -1.0
       // Formula: alignmentX = (cropX * 2) - 1
       // 0.0 * 2 - 1 = -1.0 (left)
@@ -161,7 +151,7 @@ void main() {
       expect(alignmentX, -1.0);
     });
 
-    testWidgets('cropX 0.5 maps to center alignment', (tester) async {
+    test('cropX 0.5 maps to center alignment', () {
       // Verify the math: cropX 0.5 should map to alignment 0.0
       // Formula: alignmentX = (cropX * 2) - 1
       // 0.5 * 2 - 1 = 0.0 (center)
@@ -170,7 +160,7 @@ void main() {
       expect(alignmentX, 0.0);
     });
 
-    testWidgets('cropX 1.0 maps to right alignment', (tester) async {
+    test('cropX 1.0 maps to right alignment', () {
       // Verify the math: cropX 1.0 should map to alignment 1.0
       // Formula: alignmentX = (cropX * 2) - 1
       // 1.0 * 2 - 1 = 1.0 (right)

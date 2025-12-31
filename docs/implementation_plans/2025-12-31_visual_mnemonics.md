@@ -256,12 +256,12 @@ Widget _buildWithCoverArt(BuildContext context, String coverArtId) {
   return Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      // 80x80 thumbnail
+      // 120x120 thumbnail
       ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: SizedBox(
-          width: 80,
-          height: 80,
+          width: 120,
+          height: 120,
           child: CoverArtThumbnail(imageId: coverArtId),
         ),
       ),
@@ -281,7 +281,7 @@ Widget _buildWithCoverArt(BuildContext context, String coverArtId) {
 class CoverArtThumbnail extends ConsumerWidget {
   const CoverArtThumbnail({
     required this.imageId,
-    this.size = 80,
+    this.size = 120,
     super.key,
   });
 

@@ -459,5 +459,11 @@
       }
     }
   },
-  "clearButton": "Effacer"
+  "clearButton": "Effacer",
+
+  "tasksShowCoverArt": "Afficher la couverture sur les cartes",
+  "coverArtChipSet": "Définir couverture",
+  "coverArtChipActive": "Couverture",
+  "coverArtAssign": "Définir comme couverture",
+  "coverArtRemove": "Retirer comme couverture"
 }

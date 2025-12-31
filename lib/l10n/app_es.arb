@@ -458,5 +458,11 @@
       }
     }
   },
-  "clearButton": "Borrar"
+  "clearButton": "Borrar",
+
+  "tasksShowCoverArt": "Mostrar imagen de portada en tarjetas",
+  "coverArtChipSet": "Establecer portada",
+  "coverArtChipActive": "Portada",
+  "coverArtAssign": "Establecer como imagen de portada",
+  "coverArtRemove": "Eliminar imagen de portada"
 }

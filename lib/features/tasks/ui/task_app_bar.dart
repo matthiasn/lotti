@@ -100,12 +100,10 @@ class TaskSliverAppBar extends ConsumerWidget {
 
   List<Widget> _buildGlassActions(BuildContext context, Task task) {
     return [
-      GlassIconContainer(
-        child: UnifiedAiPopUpMenu(
-          journalEntity: task,
-          linkedFromId: null,
-          iconColor: Colors.white,
-        ),
+      UnifiedAiPopUpMenu(
+        journalEntity: task,
+        linkedFromId: null,
+        iconColor: Colors.white,
       ),
       const SizedBox(width: 8),
       Material(

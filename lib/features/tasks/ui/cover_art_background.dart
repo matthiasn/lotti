@@ -27,6 +27,14 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground> {
   int retries = 0;
 
   @override
+  void didUpdateWidget(CoverArtBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageId != widget.imageId) {
+      retries = 0;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = entryControllerProvider(id: widget.imageId);
     final entry = ref.watch(provider).value?.entry;
