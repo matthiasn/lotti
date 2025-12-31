@@ -248,6 +248,131 @@ void main() {
       expect(find.byIcon(Icons.error_outline), findsNothing);
     });
 
+    testWidgets('error banner retry calls retryLastMessage', (tester) async {
+      // Create a session with a message so retry has something to retry
+      final session = ChatSession(
+        id: 'test-session',
+        title: 'Test Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [
+          ChatMessage.user('Hello'),
+        ],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
+      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
+          .thenAnswer((_) async => session);
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => session);
+
+      // First sendMessage call fails to trigger error state
+      var sendCallCount = 0;
+      when(() => mockChatRepository.sendMessage(
+            message: any(named: 'message'),
+            conversationHistory: any(named: 'conversationHistory'),
+            categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
+          )).thenAnswer((_) {
+        sendCallCount++;
+        if (sendCallCount == 1) {
+          // First call throws to trigger error
+          return Stream<String>.error(Exception('Network error'));
+        }
+        // Subsequent calls succeed
+        return Stream.value('Response');
+      });
+      when(() => mockChatRepository.saveSession(any()))
+          .thenAnswer((_) async => session);
+
+      await setupTestWidget(
+        tester,
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
+          ),
+        ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      // Send a message to trigger the error
+      await tester.enterText(find.byType(TextField), 'Test message');
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      // Error banner should be visible
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+
+      // Tap retry button
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+
+      // sendMessage should have been called twice (original + retry)
+      expect(sendCallCount, 2);
+    });
+
+    testWidgets('clear chat button clears the conversation', (tester) async {
+      final sessionWithMessages = ChatSession(
+        id: 'test-session',
+        title: 'Test Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [
+          ChatMessage.user('Hello'),
+          ChatMessage.assistant('Hi there!'),
+        ],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
+      final emptySession = ChatSession(
+        id: 'new-session',
+        title: 'New Chat',
+        createdAt: DateTime(2024),
+        lastMessageAt: DateTime(2024),
+        messages: [],
+        metadata: const {'selectedModelId': 'test-model'},
+      );
+
+      var createCallCount = 0;
+      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
+          .thenAnswer((_) async {
+        createCallCount++;
+        // First call returns session with messages, subsequent calls return empty
+        return createCallCount == 1 ? sessionWithMessages : emptySession;
+      });
+      when(() => mockChatRepository.getSession(any()))
+          .thenAnswer((_) async => sessionWithMessages);
+
+      await setupTestWidget(
+        tester,
+        const MaterialApp(
+          home: Scaffold(
+            body: ChatInterface(categoryId: 'test-category'),
+          ),
+        ),
+        overrides: [
+          chatRepositoryProvider.overrideWithValue(mockChatRepository),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify messages exist
+      expect(find.text('Hello'), findsOneWidget);
+
+      // Find and tap clear button
+      await tester.tap(find.byIcon(Icons.clear_all));
+      await tester.pumpAndSettle();
+
+      // createSession should have been called twice (initial + clear)
+      expect(createCallCount, 2);
+    });
+
     testWidgets('displays empty state with helper text', (tester) async {
       when(() => mockChatRepository.createSession(categoryId: 'test-category'))
           .thenAnswer((_) async => ChatSession(

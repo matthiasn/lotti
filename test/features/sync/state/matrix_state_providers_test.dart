@@ -183,4 +183,50 @@ void main() {
       expect(result.messageCounts, streamedStats.messageCounts);
     });
   });
+
+  group('MatrixStats equality', () {
+    test('two MatrixStats with same values are equal', () {
+      const stats1 = MatrixStats(
+        sentCount: 5,
+        messageCounts: {'m.text': 3, 'm.image': 2},
+      );
+      const stats2 = MatrixStats(
+        sentCount: 5,
+        messageCounts: {'m.text': 3, 'm.image': 2},
+      );
+
+      expect(stats1 == stats2, isTrue);
+      expect(stats1.hashCode, stats2.hashCode);
+    });
+
+    test('MatrixStats with different sentCount are not equal', () {
+      const stats1 = MatrixStats(sentCount: 5, messageCounts: {});
+      const stats2 = MatrixStats(sentCount: 10, messageCounts: {});
+
+      expect(stats1 == stats2, isFalse);
+    });
+
+    test('MatrixStats with different messageCounts are not equal', () {
+      const stats1 = MatrixStats(
+        sentCount: 5,
+        messageCounts: {'m.text': 3},
+      );
+      const stats2 = MatrixStats(
+        sentCount: 5,
+        messageCounts: {'m.text': 5},
+      );
+
+      expect(stats1 == stats2, isFalse);
+    });
+
+    test('MatrixStats is equal to itself (identical)', () {
+      const stats = MatrixStats(sentCount: 5, messageCounts: {});
+      expect(stats == stats, isTrue);
+    });
+
+    test('MatrixStats is not equal to non-MatrixStats object', () {
+      const stats = MatrixStats(sentCount: 5, messageCounts: {});
+      expect(stats == Object(), isFalse);
+    });
+  });
 }

@@ -734,4 +734,74 @@ void main() {
     expect(state.error, isNull);
     expect(state.amplitudeHistory, equals(const <double>[0.2, 0.5]));
   });
+
+  test('ref.onDispose cleans up active recording resources', () async {
+    final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+    final mockRecorder = _MockAudioRecorder();
+    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+    when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+    // Create a stream that keeps emitting (simulates active recording)
+    final amplitudeController = StreamController<record.Amplitude>.broadcast();
+    when(() => mockRecorder.onAmplitudeChanged(any()))
+        .thenAnswer((_) => amplitudeController.stream);
+
+    // Create file on start
+    when(() => mockRecorder.start(any<record.RecordConfig>(),
+        path: any(named: 'path'))).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String;
+      await File(path).create(recursive: true);
+    });
+
+    final container = ProviderContainer(overrides: [
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 60),
+          )),
+      audioTranscriptionServiceProvider
+          .overrideWithValue(_MockTranscriptionService()),
+    ]);
+
+    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    await controller.start();
+
+    // Emit some amplitude data to simulate active recording
+    amplitudeController.add(record.Amplitude(current: -40, max: -30));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    final tempSubdir = Directory('${baseTemp.path}/lotti_chat_rec');
+    expect(await tempSubdir.exists(), isTrue);
+
+    // Dispose while recording is active - this triggers ref.onDispose
+    sub.close();
+    container.dispose();
+    await amplitudeController.close();
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+
+    // Temp directory should be cleaned up by onDispose
+    expect(await tempSubdir.exists(), isFalse);
+  });
+
+  test('clearResult does nothing when no transcript or error', () async {
+    final container = ProviderContainer(overrides: [
+      audioTranscriptionServiceProvider
+          .overrideWithValue(_MockTranscriptionService()),
+    ]);
+    addTearDown(container.dispose);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    controller.state = controller.state.copyWith(
+      amplitudeHistory: const <double>[0.3],
+    );
+
+    // Call clearResult when there's nothing to clear
+    controller.clearResult();
+    final state = container.read(chatRecorderControllerProvider);
+    expect(state.amplitudeHistory, equals(const <double>[0.3]));
+    expect(state.transcript, isNull);
+    expect(state.error, isNull);
+  });
 }
