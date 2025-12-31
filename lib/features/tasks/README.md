@@ -19,6 +19,35 @@ This feature powers task creation, editing, filtering and list/grid rendering.
   - Ordering: `task_priority_rank` ASC, then `date_from` DESC
   - Migration v29 backfills legacy tasks to `P2` with rank `2` and rebuilds `idx_journal_tasks`
 
+## Due Dates
+
+Tasks support optional due dates with visual status indicators and flexible display options.
+
+### Features
+
+- **Date Picker**: Tap the due date chip in task details header to open the date picker modal
+  - Cancel: Close without changes
+  - Clear: Remove the due date
+  - Done: Save the selected date (only if user interacted with picker)
+- **Color-Coded Status**:
+  - 🔴 Red: Overdue (past due date)
+  - 🟠 Orange: Due today
+  - Default: Future due dates
+- **Display Toggle**: Filter modal includes "Show due date on cards" toggle
+- **Card Layout**: Creation date on LEFT, due date on RIGHT
+- **Tappable Format Toggle**: Tap due date text to switch between:
+  - Absolute: "Due: Dec 24, 2025"
+  - Relative: "Due in 5 days", "Due Tomorrow", "Overdue by 3 days"
+- **Localization**: Full ICU plural support for English, Spanish, and French
+  - Handles singular/plural correctly (1 day vs 5 days, 1 día vs 5 días, 1 jour vs 5 jours)
+
+### Implementation
+
+- **Utility**: `getDueDateStatus()` in `lib/features/tasks/util/due_date_utils.dart` provides consistent status calculation
+- **Widget**: `DueDateText` handles display with tap-to-toggle behavior
+- **Testability**: Uses `clock` package for deterministic time-dependent tests
+- **Persistence**: Due date stored in `TaskData.due` field (nullable DateTime)
+
 ## Developer Notes
 
 - Model helpers live in `lib/classes/task.dart` (priority enum, rank/short/color mapping)
