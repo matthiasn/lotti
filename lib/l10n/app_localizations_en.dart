@@ -2679,6 +2679,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksShowCreationDate => 'Show creation date on cards';
 
   @override
+  String get tasksShowDueDate => 'Show due date on cards';
+
+  @override
+  String get taskDueToday => 'Due Today';
+
+  @override
+  String get taskDueTomorrow => 'Due Tomorrow';
+
+  @override
+  String get taskDueYesterday => 'Due Yesterday';
+
+  @override
+  String taskDueInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'Due in $_temp0';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'Overdue by $_temp0';
+  }
+
+  @override
+  String get taskDueDateLabel => 'Due Date';
+
+  @override
+  String get taskNoDueDateLabel => 'No due date';
+
+  @override
+  String taskDueDateWithDate(String date) {
+    return 'Due: $date';
+  }
+
+  @override
+  String get clearButton => 'Clear';
+
+  @override
   String get timeByCategoryChartTitle => 'Time by Category';
 
   @override
@@ -2713,6 +2761,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tasksLabelsHeaderEditTooltip => 'Edit labels';
+
+  @override
+  String get tasksAddLabelButton => 'Add Label';
 
   @override
   String get tasksLabelsNoLabels => 'No labels';

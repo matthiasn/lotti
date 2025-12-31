@@ -346,6 +346,37 @@
   "tasksSortByPriority": "Priorität",
   "tasksSortByDate": "Datum",
   "tasksShowCreationDate": "Erstellungsdatum auf Karten anzeigen",
+  "tasksShowDueDate": "Fälligkeitsdatum auf Karten anzeigen",
+  "taskDueToday": "Heute fällig",
+  "taskDueTomorrow": "Morgen fällig",
+  "taskDueYesterday": "Gestern fällig",
+  "taskDueInDays": "Fällig in {days} Tagen",
+  "@taskDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskOverdueByDays": "{days} Tage überfällig",
+  "@taskOverdueByDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskDueDateLabel": "Fälligkeitsdatum",
+  "taskNoDueDateLabel": "Kein Fälligkeitsdatum",
+  "taskDueDateWithDate": "Fällig: {date}",
+  "@taskDueDateWithDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "clearButton": "Löschen",
   "taskStatusAll": "Alle",
   "taskStatusBlocked": "Blockiert",
   "taskStatusDone": "Erledigt",

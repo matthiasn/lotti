@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/switch_icon_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
+import 'package:lotti/features/tasks/ui/header/task_creation_date_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -33,10 +33,7 @@ class TaskDateRow extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            EntryDatetimeWidget(
-              entryId: taskId,
-              padding: EdgeInsets.zero,
-            ),
+            TaskCreationDateWidget(taskId: taskId),
             const SizedBox(width: 10),
             if (task.meta.starred ?? false)
               SwitchIconWidget(

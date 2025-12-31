@@ -2700,6 +2700,54 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksShowCreationDate => 'Mostrar fecha de creación en tarjetas';
 
   @override
+  String get tasksShowDueDate => 'Mostrar fecha de vencimiento en tarjetas';
+
+  @override
+  String get taskDueToday => 'Vence hoy';
+
+  @override
+  String get taskDueTomorrow => 'Vence mañana';
+
+  @override
+  String get taskDueYesterday => 'Venció ayer';
+
+  @override
+  String taskDueInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days días',
+      one: '1 día',
+    );
+    return 'Vence en $_temp0';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days días',
+      one: '1 día',
+    );
+    return 'Atrasado $_temp0';
+  }
+
+  @override
+  String get taskDueDateLabel => 'Fecha de vencimiento';
+
+  @override
+  String get taskNoDueDateLabel => 'Sin fecha de vencimiento';
+
+  @override
+  String taskDueDateWithDate(String date) {
+    return 'Vence: $date';
+  }
+
+  @override
+  String get clearButton => 'Borrar';
+
+  @override
   String get timeByCategoryChartTitle => 'Tiempo por categoría';
 
   @override
@@ -2734,6 +2782,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tasksLabelsHeaderEditTooltip => 'Edit labels';
+
+  @override
+  String get tasksAddLabelButton => 'Add Label';
 
   @override
   String get tasksLabelsNoLabels => 'No labels';

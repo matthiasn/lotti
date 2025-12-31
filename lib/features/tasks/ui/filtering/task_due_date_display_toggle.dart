@@ -6,8 +6,8 @@ import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
-class TaskDateDisplayToggle extends ConsumerWidget {
-  const TaskDateDisplayToggle({super.key});
+class TaskDueDateDisplayToggle extends ConsumerWidget {
+  const TaskDueDateDisplayToggle({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,12 +25,12 @@ class TaskDateDisplayToggle extends ConsumerWidget {
       child: SwitchListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(
-          context.messages.tasksShowCreationDate,
+          context.messages.tasksShowDueDate,
           style: context.textTheme.bodySmall,
         ),
-        value: state.showCreationDate,
+        value: state.showDueDate,
         onChanged: (value) {
-          controller.setShowCreationDate(show: value);
+          controller.setShowDueDate(show: value);
           HapticFeedback.selectionClick();
         },
       ),

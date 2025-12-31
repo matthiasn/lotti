@@ -34,9 +34,10 @@ class TaskForm extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TaskHeaderMetaCard(taskId: taskId),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
+        // Row 3 & 4: Secondary Actions + Labels
         TaskLabelsWrapper(taskId: taskId),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
         if (entryState?.entry?.entryText != null && plainText.isNotEmpty) ...[
           EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
           const SizedBox(height: 10),

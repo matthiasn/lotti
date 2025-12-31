@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
+import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -18,11 +19,13 @@ class ModernTaskCard extends StatelessWidget {
   const ModernTaskCard({
     required this.task,
     this.showCreationDate = false,
+    this.showDueDate = true,
     super.key,
   });
 
   final Task task;
   final bool showCreationDate;
+  final bool showDueDate;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +36,12 @@ class ModernTaskCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: AppTheme.cardSpacing / 2,
+      ),
+      padding: const EdgeInsets.only(
+        left: AppTheme.cardPadding,
+        top: AppTheme.cardPadding,
+        right: AppTheme.cardPadding,
+        bottom: 10,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,24 +55,57 @@ class ModernTaskCard extends StatelessWidget {
               taskId: task.meta.id,
             ),
           ),
-          if (showCreationDate) _buildCreationDateRow(context),
+          _buildDateRow(context),
         ],
       ),
     );
   }
 
-  Widget _buildCreationDateRow(BuildContext context) {
+  Widget _buildDateRow(BuildContext context) {
+    final hasCreationDate = showCreationDate;
+    final hasDueDate = showDueDate && task.data.due != null;
+
+    if (!hasCreationDate && !hasDueDate) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Align(
-        alignment: Alignment.bottomRight,
-        child: Text(
-          DateFormat.yMMMd().format(task.meta.dateFrom),
-          style: context.textTheme.bodySmall?.copyWith(
-            fontSize: fontSizeSmall,
-            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-        ),
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // LEFT: Creation date with icon for alignment
+          if (hasCreationDate)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: AppTheme.statusIndicatorFontSize,
+                  color: context.colorScheme.onSurfaceVariant
+                      .withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  DateFormat.yMMMd().format(task.meta.dateFrom),
+                  style: context.textTheme.bodySmall?.copyWith(
+                    fontSize: AppTheme.statusIndicatorFontSize,
+                    color: context.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            )
+          else
+            const SizedBox.shrink(),
+          // RIGHT: Due date with color logic
+          if (hasDueDate)
+            DueDateText(
+              dueDate: task.data.due!,
+            )
+          else
+            const SizedBox.shrink(),
+        ],
       ),
     );
   }
@@ -87,24 +129,6 @@ class ModernTaskCard extends StatelessWidget {
         const SizedBox(width: 6),
         // Inline category icon after status chip for better chip alignment
         CategoryIconCompact(task.meta.categoryId),
-        if (task.data.due != null) ...[
-          const SizedBox(width: 8),
-          Icon(
-            Icons.event_rounded,
-            size: AppTheme.subtitleFontSize,
-            color: context.colorScheme.onSurfaceVariant
-                .withValues(alpha: AppTheme.alphaSurfaceVariant),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            DateFormat.MMMd().format(task.data.due!),
-            style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.onSurfaceVariant
-                  .withValues(alpha: AppTheme.alphaSurfaceVariant),
-              fontSize: AppTheme.subtitleFontSize,
-            ),
-          ),
-        ],
         const Spacer(),
         CompactTaskProgress(taskId: task.id),
       ],

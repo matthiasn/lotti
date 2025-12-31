@@ -1907,6 +1907,164 @@ void main() {
       expect(capturedTaskData.title, newTitle);
       expect(capturedTaskData.estimate, newEstimate);
     });
+
+    test('saves task with dueDate', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockEditorStateService.entryWasSaved(
+          id: entryId,
+          lastSaved: any(named: 'lastSaved'),
+          controller: notifier.controller,
+        ),
+      ).thenAnswer((_) async {});
+
+      final newDueDate = DateTime(2025, 12, 31);
+      await notifier.save(dueDate: newDueDate);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          entryText: captureAny(named: 'entryText'),
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      final capturedTaskData = captured[1] as TaskData;
+      expect(capturedTaskData.due, newDueDate);
+    });
+
+    test('clears dueDate when clearDueDate is true', () async {
+      // Create a task with an existing due date
+      final taskWithDueDate = testTask.copyWith(
+        data: testTask.data.copyWith(due: DateTime(2025, 6, 15)),
+      );
+
+      when(() => mockJournalDb.journalEntityById(taskWithDueDate.meta.id))
+          .thenAnswer((_) async => taskWithDueDate);
+
+      final container = makeProviderContainer();
+      final entryId = taskWithDueDate.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockEditorStateService.entryWasSaved(
+          id: entryId,
+          lastSaved: any(named: 'lastSaved'),
+          controller: notifier.controller,
+        ),
+      ).thenAnswer((_) async {});
+
+      await notifier.save(clearDueDate: true);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          entryText: captureAny(named: 'entryText'),
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      final capturedTaskData = captured[1] as TaskData;
+      expect(capturedTaskData.due, isNull);
+    });
+
+    test(
+        'preserves existing dueDate when neither dueDate nor clearDueDate provided',
+        () async {
+      final existingDueDate = DateTime(2025, 6, 15);
+      final taskWithDueDate = testTask.copyWith(
+        data: testTask.data.copyWith(due: existingDueDate),
+      );
+
+      when(() => mockJournalDb.journalEntityById(taskWithDueDate.meta.id))
+          .thenAnswer((_) async => taskWithDueDate);
+
+      final container = makeProviderContainer();
+      final entryId = taskWithDueDate.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateJournalEntityText(
+          any(),
+          any(),
+          any(),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(
+        () => mockEditorStateService.entryWasSaved(
+          id: entryId,
+          lastSaved: any(named: 'lastSaved'),
+          controller: notifier.controller,
+        ),
+      ).thenAnswer((_) async {});
+
+      // Save with just a title change, dueDate should be preserved
+      await notifier.save(title: 'New Title');
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          entryText: captureAny(named: 'entryText'),
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      final capturedTaskData = captured[1] as TaskData;
+      expect(capturedTaskData.due, existingDueDate);
+    });
   });
 
   group('Task Summary Refresh Triggers', () {

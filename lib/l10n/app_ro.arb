@@ -425,5 +425,36 @@
   "tasksSortByLabel": "Sortare după",
   "tasksSortByPriority": "Prioritate",
   "tasksSortByDate": "Dată",
-  "tasksShowCreationDate": "Afișează data creării pe carduri"
+  "tasksShowCreationDate": "Afișează data creării pe carduri",
+  "tasksShowDueDate": "Afișează data scadenței pe carduri",
+  "taskDueToday": "Scadent astăzi",
+  "taskDueTomorrow": "Scadent mâine",
+  "taskDueYesterday": "Scadent ieri",
+  "taskDueInDays": "Scadent în {days} zile",
+  "@taskDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskOverdueByDays": "Întârziat cu {days} zile",
+  "@taskOverdueByDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskDueDateLabel": "Data scadenței",
+  "taskNoDueDateLabel": "Fără dată scadentă",
+  "taskDueDateWithDate": "Scadent: {date}",
+  "@taskDueDateWithDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "clearButton": "Șterge"
 }

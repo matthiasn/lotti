@@ -2691,6 +2691,42 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksShowCreationDate => 'Afișează data creării pe carduri';
 
   @override
+  String get tasksShowDueDate => 'Afișează data scadenței pe carduri';
+
+  @override
+  String get taskDueToday => 'Scadent astăzi';
+
+  @override
+  String get taskDueTomorrow => 'Scadent mâine';
+
+  @override
+  String get taskDueYesterday => 'Scadent ieri';
+
+  @override
+  String taskDueInDays(int days) {
+    return 'Scadent în $days zile';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    return 'Întârziat cu $days zile';
+  }
+
+  @override
+  String get taskDueDateLabel => 'Data scadenței';
+
+  @override
+  String get taskNoDueDateLabel => 'Fără dată scadentă';
+
+  @override
+  String taskDueDateWithDate(String date) {
+    return 'Scadent: $date';
+  }
+
+  @override
+  String get clearButton => 'Șterge';
+
+  @override
   String get timeByCategoryChartTitle => 'Timp pe categorie';
 
   @override
@@ -2725,6 +2761,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksLabelsHeaderEditTooltip => 'Edit labels';
+
+  @override
+  String get tasksAddLabelButton => 'Add Label';
 
   @override
   String get tasksLabelsNoLabels => 'No labels';

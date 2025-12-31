@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_date_display_toggle.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_due_date_display_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_sort_filter.dart';
@@ -27,12 +28,15 @@ class TaskFilterContent extends StatelessWidget {
         SizedBox(height: 10),
         TaskSortFilter(),
         SizedBox(height: 10),
-        TaskDateDisplayToggle(),
-        SizedBox(height: 10),
         TaskStatusFilter(),
         TaskPriorityFilter(),
         TaskCategoryFilter(),
         TaskLabelFilter(),
+        SizedBox(height: 10),
+        Divider(),
+        SizedBox(height: 10),
+        TaskDateDisplayToggle(),
+        TaskDueDateDisplayToggle(),
       ],
     );
   }

@@ -819,6 +819,59 @@ void main() {
       });
     });
 
+    group('Show Due Date Toggle', () {
+      test('setShowDueDate updates showDueDate to false', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Default is true, so toggle to false
+          controller.setShowDueDate(show: false);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showDueDate, isFalse);
+        });
+      });
+
+      test('setShowDueDate can toggle back to true', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..setShowDueDate(show: false)
+            ..setShowDueDate(show: true);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showDueDate, isTrue);
+        });
+      });
+
+      test('showDueDate defaults to true', () {
+        fakeAsync((async) {
+          container.read(journalPageControllerProvider(true));
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showDueDate, isTrue);
+        });
+      });
+    });
+
     group('Search Functionality', () {
       test('setSearchString updates match in state', () {
         fakeAsync((async) {
@@ -899,6 +952,7 @@ void main() {
             'selectedPriorities': ['P0'],
             'sortOption': 'byDate',
             'showCreationDate': true,
+            'showDueDate': false,
           });
 
           when(
@@ -918,6 +972,7 @@ void main() {
           expect(state.selectedPriorities, equals({'P0'}));
           expect(state.sortOption, equals(TaskSortOption.byDate));
           expect(state.showCreationDate, isTrue);
+          expect(state.showDueDate, isFalse);
         });
       });
 

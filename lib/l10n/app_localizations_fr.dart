@@ -2702,6 +2702,54 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la date de création sur les cartes';
 
   @override
+  String get tasksShowDueDate => 'Afficher la date d\'échéance sur les cartes';
+
+  @override
+  String get taskDueToday => 'Échéance aujourd\'hui';
+
+  @override
+  String get taskDueTomorrow => 'Échéance demain';
+
+  @override
+  String get taskDueYesterday => 'Échéance hier';
+
+  @override
+  String taskDueInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours',
+      one: '1 jour',
+    );
+    return 'Échéance dans $_temp0';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours',
+      one: '1 jour',
+    );
+    return 'En retard de $_temp0';
+  }
+
+  @override
+  String get taskDueDateLabel => 'Date d\'échéance';
+
+  @override
+  String get taskNoDueDateLabel => 'Pas de date d\'échéance';
+
+  @override
+  String taskDueDateWithDate(String date) {
+    return 'Échéance : $date';
+  }
+
+  @override
+  String get clearButton => 'Effacer';
+
+  @override
   String get timeByCategoryChartTitle => 'Temps par catégorie';
 
   @override
@@ -2736,6 +2784,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tasksLabelsHeaderEditTooltip => 'Edit labels';
+
+  @override
+  String get tasksAddLabelButton => 'Add Label';
 
   @override
   String get tasksLabelsNoLabels => 'No labels';

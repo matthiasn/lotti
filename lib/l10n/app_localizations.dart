@@ -5014,6 +5014,66 @@ abstract class AppLocalizations {
   /// **'Show creation date on cards'**
   String get tasksShowCreationDate;
 
+  /// No description provided for @tasksShowDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Show due date on cards'**
+  String get tasksShowDueDate;
+
+  /// No description provided for @taskDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Today'**
+  String get taskDueToday;
+
+  /// No description provided for @taskDueTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Tomorrow'**
+  String get taskDueTomorrow;
+
+  /// No description provided for @taskDueYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Yesterday'**
+  String get taskDueYesterday;
+
+  /// No description provided for @taskDueInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Due in {days, plural, =1{1 day} other{{days} days}}'**
+  String taskDueInDays(int days);
+
+  /// No description provided for @taskOverdueByDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue by {days, plural, =1{1 day} other{{days} days}}'**
+  String taskOverdueByDays(int days);
+
+  /// No description provided for @taskDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Date'**
+  String get taskDueDateLabel;
+
+  /// No description provided for @taskNoDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get taskNoDueDateLabel;
+
+  /// No description provided for @taskDueDateWithDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due: {date}'**
+  String taskDueDateWithDate(String date);
+
+  /// No description provided for @clearButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearButton;
+
   /// No description provided for @timeByCategoryChartTitle.
   ///
   /// In en, this message translates to:
@@ -5085,6 +5145,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit labels'**
   String get tasksLabelsHeaderEditTooltip;
+
+  /// No description provided for @tasksAddLabelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Label'**
+  String get tasksAddLabelButton;
 
   /// No description provided for @tasksLabelsNoLabels.
   ///

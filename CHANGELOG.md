@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.790] - 2025-12-31
+### Added
+- Task Due Dates: Tasks now support due date assignment and display
+  - Due date picker in task details header with Cancel/Clear/Done actions
+  - Color-coded status indicators: red for overdue, orange for due today
+  - Due date display on task cards with toggle in filter modal
+  - Tappable due date text toggles between absolute ("Dec 24, 2025") and relative ("Due in 5 days") formats
+  - Proper localization with ICU plural support for English, Spanish, and French
+  - Shared `getDueDateStatus` utility for consistent status calculations
+  - Uses `clock` package for testable time-dependent logic
+
+### Changed
+- Task card layout: creation date on LEFT, due date on RIGHT
+- Task details header: improved styling with restyled filter modal
+- Added comprehensive test coverage for due date widgets and utilities
+
 ## [0.9.788] - 2025-12-30
 ### Changed
 - Migrated journal/tasks page state management from Bloc to Riverpod

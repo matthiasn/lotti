@@ -11,6 +11,7 @@ import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -167,12 +168,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ModernTaskCard(task: task),
           ),
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Due date branch should render an event icon
     expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -409,7 +413,7 @@ void main() {
       expect(find.text(expectedTaskDateString), findsOneWidget);
     });
 
-    testWidgets('creation date is aligned to bottom right', (tester) async {
+    testWidgets('creation date is in the date row', (tester) async {
       final task = buildTask();
 
       await tester.pumpWidget(
@@ -426,15 +430,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find the Align widget containing the date
-      final alignFinder = find.ancestor(
+      // Find the Row containing the date (date row layout)
+      final rowFinder = find.ancestor(
         of: find.text(expectedTaskDateString),
-        matching: find.byType(Align),
+        matching: find.byType(Row),
       );
-      expect(alignFinder, findsOneWidget);
+      expect(rowFinder, findsWidgets);
 
-      final alignWidget = tester.widget<Align>(alignFinder);
-      expect(alignWidget.alignment, Alignment.bottomRight);
+      // Verify the date text is present
+      expect(find.text(expectedTaskDateString), findsOneWidget);
     });
 
     testWidgets('showCreationDate defaults to false', (tester) async {
@@ -496,6 +500,206 @@ void main() {
 
       // Format should match yMMMd format for the locale
       expect(find.text(expectedDateString), findsOneWidget);
+    });
+  });
+
+  group('showDueDate', () {
+    testWidgets('does not show due date in date row when showDueDate is false',
+        (tester) async {
+      final dueDate = DateTime(2025, 11, 10);
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(due: dueDate),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showDueDate: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Due date should not be shown in date row when showDueDate is false
+      expect(find.text(DateFormat.MMMd().format(dueDate)), findsNothing);
+    });
+
+    testWidgets('shows due date in date row when showDueDate is true',
+        (tester) async {
+      final dueDate = DateTime(2025, 11, 10);
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(due: dueDate),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Due date should be shown with event icon and "Due:" prefix
+      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+      expect(
+        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('showDueDate defaults to true', (tester) async {
+      final dueDate = DateTime(2025, 11, 10);
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(due: dueDate),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Default should show due date with "Due:" prefix
+      expect(
+        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('does not show due date row when due is null', (tester) async {
+      final task = buildTask(); // No due date set
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No event icon should be shown when there's no due date
+      expect(find.byIcon(Icons.event_rounded), findsNothing);
+    });
+
+    testWidgets('shows creation date on LEFT and due date on RIGHT',
+        (tester) async {
+      final creationDate = DateTime(2025, 11, 3, 12);
+      final dueDate = DateTime(2025, 11, 10);
+
+      final meta = Metadata(
+        id: 'task-1',
+        createdAt: creationDate,
+        updatedAt: creationDate,
+        dateFrom: creationDate,
+        dateTo: creationDate,
+      );
+      final data = TaskData(
+        status: TaskStatus.open(id: 's', createdAt: creationDate, utcOffset: 0),
+        dateFrom: creationDate,
+        dateTo: creationDate,
+        statusHistory: const [],
+        title: 'Test',
+        due: dueDate,
+      );
+      final task = Task(meta: meta, data: data);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernTaskCard(
+                task: task,
+                showCreationDate: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify both dates are present
+      final creationDateText = DateFormat.yMMMd().format(creationDate);
+      final dueDateText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+
+      expect(find.text(creationDateText), findsOneWidget);
+      expect(find.text(dueDateText), findsOneWidget);
+
+      // Verify layout: creation date on left, due date on right
+      final creationDateOffset = tester.getTopLeft(find.text(creationDateText));
+      final dueDateOffset = tester.getTopLeft(find.text(dueDateText));
+
+      expect(creationDateOffset.dx, lessThan(dueDateOffset.dx));
+    });
+
+    testWidgets(
+        'tapping due date toggles between absolute and relative display',
+        (tester) async {
+      // Use a date 5 days in the future for testing relative display
+      final now = DateTime.now();
+      final dueDate = DateTime(now.year, now.month, now.day).add(
+        const Duration(days: 5),
+      );
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(due: dueDate),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially shows absolute date
+      final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+      expect(find.text(absoluteText), findsOneWidget);
+
+      // Tap to toggle to relative display
+      await tester.tap(find.byIcon(Icons.event_rounded));
+      await tester.pumpAndSettle();
+
+      // Now shows relative date ("Due in 5 days")
+      expect(find.text(absoluteText), findsNothing);
+      expect(find.textContaining('5'), findsOneWidget);
+
+      // Tap again to toggle back to absolute
+      await tester.tap(find.byIcon(Icons.event_rounded));
+      await tester.pumpAndSettle();
+
+      // Back to absolute
+      expect(find.text(absoluteText), findsOneWidget);
     });
   });
 }

@@ -66,6 +66,7 @@ class JournalPageController extends _$JournalPageController {
   Set<String> _fullTextMatches = {};
   TaskSortOption _sortOption = TaskSortOption.byPriority;
   bool _showCreationDate = false;
+  bool _showDueDate = true;
   // Same default for both tabs (matches cubit behavior at journal_page_cubit.dart:266-270)
   Set<String> _selectedTaskStatuses = {
     'OPEN',
@@ -133,6 +134,7 @@ class JournalPageController extends _$JournalPageController {
       selectedTaskStatuses: _selectedTaskStatuses,
       sortOption: _sortOption,
       showCreationDate: _showCreationDate,
+      showDueDate: _showDueDate,
     );
   }
 
@@ -293,6 +295,7 @@ class JournalPageController extends _$JournalPageController {
       selectedPriorities: _selectedPriorities,
       sortOption: _sortOption,
       showCreationDate: _showCreationDate,
+      showDueDate: _showDueDate,
     );
   }
 
@@ -419,6 +422,13 @@ class JournalPageController extends _$JournalPageController {
     await _persistTasksFilterWithoutRefresh();
   }
 
+  // Due date display toggle (visual only, no query refresh needed)
+  Future<void> setShowDueDate({required bool show}) async {
+    _showDueDate = show;
+    _emitState();
+    await _persistTasksFilterWithoutRefresh();
+  }
+
   // Persistence methods
 
   /// Loads persisted filters with migration from legacy key
@@ -445,6 +455,7 @@ class JournalPageController extends _$JournalPageController {
         _selectedPriorities = tasksFilter.selectedPriorities;
         _sortOption = tasksFilter.sortOption;
         _showCreationDate = tasksFilter.showCreationDate;
+        _showDueDate = tasksFilter.showDueDate;
       } else {
         _selectedLabelIds = {};
         _selectedPriorities = {};
@@ -489,6 +500,7 @@ class JournalPageController extends _$JournalPageController {
       selectedPriorities: _showTasks ? _selectedPriorities : {},
       sortOption: _showTasks ? _sortOption : TaskSortOption.byPriority,
       showCreationDate: _showTasks && _showCreationDate,
+      showDueDate: _showTasks && _showDueDate,
     );
     final encodedFilter = jsonEncode(filter);
 

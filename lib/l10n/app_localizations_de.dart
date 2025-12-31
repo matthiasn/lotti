@@ -2699,6 +2699,42 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksShowCreationDate => 'Erstellungsdatum auf Karten anzeigen';
 
   @override
+  String get tasksShowDueDate => 'Fälligkeitsdatum auf Karten anzeigen';
+
+  @override
+  String get taskDueToday => 'Heute fällig';
+
+  @override
+  String get taskDueTomorrow => 'Morgen fällig';
+
+  @override
+  String get taskDueYesterday => 'Gestern fällig';
+
+  @override
+  String taskDueInDays(int days) {
+    return 'Fällig in $days Tagen';
+  }
+
+  @override
+  String taskOverdueByDays(int days) {
+    return '$days Tage überfällig';
+  }
+
+  @override
+  String get taskDueDateLabel => 'Fälligkeitsdatum';
+
+  @override
+  String get taskNoDueDateLabel => 'Kein Fälligkeitsdatum';
+
+  @override
+  String taskDueDateWithDate(String date) {
+    return 'Fällig: $date';
+  }
+
+  @override
+  String get clearButton => 'Löschen';
+
+  @override
   String get timeByCategoryChartTitle => 'Zeit nach Kategorie';
 
   @override
@@ -2733,6 +2769,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tasksLabelsHeaderEditTooltip => 'Edit labels';
+
+  @override
+  String get tasksAddLabelButton => 'Add Label';
 
   @override
   String get tasksLabelsNoLabels => 'No labels';

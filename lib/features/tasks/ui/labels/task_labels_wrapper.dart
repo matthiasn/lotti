@@ -8,10 +8,14 @@ import 'package:lotti/features/labels/state/label_assignment_event_provider.dart
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
+import 'package:lotti/features/tasks/state/task_progress_controller.dart';
+import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
+import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/widgets/cards/subtle_action_chip.dart';
 
 class TaskLabelsWrapper extends ConsumerWidget {
   const TaskLabelsWrapper({
@@ -152,44 +156,37 @@ class TaskLabelsWrapper extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final headerStyle = theme.textTheme.titleSmall?.copyWith(
-      color: colorScheme.outline,
-    );
+    final estimate = task.data.estimate;
+    final hasEstimate = estimate != null && estimate != Duration.zero;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Row 3: Secondary Actions (Add Label + Estimate)
         Row(
-          mainAxisSize: MainAxisSize.min,
+          spacing: 8,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              context.messages.tasksLabelsHeaderTitle,
-              style: headerStyle,
-            ),
-            IconButton(
-              tooltip: context.messages.tasksLabelsHeaderEditTooltip,
-              onPressed: () => _openSelector(context, ref, assignedIds),
-              icon: Icon(
-                Icons.edit_outlined,
-                size: 18,
-                color: colorScheme.outline,
+            GestureDetector(
+              onTap: () => _openSelector(context, ref, assignedIds),
+              child: SubtleActionChip(
+                label: context.messages.tasksAddLabelButton,
+                icon: Icons.add,
               ),
+            ),
+            _EditableEstimateChip(
+              taskId: taskId,
+              hasEstimate: hasEstimate,
+              estimate: estimate,
             ),
           ],
         ),
-        if (assignedLabels.isEmpty)
-          Text(
-            context.messages.tasksLabelsNoLabels,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-            ),
-          )
-        else
+        // Row 4: Label chips (if any)
+        if (assignedLabels.isNotEmpty) ...[
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: 8,
+            runSpacing: 8,
             children: assignedLabels
                 .map(
                   (label) => GestureDetector(
@@ -202,6 +199,7 @@ class TaskLabelsWrapper extends ConsumerWidget {
                 )
                 .toList(),
           ),
+        ],
       ],
     );
   }
@@ -249,6 +247,62 @@ class TaskLabelsWrapper extends ConsumerWidget {
             child: Text(context.messages.tasksLabelsDialogClose),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EditableEstimateChip extends ConsumerWidget {
+  const _EditableEstimateChip({
+    required this.taskId,
+    required this.hasEstimate,
+    this.estimate,
+  });
+
+  final String taskId;
+  final bool hasEstimate;
+  final Duration? estimate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: taskId);
+    final notifier = ref.read(provider.notifier);
+
+    Future<void> onTap() async {
+      await showEstimatePicker(
+        context: context,
+        initialDuration: estimate ?? Duration.zero,
+        onEstimateChanged: (newDuration) async {
+          await notifier.save(estimate: newDuration);
+        },
+      );
+    }
+
+    // Show progress bar when there's an estimate, wrapped in subtle chip
+    if (hasEstimate) {
+      final progressState =
+          ref.watch(taskProgressControllerProvider(id: taskId)).valueOrNull;
+      final isOvertime = progressState != null &&
+          progressState.progress > progressState.estimate;
+
+      return GestureDetector(
+        onTap: onTap,
+        child: SubtleActionChip(
+          isUrgent: isOvertime,
+          child: CompactTaskProgress(
+            taskId: taskId,
+            showTimeText: true,
+          ),
+        ),
+      );
+    }
+
+    // Show "No estimate" chip when no estimate set
+    return GestureDetector(
+      onTap: onTap,
+      child: SubtleActionChip(
+        label: context.messages.taskNoEstimateLabel,
+        icon: Icons.timer_outlined,
       ),
     );
   }

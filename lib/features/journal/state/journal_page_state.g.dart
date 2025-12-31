@@ -27,6 +27,7 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
           $enumDecodeNullable(_$TaskSortOptionEnumMap, json['sortOption']) ??
               TaskSortOption.byPriority,
       showCreationDate: json['showCreationDate'] as bool? ?? false,
+      showDueDate: json['showDueDate'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
@@ -37,6 +38,7 @@ Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
       'selectedPriorities': instance.selectedPriorities.toList(),
       'sortOption': _$TaskSortOptionEnumMap[instance.sortOption]!,
       'showCreationDate': instance.showCreationDate,
+      'showDueDate': instance.showDueDate,
     };
 
 const _$TaskSortOptionEnumMap = {

@@ -425,5 +425,36 @@
   "tasksSortByLabel": "Ordenar por",
   "tasksSortByPriority": "Prioridad",
   "tasksSortByDate": "Fecha",
-  "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas"
+  "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas",
+  "tasksShowDueDate": "Mostrar fecha de vencimiento en tarjetas",
+  "taskDueToday": "Vence hoy",
+  "taskDueTomorrow": "Vence mañana",
+  "taskDueYesterday": "Venció ayer",
+  "taskDueInDays": "Vence en {days, plural, =1{1 día} other{{days} días}}",
+  "@taskDueInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskOverdueByDays": "Atrasado {days, plural, =1{1 día} other{{days} días}}",
+  "@taskOverdueByDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "taskDueDateLabel": "Fecha de vencimiento",
+  "taskNoDueDateLabel": "Sin fecha de vencimiento",
+  "taskDueDateWithDate": "Vence: {date}",
+  "@taskDueDateWithDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "clearButton": "Borrar"
 }

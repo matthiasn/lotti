@@ -7,14 +7,12 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
-import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_wrapper.dart';
+import 'package:lotti/features/tasks/ui/header/task_creation_date_widget.dart';
 import 'package:lotti/features/tasks/ui/header/task_header_meta_card.dart';
 import 'package:lotti/features/tasks/ui/header/task_language_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_priority_wrapper.dart';
-import 'package:lotti/features/tasks/ui/task_date_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -112,37 +110,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(TaskHeaderMetaCard), findsOneWidget);
-    expect(find.byType(TaskDateRow), findsOneWidget);
+    expect(find.byType(TaskCreationDateWidget), findsOneWidget);
 
     // All metadata wrappers should be present
     expect(find.byType(TaskPriorityWrapper), findsOneWidget);
     expect(find.byType(TaskCategoryWrapper), findsOneWidget);
     expect(find.byType(TaskLanguageWrapper), findsOneWidget);
-  });
-
-  testWidgets('TaskHeaderMetaCard shows estimate placeholder when no estimate',
-      (tester) async {
-    final taskWithoutEstimate = testTask.copyWith(
-      data: testTask.data.copyWith(estimate: null),
-    );
-
-    final overrides = <Override>[
-      entryControllerProvider(id: taskWithoutEstimate.meta.id).overrideWith(
-        () => _TestEntryController(taskWithoutEstimate),
-      ),
-    ];
-
-    await tester.pumpWidget(
-      RiverpodWidgetTestBench(
-        overrides: overrides,
-        child: TaskHeaderMetaCard(taskId: taskWithoutEstimate.meta.id),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Placeholder text and timer icon should be visible.
-    expect(find.text('No estimate'), findsOneWidget);
-    expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
   });
 
   testWidgets('TaskHeaderMetaCard keeps metadata visible on narrow layouts',
@@ -176,48 +149,5 @@ void main() {
     expect(find.byType(TaskPriorityWrapper), findsOneWidget);
     expect(find.byType(TaskCategoryWrapper), findsOneWidget);
     expect(find.byType(TaskLanguageWrapper), findsOneWidget);
-  });
-
-  testWidgets('TaskHeaderMetaCard aligns date and progress text font sizes',
-      (tester) async {
-    final task = testTask;
-
-    final overrides = <Override>[
-      taskProgressControllerProvider(id: task.meta.id).overrideWith(
-        () => TestTaskProgressController(
-          progress: const Duration(hours: 1),
-          estimate: const Duration(hours: 4),
-        ),
-      ),
-      entryControllerProvider(id: task.meta.id).overrideWith(
-        () => _TestEntryController(task),
-      ),
-    ];
-
-    await tester.pumpWidget(
-      RiverpodWidgetTestBench(
-        overrides: overrides,
-        child: TaskHeaderMetaCard(taskId: task.meta.id),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Date text from EntryDatetimeWidget.
-    final dateFinder = find.text(dfShorter.format(task.meta.dateFrom));
-    expect(dateFinder, findsOneWidget);
-    final dateText = tester.widget<Text>(dateFinder);
-
-    // Progress text from CompactTaskProgress within the header.
-    final progressTextFinder = find.descendant(
-      of: find.byType(CompactTaskProgress),
-      matching: find.byType(Text),
-    );
-    expect(progressTextFinder, findsOneWidget);
-    final progressText = tester.widget<Text>(progressTextFinder);
-
-    expect(
-      dateText.style?.fontSize,
-      equals(progressText.style?.fontSize),
-    );
   });
 }
