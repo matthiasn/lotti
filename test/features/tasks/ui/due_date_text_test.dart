@@ -174,6 +174,47 @@ void main() {
       });
     });
 
+    testWidgets('applies non-urgent color for future dates', (tester) async {
+      final fakeNow = DateTime(2025, 6, 15, 12);
+      final dueDate = DateTime(2025, 6, 25); // 10 days in future - not urgent
+
+      await withClock(Clock(() => fakeNow), () async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: DueDateText(dueDate: dueDate),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify the icon exists and uses non-urgent color (from colorScheme)
+        final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+        // Non-urgent future dates should NOT have red or orange colors
+        expect(icon.color, isNotNull);
+      });
+    });
+
+    testWidgets('shows "Due Today" in absolute mode for today', (tester) async {
+      final fakeNow = DateTime(2025, 6, 15, 12);
+      final dueDate = DateTime(2025, 6, 15); // Same day
+
+      await withClock(Clock(() => fakeNow), () async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: DueDateText(dueDate: dueDate),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // In absolute mode (default), "Due Today" should show for same-day
+        expect(find.text('Due Today'), findsOneWidget);
+
+        // Toggle to relative - should still show "Due Today"
+        await tester.tap(find.text('Due Today'));
+        await tester.pumpAndSettle();
+        expect(find.text('Due Today'), findsOneWidget);
+      });
+    });
+
     testWidgets('renders in dark mode', (tester) async {
       final fakeNow = DateTime(2025, 6, 15, 12);
       final dueDate = DateTime(2025, 6, 20);

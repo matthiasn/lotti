@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -28,7 +29,7 @@ class TaskDueDateWrapper extends ConsumerWidget {
     final dueDate = task.data.due;
     final status = getDueDateStatus(
       dueDate: dueDate,
-      referenceDate: DateTime.now(),
+      referenceDate: clock.now(),
     );
 
     final label = dueDate != null

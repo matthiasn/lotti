@@ -38,6 +38,20 @@ class _TestEntryController extends EntryController {
   }
 }
 
+class _NonTaskEntryController extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) async {
+    // Return a non-Task entry (JournalEntry)
+    return EntryState.saved(
+      entryId: id,
+      entry: testTextEntry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -329,27 +343,25 @@ void main() {
     });
 
     testWidgets('returns empty widget for non-Task entities', (tester) async {
-      // This test verifies the SizedBox.shrink() is returned for non-Task
-      // We can't easily test this without a different entity type,
-      // but we can at least verify the widget renders correctly for tasks
-      final task = testTask;
-
       final overrides = <Override>[
-        entryControllerProvider(id: task.meta.id).overrideWith(
-          () => _TestEntryController(task),
+        entryControllerProvider(id: 'non-task').overrideWith(
+          _NonTaskEntryController.new,
         ),
       ];
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: overrides,
-          child: TaskDueDateWrapper(taskId: task.meta.id),
+          child: const TaskDueDateWrapper(taskId: 'non-task'),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Widget should render
+      // Widget should render but show nothing (SizedBox.shrink)
       expect(find.byType(TaskDueDateWrapper), findsOneWidget);
+      // Should not show any due date UI elements
+      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(find.text('No due date'), findsNothing);
     });
   });
 }

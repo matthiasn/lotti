@@ -33,6 +33,20 @@ class _TestEntryController extends EntryController {
   }
 }
 
+class _NonTaskEntryController extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) async {
+    // Return a non-Task entry (JournalEntry)
+    return EntryState.saved(
+      entryId: id,
+      entry: testTextEntry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -128,6 +142,52 @@ void main() {
 
       // Verify widget is wrapped in GestureDetector
       expect(find.byType(GestureDetector), findsWidgets);
+    });
+
+    testWidgets('returns empty widget for non-Task entries', (tester) async {
+      final overrides = <Override>[
+        entryControllerProvider(id: 'non-task').overrideWith(
+          _NonTaskEntryController.new,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: const TaskCreationDateWidget(taskId: 'non-task'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should return empty widget (SizedBox.shrink) for non-Task
+      expect(find.byType(TaskCreationDateWidget), findsOneWidget);
+      // The widget should not contain any text or icons
+      expect(find.byIcon(Icons.calendar_today_rounded), findsNothing);
+    });
+
+    testWidgets('opens modal when tapped', (tester) async {
+      final task = testTask;
+
+      final overrides = <Override>[
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: TaskCreationDateWidget(taskId: task.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the widget to open the date picker modal
+      await tester.tap(find.byIcon(Icons.calendar_today_rounded));
+      await tester.pumpAndSettle();
+
+      // Verify modal is opened by checking for "Date & Time Range" title
+      expect(find.text('Date & Time Range'), findsOneWidget);
     });
   });
 }

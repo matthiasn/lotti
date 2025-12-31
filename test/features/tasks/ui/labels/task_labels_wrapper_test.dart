@@ -42,6 +42,20 @@ class _TestEntryController extends EntryController {
 
 class _MockLabelsRepository extends Mock implements LabelsRepository {}
 
+class _NonTaskEntryController extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) async {
+    // Return a non-Task entry (JournalEntry)
+    return EntryState.saved(
+      entryId: id,
+      entry: testTextEntry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+  }
+}
+
 JournalEntity taskWithLabels(List<String> labelIds) {
   final now = DateTime(2023);
   return JournalEntity.task(
@@ -129,6 +143,55 @@ void main() {
       ),
     );
   }
+
+  testWidgets('ignores events for different taskId', (tester) async {
+    // Register event service for provider
+    final eventService = LabelAssignmentEventService();
+    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
+
+    final task = taskWithLabels(['existing']);
+    await tester.pumpWidget(buildWrapper(task));
+    await tester.pumpAndSettle();
+
+    // Publish assignment event for a DIFFERENT task
+    eventService.publish(
+      const LabelAssignmentEvent(
+        taskId: 'other-task-id', // Different task ID
+        assignedIds: ['label-1'],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // No toast should be shown since taskId doesn't match
+    expect(find.text('Assigned:'), findsNothing);
+  });
+
+  testWidgets('returns empty widget for non-Task entries', (tester) async {
+    // Create a non-Task entry controller that returns null entry
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          entryControllerProvider(id: 'non-task').overrideWith(
+            _NonTaskEntryController.new,
+          ),
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream<List<LabelDefinition>>.value(
+              [testLabelDefinition1, testLabelDefinition2],
+            ),
+          ),
+        ],
+        child: makeTestableWidgetWithScaffold(
+          const TaskLabelsWrapper(taskId: 'non-task'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Should render SizedBox.shrink() for non-Task
+    expect(find.text('Add Label'), findsNothing);
+    expect(find.byType(TaskLabelsWrapper), findsOneWidget);
+  });
 
   testWidgets('shows toast and performs undo on AI assignment', (tester) async {
     // Register event service for provider

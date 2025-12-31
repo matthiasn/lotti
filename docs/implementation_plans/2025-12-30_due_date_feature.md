@@ -121,13 +121,14 @@ Widget _buildDateRow(BuildContext context) {
 
 #### 3.4 Create `_DueDateText` widget
 ```dart
+// NOTE: Use clock.now() from package:clock for testability.
+// Get reference time once in build() for consistent calculations.
 class _DueDateText extends StatelessWidget {
   const _DueDateText({required this.dueDate});
   final DateTime dueDate;
 
-  Color _getColor(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  Color _getColor(BuildContext context, DateTime referenceDate) {
+    final today = DateTime(referenceDate.year, referenceDate.month, referenceDate.day);
     final dueDateDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
 
     if (dueDateDay.isBefore(today)) return taskStatusRed;  // Overdue
@@ -135,9 +136,8 @@ class _DueDateText extends StatelessWidget {
     return context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
   }
 
-  String _getText(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  String _getText(BuildContext context, DateTime referenceDate) {
+    final today = DateTime(referenceDate.year, referenceDate.month, referenceDate.day);
     final dueDateDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
 
     if (dueDateDay == today) return context.messages.taskDueToday;
@@ -146,13 +146,14 @@ class _DueDateText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getColor(context);
+    final now = clock.now();  // Get time once for consistent calculations
+    final color = _getColor(context, now);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.event_rounded, size: fontSizeSmall, color: color),
         const SizedBox(width: 4),
-        Text(_getText(context), style: TextStyle(color: color, ...)),
+        Text(_getText(context, now), style: TextStyle(color: color, ...)),
       ],
     );
   }
