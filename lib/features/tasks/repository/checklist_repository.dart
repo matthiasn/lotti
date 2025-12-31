@@ -1,6 +1,5 @@
 // ignore_for_file: comment_references
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';

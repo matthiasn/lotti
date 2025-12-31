@@ -12,7 +12,6 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
@@ -24,16 +23,83 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../test_utils.dart';
+
 class MockJournalRepository extends Mock implements JournalRepository {}
 
-class MockConversationRepository extends Mock
-    implements ConversationRepository {}
+/// Mock ConversationRepository that extends the real class.
+/// In Riverpod 3, Notifier classes can't be mocked with `Mock implements`
+/// because they have internal state that's accessed during initialization.
+class MockConversationRepository extends ConversationRepository {
+  MockConversationRepository(this._mockManager);
+
+  final MockConversationManager _mockManager;
+  final List<String> deletedConversationIds = [];
+
+  /// Delegate for sendMessage - set this in tests to control behavior
+  Future<void> Function({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    double temperature,
+    ConversationStrategy? strategy,
+  })? sendMessageDelegate;
+
+  @override
+  void build() {
+    // No-op for mock
+  }
+
+  @override
+  String createConversation({
+    String? systemMessage,
+    int maxTurns = 20,
+  }) {
+    return 'test-conv';
+  }
+
+  @override
+  ConversationManager? getConversation(String conversationId) {
+    return _mockManager;
+  }
+
+  @override
+  void deleteConversation(String conversationId) {
+    deletedConversationIds.add(conversationId);
+  }
+
+  @override
+  Future<void> sendMessage({
+    required String conversationId,
+    required String message,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required InferenceRepositoryInterface inferenceRepo,
+    List<ChatCompletionTool>? tools,
+    double temperature = 0.7,
+    ConversationStrategy? strategy,
+  }) async {
+    if (sendMessageDelegate != null) {
+      await sendMessageDelegate!(
+        conversationId: conversationId,
+        message: message,
+        model: model,
+        provider: provider,
+        inferenceRepo: inferenceRepo,
+        tools: tools,
+        temperature: temperature,
+        strategy: strategy,
+      );
+    }
+  }
+}
 
 class MockConversationManager extends Mock implements ConversationManager {}
 
 class MockJournalDb extends Mock implements JournalDb {}
-
-class MockRef extends Mock implements Ref {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -48,7 +114,7 @@ void main() {
   late MockConversationRepository mockConversationRepo;
   late MockConversationManager mockConversationManager;
   late MockJournalDb mockJournalDb;
-  late MockRef mockRef;
+  late ProviderContainer container;
   late MockLoggingService mockLoggingService;
   late MockPersistenceLogic mockPersistenceLogic;
   late MockLabelsRepository mockLabelsRepo;
@@ -73,13 +139,14 @@ void main() {
 
   setUp(() {
     mockJournalRepo = MockJournalRepository();
-    mockConversationRepo = MockConversationRepository();
+    // Create MockConversationManager first since MockConversationRepository needs it
     mockConversationManager = MockConversationManager();
+    mockConversationRepo = MockConversationRepository(mockConversationManager);
     mockJournalDb = MockJournalDb();
-    mockRef = MockRef();
     mockLoggingService = MockLoggingService();
     mockPersistenceLogic = MockPersistenceLogic();
     mockLabelsRepo = MockLabelsRepository();
+    mockChecklistRepo = MockChecklistRepositoryBase();
 
     // Set up getIt
     getIt
@@ -97,21 +164,24 @@ void main() {
     // Ensure no cross-test rate limiting state persists
     getIt<LabelAssignmentRateLimiter>().clearHistory();
 
-    // Set up ref
-    when(() => mockRef.read(journalRepositoryProvider))
-        .thenReturn(mockJournalRepo);
-    when(() => mockRef.read(labelsRepositoryProvider))
-        .thenReturn(mockLabelsRepo);
-    mockChecklistRepo = MockChecklistRepositoryBase();
-    when(() => mockRef.read(checklistRepositoryProvider))
-        .thenReturn(mockChecklistRepo);
-    when(() => mockRef.read(conversationRepositoryProvider.notifier))
-        .thenReturn(mockConversationRepo);
+    // Set up container with provider overrides
+    container = ProviderContainer(
+      overrides: [
+        journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+        labelsRepositoryProvider.overrideWithValue(mockLabelsRepo),
+        checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
+        conversationRepositoryProvider.overrideWith(() => mockConversationRepo),
+      ],
+    );
 
-    processor = LottiConversationProcessor(ref: mockRef);
+    final ref = container.read(testRefProvider);
+    processor = LottiConversationProcessor(ref: ref);
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    container.dispose();
+    getIt.reset();
+  });
 
   Task makeTask() => Task(
         meta: Metadata(
@@ -213,14 +283,7 @@ void main() {
     when(() => mockJournalDb.getLabelDefinitionById('X'))
         .thenAnswer((_) async => null);
 
-    // Conversation wiring
-    const conversationId = 'conv';
-    when(() => mockConversationRepo.createConversation(
-          systemMessage: any(named: 'systemMessage'),
-          maxTurns: any(named: 'maxTurns'),
-        )).thenReturn(conversationId);
-    when(() => mockConversationRepo.getConversation(conversationId))
-        .thenReturn(mockConversationManager);
+    // Conversation wiring - MockConversationRepository provides createConversation and getConversation
     when(() => mockConversationManager.messages).thenReturn([]);
     when(() => mockConversationManager.addToolResponse(
           toolCallId: any(named: 'toolCallId'),
@@ -228,18 +291,16 @@ void main() {
         )).thenAnswer((_) {});
 
     // sendMessage triggers strategy processing of our tool call
-    when(() => mockConversationRepo.sendMessage(
-          conversationId: conversationId,
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-          tools: any(named: 'tools'),
-          temperature: any(named: 'temperature'),
-          strategy: any(named: 'strategy'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
+    mockConversationRepo.sendMessageDelegate = ({
+      required String conversationId,
+      required String message,
+      required String model,
+      required AiConfigInferenceProvider provider,
+      required InferenceRepositoryInterface inferenceRepo,
+      List<ChatCompletionTool>? tools,
+      double temperature = 0.7,
+      ConversationStrategy? strategy,
+    }) async {
       if (strategy != null) {
         await strategy.processToolCalls(
           toolCalls: [
@@ -248,10 +309,7 @@ void main() {
           manager: mockConversationManager,
         );
       }
-    });
-
-    when(() => mockConversationRepo.deleteConversation(conversationId))
-        .thenAnswer((_) {});
+    };
 
     // Stub addLabels to avoid null futures and ensure success
     when(() => mockLabelsRepo.addLabels(
@@ -323,14 +381,7 @@ void main() {
     when(() => mockJournalDb.getLabelDefinitionById(low1))
         .thenAnswer((_) => def(low1));
 
-    // Wire conversation
-    const conversationId = 'conv-mixed';
-    when(() => mockConversationRepo.createConversation(
-          systemMessage: any(named: 'systemMessage'),
-          maxTurns: any(named: 'maxTurns'),
-        )).thenReturn(conversationId);
-    when(() => mockConversationRepo.getConversation(conversationId))
-        .thenReturn(mockConversationManager);
+    // Wire conversation - MockConversationRepository provides createConversation and getConversation
     when(() => mockConversationManager.messages).thenReturn([]);
 
     // Capture tool response
@@ -344,18 +395,16 @@ void main() {
     });
 
     // sendMessage triggers strategy with the new preferred labels array
-    when(() => mockConversationRepo.sendMessage(
-          conversationId: conversationId,
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-          tools: any(named: 'tools'),
-          temperature: any(named: 'temperature'),
-          strategy: any(named: 'strategy'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
+    mockConversationRepo.sendMessageDelegate = ({
+      required String conversationId,
+      required String message,
+      required String model,
+      required AiConfigInferenceProvider provider,
+      required InferenceRepositoryInterface inferenceRepo,
+      List<ChatCompletionTool>? tools,
+      double temperature = 0.7,
+      ConversationStrategy? strategy,
+    }) async {
       if (strategy != null) {
         await strategy.processToolCalls(
           toolCalls: [
@@ -379,9 +428,7 @@ void main() {
           manager: mockConversationManager,
         );
       }
-    });
-    when(() => mockConversationRepo.deleteConversation(conversationId))
-        .thenAnswer((_) {});
+    };
 
     // Repo call should persist selected labels
     when(() => mockLabelsRepo.addLabels(
@@ -450,14 +497,7 @@ void main() {
       ),
     );
 
-    // Conversation wiring + capture tool response
-    const conversationId = 'conv-suppressed';
-    when(() => mockConversationRepo.createConversation(
-          systemMessage: any(named: 'systemMessage'),
-          maxTurns: any(named: 'maxTurns'),
-        )).thenReturn(conversationId);
-    when(() => mockConversationRepo.getConversation(conversationId))
-        .thenReturn(mockConversationManager);
+    // Conversation wiring - MockConversationRepository provides createConversation and getConversation
     when(() => mockConversationManager.messages).thenReturn([]);
 
     String? toolResponse;
@@ -468,18 +508,16 @@ void main() {
       toolResponse = inv.namedArguments[#response] as String?;
     });
 
-    when(() => mockConversationRepo.sendMessage(
-          conversationId: conversationId,
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-          tools: any(named: 'tools'),
-          temperature: any(named: 'temperature'),
-          strategy: any(named: 'strategy'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
+    mockConversationRepo.sendMessageDelegate = ({
+      required String conversationId,
+      required String message,
+      required String model,
+      required AiConfigInferenceProvider provider,
+      required InferenceRepositoryInterface inferenceRepo,
+      List<ChatCompletionTool>? tools,
+      double temperature = 0.7,
+      ConversationStrategy? strategy,
+    }) async {
       if (strategy != null) {
         await strategy.processToolCalls(
           toolCalls: [
@@ -488,9 +526,7 @@ void main() {
           manager: mockConversationManager,
         );
       }
-    });
-    when(() => mockConversationRepo.deleteConversation(conversationId))
-        .thenAnswer((_) {});
+    };
 
     // No labels should be persisted (short-circuit)
     await processor.processPromptWithConversation(
@@ -597,14 +633,7 @@ void main() {
           addedLabelIds: any(named: 'addedLabelIds'),
         )).thenAnswer((_) async => true);
 
-    // First attempt conversation wiring
-    const conversationId1 = 'conv-retry-1';
-    when(() => mockConversationRepo.createConversation(
-          systemMessage: any(named: 'systemMessage'),
-          maxTurns: any(named: 'maxTurns'),
-        )).thenReturn(conversationId1);
-    when(() => mockConversationRepo.getConversation(conversationId1))
-        .thenReturn(mockConversationManager);
+    // First attempt conversation wiring - MockConversationRepository provides createConversation and getConversation
     when(() => mockConversationManager.messages).thenReturn([]);
 
     String? firstResponse;
@@ -616,18 +645,16 @@ void main() {
       return;
     });
 
-    when(() => mockConversationRepo.sendMessage(
-          conversationId: conversationId1,
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-          tools: any(named: 'tools'),
-          temperature: any(named: 'temperature'),
-          strategy: any(named: 'strategy'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
+    mockConversationRepo.sendMessageDelegate = ({
+      required String conversationId,
+      required String message,
+      required String model,
+      required AiConfigInferenceProvider provider,
+      required InferenceRepositoryInterface inferenceRepo,
+      List<ChatCompletionTool>? tools,
+      double temperature = 0.7,
+      ConversationStrategy? strategy,
+    }) async {
       if (strategy != null) {
         await strategy.processToolCalls(
           toolCalls: [
@@ -646,9 +673,7 @@ void main() {
           manager: mockConversationManager,
         );
       }
-    });
-    when(() => mockConversationRepo.deleteConversation(conversationId1))
-        .thenAnswer((_) {});
+    };
 
     await processor.processPromptWithConversation(
       prompt: 'user',
@@ -675,14 +700,7 @@ void main() {
     // Clear rate limiter before retry to allow second assignment
     getIt<LabelAssignmentRateLimiter>().clearHistory();
 
-    // Second attempt with corrected IDs
-    const conversationId2 = 'conv-retry-2';
-    when(() => mockConversationRepo.createConversation(
-          systemMessage: any(named: 'systemMessage'),
-          maxTurns: any(named: 'maxTurns'),
-        )).thenReturn(conversationId2);
-    when(() => mockConversationRepo.getConversation(conversationId2))
-        .thenReturn(mockConversationManager);
+    // Second attempt with corrected IDs - MockConversationRepository provides createConversation and getConversation
 
     String? secondResponse;
     when(() => mockConversationManager.addToolResponse(
@@ -693,18 +711,16 @@ void main() {
       return;
     });
 
-    when(() => mockConversationRepo.sendMessage(
-          conversationId: conversationId2,
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-          tools: any(named: 'tools'),
-          temperature: any(named: 'temperature'),
-          strategy: any(named: 'strategy'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
+    mockConversationRepo.sendMessageDelegate = ({
+      required String conversationId,
+      required String message,
+      required String model,
+      required AiConfigInferenceProvider provider,
+      required InferenceRepositoryInterface inferenceRepo,
+      List<ChatCompletionTool>? tools,
+      double temperature = 0.7,
+      ConversationStrategy? strategy,
+    }) async {
       if (strategy != null) {
         await strategy.processToolCalls(
           toolCalls: [
@@ -722,9 +738,7 @@ void main() {
           manager: mockConversationManager,
         );
       }
-    });
-    when(() => mockConversationRepo.deleteConversation(conversationId2))
-        .thenAnswer((_) {});
+    };
 
     await processor.processPromptWithConversation(
       prompt: 'user',
@@ -781,13 +795,7 @@ void main() {
           addedLabelIds: any(named: 'addedLabelIds'),
         )).thenThrow(Exception('Network error'));
 
-    const conversationId = 'conv-error';
-    when(() => mockConversationRepo.createConversation(
-          systemMessage: any(named: 'systemMessage'),
-          maxTurns: any(named: 'maxTurns'),
-        )).thenReturn(conversationId);
-    when(() => mockConversationRepo.getConversation(conversationId))
-        .thenReturn(mockConversationManager);
+    // MockConversationRepository provides createConversation and getConversation
     when(() => mockConversationManager.messages).thenReturn([]);
 
     String? errorResponse;
@@ -799,18 +807,16 @@ void main() {
       return;
     });
 
-    when(() => mockConversationRepo.sendMessage(
-          conversationId: conversationId,
-          message: any(named: 'message'),
-          model: any(named: 'model'),
-          provider: any(named: 'provider'),
-          inferenceRepo: any(named: 'inferenceRepo'),
-          tools: any(named: 'tools'),
-          temperature: any(named: 'temperature'),
-          strategy: any(named: 'strategy'),
-        )).thenAnswer((invocation) async {
-      final strategy =
-          invocation.namedArguments[#strategy] as ConversationStrategy?;
+    mockConversationRepo.sendMessageDelegate = ({
+      required String conversationId,
+      required String message,
+      required String model,
+      required AiConfigInferenceProvider provider,
+      required InferenceRepositoryInterface inferenceRepo,
+      List<ChatCompletionTool>? tools,
+      double temperature = 0.7,
+      ConversationStrategy? strategy,
+    }) async {
       if (strategy != null) {
         await strategy.processToolCalls(
           toolCalls: [
@@ -828,9 +834,7 @@ void main() {
           manager: mockConversationManager,
         );
       }
-    });
-    when(() => mockConversationRepo.deleteConversation(conversationId))
-        .thenAnswer((_) {});
+    };
 
     await processor.processPromptWithConversation(
       prompt: 'user',

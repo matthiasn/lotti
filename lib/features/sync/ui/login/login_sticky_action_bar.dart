@@ -23,9 +23,9 @@ class LoginStickyActionBar extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final loginState = ref.watch(loginFormControllerProvider).valueOrNull;
+    final loginState = ref.watch(loginFormControllerProvider).value;
     final loginNotifier = ref.read(loginFormControllerProvider.notifier);
-    final config = ref.watch(matrixConfigControllerProvider).valueOrNull;
+    final config = ref.watch(matrixConfigControllerProvider).value;
 
     final enableLoginButton = (loginState?.status.isSuccess ?? false) &&
         !(loginState?.loginFailed ?? false);

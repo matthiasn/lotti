@@ -1,8 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'mocks/mocks.dart';
+
+/// Sets up GetIt with common mocks for widget tests.
+/// Call this in setUp() before creating widgets that use controllers
+/// which access GetIt (e.g., ChecklistController, ChecklistItemController).
+Future<void> setUpTestGetIt() async {
+  await getIt.reset();
+
+  final mockUpdateNotifications = MockUpdateNotifications();
+  final mockJournalDb = MockJournalDb();
+
+  when(() => mockUpdateNotifications.updateStream)
+      .thenAnswer((_) => const Stream.empty());
+  when(() => mockJournalDb.journalEntityById(any()))
+      .thenAnswer((_) async => null);
+
+  getIt
+    ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+    ..registerSingleton<JournalDb>(mockJournalDb);
+}
+
+/// Tears down GetIt after tests.
+/// Call this in tearDown() to clean up registrations.
+Future<void> tearDownTestGetIt() async {
+  await getIt.reset();
+}
 
 const phoneMediaQueryData = MediaQueryData(
   size: Size(390, 844),

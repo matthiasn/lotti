@@ -6,618 +6,384 @@ part of 'linked_entries_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$linkedEntriesControllerHash() =>
-    r'233ba30fd610e9366af282fd28573fb8df7eb040';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
-abstract class _$LinkedEntriesController
-    extends BuildlessAutoDisposeAsyncNotifier<List<EntryLink>> {
-  late final String id;
-
-  FutureOr<List<EntryLink>> build({
-    required String id,
-  });
-}
-
-/// See also [LinkedEntriesController].
 @ProviderFor(LinkedEntriesController)
-const linkedEntriesControllerProvider = LinkedEntriesControllerFamily();
+final linkedEntriesControllerProvider = LinkedEntriesControllerFamily._();
 
-/// See also [LinkedEntriesController].
-class LinkedEntriesControllerFamily
-    extends Family<AsyncValue<List<EntryLink>>> {
-  /// See also [LinkedEntriesController].
-  const LinkedEntriesControllerFamily();
-
-  /// See also [LinkedEntriesController].
-  LinkedEntriesControllerProvider call({
-    required String id,
-  }) {
-    return LinkedEntriesControllerProvider(
-      id: id,
-    );
-  }
-
-  @override
-  LinkedEntriesControllerProvider getProviderOverride(
-    covariant LinkedEntriesControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'linkedEntriesControllerProvider';
-}
-
-/// See also [LinkedEntriesController].
-class LinkedEntriesControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<LinkedEntriesController,
-        List<EntryLink>> {
-  /// See also [LinkedEntriesController].
-  LinkedEntriesControllerProvider({
-    required String id,
-  }) : this._internal(
-          () => LinkedEntriesController()..id = id,
-          from: linkedEntriesControllerProvider,
+final class LinkedEntriesControllerProvider
+    extends $AsyncNotifierProvider<LinkedEntriesController, List<EntryLink>> {
+  LinkedEntriesControllerProvider._(
+      {required LinkedEntriesControllerFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
           name: r'linkedEntriesControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$linkedEntriesControllerHash,
-          dependencies: LinkedEntriesControllerFamily._dependencies,
-          allTransitiveDependencies:
-              LinkedEntriesControllerFamily._allTransitiveDependencies,
-          id: id,
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  LinkedEntriesControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-  }) : super.internal();
-
-  final String id;
+  @override
+  String debugGetCreateSourceHash() => _$linkedEntriesControllerHash();
 
   @override
-  FutureOr<List<EntryLink>> runNotifierBuild(
-    covariant LinkedEntriesController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-    );
+  String toString() {
+    return r'linkedEntriesControllerProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  Override overrideWith(LinkedEntriesController Function() create) {
-    return ProviderOverride(
-      origin: this,
-      override: LinkedEntriesControllerProvider._internal(
-        () => create()..id = id,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeAsyncNotifierProviderElement<LinkedEntriesController,
-      List<EntryLink>> createElement() {
-    return _LinkedEntriesControllerProviderElement(this);
-  }
+  LinkedEntriesController create() => LinkedEntriesController();
 
   @override
   bool operator ==(Object other) {
-    return other is LinkedEntriesControllerProvider && other.id == id;
+    return other is LinkedEntriesControllerProvider &&
+        other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin LinkedEntriesControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<List<EntryLink>> {
-  /// The parameter `id` of this provider.
-  String get id;
-}
+String _$linkedEntriesControllerHash() =>
+    r'233ba30fd610e9366af282fd28573fb8df7eb040';
 
-class _LinkedEntriesControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<LinkedEntriesController,
-        List<EntryLink>> with LinkedEntriesControllerRef {
-  _LinkedEntriesControllerProviderElement(super.provider);
+final class LinkedEntriesControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+            LinkedEntriesController,
+            AsyncValue<List<EntryLink>>,
+            List<EntryLink>,
+            FutureOr<List<EntryLink>>,
+            String> {
+  LinkedEntriesControllerFamily._()
+      : super(
+          retry: null,
+          name: r'linkedEntriesControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  LinkedEntriesControllerProvider call({
+    required String id,
+  }) =>
+      LinkedEntriesControllerProvider._(argument: id, from: this);
 
   @override
-  String get id => (origin as LinkedEntriesControllerProvider).id;
+  String toString() => r'linkedEntriesControllerProvider';
+}
+
+abstract class _$LinkedEntriesController
+    extends $AsyncNotifier<List<EntryLink>> {
+  late final _$args = ref.$arg as String;
+  String get id => _$args;
+
+  FutureOr<List<EntryLink>> build({
+    required String id,
+  });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<List<EntryLink>>, List<EntryLink>>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<List<EntryLink>>, List<EntryLink>>,
+        AsyncValue<List<EntryLink>>,
+        Object?,
+        Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              id: _$args,
+            ));
+  }
+}
+
+@ProviderFor(IncludeHiddenController)
+final includeHiddenControllerProvider = IncludeHiddenControllerFamily._();
+
+final class IncludeHiddenControllerProvider
+    extends $NotifierProvider<IncludeHiddenController, bool> {
+  IncludeHiddenControllerProvider._(
+      {required IncludeHiddenControllerFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'includeHiddenControllerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$includeHiddenControllerHash();
+
+  @override
+  String toString() {
+    return r'includeHiddenControllerProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  IncludeHiddenController create() => IncludeHiddenController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is IncludeHiddenControllerProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
 }
 
 String _$includeHiddenControllerHash() =>
     r'224d7a7bbee3c403c65bb85517e10fb1eeac3148';
 
-abstract class _$IncludeHiddenController
-    extends BuildlessAutoDisposeNotifier<bool> {
-  late final String id;
+final class IncludeHiddenControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<IncludeHiddenController, bool, bool, bool,
+            String> {
+  IncludeHiddenControllerFamily._()
+      : super(
+          retry: null,
+          name: r'includeHiddenControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  IncludeHiddenControllerProvider call({
+    required String id,
+  }) =>
+      IncludeHiddenControllerProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'includeHiddenControllerProvider';
+}
+
+abstract class _$IncludeHiddenController extends $Notifier<bool> {
+  late final _$args = ref.$arg as String;
+  String get id => _$args;
 
   bool build({
     required String id,
   });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<bool, bool>, bool, Object?, Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              id: _$args,
+            ));
+  }
 }
 
-/// See also [IncludeHiddenController].
-@ProviderFor(IncludeHiddenController)
-const includeHiddenControllerProvider = IncludeHiddenControllerFamily();
+@ProviderFor(IncludeAiEntriesController)
+final includeAiEntriesControllerProvider = IncludeAiEntriesControllerFamily._();
 
-/// See also [IncludeHiddenController].
-class IncludeHiddenControllerFamily extends Family<bool> {
-  /// See also [IncludeHiddenController].
-  const IncludeHiddenControllerFamily();
-
-  /// See also [IncludeHiddenController].
-  IncludeHiddenControllerProvider call({
-    required String id,
-  }) {
-    return IncludeHiddenControllerProvider(
-      id: id,
-    );
-  }
-
-  @override
-  IncludeHiddenControllerProvider getProviderOverride(
-    covariant IncludeHiddenControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'includeHiddenControllerProvider';
-}
-
-/// See also [IncludeHiddenController].
-class IncludeHiddenControllerProvider
-    extends AutoDisposeNotifierProviderImpl<IncludeHiddenController, bool> {
-  /// See also [IncludeHiddenController].
-  IncludeHiddenControllerProvider({
-    required String id,
-  }) : this._internal(
-          () => IncludeHiddenController()..id = id,
-          from: includeHiddenControllerProvider,
-          name: r'includeHiddenControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$includeHiddenControllerHash,
-          dependencies: IncludeHiddenControllerFamily._dependencies,
-          allTransitiveDependencies:
-              IncludeHiddenControllerFamily._allTransitiveDependencies,
-          id: id,
+final class IncludeAiEntriesControllerProvider
+    extends $NotifierProvider<IncludeAiEntriesController, bool> {
+  IncludeAiEntriesControllerProvider._(
+      {required IncludeAiEntriesControllerFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'includeAiEntriesControllerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  IncludeHiddenControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-  }) : super.internal();
-
-  final String id;
+  @override
+  String debugGetCreateSourceHash() => _$includeAiEntriesControllerHash();
 
   @override
-  bool runNotifierBuild(
-    covariant IncludeHiddenController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-    );
+  String toString() {
+    return r'includeAiEntriesControllerProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  Override overrideWith(IncludeHiddenController Function() create) {
-    return ProviderOverride(
+  IncludeAiEntriesController create() => IncludeAiEntriesController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
       origin: this,
-      override: IncludeHiddenControllerProvider._internal(
-        () => create()..id = id,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-      ),
+      providerOverride: $SyncValueProvider<bool>(value),
     );
-  }
-
-  @override
-  AutoDisposeNotifierProviderElement<IncludeHiddenController, bool>
-      createElement() {
-    return _IncludeHiddenControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is IncludeHiddenControllerProvider && other.id == id;
+    return other is IncludeAiEntriesControllerProvider &&
+        other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
-}
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin IncludeHiddenControllerRef on AutoDisposeNotifierProviderRef<bool> {
-  /// The parameter `id` of this provider.
-  String get id;
-}
-
-class _IncludeHiddenControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<IncludeHiddenController, bool>
-    with IncludeHiddenControllerRef {
-  _IncludeHiddenControllerProviderElement(super.provider);
-
-  @override
-  String get id => (origin as IncludeHiddenControllerProvider).id;
 }
 
 String _$includeAiEntriesControllerHash() =>
     r'8db4e5da7dbd6f9ba3da50fc5227a5e0e507708a';
 
-abstract class _$IncludeAiEntriesController
-    extends BuildlessAutoDisposeNotifier<bool> {
-  late final String id;
+final class IncludeAiEntriesControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<IncludeAiEntriesController, bool, bool, bool,
+            String> {
+  IncludeAiEntriesControllerFamily._()
+      : super(
+          retry: null,
+          name: r'includeAiEntriesControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  IncludeAiEntriesControllerProvider call({
+    required String id,
+  }) =>
+      IncludeAiEntriesControllerProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'includeAiEntriesControllerProvider';
+}
+
+abstract class _$IncludeAiEntriesController extends $Notifier<bool> {
+  late final _$args = ref.$arg as String;
+  String get id => _$args;
 
   bool build({
     required String id,
   });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<bool, bool>, bool, Object?, Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              id: _$args,
+            ));
+  }
 }
 
-/// See also [IncludeAiEntriesController].
-@ProviderFor(IncludeAiEntriesController)
-const includeAiEntriesControllerProvider = IncludeAiEntriesControllerFamily();
+@ProviderFor(NewestLinkedIdController)
+final newestLinkedIdControllerProvider = NewestLinkedIdControllerFamily._();
 
-/// See also [IncludeAiEntriesController].
-class IncludeAiEntriesControllerFamily extends Family<bool> {
-  /// See also [IncludeAiEntriesController].
-  const IncludeAiEntriesControllerFamily();
-
-  /// See also [IncludeAiEntriesController].
-  IncludeAiEntriesControllerProvider call({
-    required String id,
-  }) {
-    return IncludeAiEntriesControllerProvider(
-      id: id,
-    );
-  }
-
-  @override
-  IncludeAiEntriesControllerProvider getProviderOverride(
-    covariant IncludeAiEntriesControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'includeAiEntriesControllerProvider';
-}
-
-/// See also [IncludeAiEntriesController].
-class IncludeAiEntriesControllerProvider
-    extends AutoDisposeNotifierProviderImpl<IncludeAiEntriesController, bool> {
-  /// See also [IncludeAiEntriesController].
-  IncludeAiEntriesControllerProvider({
-    required String id,
-  }) : this._internal(
-          () => IncludeAiEntriesController()..id = id,
-          from: includeAiEntriesControllerProvider,
-          name: r'includeAiEntriesControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$includeAiEntriesControllerHash,
-          dependencies: IncludeAiEntriesControllerFamily._dependencies,
-          allTransitiveDependencies:
-              IncludeAiEntriesControllerFamily._allTransitiveDependencies,
-          id: id,
+final class NewestLinkedIdControllerProvider
+    extends $AsyncNotifierProvider<NewestLinkedIdController, String?> {
+  NewestLinkedIdControllerProvider._(
+      {required NewestLinkedIdControllerFamily super.from,
+      required String? super.argument})
+      : super(
+          retry: null,
+          name: r'newestLinkedIdControllerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  IncludeAiEntriesControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-  }) : super.internal();
-
-  final String id;
+  @override
+  String debugGetCreateSourceHash() => _$newestLinkedIdControllerHash();
 
   @override
-  bool runNotifierBuild(
-    covariant IncludeAiEntriesController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-    );
+  String toString() {
+    return r'newestLinkedIdControllerProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  Override overrideWith(IncludeAiEntriesController Function() create) {
-    return ProviderOverride(
-      origin: this,
-      override: IncludeAiEntriesControllerProvider._internal(
-        () => create()..id = id,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeNotifierProviderElement<IncludeAiEntriesController, bool>
-      createElement() {
-    return _IncludeAiEntriesControllerProviderElement(this);
-  }
+  NewestLinkedIdController create() => NewestLinkedIdController();
 
   @override
   bool operator ==(Object other) {
-    return other is IncludeAiEntriesControllerProvider && other.id == id;
+    return other is NewestLinkedIdControllerProvider &&
+        other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin IncludeAiEntriesControllerRef on AutoDisposeNotifierProviderRef<bool> {
-  /// The parameter `id` of this provider.
-  String get id;
-}
+String _$newestLinkedIdControllerHash() =>
+    r'b97f5f08862c659af19b300d4b6fbaf4c8d187dd';
 
-class _IncludeAiEntriesControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<IncludeAiEntriesController, bool>
-    with IncludeAiEntriesControllerRef {
-  _IncludeAiEntriesControllerProviderElement(super.provider);
+final class NewestLinkedIdControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<NewestLinkedIdController, AsyncValue<String?>,
+            String?, FutureOr<String?>, String?> {
+  NewestLinkedIdControllerFamily._()
+      : super(
+          retry: null,
+          name: r'newestLinkedIdControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  NewestLinkedIdControllerProvider call({
+    required String? id,
+  }) =>
+      NewestLinkedIdControllerProvider._(argument: id, from: this);
 
   @override
-  String get id => (origin as IncludeAiEntriesControllerProvider).id;
+  String toString() => r'newestLinkedIdControllerProvider';
 }
 
-String _$newestLinkedIdControllerHash() =>
-    r'61d42af166607a4262d284b86caa40eec3caa728';
-
-abstract class _$NewestLinkedIdController
-    extends BuildlessAutoDisposeAsyncNotifier<String?> {
-  late final String? id;
+abstract class _$NewestLinkedIdController extends $AsyncNotifier<String?> {
+  late final _$args = ref.$arg as String?;
+  String? get id => _$args;
 
   FutureOr<String?> build({
     required String? id,
   });
-}
-
-/// See also [NewestLinkedIdController].
-@ProviderFor(NewestLinkedIdController)
-const newestLinkedIdControllerProvider = NewestLinkedIdControllerFamily();
-
-/// See also [NewestLinkedIdController].
-class NewestLinkedIdControllerFamily extends Family<AsyncValue<String?>> {
-  /// See also [NewestLinkedIdController].
-  const NewestLinkedIdControllerFamily();
-
-  /// See also [NewestLinkedIdController].
-  NewestLinkedIdControllerProvider call({
-    required String? id,
-  }) {
-    return NewestLinkedIdControllerProvider(
-      id: id,
-    );
-  }
-
+  @$mustCallSuper
   @override
-  NewestLinkedIdControllerProvider getProviderOverride(
-    covariant NewestLinkedIdControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'newestLinkedIdControllerProvider';
-}
-
-/// See also [NewestLinkedIdController].
-class NewestLinkedIdControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<NewestLinkedIdController,
-        String?> {
-  /// See also [NewestLinkedIdController].
-  NewestLinkedIdControllerProvider({
-    required String? id,
-  }) : this._internal(
-          () => NewestLinkedIdController()..id = id,
-          from: newestLinkedIdControllerProvider,
-          name: r'newestLinkedIdControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$newestLinkedIdControllerHash,
-          dependencies: NewestLinkedIdControllerFamily._dependencies,
-          allTransitiveDependencies:
-              NewestLinkedIdControllerFamily._allTransitiveDependencies,
-          id: id,
-        );
-
-  NewestLinkedIdControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-  }) : super.internal();
-
-  final String? id;
-
-  @override
-  FutureOr<String?> runNotifierBuild(
-    covariant NewestLinkedIdController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-    );
-  }
-
-  @override
-  Override overrideWith(NewestLinkedIdController Function() create) {
-    return ProviderOverride(
-      origin: this,
-      override: NewestLinkedIdControllerProvider._internal(
-        () => create()..id = id,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeAsyncNotifierProviderElement<NewestLinkedIdController, String?>
-      createElement() {
-    return _NewestLinkedIdControllerProviderElement(this);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is NewestLinkedIdControllerProvider && other.id == id;
-  }
-
-  @override
-  int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-
-    return _SystemHash.finish(hash);
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<String?>, String?>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<String?>, String?>,
+        AsyncValue<String?>,
+        Object?,
+        Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              id: _$args,
+            ));
   }
 }
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin NewestLinkedIdControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<String?> {
-  /// The parameter `id` of this provider.
-  String? get id;
-}
-
-class _NewestLinkedIdControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<NewestLinkedIdController,
-        String?> with NewestLinkedIdControllerRef {
-  _NewestLinkedIdControllerProviderElement(super.provider);
-
-  @override
-  String? get id => (origin as NewestLinkedIdControllerProvider).id;
-}
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

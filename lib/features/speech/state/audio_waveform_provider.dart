@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'audio_waveform_provider.g.dart';

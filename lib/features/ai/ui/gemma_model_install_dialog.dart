@@ -205,6 +205,12 @@ class _GemmaModelInstallDialogState
 
   @override
   Widget build(BuildContext context) {
+    // Watch the provider to keep it alive for _installModel() to use
+    // In Riverpod 3, auto-dispose providers need active watchers
+    ref.watch(aiConfigByTypeControllerProvider(
+      configType: AiConfigType.inferenceProvider,
+    ));
+
     final command =
         'python download_model.py ${_extractVariant(widget.modelName)}';
 

@@ -43,7 +43,7 @@ class ProviderTypeSelectionModal extends ConsumerWidget {
         .watch(
           inferenceProviderFormControllerProvider(configId: configId),
         )
-        .valueOrNull;
+        .value;
     final formController = ref.read(
       inferenceProviderFormControllerProvider(configId: configId).notifier,
     );

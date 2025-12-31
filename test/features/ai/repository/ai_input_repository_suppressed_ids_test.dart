@@ -10,9 +10,9 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
+import '../test_utils.dart';
 
-class FakeRef extends Fake implements Ref {}
+class MockJournalDb extends Mock implements JournalDb {}
 
 class TestAiInputRepo extends AiInputRepository {
   TestAiInputRepo(super.ref);
@@ -37,6 +37,11 @@ void main() {
   test('buildTaskDetailsJson includes aiSuppressedLabelIds', () async {
     final db = MockJournalDb();
     getIt.registerSingleton<JournalDb>(db);
+    final container = ProviderContainer();
+    addTearDown(() {
+      container.dispose();
+      getIt.reset();
+    });
 
     final task = Task(
       meta: Metadata(
@@ -63,7 +68,7 @@ void main() {
     when(() => db.journalEntityById('t1')).thenAnswer((_) async => task);
     when(db.getAllLabelDefinitions).thenAnswer((_) async => const []);
 
-    final repo = TestAiInputRepo(FakeRef());
+    final repo = TestAiInputRepo(container.read(testRefProvider));
     final jsonStr = await repo.buildTaskDetailsJson(id: 't1');
     expect(jsonStr, isNotNull);
     final map = jsonDecode(jsonStr!) as Map<String, dynamic>;

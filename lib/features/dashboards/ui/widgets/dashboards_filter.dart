@@ -16,7 +16,7 @@ class DashboardsFilter extends ConsumerWidget {
     final filteredSortedDashboards =
         ref.watch(filteredSortedDashboardsProvider);
 
-    final categories = categoriesAsync.valueOrNull ?? [];
+    final categories = categoriesAsync.value ?? [];
     final categoriesById = {for (final c in categories) c.id: c};
 
     final dataMap = <String, double>{};

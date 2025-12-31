@@ -4,7 +4,6 @@ import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -567,17 +566,19 @@ class DayViewControllerOverride extends DayViewController {
 }
 
 class TimeByCategoryControllerOverride extends TimeByCategoryController {
+  TimeByCategoryControllerOverride();
+
   @override
-  Future<Map<DateTime, Map<CategoryDefinition?, Duration>>> build() async {
-    return {};
+  Future<TimeByCategoryData> build() async => {};
+
+  @override
+  void onVisibilityChanged(VisibilityInfo info) {
+    // No-op
   }
 }
 
 class TimeFrameControllerOverride extends TimeFrameController {
-  @override
-  int build() {
-    return 30; // Default 30 days
-  }
+  TimeFrameControllerOverride();
 }
 
 class DaySelectionControllerOverride extends DaySelectionController {

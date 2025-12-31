@@ -21,7 +21,7 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
     WidgetRef ref,
   ) {
     final provider = linkedFromEntriesControllerProvider(id: item.id);
-    final items = ref.watch(provider).valueOrNull ?? [];
+    final items = ref.watch(provider).value ?? [];
 
     if (items.isEmpty) {
       return const SizedBox.shrink();

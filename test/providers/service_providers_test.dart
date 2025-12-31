@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/providers/service_providers.dart';
 
@@ -20,9 +21,16 @@ void main() {
       addTearDown(container.dispose);
       final reader = container.read;
 
+      // In Riverpod 3, errors are wrapped in ProviderException
       expect(
         () => reader(entry.value),
-        throwsA(isA<UnimplementedError>()),
+        throwsA(
+          isA<ProviderException>().having(
+            (e) => e.exception,
+            'exception',
+            isA<UnimplementedError>(),
+          ),
+        ),
       );
     });
   }

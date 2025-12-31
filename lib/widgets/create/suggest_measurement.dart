@@ -26,7 +26,7 @@ class MeasurementSuggestions extends ConsumerWidget {
         .watch(
           measurableSuggestionsControllerProvider(measurableDataType.id),
         )
-        .valueOrNull;
+        .value;
 
     if (popularValues == null) {
       return const SizedBox.shrink();

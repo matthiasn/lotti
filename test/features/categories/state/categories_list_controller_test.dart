@@ -247,50 +247,91 @@ void main() {
       mockRepository = MockCategoryRepository();
     });
 
-    test('provides categories stream from repository', () async {
-      final categories = [
-        CategoryTestUtils.createTestCategory(
-          color: '#FF0000',
-        ),
-      ];
+    test('provides categories stream from repository', () {
+      fakeAsync((async) {
+        final categories = [
+          CategoryTestUtils.createTestCategory(
+            color: '#FF0000',
+          ),
+        ];
 
-      when(() => mockRepository.watchCategories()).thenAnswer(
-        (_) => Stream.value(categories),
-      );
+        final streamController =
+            StreamController<List<CategoryDefinition>>.broadcast();
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => streamController.stream,
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
 
-      final result = await container.read(
-        categoriesStreamProvider.future,
-      );
+        // Start listening to trigger subscription
+        final subscription = container.listen(
+          categoriesStreamProvider,
+          (_, __) {},
+        );
 
-      expect(result, equals(categories));
-      verify(() => mockRepository.watchCategories()).called(1);
+        // Process microtasks
+        async.flushMicrotasks();
+
+        // Emit value after provider is listening
+        streamController.add(categories);
+
+        // Wait for the value to be processed
+        async.flushMicrotasks();
+
+        final state = container.read(categoriesStreamProvider);
+        expect(state.hasValue, isTrue);
+        expect(state.value, equals(categories));
+        verify(() => mockRepository.watchCategories()).called(1);
+
+        subscription.close();
+        streamController.close();
+        container.dispose();
+      });
     });
 
-    test('propagates errors from repository', () async {
-      final error = Exception('Stream error');
+    test('propagates errors from repository', () {
+      fakeAsync((async) {
+        final error = Exception('Stream error');
 
-      when(() => mockRepository.watchCategories()).thenAnswer(
-        (_) => Stream<List<CategoryDefinition>>.error(error),
-      );
+        final streamController =
+            StreamController<List<CategoryDefinition>>.broadcast();
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => streamController.stream,
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
 
-      expect(
-        () => container.read(categoriesStreamProvider.future),
-        throwsA(error),
-      );
+        // Start listening to trigger subscription
+        final subscription = container.listen(
+          categoriesStreamProvider,
+          (_, __) {},
+        );
+
+        // Process microtasks
+        async.flushMicrotasks();
+
+        // Emit error after provider is listening
+        streamController.addError(error);
+
+        // Wait for the error to be processed
+        async.flushMicrotasks();
+
+        final state = container.read(categoriesStreamProvider);
+        expect(state.hasError, isTrue);
+        expect(state.error, equals(error));
+
+        subscription.close();
+        streamController.close();
+        container.dispose();
+      });
     });
   });
 }

@@ -44,7 +44,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
     // Watch the form state to enable/disable save button
     final formState = ref
         .watch(promptFormControllerProvider(configId: widget.configId))
-        .valueOrNull;
+        .value;
 
     final isFormValid = formState != null &&
         formState.isValid &&

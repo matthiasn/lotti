@@ -44,22 +44,6 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
-class TestRef implements Ref {
-  TestRef(this._mockTaskProgressRepository);
-  final TaskProgressRepository _mockTaskProgressRepository;
-
-  @override
-  T read<T>(ProviderListenable<T> provider) {
-    if (provider.toString().contains('taskProgressRepositoryProvider')) {
-      return _mockTaskProgressRepository as T;
-    }
-    throw UnimplementedError('Provider not found: $provider');
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
 void main() {
   group('AiLinkedTaskContext', () {
     final testDate = DateTime(2025, 12, 20, 14, 30);
@@ -330,7 +314,7 @@ void main() {
     late MockTaskProgressRepository mockTaskProgressRepository;
     late MockPersistenceLogic mockPersistenceLogic;
     late MockEntitiesCacheService mockCacheService;
-    late TestRef testRef;
+    late ProviderContainer container;
     late AiInputRepository repository;
 
     final testDate = DateTime(2025, 12, 20, 14, 30);
@@ -344,14 +328,19 @@ void main() {
       mockTaskProgressRepository = MockTaskProgressRepository();
       mockPersistenceLogic = MockPersistenceLogic();
       mockCacheService = MockEntitiesCacheService();
-      testRef = TestRef(mockTaskProgressRepository);
+      container = ProviderContainer(
+        overrides: [
+          taskProgressRepositoryProvider
+              .overrideWithValue(mockTaskProgressRepository),
+        ],
+      );
 
       getIt
         ..registerSingleton<JournalDb>(mockDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<EntitiesCacheService>(mockCacheService);
 
-      repository = AiInputRepository(testRef);
+      repository = container.read(aiInputRepositoryProvider);
 
       // Default mocks
       when(() => mockTaskProgressRepository.getTaskProgressData(
@@ -368,6 +357,7 @@ void main() {
     });
 
     tearDown(() {
+      container.dispose();
       getIt
         ..unregister<JournalDb>()
         ..unregister<PersistenceLogic>()

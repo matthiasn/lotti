@@ -6,27 +6,56 @@ part of 'audio_recorder_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$audioRecorderRepositoryHash() =>
-    r'f0050ec0bfccbaaedbeddb0f560f661558313922';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Provider for the audio recorder repository.
+/// Kept alive to maintain recording state across navigation.
+
+@ProviderFor(audioRecorderRepository)
+final audioRecorderRepositoryProvider = AudioRecorderRepositoryProvider._();
 
 /// Provider for the audio recorder repository.
 /// Kept alive to maintain recording state across navigation.
-///
-/// Copied from [audioRecorderRepository].
-@ProviderFor(audioRecorderRepository)
-final audioRecorderRepositoryProvider =
-    Provider<AudioRecorderRepository>.internal(
-  audioRecorderRepository,
-  name: r'audioRecorderRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$audioRecorderRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef AudioRecorderRepositoryRef = ProviderRef<AudioRecorderRepository>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+final class AudioRecorderRepositoryProvider extends $FunctionalProvider<
+    AudioRecorderRepository,
+    AudioRecorderRepository,
+    AudioRecorderRepository> with $Provider<AudioRecorderRepository> {
+  /// Provider for the audio recorder repository.
+  /// Kept alive to maintain recording state across navigation.
+  AudioRecorderRepositoryProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'audioRecorderRepositoryProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$audioRecorderRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<AudioRecorderRepository> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AudioRecorderRepository create(Ref ref) {
+    return audioRecorderRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AudioRecorderRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AudioRecorderRepository>(value),
+    );
+  }
+}
+
+String _$audioRecorderRepositoryHash() =>
+    r'f0050ec0bfccbaaedbeddb0f560f661558313922';

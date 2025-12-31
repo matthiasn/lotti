@@ -108,7 +108,7 @@ class BmiChartInfoWidget extends ConsumerWidget {
                     DateTime.now().dayAtMidnight.add(const Duration(days: 1)),
               ),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     final heightEntry = heightEntries.firstOrNull as QuantitativeEntry?;
@@ -173,7 +173,7 @@ class DashboardHealthBmiChart extends ConsumerWidget {
                 rangeEnd: rangeEnd,
               ),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     final minInRange = findMin(weightData);

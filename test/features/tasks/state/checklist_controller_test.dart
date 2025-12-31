@@ -139,9 +139,8 @@ void main() {
         addTearDown(container.dispose);
 
         // Read the controller to trigger build
-        await container.read(
-          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
-              .future,
+        container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1')),
         );
 
         final notifier = container.read(
@@ -180,8 +179,8 @@ void main() {
         addTearDown(container.dispose);
 
         // Read controller with null taskId
-        await container.read(
-          checklistControllerProvider((id: 'checklist-1', taskId: null)).future,
+        container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: null)),
         );
 
         final notifier = container.read(
@@ -242,9 +241,8 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        await container.read(
-          checklistControllerProvider((id: 'checklist-1', taskId: 'task-2'))
-              .future,
+        container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-2')),
         );
 
         final notifier = container.read(
@@ -305,9 +303,8 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        await container.read(
-          checklistControllerProvider((id: 'checklist-1', taskId: 'task-3'))
-              .future,
+        container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-3')),
         );
 
         final notifier = container.read(
@@ -343,9 +340,8 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        await container.read(
-          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
-              .future,
+        container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1')),
         );
 
         final notifier = container.read(

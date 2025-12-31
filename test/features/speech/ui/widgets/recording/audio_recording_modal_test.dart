@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -16,8 +17,10 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
+import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
@@ -69,7 +72,8 @@ class FakeEntryController extends EntryController {
   Future<EntryState?> build({required String id}) {
     // Return synchronously using SynchronousFuture for immediate resolution in tests
     if (shouldError) {
-      throw Exception('Test error');
+      // Return a Future.error for error propagation
+      return Future<EntryState?>.error(Exception('Test error'));
     }
 
     // If simulating loading, return a future that never completes
@@ -1504,9 +1508,19 @@ void main() {
             categoryRepositoryProvider
                 .overrideWithValue(mockCategoryRepository),
             playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            // Return error state
-            entryControllerProvider(id: 'error-123').overrideWith(
-              () => FakeEntryController(shouldError: true),
+            // Override checkboxVisibilityProvider to simulate error state behavior
+            // When entryController is in error state, isLinkedToTask should be false,
+            // so only speech checkbox is visible
+            checkboxVisibilityProvider(
+              categoryId: 'test-category',
+              linkedId: 'error-123',
+              userSpeechPreference: true,
+            ).overrideWithValue(
+              const AutomaticPromptVisibility(
+                speech: true,
+                checklist: false,
+                summary: false,
+              ),
             ),
           ],
           child: Builder(
@@ -1535,7 +1549,9 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      // Extra pump for Riverpod async provider resolution
+      // Extra pumps for Riverpod async provider error state propagation
+      await tester.pump();
+      await tester.pump();
       await tester.pump();
 
       // Only speech recognition visible on error

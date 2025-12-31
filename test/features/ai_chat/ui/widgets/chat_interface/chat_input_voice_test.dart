@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
@@ -306,9 +307,6 @@ class _FakeChatRecorderController extends ChatRecorderController {
   _FakeChatRecorderController();
 
   @override
-  ChatRecorderState build() => const ChatRecorderState.initial();
-
-  @override
   Future<void> start() async {
     state = state.copyWith(status: ChatRecorderStatus.recording);
   }
@@ -380,9 +378,6 @@ class _NonSendableChatSessionController extends ChatSessionController {
 
 class _ProcessingChatRecorderController extends ChatRecorderController {
   _ProcessingChatRecorderController();
-
-  @override
-  ChatRecorderState build() => const ChatRecorderState.initial();
 
   @override
   Future<void> start() async {

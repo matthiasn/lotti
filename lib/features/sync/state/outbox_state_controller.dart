@@ -1,6 +1,5 @@
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'outbox_state_controller.g.dart';

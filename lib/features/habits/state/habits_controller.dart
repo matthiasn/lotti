@@ -252,6 +252,9 @@ class HabitsController extends _$HabitsController {
 
   /// Updates visibility state based on widget visibility.
   void updateVisibility(VisibilityInfo visibilityInfo) {
+    // Guard against callback after disposal
+    if (!ref.mounted) return;
+
     final isVisible = visibilityInfo.visibleBounds.size.width > 0;
     final wasNotVisible = !state.isVisible;
 

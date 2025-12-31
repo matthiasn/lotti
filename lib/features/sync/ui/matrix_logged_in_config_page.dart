@@ -100,7 +100,7 @@ class _HomeserverLoggedInWidgetState
 
     return userIdAsyncValue.map(
       data: (data) {
-        final userId = data.valueOrNull;
+        final userId = data.value;
 
         if (userId == null) {
           return const CircularProgressIndicator();
@@ -138,7 +138,7 @@ class _HomeserverLoggedInWidgetState
         );
       },
       error: (error) {
-        return Text(error.valueOrNull.toString());
+        return Text(error.value.toString());
       },
       loading: (loading) {
         return const CircularProgressIndicator();

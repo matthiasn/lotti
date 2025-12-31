@@ -65,7 +65,7 @@ void main() {
   });
 
   testWidgets('IncomingStats displays matrix statistics', (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 5,
       messageCounts: {'m.text': 3, 'm.image': 2},
     );
@@ -95,9 +95,9 @@ void main() {
 
   testWidgets('IncomingStats shows V2 metrics and supports refresh',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 1,
-      messageCounts: const {'m.text': 1},
+      messageCounts: {'m.text': 1},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
@@ -157,9 +157,9 @@ void main() {
 
   testWidgets('Retry Now button triggers MatrixService.retryV2Now',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 0,
-      messageCounts: const {},
+      messageCounts: {},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
@@ -188,9 +188,9 @@ void main() {
 
   testWidgets('V2 metrics signature gating keeps lastUpdated on identical map',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 0,
-      messageCounts: const {},
+      messageCounts: {},
     );
 
     var map = {'processed': 2, 'failures': 0, 'retriesScheduled': 0};
@@ -247,9 +247,9 @@ void main() {
 
   testWidgets('refresh button invalidates provider and updates metrics',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 0,
-      messageCounts: const {},
+      messageCounts: {},
     );
 
     var refreshCount = 0;
@@ -293,9 +293,9 @@ void main() {
 
   testWidgets('renders stable section when V2 metrics are null',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 0,
-      messageCounts: const {},
+      messageCounts: {},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
@@ -339,7 +339,7 @@ void main() {
     expect(find.textContaining('Sync Metrics'), findsOneWidget);
 
     completer.complete(
-      MatrixStats(sentCount: 0, messageCounts: const {}),
+      const MatrixStats(sentCount: 0, messageCounts: {}),
     );
   });
 
@@ -362,9 +362,9 @@ void main() {
 
   testWidgets('IncomingStats shows DB-apply metrics and legend tooltip',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 1,
-      messageCounts: const {'m.text': 1},
+      messageCounts: {'m.text': 1},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
@@ -407,9 +407,9 @@ void main() {
   });
 
   testWidgets('matrixStatsPage wiring updates page index', (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 3,
-      messageCounts: const {'m.text': 2},
+      messageCounts: {'m.text': 2},
     );
 
     final pageIndexNotifier = ValueNotifier<int>(2);
@@ -448,9 +448,9 @@ void main() {
 
   testWidgets('Force Rescan button triggers rescan and refresh',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 1,
-      messageCounts: const {'m.text': 1},
+      messageCounts: {'m.text': 1},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
@@ -490,9 +490,9 @@ void main() {
   });
 
   testWidgets('Last updated formatting shows HH:mm:ss', (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 0,
-      messageCounts: const {},
+      messageCounts: {},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
@@ -534,9 +534,9 @@ void main() {
 
   testWidgets('Copy Diagnostics button calls service and shows snackbar',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 1,
-      messageCounts: const {'m.text': 1},
+      messageCounts: {'m.text': 1},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
@@ -581,9 +581,9 @@ void main() {
   });
 
   testWidgets('preserves scroll offset via PageStorageKey', (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 0,
-      messageCounts: const {},
+      messageCounts: {},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
@@ -659,9 +659,9 @@ void main() {
 
   testWidgets('Tooltips contain expected messages and snackbar duration holds',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 1,
-      messageCounts: const {'m.text': 1},
+      messageCounts: {'m.text': 1},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);

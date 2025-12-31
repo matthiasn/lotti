@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -9,11 +10,10 @@ import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:riverpod/riverpod.dart';
+
+import '../test_utils.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
-
-class MockRef extends Mock implements Ref {}
 
 class MockTaskProgressRepository extends Mock
     implements TaskProgressRepository {}
@@ -23,13 +23,12 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 void main() {
   late AiInputRepository repository;
   late MockJournalDb mockDb;
-  late MockRef mockRef;
+  late ProviderContainer container;
   late MockTaskProgressRepository mockTaskProgressRepo;
   late MockPersistenceLogic mockPersistenceLogic;
 
   setUp(() {
     mockDb = MockJournalDb();
-    mockRef = MockRef();
     mockTaskProgressRepo = MockTaskProgressRepository();
     mockPersistenceLogic = MockPersistenceLogic();
 
@@ -37,13 +36,18 @@ void main() {
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
-    when(() => mockRef.read(taskProgressRepositoryProvider))
-        .thenReturn(mockTaskProgressRepo);
+    container = ProviderContainer(
+      overrides: [
+        taskProgressRepositoryProvider.overrideWithValue(mockTaskProgressRepo),
+      ],
+    );
 
-    repository = AiInputRepository(mockRef);
+    final ref = container.read(testRefProvider);
+    repository = AiInputRepository(ref);
   });
 
   tearDown(() {
+    container.dispose();
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }

@@ -1,12 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
 void main() {
   group('ChecklistWidget add field focus + double-submit guard', () {
     const desktopMq = MediaQueryData(size: Size(1280, 1000));
+
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockJournalDb mockJournalDb;
+
+    setUp(() async {
+      await getIt.reset();
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockJournalDb = MockJournalDb();
+
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+
+      getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<JournalDb>(mockJournalDb);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
 
     testWidgets('keeps focus after save and guards rapid double enter',
         (tester) async {

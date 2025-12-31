@@ -156,7 +156,7 @@ void main() {
       controller.nameChanged('New Name');
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.name.value, equals('New Name'));
@@ -174,7 +174,7 @@ void main() {
       controller.descriptionChanged('New description');
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.description.value, equals('New description'));
@@ -193,7 +193,7 @@ void main() {
       controller.maxCompletionTokensChanged('2000');
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.maxCompletionTokens.value, equals('2000'));
@@ -212,7 +212,7 @@ void main() {
       controller.inferenceProviderIdChanged('new-provider-id');
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.inferenceProviderId, equals('new-provider-id'));
@@ -230,7 +230,7 @@ void main() {
       controller.providerModelIdChanged('new-provider-model-id');
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.providerModelId.value, equals('new-provider-model-id'));
@@ -248,7 +248,7 @@ void main() {
       controller.inputModalitiesChanged([Modality.text, Modality.image]);
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -269,7 +269,7 @@ void main() {
       controller.outputModalitiesChanged([Modality.text, Modality.audio]);
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(
@@ -290,7 +290,7 @@ void main() {
       controller.isReasoningModelChanged(true);
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.isReasoningModel, isTrue);
@@ -309,7 +309,7 @@ void main() {
       controller.supportsFunctionCallingChanged(true);
       final formState = container
           .read(inferenceModelFormControllerProvider(configId: null))
-          .valueOrNull;
+          .value;
 
       // Assert
       expect(formState?.supportsFunctionCalling, isTrue);

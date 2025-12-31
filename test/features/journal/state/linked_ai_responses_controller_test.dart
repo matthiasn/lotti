@@ -188,9 +188,11 @@ void main() {
         ],
       );
 
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final result = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       // Should only have non-deleted AI responses
       expect(result.length, equals(2));
@@ -227,9 +229,11 @@ void main() {
         ],
       );
 
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final result = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       expect(result, isEmpty);
 
@@ -260,9 +264,11 @@ void main() {
         ],
       );
 
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final result = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       expect(result, isEmpty);
 
@@ -279,9 +285,11 @@ void main() {
         ],
       );
 
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final result = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       expect(result, isEmpty);
 
@@ -323,9 +331,11 @@ void main() {
         ],
       );
 
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final result = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       // Newest should be first
       expect(result.length, equals(2));
@@ -386,9 +396,11 @@ void main() {
       );
 
       // Initial load
-      final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final initialResult = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
       expect(initialResult.length, equals(1));
 
       // Simulate update notification and wait for state change
@@ -427,9 +439,11 @@ void main() {
         ],
       );
 
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final result = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       expect(result, isEmpty);
 
@@ -483,9 +497,11 @@ void main() {
       );
 
       // Initial load
-      final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final initialResult = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
       expect(initialResult.length, equals(1));
       expect(
         initialResult[0].meta.updatedAt,
@@ -537,9 +553,11 @@ void main() {
       );
 
       // Initial load
-      await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
       expect(fetchCount, equals(1));
 
       // Notify with unrelated ID
@@ -624,9 +642,11 @@ void main() {
         ],
       );
 
-      final result = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final result = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       expect(result.length, equals(2));
 
@@ -643,9 +663,11 @@ void main() {
         ],
       );
 
-      await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       // Dispose should not throw
       container.dispose();
@@ -687,9 +709,11 @@ void main() {
       );
 
       // Initial load - should have 1 item
-      final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final initialResult = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
       expect(initialResult.length, equals(1));
 
       // Notify update and wait for state change
@@ -744,9 +768,11 @@ void main() {
       );
 
       // Initial load
-      final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final initialResult = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
       expect(initialResult[0].meta.id, equals(testAiResponseEntry1.meta.id));
 
       // Notify update and wait for state change
@@ -792,9 +818,11 @@ void main() {
       );
 
       // Initial load - empty
-      final initialResult = await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      final initialResult = await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
       expect(initialResult, isEmpty);
 
       // Notify update and wait for state change
@@ -843,9 +871,11 @@ void main() {
       );
 
       // Wait for initial load
-      await container.read(
-        linkedAiResponsesControllerProvider(testAudioEntryId).future,
-      );
+      await container
+          .read(
+            linkedAiResponsesControllerProvider(testAudioEntryId).notifier,
+          )
+          .future;
 
       // Verify we got loading then data states
       expect(states.any((s) => s.isLoading), isTrue);

@@ -45,7 +45,7 @@ class LoginFormController extends _$LoginFormController {
 
   void homeServerChanged(String value) {
     final homeServer = HomeServer.dirty(value);
-    final data = state.valueOrNull;
+    final data = state.value;
     state = AsyncData(
       data?.copyWith(
         homeServer: homeServer,
@@ -59,7 +59,7 @@ class LoginFormController extends _$LoginFormController {
 
   void passwordChanged(String value) {
     final password = Password.dirty(value);
-    final data = state.valueOrNull;
+    final data = state.value;
     state = AsyncData(
       data?.copyWith(
         password: password,
@@ -73,7 +73,7 @@ class LoginFormController extends _$LoginFormController {
 
   void usernameChanged(String value) {
     final userName = UserName.dirty(value);
-    final data = state.valueOrNull;
+    final data = state.value;
     state = AsyncData(
       data?.copyWith(
         userName: userName,
@@ -86,7 +86,7 @@ class LoginFormController extends _$LoginFormController {
   }
 
   Future<bool> login() async {
-    final data = state.valueOrNull;
+    final data = state.value;
     if (data == null) {
       return false;
     }

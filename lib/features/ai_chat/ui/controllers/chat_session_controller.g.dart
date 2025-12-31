@@ -6,210 +6,136 @@ part of 'chat_session_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$chatSessionControllerHash() =>
-    r'da7744502ec36a82f247b0af2fcc20362e1476f5';
-
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
-abstract class _$ChatSessionController
-    extends BuildlessAutoDisposeNotifier<ChatSessionUiModel> {
-  late final String categoryId;
-
-  ChatSessionUiModel build(
-    String categoryId,
-  );
-}
-
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 /// Riverpod controller for a single AI chat session.
 ///
 /// Owns UI-facing state (messages, streaming flags, errors) and delegates
 /// sending to `ChatRepository`. Enforces explicit model selection and manages
 /// streaming placeholders for assistant messages.
-///
-/// Copied from [ChatSessionController].
+
 @ProviderFor(ChatSessionController)
-const chatSessionControllerProvider = ChatSessionControllerFamily();
+final chatSessionControllerProvider = ChatSessionControllerFamily._();
 
 /// Riverpod controller for a single AI chat session.
 ///
 /// Owns UI-facing state (messages, streaming flags, errors) and delegates
 /// sending to `ChatRepository`. Enforces explicit model selection and manages
 /// streaming placeholders for assistant messages.
-///
-/// Copied from [ChatSessionController].
-class ChatSessionControllerFamily extends Family<ChatSessionUiModel> {
+final class ChatSessionControllerProvider
+    extends $NotifierProvider<ChatSessionController, ChatSessionUiModel> {
   /// Riverpod controller for a single AI chat session.
   ///
   /// Owns UI-facing state (messages, streaming flags, errors) and delegates
   /// sending to `ChatRepository`. Enforces explicit model selection and manages
   /// streaming placeholders for assistant messages.
-  ///
-  /// Copied from [ChatSessionController].
-  const ChatSessionControllerFamily();
-
-  /// Riverpod controller for a single AI chat session.
-  ///
-  /// Owns UI-facing state (messages, streaming flags, errors) and delegates
-  /// sending to `ChatRepository`. Enforces explicit model selection and manages
-  /// streaming placeholders for assistant messages.
-  ///
-  /// Copied from [ChatSessionController].
-  ChatSessionControllerProvider call(
-    String categoryId,
-  ) {
-    return ChatSessionControllerProvider(
-      categoryId,
-    );
-  }
-
-  @override
-  ChatSessionControllerProvider getProviderOverride(
-    covariant ChatSessionControllerProvider provider,
-  ) {
-    return call(
-      provider.categoryId,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'chatSessionControllerProvider';
-}
-
-/// Riverpod controller for a single AI chat session.
-///
-/// Owns UI-facing state (messages, streaming flags, errors) and delegates
-/// sending to `ChatRepository`. Enforces explicit model selection and manages
-/// streaming placeholders for assistant messages.
-///
-/// Copied from [ChatSessionController].
-class ChatSessionControllerProvider extends AutoDisposeNotifierProviderImpl<
-    ChatSessionController, ChatSessionUiModel> {
-  /// Riverpod controller for a single AI chat session.
-  ///
-  /// Owns UI-facing state (messages, streaming flags, errors) and delegates
-  /// sending to `ChatRepository`. Enforces explicit model selection and manages
-  /// streaming placeholders for assistant messages.
-  ///
-  /// Copied from [ChatSessionController].
-  ChatSessionControllerProvider(
-    String categoryId,
-  ) : this._internal(
-          () => ChatSessionController()..categoryId = categoryId,
-          from: chatSessionControllerProvider,
+  ChatSessionControllerProvider._(
+      {required ChatSessionControllerFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
           name: r'chatSessionControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$chatSessionControllerHash,
-          dependencies: ChatSessionControllerFamily._dependencies,
-          allTransitiveDependencies:
-              ChatSessionControllerFamily._allTransitiveDependencies,
-          categoryId: categoryId,
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  ChatSessionControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.categoryId,
-  }) : super.internal();
-
-  final String categoryId;
+  @override
+  String debugGetCreateSourceHash() => _$chatSessionControllerHash();
 
   @override
-  ChatSessionUiModel runNotifierBuild(
-    covariant ChatSessionController notifier,
-  ) {
-    return notifier.build(
-      categoryId,
-    );
+  String toString() {
+    return r'chatSessionControllerProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  Override overrideWith(ChatSessionController Function() create) {
-    return ProviderOverride(
+  ChatSessionController create() => ChatSessionController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ChatSessionUiModel value) {
+    return $ProviderOverride(
       origin: this,
-      override: ChatSessionControllerProvider._internal(
-        () => create()..categoryId = categoryId,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        categoryId: categoryId,
-      ),
+      providerOverride: $SyncValueProvider<ChatSessionUiModel>(value),
     );
-  }
-
-  @override
-  AutoDisposeNotifierProviderElement<ChatSessionController, ChatSessionUiModel>
-      createElement() {
-    return _ChatSessionControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ChatSessionControllerProvider &&
-        other.categoryId == categoryId;
+    return other is ChatSessionControllerProvider && other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, categoryId.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin ChatSessionControllerRef
-    on AutoDisposeNotifierProviderRef<ChatSessionUiModel> {
-  /// The parameter `categoryId` of this provider.
-  String get categoryId;
-}
+String _$chatSessionControllerHash() =>
+    r'90f79f43074b2e54248429fa3e7a2e0552ea3b38';
 
-class _ChatSessionControllerProviderElement
-    extends AutoDisposeNotifierProviderElement<ChatSessionController,
-        ChatSessionUiModel> with ChatSessionControllerRef {
-  _ChatSessionControllerProviderElement(super.provider);
+/// Riverpod controller for a single AI chat session.
+///
+/// Owns UI-facing state (messages, streaming flags, errors) and delegates
+/// sending to `ChatRepository`. Enforces explicit model selection and manages
+/// streaming placeholders for assistant messages.
+
+final class ChatSessionControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<ChatSessionController, ChatSessionUiModel,
+            ChatSessionUiModel, ChatSessionUiModel, String> {
+  ChatSessionControllerFamily._()
+      : super(
+          retry: null,
+          name: r'chatSessionControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Riverpod controller for a single AI chat session.
+  ///
+  /// Owns UI-facing state (messages, streaming flags, errors) and delegates
+  /// sending to `ChatRepository`. Enforces explicit model selection and manages
+  /// streaming placeholders for assistant messages.
+
+  ChatSessionControllerProvider call(
+    String categoryId,
+  ) =>
+      ChatSessionControllerProvider._(argument: categoryId, from: this);
 
   @override
-  String get categoryId => (origin as ChatSessionControllerProvider).categoryId;
+  String toString() => r'chatSessionControllerProvider';
 }
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+
+/// Riverpod controller for a single AI chat session.
+///
+/// Owns UI-facing state (messages, streaming flags, errors) and delegates
+/// sending to `ChatRepository`. Enforces explicit model selection and manages
+/// streaming placeholders for assistant messages.
+
+abstract class _$ChatSessionController extends $Notifier<ChatSessionUiModel> {
+  late final _$args = ref.$arg as String;
+  String get categoryId => _$args;
+
+  ChatSessionUiModel build(
+    String categoryId,
+  );
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<ChatSessionUiModel, ChatSessionUiModel>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<ChatSessionUiModel, ChatSessionUiModel>,
+        ChatSessionUiModel,
+        Object?,
+        Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              _$args,
+            ));
+  }
+}

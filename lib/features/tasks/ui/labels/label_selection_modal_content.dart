@@ -65,7 +65,7 @@ class _LabelSelectionModalContentState
     final available = ref.watch(
       availableLabelsForCategoryProvider(categoryId),
     );
-    final allLabels = ref.watch(labelsStreamProvider).valueOrNull ?? [];
+    final allLabels = ref.watch(labelsStreamProvider).value ?? [];
 
     return ValueListenableBuilder<String>(
       valueListenable: widget.searchQuery,

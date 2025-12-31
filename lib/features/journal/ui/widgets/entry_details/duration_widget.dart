@@ -40,7 +40,7 @@ class DurationWidget extends ConsumerWidget {
 
         final latestLinkedId = ref
             .watch(newestLinkedIdControllerProvider(id: linkedFrom?.id))
-            .valueOrNull;
+            .value;
 
         final showRecordIcon = item is JournalEntry &&
             (latestLinkedId == item.id || linkedFrom == null);

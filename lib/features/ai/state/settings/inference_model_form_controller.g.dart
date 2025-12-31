@@ -6,179 +6,104 @@ part of 'inference_model_form_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$inferenceModelFormControllerHash() =>
-    r'ef529dac34908a81e9d543679a6674c4b9429841';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
-abstract class _$InferenceModelFormController
-    extends BuildlessAutoDisposeAsyncNotifier<InferenceModelFormState?> {
-  late final String? configId;
-
-  FutureOr<InferenceModelFormState?> build({
-    required String? configId,
-  });
-}
-
-/// See also [InferenceModelFormController].
 @ProviderFor(InferenceModelFormController)
-const inferenceModelFormControllerProvider =
-    InferenceModelFormControllerFamily();
+final inferenceModelFormControllerProvider =
+    InferenceModelFormControllerFamily._();
 
-/// See also [InferenceModelFormController].
-class InferenceModelFormControllerFamily
-    extends Family<AsyncValue<InferenceModelFormState?>> {
-  /// See also [InferenceModelFormController].
-  const InferenceModelFormControllerFamily();
-
-  /// See also [InferenceModelFormController].
-  InferenceModelFormControllerProvider call({
-    required String? configId,
-  }) {
-    return InferenceModelFormControllerProvider(
-      configId: configId,
-    );
-  }
-
-  @override
-  InferenceModelFormControllerProvider getProviderOverride(
-    covariant InferenceModelFormControllerProvider provider,
-  ) {
-    return call(
-      configId: provider.configId,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'inferenceModelFormControllerProvider';
-}
-
-/// See also [InferenceModelFormController].
-class InferenceModelFormControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<InferenceModelFormController,
-        InferenceModelFormState?> {
-  /// See also [InferenceModelFormController].
-  InferenceModelFormControllerProvider({
-    required String? configId,
-  }) : this._internal(
-          () => InferenceModelFormController()..configId = configId,
-          from: inferenceModelFormControllerProvider,
+final class InferenceModelFormControllerProvider extends $AsyncNotifierProvider<
+    InferenceModelFormController, InferenceModelFormState?> {
+  InferenceModelFormControllerProvider._(
+      {required InferenceModelFormControllerFamily super.from,
+      required String? super.argument})
+      : super(
+          retry: null,
           name: r'inferenceModelFormControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$inferenceModelFormControllerHash,
-          dependencies: InferenceModelFormControllerFamily._dependencies,
-          allTransitiveDependencies:
-              InferenceModelFormControllerFamily._allTransitiveDependencies,
-          configId: configId,
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  InferenceModelFormControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.configId,
-  }) : super.internal();
-
-  final String? configId;
+  @override
+  String debugGetCreateSourceHash() => _$inferenceModelFormControllerHash();
 
   @override
-  FutureOr<InferenceModelFormState?> runNotifierBuild(
-    covariant InferenceModelFormController notifier,
-  ) {
-    return notifier.build(
-      configId: configId,
-    );
+  String toString() {
+    return r'inferenceModelFormControllerProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  Override overrideWith(InferenceModelFormController Function() create) {
-    return ProviderOverride(
-      origin: this,
-      override: InferenceModelFormControllerProvider._internal(
-        () => create()..configId = configId,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        configId: configId,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeAsyncNotifierProviderElement<InferenceModelFormController,
-      InferenceModelFormState?> createElement() {
-    return _InferenceModelFormControllerProviderElement(this);
-  }
+  InferenceModelFormController create() => InferenceModelFormController();
 
   @override
   bool operator ==(Object other) {
     return other is InferenceModelFormControllerProvider &&
-        other.configId == configId;
+        other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, configId.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin InferenceModelFormControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<InferenceModelFormState?> {
-  /// The parameter `configId` of this provider.
-  String? get configId;
-}
+String _$inferenceModelFormControllerHash() =>
+    r'bf4f44475c5e2926b14de33c7d4aea0047d1d60e';
 
-class _InferenceModelFormControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<
-        InferenceModelFormController,
-        InferenceModelFormState?> with InferenceModelFormControllerRef {
-  _InferenceModelFormControllerProviderElement(super.provider);
+final class InferenceModelFormControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+            InferenceModelFormController,
+            AsyncValue<InferenceModelFormState?>,
+            InferenceModelFormState?,
+            FutureOr<InferenceModelFormState?>,
+            String?> {
+  InferenceModelFormControllerFamily._()
+      : super(
+          retry: null,
+          name: r'inferenceModelFormControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  InferenceModelFormControllerProvider call({
+    required String? configId,
+  }) =>
+      InferenceModelFormControllerProvider._(argument: configId, from: this);
 
   @override
-  String? get configId =>
-      (origin as InferenceModelFormControllerProvider).configId;
+  String toString() => r'inferenceModelFormControllerProvider';
 }
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+
+abstract class _$InferenceModelFormController
+    extends $AsyncNotifier<InferenceModelFormState?> {
+  late final _$args = ref.$arg as String?;
+  String? get configId => _$args;
+
+  FutureOr<InferenceModelFormState?> build({
+    required String? configId,
+  });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref
+        as $Ref<AsyncValue<InferenceModelFormState?>, InferenceModelFormState?>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<InferenceModelFormState?>,
+            InferenceModelFormState?>,
+        AsyncValue<InferenceModelFormState?>,
+        Object?,
+        Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              configId: _$args,
+            ));
+  }
+}

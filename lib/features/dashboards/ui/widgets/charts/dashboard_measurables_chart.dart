@@ -35,7 +35,7 @@ class MeasurablesBarChart extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final measurableDataType = ref
         .watch(measurableDataTypeControllerProvider(measurableDataTypeId))
-        .valueOrNull;
+        .value;
 
     if (measurableDataType == null) {
       return const SizedBox.shrink();
@@ -48,7 +48,7 @@ class MeasurablesBarChart extends ConsumerWidget {
                 dashboardDefinedAggregationType: aggregationType,
               )),
             )
-            .valueOrNull ??
+            .value ??
         AggregationType.none;
 
     final data = ref
@@ -60,7 +60,7 @@ class MeasurablesBarChart extends ConsumerWidget {
                 dashboardDefinedAggregationType: chartAggregationType,
               )),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     return DashboardChart(

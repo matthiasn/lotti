@@ -63,7 +63,7 @@ class InferenceProviderFormController
     String? baseUrl,
     InferenceProviderType? inferenceProviderType,
   }) {
-    final prev = state.valueOrNull;
+    final prev = state.value;
     if (prev == null) return;
 
     // Check if any non-FormzInput field is being changed
@@ -125,7 +125,7 @@ class InferenceProviderFormController
   }
 
   void inferenceProviderTypeChanged(InferenceProviderType value) {
-    final prev = state.valueOrNull;
+    final prev = state.value;
 
     // If we have a previous state and the provider type hasn't changed, don't do anything
     if (prev != null && prev.inferenceProviderType == value) {

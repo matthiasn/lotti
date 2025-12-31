@@ -11,14 +11,12 @@ import 'package:lotti/features/ai/providers/ollama_inference_repository_provider
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../test_utils/retry_fake_time.dart';
+import '../test_utils.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
-
-class MockRef extends Mock implements Ref<Object?> {}
 
 // Add this fake for mocktail
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
@@ -41,25 +39,23 @@ void main() {
 
     setUp(() {
       mockHttpClient = MockHttpClient();
-      container = ProviderContainer();
-
-      // Create and configure the mock ref
-      final mockRef = MockRef();
 
       // Create a real OllamaInferenceRepository with the mocked HTTP client
       // This allows the tests to verify HTTP calls as originally intended
       final ollamaRepo = OllamaInferenceRepository(httpClient: mockHttpClient);
 
-      // Configure the mock ref to return the OllamaInferenceRepository with mocked HTTP
-      when(() => mockRef.read(ollamaInferenceRepositoryProvider))
-          .thenReturn(ollamaRepo);
       // Also provide a real GeminiInferenceRepository to satisfy constructor deps
       final geminiRepo = GeminiInferenceRepository(httpClient: mockHttpClient);
-      when(() => mockRef.read(geminiInferenceRepositoryProvider))
-          .thenReturn(geminiRepo);
 
-      repository =
-          CloudInferenceRepository(mockRef, httpClient: mockHttpClient);
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(ollamaRepo),
+          geminiInferenceRepositoryProvider.overrideWithValue(geminiRepo),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
       ollamaProvider = AiConfig.inferenceProvider(
         id: 'ollama-provider',
         name: 'Ollama Provider',
@@ -164,18 +160,20 @@ void main() {
         const temperature = 0.7;
 
         // Set up repository with mock HTTP client
-        final testMockRef = MockRef();
         final testOllamaRepo =
             OllamaInferenceRepository(httpClient: mockHttpClient);
+        final testGeminiRepo =
+            GeminiInferenceRepository(httpClient: mockHttpClient);
 
-        when(() => testMockRef.read(ollamaInferenceRepositoryProvider))
-            .thenReturn(testOllamaRepo);
-        // Provide Gemini repo as well for this specialized ref
-        when(() => testMockRef.read(geminiInferenceRepositoryProvider))
-            .thenReturn(GeminiInferenceRepository(httpClient: mockHttpClient));
+        final testContainer = ProviderContainer(
+          overrides: [
+            ollamaInferenceRepositoryProvider.overrideWithValue(testOllamaRepo),
+            geminiInferenceRepositoryProvider.overrideWithValue(testGeminiRepo),
+          ],
+        );
 
-        repository =
-            CloudInferenceRepository(testMockRef, httpClient: mockHttpClient);
+        final ref = testContainer.read(testRefProvider);
+        repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
         ollamaProvider = AiConfig.inferenceProvider(
           id: 'ollama-provider',
           name: 'Ollama Provider',

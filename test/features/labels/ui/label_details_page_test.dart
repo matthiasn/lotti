@@ -1,5 +1,3 @@
-// ignore_for_file: cascade_invocations
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -22,13 +20,19 @@ import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
 class _FakeLabelEditorController extends LabelEditorController {
-  _FakeLabelEditorController(this._state, {this.onSave});
+  _FakeLabelEditorController(
+    super.params, {
+    required LabelEditorState initialState,
+    this.onSave,
+  }) : _initialState = initialState;
 
-  final LabelEditorState _state;
+  final LabelEditorState _initialState;
   final Future<LabelDefinition?> Function()? onSave;
 
   @override
-  LabelEditorState build(LabelEditorArgs args) => _state;
+  LabelEditorState build() {
+    return _initialState;
+  }
 
   @override
   Future<LabelDefinition?> save() async {
@@ -40,7 +44,11 @@ class _FakeLabelEditorController extends LabelEditorController {
 class _MockLabelsRepository extends Mock implements LabelsRepository {}
 
 class _ColorSpyController extends _FakeLabelEditorController {
-  _ColorSpyController(super._state, {required this.onPick});
+  _ColorSpyController(
+    super.params, {
+    required super.initialState,
+    required this.onPick,
+  });
   final void Function(Color) onPick;
   @override
   void setColor(Color color) {
@@ -86,8 +94,8 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(state),
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
           ),
         ],
       );
@@ -116,17 +124,18 @@ void main() {
         selectedCategoryIds: {},
       );
 
+      final fakeController = _FakeLabelEditorController(
+        const LabelEditorArgs(),
+        initialState: state,
+        onSave: () async {
+          saved = true;
+          return testLabelDefinition1;
+        },
+      );
+
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(
-              state,
-              onSave: () async {
-                saved = true;
-                return testLabelDefinition1;
-              },
-            ),
-          ),
+          labelEditorControllerProvider.overrideWith(() => fakeController),
         ],
       );
       addTearDown(container.dispose);
@@ -193,11 +202,16 @@ void main() {
         selectedCategoryIds: {},
       );
 
+      // Create controller with empty args (matching what LabelDetailsPage uses)
+      final colorSpyController = _ColorSpyController(
+        const LabelEditorArgs(),
+        initialState: state,
+        onPick: (c) => picked = c,
+      );
+
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _ColorSpyController(state, onPick: (c) => picked = c),
-          ),
+          labelEditorControllerProvider.overrideWith(() => colorSpyController),
         ],
       );
       addTearDown(container.dispose);
@@ -210,12 +224,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Drive color change via controller (UI swatch hit-testing can be flaky in tests)
-      const args = LabelEditorArgs(initialName: 'Urgent');
-      final controller =
-          container.read(labelEditorControllerProvider(args).notifier)
-              as _ColorSpyController;
-      controller.setColor(Colors.green);
+      // Drive color change directly via the pre-constructed controller
+      // (UI swatch hit-testing can be flaky in tests)
+      colorSpyController.setColor(Colors.green);
       expect(picked, equals(Colors.green));
     });
 
@@ -234,8 +245,8 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(state),
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
           ),
         ],
       );
@@ -266,17 +277,18 @@ void main() {
         selectedCategoryIds: {},
       );
 
+      final fakeController = _FakeLabelEditorController(
+        const LabelEditorArgs(),
+        initialState: state,
+        onSave: () async {
+          saved = true;
+          return testLabelDefinition1;
+        },
+      );
+
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(
-              state,
-              onSave: () async {
-                saved = true;
-                return testLabelDefinition1;
-              },
-            ),
-          ),
+          labelEditorControllerProvider.overrideWith(() => fakeController),
         ],
       );
       addTearDown(container.dispose);
@@ -306,17 +318,18 @@ void main() {
         selectedCategoryIds: {},
       );
 
+      final fakeController = _FakeLabelEditorController(
+        const LabelEditorArgs(),
+        initialState: state,
+        onSave: () async {
+          saved = true;
+          return testLabelDefinition1;
+        },
+      );
+
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(
-              state,
-              onSave: () async {
-                saved = true;
-                return testLabelDefinition1;
-              },
-            ),
-          ),
+          labelEditorControllerProvider.overrideWith(() => fakeController),
         ],
       );
       addTearDown(container.dispose);
@@ -346,17 +359,18 @@ void main() {
         selectedCategoryIds: {},
       );
 
+      final fakeController = _FakeLabelEditorController(
+        const LabelEditorArgs(),
+        initialState: state,
+        onSave: () async {
+          saved = true;
+          return testLabelDefinition1;
+        },
+      );
+
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(
-              state,
-              onSave: () async {
-                saved = true;
-                return testLabelDefinition1;
-              },
-            ),
-          ),
+          labelEditorControllerProvider.overrideWith(() => fakeController),
         ],
       );
       addTearDown(container.dispose);
@@ -388,8 +402,8 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(state),
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
           ),
         ],
       );
@@ -418,8 +432,8 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(state),
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
           ),
         ],
       );
@@ -479,8 +493,8 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(state),
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
           ),
         ],
       );
@@ -525,8 +539,8 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
-          labelEditorControllerProvider.overrideWith(
-            () => _FakeLabelEditorController(state),
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
           ),
         ],
       );

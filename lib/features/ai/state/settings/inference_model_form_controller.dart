@@ -68,7 +68,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     bool? isReasoningModel,
     bool? supportsFunctionCalling,
   }) {
-    final prev = state.valueOrNull;
+    final prev = state.value;
     if (prev == null) return;
 
     // Check if any non-FormzInput field is being changed

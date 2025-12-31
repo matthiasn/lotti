@@ -127,7 +127,7 @@ class UnifiedAiPromptsList extends ConsumerWidget {
             .watch(
               availablePromptsProvider(journalEntity.id),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     // Get category to check for automatic prompts

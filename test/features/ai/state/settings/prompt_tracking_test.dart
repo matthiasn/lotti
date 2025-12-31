@@ -69,7 +69,7 @@ void main() {
       // Verify the form state has the preconfigured values and tracking is off
       final formState = container
           .read(promptFormControllerProvider(configId: 'test-prompt'))
-          .valueOrNull;
+          .value;
       expect(formState?.trackPreconfigured, isFalse);
       expect(formState?.systemMessage.value,
           equals(preconfiguredPrompt.systemMessage));

@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';

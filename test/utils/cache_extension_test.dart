@@ -2,8 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
-final AutoDisposeProvider<DateTime> testProvider =
-    Provider.autoDispose<DateTime>((ref) {
+final Provider<DateTime> testProvider = Provider.autoDispose<DateTime>((ref) {
   ref.cacheFor(const Duration(milliseconds: 100));
   return DateTime.now();
 });

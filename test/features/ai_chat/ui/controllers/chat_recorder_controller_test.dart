@@ -545,6 +545,10 @@ void main() {
     ]);
     addTearDown(container.dispose);
 
+    // Keep provider alive during async operations
+    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub.close);
+
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
     await controller.stopAndTranscribe();
@@ -592,6 +596,10 @@ void main() {
           .overrideWithValue(_MockTranscriptionService()),
     ]);
     addTearDown(container.dispose);
+
+    // Keep provider alive during async operations
+    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub.close);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();
@@ -646,6 +654,10 @@ void main() {
           .overrideWithValue(_MockTranscriptionService()),
     ]);
     addTearDown(container.dispose);
+
+    // Keep provider alive during async operations
+    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub.close);
 
     final controller = container.read(chatRecorderControllerProvider.notifier);
     await controller.start();

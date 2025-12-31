@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,28 +80,30 @@ class LabelEditorArgs {
   final String? initialName;
 }
 
-final labelEditorControllerProvider = AutoDisposeNotifierProviderFamily<
-    LabelEditorController, LabelEditorState, LabelEditorArgs>(
+final labelEditorControllerProvider = NotifierProvider.autoDispose
+    .family<LabelEditorController, LabelEditorState, LabelEditorArgs>(
   LabelEditorController.new,
 );
 
-class LabelEditorController
-    extends AutoDisposeFamilyNotifier<LabelEditorState, LabelEditorArgs> {
+class LabelEditorController extends Notifier<LabelEditorState> {
+  LabelEditorController(this.params);
+
   static const int _nameMinLength = 1;
 
-  late final LabelsRepository _repository;
+  final LabelEditorArgs params;
+  late LabelsRepository _repository;
   LabelDefinition? _initialLabel;
   String? _initialName;
 
   @override
-  LabelEditorState build(LabelEditorArgs args) {
-    _repository = ref.watch(labelsRepositoryProvider);
-    _initialLabel = args.label;
-    _initialName = args.initialName?.trim().isEmpty ?? true
+  LabelEditorState build() {
+    _repository = ref.read(labelsRepositoryProvider);
+    _initialLabel = params.label;
+    _initialName = params.initialName?.trim().isEmpty ?? true
         ? null
-        : args.initialName!.trim();
+        : params.initialName!.trim();
     return LabelEditorState.initial(
-      label: _initialLabel,
+      label: params.label,
       initialName: _initialName,
     );
   }

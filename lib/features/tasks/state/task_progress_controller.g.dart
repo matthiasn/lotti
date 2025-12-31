@@ -6,175 +6,102 @@ part of 'task_progress_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$taskProgressControllerHash() =>
-    r'024b90c38fcec6227648261a467d902fc8c5a3b2';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
-abstract class _$TaskProgressController
-    extends BuildlessAutoDisposeAsyncNotifier<TaskProgressState?> {
-  late final String id;
-
-  FutureOr<TaskProgressState?> build({
-    required String id,
-  });
-}
-
-/// See also [TaskProgressController].
 @ProviderFor(TaskProgressController)
-const taskProgressControllerProvider = TaskProgressControllerFamily();
+final taskProgressControllerProvider = TaskProgressControllerFamily._();
 
-/// See also [TaskProgressController].
-class TaskProgressControllerFamily
-    extends Family<AsyncValue<TaskProgressState?>> {
-  /// See also [TaskProgressController].
-  const TaskProgressControllerFamily();
-
-  /// See also [TaskProgressController].
-  TaskProgressControllerProvider call({
-    required String id,
-  }) {
-    return TaskProgressControllerProvider(
-      id: id,
-    );
-  }
-
-  @override
-  TaskProgressControllerProvider getProviderOverride(
-    covariant TaskProgressControllerProvider provider,
-  ) {
-    return call(
-      id: provider.id,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'taskProgressControllerProvider';
-}
-
-/// See also [TaskProgressController].
-class TaskProgressControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<TaskProgressController,
-        TaskProgressState?> {
-  /// See also [TaskProgressController].
-  TaskProgressControllerProvider({
-    required String id,
-  }) : this._internal(
-          () => TaskProgressController()..id = id,
-          from: taskProgressControllerProvider,
+final class TaskProgressControllerProvider
+    extends $AsyncNotifierProvider<TaskProgressController, TaskProgressState?> {
+  TaskProgressControllerProvider._(
+      {required TaskProgressControllerFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
           name: r'taskProgressControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$taskProgressControllerHash,
-          dependencies: TaskProgressControllerFamily._dependencies,
-          allTransitiveDependencies:
-              TaskProgressControllerFamily._allTransitiveDependencies,
-          id: id,
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  TaskProgressControllerProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.id,
-  }) : super.internal();
-
-  final String id;
+  @override
+  String debugGetCreateSourceHash() => _$taskProgressControllerHash();
 
   @override
-  FutureOr<TaskProgressState?> runNotifierBuild(
-    covariant TaskProgressController notifier,
-  ) {
-    return notifier.build(
-      id: id,
-    );
+  String toString() {
+    return r'taskProgressControllerProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  Override overrideWith(TaskProgressController Function() create) {
-    return ProviderOverride(
-      origin: this,
-      override: TaskProgressControllerProvider._internal(
-        () => create()..id = id,
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        id: id,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeAsyncNotifierProviderElement<TaskProgressController,
-      TaskProgressState?> createElement() {
-    return _TaskProgressControllerProviderElement(this);
-  }
+  TaskProgressController create() => TaskProgressController();
 
   @override
   bool operator ==(Object other) {
-    return other is TaskProgressControllerProvider && other.id == id;
+    return other is TaskProgressControllerProvider &&
+        other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, id.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin TaskProgressControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<TaskProgressState?> {
-  /// The parameter `id` of this provider.
-  String get id;
-}
+String _$taskProgressControllerHash() =>
+    r'024b90c38fcec6227648261a467d902fc8c5a3b2';
 
-class _TaskProgressControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<TaskProgressController,
-        TaskProgressState?> with TaskProgressControllerRef {
-  _TaskProgressControllerProviderElement(super.provider);
+final class TaskProgressControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+            TaskProgressController,
+            AsyncValue<TaskProgressState?>,
+            TaskProgressState?,
+            FutureOr<TaskProgressState?>,
+            String> {
+  TaskProgressControllerFamily._()
+      : super(
+          retry: null,
+          name: r'taskProgressControllerProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  TaskProgressControllerProvider call({
+    required String id,
+  }) =>
+      TaskProgressControllerProvider._(argument: id, from: this);
 
   @override
-  String get id => (origin as TaskProgressControllerProvider).id;
+  String toString() => r'taskProgressControllerProvider';
 }
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+
+abstract class _$TaskProgressController
+    extends $AsyncNotifier<TaskProgressState?> {
+  late final _$args = ref.$arg as String;
+  String get id => _$args;
+
+  FutureOr<TaskProgressState?> build({
+    required String id,
+  });
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<TaskProgressState?>, TaskProgressState?>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<TaskProgressState?>, TaskProgressState?>,
+        AsyncValue<TaskProgressState?>,
+        Object?,
+        Object?>;
+    element.handleCreate(
+        ref,
+        () => build(
+              id: _$args,
+            ));
+  }
+}

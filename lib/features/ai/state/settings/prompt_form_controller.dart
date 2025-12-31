@@ -112,7 +112,7 @@ class PromptFormController extends _$PromptFormController {
     bool? trackPreconfigured,
     String? preconfiguredPromptId,
   }) {
-    final prev = state.valueOrNull;
+    final prev = state.value;
     if (prev == null) return;
 
     // Check if any non-FormzInput field is being changed
@@ -196,7 +196,7 @@ class PromptFormController extends _$PromptFormController {
   }
 
   void modelIdsChanged(List<String> newModelIds) {
-    final currentFormState = state.valueOrNull;
+    final currentFormState = state.value;
     if (currentFormState == null) return;
 
     var newDefaultModelId = currentFormState.defaultModelId;
@@ -302,7 +302,7 @@ class PromptFormController extends _$PromptFormController {
   /// Toggle tracking of preconfigured prompt
   // ignore: avoid_positional_boolean_parameters
   void toggleTrackPreconfigured(bool track) {
-    final currentState = state.valueOrNull;
+    final currentState = state.value;
     if (currentState == null) return;
 
     if (track) {

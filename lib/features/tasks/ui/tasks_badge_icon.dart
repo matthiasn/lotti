@@ -13,7 +13,7 @@ class TasksBadge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final count = ref.watch(tasksCountControllerProvider).valueOrNull ?? 0;
+    final count = ref.watch(tasksCountControllerProvider).value ?? 0;
 
     return Badge(
       label: Text('$count', style: badgeStyle),

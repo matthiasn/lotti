@@ -25,7 +25,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -40,6 +39,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../test_utils.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
@@ -58,8 +58,6 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-class MockRef extends Mock implements Ref {}
-
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class MockPromptCapabilityFilter extends Mock
@@ -69,15 +67,15 @@ class MockDirectory extends Mock implements Directory {}
 
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
-class MockChecklistCompletionService extends Mock
-    implements ChecklistCompletionService {
-  MockChecklistCompletionService({this.onAddSuggestions});
+class TestChecklistCompletionService extends ChecklistCompletionService {
+  List<ChecklistCompletionSuggestion> capturedSuggestions = [];
 
-  final void Function(List<ChecklistCompletionSuggestion>)? onAddSuggestions;
+  @override
+  FutureOr<List<ChecklistCompletionSuggestion>> build() async => [];
 
   @override
   void addSuggestions(List<ChecklistCompletionSuggestion> suggestions) {
-    onAddSuggestions?.call(suggestions);
+    capturedSuggestions.addAll(suggestions);
   }
 }
 
@@ -110,7 +108,7 @@ class MockSelectable<T> extends Mock implements Selectable<T> {}
 
 void main() {
   UnifiedAiInferenceRepository? repository;
-  late MockRef mockRef;
+  late ProviderContainer container;
   late MockAiConfigRepository mockAiConfigRepo;
   late MockAiInputRepository mockAiInputRepo;
   late MockCloudInferenceRepository mockCloudInferenceRepo;
@@ -123,6 +121,7 @@ void main() {
   late MockCategoryRepository mockCategoryRepo;
   late MockPromptCapabilityFilter mockPromptCapabilityFilter;
   late MockLabelsRepository mockLabelsRepository;
+  late TestChecklistCompletionService testChecklistCompletionService;
 
   setUpAll(() {
     // Isolate registrations from other files when tests are optimized
@@ -147,7 +146,6 @@ void main() {
   late List<Directory> overrideTempDirs;
 
   setUp(() {
-    mockRef = MockRef();
     mockAiConfigRepo = MockAiConfigRepository();
     mockAiInputRepo = MockAiInputRepository();
     mockCloudInferenceRepo = MockCloudInferenceRepository();
@@ -160,6 +158,7 @@ void main() {
     mockCategoryRepo = MockCategoryRepository();
     mockPromptCapabilityFilter = MockPromptCapabilityFilter();
     mockLabelsRepository = MockLabelsRepository();
+    testChecklistCompletionService = TestChecklistCompletionService();
 
     reset(mockJournalDb);
 
@@ -183,24 +182,6 @@ void main() {
     overrideTempDirs = <Directory>[];
     when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
-    // Setup mock ref to return mocked repositories
-    when(() => mockRef.read(aiConfigRepositoryProvider))
-        .thenReturn(mockAiConfigRepo);
-    when(() => mockRef.read(aiInputRepositoryProvider))
-        .thenReturn(mockAiInputRepo);
-    when(() => mockRef.read(cloudInferenceRepositoryProvider))
-        .thenReturn(mockCloudInferenceRepo);
-    when(() => mockRef.read(journalDbProvider)).thenReturn(mockJournalDb);
-    when(() => mockRef.read(journalRepositoryProvider))
-        .thenReturn(mockJournalRepo);
-    when(() => mockRef.read(checklistRepositoryProvider))
-        .thenReturn(mockChecklistRepo);
-    when(() => mockRef.read(categoryRepositoryProvider))
-        .thenReturn(mockCategoryRepo);
-    when(() => mockRef.read(promptCapabilityFilterProvider))
-        .thenReturn(mockPromptCapabilityFilter);
-    when(() => mockRef.read(labelsRepositoryProvider))
-        .thenReturn(mockLabelsRepository);
     when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
         .thenAnswer((_) async => false);
 
@@ -216,12 +197,32 @@ void main() {
       return prompts;
     });
 
+    container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+        aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
+        cloudInferenceRepositoryProvider
+            .overrideWithValue(mockCloudInferenceRepo),
+        journalDbProvider.overrideWithValue(mockJournalDb),
+        journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+        checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
+        categoryRepositoryProvider.overrideWithValue(mockCategoryRepo),
+        promptCapabilityFilterProvider
+            .overrideWithValue(mockPromptCapabilityFilter),
+        labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
+        checklistCompletionServiceProvider
+            .overrideWith(() => testChecklistCompletionService),
+      ],
+    );
+
     // Create repository - tests can recreate if needed after setting up specific mocks
-    repository = UnifiedAiInferenceRepository(mockRef)
+    final ref = container.read(testRefProvider);
+    repository = UnifiedAiInferenceRepository(ref)
       ..autoChecklistServiceForTesting = mockAutoChecklistService;
   });
 
   tearDown(() {
+    container.dispose();
     // Clean up temp directories if they were created
     // Note: Only remove if it still exists and is empty-ish; ignore errors
     try {
@@ -4038,14 +4039,9 @@ If the image IS relevant:
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
 
-        // Ensure the ref returns the mocked repositories before creating the repository
-        when(() => mockRef.read(journalRepositoryProvider))
-            .thenReturn(mockJournalRepo);
-        when(() => mockRef.read(aiInputRepositoryProvider))
-            .thenReturn(mockAiInputRepo);
-
         // Create repository after all mocks are set up
-        final repository = UnifiedAiInferenceRepository(mockRef)
+        final ref = container.read(testRefProvider);
+        final repository = UnifiedAiInferenceRepository(ref)
           ..autoChecklistServiceForTesting = mockAutoChecklistService;
 
         try {
@@ -4360,14 +4356,9 @@ be consulted to ensure accuracy.''',
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
 
-        // Ensure the ref returns the mocked repositories before creating the repository
-        when(() => mockRef.read(journalRepositoryProvider))
-            .thenReturn(mockJournalRepo);
-        when(() => mockRef.read(aiInputRepositoryProvider))
-            .thenReturn(mockAiInputRepo);
-
         // Create repository after all mocks are set up
-        final repository = UnifiedAiInferenceRepository(mockRef)
+        final ref = container.read(testRefProvider);
+        final repository = UnifiedAiInferenceRepository(ref)
           ..autoChecklistServiceForTesting = mockAutoChecklistService;
 
         try {
@@ -4880,7 +4871,8 @@ Take into account the following task context:
             categoryId: any(named: 'categoryId'),
           )).thenAnswer((_) async => null);
 
-      final repository = UnifiedAiInferenceRepository(mockRef);
+      final ref = container.read(testRefProvider);
+      final repository = UnifiedAiInferenceRepository(ref);
 
       // Act - Run inference which should call getEntity
       await repository.runInference(
@@ -5514,13 +5506,8 @@ Take into account the following task context:
           ),
         ).thenAnswer((_) => streamController.stream);
 
-        final checklistCompletionSuggestions =
-            <ChecklistCompletionSuggestion>[];
-
-        when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
-            .thenReturn(MockChecklistCompletionService(
-          onAddSuggestions: checklistCompletionSuggestions.addAll,
-        ));
+        // Clear any captured suggestions from previous tests
+        testChecklistCompletionService.capturedSuggestions.clear();
 
         await repository!.runInference(
           entityId: taskEntity.id,
@@ -5530,9 +5517,10 @@ Take into account the following task context:
         );
 
         // Verify all three suggestions were processed
-        expect(checklistCompletionSuggestions.length, 3);
+        expect(testChecklistCompletionService.capturedSuggestions.length, 3);
         expect(
-          checklistCompletionSuggestions.map((s) => s.checklistItemId),
+          testChecklistCompletionService.capturedSuggestions
+              .map((s) => s.checklistItemId),
           containsAll(['item-1', 'item-2', 'item-3']),
         );
       });
@@ -5609,13 +5597,8 @@ Take into account the following task context:
           ),
         ).thenAnswer((_) => streamController.stream);
 
-        final checklistCompletionSuggestions =
-            <ChecklistCompletionSuggestion>[];
-
-        when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
-            .thenReturn(MockChecklistCompletionService(
-          onAddSuggestions: checklistCompletionSuggestions.addAll,
-        ));
+        // Clear any captured suggestions from previous tests
+        testChecklistCompletionService.capturedSuggestions.clear();
 
         await repository!.runInference(
           entityId: taskEntity.id,
@@ -5625,13 +5608,15 @@ Take into account the following task context:
         );
 
         // Verify all three suggestions were parsed from concatenated JSON
-        expect(checklistCompletionSuggestions.length, 3);
+        expect(testChecklistCompletionService.capturedSuggestions.length, 3);
         expect(
-          checklistCompletionSuggestions.map((s) => s.checklistItemId),
+          testChecklistCompletionService.capturedSuggestions
+              .map((s) => s.checklistItemId),
           containsAll(['item-1', 'item-2', 'item-3']),
         );
         expect(
-          checklistCompletionSuggestions.map((s) => s.confidence),
+          testChecklistCompletionService.capturedSuggestions
+              .map((s) => s.confidence),
           containsAll([
             ChecklistCompletionConfidence.high,
             ChecklistCompletionConfidence.medium,
@@ -6215,12 +6200,8 @@ Take into account the following task context:
         ),
       ).thenAnswer((_) => streamController.stream);
 
-      // Mock the checklist completion service
-      final checklistCompletionSuggestions = <ChecklistCompletionSuggestion>[];
-      when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
-          .thenReturn(MockChecklistCompletionService(
-        onAddSuggestions: checklistCompletionSuggestions.addAll,
-      ));
+      // Clear any captured suggestions from previous tests
+      testChecklistCompletionService.capturedSuggestions.clear();
       when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
           .thenAnswer((_) async => '{"title": "Test Task"}');
 
@@ -6316,12 +6297,8 @@ Take into account the following task context:
         ),
       ).thenAnswer((_) => streamController.stream);
 
-      // Mock the checklist completion service
-      final checklistCompletionSuggestions = <ChecklistCompletionSuggestion>[];
-      when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
-          .thenReturn(MockChecklistCompletionService(
-        onAddSuggestions: checklistCompletionSuggestions.addAll,
-      ));
+      // Clear any captured suggestions from previous tests
+      testChecklistCompletionService.capturedSuggestions.clear();
       when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
           .thenAnswer((_) async => '{"title": "Test Task"}');
 
@@ -6424,12 +6401,8 @@ Take into account the following task context:
         ),
       ).thenAnswer((_) => streamController.stream);
 
-      // Mock the checklist completion service
-      final checklistCompletionSuggestions = <ChecklistCompletionSuggestion>[];
-      when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
-          .thenReturn(MockChecklistCompletionService(
-        onAddSuggestions: checklistCompletionSuggestions.addAll,
-      ));
+      // Clear any captured suggestions from previous tests
+      testChecklistCompletionService.capturedSuggestions.clear();
       when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
           .thenAnswer((_) async => '{"title": "Test Task"}');
 
@@ -6564,11 +6537,8 @@ Take into account the following task context:
         ),
       ).thenAnswer((_) => streamController.stream);
 
-      final checklistCompletionSuggestions = <ChecklistCompletionSuggestion>[];
-      when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
-          .thenReturn(MockChecklistCompletionService(
-        onAddSuggestions: checklistCompletionSuggestions.addAll,
-      ));
+      // Clear any captured suggestions from previous tests
+      testChecklistCompletionService.capturedSuggestions.clear();
       when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
           .thenAnswer((_) async => '{"title": "Test Task"}');
 
@@ -6677,11 +6647,8 @@ Take into account the following task context:
         ),
       ).thenAnswer((_) => streamController.stream);
 
-      final checklistCompletionSuggestions = <ChecklistCompletionSuggestion>[];
-      when(() => mockRef.read(checklistCompletionServiceProvider.notifier))
-          .thenReturn(MockChecklistCompletionService(
-        onAddSuggestions: checklistCompletionSuggestions.addAll,
-      ));
+      // Clear any captured suggestions from previous tests
+      testChecklistCompletionService.capturedSuggestions.clear();
       when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
           .thenAnswer((_) async => '{"title": "Test Task"}');
 

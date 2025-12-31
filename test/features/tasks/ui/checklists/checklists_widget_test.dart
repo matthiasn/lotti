@@ -70,7 +70,8 @@ class MockOutboxService extends Mock implements OutboxService {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
+  setUpAll(() async {
+    await getIt.reset();
     final mockUpdateNotifications = MockUpdateNotifications();
     final mockJournalDb = MockJournalDb();
     final mockPersistenceLogic = MockPersistenceLogic();

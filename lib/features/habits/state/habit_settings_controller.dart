@@ -1,3 +1,7 @@
+// ignore_for_file: specify_nonobvious_property_types
+
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,8 +40,7 @@ abstract class HabitSettingsState with _$HabitSettingsState {
 
 /// Stream provider for watching a habit by ID.
 /// Uses the repository for data access.
-final AutoDisposeStreamProviderFamily<HabitDefinition?, String>
-    habitByIdProvider =
+final habitByIdProvider =
     StreamProvider.autoDispose.family<HabitDefinition?, String>(
   (ref, habitId) {
     final repository = ref.watch(habitsRepositoryProvider);
@@ -47,8 +50,7 @@ final AutoDisposeStreamProviderFamily<HabitDefinition?, String>
 
 /// Stream provider for dashboards used in habit settings.
 /// Uses the repository for data access.
-final AutoDisposeStreamProvider<List<DashboardDefinition>>
-    habitDashboardsProvider =
+final habitDashboardsProvider =
     StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
   final repository = ref.watch(habitsRepositoryProvider);
   return repository.watchDashboards();
@@ -71,65 +73,69 @@ HabitDefinition _createEmptyHabitDefinition(String habitId) {
 }
 
 /// Provider for the habit settings controller, using habitId as family key.
-final AutoDisposeNotifierProviderFamily<HabitSettingsController,
-        HabitSettingsState, String> habitSettingsControllerProvider =
-    AutoDisposeNotifierProvider.family<HabitSettingsController,
-        HabitSettingsState, String>(
+final habitSettingsControllerProvider = NotifierProvider.autoDispose
+    .family<HabitSettingsController, HabitSettingsState, String>(
   HabitSettingsController.new,
 );
 
 /// Stream provider for story tags.
-final AutoDisposeStreamProvider<List<TagEntity>> storyTagsStreamProvider =
+final storyTagsStreamProvider =
     StreamProvider.autoDispose<List<TagEntity>>((ref) {
   return getIt<TagsService>().watchTags();
 });
 
 /// Controller for managing habit settings form state.
 /// Uses habitId as family key - works for both create (new ID) and edit (existing ID).
-class HabitSettingsController
-    extends AutoDisposeFamilyNotifier<HabitSettingsState, String> {
-  HabitSettingsController();
+class HabitSettingsController extends Notifier<HabitSettingsState> {
+  HabitSettingsController(this._habitId);
+
+  final String _habitId;
+  ProviderSubscription<AsyncValue<HabitDefinition?>>? _habitSubscription;
+  ProviderSubscription<AsyncValue<List<TagEntity>>>? _tagsSubscription;
 
   @override
-  HabitSettingsState build(String habitId) {
+  HabitSettingsState build() {
+    ref.onDispose(() {
+      _habitSubscription?.close();
+      _tagsSubscription?.close();
+    });
+
+    final initialState = HabitSettingsState.initial(_habitId);
+
     // Check if habit data is already available (for edit case)
-    // Use ref.read() to get current value without causing rebuilds on stream updates
-    final habitAsync = ref.read(habitByIdProvider(habitId));
-    final existingHabit = habitAsync.valueOrNull;
+    final habitAsync = ref.read(habitByIdProvider(_habitId));
+    final existingHabit = habitAsync.value;
 
-    // Watch for future habit updates from DB and story tags
-    ref
-      ..listen<AsyncValue<HabitDefinition?>>(
-        habitByIdProvider(habitId),
-        (_, next) {
-          next.whenData((habit) {
-            if (habit != null && !state.dirty) {
-              // Only update from DB if user hasn't made changes
-              state = state.copyWith(habitDefinition: habit);
-              _updateDefaultStory();
-            }
-          });
-        },
-      )
-      ..listen<AsyncValue<List<TagEntity>>>(
-        storyTagsStreamProvider,
-        (_, next) {
-          next.whenData((tags) {
-            final storyTags = tags.whereType<StoryTag>().toList();
-            state = state.copyWith(storyTags: storyTags);
+    // Watch for future habit updates from DB
+    _habitSubscription = ref.listen<AsyncValue<HabitDefinition?>>(
+      habitByIdProvider(_habitId),
+      (_, next) {
+        next.whenData((habit) {
+          if (habit != null && !state.dirty) {
+            // Only update from DB if user hasn't made changes
+            state = state.copyWith(habitDefinition: habit);
             _updateDefaultStory();
-          });
-        },
-      );
+          }
+        });
+      },
+    );
 
-    // Return initial state with existing habit data if available
+    // Watch for story tags updates
+    _tagsSubscription = ref.listen<AsyncValue<List<TagEntity>>>(
+      storyTagsStreamProvider,
+      (_, next) {
+        next.whenData((tags) {
+          final storyTags = tags.whereType<StoryTag>().toList();
+          state = state.copyWith(storyTags: storyTags);
+          _updateDefaultStory();
+        });
+      },
+    );
+
     if (existingHabit != null) {
-      return HabitSettingsState.initial(habitId).copyWith(
-        habitDefinition: existingHabit,
-      );
+      return initialState.copyWith(habitDefinition: existingHabit);
     }
-
-    return HabitSettingsState.initial(habitId);
+    return initialState;
   }
 
   void _updateDefaultStory() {

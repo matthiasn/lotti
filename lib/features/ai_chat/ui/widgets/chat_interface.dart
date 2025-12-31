@@ -53,9 +53,12 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
   Widget build(BuildContext context) {
     final sessionState =
         ref.watch(chatSessionControllerProvider(widget.categoryId));
-    final sessionController =
+
+    // Use closures to get fresh notifier instances at invocation time
+    // (required for Riverpod 3 autoDispose providers)
+    ChatSessionController getSessionController() =>
         ref.read(chatSessionControllerProvider(widget.categoryId).notifier);
-    final sessionsController =
+    ChatSessionsController getSessionsController() =>
         ref.read(chatSessionsControllerProvider(widget.categoryId).notifier);
 
     return Column(
@@ -63,12 +66,12 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
         ChatHeader(
           sessionTitle: sessionState.displayTitle,
           canClearChat: sessionState.hasMessages,
-          onClearChat: sessionController.clearChat,
-          onNewSession: sessionsController.createNewSession,
+          onClearChat: () => getSessionController().clearChat(),
+          onNewSession: () => getSessionsController().createNewSession(),
           categoryId: widget.categoryId,
           selectedModelId: sessionState.selectedModelId,
           isStreaming: sessionState.isStreaming,
-          onSelectModel: sessionController.setModel,
+          onSelectModel: (modelId) => getSessionController().setModel(modelId),
         ),
         Expanded(
           child: ShaderMask(
@@ -95,15 +98,15 @@ class _ChatInterfaceState extends ConsumerState<ChatInterface> {
         if (sessionState.error != null)
           ErrorBanner(
             error: sessionState.error!,
-            onRetry: sessionController.retryLastMessage,
-            onDismiss: sessionController.clearError,
+            onRetry: () => getSessionController().retryLastMessage(),
+            onDismiss: () => getSessionController().clearError(),
           ),
         InputArea(
           controller: _textController,
           scrollController: _scrollController,
           isLoading: sessionState.isLoading,
           canSend: sessionState.canSendMessage,
-          onSendMessage: sessionController.sendMessage,
+          onSendMessage: (msg) => getSessionController().sendMessage(msg),
           requiresModelSelection: sessionState.selectedModelId == null,
           categoryId: widget.categoryId,
         ),

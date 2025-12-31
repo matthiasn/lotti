@@ -77,7 +77,7 @@ class WorkoutObservationsController extends _$WorkoutObservationsController {
                 rangeEnd: rangeEnd,
               ),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     return aggregateWorkoutDailySum(

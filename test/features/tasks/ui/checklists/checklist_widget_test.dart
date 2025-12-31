@@ -6,6 +6,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 class MockChecklistState {
   MockChecklistState({
@@ -21,11 +22,16 @@ void main() {
   group('ChecklistWidget', () {
     late MockChecklistState mockState;
 
-    setUp(() {
+    setUp(() async {
+      await setUpTestGetIt();
       mockState = MockChecklistState(
         title: 'Test Checklist',
         itemIds: [], // Empty to avoid issues with ChecklistItemWrapper
       );
+    });
+
+    tearDown(() async {
+      await tearDownTestGetIt();
     });
 
     testWidgets('renders title and progress indicator correctly',

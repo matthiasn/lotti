@@ -6,173 +6,91 @@ part of 'config_flag_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$configFlagHash() => r'cb8244b4da8af37d109e0cc56ecd8b977091e30e';
-
-/// Copied from Dart SDK
-class _SystemHash {
-  _SystemHash._();
-
-  static int combine(int hash, int value) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + value);
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-    return hash ^ (hash >> 6);
-  }
-
-  static int finish(int hash) {
-    // ignore: parameter_assignments
-    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
-    // ignore: parameter_assignments
-    hash = hash ^ (hash >> 11);
-    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
-  }
-}
-
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 /// Provides a stream of the status (bool) for a specific config flag.
 /// Returns false by default if the flag doesn't exist or has no status.
-///
-/// Copied from [configFlag].
+
 @ProviderFor(configFlag)
-const configFlagProvider = ConfigFlagFamily();
+final configFlagProvider = ConfigFlagFamily._();
 
 /// Provides a stream of the status (bool) for a specific config flag.
 /// Returns false by default if the flag doesn't exist or has no status.
-///
-/// Copied from [configFlag].
-class ConfigFlagFamily extends Family<AsyncValue<bool>> {
+
+final class ConfigFlagProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
+    with $FutureModifier<bool>, $StreamProvider<bool> {
   /// Provides a stream of the status (bool) for a specific config flag.
   /// Returns false by default if the flag doesn't exist or has no status.
-  ///
-  /// Copied from [configFlag].
-  const ConfigFlagFamily();
-
-  /// Provides a stream of the status (bool) for a specific config flag.
-  /// Returns false by default if the flag doesn't exist or has no status.
-  ///
-  /// Copied from [configFlag].
-  ConfigFlagProvider call(
-    String flagName,
-  ) {
-    return ConfigFlagProvider(
-      flagName,
-    );
-  }
-
-  @override
-  ConfigFlagProvider getProviderOverride(
-    covariant ConfigFlagProvider provider,
-  ) {
-    return call(
-      provider.flagName,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'configFlagProvider';
-}
-
-/// Provides a stream of the status (bool) for a specific config flag.
-/// Returns false by default if the flag doesn't exist or has no status.
-///
-/// Copied from [configFlag].
-class ConfigFlagProvider extends AutoDisposeStreamProvider<bool> {
-  /// Provides a stream of the status (bool) for a specific config flag.
-  /// Returns false by default if the flag doesn't exist or has no status.
-  ///
-  /// Copied from [configFlag].
-  ConfigFlagProvider(
-    String flagName,
-  ) : this._internal(
-          (ref) => configFlag(
-            ref as ConfigFlagRef,
-            flagName,
-          ),
-          from: configFlagProvider,
+  ConfigFlagProvider._(
+      {required ConfigFlagFamily super.from, required String super.argument})
+      : super(
+          retry: null,
           name: r'configFlagProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$configFlagHash,
-          dependencies: ConfigFlagFamily._dependencies,
-          allTransitiveDependencies:
-              ConfigFlagFamily._allTransitiveDependencies,
-          flagName: flagName,
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
         );
 
-  ConfigFlagProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.flagName,
-  }) : super.internal();
-
-  final String flagName;
+  @override
+  String debugGetCreateSourceHash() => _$configFlagHash();
 
   @override
-  Override overrideWith(
-    Stream<bool> Function(ConfigFlagRef provider) create,
-  ) {
-    return ProviderOverride(
-      origin: this,
-      override: ConfigFlagProvider._internal(
-        (ref) => create(ref as ConfigFlagRef),
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        flagName: flagName,
-      ),
-    );
+  String toString() {
+    return r'configFlagProvider'
+        ''
+        '($argument)';
   }
 
+  @$internal
   @override
-  AutoDisposeStreamProviderElement<bool> createElement() {
-    return _ConfigFlagProviderElement(this);
+  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<bool> create(Ref ref) {
+    final argument = this.argument as String;
+    return configFlag(
+      ref,
+      argument,
+    );
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ConfigFlagProvider && other.flagName == flagName;
+    return other is ConfigFlagProvider && other.argument == argument;
   }
 
   @override
   int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, flagName.hashCode);
-
-    return _SystemHash.finish(hash);
+    return argument.hashCode;
   }
 }
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-mixin ConfigFlagRef on AutoDisposeStreamProviderRef<bool> {
-  /// The parameter `flagName` of this provider.
-  String get flagName;
-}
+String _$configFlagHash() => r'cb8244b4da8af37d109e0cc56ecd8b977091e30e';
 
-class _ConfigFlagProviderElement extends AutoDisposeStreamProviderElement<bool>
-    with ConfigFlagRef {
-  _ConfigFlagProviderElement(super.provider);
+/// Provides a stream of the status (bool) for a specific config flag.
+/// Returns false by default if the flag doesn't exist or has no status.
+
+final class ConfigFlagFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<bool>, String> {
+  ConfigFlagFamily._()
+      : super(
+          retry: null,
+          name: r'configFlagProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Provides a stream of the status (bool) for a specific config flag.
+  /// Returns false by default if the flag doesn't exist or has no status.
+
+  ConfigFlagProvider call(
+    String flagName,
+  ) =>
+      ConfigFlagProvider._(argument: flagName, from: this);
 
   @override
-  String get flagName => (origin as ConfigFlagProvider).flagName;
+  String toString() => r'configFlagProvider';
 }
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

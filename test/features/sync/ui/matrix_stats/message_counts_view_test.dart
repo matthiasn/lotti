@@ -43,7 +43,7 @@ void main() {
 
   testWidgets('MessageCountsView renders stats from controller',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 2,
       messageCounts: {'m.text': 1, 'm.image': 1},
     );
@@ -71,9 +71,9 @@ void main() {
 
   testWidgets('MessageCountsView closes subscription on dispose',
       (tester) async {
-    final stats = MatrixStats(
+    const stats = MatrixStats(
       sentCount: 1,
-      messageCounts: const {'m.text': 1},
+      messageCounts: {'m.text': 1},
     );
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);

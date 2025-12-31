@@ -50,6 +50,9 @@ class ActiveInferenceData {
 
 @riverpod
 class ActiveInferenceController extends _$ActiveInferenceController {
+  // Track current data to dispose in onDispose without accessing state
+  ActiveInferenceData? _currentData;
+
   @override
   ActiveInferenceData? build({
     required String entityId,
@@ -60,7 +63,7 @@ class ActiveInferenceController extends _$ActiveInferenceController {
 
       // Clean up when provider is disposed
       ..onDispose(() {
-        state?.dispose();
+        _currentData?.dispose();
       });
 
     return null;
@@ -71,25 +74,28 @@ class ActiveInferenceController extends _$ActiveInferenceController {
     String? linkedEntityId,
   }) {
     // Dispose of any existing inference data
-    state?.dispose();
+    _currentData?.dispose();
 
-    state = ActiveInferenceData(
+    _currentData = ActiveInferenceData(
       entityId: entityId,
       promptId: promptId,
       aiResponseType: aiResponseType,
       linkedEntityId: linkedEntityId,
     );
+    state = _currentData;
   }
 
   void updateProgress(String progress) {
-    if (state != null) {
-      state!.updateProgress(progress);
-      state = state!.copyWith(progressText: progress);
+    if (_currentData != null) {
+      _currentData!.updateProgress(progress);
+      _currentData = _currentData!.copyWith(progressText: progress);
+      state = _currentData;
     }
   }
 
   void clearInference() {
-    state?.dispose();
+    _currentData?.dispose();
+    _currentData = null;
     state = null;
   }
 }

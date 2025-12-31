@@ -6,23 +6,49 @@ part of 'checklist_repository.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(checklistRepository)
+final checklistRepositoryProvider = ChecklistRepositoryProvider._();
+
+final class ChecklistRepositoryProvider extends $FunctionalProvider<
+    ChecklistRepository,
+    ChecklistRepository,
+    ChecklistRepository> with $Provider<ChecklistRepository> {
+  ChecklistRepositoryProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'checklistRepositoryProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$checklistRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ChecklistRepository> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ChecklistRepository create(Ref ref) {
+    return checklistRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ChecklistRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ChecklistRepository>(value),
+    );
+  }
+}
+
 String _$checklistRepositoryHash() =>
     r'ddd5a084b352361abb5a29fbe1ab58099dbc9585';
-
-/// See also [checklistRepository].
-@ProviderFor(checklistRepository)
-final checklistRepositoryProvider = Provider<ChecklistRepository>.internal(
-  checklistRepository,
-  name: r'checklistRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$checklistRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef ChecklistRepositoryRef = ProviderRef<ChecklistRepository>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

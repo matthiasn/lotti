@@ -108,7 +108,7 @@ class NewestLinkedIdController extends _$NewestLinkedIdController {
     }
 
     final provider = linkedEntriesControllerProvider(id: id);
-    final entryLinks = ref.watch(provider).valueOrNull;
+    final entryLinks = ref.watch(provider).value;
 
     final newestLinkedId = entryLinks
         ?.sortedBy((entryLink) => entryLink.createdAt)

@@ -33,7 +33,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
                 rangeEnd: rangeEnd,
               ),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     final diastolicData = ref
@@ -44,7 +44,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
                 rangeEnd: rangeEnd,
               ),
             )
-            .valueOrNull ??
+            .value ??
         [];
 
     final rangeInDays = rangeEnd.difference(rangeStart).inDays;

@@ -41,7 +41,7 @@ class _InferenceModelEditPageState
     // Watch the form state to enable/disable save button
     final formState = ref
         .watch(inferenceModelFormControllerProvider(configId: widget.configId))
-        .valueOrNull;
+        .value;
 
     final isFormValid = formState != null &&
         formState.isValid &&

@@ -6,22 +6,47 @@ part of 'matrix_room_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(MatrixRoomController)
+final matrixRoomControllerProvider = MatrixRoomControllerProvider._();
+
+final class MatrixRoomControllerProvider
+    extends $AsyncNotifierProvider<MatrixRoomController, String?> {
+  MatrixRoomControllerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'matrixRoomControllerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$matrixRoomControllerHash();
+
+  @$internal
+  @override
+  MatrixRoomController create() => MatrixRoomController();
+}
+
 String _$matrixRoomControllerHash() =>
     r'a7b0beef24beafaea7cf3cb58859edfd1713c07d';
 
-/// See also [MatrixRoomController].
-@ProviderFor(MatrixRoomController)
-final matrixRoomControllerProvider =
-    AutoDisposeAsyncNotifierProvider<MatrixRoomController, String?>.internal(
-  MatrixRoomController.new,
-  name: r'matrixRoomControllerProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$matrixRoomControllerHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef _$MatrixRoomController = AutoDisposeAsyncNotifier<String?>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+abstract class _$MatrixRoomController extends $AsyncNotifier<String?> {
+  FutureOr<String?> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<String?>, String?>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<String?>, String?>,
+        AsyncValue<String?>,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

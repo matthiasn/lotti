@@ -148,7 +148,7 @@ void main() {
         // Listen for pending correction events
         PendingCorrection? capturedPending;
         container.listen<PendingCorrection?>(
-          correctionCaptureNotifierProvider,
+          correctionCaptureProvider,
           (previous, next) {
             if (next != null) {
               capturedPending = next;
@@ -222,7 +222,7 @@ void main() {
         verifyNever(() => mockCategoryRepository.updateCategory(any()));
 
         // Verify pending state was set
-        final pending = container.read(correctionCaptureNotifierProvider);
+        final pending = container.read(correctionCaptureProvider);
         expect(pending, isNotNull);
         expect(pending!.before, equals('test flight'));
         expect(pending.after, equals('TestFlight'));
@@ -244,7 +244,7 @@ void main() {
         // Listen for pending correction events
         PendingCorrection? capturedPending;
         container.listen<PendingCorrection?>(
-          correctionCaptureNotifierProvider,
+          correctionCaptureProvider,
           (previous, next) {
             if (next != null) {
               capturedPending = next;
@@ -355,7 +355,7 @@ void main() {
       addTearDown(container.dispose);
 
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         isNull,
       );
     });
@@ -373,14 +373,14 @@ void main() {
       );
 
       // Set pending with save callback
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending,
             onSave: () async {},
           );
 
       // State should be set
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         equals(pending),
       );
     });
@@ -398,26 +398,26 @@ void main() {
       );
 
       // Set pending with save callback
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending,
             onSave: () async {},
           );
 
       // State should be set
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         equals(pending),
       );
 
       // Cancel the pending correction immediately
       final wasCancelled =
-          container.read(correctionCaptureNotifierProvider.notifier).cancel();
+          container.read(correctionCaptureProvider.notifier).cancel();
 
       expect(wasCancelled, isTrue);
 
       // State should be cleared immediately
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         isNull,
       );
     });
@@ -427,7 +427,7 @@ void main() {
       addTearDown(container.dispose);
 
       final wasCancelled =
-          container.read(correctionCaptureNotifierProvider.notifier).cancel();
+          container.read(correctionCaptureProvider.notifier).cancel();
 
       expect(wasCancelled, isFalse);
     });
@@ -445,13 +445,13 @@ void main() {
       );
 
       // Set first pending
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending1,
             onSave: () async {},
           );
 
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         equals(pending1),
       );
 
@@ -464,20 +464,20 @@ void main() {
       );
 
       // Set second pending (should replace first)
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending2,
             onSave: () async {},
           );
 
       // State should now be pending2
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         equals(pending2),
       );
 
       // Verify pending1 is no longer the state
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         isNot(equals(pending1)),
       );
     });
@@ -494,7 +494,7 @@ void main() {
       );
 
       // Set pending (starts the save timer)
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending,
             onSave: () async {},
           );
@@ -522,23 +522,23 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending,
             onSave: () async {},
           );
 
       // State should be set
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         equals(pending),
       );
 
       // Clear the state
-      container.read(correctionCaptureNotifierProvider.notifier).clear();
+      container.read(correctionCaptureProvider.notifier).clear();
 
       // State should be cleared
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         isNull,
       );
     });
@@ -557,7 +557,7 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending,
             onSave: () async {
               saveCalled = true;
@@ -565,14 +565,13 @@ void main() {
           );
 
       // State should be set
-      expect(
-          container.read(correctionCaptureNotifierProvider), equals(pending));
+      expect(container.read(correctionCaptureProvider), equals(pending));
 
       // Cancel immediately
-      container.read(correctionCaptureNotifierProvider.notifier).cancel();
+      container.read(correctionCaptureProvider.notifier).cancel();
 
       // State should be null
-      expect(container.read(correctionCaptureNotifierProvider), isNull);
+      expect(container.read(correctionCaptureProvider), isNull);
 
       // Save should NOT have been called (cancelled before timer)
       expect(saveCalled, isFalse);
@@ -593,7 +592,7 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending1,
             onSave: () async {
               firstSaveCalled = true;
@@ -609,7 +608,7 @@ void main() {
       );
 
       // Setting a new pending should replace the first one
-      container.read(correctionCaptureNotifierProvider.notifier).setPending(
+      container.read(correctionCaptureProvider.notifier).setPending(
             pending: pending2,
             onSave: () async {
               secondSaveCalled = true;
@@ -618,7 +617,7 @@ void main() {
 
       // State should be the second pending
       expect(
-        container.read(correctionCaptureNotifierProvider),
+        container.read(correctionCaptureProvider),
         equals(pending2),
       );
 

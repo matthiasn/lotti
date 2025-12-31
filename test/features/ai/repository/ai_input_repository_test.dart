@@ -14,12 +14,12 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
-import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
 
 // Mock for TaskProgressRepository
 class MockTaskProgressRepository extends Mock
@@ -74,34 +74,31 @@ class TestTaskProgressState implements TaskProgressState {
       'TestTaskProgressState(progress: $_progress, estimate: $_estimate)';
 }
 
-class TestRef implements Ref {
-  TestRef(this._mockTaskProgressRepository) {
-    // Add the mock repository to the values map
-    _values[taskProgressRepositoryProvider] = _mockTaskProgressRepository;
-  }
-  final Map<ProviderListenable<Object?>, Object> _values = {};
-  // Add a mock for the taskProgressRepositoryProvider
+/// Test helper to build a ProviderContainer with task progress overrides
+class TestContainerBuilder {
+  TestContainerBuilder(this._mockTaskProgressRepository);
+
   final TaskProgressRepository _mockTaskProgressRepository;
+  final _progressOverrides = <String, TaskProgressState?>{};
 
   void setTaskProgress(String taskId, Duration? progress) {
-    final provider = taskProgressControllerProvider(id: taskId);
-
     final progressState =
         progress != null ? TestTaskProgressState(progress) : null;
-
-    _values[provider] = AsyncData<TaskProgressState?>(progressState);
+    _progressOverrides[taskId] = progressState;
   }
 
-  @override
-  T read<T>(ProviderListenable<T> provider) {
-    if (_values.containsKey(provider)) {
-      return _values[provider] as T;
-    }
-    throw UnimplementedError('Provider not found: $provider');
+  ProviderContainer build() {
+    return ProviderContainer(
+      overrides: [
+        taskProgressRepositoryProvider
+            .overrideWithValue(_mockTaskProgressRepository),
+      ],
+    );
   }
 
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Ref getRef(ProviderContainer container) {
+    return container.read(testRefProvider);
+  }
 }
 
 void main() {
@@ -154,24 +151,28 @@ void main() {
     late MockJournalDb mockDb;
     late MockTaskProgressRepository mockTaskProgressRepository;
     late MockPersistenceLogic mockPersistenceLogic;
-    late TestRef testRef;
+    late TestContainerBuilder containerBuilder;
+    late ProviderContainer container;
     late AiInputRepository repository;
 
     setUp(() {
       mockDb = MockJournalDb();
       mockTaskProgressRepository = MockTaskProgressRepository();
       mockPersistenceLogic = MockPersistenceLogic();
-      testRef = TestRef(mockTaskProgressRepository);
+      containerBuilder = TestContainerBuilder(mockTaskProgressRepository);
 
       // Register function for service locator
       getIt
         ..registerSingleton<JournalDb>(mockDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
-      repository = AiInputRepository(testRef);
-
       // Set initial value to null
-      testRef.setTaskProgress(taskId, null);
+      containerBuilder.setTaskProgress(taskId, null);
+
+      // Build container and get ref
+      container = containerBuilder.build();
+      final ref = containerBuilder.getRef(container);
+      repository = AiInputRepository(ref);
 
       // Set default mock for taskProgressRepository if not overridden in tests
       when(
@@ -187,6 +188,7 @@ void main() {
     });
 
     tearDown(() {
+      container.dispose();
       getIt
         ..unregister<JournalDb>()
         ..unregister<PersistenceLogic>();
@@ -311,8 +313,12 @@ void main() {
       when(() => mockDb.journalEntityById(checklistItemId))
           .thenAnswer((_) async => checklistItem);
 
-      // Set task progress
-      testRef.setTaskProgress(taskId, const Duration(minutes: 45));
+      // Set task progress via the mock repository
+      when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+          .thenAnswer((_) async => (
+                const Duration(hours: 1),
+                <String, Duration>{'entry': const Duration(minutes: 45)},
+              ));
 
       // Act
       final result = await repository.generate(taskId);

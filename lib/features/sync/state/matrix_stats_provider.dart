@@ -54,6 +54,7 @@ class SyncMetricsHistory extends _$SyncMetricsHistory {
       matrixSyncMetricsFutureProvider,
       (prev, next) {
         next.whenData((v) {
+          if (!ref.mounted) return;
           if (v == null) return;
           final map = v.toMap();
           const keys = ['processed', 'failures', 'retriesScheduled'];
@@ -67,10 +68,25 @@ class SyncMetricsHistory extends _$SyncMetricsHistory {
           state = updated;
         });
       },
+      fireImmediately: true,
     );
 
     return <String, List<int>>{};
   }
 
   void clear() => state = <String, List<int>>{};
+
+  /// Appends metrics values to history. Exposed for testing.
+  void appendFromMetrics(SyncMetrics metrics) {
+    final map = metrics.toMap();
+    const keys = ['processed', 'failures', 'retriesScheduled'];
+    final updated = Map<String, List<int>>.from(state);
+    for (final k in keys) {
+      final val = map[k] ?? 0;
+      final list = List<int>.from(updated[k] ?? const <int>[])..add(val);
+      if (list.length > 24) list.removeAt(0);
+      updated[k] = list;
+    }
+    state = updated;
+  }
 }

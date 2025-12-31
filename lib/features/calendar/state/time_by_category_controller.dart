@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types, use_setters_to_change_properties
+
 import 'dart:async';
 
 import 'package:collection/collection.dart';
@@ -9,7 +11,6 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -17,19 +18,24 @@ import 'package:visibility_detector/visibility_detector.dart';
 /// Typedef for the complex return type.
 typedef TimeByCategoryData = Map<DateTime, Map<CategoryDefinition?, Duration>>;
 
-final AutoDisposeAsyncNotifierProvider<TimeByCategoryController,
-        TimeByCategoryData> timeByCategoryControllerProvider =
-    AsyncNotifierProvider.autoDispose<TimeByCategoryController,
-        TimeByCategoryData>(
+final timeByCategoryControllerProvider = AsyncNotifierProvider.autoDispose<
+    TimeByCategoryController, TimeByCategoryData>(
   TimeByCategoryController.new,
 );
 
-class TimeByCategoryController
-    extends AutoDisposeAsyncNotifier<TimeByCategoryData> {
+class TimeByCategoryController extends AsyncNotifier<TimeByCategoryData> {
   StreamSubscription<Set<String>>? _updateSubscription;
   bool _isVisible = false;
 
-  void listen() {
+  @override
+  Future<TimeByCategoryData> build() async {
+    ref.onDispose(() => _updateSubscription?.cancel());
+    _listen();
+    final timeSpanDays = ref.read(timeFrameControllerProvider);
+    return _fetch(timeSpanDays);
+  }
+
+  void _listen() {
     final subscribedIds = <String>{textEntryNotification};
 
     _updateSubscription = getIt<UpdateNotifications>()
@@ -43,33 +49,24 @@ class TimeByCategoryController
       if (affectedIds.intersection(subscribedIds).isNotEmpty && _isVisible) {
         final timeSpanDays = ref.read(timeFrameControllerProvider);
         final latest = await _fetch(timeSpanDays);
-        state = AsyncData(latest);
+        if (ref.mounted) {
+          state = AsyncData(latest);
+        }
       }
     });
   }
 
   void onVisibilityChanged(VisibilityInfo info) {
+    if (!ref.mounted) return;
     _isVisible = info.visibleFraction > 0.5;
     if (_isVisible) {
       final timeSpanDays = ref.read(timeFrameControllerProvider);
       _fetch(timeSpanDays).then((latest) {
-        if (latest != state.value) {
+        if (ref.mounted && latest != state.value) {
           state = AsyncData(latest);
         }
       });
     }
-  }
-
-  @override
-  Future<TimeByCategoryData> build() async {
-    ref
-      ..onDispose(() => _updateSubscription?.cancel())
-      ..cacheFor(entryCacheDuration);
-
-    final timeSpanDays = ref.watch(timeFrameControllerProvider);
-    final data = await _fetch(timeSpanDays);
-    listen();
-    return data;
   }
 
   Future<TimeByCategoryData> _fetch(
@@ -143,28 +140,21 @@ class TimeByCategoryController
   }
 }
 
-final AutoDisposeNotifierProvider<TimeFrameController, int>
-    timeFrameControllerProvider =
+final timeFrameControllerProvider =
     NotifierProvider.autoDispose<TimeFrameController, int>(
   TimeFrameController.new,
 );
 
-class TimeFrameController extends AutoDisposeNotifier<int> {
-  int _timeSpanDays = 30;
-
+class TimeFrameController extends Notifier<int> {
   @override
-  int build() {
-    return _timeSpanDays;
-  }
+  int build() => 30;
 
   void onValueChanged(int days) {
-    _timeSpanDays = days;
     state = days;
   }
 }
 
-final AutoDisposeFutureProvider<List<TimeByDayAndCategory>>
-    timeByDayChartProvider =
+final FutureProvider<List<TimeByDayAndCategory>> timeByDayChartProvider =
     FutureProvider.autoDispose<List<TimeByDayAndCategory>>((ref) async {
   final timeByCategoryAndDay = ref.watch(timeByCategoryControllerProvider);
   return _convertTimeByCategory(timeByCategoryAndDay.value);
@@ -228,7 +218,7 @@ List<DateTime> getDaysAtNoon(int rangeDays, DateTime rangeEnd) {
   );
 }
 
-final AutoDisposeFutureProvider<int> maxCategoriesCountProvider =
+final FutureProvider<int> maxCategoriesCountProvider =
     FutureProvider.autoDispose<int>((ref) async {
   final events = ref.watch(timeByDayChartProvider).value;
   final categoryIdsByDay = <DateTime, Set<String>>{};

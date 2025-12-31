@@ -14,19 +14,22 @@ import 'package:mocktail/mocktail.dart';
 class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class _FakeLabelEditorController extends LabelEditorController {
-  _FakeLabelEditorController(this._state, {this.onPrivateChanged});
+  _FakeLabelEditorController(
+    super.params, {
+    required LabelEditorState initialState,
+    this.onPrivateChanged,
+  }) : _initialState = initialState;
 
-  LabelEditorState _state;
+  final LabelEditorState _initialState;
   final void Function({required bool isPrivate})? onPrivateChanged;
 
   @override
-  LabelEditorState build(LabelEditorArgs args) => _state;
+  LabelEditorState build() => _initialState;
 
   @override
   void setPrivate({required bool isPrivateValue}) {
     onPrivateChanged?.call(isPrivate: isPrivateValue);
-    _state = _state.copyWith(isPrivate: isPrivateValue);
-    state = _state;
+    state = state.copyWith(isPrivate: isPrivateValue);
   }
 }
 
@@ -82,8 +85,8 @@ void main() {
 
     final container = ProviderContainer(
       overrides: [
-        labelEditorControllerProvider.overrideWith(
-          () => _FakeLabelEditorController(state),
+        labelEditorControllerProvider.overrideWithBuild(
+          (ref, args) => state,
         ),
       ],
     );
@@ -115,8 +118,8 @@ void main() {
 
     final container = ProviderContainer(
       overrides: [
-        labelEditorControllerProvider.overrideWith(
-          () => _FakeLabelEditorController(state),
+        labelEditorControllerProvider.overrideWithBuild(
+          (ref, args) => state,
         ),
       ],
     );
@@ -149,8 +152,8 @@ void main() {
 
     final container = ProviderContainer(
       overrides: [
-        labelEditorControllerProvider.overrideWith(
-          () => _FakeLabelEditorController(state),
+        labelEditorControllerProvider.overrideWithBuild(
+          (ref, args) => state,
         ),
       ],
     );
@@ -179,15 +182,15 @@ void main() {
       selectedCategoryIds: {},
     );
 
+    final fakeController = _FakeLabelEditorController(
+      const LabelEditorArgs(initialName: 'Urgent'),
+      initialState: state,
+      onPrivateChanged: ({required bool isPrivate}) => toggledValue = isPrivate,
+    );
+
     final container = ProviderContainer(
       overrides: [
-        labelEditorControllerProvider.overrideWith(
-          () => _FakeLabelEditorController(
-            state,
-            onPrivateChanged: ({required bool isPrivate}) =>
-                toggledValue = isPrivate,
-          ),
-        ),
+        labelEditorControllerProvider.overrideWith(() => fakeController),
       ],
     );
     addTearDown(container.dispose);

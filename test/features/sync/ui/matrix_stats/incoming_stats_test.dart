@@ -90,7 +90,7 @@ void main() {
           matrixServiceProvider.overrideWithValue(mockSvc),
           matrixStatsControllerProvider.overrideWith(
             () => _FakeMatrixStatsController(
-              MatrixStats(sentCount: 0, messageCounts: const {}),
+              const MatrixStats(sentCount: 0, messageCounts: {}),
             ),
           ),
         ],
@@ -122,7 +122,7 @@ void main() {
           matrixServiceProvider.overrideWithValue(mockSvc),
           matrixStatsControllerProvider.overrideWith(
             () => _FakeMatrixStatsController(
-              MatrixStats(sentCount: 1, messageCounts: const {'m.text': 1}),
+              const MatrixStats(sentCount: 1, messageCounts: {'m.text': 1}),
             ),
           ),
         ],

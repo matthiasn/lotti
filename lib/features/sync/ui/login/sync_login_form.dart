@@ -24,7 +24,7 @@ class _SyncLoginFormState extends ConsumerState<SyncLoginForm> {
   void initState() {
     super.initState();
 
-    final isLoggedIn = ref.read(isLoggedInProvider).valueOrNull ?? false;
+    final isLoggedIn = ref.read(isLoggedInProvider).value ?? false;
     if (isLoggedIn) {
       widget.pageIndexNotifier.value = 1;
     }
@@ -33,7 +33,7 @@ class _SyncLoginFormState extends ConsumerState<SyncLoginForm> {
   @override
   Widget build(BuildContext context) {
     final loginNotifier = ref.read(loginFormControllerProvider.notifier);
-    final loginState = ref.watch(loginFormControllerProvider).valueOrNull;
+    final loginState = ref.watch(loginFormControllerProvider).value;
 
     if (loginState == null) {
       return const Center(child: CircularProgressIndicator());

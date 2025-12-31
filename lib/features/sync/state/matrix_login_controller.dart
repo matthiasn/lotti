@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
@@ -35,7 +34,7 @@ Future<bool> isLoggedIn(Ref ref) async {
 @riverpod
 Future<String?> loggedInUserId(Ref ref) async {
   final matrixService = ref.watch(matrixServiceProvider);
-  final loginState = ref.watch(loginStateStreamProvider).valueOrNull ??
+  final loginState = ref.watch(loginStateStreamProvider).value ??
       matrixService.client.onLoginStateChanged.value;
 
   if (loginState == LoginState.loggedIn) {

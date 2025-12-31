@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -11,7 +12,8 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:riverpod/riverpod.dart';
+
+import '../test_utils.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
@@ -21,15 +23,14 @@ class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
 class MockConversationManager extends Mock implements ConversationManager {}
 
-class MockRef extends Mock implements Ref {}
-
 void main() {
   group('LottiChecklistStrategy continuation logic', () {
     late MockJournalDb mockJournalDb;
     late MockAutoChecklistService mockAutoChecklistService;
     late MockChecklistRepository mockChecklistRepository;
     late MockConversationManager mockConversationManager;
-    late MockRef mockRef;
+    late ProviderContainer container;
+    late Ref testRef;
     late Task testTask;
 
     setUp(() {
@@ -37,7 +38,8 @@ void main() {
       mockAutoChecklistService = MockAutoChecklistService();
       mockChecklistRepository = MockChecklistRepository();
       mockConversationManager = MockConversationManager();
-      mockRef = MockRef();
+      container = ProviderContainer();
+      testRef = container.read(testRefProvider);
 
       getIt.registerSingleton<JournalDb>(mockJournalDb);
 
@@ -70,7 +72,10 @@ void main() {
       when(() => mockConversationManager.messages).thenReturn([]);
     });
 
-    tearDown(getIt.reset);
+    tearDown(() {
+      container.dispose();
+      getIt.reset();
+    });
 
     test('shouldContinue includes items from both handlers', () {
       // Create handlers
@@ -90,7 +95,7 @@ void main() {
       final strategy = LottiChecklistStrategy(
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
-        ref: mockRef,
+        ref: testRef,
         provider: AiConfigInferenceProvider(
           id: 'test-ollama',
           name: 'Test Ollama',
@@ -146,7 +151,7 @@ void main() {
       final strategy = LottiChecklistStrategy(
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
-        ref: mockRef,
+        ref: testRef,
         provider: AiConfigInferenceProvider(
           id: 'test-ollama',
           name: 'Test Ollama',
@@ -208,7 +213,7 @@ void main() {
         final strategy = LottiChecklistStrategy(
           checklistHandler: checklistHandler,
           batchChecklistHandler: batchChecklistHandler,
-          ref: mockRef,
+          ref: testRef,
           provider: AiConfigInferenceProvider(
             id: 'test-gemini',
             name: 'Test Gemini',
@@ -243,7 +248,7 @@ void main() {
         final strategy = LottiChecklistStrategy(
           checklistHandler: checklistHandler,
           batchChecklistHandler: batchChecklistHandler,
-          ref: mockRef,
+          ref: testRef,
           provider: AiConfigInferenceProvider(
             id: 'test-ollama',
             name: 'Test Ollama',
@@ -276,7 +281,7 @@ void main() {
         final strategy = LottiChecklistStrategy(
           checklistHandler: checklistHandler,
           batchChecklistHandler: batchChecklistHandler,
-          ref: mockRef,
+          ref: testRef,
           provider: AiConfigInferenceProvider(
             id: 'test-openai',
             name: 'Test OpenAI',
@@ -309,7 +314,7 @@ void main() {
         final strategy = LottiChecklistStrategy(
           checklistHandler: checklistHandler,
           batchChecklistHandler: batchChecklistHandler,
-          ref: mockRef,
+          ref: testRef,
           provider: AiConfigInferenceProvider(
             id: 'test-anthropic',
             name: 'Test Anthropic',
@@ -342,7 +347,7 @@ void main() {
       final strategy = LottiChecklistStrategy(
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
-        ref: mockRef,
+        ref: testRef,
         provider: AiConfigInferenceProvider(
           id: 'test-ollama',
           name: 'Test Ollama',
@@ -375,7 +380,7 @@ void main() {
       final strategy = LottiChecklistStrategy(
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
-        ref: mockRef,
+        ref: testRef,
         provider: AiConfigInferenceProvider(
           id: 'test-ollama',
           name: 'Test Ollama',
@@ -407,7 +412,7 @@ void main() {
       final strategy = LottiChecklistStrategy(
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
-        ref: mockRef,
+        ref: testRef,
         provider: AiConfigInferenceProvider(
           id: 'test-gemini',
           name: 'Test Gemini',
@@ -440,7 +445,7 @@ void main() {
       final strategy = LottiChecklistStrategy(
         checklistHandler: checklistHandler,
         batchChecklistHandler: batchChecklistHandler,
-        ref: mockRef,
+        ref: testRef,
         provider: AiConfigInferenceProvider(
           id: 'test-ollama',
           name: 'Test Ollama',

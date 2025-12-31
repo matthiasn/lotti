@@ -41,16 +41,15 @@ class ChecklistWrapper extends ConsumerWidget {
   Future<List<ChecklistItem?>> _resolveChecklistItems(
     WidgetRef ref,
     Checklist checklist,
-  ) {
-    final futures =
-        checklist.data.linkedChecklistItems.map<Future<ChecklistItem?>>(
-      (id) => ref
-          .read(
-            checklistItemControllerProvider((id: id, taskId: taskId)).future,
-          )
-          .catchError((Object _, StackTrace __) => null),
-    );
-    return Future.wait<ChecklistItem?>(futures);
+  ) async {
+    final items = <ChecklistItem?>[];
+    for (final id in checklist.data.linkedChecklistItems) {
+      final itemState = ref.read(
+        checklistItemControllerProvider((id: id, taskId: taskId)),
+      );
+      items.add(itemState.value);
+    }
+    return items;
   }
 
   @override
@@ -79,10 +78,10 @@ class ChecklistWrapper extends ConsumerWidget {
 
     // Listen for pending correction events and show countdown snackbar
     ref.listen<PendingCorrection?>(
-      correctionCaptureNotifierProvider,
+      correctionCaptureProvider,
       (previous, next) {
         if (next != null && previous != next) {
-          final notifier = ref.read(correctionCaptureNotifierProvider.notifier);
+          final notifier = ref.read(correctionCaptureProvider.notifier);
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
