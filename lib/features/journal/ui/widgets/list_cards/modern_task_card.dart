@@ -117,7 +117,10 @@ class ModernTaskCard extends StatelessWidget {
 
   Widget _buildDateRow(BuildContext context) {
     final hasCreationDate = showCreationDate;
-    final hasDueDate = showDueDate && task.data.due != null;
+    // Don't show due date for completed or rejected tasks - it's no longer relevant
+    final isCompleted =
+        task.data.status is TaskDone || task.data.status is TaskRejected;
+    final hasDueDate = showDueDate && task.data.due != null && !isCompleted;
 
     if (!hasCreationDate && !hasDueDate) {
       return const SizedBox.shrink();

@@ -12,13 +12,13 @@ Lotti is now available on [Flathub](https://flathub.org/en/apps/com.matthiasn.lo
 
 [![Get it on Flathub](https://flathub.org/api/badge?locale=en)](https://flathub.org/en/apps/com.matthiasn.lotti)
 
-## Coming Soon: Deep Dive Series
+## Blog Series: Meet Lotti
 
-Coming in **December 2025**: a **10-part blog series with video walkthroughs** exploring everything Lotti can do. From task management to AI-powered insights — learn how to take control of your productivity while keeping your data private.
+The beginning of a [**multi-part blog series with video walkthroughs**](https://matthiasnehlsen.substack.com/p/meet-lotti) exploring everything Lotti can do is now live! From task management to AI-powered insights — learn how to take control of your productivity while keeping your data private.
 
 ![AI Assistant](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.662+3261/tasks_category_summary.png)
 
-Read more on [**Substack**](https://matthiasnehlsen.substack.com) | [**Project Background**](docs/BACKGROUND.md)
+Start reading: [**Meet Lotti**](https://matthiasnehlsen.substack.com/p/meet-lotti) | [**Project Background**](docs/BACKGROUND.md)
 
 ## Table of Contents
 - [Why Lotti?](#why-lotti)

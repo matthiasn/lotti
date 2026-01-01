@@ -342,6 +342,103 @@ void main() {
       expect(find.text('Cancel'), findsNothing);
     });
 
+    testWidgets(
+        'shows grayed-out styling for completed tasks with overdue date',
+        (tester) async {
+      // Set due date to yesterday (would be overdue for non-completed tasks)
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final now = DateTime(2025, 6, 10);
+      final task = testTask.copyWith(
+        data: testTask.data.copyWith(
+          due: yesterday,
+          status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
+        ),
+      );
+
+      final overrides = <Override>[
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: TaskDueDateWrapper(taskId: task.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify icon does NOT have red color (should be grayed out)
+      final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+      // For completed tasks, urgency is disabled so color should NOT be red
+      expect(icon.color?.r, isNot(taskStatusRed.r));
+    });
+
+    testWidgets('shows grayed-out styling for rejected tasks with overdue date',
+        (tester) async {
+      // Set due date to yesterday (would be overdue for non-rejected tasks)
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      final now = DateTime(2025, 6, 10);
+      final task = testTask.copyWith(
+        data: testTask.data.copyWith(
+          due: yesterday,
+          status: TaskStatus.rejected(
+              id: 's-rejected', createdAt: now, utcOffset: 0),
+        ),
+      );
+
+      final overrides = <Override>[
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: TaskDueDateWrapper(taskId: task.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify icon does NOT have red color (should be grayed out)
+      final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+      // For rejected tasks, urgency is disabled so color should NOT be red
+      expect(icon.color?.r, isNot(taskStatusRed.r));
+    });
+
+    testWidgets('shows grayed-out styling for completed tasks due today',
+        (tester) async {
+      final today = DateTime.now();
+      final now = DateTime(2025, 6, 10);
+      final task = testTask.copyWith(
+        data: testTask.data.copyWith(
+          due: today,
+          status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
+        ),
+      );
+
+      final overrides = <Override>[
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: TaskDueDateWrapper(taskId: task.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify icon does NOT have orange color (should be grayed out)
+      final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+      // For completed tasks, urgency is disabled so color should NOT be orange
+      expect(icon.color?.r, isNot(taskStatusOrange.r));
+    });
+
     testWidgets('returns empty widget for non-Task entities', (tester) async {
       final overrides = <Override>[
         entryControllerProvider(id: 'non-task').overrideWith(
