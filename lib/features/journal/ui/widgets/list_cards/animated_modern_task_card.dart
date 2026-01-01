@@ -14,12 +14,14 @@ class AnimatedModernTaskCard extends StatelessWidget {
     required this.task,
     this.showCreationDate = false,
     this.showDueDate = true,
+    this.showCoverArt = true,
     super.key,
   });
 
   final Task task;
   final bool showCreationDate;
   final bool showDueDate;
+  final bool showCoverArt;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,7 @@ class AnimatedModernTaskCard extends StatelessWidget {
         task: task,
         showCreationDate: showCreationDate,
         showDueDate: showDueDate,
+        showCoverArt: showCoverArt,
       ),
     );
   }

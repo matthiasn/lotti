@@ -31,6 +31,7 @@ mixin _$JournalPageState {
   TaskSortOption get sortOption;
   bool get showCreationDate;
   bool get showDueDate;
+  bool get showCoverArt;
 
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -73,7 +74,9 @@ mixin _$JournalPageState {
             (identical(other.showCreationDate, showCreationDate) ||
                 other.showCreationDate == showCreationDate) &&
             (identical(other.showDueDate, showDueDate) ||
-                other.showDueDate == showDueDate));
+                other.showDueDate == showDueDate) &&
+            (identical(other.showCoverArt, showCoverArt) ||
+                other.showCoverArt == showCoverArt));
   }
 
   @override
@@ -94,11 +97,12 @@ mixin _$JournalPageState {
       const DeepCollectionEquality().hash(selectedPriorities),
       sortOption,
       showCreationDate,
-      showDueDate);
+      showDueDate,
+      showCoverArt);
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate, showCoverArt: $showCoverArt)';
   }
 }
 
@@ -125,7 +129,8 @@ abstract mixin class $JournalPageStateCopyWith<$Res> {
       Set<String> selectedPriorities,
       TaskSortOption sortOption,
       bool showCreationDate,
-      bool showDueDate});
+      bool showDueDate,
+      bool showCoverArt});
 }
 
 /// @nodoc
@@ -157,6 +162,7 @@ class _$JournalPageStateCopyWithImpl<$Res>
     Object? sortOption = null,
     Object? showCreationDate = null,
     Object? showDueDate = null,
+    Object? showCoverArt = null,
   }) {
     return _then(_self.copyWith(
       match: null == match
@@ -222,6 +228,10 @@ class _$JournalPageStateCopyWithImpl<$Res>
       showDueDate: null == showDueDate
           ? _self.showDueDate
           : showDueDate // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showCoverArt: null == showCoverArt
+          ? _self.showCoverArt
+          : showCoverArt // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -337,7 +347,8 @@ extension JournalPageStatePatterns on JournalPageState {
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
             bool showCreationDate,
-            bool showDueDate)?
+            bool showDueDate,
+            bool showCoverArt)?
         $default, {
     required TResult orElse(),
   }) {
@@ -360,7 +371,8 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.selectedPriorities,
             _that.sortOption,
             _that.showCreationDate,
-            _that.showDueDate);
+            _that.showDueDate,
+            _that.showCoverArt);
       case _:
         return orElse();
     }
@@ -398,7 +410,8 @@ extension JournalPageStatePatterns on JournalPageState {
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
             bool showCreationDate,
-            bool showDueDate)
+            bool showDueDate,
+            bool showCoverArt)
         $default,
   ) {
     final _that = this;
@@ -420,7 +433,8 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.selectedPriorities,
             _that.sortOption,
             _that.showCreationDate,
-            _that.showDueDate);
+            _that.showDueDate,
+            _that.showCoverArt);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -457,7 +471,8 @@ extension JournalPageStatePatterns on JournalPageState {
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
             bool showCreationDate,
-            bool showDueDate)?
+            bool showDueDate,
+            bool showCoverArt)?
         $default,
   ) {
     final _that = this;
@@ -479,7 +494,8 @@ extension JournalPageStatePatterns on JournalPageState {
             _that.selectedPriorities,
             _that.sortOption,
             _that.showCreationDate,
-            _that.showDueDate);
+            _that.showDueDate,
+            _that.showCoverArt);
       case _:
         return null;
     }
@@ -506,7 +522,8 @@ class _JournalPageState implements JournalPageState {
       final Set<String> selectedPriorities = const <String>{},
       this.sortOption = TaskSortOption.byPriority,
       this.showCreationDate = false,
-      this.showDueDate = true})
+      this.showDueDate = true,
+      this.showCoverArt = true})
       : _tagIds = tagIds,
         _filters = filters,
         _selectedEntryTypes = selectedEntryTypes,
@@ -623,6 +640,9 @@ class _JournalPageState implements JournalPageState {
   @override
   @JsonKey()
   final bool showDueDate;
+  @override
+  @JsonKey()
+  final bool showCoverArt;
 
   /// Create a copy of JournalPageState
   /// with the given fields replaced by the non-null parameter values.
@@ -665,7 +685,9 @@ class _JournalPageState implements JournalPageState {
             (identical(other.showCreationDate, showCreationDate) ||
                 other.showCreationDate == showCreationDate) &&
             (identical(other.showDueDate, showDueDate) ||
-                other.showDueDate == showDueDate));
+                other.showDueDate == showDueDate) &&
+            (identical(other.showCoverArt, showCoverArt) ||
+                other.showCoverArt == showCoverArt));
   }
 
   @override
@@ -686,11 +708,12 @@ class _JournalPageState implements JournalPageState {
       const DeepCollectionEquality().hash(_selectedPriorities),
       sortOption,
       showCreationDate,
-      showDueDate);
+      showDueDate,
+      showCoverArt);
 
   @override
   String toString() {
-    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate)';
+    return 'JournalPageState(match: $match, tagIds: $tagIds, filters: $filters, showPrivateEntries: $showPrivateEntries, showTasks: $showTasks, selectedEntryTypes: $selectedEntryTypes, fullTextMatches: $fullTextMatches, pagingController: $pagingController, taskStatuses: $taskStatuses, selectedTaskStatuses: $selectedTaskStatuses, selectedCategoryIds: $selectedCategoryIds, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate, showCoverArt: $showCoverArt)';
   }
 }
 
@@ -719,7 +742,8 @@ abstract mixin class _$JournalPageStateCopyWith<$Res>
       Set<String> selectedPriorities,
       TaskSortOption sortOption,
       bool showCreationDate,
-      bool showDueDate});
+      bool showDueDate,
+      bool showCoverArt});
 }
 
 /// @nodoc
@@ -751,6 +775,7 @@ class __$JournalPageStateCopyWithImpl<$Res>
     Object? sortOption = null,
     Object? showCreationDate = null,
     Object? showDueDate = null,
+    Object? showCoverArt = null,
   }) {
     return _then(_JournalPageState(
       match: null == match
@@ -817,6 +842,10 @@ class __$JournalPageStateCopyWithImpl<$Res>
           ? _self.showDueDate
           : showDueDate // ignore: cast_nullable_to_non_nullable
               as bool,
+      showCoverArt: null == showCoverArt
+          ? _self.showCoverArt
+          : showCoverArt // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -830,6 +859,7 @@ mixin _$TasksFilter {
   TaskSortOption get sortOption;
   bool get showCreationDate;
   bool get showDueDate;
+  bool get showCoverArt;
 
   /// Create a copy of TasksFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -859,7 +889,9 @@ mixin _$TasksFilter {
             (identical(other.showCreationDate, showCreationDate) ||
                 other.showCreationDate == showCreationDate) &&
             (identical(other.showDueDate, showDueDate) ||
-                other.showDueDate == showDueDate));
+                other.showDueDate == showDueDate) &&
+            (identical(other.showCoverArt, showCoverArt) ||
+                other.showCoverArt == showCoverArt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -872,11 +904,12 @@ mixin _$TasksFilter {
       const DeepCollectionEquality().hash(selectedPriorities),
       sortOption,
       showCreationDate,
-      showDueDate);
+      showDueDate,
+      showCoverArt);
 
   @override
   String toString() {
-    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate)';
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate, showCoverArt: $showCoverArt)';
   }
 }
 
@@ -893,7 +926,8 @@ abstract mixin class $TasksFilterCopyWith<$Res> {
       Set<String> selectedPriorities,
       TaskSortOption sortOption,
       bool showCreationDate,
-      bool showDueDate});
+      bool showDueDate,
+      bool showCoverArt});
 }
 
 /// @nodoc
@@ -915,6 +949,7 @@ class _$TasksFilterCopyWithImpl<$Res> implements $TasksFilterCopyWith<$Res> {
     Object? sortOption = null,
     Object? showCreationDate = null,
     Object? showDueDate = null,
+    Object? showCoverArt = null,
   }) {
     return _then(_self.copyWith(
       selectedCategoryIds: null == selectedCategoryIds
@@ -944,6 +979,10 @@ class _$TasksFilterCopyWithImpl<$Res> implements $TasksFilterCopyWith<$Res> {
       showDueDate: null == showDueDate
           ? _self.showDueDate
           : showDueDate // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showCoverArt: null == showCoverArt
+          ? _self.showCoverArt
+          : showCoverArt // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -1049,7 +1088,8 @@ extension TasksFilterPatterns on TasksFilter {
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
             bool showCreationDate,
-            bool showDueDate)?
+            bool showDueDate,
+            bool showCoverArt)?
         $default, {
     required TResult orElse(),
   }) {
@@ -1063,7 +1103,8 @@ extension TasksFilterPatterns on TasksFilter {
             _that.selectedPriorities,
             _that.sortOption,
             _that.showCreationDate,
-            _that.showDueDate);
+            _that.showDueDate,
+            _that.showCoverArt);
       case _:
         return orElse();
     }
@@ -1091,7 +1132,8 @@ extension TasksFilterPatterns on TasksFilter {
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
             bool showCreationDate,
-            bool showDueDate)
+            bool showDueDate,
+            bool showCoverArt)
         $default,
   ) {
     final _that = this;
@@ -1104,7 +1146,8 @@ extension TasksFilterPatterns on TasksFilter {
             _that.selectedPriorities,
             _that.sortOption,
             _that.showCreationDate,
-            _that.showDueDate);
+            _that.showDueDate,
+            _that.showCoverArt);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -1131,7 +1174,8 @@ extension TasksFilterPatterns on TasksFilter {
             Set<String> selectedPriorities,
             TaskSortOption sortOption,
             bool showCreationDate,
-            bool showDueDate)?
+            bool showDueDate,
+            bool showCoverArt)?
         $default,
   ) {
     final _that = this;
@@ -1144,7 +1188,8 @@ extension TasksFilterPatterns on TasksFilter {
             _that.selectedPriorities,
             _that.sortOption,
             _that.showCreationDate,
-            _that.showDueDate);
+            _that.showDueDate,
+            _that.showCoverArt);
       case _:
         return null;
     }
@@ -1161,7 +1206,8 @@ class _TasksFilter implements TasksFilter {
       final Set<String> selectedPriorities = const <String>{},
       this.sortOption = TaskSortOption.byPriority,
       this.showCreationDate = false,
-      this.showDueDate = true})
+      this.showDueDate = true,
+      this.showCoverArt = true})
       : _selectedCategoryIds = selectedCategoryIds,
         _selectedTaskStatuses = selectedTaskStatuses,
         _selectedLabelIds = selectedLabelIds,
@@ -1217,6 +1263,9 @@ class _TasksFilter implements TasksFilter {
   @override
   @JsonKey()
   final bool showDueDate;
+  @override
+  @JsonKey()
+  final bool showCoverArt;
 
   /// Create a copy of TasksFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -1251,7 +1300,9 @@ class _TasksFilter implements TasksFilter {
             (identical(other.showCreationDate, showCreationDate) ||
                 other.showCreationDate == showCreationDate) &&
             (identical(other.showDueDate, showDueDate) ||
-                other.showDueDate == showDueDate));
+                other.showDueDate == showDueDate) &&
+            (identical(other.showCoverArt, showCoverArt) ||
+                other.showCoverArt == showCoverArt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1264,11 +1315,12 @@ class _TasksFilter implements TasksFilter {
       const DeepCollectionEquality().hash(_selectedPriorities),
       sortOption,
       showCreationDate,
-      showDueDate);
+      showDueDate,
+      showCoverArt);
 
   @override
   String toString() {
-    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate)';
+    return 'TasksFilter(selectedCategoryIds: $selectedCategoryIds, selectedTaskStatuses: $selectedTaskStatuses, selectedLabelIds: $selectedLabelIds, selectedPriorities: $selectedPriorities, sortOption: $sortOption, showCreationDate: $showCreationDate, showDueDate: $showDueDate, showCoverArt: $showCoverArt)';
   }
 }
 
@@ -1287,7 +1339,8 @@ abstract mixin class _$TasksFilterCopyWith<$Res>
       Set<String> selectedPriorities,
       TaskSortOption sortOption,
       bool showCreationDate,
-      bool showDueDate});
+      bool showDueDate,
+      bool showCoverArt});
 }
 
 /// @nodoc
@@ -1309,6 +1362,7 @@ class __$TasksFilterCopyWithImpl<$Res> implements _$TasksFilterCopyWith<$Res> {
     Object? sortOption = null,
     Object? showCreationDate = null,
     Object? showDueDate = null,
+    Object? showCoverArt = null,
   }) {
     return _then(_TasksFilter(
       selectedCategoryIds: null == selectedCategoryIds
@@ -1338,6 +1392,10 @@ class __$TasksFilterCopyWithImpl<$Res> implements _$TasksFilterCopyWith<$Res> {
       showDueDate: null == showDueDate
           ? _self.showDueDate
           : showDueDate // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showCoverArt: null == showCoverArt
+          ? _self.showCoverArt
+          : showCoverArt // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }

@@ -35,13 +35,19 @@ class _TaskTitleHeaderState extends ConsumerState<TaskTitleHeader> {
     }
 
     final title = task.data.title;
+    final hasCoverArt = task.data.coverArtId != null;
 
     return Material(
       elevation: 2,
       child: Container(
         width: double.infinity,
         color: Theme.of(context).appBarTheme.backgroundColor,
-        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 10),
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: hasCoverArt ? 12 : 0,
+          bottom: 10,
+        ),
         child: AnimatedCrossFade(
           duration: checklistCrossFadeDuration,
           firstChild: TitleTextField(

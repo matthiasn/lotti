@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
@@ -14,12 +15,16 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
-/// A modern task card with gradient styling matching the settings page design
+/// A modern task card with gradient styling matching the settings page design.
+///
+/// When [showCoverArt] is true and the task has a cover art image set,
+/// displays an 120x120 thumbnail on the left side of the card.
 class ModernTaskCard extends StatelessWidget {
   const ModernTaskCard({
     required this.task,
     this.showCreationDate = false,
     this.showDueDate = true,
+    this.showCoverArt = true,
     super.key,
   });
 
@@ -27,9 +32,17 @@ class ModernTaskCard extends StatelessWidget {
   final bool showCreationDate;
   final bool showDueDate;
 
+  /// Whether to show the cover art thumbnail when available.
+  final bool showCoverArt;
+
+  static const double _thumbnailSize = 120;
+
   @override
   Widget build(BuildContext context) {
     void onTap() => beamToNamed('/tasks/${task.meta.id}');
+
+    final coverArtId = task.data.coverArtId;
+    final hasCoverArt = showCoverArt && coverArtId != null;
 
     return ModernBaseCard(
       onTap: onTap,
@@ -37,27 +50,68 @@ class ModernTaskCard extends StatelessWidget {
         horizontal: 12,
         vertical: AppTheme.cardSpacing / 2,
       ),
-      padding: const EdgeInsets.only(
-        left: AppTheme.cardPadding,
-        top: AppTheme.cardPadding,
-        right: AppTheme.cardPadding,
-        bottom: 10,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ModernCardContent(
-            title: task.data.title,
-            maxTitleLines: 3,
-            subtitleWidget: _buildSubtitleWidget(context),
-            trailing: TimeRecordingIcon(
-              taskId: task.meta.id,
+      padding: hasCoverArt
+          ? EdgeInsets.zero
+          : const EdgeInsets.only(
+              left: AppTheme.cardPadding,
+              top: AppTheme.cardPadding,
+              right: AppTheme.cardPadding,
+              bottom: 10,
+            ),
+      child: hasCoverArt
+          ? _buildWithCoverArt(context, coverArtId)
+          : _buildStandardContent(context),
+    );
+  }
+
+  Widget _buildWithCoverArt(BuildContext context, String coverArtId) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Cover art thumbnail with rounded left corners
+        Padding(
+          padding: const EdgeInsets.only(top: AppTheme.cardPadding * 1.25),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(
+                Radius.circular(AppTheme.cardBorderRadius / 2)),
+            child: CoverArtThumbnail(
+              imageId: coverArtId,
+              size: _thumbnailSize,
+              cropX: task.data.coverArtCropX,
             ),
           ),
-          _buildDateRow(context),
-        ],
-      ),
+        ),
+        const SizedBox(width: 12),
+        // Standard content
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: AppTheme.cardPadding,
+              right: AppTheme.cardPadding,
+              bottom: 10,
+            ),
+            child: _buildStandardContent(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStandardContent(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ModernCardContent(
+          title: task.data.title,
+          maxTitleLines: 3,
+          subtitleWidget: _buildSubtitleWidget(context),
+          trailing: TimeRecordingIcon(
+            taskId: task.meta.id,
+          ),
+        ),
+        _buildDateRow(context),
+      ],
     );
   }
 

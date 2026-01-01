@@ -2708,6 +2708,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksShowDueDate => 'Fälligkeitsdatum auf Karten anzeigen';
 
   @override
+  String get tasksShowCoverArt => 'Titelbild auf Karten anzeigen';
+
+  @override
+  String get coverArtChipSet => 'Titelbild setzen';
+
+  @override
+  String get coverArtChipActive => 'Titelbild';
+
+  @override
+  String get coverArtAssign => 'Als Titelbild setzen';
+
+  @override
+  String get coverArtRemove => 'Titelbild entfernen';
+
+  @override
   String get taskDueToday => 'Heute fällig';
 
   @override

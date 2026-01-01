@@ -2794,6 +2794,123 @@ void main() {
       );
     });
   });
+
+  group('setCoverArt method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+          .thenAnswer((_) async => testTask);
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+    });
+
+    test('sets cover art on a task', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.setCoverArt('image-123');
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      final capturedTaskData = captured[1] as TaskData;
+      expect(capturedTaskData.coverArtId, 'image-123');
+    });
+
+    test('removes cover art when null is passed', () async {
+      // Use a task that has cover art set
+      final taskWithCover = testTask.copyWith(
+        data: testTask.data.copyWith(coverArtId: 'existing-image'),
+      );
+      when(() => mockJournalDb.journalEntityById(taskWithCover.meta.id))
+          .thenAnswer((_) async => taskWithCover);
+
+      final container = makeProviderContainer();
+      final entryId = taskWithCover.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.setCoverArt(null);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: captureAny(named: 'journalEntityId'),
+          taskData: captureAny(named: 'taskData'),
+        ),
+      ).captured;
+
+      expect(captured[0], entryId);
+      final capturedTaskData = captured[1] as TaskData;
+      expect(capturedTaskData.coverArtId, isNull);
+    });
+
+    test('does nothing when entry is not a task', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      await notifier.setCoverArt('image-123');
+
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+
+    test('updates local state optimistically', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await container.read(testEntryProvider.future);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.setCoverArt('new-image');
+
+      // Verify the state was updated optimistically
+      final state = container.read(testEntryProvider).value;
+      expect(state?.entry, isA<Task>());
+      final task = state!.entry! as Task;
+      expect(task.data.coverArtId, 'new-image');
+    });
+  });
 }
 
 class MockJournalRepository extends Mock implements JournalRepository {}

@@ -458,5 +458,11 @@
       }
     }
   },
-  "clearButton": "Șterge"
+  "clearButton": "Șterge",
+
+  "tasksShowCoverArt": "Afișează coperta pe carduri",
+  "coverArtChipSet": "Setează coperta",
+  "coverArtChipActive": "Copertă",
+  "coverArtAssign": "Setează ca imagine de copertă",
+  "coverArtRemove": "Elimină ca imagine de copertă"
 }

@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/utils/platform.dart';
 
 class CardImageWidget extends StatefulWidget {
   const CardImageWidget({
@@ -21,35 +21,35 @@ class CardImageWidget extends StatefulWidget {
   State<CardImageWidget> createState() => _CardImageWidgetState();
 }
 
-class _CardImageWidgetState extends State<CardImageWidget> {
-  int retries = 0;
+class _CardImageWidgetState extends State<CardImageWidget>
+    with FileWatcherMixin {
+  @override
+  void didUpdateWidget(CardImageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.journalImage.id != widget.journalImage.id) {
+      resetFileWatcher();
+    }
+  }
 
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    disposeFileWatcher();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final file = File(getFullImagePath(widget.journalImage));
+    final path = getFullImagePath(widget.journalImage);
+    setupFileWatcher(path);
 
-    if (!isTestEnv && retries < 10 && !file.existsSync()) {
-      Future<void>.delayed(const Duration(milliseconds: 200)).then((_) {
-        setState(() {
-          retries++;
-        });
-      });
-    }
-
-    if (!file.existsSync()) {
-      return Container();
+    if (!fileExists) {
+      return const SizedBox.shrink();
     }
 
     return SizedBox(
-      key: Key('${file.path}-$retries'),
       height: widget.height.toDouble(),
       child: Image.file(
-        file,
+        File(path),
         cacheHeight: widget.height * 3,
         height: widget.height.toDouble(),
         fit: widget.fit,

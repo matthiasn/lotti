@@ -177,6 +177,8 @@ _TaskData _$TaskDataFromJson(Map<String, dynamic> json) => _TaskData(
           .toSet(),
       priority: $enumDecodeNullable(_$TaskPriorityEnumMap, json['priority']) ??
           TaskPriority.p2Medium,
+      coverArtId: json['coverArtId'] as String?,
+      coverArtCropX: (json['coverArtCropX'] as num?)?.toDouble() ?? 0.5,
     );
 
 Map<String, dynamic> _$TaskDataToJson(_TaskData instance) => <String, dynamic>{
@@ -191,6 +193,8 @@ Map<String, dynamic> _$TaskDataToJson(_TaskData instance) => <String, dynamic>{
       'languageCode': instance.languageCode,
       'aiSuppressedLabelIds': instance.aiSuppressedLabelIds?.toList(),
       'priority': _$TaskPriorityEnumMap[instance.priority]!,
+      'coverArtId': instance.coverArtId,
+      'coverArtCropX': instance.coverArtCropX,
     };
 
 const _$TaskPriorityEnumMap = {

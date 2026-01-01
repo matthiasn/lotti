@@ -9,12 +9,14 @@ class CardWrapperWidget extends StatelessWidget {
     required this.item,
     this.showCreationDate = false,
     this.showDueDate = true,
+    this.showCoverArt = true,
     super.key,
   });
 
   final JournalEntity item;
   final bool showCreationDate;
   final bool showDueDate;
+  final bool showCoverArt;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +30,7 @@ class CardWrapperWidget extends StatelessWidget {
             task: task,
             showCreationDate: showCreationDate,
             showDueDate: showDueDate,
+            showCoverArt: showCoverArt,
           );
         },
         orElse: () => ModernJournalCard(item: item),

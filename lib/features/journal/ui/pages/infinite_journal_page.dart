@@ -140,6 +140,7 @@ class _InfiniteJournalPageBodyState
                           item: item,
                           showCreationDate: state.showCreationDate,
                           showDueDate: state.showDueDate,
+                          showCoverArt: state.showCoverArt,
                           key: ValueKey(item.meta.id),
                         );
                       },

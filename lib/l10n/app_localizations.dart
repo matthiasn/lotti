@@ -5032,6 +5032,36 @@ abstract class AppLocalizations {
   /// **'Show due date on cards'**
   String get tasksShowDueDate;
 
+  /// No description provided for @tasksShowCoverArt.
+  ///
+  /// In en, this message translates to:
+  /// **'Show cover art on cards'**
+  String get tasksShowCoverArt;
+
+  /// No description provided for @coverArtChipSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Set cover'**
+  String get coverArtChipSet;
+
+  /// No description provided for @coverArtChipActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover'**
+  String get coverArtChipActive;
+
+  /// No description provided for @coverArtAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as cover art'**
+  String get coverArtAssign;
+
+  /// No description provided for @coverArtRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove as cover art'**
+  String get coverArtRemove;
+
   /// No description provided for @taskDueToday.
   ///
   /// In en, this message translates to:

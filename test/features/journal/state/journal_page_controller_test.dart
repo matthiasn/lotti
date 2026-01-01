@@ -927,6 +927,82 @@ void main() {
       });
     });
 
+    group('Show Cover Art Toggle', () {
+      test('setShowCoverArt updates showCoverArt to false', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Default is true, so toggle to false
+          controller.setShowCoverArt(show: false);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showCoverArt, isFalse);
+        });
+      });
+
+      test('setShowCoverArt can toggle back to true', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..setShowCoverArt(show: false)
+            ..setShowCoverArt(show: true);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showCoverArt, isTrue);
+        });
+      });
+
+      test('showCoverArt defaults to true', () {
+        fakeAsync((async) {
+          container.read(journalPageControllerProvider(true));
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showCoverArt, isTrue);
+        });
+      });
+
+      test('showCoverArt persists alongside other settings', () {
+        fakeAsync((async) {
+          final controller =
+              container.read(journalPageControllerProvider(true).notifier);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..setShowCoverArt(show: false)
+            ..setSortOption(TaskSortOption.byDate)
+            ..setFilters({DisplayFilter.starredEntriesOnly});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showCoverArt, isFalse);
+          expect(state.sortOption, equals(TaskSortOption.byDate));
+          expect(state.filters, contains(DisplayFilter.starredEntriesOnly));
+        });
+      });
+    });
+
     group('Search Functionality', () {
       test('setSearchString updates match in state', () {
         fakeAsync((async) {

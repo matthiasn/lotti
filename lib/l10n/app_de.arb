@@ -505,5 +505,11 @@
   "entryLabelsEditTooltip": "Labels bearbeiten",
   "entryLabelsNoLabels": "Keine Labels zugewiesen",
   "entryLabelsActionTitle": "Labels",
-  "entryLabelsActionSubtitle": "Labels zuweisen, um diesen Eintrag zu organisieren"
+  "entryLabelsActionSubtitle": "Labels zuweisen, um diesen Eintrag zu organisieren",
+
+  "tasksShowCoverArt": "Titelbild auf Karten anzeigen",
+  "coverArtChipSet": "Titelbild setzen",
+  "coverArtChipActive": "Titelbild",
+  "coverArtAssign": "Als Titelbild setzen",
+  "coverArtRemove": "Titelbild entfernen"
 }
