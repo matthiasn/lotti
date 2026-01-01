@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
@@ -32,6 +33,10 @@ class TaskDueDateWrapper extends ConsumerWidget {
       referenceDate: clock.now(),
     );
 
+    // Don't show urgency for completed/rejected tasks - they're done
+    final isCompleted =
+        task.data.status is TaskDone || task.data.status is TaskRejected;
+
     final label = dueDate != null
         ? context.messages
             .taskDueDateWithDate(DateFormat.yMMMd().format(dueDate))
@@ -54,8 +59,9 @@ class TaskDueDateWrapper extends ConsumerWidget {
       child: SubtleActionChip(
         label: label,
         icon: Icons.event_rounded,
-        isUrgent: status.isUrgent,
-        urgentColor: status.urgentColor,
+        // When task is completed/rejected, show grayed-out styling instead of urgent
+        isUrgent: !isCompleted && status.isUrgent,
+        urgentColor: isCompleted ? null : status.urgentColor,
       ),
     );
   }

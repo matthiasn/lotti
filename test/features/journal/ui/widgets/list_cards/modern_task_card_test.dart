@@ -660,6 +660,133 @@ void main() {
       expect(creationDateOffset.dx, lessThan(dueDateOffset.dx));
     });
 
+    testWidgets('hides due date when task status is Done', (tester) async {
+      final dueDate = DateTime(2025, 11, 10);
+      final now = DateTime(2025, 11, 3, 12);
+      final meta = Metadata(
+        id: 'task-done',
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      );
+      final data = TaskData(
+        status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
+        dateFrom: now,
+        dateTo: now,
+        statusHistory: const [],
+        title: 'Completed Task',
+        due: dueDate,
+      );
+      final task = Task(meta: meta, data: data);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Due date should NOT be shown for completed tasks
+      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(
+        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('hides due date when task status is Rejected', (tester) async {
+      final dueDate = DateTime(2025, 11, 10);
+      final now = DateTime(2025, 11, 3, 12);
+      final meta = Metadata(
+        id: 'task-rejected',
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      );
+      final data = TaskData(
+        status:
+            TaskStatus.rejected(id: 's-rejected', createdAt: now, utcOffset: 0),
+        dateFrom: now,
+        dateTo: now,
+        statusHistory: const [],
+        title: 'Rejected Task',
+        due: dueDate,
+      );
+      final task = Task(meta: meta, data: data);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Due date should NOT be shown for rejected tasks
+      expect(find.byIcon(Icons.event_rounded), findsNothing);
+      expect(
+        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('shows due date for non-completed task statuses',
+        (tester) async {
+      final dueDate = DateTime(2025, 11, 10);
+      final now = DateTime(2025, 11, 3, 12);
+
+      // Test with InProgress status (a non-completed status)
+      final meta = Metadata(
+        id: 'task-in-progress',
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      );
+      final data = TaskData(
+        status: TaskStatus.inProgress(id: 's-ip', createdAt: now, utcOffset: 0),
+        dateFrom: now,
+        dateTo: now,
+        statusHistory: const [],
+        title: 'In Progress Task',
+        due: dueDate,
+      );
+      final task = Task(meta: meta, data: data);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Due date SHOULD be shown for in-progress tasks
+      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+      expect(
+        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
         'tapping due date toggles between absolute and relative display',
         (tester) async {

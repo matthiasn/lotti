@@ -19,7 +19,7 @@
       <li>Customizable dashboards and analytics</li>
     </ul>
     <p>
-      Coming in December 2025: A 10-part blog series with video walkthroughs exploring everything Lotti can do — from task management to AI-powered insights. Learn how to take control of your productivity while keeping your data private!
+      Read the <a href="https://matthiasnehlsen.substack.com/p/meet-lotti">multi-part blog series with video walkthroughs</a> exploring everything Lotti can do — from task management to AI-powered insights. Learn how to take control of your productivity while keeping your data private!
     </p>
   </description>
   <developer id="com.matthiasn">
@@ -27,10 +27,15 @@
   </developer>
   <url type="homepage">https://github.com/matthiasn/lotti</url>
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
-  <url type="help">https://github.com/matthiasn/lotti</url>
+  <url type="help">https://matthiasnehlsen.substack.com/p/meet-lotti</url>
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.794" date="2026-01-02">
+      <description>
+        <p>Due Date Visibility Refinements: Improved UX for completed and rejected tasks. Due dates are now hidden on task cards for completed/rejected tasks since they're no longer relevant. In the entry details view, due dates show grayed-out styling instead of red/orange urgency colors for completed/rejected tasks.</p>
+      </description>
+    </release>
     <release version="0.9.793" date="2025-12-31">
       <description>
         <p>Visual Mnemonics: Tasks can now have cover art images for memorable visual representation. Set any linked image as a task's cover art via the action menu. Features include cover art thumbnails on task cards (with filter toggle), a cinematic 2:1 collapsible SliverAppBar in task details, glass effect overlay buttons, and horizontal crop adjustment for positioning.</p>

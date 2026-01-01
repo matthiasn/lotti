@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Ensure SetCoverArtChip widget tests register required dependencies and fallbacks in `getIt` to keep cover-art flows testable
 
+## [0.9.794] - 2026-01-02
+### Changed
+- Due Date Visibility Refinements: Improved UX for completed and rejected tasks
+  - Due dates are now hidden on task cards for completed and rejected tasks
+  - Due dates in entry details view show grayed-out styling for completed/rejected tasks (no red/orange urgency colors)
+- Updated README and Flatpak metainfo to reference the launched "Meet Lotti" blog series
+
+### Added
+- Tests for due date visibility behavior based on task status
+
 ## [0.9.793] - 2025-12-31
 ### Added
 - Visual Mnemonics: Tasks can now have cover art images for memorable visual representation
