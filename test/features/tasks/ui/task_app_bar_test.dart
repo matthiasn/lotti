@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -153,6 +155,91 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(SliverAppBar), findsOneWidget);
+    });
+
+    testWidgets('renders expandable app bar when task has cover art',
+        (tester) async {
+      final task = buildTask(coverArtId: 'image-1');
+      final image = buildImage(id: 'image-1');
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          overrides: [
+            createEntryControllerOverride(task),
+            createEntryControllerOverride(image),
+          ],
+          child: const TaskSliverAppBar(taskId: 'task-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SliverAppBar), findsOneWidget);
+      // TaskSliverAppBar should render when task has cover art
+      expect(find.byType(TaskSliverAppBar), findsOneWidget);
+    });
+
+    testWidgets('expandable app bar has chevron_left icon for back button',
+        (tester) async {
+      final task = buildTask(coverArtId: 'image-1');
+      final image = buildImage(id: 'image-1');
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          overrides: [
+            createEntryControllerOverride(task),
+            createEntryControllerOverride(image),
+          ],
+          child: const TaskSliverAppBar(taskId: 'task-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // App bar should have chevron_left icon for back navigation
+      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+    });
+
+    testWidgets('task with cover art renders SliverAppBar correctly',
+        (tester) async {
+      final task = buildTask(coverArtId: 'image-1');
+      final image = buildImage(id: 'image-1');
+
+      // Set a specific screen size for consistent testing
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          overrides: [
+            createEntryControllerOverride(task),
+            createEntryControllerOverride(image),
+          ],
+          child: const TaskSliverAppBar(taskId: 'task-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify the app bar is rendered
+      expect(find.byType(SliverAppBar), findsOneWidget);
+
+      // Reset surface size
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    testWidgets('task without cover art renders compact SliverAppBar',
+        (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          overrides: [createEntryControllerOverride(task)],
+          child: const TaskSliverAppBar(taskId: 'task-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Compact app bar should be rendered
+      expect(find.byType(SliverAppBar), findsOneWidget);
+      // Should still have back button
+      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
   });
 }

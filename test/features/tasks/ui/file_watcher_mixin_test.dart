@@ -108,6 +108,71 @@ void main() {
 
       expect(state.fileExists, isTrue);
     });
+
+    testWidgets('setupFileWatcher with forceReset rechecks same path',
+        (tester) async {
+      final path = '${tempDir.path}/force_reset_test.txt';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: _TestWidget(path: path),
+        ),
+      );
+
+      final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+      expect(state.fileExists, isFalse);
+
+      // Create the file
+      File(path).writeAsStringSync('test');
+
+      // Without forceReset, same path would not be rechecked
+      // Use forceReset to force recheck
+      state.setupFileWatcher(path, forceReset: true);
+
+      expect(state.fileExists, isTrue);
+    });
+
+    testWidgets('setupFileWatcher switches to new path correctly',
+        (tester) async {
+      final file1 = File('${tempDir.path}/file1.txt')
+        ..writeAsStringSync('test1');
+      final path2 = '${tempDir.path}/file2.txt';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: _TestWidget(path: file1.path),
+        ),
+      );
+
+      final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+      expect(state.fileExists, isTrue);
+
+      // Switch to a non-existent path
+      state.setupFileWatcher(path2);
+      expect(state.fileExists, isFalse);
+
+      // Create the second file and reset
+      File(path2).writeAsStringSync('test2');
+      state
+        ..resetFileWatcher()
+        ..setupFileWatcher(path2);
+      expect(state.fileExists, isTrue);
+    });
+
+    testWidgets('handles non-existent parent directory gracefully',
+        (tester) async {
+      final path = '${tempDir.path}/nonexistent_dir/file.txt';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: _TestWidget(path: path),
+        ),
+      );
+
+      final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+      // Should handle missing parent directory without crashing
+      expect(state.fileExists, isFalse);
+    });
   });
 
   group('pathsEqual', () {

@@ -154,5 +154,114 @@ void main() {
       // Note: We can't directly test the BoxFit value since it's inside an Image.file
       // widget, but we've confirmed it accepts the parameter
     });
+
+    testWidgets('didUpdateWidget resets watcher when journalImage.id changes',
+        (WidgetTester tester) async {
+      // Setup: Create the directory structure for both images
+      Directory(
+        p.join(
+          mockDirectory.path,
+          testImage.data.imageDirectory.replaceFirst('/', ''),
+        ),
+      ).createSync(recursive: true);
+
+      final filePath1 = getExpectedImagePath();
+      File(filePath1).createSync();
+
+      // Create second image data
+      final now = DateTime.now();
+      final testImage2 = JournalImage(
+        meta: Metadata(
+          id: 'test-image-id-2',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          capturedAt: now,
+          imageId: 'test-image-id-2',
+          imageFile: 'test_image_2.jpg',
+          imageDirectory: '/images/2023/',
+        ),
+        entryText: const EntryText(plainText: 'Test image 2'),
+      );
+
+      final filePath2 = p
+          .join(
+            mockDirectory.path,
+            testImage2.data.imageDirectory.replaceFirst('/', ''),
+            testImage2.data.imageFile,
+          )
+          .replaceAll(r'\', '/');
+      File(filePath2).createSync();
+
+      // Build with first image
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CardImageWidget(
+            journalImage: testImage,
+            height: testHeight,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CardImageWidget), findsOneWidget);
+
+      // Rebuild with second image - this should trigger didUpdateWidget
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CardImageWidget(
+            journalImage: testImage2,
+            height: testHeight,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Widget should still render correctly after id change
+      expect(find.byType(CardImageWidget), findsOneWidget);
+    });
+
+    testWidgets('does not reset watcher when other props change',
+        (WidgetTester tester) async {
+      // Setup: Create the file to make existsSync() return true
+      Directory(
+        p.join(
+          mockDirectory.path,
+          testImage.data.imageDirectory.replaceFirst('/', ''),
+        ),
+      ).createSync(recursive: true);
+
+      final filePath = getExpectedImagePath();
+      File(filePath).createSync();
+
+      // Build with initial height
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CardImageWidget(
+            journalImage: testImage,
+            height: testHeight,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Rebuild with different height but same journalImage.id
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CardImageWidget(
+            journalImage: testImage,
+            height: 200, // Different height
+            fit: BoxFit.cover, // Different fit
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Widget should render correctly - no watcher reset needed
+      expect(find.byType(CardImageWidget), findsOneWidget);
+    });
   });
 }

@@ -10,11 +10,11 @@ import '../../../helpers/fake_entry_controller.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  JournalImage buildJournalImage() {
+  JournalImage buildJournalImage({String id = 'image-1'}) {
     final now = DateTime(2025, 12, 31, 12);
     return JournalImage(
       meta: Metadata(
-        id: 'image-1',
+        id: id,
         createdAt: now,
         updatedAt: now,
         dateFrom: now,
@@ -274,6 +274,5 @@ void main() {
       // Widget should still render correctly
       expect(find.byType(CoverArtThumbnail), findsOneWidget);
     });
-
   });
 }
