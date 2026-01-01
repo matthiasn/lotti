@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 
@@ -45,7 +46,7 @@ void main() {
       expect(icon.color, Colors.red);
     });
 
-    testWidgets('uses default icon size of 26', (tester) async {
+    testWidgets('uses default icon size of 24', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -55,7 +56,22 @@ void main() {
       );
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
-      expect(icon.size, 26);
+      expect(icon.size, 24);
+    });
+
+    testWidgets('uses default container size of 34', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: GlassBackButton(),
+          ),
+        ),
+      );
+
+      final actionButton = tester.widget<GlassActionButton>(
+        find.byType(GlassActionButton),
+      );
+      expect(actionButton.size, 34);
     });
 
     testWidgets('uses custom icon size when provided', (tester) async {
@@ -157,7 +173,7 @@ void main() {
       expect(find.byType(GlassBackButton), findsOneWidget);
     });
 
-    testWidgets('has left padding of 4', (tester) async {
+    testWidgets('uses GlassActionButton internally', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -166,19 +182,7 @@ void main() {
         ),
       );
 
-      final paddings = tester.widgetList<Padding>(
-        find.descendant(
-          of: find.byType(GlassBackButton),
-          matching: find.byType(Padding),
-        ),
-      );
-
-      // Find the padding with left: 4
-      final leftPadding = paddings.firstWhere(
-        (p) => p.padding == const EdgeInsets.only(left: 4),
-      );
-
-      expect(leftPadding.padding, const EdgeInsets.only(left: 4));
+      expect(find.byType(GlassActionButton), findsOneWidget);
     });
   });
 }

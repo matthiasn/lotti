@@ -11,7 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
+import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/modal/index.dart';
 
 /// Unified AI popup menu that shows available prompts for the current entity
@@ -43,14 +43,26 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
         Icons.assistant_rounded,
         color: iconColor ?? context.colorScheme.outline,
       );
+
+      void onTap() => UnifiedAiModal.show<void>(
+            context: context,
+            journalEntity: journalEntity,
+            linkedFromId: linkedFromId,
+            ref: ref,
+          );
+
+      // Use GlassActionButton for proper clipped splash effect when iconColor
+      // is specified (used over images), otherwise use standard IconButton
+      if (iconColor != null) {
+        return GlassActionButton(
+          onTap: onTap,
+          child: icon,
+        );
+      }
+
       return IconButton(
-        icon: iconColor != null ? GlassIconContainer(child: icon) : icon,
-        onPressed: () => UnifiedAiModal.show<void>(
-          context: context,
-          journalEntity: journalEntity,
-          linkedFromId: linkedFromId,
-          ref: ref,
-        ),
+        icon: icon,
+        onPressed: onTap,
       );
     }
 

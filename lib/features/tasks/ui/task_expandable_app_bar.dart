@@ -27,12 +27,15 @@ class TaskExpandableAppBar extends StatelessWidget {
 
     return SliverAppBar(
       expandedHeight: expandedHeight,
-      leadingWidth: 52,
+      leadingWidth: 48,
       titleSpacing: 0,
-      toolbarHeight: 45,
+      toolbarHeight: 40,
       scrolledUnderElevation: 0,
       elevation: 10,
-      leading: const GlassBackButton(),
+      leading: const Padding(
+        padding: EdgeInsets.only(left: 8),
+        child: GlassBackButton(),
+      ),
       actions: _buildGlassActions(context),
       pinned: true,
       automaticallyImplyLeading: false,

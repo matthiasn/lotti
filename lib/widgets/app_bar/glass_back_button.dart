@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 
 /// A glass-styled back button for use over images.
@@ -10,7 +11,8 @@ class GlassBackButton extends StatelessWidget {
   const GlassBackButton({
     this.onPressed,
     this.iconColor = Colors.white,
-    this.iconSize = 26,
+    this.iconSize = 24,
+    this.containerSize = 34,
     super.key,
   });
 
@@ -20,27 +22,21 @@ class GlassBackButton extends StatelessWidget {
   /// Color of the chevron icon. Defaults to white.
   final Color iconColor;
 
-  /// Size of the chevron icon. Defaults to 26.
+  /// Size of the chevron icon. Defaults to 24.
   final double iconSize;
+
+  /// Size of the glass container. Defaults to 34.
+  final double containerSize;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Material(
-        type: MaterialType.transparency,
-        clipBehavior: Clip.hardEdge,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: onPressed ?? () => Navigator.of(context).maybePop(),
-          child: GlassIconContainer(
-            child: Icon(
-              Icons.chevron_left,
-              size: iconSize,
-              color: iconColor,
-            ),
-          ),
-        ),
+    return GlassActionButton(
+      onTap: onPressed ?? () => Navigator.of(context).maybePop(),
+      size: containerSize,
+      child: Icon(
+        Icons.chevron_left,
+        size: iconSize,
+        color: iconColor,
       ),
     );
   }

@@ -123,13 +123,15 @@ void main() {
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
 
-    testWidgets('renders GlassActionButton for more menu', (tester) async {
+    testWidgets('renders GlassActionButtons for back and more menu',
+        (tester) async {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task, 'image-1'));
       await tester.pump();
 
-      expect(find.byType(GlassActionButton), findsOneWidget);
+      // GlassBackButton uses GlassActionButton internally, plus one for more menu
+      expect(find.byType(GlassActionButton), findsNWidgets(2));
     });
 
     testWidgets('renders more_horiz icon', (tester) async {
@@ -179,7 +181,7 @@ void main() {
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
-      expect(appBar.toolbarHeight, 45);
+      expect(appBar.toolbarHeight, 40);
     });
 
     testWidgets('SliverAppBar has correct leadingWidth', (tester) async {
@@ -189,7 +191,7 @@ void main() {
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
-      expect(appBar.leadingWidth, 52);
+      expect(appBar.leadingWidth, 48);
     });
 
     testWidgets('does not automatically imply leading', (tester) async {
