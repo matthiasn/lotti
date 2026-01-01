@@ -5,7 +5,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -76,15 +75,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.more_horiz), findsOneWidget);
-    });
-
-    testWidgets('contains GlassIconContainer for AI menu', (tester) async {
-      final task = buildTask();
-
-      await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(GlassIconContainer), findsOneWidget);
     });
 
     testWidgets('SliverAppBar is pinned', (tester) async {

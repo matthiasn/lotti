@@ -192,7 +192,7 @@ class ModernAssignCoverArtItem extends ConsumerWidget {
 }
 ```
 
-### 2.2 Add menu item to InitialModalPageContent
+### 2.6 Add menu item to InitialModalPageContent
 **File:** `lib/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart`
 
 Add after `ModernCopyImageItem`:
@@ -203,7 +203,7 @@ ModernAssignCoverArtItem(
 ),
 ```
 
-### 2.3 Add localization strings
+### 2.7 Add localization strings
 **File:** `lib/l10n/app_en.arb`
 
 Add:

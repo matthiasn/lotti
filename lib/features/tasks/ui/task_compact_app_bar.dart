@@ -3,7 +3,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 /// Compact app bar for tasks without cover art.
@@ -35,9 +34,7 @@ class TaskCompactAppBar extends StatelessWidget {
 
   List<Widget> _buildActions(BuildContext context) {
     return [
-      GlassIconContainer(
-        child: UnifiedAiPopUpMenu(journalEntity: task, linkedFromId: null),
-      ),
+      UnifiedAiPopUpMenu(journalEntity: task, linkedFromId: null),
       IconButton(
         icon: Icon(
           Icons.more_horiz,
