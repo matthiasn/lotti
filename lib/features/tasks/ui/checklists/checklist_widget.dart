@@ -78,8 +78,7 @@ class ChecklistWidget extends StatefulWidget {
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
 }
 
-class _ChecklistWidgetState extends State<ChecklistWidget>
-    with SingleTickerProviderStateMixin {
+class _ChecklistWidgetState extends State<ChecklistWidget> {
   late List<String> _itemIds;
   final FocusNode _focusNode = FocusNode();
   bool _isCreatingItem = false;
@@ -99,6 +98,15 @@ class _ChecklistWidgetState extends State<ChecklistWidget>
     _itemIds = widget.itemIds;
     _isExpanded = widget.initiallyExpanded ??
         (widget.completionRate < 1 || widget.itemIds.isEmpty);
+
+    // Notify parent of initial expansion state so it can track it for sorting
+    // mode restoration. This ensures newly mounted checklists are registered
+    // in the parent's expansion state map.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onExpansionChanged?.call(_isExpanded);
+      }
+    });
 
     // Load filter preference
     final key = 'checklist_filter_mode_${widget.id}';
