@@ -471,5 +471,260 @@ void main() {
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('All'), findsOneWidget);
     });
+
+    testWidgets('empty checklist shows empty state and hides progress row',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: 'Empty Checklist',
+              itemIds: const [], // Empty checklist
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0,
+              totalCount: 0, // No items
+              completedCount: 0,
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // Empty state message should be visible
+      expect(find.text('No items yet'), findsOneWidget);
+
+      // The progress/filter row AnimatedCrossFade should show secondChild
+      // (SizedBox.shrink) when totalCount is 0. We verify by checking
+      // that the AnimatedCrossFade with filter tabs has correct state.
+      final animatedCrossFades = tester.widgetList<AnimatedCrossFade>(
+        find.byType(AnimatedCrossFade),
+      );
+      // There are multiple AnimatedCrossFades - find the ones that should
+      // be showing secondChild (hidden) when empty
+      final hiddenCrossFades = animatedCrossFades
+          .where((acf) => acf.crossFadeState == CrossFadeState.showSecond)
+          .toList();
+      // At least 3 should be hidden: divider1, progress/filters row, divider2
+      expect(hiddenCrossFades.length, greaterThanOrEqualTo(3));
+    });
+
+    testWidgets('populated checklist shows progress row and filter tabs',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: 'Populated Checklist',
+              itemIds: const ['item1', 'item2'],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5,
+              totalCount: 2,
+              completedCount: 1,
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // Filter tabs should be visible when checklist has items
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+
+      // Progress text should be visible
+      expect(find.textContaining('done'), findsOneWidget);
+
+      // The AnimatedCrossFades for dividers and progress row should show
+      // firstChild when checklist has items
+      final animatedCrossFades = tester.widgetList<AnimatedCrossFade>(
+        find.byType(AnimatedCrossFade),
+      );
+      final visibleCrossFades = animatedCrossFades
+          .where((acf) => acf.crossFadeState == CrossFadeState.showFirst)
+          .toList();
+      // At least 3 should be visible: divider1, progress/filters row, divider2
+      expect(visibleCrossFades.length, greaterThanOrEqualTo(3));
+    });
+
+    group('sorting mode', () {
+      testWidgets('shows drag handle and hides chevron/menu in sorting mode',
+          (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const ['item1', 'item2'],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5,
+                totalCount: 2,
+                completedCount: 1,
+                updateItemOrder: (_) async {},
+                isSortingMode: true, // Enable sorting mode
+              ),
+            ),
+          ),
+        );
+
+        // Drag handle should be visible in sorting mode
+        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+
+        // Chevron should NOT be visible in sorting mode
+        expect(find.byIcon(Icons.expand_more), findsNothing);
+
+        // Menu button should NOT be visible in sorting mode
+        expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
+      });
+
+      testWidgets('collapses body when in sorting mode', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const ['item1', 'item2'],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5, // Would normally be expanded (incomplete)
+                totalCount: 2,
+                completedCount: 1,
+                updateItemOrder: (_) async {},
+                isSortingMode: true, // Force collapsed
+              ),
+            ),
+          ),
+        );
+
+        // In sorting mode, body should be collapsed (second child shown)
+        // The body AnimatedCrossFade should show secondChild (SizedBox.shrink)
+        final animatedCrossFades = tester.widgetList<AnimatedCrossFade>(
+          find.byType(AnimatedCrossFade),
+        );
+
+        // The body CrossFade should be showing secondChild when in sorting mode
+        // We identify it by checking: when sorting, ALL cross fades should be
+        // showing secondChild since body is collapsed
+        final hiddenCrossFades = animatedCrossFades
+            .where((acf) => acf.crossFadeState == CrossFadeState.showSecond)
+            .toList();
+
+        // Body is collapsed so at least 1 AnimatedCrossFade should be hidden
+        expect(hiddenCrossFades.length, greaterThanOrEqualTo(1));
+
+        // Filter tabs should NOT be visible in sorting mode
+        expect(find.text('Open'), findsNothing);
+        expect(find.text('All'), findsNothing);
+      });
+
+      testWidgets('shows normal layout when not in sorting mode',
+          (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const ['item1', 'item2'],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5,
+                totalCount: 2,
+                completedCount: 1,
+                updateItemOrder: (_) async {},
+              ),
+            ),
+          ),
+        );
+
+        // Drag handle should NOT be visible in normal mode
+        expect(find.byIcon(Icons.drag_indicator), findsNothing);
+
+        // Chevron should be visible
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+        // Menu button should be visible
+        expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+
+        // Filter tabs should be visible (when expanded with items)
+        expect(find.text('Open'), findsOneWidget);
+        expect(find.text('All'), findsOneWidget);
+      });
+
+      testWidgets('calls onExpansionChanged when expansion state changes',
+          (tester) async {
+        bool? expansionState;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const [],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5,
+                updateItemOrder: (_) async {},
+                onExpansionChanged: (isExpanded) {
+                  expansionState = isExpanded;
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Tap chevron to toggle expansion
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+
+        // Callback should have been called
+        expect(expansionState, isNotNull);
+      });
+
+      testWidgets('respects initiallyExpanded override', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const ['item1'],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 1, // Would normally collapse (100% done)
+                totalCount: 1,
+                completedCount: 1,
+                updateItemOrder: (_) async {},
+                initiallyExpanded: true, // Force expanded
+              ),
+            ),
+          ),
+        );
+
+        // Filter tabs should be visible since we forced it expanded
+        expect(find.text('Open'), findsOneWidget);
+        expect(find.text('All'), findsOneWidget);
+      });
+    });
   });
 }
