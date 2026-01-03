@@ -59,17 +59,15 @@ void main() {
       final animatedContainerFinder = find.byType(AnimatedContainer);
       expect(animatedContainerFinder, findsOneWidget);
 
-      final context = tester.element(animatedContainerFinder);
-      final colorScheme = Theme.of(context).colorScheme;
-      final highlightBorderColor = colorScheme.primary.withValues(alpha: 0.7);
-
-      // Capture initial border color.
+      // Capture initial boxShadow state (should be null when not highlighted).
       var animatedContainer = tester.widget<AnimatedContainer>(
         animatedContainerFinder,
       );
       var decoration = animatedContainer.decoration as BoxDecoration?;
-      final initialBorder = decoration!.border as Border?;
-      final initialBorderColor = initialBorder?.top.color;
+      final initialBoxShadow = decoration?.boxShadow;
+
+      // Initially no highlight shadow
+      expect(initialBoxShadow, isNull);
 
       // Toggle checkbox to checked to trigger highlight.
       await tester.tap(find.byType(Checkbox));
@@ -79,11 +77,11 @@ void main() {
         animatedContainerFinder,
       );
       decoration = animatedContainer.decoration as BoxDecoration?;
-      final borderAfterCheck = decoration!.border as Border?;
+      final boxShadowAfterCheck = decoration?.boxShadow;
 
-      expect(borderAfterCheck, isNotNull);
-      expect(borderAfterCheck!.top.color, equals(highlightBorderColor));
-      expect(initialBorderColor, isNot(equals(highlightBorderColor)));
+      // Should have a highlight shadow after checking
+      expect(boxShadowAfterCheck, isNotNull);
+      expect(boxShadowAfterCheck!.isNotEmpty, isTrue);
 
       // After the completion animation duration, highlight should clear.
       await tester.pump(checklistCompletionAnimationDuration);
@@ -93,11 +91,10 @@ void main() {
         animatedContainerFinder,
       );
       decoration = animatedContainer.decoration as BoxDecoration?;
-      final borderAfterDuration = decoration!.border as Border?;
+      final boxShadowAfterDuration = decoration?.boxShadow;
 
-      expect(borderAfterDuration, isNotNull);
-      expect(
-          borderAfterDuration!.top.color, isNot(equals(highlightBorderColor)));
+      // Highlight shadow should be cleared
+      expect(boxShadowAfterDuration, isNull);
     });
     testWidgets('renders title and checkbox correctly', (tester) async {
       // Define test variables
@@ -337,7 +334,7 @@ void main() {
           tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
       expect(
         animatedContainer.duration,
-        equals(const Duration(milliseconds: 200)),
+        equals(const Duration(milliseconds: 150)),
       );
       expect(animatedContainer.curve, equals(Curves.easeInOut));
     });
@@ -358,7 +355,7 @@ void main() {
           tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
       expect(
         animatedContainer.duration,
-        equals(const Duration(milliseconds: 200)),
+        equals(const Duration(milliseconds: 150)),
       );
       expect(animatedContainer.curve, equals(Curves.easeInOut));
 
@@ -399,7 +396,7 @@ void main() {
       expect(decoration, isNotNull);
       expect(decoration!.borderRadius, isA<BorderRadius>());
       final borderRadius = decoration.borderRadius! as BorderRadius;
-      expect(borderRadius.topLeft.x, equals(12.0));
+      expect(borderRadius.topLeft.x, equals(6.0));
     });
 
     testWidgets('renders edit icon without extra spacer', (tester) async {
@@ -569,7 +566,7 @@ void main() {
       // Verify AnimatedContainer exists for hover animations
       final animatedContainer =
           tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
-      expect(animatedContainer.duration, const Duration(milliseconds: 200));
+      expect(animatedContainer.duration, const Duration(milliseconds: 150));
       expect(animatedContainer.curve, Curves.easeInOut);
     });
 
@@ -645,7 +642,7 @@ void main() {
       // Verify colors exist and container properly animates
       expect(initialColor, isNotNull);
       expect(editingColor, isNotNull);
-      expect(animatedContainer.duration, const Duration(milliseconds: 200));
+      expect(animatedContainer.duration, const Duration(milliseconds: 150));
     });
   });
 }

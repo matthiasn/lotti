@@ -29,7 +29,7 @@ void main() {
     );
 
     // Open overflow and tap Export
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.tap(find.byIcon(Icons.more_horiz_rounded));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Export checklist as Markdown'));
     await tester.pump();
@@ -57,7 +57,7 @@ void main() {
     );
 
     // Opening overflow should not show Export
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.tap(find.byIcon(Icons.more_horiz_rounded));
     await tester.pumpAndSettle();
     expect(find.text('Export checklist as Markdown'), findsNothing);
   });

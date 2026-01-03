@@ -34,13 +34,13 @@ void main() {
       final outerPadding = paddings.firstWhere(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2 &&
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1 &&
             (padding.padding as EdgeInsets).left == 0 &&
             (padding.padding as EdgeInsets).right == 0,
       );
 
-      expect(outerPadding.padding, const EdgeInsets.symmetric(vertical: 2));
+      expect(outerPadding.padding, const EdgeInsets.symmetric(vertical: 1));
     });
 
     testWidgets('inner row has correct spacing', (tester) async {
@@ -88,8 +88,8 @@ void main() {
       final hasCorrectOuterPadding = paddings.any(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2 &&
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1 &&
             (padding.padding as EdgeInsets).left == 0 &&
             (padding.padding as EdgeInsets).right == 0,
       );
@@ -156,8 +156,8 @@ void main() {
       final hasCorrectOuterPadding = paddings.any(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2,
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1,
       );
 
       expect(hasCorrectOuterPadding, isTrue);
@@ -185,15 +185,15 @@ void main() {
       final outerPadding = paddings.firstWhere(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2,
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1,
       );
 
-      // Verify it's 2, not the legacy 4
+      // Verify it's 1, reduced for compact spacing
       final edgeInsets = outerPadding.padding as EdgeInsets;
-      expect(edgeInsets.vertical, 4.0); // 2 top + 2 bottom = 4 total
-      expect(edgeInsets.top, 2.0); // Was 4 in legacy code
-      expect(edgeInsets.bottom, 2.0); // Was 4 in legacy code
+      expect(edgeInsets.vertical, 2.0); // 1 top + 1 bottom = 2 total
+      expect(edgeInsets.top, 1.0);
+      expect(edgeInsets.bottom, 1.0);
     });
 
     testWidgets('multiple items have consistent compact spacing',
@@ -231,8 +231,8 @@ void main() {
       final outerPaddings = allPaddings.where(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2 &&
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1 &&
             (padding.padding as EdgeInsets).horizontal == 0,
       );
 
@@ -240,8 +240,8 @@ void main() {
       expect(outerPaddings.length, 3);
     });
 
-    testWidgets('vertical space per item is 2+2=4px total', (tester) async {
-      // outer padding (2 top, 2 bottom) = 4px vertical total
+    testWidgets('vertical space per item is 1+1=2px total', (tester) async {
+      // outer padding (1 top, 1 bottom) = 2px vertical total
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -260,12 +260,12 @@ void main() {
       final outerPadding = paddings.firstWhere(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2,
+            (padding.padding as EdgeInsets).top == 1,
       );
       final outerEdgeInsets = outerPadding.padding as EdgeInsets;
 
       // Total vertical space from outer padding
-      expect(outerEdgeInsets.vertical, 4.0);
+      expect(outerEdgeInsets.vertical, 2.0);
     });
   });
 }

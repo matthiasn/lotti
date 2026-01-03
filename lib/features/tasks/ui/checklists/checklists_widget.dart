@@ -129,8 +129,9 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                     margin: const EdgeInsets.only(
                       bottom: AppTheme.cardSpacing,
                     ),
+                    // Only vertical padding - horizontal padding is handled
+                    // inside ChecklistWidget to allow dividers to extend edge-to-edge
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.cardPadding,
                       vertical: AppTheme.cardPaddingHalf,
                     ),
                     child: ChecklistWrapper(

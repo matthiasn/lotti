@@ -95,8 +95,6 @@ class _ChecklistWidgetState extends State<ChecklistWidget>
 
   // Expansion state
   late bool _isExpanded;
-  late AnimationController _chevronController;
-  late Animation<double> _chevronRotation;
 
   @override
   void initState() {
@@ -104,14 +102,6 @@ class _ChecklistWidgetState extends State<ChecklistWidget>
     _itemIds = widget.itemIds;
     _isExpanded = widget.initiallyExpanded ??
         (widget.completionRate < 1 || widget.itemIds.isEmpty);
-
-    // Chevron rotation: 0.0 = pointing down (expanded), -0.25 = pointing right (collapsed)
-    _chevronController = AnimationController(
-      duration: checklistChevronRotationDuration,
-      vsync: this,
-      value: _isExpanded ? 0.0 : -0.25,
-    );
-    _chevronRotation = _chevronController;
 
     // Load filter preference
     final key = 'checklist_filter_mode_${widget.id}';
@@ -145,7 +135,6 @@ class _ChecklistWidgetState extends State<ChecklistWidget>
 
   @override
   void dispose() {
-    _chevronController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -155,11 +144,6 @@ class _ChecklistWidgetState extends State<ChecklistWidget>
     setState(() {
       _isExpanded = expanded;
     });
-    if (expanded) {
-      _chevronController.animateTo(0);
-    } else {
-      _chevronController.animateTo(-0.25);
-    }
     widget.onExpansionChanged?.call(expanded);
   }
 
@@ -213,7 +197,6 @@ class _ChecklistWidgetState extends State<ChecklistWidget>
             onDelete: widget.onDelete,
             onExportMarkdown: widget.onExportMarkdown,
             onShareMarkdown: widget.onShareMarkdown,
-            chevronRotation: _chevronRotation,
           ),
 
           // BODY (animated visibility)
@@ -297,7 +280,6 @@ class _ChecklistCardHeader extends StatelessWidget {
     required this.onTitleSave,
     required this.onTitleCancel,
     required this.onFilterChanged,
-    required this.chevronRotation,
     this.onDelete,
     this.onExportMarkdown,
     this.onShareMarkdown,
@@ -319,7 +301,6 @@ class _ChecklistCardHeader extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onExportMarkdown;
   final VoidCallback? onShareMarkdown;
-  final Animation<double> chevronRotation;
 
   @override
   Widget build(BuildContext context) {
@@ -327,17 +308,152 @@ class _ChecklistCardHeader extends StatelessWidget {
       return _buildSortingModeHeader(context);
     }
 
-    if (isExpanded) {
-      return _buildExpandedHeader(context);
-    }
+    // Use a single widget tree for both expanded and collapsed states
+    // so the chevron animation is visible during transitions
+    return _buildUnifiedHeader(context);
+  }
 
-    return _buildCollapsedHeader(context);
+  /// Unified header that animates smoothly between expanded and collapsed states.
+  /// This keeps the chevron as the same widget instance so its rotation animates.
+  Widget _buildUnifiedHeader(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Row 1: Title, Chevron, Menu (always present)
+        // Use GestureDetector instead of InkWell to avoid hover effects
+        GestureDetector(
+          onTap: isExpanded ? null : onToggleExpand,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: Row(
+                children: [
+                  // Title (editable in expanded mode, plain text in collapsed)
+                  Expanded(
+                    child: isExpanded && !isEditingTitle
+                        ? GestureDetector(
+                            onTap: onTitleTap,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.text,
+                              child: _buildTitleText(context),
+                            ),
+                          )
+                        : isExpanded && isEditingTitle
+                            ? TitleTextField(
+                                initialValue: title,
+                                onSave: onTitleSave,
+                                resetToInitialValue: true,
+                                onCancel: onTitleCancel,
+                              )
+                            : _buildTitleText(context),
+                  ),
+                  // Progress (visible in collapsed mode, hidden in expanded unless total > 0)
+                  if (!isExpanded || totalCount == 0)
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 150),
+                      opacity: !isExpanded ? 1.0 : 0.0,
+                      child: _buildProgressIndicator(context, alwaysShow: true),
+                    ),
+                  const SizedBox(width: 10),
+                  // Chevron (same widget instance, animates rotation)
+                  _buildChevron(context),
+                  // Menu
+                  _buildMenu(context),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Divider 1: Between title row and progress/filters row
+        // Only show when expanded AND has items (no divider for empty checklist)
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 200),
+          sizeCurve: Curves.easeInOut,
+          crossFadeState: isExpanded && totalCount > 0
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
+          firstChild: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
+          ),
+          secondChild: const SizedBox.shrink(),
+        ),
+        // Row 2: Progress + Filters (only when expanded AND has items)
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 200),
+          sizeCurve: Curves.easeInOut,
+          crossFadeState: isExpanded && totalCount > 0
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
+          firstChild: Padding(
+            padding: const EdgeInsets.only(
+              left: AppTheme.cardPadding,
+              right: AppTheme.cardPadding,
+              top: 12,
+              // No bottom padding - underline sits directly on divider
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Progress indicator - align text baseline with filter tabs
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: _buildProgressIndicator(context, alwaysShow: false),
+                ),
+                const Spacer(),
+                // Filter tabs
+                _FilterTabs(
+                  filter: filter,
+                  onFilterChanged: onFilterChanged,
+                ),
+              ],
+            ),
+          ),
+          secondChild: const SizedBox.shrink(),
+        ),
+        // Divider 2: Between progress/filters row and body
+        // Only show when expanded AND has items
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 200),
+          sizeCurve: Curves.easeInOut,
+          crossFadeState: isExpanded && totalCount > 0
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
+          firstChild: Divider(
+            height: 1,
+            thickness: 1,
+            color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+          secondChild: const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTitleText(BuildContext context) {
+    return Text(
+      title,
+      style: context.textTheme.titleMedium,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
   }
 
   /// Sorting mode: `DragHandle` `Title` `Progress`
   Widget _buildSortingModeHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        vertical: 8,
+        horizontal: AppTheme.cardPadding,
+      ),
       child: Row(
         children: [
           // Large drag handle for sorting
@@ -365,112 +481,23 @@ class _ChecklistCardHeader extends StatelessWidget {
     );
   }
 
-  /// Collapsed: `Title` `Progress` `Chevron` `Menu`
-  Widget _buildCollapsedHeader(BuildContext context) {
-    return InkWell(
-      onTap: onToggleExpand,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            // Title
-            Expanded(
-              child: Text(
-                title,
-                style: context.textTheme.titleMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            // Progress (always visible in collapsed)
-            _buildProgressIndicator(context, alwaysShow: true),
-            // Chevron
-            _buildChevron(context),
-            // Menu
-            _buildMenu(context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Expanded: Two rows
-  /// Row 1: `Title (editable)` `Chevron` `Menu`
-  /// Row 2: `Progress` `Filters`
-  Widget _buildExpandedHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Row 1: Title, Chevron, Menu
-          Row(
-            children: [
-              Expanded(child: _buildTitleWidget(context)),
-              _buildChevron(context),
-              _buildMenu(context),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Row 2: Progress, Filters
-          Row(
-            children: [
-              // Progress (hide when total = 0 in expanded mode)
-              _buildProgressIndicator(context, alwaysShow: false),
-              const Spacer(),
-              // Filter tabs
-              _FilterTabs(
-                filter: filter,
-                onFilterChanged: onFilterChanged,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTitleWidget(BuildContext context) {
-    return AnimatedCrossFade(
-      duration: checklistCrossFadeDuration,
-      crossFadeState:
-          isEditingTitle ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-      firstChild: TitleTextField(
-        initialValue: title,
-        onSave: onTitleSave,
-        resetToInitialValue: true,
-        onCancel: onTitleCancel,
-      ),
-      secondChild: GestureDetector(
-        onTap: onTitleTap,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.text,
-          child: Text(
-            title,
-            style: context.textTheme.titleMedium,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildChevron(BuildContext context) {
-    return InkWell(
-      onTap: onToggleExpand,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: RotationTransition(
-          turns: chevronRotation,
-          child: Icon(
-            Icons.expand_more,
-            size: 22,
-            color: context.colorScheme.outline,
-          ),
+    // Use AnimatedRotation (implicit animation) instead of RotationTransition
+    // to avoid issues with widget tree rebuilds
+    return AnimatedRotation(
+      turns: isExpanded ? 0.0 : -0.25,
+      duration: checklistChevronRotationDuration,
+      child: IconButton(
+        onPressed: onToggleExpand,
+        icon: Icon(
+          Icons.expand_more,
+          size: 22,
+          color: context.colorScheme.outline,
+        ),
+        tooltip: isExpanded ? 'Collapse' : 'Expand',
+        visualDensity: VisualDensity.compact,
+        style: IconButton.styleFrom(
+          shape: const CircleBorder(),
         ),
       ),
     );
@@ -488,10 +515,10 @@ class _ChecklistCardHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         ChecklistProgressIndicator(completionRate: completionRate),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
         Text(
           context.messages.checklistCompletedShort(completedCount, totalCount),
-          style: context.textTheme.labelSmall?.copyWith(
+          style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.outline,
           ),
         ),
@@ -518,7 +545,7 @@ class _ChecklistCardHeader extends StatelessWidget {
       child: PopupMenuButton<String>(
         tooltip: 'More',
         position: PopupMenuPosition.under,
-        icon: const Icon(Icons.more_vert_rounded, size: 18),
+        icon: const Icon(Icons.more_horiz_rounded, size: 18),
         onSelected: (value) async {
           Future<void> deleteAction() async {
             final result = await showDialog<bool>(
@@ -654,42 +681,41 @@ class _FilterTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected
+    final textColor = isSelected
         ? context.colorScheme.onSurface
         : context.colorScheme.outline;
 
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
+      behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        // Use IntrinsicWidth to ensure underline matches text width exactly
-        child: IntrinsicWidth(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                label,
-                style: context.textTheme.labelMedium?.copyWith(
-                  color: color,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                ),
+        // Only horizontal padding - vertical alignment handled by parent row
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: textColor,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
-              const SizedBox(height: 2),
-              // Underline indicator - stretches to match text width
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                height: isSelected ? 2 : 0,
+            ),
+            const SizedBox(height: 4),
+            // Underline - sits directly on divider (no extra spacing)
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 150),
+              opacity: isSelected ? 1.0 : 0.0,
+              child: Container(
+                width: 44,
+                height: 2,
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? context.colorScheme.primary
-                      : Colors.transparent,
+                  color: context.colorScheme.onSurface,
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -729,38 +755,55 @@ class _ChecklistCardBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Items list
-        if (itemIds.isEmpty)
-          _buildEmptyState(context)
-        else if (allDone)
-          _buildAllDoneState(context)
-        else
-          ReorderableListView(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false, // We use custom drag handles
-            proxyDecorator: (child, index, animation) =>
-                buildDragDecorator(context, child),
-            onReorder: onReorder,
-            children: List.generate(
-              itemIds.length,
-              (int index) {
-                final itemId = itemIds.elementAt(index);
-                return ChecklistItemWrapper(
-                  itemId,
-                  taskId: taskId,
-                  checklistId: checklistId,
-                  hideIfChecked: hideChecked,
-                  index: index,
-                  key: ValueKey('checklist-item-$checklistId-$itemId'),
-                );
-              },
-            ),
-          ),
-
-        // Add input at BOTTOM
+        // Items list (with horizontal padding)
         Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
+          child: itemIds.isEmpty
+              ? _buildEmptyState(context)
+              : allDone
+                  ? _buildAllDoneState(context)
+                  : ReorderableListView(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      buildDefaultDragHandles:
+                          false, // We use custom drag handles
+                      proxyDecorator: (child, index, animation) =>
+                          buildDragDecorator(context, child),
+                      onReorder: onReorder,
+                      children: List.generate(
+                        itemIds.length,
+                        (int index) {
+                          final itemId = itemIds.elementAt(index);
+                          return ChecklistItemWrapper(
+                            itemId,
+                            taskId: taskId,
+                            checklistId: checklistId,
+                            hideIfChecked: hideChecked,
+                            index: index,
+                            key:
+                                ValueKey('checklist-item-$checklistId-$itemId'),
+                          );
+                        },
+                      ),
+                    ),
+        ),
+
+        // Divider 3: Between items and add input (no horizontal padding)
+        Divider(
+          height: 1,
+          thickness: 1,
+          color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+
+        // Add input at BOTTOM (with horizontal padding)
+        // Top padding from divider, bottom padding combines with card's padding
+        Padding(
+          padding: const EdgeInsets.only(
+            left: AppTheme.cardPadding,
+            right: AppTheme.cardPadding,
+            top: 12,
+            bottom: 4, // Card adds cardPaddingHalf (8) below this
+          ),
           child: FocusTraversalGroup(
             child: FocusScope(
               child: TitleTextField(
@@ -781,11 +824,12 @@ class _ChecklistCardBody extends StatelessWidget {
 
   Widget _buildEmptyState(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      // Only vertical padding - horizontal is handled by parent
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Center(
         child: Text(
           'No items yet',
-          style: context.textTheme.bodyMedium?.copyWith(
+          style: context.textTheme.titleSmall?.copyWith(
             color: context.colorScheme.outline,
           ),
         ),
@@ -795,7 +839,8 @@ class _ChecklistCardBody extends StatelessWidget {
 
   Widget _buildAllDoneState(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      // Only vertical padding - horizontal is handled by parent
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Text(
         context.messages.checklistAllDone,
         style: context.textTheme.bodySmall?.copyWith(

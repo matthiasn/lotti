@@ -66,7 +66,7 @@ void main() {
       expect(find.byIcon(Icons.expand_more), findsOneWidget);
 
       // Verify the menu button exists
-      expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
     });
 
     testWidgets('enters edit mode when title is tapped', (tester) async {
@@ -110,12 +110,9 @@ void main() {
       final editableTextFields = find.byType(TitleTextField);
       expect(editableTextFields, findsWidgets);
 
-      // Look for an ancestor AnimatedCrossFade that contains the TitleTextField
-      final crossFade = find.ancestor(
-        of: editableTextFields.first,
-        matching: find.byType(AnimatedCrossFade),
-      );
-      expect(crossFade, findsOneWidget);
+      // The TitleTextField should be visible and editable in the header
+      // (No longer using AnimatedCrossFade for title switching in unified header)
+      expect(editableTextFields.first, findsOneWidget);
     });
 
     testWidgets('saves title when edited', (tester) async {
@@ -252,7 +249,7 @@ void main() {
       );
 
       // Open the overflow menu and choose Delete
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete checklist?'));
       await tester.pump();
@@ -293,7 +290,7 @@ void main() {
       );
 
       // Open the overflow menu and choose Delete
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete checklist?'));
       await tester.pump();
@@ -447,7 +444,8 @@ void main() {
       expect(find.byType(ChecklistWidget), findsOneWidget);
     });
 
-    testWidgets('filter tabs are visible when expanded', (tester) async {
+    testWidgets('filter tabs are visible when expanded with items',
+        (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -456,10 +454,13 @@ void main() {
               id: 'checklist1',
               taskId: 'task1',
               title: 'Test Checklist',
-              itemIds: const [],
+              // Need items for filter tabs to show (hidden when empty)
+              itemIds: const ['item1', 'item2'],
               onTitleSave: (title) {},
               onCreateChecklistItem: (_) async => 'new-item-id',
               completionRate: 0.5, // Will start expanded
+              totalCount: 2,
+              completedCount: 1,
               updateItemOrder: (_) async {},
             ),
           ),

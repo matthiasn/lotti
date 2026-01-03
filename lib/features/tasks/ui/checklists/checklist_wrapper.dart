@@ -21,8 +21,8 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 /// Responsibilities
 /// - Reads checklist/item state and passes it to [ChecklistWidget].
 /// - Implements export (copy Markdown) and share (emoji list) callbacks.
-/// - Shows a one‑time mobile hint after the first successful copy: “Long press
-///   to share”.
+/// - Shows a one‑time mobile hint after the first successful copy: "Long press
+///   to share".
 class ChecklistWrapper extends ConsumerWidget {
   const ChecklistWrapper({
     required this.entryId,

@@ -22,10 +22,10 @@ void main() {
       // Verify the padding is applied
       expect(find.byType(Padding), findsOneWidget);
 
-      // Verify the SizedBox has correct dimensions
+      // Verify the SizedBox has correct dimensions (24x24 for larger progress ring)
       final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox));
-      expect(sizedBox.width, 16);
-      expect(sizedBox.height, 16);
+      expect(sizedBox.width, 24);
+      expect(sizedBox.height, 24);
     });
 
     testWidgets('renders CircularProgressIndicator with correct properties',
@@ -47,10 +47,12 @@ void main() {
 
       // Verify properties
       expect(progressIndicator.value, completionRate);
-      expect(progressIndicator.strokeWidth, 5);
+      expect(progressIndicator.strokeWidth, 3);
       expect(progressIndicator.semanticsLabel, 'Checklist progress');
       expect(progressIndicator.color, successColor);
-      expect(progressIndicator.backgroundColor, failColor);
+      // Background is a light green (20% opacity of success color)
+      expect(progressIndicator.backgroundColor,
+          successColor.withValues(alpha: 0.2));
     });
 
     testWidgets('handles different completion rates correctly', (tester) async {
