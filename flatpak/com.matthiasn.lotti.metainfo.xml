@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.796" date="2026-01-03">
+      <description>
+        <p>Nano Banana Checklist Redesign: Major UI rewrite with card-based architecture. Features modular widget structure, animated chevron rotation, filter tabs with underline indicator, and three display modes (expanded, collapsed, sorting). Progress ring now hidden when empty in expanded mode. Add input moved to bottom of checklist body with click-to-edit title functionality.</p>
+      </description>
+    </release>
     <release version="0.9.795" date="2026-01-03">
       <description>
         <p>Image Card Thumbnails: Now display as uniform squares with center crop for consistent visual presentation. Portrait images are cropped from vertical center, landscape images from horizontal center. Also updated Gemini AI models to latest versions.</p>

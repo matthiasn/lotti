@@ -133,20 +133,44 @@ below the search bar:
   label filters are active. `TaskLabelQuickFilter` still self‑hides its own content as an extra
   guard.
 
-#### Checklist Components
+#### Checklist Components (Nano Banana Redesign - 2026‑01)
 
-**ChecklistWidget**: Displays a single checklist with:
-- Expandable/collapsible header with progress indicator
-- Reorderable list of checklist items
-- Add new item functionality
-- Delete and rename options
-- Edit and Export controls in the header (edit first, then export)
-- Visual polish (2025‑10):
-  - Subtle rounded backgrounds and hairline borders for each item
-  - Increased row padding (H 16, V 8) and improved multi‑line readability (up to 4 lines)
-  - Checked items show strikethrough with reduced text opacity
-  - Swipe‑to‑delete background clips to the same radius and aligns with padding
-  - Delete control is available while editing just below the header; a follow‑up will migrate this into the header when the header layout is unified
+The checklist UI follows a modular card-based architecture with components organized in `lib/features/tasks/ui/checklists/`:
+
+| File | Widget(s) | Description |
+|------|-----------|-------------|
+| `checklist_widget.dart` | `ChecklistWidget` | Main orchestrator: manages expansion, filter, title editing state |
+| `checklist_card_header.dart` | `ChecklistCardHeader` | Header with title, chevron, progress, filters, menu |
+| `checklist_card_body.dart` | `ChecklistCardBody`, `ChecklistEmptyState`, `ChecklistAllDoneState` | Item list, add input, empty/done states |
+| `checklist_filter_tabs.dart` | `ChecklistFilterTabs`, `ChecklistFilterTab` | Open/All filter with underline indicator |
+| `progress_indicator.dart` | `ChecklistProgressIndicator` | Circular progress ring |
+| `consts.dart` | `ChecklistFilter` enum, animation constants | Shared types and durations |
+
+**ChecklistWidget**: Main checklist card with three display modes:
+- **Expanded**: Full header with filter tabs + body with items + add input at bottom
+- **Collapsed**: Compact header row with inline progress + rotating chevron
+- **Sorting Mode**: Drag handle + title + progress (no chevron/menu, body hidden)
+
+Features:
+- Click-to-edit title (transforms to `TitleTextField`)
+- Animated chevron rotation (90° between expanded/collapsed)
+- Progress ring hidden when `totalCount = 0` (expanded), always shown (collapsed)
+- Filter state persisted per-checklist via `SharedPreferences`
+
+**ChecklistCardHeader**: Renders layout based on mode:
+```
+Expanded:   [Title]  [Chevron ↓]  [Menu ⋯]
+            [Progress] X/Y done    [Open] [All]
+
+Collapsed:  [Title]  [Progress] X/Y done  [Chevron →]  [Menu ⋯]
+
+Sorting:    [Drag ⋮⋮]  [Title]  [Progress] X/Y done
+```
+
+**ChecklistCardBody**: Contains:
+- `ReorderableListView` of items (or empty/done state)
+- Add input field at bottom with divider
+- Completion rate gradient background effect
 
 ##### Export and Share Checklists
 
@@ -164,13 +188,13 @@ below the search bar:
 
 - UX details
   - Desktop shows an export tooltip; mobile suppresses the tooltip so long‑press triggers share. Long‑press also works on desktop.
-  - After the first successful copy, a one‑time SnackBar hints: “Long press to share”.
+  - After the first successful copy, a one‑time SnackBar hints: "Long press to share".
 
 **ChecklistItemWidget**: Individual checklist item with:
 - Checkbox for completion toggle
 - Inline text editing
-- Drag handle for reordering
- - Visual and animation details (2025‑10): background tint animates on check/edit; no behaviour changes
+- Always-visible drag handle on LEFT (uses `ReorderableDragStartListener`)
+- Visual and animation details (2025‑10): background tint animates on check/edit; no behaviour changes
 
 **ChecklistItemWithSuggestionWidget**: Enhanced checklist item that supports AI-powered completion suggestions (new in 2025):
 - All features of regular checklist items

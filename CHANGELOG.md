@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Ensure SetCoverArtChip widget tests register required dependencies and fallbacks in `getIt` to keep cover-art flows testable
 
+## [0.9.796] - 2026-01-03
+### Changed
+- Nano Banana Checklist Redesign: Major UI rewrite with card-based architecture
+  - Modular widget structure: extracted `ChecklistCardHeader`, `ChecklistCardBody`, `ChecklistFilterTabs` into separate files
+  - Animated chevron rotation (90°) between expanded/collapsed states
+  - Filter tabs with underline indicator (replaced SegmentedButton)
+  - Progress ring hidden when empty (expanded mode), always shown (collapsed)
+  - Add input moved to bottom of checklist body
+  - Click-to-edit title functionality
+  - Three display modes: expanded, collapsed, sorting
+- Comprehensive test coverage for all extracted components (32 new tests)
+
 ## [0.9.795] - 2026-01-03
 ### Changed
 - Image Card Thumbnails: Now display as uniform squares with center crop
