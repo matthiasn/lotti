@@ -86,7 +86,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
         ReorderableListView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          buildDefaultDragHandles: isSorting,
+          buildDefaultDragHandles: false, // We use custom drag handles
           onReorder: (int oldIndex, int newIndex) {
             final itemIds = [...checklistIds];
             final movedItem = itemIds.removeAt(oldIndex);
@@ -141,6 +141,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                       isSortingMode: isSorting,
                       initiallyExpanded: initiallyExpanded,
                       onExpansionChanged: _onExpansionChanged,
+                      reorderIndex: index,
                     ),
                   );
                 },

@@ -39,6 +39,7 @@ class ChecklistWidget extends StatefulWidget {
     this.isSortingMode = false,
     this.onExpansionChanged,
     this.initiallyExpanded,
+    this.reorderIndex,
     super.key,
   });
 
@@ -74,6 +75,9 @@ class ChecklistWidget extends StatefulWidget {
   /// Override the initial expansion state. If null, defaults to
   /// expanding if completionRate < 1.
   final bool? initiallyExpanded;
+
+  /// Index for reordering in the parent ReorderableListView.
+  final int? reorderIndex;
 
   @override
   State<ChecklistWidget> createState() => _ChecklistWidgetState();
@@ -186,6 +190,7 @@ class _ChecklistWidgetState extends State<ChecklistWidget>
             totalCount: total,
             completionRate: widget.completionRate,
             filter: _filter,
+            reorderIndex: widget.reorderIndex,
             onToggleExpand: _toggleExpanded,
             onTitleTap: () => setState(() => _isEditingTitle = true),
             onTitleSave: (title) {
@@ -280,6 +285,7 @@ class _ChecklistCardHeader extends StatelessWidget {
     required this.onTitleSave,
     required this.onTitleCancel,
     required this.onFilterChanged,
+    this.reorderIndex,
     this.onDelete,
     this.onExportMarkdown,
     this.onShareMarkdown,
@@ -293,6 +299,7 @@ class _ChecklistCardHeader extends StatelessWidget {
   final int totalCount;
   final double completionRate;
   final ChecklistFilter filter;
+  final int? reorderIndex;
   final VoidCallback onToggleExpand;
   final VoidCallback onTitleTap;
   final StringCallback onTitleSave;
@@ -398,6 +405,7 @@ class _ChecklistCardHeader extends StatelessWidget {
               left: AppTheme.cardPadding,
               right: AppTheme.cardPadding,
               top: 12,
+              bottom: 4,
               // No bottom padding - underline sits directly on divider
             ),
             child: Row(
@@ -449,6 +457,15 @@ class _ChecklistCardHeader extends StatelessWidget {
 
   /// Sorting mode: `DragHandle` `Title` `Progress`
   Widget _buildSortingModeHeader(BuildContext context) {
+    final dragHandleIcon = Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Icon(
+        Icons.drag_indicator,
+        size: 28,
+        color: context.colorScheme.outline.withValues(alpha: 0.7),
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         vertical: 8,
@@ -456,15 +473,14 @@ class _ChecklistCardHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Large drag handle for sorting
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Icon(
-              Icons.drag_indicator,
-              size: 28,
-              color: context.colorScheme.outline.withValues(alpha: 0.7),
-            ),
-          ),
+          // Large drag handle for sorting - wrapped in ReorderableDragStartListener
+          if (reorderIndex != null)
+            ReorderableDragStartListener(
+              index: reorderIndex!,
+              child: dragHandleIcon,
+            )
+          else
+            dragHandleIcon,
           // Title
           Expanded(
             child: Text(
@@ -701,7 +717,7 @@ class _FilterTab extends StatelessWidget {
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             // Underline - sits directly on divider (no extra spacing)
             AnimatedOpacity(
               duration: const Duration(milliseconds: 150),
@@ -825,7 +841,7 @@ class _ChecklistCardBody extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     return Padding(
       // Only vertical padding - horizontal is handled by parent
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Center(
         child: Text(
           'No items yet',

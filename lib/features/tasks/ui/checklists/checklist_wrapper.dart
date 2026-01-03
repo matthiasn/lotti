@@ -31,6 +31,7 @@ class ChecklistWrapper extends ConsumerWidget {
     this.isSortingMode = false,
     this.onExpansionChanged,
     this.initiallyExpanded,
+    this.reorderIndex,
     super.key,
   });
 
@@ -47,6 +48,9 @@ class ChecklistWrapper extends ConsumerWidget {
 
   /// Override initial expansion state (used to restore after sorting).
   final bool? initiallyExpanded;
+
+  /// Index for reordering when in sorting mode.
+  final int? reorderIndex;
 
   /// Preferences key for the one‑time mobile “Long press to share” hint.
   static const _shareHintSeenKey = 'seen_checklist_share_hint';
@@ -154,6 +158,7 @@ class ChecklistWrapper extends ConsumerWidget {
         onDelete: ref.read(provider.notifier).delete,
         isSortingMode: isSortingMode,
         initiallyExpanded: initiallyExpanded,
+        reorderIndex: reorderIndex,
         onExpansionChanged: onExpansionChanged != null
             ? (isExpanded) => onExpansionChanged!(entryId, isExpanded)
             : null,
