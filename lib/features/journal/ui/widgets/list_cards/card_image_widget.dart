@@ -52,7 +52,6 @@ class _CardImageWidgetState extends State<CardImageWidget>
       height: size,
       child: Image.file(
         File(path),
-        cacheWidth: widget.height * 3,
         cacheHeight: widget.height * 3,
         fit: widget.fit,
       ),
