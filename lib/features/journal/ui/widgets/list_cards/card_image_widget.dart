@@ -46,12 +46,14 @@ class _CardImageWidgetState extends State<CardImageWidget>
       return const SizedBox.shrink();
     }
 
+    final size = widget.height.toDouble();
     return SizedBox(
-      height: widget.height.toDouble(),
+      width: size,
+      height: size,
       child: Image.file(
         File(path),
+        cacheWidth: widget.height * 3,
         cacheHeight: widget.height * 3,
-        height: widget.height.toDouble(),
         fit: widget.fit,
       ),
     );

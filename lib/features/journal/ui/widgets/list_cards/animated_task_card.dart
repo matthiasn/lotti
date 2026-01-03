@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/task_card.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
 

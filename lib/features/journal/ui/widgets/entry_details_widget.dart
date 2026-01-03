@@ -16,7 +16,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summ
 import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';

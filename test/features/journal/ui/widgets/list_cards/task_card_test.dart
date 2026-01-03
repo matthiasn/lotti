@@ -8,7 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/modern_task_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/task_card.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';

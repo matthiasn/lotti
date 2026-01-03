@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -20,10 +18,6 @@ class ModernJournalImageCard extends StatelessWidget {
     required this.item,
     super.key,
   });
-
-  // Layout constants
-  static const double minImageSectionWidth = 300;
-  static const double cardHorizontalPadding = 40;
 
   // Header and content spacing constants
   static const double headerHeight = 24; // Approximate height of date/icons row
@@ -53,30 +47,22 @@ class ModernJournalImageCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    // Image dimensions
-    const imageHeight = 160;
-
-    final maxWidth =
-        max(MediaQuery.of(context).size.width / 2, minImageSectionWidth) -
-            cardHorizontalPadding;
+    // Image dimensions (square thumbnail)
+    const imageSize = 160;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Image section
+        // Image section (square thumbnail with center crop)
         ClipRRect(
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(AppTheme.cardBorderRadius),
             bottomLeft: Radius.circular(AppTheme.cardBorderRadius),
           ),
-          child: LimitedBox(
-            maxWidth: maxWidth,
-            maxHeight: imageHeight.toDouble(),
-            child: CardImageWidget(
-              journalImage: item,
-              height: imageHeight,
-              fit: BoxFit.cover,
-            ),
+          child: CardImageWidget(
+            journalImage: item,
+            height: imageSize,
+            fit: BoxFit.cover,
           ),
         ),
 
@@ -84,7 +70,7 @@ class ModernJournalImageCard extends StatelessWidget {
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(AppTheme.cardPadding),
-            height: imageHeight.toDouble(),
+            height: imageSize.toDouble(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -176,14 +162,14 @@ class ModernJournalImageCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // Calculate available height based on image height and padding
-    const imageHeight = 160;
+    // Calculate available height based on image size and padding
+    const imageSize = 160;
     const padding = AppTheme.cardPadding;
     // Calculate reserved height for header and spacing
     const reservedHeight =
         headerHeight + spacingAfterHeader + tagsHeight + spacingAfterTags;
 
-    const availableHeight = imageHeight -
+    const availableHeight = imageSize -
         (padding * 2) -
         reservedHeight; // Account for header and tags
 
