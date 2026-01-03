@@ -121,7 +121,7 @@ const List<KnownModel> geminiModels = [
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Latest Gemini 3 with breakthrough reasoning and state-of-the-art multimodal capabilities',
+        'Fast and efficient Gemini 3 model optimized for speed and cost-effectiveness with multimodal capabilities',
   ),
   KnownModel(
     providerModelId: 'models/gemini-2.5-pro',

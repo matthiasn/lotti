@@ -19,6 +19,9 @@ class ModernJournalImageCard extends StatelessWidget {
     super.key,
   });
 
+  // Layout constants
+  static const int imageSize = 160; // Square thumbnail size
+
   // Header and content spacing constants
   static const double headerHeight = 24; // Approximate height of date/icons row
   static const double spacingAfterHeader = 8;
@@ -47,9 +50,6 @@ class ModernJournalImageCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    // Image dimensions (square thumbnail)
-    const imageSize = 160;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -163,7 +163,6 @@ class ModernJournalImageCard extends StatelessWidget {
     }
 
     // Calculate available height based on image size and padding
-    const imageSize = 160;
     const padding = AppTheme.cardPadding;
     // Calculate reserved height for header and spacing
     const reservedHeight =
