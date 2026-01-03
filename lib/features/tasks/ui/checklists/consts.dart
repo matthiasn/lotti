@@ -6,3 +6,12 @@ const checklistCompletionFadeDuration = Duration(milliseconds: 300);
 // Nano Banana design animations
 const checklistChevronRotationDuration = Duration(milliseconds: 200);
 const checklistCardCollapseAnimationDuration = Duration(milliseconds: 250);
+
+/// Filter mode for checklist items.
+enum ChecklistFilter {
+  /// Show only unchecked items.
+  openOnly,
+
+  /// Show all items (checked and unchecked).
+  all,
+}
