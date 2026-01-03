@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.795" date="2026-01-03">
+      <description>
+        <p>Image Card Thumbnails: Now display as uniform squares with center crop for consistent visual presentation. Portrait images are cropped from vertical center, landscape images from horizontal center. Also updated Gemini AI models to latest versions.</p>
+      </description>
+    </release>
     <release version="0.9.794" date="2026-01-02">
       <description>
         <p>Due Date Visibility Refinements: Improved UX for completed and rejected tasks. Due dates are now hidden on task cards for completed/rejected tasks since they're no longer relevant. In the entry details view, due dates show grayed-out styling instead of red/orange urgency colors for completed/rejected tasks.</p>

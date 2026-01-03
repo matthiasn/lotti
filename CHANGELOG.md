@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Ensure SetCoverArtChip widget tests register required dependencies and fallbacks in `getIt` to keep cover-art flows testable
 
+## [0.9.795] - 2026-01-03
+### Changed
+- Image Card Thumbnails: Now display as uniform squares with center crop
+  - Portrait images cropped from vertical center
+  - Landscape images cropped from horizontal center
+  - Consistent 160x160 thumbnail size for visual uniformity
+- Updated Gemini AI models to latest versions
+
 ## [0.9.794] - 2026-01-02
 ### Changed
 - Due Date Visibility Refinements: Improved UX for completed and rejected tasks

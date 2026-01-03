@@ -114,6 +114,16 @@ const List<KnownModel> geminiModels = [
         'Latest Gemini 3 with breakthrough reasoning and state-of-the-art multimodal capabilities',
   ),
   KnownModel(
+    providerModelId: 'models/gemini-3-flash-preview',
+    name: 'Gemini 3 Flash Preview',
+    inputModalities: [Modality.text, Modality.image, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Fast and efficient Gemini 3 model optimized for speed and cost-effectiveness with multimodal capabilities',
+  ),
+  KnownModel(
     providerModelId: 'models/gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
@@ -132,16 +142,6 @@ const List<KnownModel> geminiModels = [
     supportsFunctionCalling: true,
     description:
         'Fast multimodal model with reasoning capabilities optimized for speed',
-  ),
-  KnownModel(
-    providerModelId: 'models/gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    inputModalities: [Modality.text, Modality.image, Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    supportsFunctionCalling: true,
-    description:
-        'Fast & legacy multimodal model without reasoning capabilities optimized for speed',
   ),
 ];
 

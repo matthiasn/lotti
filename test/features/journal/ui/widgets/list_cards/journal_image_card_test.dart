@@ -7,7 +7,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/list_cards/modern_journal_image_card.dart';
+import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
 import 'package:lotti/get_it.dart';
