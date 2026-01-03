@@ -16,6 +16,7 @@ class ChecklistItemWrapper extends ConsumerWidget {
     required this.checklistId,
     required this.taskId,
     this.hideIfChecked = false,
+    this.index = 0,
     super.key,
   });
 
@@ -23,6 +24,9 @@ class ChecklistItemWrapper extends ConsumerWidget {
   final String taskId;
   final String checklistId;
   final bool hideIfChecked;
+
+  /// Index of this item in the list, used for ReorderableDragStartListener.
+  final int index;
 
   @override
   Widget build(
@@ -119,6 +123,7 @@ class ChecklistItemWrapper extends ConsumerWidget {
                 title: item.data.title,
                 isChecked: item.data.isChecked,
                 hideCompleted: hideIfChecked,
+                index: index,
                 onChanged: (checked) =>
                     ref.read(provider.notifier).updateChecked(checked: checked),
                 onTitleChange: ref.read(provider.notifier).updateTitle,

@@ -24,6 +24,7 @@ class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
     this.showEditIcon = true,
     this.readOnly = false,
     this.onEdit,
+    this.index = 0,
     super.key,
   });
 
@@ -36,6 +37,9 @@ class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
   final StringCallback? onTitleChange;
+
+  /// Index in the list for ReorderableDragStartListener.
+  final int index;
 
   @override
   ConsumerState<ChecklistItemWithSuggestionWidget> createState() =>
@@ -168,6 +172,7 @@ class _ChecklistItemWithSuggestionWidgetState
         ChecklistItemWidget(
           title: widget.title,
           isChecked: widget.isChecked,
+          index: widget.index,
           onChanged: (checked) {
             widget.onChanged(checked);
             // Clear suggestion if user manually changes the state

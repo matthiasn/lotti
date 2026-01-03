@@ -18,8 +18,7 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    testWidgets(
-        'segmented control visible when expanded and hidden when collapsed',
+    testWidgets('filter tabs visible when expanded and hidden when collapsed',
         (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -40,21 +39,21 @@ void main() {
       );
 
       // Initially expanded because completionRate < 1.0
-      expect(find.byType(ExpansionTile), findsOneWidget);
-      // Segmented control (Open/All) is visible when expanded
+      expect(find.byType(ChecklistWidget), findsOneWidget);
+
+      // Filter tabs (Open/All) are visible when expanded
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('All'), findsOneWidget);
 
-      // Collapse; controls should hide
-      await tester.tap(find.byType(ExpansionTile));
+      // Collapse by tapping the chevron
+      await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pumpAndSettle();
+
+      // Filter tabs should be hidden when collapsed
       expect(find.text('Open'), findsNothing);
       expect(find.text('All'), findsNothing);
-      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
 
-      // Progress indicator remains visible in collapsed subtitle line
-      // (indicates subtitle is still shown while collapsed)
-      // Note: We don't import the internal type; just look for a progress indicator widget.
+      // Progress indicator remains visible in collapsed state
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 

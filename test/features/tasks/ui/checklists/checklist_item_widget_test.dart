@@ -24,7 +24,7 @@ void main() {
       expect(find.byType(AnimatedContainer), findsWidgets);
 
       // Toggle checkbox to checked
-      await tester.tap(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(Checkbox));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -72,7 +72,7 @@ void main() {
       final initialBorderColor = initialBorder?.top.color;
 
       // Toggle checkbox to checked to trigger highlight.
-      await tester.tap(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(Checkbox));
       await tester.pump();
 
       animatedContainer = tester.widget<AnimatedContainer>(
@@ -128,13 +128,13 @@ void main() {
       expect(hasTitle, isTrue, reason: 'Text widget with title not found');
 
       // Verify checkbox exists and is unchecked
-      final checkbox = tester.widget<CheckboxListTile>(
-        find.byType(CheckboxListTile),
+      final checkbox = tester.widget<Checkbox>(
+        find.byType(Checkbox),
       );
       expect(checkbox.value, isFalse);
 
       // Tap the checkbox
-      await tester.tap(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(Checkbox));
       await tester.pump();
 
       // Verify callback was called with expected value
@@ -157,8 +157,8 @@ void main() {
       );
 
       // Verify checkbox is checked
-      final checkbox = tester.widget<CheckboxListTile>(
-        find.byType(CheckboxListTile),
+      final checkbox = tester.widget<Checkbox>(
+        find.byType(Checkbox),
       );
       expect(checkbox.value, isTrue);
     });
@@ -177,7 +177,7 @@ void main() {
 
       // Verify initial state
       expect(
-        tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
+        tester.widget<Checkbox>(find.byType(Checkbox)).value,
         isFalse,
       );
 
@@ -195,7 +195,7 @@ void main() {
 
       // Verify updated state
       expect(
-        tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
+        tester.widget<Checkbox>(find.byType(Checkbox)).value,
         isTrue,
       );
 
@@ -309,8 +309,8 @@ void main() {
       );
 
       // Verify the checkbox is disabled
-      final checkbox = tester.widget<CheckboxListTile>(
-        find.byType(CheckboxListTile),
+      final checkbox = tester.widget<Checkbox>(
+        find.byType(Checkbox),
       );
       expect(checkbox.onChanged, isNull);
     });
@@ -363,7 +363,7 @@ void main() {
       expect(animatedContainer.curve, equals(Curves.easeInOut));
 
       // Toggle checkbox to trigger animation
-      await tester.tap(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(Checkbox));
       await tester.pump();
 
       // Verify container still exists (animation in progress)
@@ -467,7 +467,7 @@ void main() {
       expect(decoration!.color, isNotNull);
 
       // Toggle to checked state
-      await tester.tap(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(Checkbox));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -573,56 +573,44 @@ void main() {
       expect(animatedContainer.curve, Curves.easeInOut);
     });
 
-    testWidgets('renders secondary edit button when onEdit is provided',
+    testWidgets('renders edit button when showEditIcon is true',
         (tester) async {
-      var editButtonTapped = false;
-
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: false,
             onChanged: (_) {},
-            onEdit: () {
-              editButtonTapped = true;
-            },
+            onTitleChange: (_) {},
           ),
         ),
       );
 
-      // Verify secondary IconButton exists (inside CheckboxListTile.secondary)
-      final checkboxListTile =
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
-      expect(checkboxListTile.secondary, isNotNull);
-      expect(checkboxListTile.secondary, isA<IconButton>());
+      // Verify edit IconButton exists
+      expect(find.byIcon(Icons.edit), findsOneWidget);
 
-      // Find and tap the secondary edit button
-      final secondaryEditButton = checkboxListTile.secondary! as IconButton;
-      expect(secondaryEditButton.onPressed, isNotNull);
+      // Tap the edit button to enter edit mode
+      await tester.tap(find.byIcon(Icons.edit));
+      await tester.pump();
 
-      // Call the onPressed callback
-      secondaryEditButton.onPressed!();
-
-      // Verify the callback was triggered
-      expect(editButtonTapped, isTrue);
+      // Verify we're now in edit mode (TitleTextField should be visible)
+      expect(find.byType(TitleTextField), findsOneWidget);
     });
 
-    testWidgets('does not render secondary button when onEdit is null',
-        (tester) async {
+    testWidgets('hides edit button when showEditIcon is false', (tester) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
             title: 'Test Item',
             isChecked: false,
             onChanged: (_) {},
+            showEditIcon: false,
           ),
         ),
       );
 
-      // Verify secondary is null
-      final checkboxListTile =
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
-      expect(checkboxListTile.secondary, isNull);
+      // Verify edit IconButton does not exist
+      expect(find.byIcon(Icons.edit), findsNothing);
     });
 
     testWidgets('applies editing background color when editing',

@@ -15,6 +15,7 @@ class ChecklistItemWidget extends StatefulWidget {
     this.showEditIcon = true,
     this.readOnly = false,
     this.onEdit,
+    this.index = 0,
     super.key,
   });
 
@@ -25,6 +26,9 @@ class ChecklistItemWidget extends StatefulWidget {
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
   final StringCallback? onTitleChange;
+
+  /// Index in the list for ReorderableDragStartListener.
+  final int index;
 
   @override
   State<ChecklistItemWidget> createState() => _ChecklistItemWidgetState();
@@ -99,126 +103,132 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
           ]
         : null;
 
-    return Theme(
-      data: Theme.of(context).copyWith(
-        listTileTheme: Theme.of(context).listTileTheme.copyWith(dense: true),
-        hoverColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        splashColor: Colors.transparent,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _isHovered = true),
-          onExit: (_) => setState(() => _isHovered = false),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            decoration: BoxDecoration(
-              color: _isHovered
-                  ? Color.alphaBlend(
-                      context.colorScheme.primary.withValues(alpha: 0.05),
-                      animatedBg,
-                    )
-                  : animatedBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: borderColor,
-              ),
-              boxShadow: boxShadow,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? Color.alphaBlend(
+                    context.colorScheme.primary.withValues(alpha: 0.05),
+                    animatedBg,
+                  )
+                : animatedBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: borderColor,
             ),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              clipBehavior: Clip.antiAlias,
-              child: CheckboxListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 5),
-                title: AnimatedCrossFade(
-                  duration: checklistCrossFadeDuration,
-                  firstChild: TitleTextField(
-                    initialValue: widget.title,
-                    onSave: (title) {
-                      setState(() {
-                        _isEditing = false;
-                      });
-                      widget.onTitleChange?.call(title);
-                    },
-                    resetToInitialValue: true,
-                    onCancel: () => setState(() {
-                      _isEditing = false;
-                    }),
-                  ),
-                  secondChild: SizedBox(
-                    width: double.infinity,
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.title,
-                            softWrap: true,
-                            maxLines: 4,
-                            overflow: TextOverflow.fade,
-                            style: () {
-                              final baseStyle = context.textTheme.bodyMedium;
-                              if (!_isChecked) return baseStyle;
-
-                              final strikethroughStyle = TextStyle(
-                                decoration: TextDecoration.lineThrough,
-                                color: (baseStyle?.color ??
-                                        context.colorScheme.onSurface)
-                                    .withValues(alpha: 0.6),
-                              );
-                              return baseStyle?.merge(strikethroughStyle) ??
-                                  strikethroughStyle;
-                            }(),
-                          ),
-                        ),
-                        if (widget.showEditIcon)
-                          IconButton(
-                            icon: Icon(
-                              Icons.edit,
-                              color: context.colorScheme.outline,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isEditing = !_isEditing;
-                              });
-                            },
-                          ),
-                      ],
+            boxShadow: boxShadow,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              child: Row(
+                children: [
+                  // Drag handle - always visible on the LEFT
+                  ReorderableDragStartListener(
+                    index: widget.index,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Icon(
+                        Icons.drag_indicator,
+                        size: 20,
+                        color: colorScheme.outline.withValues(alpha: 0.6),
+                      ),
                     ),
                   ),
-                  crossFadeState: _isEditing
-                      ? CrossFadeState.showFirst
-                      : CrossFadeState.showSecond,
-                ),
-                value: _isChecked,
-                controlAffinity: ListTileControlAffinity.leading,
-                secondary: widget.onEdit != null
-                    ? IconButton(
-                        icon: const Icon(
-                          Icons.edit,
-                          size: 20,
+                  // Checkbox
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Checkbox(
+                      value: _isChecked,
+                      onChanged: widget.readOnly
+                          ? null
+                          : (bool? value) {
+                              final isChecked = value ?? false;
+                              final wasChecked = _isChecked;
+                              setState(() {
+                                _isChecked = isChecked;
+                              });
+
+                              if (!wasChecked && isChecked) {
+                                _triggerCompletionHighlight();
+                              }
+
+                              widget.onChanged(isChecked);
+                            },
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  // Title (expandable)
+                  Expanded(
+                    child: AnimatedCrossFade(
+                      duration: checklistCrossFadeDuration,
+                      crossFadeState: _isEditing
+                          ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                      firstChild: TitleTextField(
+                        initialValue: widget.title,
+                        onSave: (title) {
+                          setState(() {
+                            _isEditing = false;
+                          });
+                          widget.onTitleChange?.call(title);
+                        },
+                        resetToInitialValue: true,
+                        onCancel: () => setState(() {
+                          _isEditing = false;
+                        }),
+                      ),
+                      secondChild: GestureDetector(
+                        onTap: widget.showEditIcon
+                            ? () => setState(() => _isEditing = true)
+                            : null,
+                        child: Text(
+                          widget.title,
+                          softWrap: true,
+                          maxLines: 4,
+                          overflow: TextOverflow.fade,
+                          style: () {
+                            final baseStyle = context.textTheme.bodyMedium;
+                            if (!_isChecked) return baseStyle;
+
+                            final strikethroughStyle = TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: (baseStyle?.color ??
+                                      context.colorScheme.onSurface)
+                                  .withValues(alpha: 0.6),
+                            );
+                            return baseStyle?.merge(strikethroughStyle) ??
+                                strikethroughStyle;
+                          }(),
                         ),
-                        onPressed: widget.onEdit,
-                      )
-                    : null,
-                onChanged: widget.readOnly
-                    ? null
-                    : (bool? value) {
-                        final isChecked = value ?? false;
-                        final wasChecked = _isChecked;
+                      ),
+                    ),
+                  ),
+                  // Edit button
+                  if (widget.showEditIcon && !_isEditing)
+                    IconButton(
+                      icon: Icon(
+                        Icons.edit,
+                        color: context.colorScheme.outline,
+                        size: 20,
+                      ),
+                      onPressed: () {
                         setState(() {
-                          _isChecked = isChecked;
+                          _isEditing = !_isEditing;
                         });
-
-                        if (!wasChecked && isChecked) {
-                          _triggerCompletionHighlight();
-                        }
-
-                        widget.onChanged(isChecked);
                       },
+                    ),
+                ],
               ),
             ),
           ),

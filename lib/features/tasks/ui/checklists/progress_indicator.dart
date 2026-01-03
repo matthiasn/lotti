@@ -20,7 +20,7 @@ class ChecklistProgressIndicator extends StatelessWidget {
           color: successColor,
           backgroundColor: failColor,
           value: completionRate,
-          strokeWidth: 5,
+          strokeWidth: 2.5,
           semanticsLabel: 'Checklist progress',
         ),
       ),
