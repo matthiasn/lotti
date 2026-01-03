@@ -21,19 +21,36 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 /// Responsibilities
 /// - Reads checklist/item state and passes it to [ChecklistWidget].
 /// - Implements export (copy Markdown) and share (emoji list) callbacks.
-/// - Shows a one‑time mobile hint after the first successful copy: “Long press
-///   to share”.
+/// - Shows a one‑time mobile hint after the first successful copy: "Long press
+///   to share".
 class ChecklistWrapper extends ConsumerWidget {
   const ChecklistWrapper({
     required this.entryId,
     required this.taskId,
     this.categoryId,
+    this.isSortingMode = false,
+    this.onExpansionChanged,
+    this.initiallyExpanded,
+    this.reorderIndex,
     super.key,
   });
 
   final String entryId;
   final String taskId;
   final String? categoryId;
+
+  /// Whether global sorting mode is active.
+  final bool isSortingMode;
+
+  /// Called when the checklist's expansion state changes.
+  // ignore: avoid_positional_boolean_parameters
+  final void Function(String checklistId, bool isExpanded)? onExpansionChanged;
+
+  /// Override initial expansion state (used to restore after sorting).
+  final bool? initiallyExpanded;
+
+  /// Index for reordering when in sorting mode.
+  final int? reorderIndex;
 
   /// Preferences key for the one‑time mobile “Long press to share” hint.
   static const _shareHintSeenKey = 'seen_checklist_share_hint';
@@ -139,6 +156,12 @@ class ChecklistWrapper extends ConsumerWidget {
         completedCount: completionCounts?.completedCount,
         totalCount: completionCounts?.totalCount,
         onDelete: ref.read(provider.notifier).delete,
+        isSortingMode: isSortingMode,
+        initiallyExpanded: initiallyExpanded,
+        reorderIndex: reorderIndex,
+        onExpansionChanged: onExpansionChanged != null
+            ? (isExpanded) => onExpansionChanged!(entryId, isExpanded)
+            : null,
         onExportMarkdown: () async {
           final messenger = ScaffoldMessenger.of(context);
           final nothingToExportMsg = context.messages.checklistNothingToExport;

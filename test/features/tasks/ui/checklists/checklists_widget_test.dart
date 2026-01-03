@@ -245,18 +245,20 @@ void main() {
       expect(find.byType(ModernBaseCard), findsNWidgets(2));
       expect(find.text('Checklists'), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.reorder), findsOneWidget);
+      // Menu button is shown when there are multiple checklists
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
       // ChecklistWrapper requires checklist providers to render
       // expect(find.byType(ChecklistWrapper), findsNWidgets(2));
       // ChecklistSuggestionsWidget requires AI providers to be mocked
       // expect(find.byType(ChecklistSuggestionsWidget), findsOneWidget);
     });
 
-    testWidgets('hides reorder button when only one checklist', (tester) async {
+    testWidgets('hides menu button when only one checklist', (tester) async {
       await tester.pumpWidget(createTestWidget(checklistIds: ['checklist1']));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.reorder), findsNothing);
+      // Menu button is hidden when there's only one checklist
+      expect(find.byIcon(Icons.more_vert), findsNothing);
       // ChecklistWrapper requires checklist providers to render
       // expect(find.byType(ChecklistWrapper), findsOneWidget);
     });
@@ -267,7 +269,8 @@ void main() {
 
       // With empty checklists, no ChecklistWrapper widgets are rendered
       expect(find.byType(ChecklistWrapper), findsNothing);
-      expect(find.byIcon(Icons.reorder), findsNothing);
+      // Menu button is hidden when there are no checklists
+      expect(find.byIcon(Icons.more_vert), findsNothing);
       // Add button should still be visible but requires full widget tree
       // expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
@@ -414,23 +417,30 @@ void main() {
 
       // With empty checklists, no ChecklistWrapper widgets are rendered
       expect(find.byType(ChecklistWrapper), findsNothing);
-      expect(find.byIcon(Icons.reorder), findsNothing);
+      // Menu button is hidden when there are no checklists
+      expect(find.byIcon(Icons.more_vert), findsNothing);
       // ChecklistSuggestionsWidget requires AI providers to be mocked
       // expect(find.byType(ChecklistSuggestionsWidget), findsOneWidget);
     });
 
-    testWidgets('preserves edited checklist order in state', (tester) async {
+    testWidgets('can enter sorting mode via menu', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Enter edit mode
-      await tester.tap(find.byIcon(Icons.reorder));
-      await tester.pump();
+      // Open the menu
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      // Test that the menu contains the sort option
+      expect(find.byIcon(Icons.sort), findsOneWidget);
+
+      // Tap on sort option
+      await tester.tap(find.byIcon(Icons.sort));
+      await tester.pumpAndSettle();
 
       // Test that the widget supports reordering
       // Multiple ReorderableListView widgets may exist in the tree
       expect(find.byType(ReorderableListView), findsWidgets);
-      expect(find.byIcon(Icons.reorder), findsOneWidget);
 
       // Detailed order preservation testing requires ChecklistWrapper widgets to render
     });

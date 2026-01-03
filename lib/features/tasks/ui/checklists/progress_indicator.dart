@@ -11,16 +11,19 @@ class ChecklistProgressIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Light green background (20% opacity of success color)
+    final lightGreenBg = successColor.withValues(alpha: 0.2);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
       child: SizedBox(
-        width: 16,
-        height: 16,
+        width: 24,
+        height: 24,
         child: CircularProgressIndicator(
           color: successColor,
-          backgroundColor: failColor,
+          backgroundColor: lightGreenBg,
           value: completionRate,
-          strokeWidth: 5,
+          strokeWidth: 3,
           semanticsLabel: 'Checklist progress',
         ),
       ),

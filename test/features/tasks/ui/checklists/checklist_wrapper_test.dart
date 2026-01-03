@@ -145,7 +145,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open overflow and choose Export
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Export checklist as Markdown'));
       await tester.pumpAndSettle();
@@ -250,7 +250,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open overflow and choose Share
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Share'));
       await tester.pumpAndSettle();
@@ -306,7 +306,7 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Export checklist as Markdown'));
       await tester.pumpAndSettle();
@@ -366,7 +366,7 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Share'));
       await tester.pumpAndSettle();
@@ -445,7 +445,7 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Share'));
 
@@ -523,7 +523,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Export checklist as Markdown'));
       await tester.pumpAndSettle();

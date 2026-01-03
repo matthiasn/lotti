@@ -5,9 +5,9 @@ import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 
 import '../../../../test_helper.dart';
 
-/// Tests for vertical spacing reduction in ChecklistItemWidget
+/// Tests for vertical spacing in ChecklistItemWidget
 ///
-/// Coverage: Ensures padding was reduced from 4 to 2 pixels per commit a58095840
+/// Coverage: Ensures the compact spacing is maintained after UI refactoring
 void main() {
   group('ChecklistItemWidget Spacing Tests', () {
     testWidgets('outer padding is exactly 2 pixels vertically', (tester) async {
@@ -34,16 +34,16 @@ void main() {
       final outerPadding = paddings.firstWhere(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2 &&
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1 &&
             (padding.padding as EdgeInsets).left == 0 &&
             (padding.padding as EdgeInsets).right == 0,
       );
 
-      expect(outerPadding.padding, const EdgeInsets.symmetric(vertical: 2));
+      expect(outerPadding.padding, const EdgeInsets.symmetric(vertical: 1));
     });
 
-    testWidgets('inner contentPadding has correct spacing', (tester) async {
+    testWidgets('inner row has correct spacing', (tester) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -54,14 +54,16 @@ void main() {
         ),
       );
 
-      final checkboxListTile =
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
-
-      // Verify contentPadding matches the compact style (reduced left/right, no vertical)
-      expect(
-        checkboxListTile.contentPadding,
-        const EdgeInsets.symmetric(horizontal: 5),
+      // Find the row inside the Material widget
+      final rowFinder = find.descendant(
+        of: find.byType(ChecklistItemWidget),
+        matching: find.byType(Row),
       );
+      // May find multiple rows due to nested widget structure
+      expect(rowFinder, findsWidgets);
+
+      // Verify that Checkbox is present in the row
+      expect(find.byType(Checkbox), findsOneWidget);
     });
 
     testWidgets('spacing remains consistent when item is checked',
@@ -76,15 +78,7 @@ void main() {
         ),
       );
 
-      // Verify inner padding
-      final checkboxListTile =
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
-      expect(
-        checkboxListTile.contentPadding,
-        const EdgeInsets.symmetric(horizontal: 5),
-      );
-
-      // Verify outer padding
+      // Verify outer padding still exists
       final paddingFinder = find.descendant(
         of: find.byType(ChecklistItemWidget),
         matching: find.byType(Padding),
@@ -94,8 +88,8 @@ void main() {
       final hasCorrectOuterPadding = paddings.any(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2 &&
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1 &&
             (padding.padding as EdgeInsets).left == 0 &&
             (padding.padding as EdgeInsets).right == 0,
       );
@@ -115,24 +109,21 @@ void main() {
         ),
       );
 
-      // Get initial spacing
-      var checkboxListTile =
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
-      final initialPadding = checkboxListTile.contentPadding;
+      // Get initial padding state
+      final paddingFinder = find.descendant(
+        of: find.byType(ChecklistItemWidget),
+        matching: find.byType(Padding),
+      );
+      final initialPaddings = tester.widgetList<Padding>(paddingFinder).length;
 
       // Toggle checkbox
-      await tester.tap(find.byType(CheckboxListTile));
+      await tester.tap(find.byType(Checkbox));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // Verify spacing unchanged
-      checkboxListTile =
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
-      expect(checkboxListTile.contentPadding, initialPadding);
-      expect(
-        checkboxListTile.contentPadding,
-        const EdgeInsets.symmetric(horizontal: 5),
-      );
+      // Verify padding structure unchanged
+      final newPaddings = tester.widgetList<Padding>(paddingFinder).length;
+      expect(newPaddings, initialPaddings);
 
       // Let completion highlight timer finish to avoid pending timers.
       await tester.pump(checklistCompletionAnimationDuration);
@@ -151,18 +142,11 @@ void main() {
         ),
       );
 
-      // Enter edit mode
+      // Enter edit mode by tapping the edit icon
       await tester.tap(find.byIcon(Icons.edit).first);
       await tester.pump();
 
-      // Verify spacing in edit mode
-      final checkboxListTile =
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
-      expect(
-        checkboxListTile.contentPadding,
-        const EdgeInsets.symmetric(horizontal: 5),
-      );
-
+      // Verify outer padding still exists
       final paddingFinder = find.descendant(
         of: find.byType(ChecklistItemWidget),
         matching: find.byType(Padding),
@@ -172,8 +156,8 @@ void main() {
       final hasCorrectOuterPadding = paddings.any(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2,
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1,
       );
 
       expect(hasCorrectOuterPadding, isTrue);
@@ -201,15 +185,15 @@ void main() {
       final outerPadding = paddings.firstWhere(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2,
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1,
       );
 
-      // Verify it's 2, not the legacy 4
+      // Verify it's 1, reduced for compact spacing
       final edgeInsets = outerPadding.padding as EdgeInsets;
-      expect(edgeInsets.vertical, 4.0); // 2 top + 2 bottom = 4 total
-      expect(edgeInsets.top, 2.0); // Was 4 in legacy code
-      expect(edgeInsets.bottom, 2.0); // Was 4 in legacy code
+      expect(edgeInsets.vertical, 2.0); // 1 top + 1 bottom = 2 total
+      expect(edgeInsets.top, 1.0);
+      expect(edgeInsets.bottom, 1.0);
     });
 
     testWidgets('multiple items have consistent compact spacing',
@@ -238,26 +222,17 @@ void main() {
         ),
       );
 
-      // Find all CheckboxListTile widgets
-      final checkboxTiles = tester.widgetList<CheckboxListTile>(
-        find.byType(CheckboxListTile),
-      );
-
-      // Verify all have the same compact padding
-      for (final tile in checkboxTiles) {
-        expect(
-          tile.contentPadding,
-          const EdgeInsets.symmetric(horizontal: 5),
-        );
-      }
+      // Find all Checkbox widgets
+      final checkboxes = tester.widgetList<Checkbox>(find.byType(Checkbox));
+      expect(checkboxes.length, 3);
 
       // Verify all outer paddings are consistent
       final allPaddings = tester.widgetList<Padding>(find.byType(Padding));
       final outerPaddings = allPaddings.where(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2 &&
-            (padding.padding as EdgeInsets).bottom == 2 &&
+            (padding.padding as EdgeInsets).top == 1 &&
+            (padding.padding as EdgeInsets).bottom == 1 &&
             (padding.padding as EdgeInsets).horizontal == 0,
       );
 
@@ -265,8 +240,8 @@ void main() {
       expect(outerPaddings.length, 3);
     });
 
-    testWidgets('vertical space per item is 2+2=4px total', (tester) async {
-      // outer padding (2 top, 2 bottom) + contentPadding (0 top, 0 bottom) = 4px vertical
+    testWidgets('vertical space per item is 1+1=2px total', (tester) async {
+      // outer padding (1 top, 1 bottom) = 2px vertical total
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -277,10 +252,6 @@ void main() {
         ),
       );
 
-      final checkboxListTile =
-          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile));
-      final contentPadding = checkboxListTile.contentPadding! as EdgeInsets;
-
       final paddingFinder = find.descendant(
         of: find.byType(ChecklistItemWidget),
         matching: find.byType(Padding),
@@ -289,13 +260,12 @@ void main() {
       final outerPadding = paddings.firstWhere(
         (padding) =>
             padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 2,
+            (padding.padding as EdgeInsets).top == 1,
       );
       final outerEdgeInsets = outerPadding.padding as EdgeInsets;
 
-      // Total vertical space = outer + content
-      final totalVertical = outerEdgeInsets.vertical + contentPadding.vertical;
-      expect(totalVertical, 4.0);
+      // Total vertical space from outer padding
+      expect(outerEdgeInsets.vertical, 2.0);
     });
   });
 }

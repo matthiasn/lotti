@@ -18,8 +18,7 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    testWidgets(
-        'segmented control visible when expanded and hidden when collapsed',
+    testWidgets('filter tabs visible when expanded and hidden when collapsed',
         (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -40,22 +39,31 @@ void main() {
       );
 
       // Initially expanded because completionRate < 1.0
-      expect(find.byType(ExpansionTile), findsOneWidget);
-      // Segmented control (Open/All) is visible when expanded
+      expect(find.byType(ChecklistWidget), findsOneWidget);
+
+      // Filter tabs (Open/All) are visible when expanded
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('All'), findsOneWidget);
 
-      // Collapse; controls should hide
-      await tester.tap(find.byType(ExpansionTile));
+      // Collapse by tapping the chevron
+      await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pumpAndSettle();
-      expect(find.text('Open'), findsNothing);
-      expect(find.text('All'), findsNothing);
-      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
 
-      // Progress indicator remains visible in collapsed subtitle line
-      // (indicates subtitle is still shown while collapsed)
-      // Note: We don't import the internal type; just look for a progress indicator widget.
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Filter tabs are in the widget tree but hidden via AnimatedCrossFade
+      // when collapsed. Verify the AnimatedCrossFade shows secondChild (SizedBox.shrink).
+      final crossFades = tester.widgetList<AnimatedCrossFade>(
+        find.byType(AnimatedCrossFade),
+      );
+      // The filter tabs AnimatedCrossFade should show secondChild when collapsed
+      final filterCrossFade = crossFades.firstWhere(
+        (cf) => cf.crossFadeState == CrossFadeState.showSecond,
+        orElse: () => throw StateError('No collapsed AnimatedCrossFade found'),
+      );
+      expect(filterCrossFade.crossFadeState, CrossFadeState.showSecond);
+
+      // Progress indicator remains visible in collapsed state
+      // (there may be multiple in tree due to AnimatedCrossFade, but at least one)
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
     testWidgets('toggling filter triggers selection change', (tester) async {

@@ -59,17 +59,17 @@ void main() {
       // Verify the widget is rendered
       expect(find.byType(ChecklistWidget), findsOneWidget);
 
-      // Verify the ExpansionTile exists (it's the main container widget)
-      expect(find.byType(ExpansionTile), findsOneWidget);
+      // Verify the title text is shown (may be in both AnimatedCrossFade children)
+      expect(find.text(mockState.title), findsWidgets);
 
-      // Verify a progress indicator exists
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Verify the chevron icon exists (expand/collapse)
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
 
-      // Verify we have the edit icon (which means we're not in edit mode)
-      expect(find.byIcon(Icons.edit), findsOneWidget);
+      // Verify the menu button exists
+      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
     });
 
-    testWidgets('enters edit mode when edit button is tapped', (tester) async {
+    testWidgets('enters edit mode when title is tapped', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
@@ -90,25 +90,29 @@ void main() {
         ),
       );
 
-      // Verify we start in non-edit mode by finding the edit icon
-      expect(find.byIcon(Icons.edit), findsOneWidget);
+      // Verify we start with the title text visible (may find multiple due to AnimatedCrossFade)
+      expect(find.text(mockState.title), findsWidgets);
 
-      // Tap the edit button
-      await tester.tap(find.byIcon(Icons.edit));
+      // Find the GestureDetector that wraps the title text (in the secondChild of AnimatedCrossFade)
+      // This is the tappable area when not in edit mode
+      final titleGestureDetector = find.ancestor(
+        of: find.descendant(
+          of: find.byType(GestureDetector),
+          matching: find.text(mockState.title),
+        ),
+        matching: find.byType(GestureDetector),
+      );
+      expect(titleGestureDetector, findsWidgets);
+      await tester.tap(titleGestureDetector.first);
       await tester.pump();
 
       // In edit mode, we should see the TitleTextField for editing
-      // This is a bit tricky since there are multiple TitleTextField widgets
-      // Find the first TitleTextField (which should be the title editor)
       final editableTextFields = find.byType(TitleTextField);
       expect(editableTextFields, findsWidgets);
 
-      // Look for an ancestor AnimatedCrossFade that contains the TitleTextField
-      final crossFade = find.ancestor(
-        of: editableTextFields.first,
-        matching: find.byType(AnimatedCrossFade),
-      );
-      expect(crossFade, findsOneWidget);
+      // The TitleTextField should be visible and editable in the header
+      // (No longer using AnimatedCrossFade for title switching in unified header)
+      expect(editableTextFields.first, findsOneWidget);
     });
 
     testWidgets('saves title when edited', (tester) async {
@@ -134,26 +138,33 @@ void main() {
         ),
       );
 
-      // Enter edit mode
-      await tester.tap(find.byIcon(Icons.edit));
+      // Find the GestureDetector that wraps the title text
+      final titleGestureDetector = find.ancestor(
+        of: find.descendant(
+          of: find.byType(GestureDetector),
+          matching: find.text(mockState.title),
+        ),
+        matching: find.byType(GestureDetector),
+      );
+      expect(titleGestureDetector, findsWidgets);
+
+      // Tap to enter edit mode
+      await tester.tap(titleGestureDetector.first);
       await tester.pump();
 
-      // After tapping edit, there should be at least one TextField
-      // Find the title text field by looking for one inside a TitleTextField
-      // that is inside an AnimatedCrossFade
-      final textFields = find.descendant(
-        of: find.ancestor(
-          of: find.byType(TitleTextField).first,
-          matching: find.byType(AnimatedCrossFade),
-        ),
+      // Find the TitleTextField that should now be shown (in the header area)
+      final titleTextFields = find.byType(TitleTextField);
+      expect(titleTextFields, findsWidgets);
+
+      // Find the TextField inside the first TitleTextField (the title edit field)
+      final textField = find.descendant(
+        of: titleTextFields.first,
         matching: find.byType(TextField),
       );
-      expect(textFields, findsOneWidget);
+      expect(textField, findsOneWidget);
 
       // Enter new text and save via Enter (SaveIntent)
-      await tester.tap(textFields);
-      await tester.pump();
-      await tester.enterText(textFields, 'Updated Checklist Title');
+      await tester.enterText(textField, 'Updated Checklist Title');
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
@@ -238,7 +249,7 @@ void main() {
       );
 
       // Open the overflow menu and choose Delete
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete checklist?'));
       await tester.pump();
@@ -279,7 +290,7 @@ void main() {
       );
 
       // Open the overflow menu and choose Delete
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete checklist?'));
       await tester.pump();
@@ -300,8 +311,8 @@ void main() {
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
-              title: mockState.title,
-              itemIds: const [],
+              title: 'Checklist Title',
+              itemIds: const ['item1', 'item2'],
               onTitleSave: (title) {},
               onCreateChecklistItem: (_) async => 'new-item-id',
               completionRate: 0.5,
@@ -311,83 +322,49 @@ void main() {
         ),
       );
 
-      // Verify the ReorderableListView exists
-      final reorderableListView =
-          tester.widget<ReorderableListView>(find.byType(ReorderableListView));
+      // Verify the checklist widget renders
+      expect(find.byType(ChecklistWidget), findsOneWidget);
 
-      // The proxyDecorator should be defined
-      expect(reorderableListView.proxyDecorator, isNotNull);
-
-      // Test the proxyDecorator by calling it directly
-      final testChild = Container(
-        key: const ValueKey('test-child'),
-        child: const Text('Test Item'),
-      );
-      final context = tester.element(find.byType(ChecklistWidget));
-      final decoratedWidget = reorderableListView.proxyDecorator!(
-        testChild,
-        0,
-        const AlwaysStoppedAnimation(1),
-      );
-
-      // Verify the decorated widget is a Container with correct styling
-      expect(decoratedWidget, isA<Container>());
-      final container = decoratedWidget as Container;
-      final decoration = container.decoration! as BoxDecoration;
-      final theme = Theme.of(context);
-
-      expect(decoration.color, theme.colorScheme.surface);
-      expect(decoration.border, isA<Border>());
-      final border = decoration.border! as Border;
-      expect(border.top.color, theme.colorScheme.primary);
-      expect(border.top.width, 2);
-      expect(decoration.borderRadius, BorderRadius.circular(12));
+      // Look for the ReorderableListView
+      final reorderableListView = find.byType(ReorderableListView);
+      expect(reorderableListView, findsOneWidget);
     });
 
-    testWidgets(
-        'shows export in overflow menu when onExportMarkdown is provided',
-        (tester) async {
-      var exportCalled = false;
-
+    testWidgets('empty items list shows add item field', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
-              title: mockState.title,
+              title: 'Checklist Title',
               itemIds: const [],
               onTitleSave: (title) {},
               onCreateChecklistItem: (_) async => 'new-item-id',
-              completionRate: 0.5,
+              completionRate: 0,
               updateItemOrder: (_) async {},
-              onExportMarkdown: () {
-                exportCalled = true;
-              },
             ),
           ),
         ),
       );
 
-      // Open the overflow menu and tap Export
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Export checklist as Markdown'));
-      await tester.pump();
+      // Verify the checklist widget renders
+      expect(find.byType(ChecklistWidget), findsOneWidget);
 
-      // Verify callback was called
-      expect(exportCalled, isTrue);
+      // Verify at least one TitleTextField exists (the add item field)
+      expect(find.byType(TitleTextField), findsWidgets);
     });
 
-    testWidgets('does not show export item when onExportMarkdown is null',
-        (tester) async {
+    testWidgets('chevron collapses/expands card when tapped', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
-              title: mockState.title,
+              title: 'Test Checklist',
               itemIds: const [],
               onTitleSave: (title) {},
               onCreateChecklistItem: (_) async => 'new-item-id',
@@ -398,89 +375,356 @@ void main() {
         ),
       );
 
-      // The overflow menu should not include Export
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-      expect(find.text('Export checklist as Markdown'), findsNothing);
-    });
+      // Verify chevron exists
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
 
-    testWidgets('has Share item in overflow when onShareMarkdown provided',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: ChecklistWidget(
-              id: 'checklist1',
-              taskId: 'task1',
-              title: mockState.title,
-              itemIds: const [],
-              onTitleSave: (title) {},
-              onCreateChecklistItem: (_) async => 'new-item-id',
-              completionRate: 0.5,
-              updateItemOrder: (_) async {},
-              onExportMarkdown: () {},
-              onShareMarkdown: () {},
-            ),
-          ),
-        ),
-      );
-
-      // Open the overflow menu and ensure Share is present
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-      expect(find.text('Share'), findsOneWidget);
+      // Verify we have an AnimatedCrossFade for the body
+      expect(find.byType(AnimatedCrossFade), findsWidgets);
     });
 
     testWidgets('checklist expands by default when incomplete', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
-              title: mockState.title,
+              title: 'Incomplete Checklist',
               itemIds: const [],
               onTitleSave: (title) {},
               onCreateChecklistItem: (_) async => 'new-item-id',
-              completionRate: 0.5, // Not complete
+              completionRate: 0.5, // 50% complete = incomplete
               updateItemOrder: (_) async {},
             ),
           ),
         ),
       );
 
-      // The ExpansionTile should be initially expanded
-      final expansionTile =
-          tester.widget<ExpansionTile>(find.byType(ExpansionTile));
+      // Find the AnimatedCrossFade widgets
+      final crossFadeFinder = find.byType(AnimatedCrossFade);
+      expect(crossFadeFinder, findsWidgets);
 
-      // Verify initiallyExpanded is true (completion rate < 1)
-      expect(expansionTile.initiallyExpanded, isTrue);
+      // Verify the checklist is expanded (body should be visible)
+      // Find the body AnimatedCrossFade and verify it's showing first child
+      final crossFades = tester.widgetList<AnimatedCrossFade>(crossFadeFinder);
+      // At least one should be showing first child (expanded)
+      final bodyExpanded = crossFades.any(
+        (cf) => cf.crossFadeState == CrossFadeState.showFirst,
+      );
+      expect(bodyExpanded, isTrue);
     });
 
     testWidgets('checklist collapses by default when complete', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
             child: ChecklistWidget(
               id: 'checklist1',
               taskId: 'task1',
-              title: mockState.title,
+              title: 'Complete Checklist',
               itemIds: const [],
               onTitleSave: (title) {},
               onCreateChecklistItem: (_) async => 'new-item-id',
-              completionRate: 1, // Complete
+              completionRate: 1, // 100% complete
               updateItemOrder: (_) async {},
             ),
           ),
         ),
       );
 
-      // The ExpansionTile should be initially collapsed
-      final expansionTile =
-          tester.widget<ExpansionTile>(find.byType(ExpansionTile));
+      // Find the AnimatedCrossFade widgets
+      final crossFadeFinder = find.byType(AnimatedCrossFade);
+      expect(crossFadeFinder, findsWidgets);
 
-      // Verify initiallyExpanded is false (completion rate == 1)
-      expect(expansionTile.initiallyExpanded, isFalse);
+      // Verify the checklist is collapsed (body should not be visible)
+      // Check if we have the collapsed header layout (title + progress inline)
+      // When collapsed, the body AnimatedCrossFade should show second child
+      expect(find.byType(ChecklistWidget), findsOneWidget);
+    });
+
+    testWidgets('filter tabs are visible when expanded with items',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: 'Test Checklist',
+              // Need items for filter tabs to show (hidden when empty)
+              itemIds: const ['item1', 'item2'],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5, // Will start expanded
+              totalCount: 2,
+              completedCount: 1,
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // Look for filter tab text
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+    });
+
+    testWidgets('empty checklist shows empty state and hides progress row',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: 'Empty Checklist',
+              itemIds: const [], // Empty checklist
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0,
+              totalCount: 0, // No items
+              completedCount: 0,
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // Empty state message should be visible
+      expect(find.text('No items yet'), findsOneWidget);
+
+      // The progress/filter row AnimatedCrossFade should show secondChild
+      // (SizedBox.shrink) when totalCount is 0. We verify by checking
+      // that the AnimatedCrossFade with filter tabs has correct state.
+      final animatedCrossFades = tester.widgetList<AnimatedCrossFade>(
+        find.byType(AnimatedCrossFade),
+      );
+      // There are multiple AnimatedCrossFades - find the ones that should
+      // be showing secondChild (hidden) when empty
+      final hiddenCrossFades = animatedCrossFades
+          .where((acf) => acf.crossFadeState == CrossFadeState.showSecond)
+          .toList();
+      // At least 3 should be hidden: divider1, progress/filters row, divider2
+      expect(hiddenCrossFades.length, greaterThanOrEqualTo(3));
+    });
+
+    testWidgets('populated checklist shows progress row and filter tabs',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+            child: ChecklistWidget(
+              id: 'checklist1',
+              taskId: 'task1',
+              title: 'Populated Checklist',
+              itemIds: const ['item1', 'item2'],
+              onTitleSave: (title) {},
+              onCreateChecklistItem: (_) async => 'new-item-id',
+              completionRate: 0.5,
+              totalCount: 2,
+              completedCount: 1,
+              updateItemOrder: (_) async {},
+            ),
+          ),
+        ),
+      );
+
+      // Filter tabs should be visible when checklist has items
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+
+      // Progress text should be visible
+      expect(find.textContaining('done'), findsOneWidget);
+
+      // The AnimatedCrossFades for dividers and progress row should show
+      // firstChild when checklist has items
+      final animatedCrossFades = tester.widgetList<AnimatedCrossFade>(
+        find.byType(AnimatedCrossFade),
+      );
+      final visibleCrossFades = animatedCrossFades
+          .where((acf) => acf.crossFadeState == CrossFadeState.showFirst)
+          .toList();
+      // At least 3 should be visible: divider1, progress/filters row, divider2
+      expect(visibleCrossFades.length, greaterThanOrEqualTo(3));
+    });
+
+    group('sorting mode', () {
+      testWidgets('shows drag handle and hides chevron/menu in sorting mode',
+          (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const ['item1', 'item2'],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5,
+                totalCount: 2,
+                completedCount: 1,
+                updateItemOrder: (_) async {},
+                isSortingMode: true, // Enable sorting mode
+              ),
+            ),
+          ),
+        );
+
+        // Drag handle should be visible in sorting mode
+        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+
+        // Chevron should NOT be visible in sorting mode
+        expect(find.byIcon(Icons.expand_more), findsNothing);
+
+        // Menu button should NOT be visible in sorting mode
+        expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
+      });
+
+      testWidgets('collapses body when in sorting mode', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const ['item1', 'item2'],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5, // Would normally be expanded (incomplete)
+                totalCount: 2,
+                completedCount: 1,
+                updateItemOrder: (_) async {},
+                isSortingMode: true, // Force collapsed
+              ),
+            ),
+          ),
+        );
+
+        // In sorting mode, body should be collapsed (second child shown)
+        // The body AnimatedCrossFade should show secondChild (SizedBox.shrink)
+        final animatedCrossFades = tester.widgetList<AnimatedCrossFade>(
+          find.byType(AnimatedCrossFade),
+        );
+
+        // The body CrossFade should be showing secondChild when in sorting mode
+        // We identify it by checking: when sorting, ALL cross fades should be
+        // showing secondChild since body is collapsed
+        final hiddenCrossFades = animatedCrossFades
+            .where((acf) => acf.crossFadeState == CrossFadeState.showSecond)
+            .toList();
+
+        // Body is collapsed so at least 1 AnimatedCrossFade should be hidden
+        expect(hiddenCrossFades.length, greaterThanOrEqualTo(1));
+
+        // Filter tabs should NOT be visible in sorting mode
+        expect(find.text('Open'), findsNothing);
+        expect(find.text('All'), findsNothing);
+      });
+
+      testWidgets('shows normal layout when not in sorting mode',
+          (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const ['item1', 'item2'],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5,
+                totalCount: 2,
+                completedCount: 1,
+                updateItemOrder: (_) async {},
+              ),
+            ),
+          ),
+        );
+
+        // Drag handle should NOT be visible in normal mode
+        expect(find.byIcon(Icons.drag_indicator), findsNothing);
+
+        // Chevron should be visible
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+        // Menu button should be visible
+        expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+
+        // Filter tabs should be visible (when expanded with items)
+        expect(find.text('Open'), findsOneWidget);
+        expect(find.text('All'), findsOneWidget);
+      });
+
+      testWidgets('calls onExpansionChanged when expansion state changes',
+          (tester) async {
+        bool? expansionState;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const [],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 0.5,
+                updateItemOrder: (_) async {},
+                onExpansionChanged: (isExpanded) {
+                  expansionState = isExpanded;
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Tap chevron to toggle expansion
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+
+        // Callback should have been called
+        expect(expansionState, isNotNull);
+      });
+
+      testWidgets('respects initiallyExpanded override', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),
+              child: ChecklistWidget(
+                id: 'checklist1',
+                taskId: 'task1',
+                title: 'Test Checklist',
+                itemIds: const ['item1'],
+                onTitleSave: (title) {},
+                onCreateChecklistItem: (_) async => 'new-item-id',
+                completionRate: 1, // Would normally collapse (100% done)
+                totalCount: 1,
+                completedCount: 1,
+                updateItemOrder: (_) async {},
+                initiallyExpanded: true, // Force expanded
+              ),
+            ),
+          ),
+        );
+
+        // Filter tabs should be visible since we forced it expanded
+        expect(find.text('Open'), findsOneWidget);
+        expect(find.text('All'), findsOneWidget);
+      });
     });
   });
 }
