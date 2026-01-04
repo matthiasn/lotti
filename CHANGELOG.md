@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Ensure SetCoverArtChip widget tests register required dependencies and fallbacks in `getIt` to keep cover-art flows testable
 
+## [0.9.797] - 2026-01-04
+### Fixed
+- Cross-Checklist Drag-and-Drop: Restored ability to move items between checklists
+  - Fixed regression from checklist redesign PR where `ReorderableDragStartListener` blocked `super_drag_and_drop` gestures
+  - Moved `DropRegion` to wrap entire checklist card for proper drop target area
+  - Added item-level `DropRegion` for position-aware drops enabling within-list reordering
+  - Unified drag system: long-press anywhere on item initiates drag for both reordering and cross-checklist moves
+
 ## [0.9.796] - 2026-01-03
 ### Changed
 - Nano Banana Checklist Redesign: Major UI rewrite with card-based architecture

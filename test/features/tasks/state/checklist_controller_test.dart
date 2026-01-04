@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -23,6 +24,8 @@ class MockJournalRepository extends Mock implements JournalRepository {}
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
 // Helper to register a mock instance in getIt
 void registerMock<T extends Object>(T instance) {
@@ -86,6 +89,13 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(testTask.data);
+    registerFallbackValue(
+      const ChecklistData(
+        title: '',
+        linkedChecklistItems: [],
+        linkedTasks: [],
+      ),
+    );
   });
 
   setUp(() {
@@ -366,6 +376,229 @@ void main() {
             entryText: any(named: 'entryText'),
           ),
         );
+      });
+    });
+
+    group('dropChecklistItem - same checklist reordering', () {
+      late MockChecklistRepository mockChecklistRepository;
+
+      setUp(() {
+        mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      test('reorders item to target index position', () async {
+        // Checklist with 3 items
+        final checklistWith3Items = Checklist(
+          meta: Metadata(
+            id: 'checklist-1',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistData(
+            title: 'Test Checklist',
+            linkedChecklistItems: ['item-1', 'item-2', 'item-3'],
+            linkedTasks: ['task-1'],
+          ),
+        );
+
+        when(() => mockDb.journalEntityById('checklist-1'))
+            .thenAnswer((_) async => checklistWith3Items);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Wait for initial state
+        await container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
+              .future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
+              .notifier,
+        );
+
+        // Drop item-1 at targetIndex 2 (before item-3)
+        // Since item-1 is removed first, actual insertion is at index 1
+        await notifier.dropChecklistItem(
+          {'checklistItemId': 'item-1', 'checklistId': 'checklist-1'},
+          targetIndex: 2,
+        );
+
+        // Verify updateChecklist was called with reordered items
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: 'checklist-1',
+            data: captureAny(named: 'data'),
+          ),
+        ).captured.single as ChecklistData;
+
+        // Original: [item-1, item-2, item-3]
+        // Remove item-1: [item-2, item-3]
+        // targetIndex=2 > oldIndex=0, so newIndex = 2 - 1 = 1
+        // Insert at 1: [item-2, item-1, item-3]
+        expect(captured.linkedChecklistItems, ['item-2', 'item-1', 'item-3']);
+      });
+
+      test('reorders item using targetItemId (insert after)', () async {
+        final checklistWith3Items = Checklist(
+          meta: Metadata(
+            id: 'checklist-1',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistData(
+            title: 'Test Checklist',
+            linkedChecklistItems: ['item-1', 'item-2', 'item-3'],
+            linkedTasks: ['task-1'],
+          ),
+        );
+
+        when(() => mockDb.journalEntityById('checklist-1'))
+            .thenAnswer((_) async => checklistWith3Items);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
+              .future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
+              .notifier,
+        );
+
+        // Move item-1 after item-2
+        await notifier.dropChecklistItem(
+          {'checklistItemId': 'item-1', 'checklistId': 'checklist-1'},
+          targetItemId: 'item-2',
+        );
+
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: 'checklist-1',
+            data: captureAny(named: 'data'),
+          ),
+        ).captured.single as ChecklistData;
+
+        // item-1 moved after item-2
+        // Original: [item-1, item-2, item-3]
+        // After: [item-2, item-1, item-3]
+        expect(captured.linkedChecklistItems, ['item-2', 'item-1', 'item-3']);
+      });
+
+      test('does nothing when item not in checklist', () async {
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
+              .future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
+              .notifier,
+        );
+
+        // Try to reorder non-existent item
+        await notifier.dropChecklistItem(
+          {'checklistItemId': 'non-existent', 'checklistId': 'checklist-1'},
+          targetIndex: 0,
+        );
+
+        // Verify updateChecklist was NOT called
+        verifyNever(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        );
+      });
+
+      test('appends to end when no position specified for same checklist',
+          () async {
+        final checklistWith3Items = Checklist(
+          meta: Metadata(
+            id: 'checklist-1',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistData(
+            title: 'Test Checklist',
+            linkedChecklistItems: ['item-1', 'item-2', 'item-3'],
+            linkedTasks: ['task-1'],
+          ),
+        );
+
+        when(() => mockDb.journalEntityById('checklist-1'))
+            .thenAnswer((_) async => checklistWith3Items);
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
+              .future,
+        );
+
+        final notifier = container.read(
+          checklistControllerProvider((id: 'checklist-1', taskId: 'task-1'))
+              .notifier,
+        );
+
+        // Reorder item-1 with no target position
+        await notifier.dropChecklistItem(
+          {'checklistItemId': 'item-1', 'checklistId': 'checklist-1'},
+        );
+
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: 'checklist-1',
+            data: captureAny(named: 'data'),
+          ),
+        ).captured.single as ChecklistData;
+
+        // item-1 moved to end
+        expect(captured.linkedChecklistItems, ['item-2', 'item-3', 'item-1']);
       });
     });
   });

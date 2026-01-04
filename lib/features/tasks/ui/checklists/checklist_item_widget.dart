@@ -110,15 +110,15 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
             child: Row(
               children: [
                 // Drag handle - always visible on the LEFT
-                ReorderableDragStartListener(
-                  index: widget.index,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Icon(
-                      Icons.drag_indicator,
-                      size: 20,
-                      color: colorScheme.outline.withValues(alpha: 0.5),
-                    ),
+                // This is a visual indicator. Drag is handled by the parent
+                // DraggableWidget (super_drag_and_drop). Long-press on item
+                // to initiate drag for both reordering and cross-checklist moves.
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    size: 20,
+                    color: colorScheme.outline.withValues(alpha: 0.5),
                   ),
                 ),
                 // Checkbox

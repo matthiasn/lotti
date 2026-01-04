@@ -50,8 +50,10 @@ class ChecklistCardBody extends StatelessWidget {
                   : ReorderableListView(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      buildDefaultDragHandles:
-                          false, // We use custom drag handles
+                      // Disable Flutter's default handles - we use custom left-side
+                      // handles. Cross-checklist drag uses super_drag_and_drop
+                      // (long-press anywhere on item).
+                      buildDefaultDragHandles: false,
                       proxyDecorator: (child, index, animation) =>
                           buildDragDecorator(context, child),
                       onReorder: onReorder,
