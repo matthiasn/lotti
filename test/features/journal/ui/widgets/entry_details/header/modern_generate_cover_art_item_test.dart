@@ -226,6 +226,38 @@ void main() {
       // Should have the correct icon
       expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
     });
+
+    testWidgets('action item displays correct labels', (tester) async {
+      final audioEntry = buildAudioEntry();
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            createEntryControllerOverride(audioEntry),
+            createEntryControllerOverride(task),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernGenerateCoverArtItem(
+                entryId: 'audio-1',
+                linkedFromId: 'task-1',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      // Should show the action item with correct text
+      expect(find.text('Generate Cover Art'), findsOneWidget);
+      expect(find.text('Create image from voice description'), findsOneWidget);
+    });
   });
 
   group('ModernGenerateCoverArtItem widget properties', () {

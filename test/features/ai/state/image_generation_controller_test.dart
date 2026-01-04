@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -757,6 +758,262 @@ void main() {
           systemMessage: any(named: 'systemMessage'),
         ),
       ).called(1);
+    });
+  });
+
+  group('ImageGenerationController.generateImageFromEntity happy path', () {
+    late MockJournalRepository mockJournalRepo;
+    late MockAiInputRepository mockAiInputRepo;
+    late MockLabelsRepository mockLabelsRepo;
+    late MockChecklistRepository mockChecklistRepo;
+    late MockCloudInferenceRepository mockCloudRepo;
+    late MockAiConfigRepository mockAiConfigRepo;
+    late MockLoggingService mockLoggingService;
+    late ProviderContainer container;
+
+    final testDate = DateTime(2025);
+    final testGeminiProvider = AiConfigInferenceProvider(
+      id: 'gemini-provider',
+      name: 'Gemini',
+      baseUrl: 'https://generativelanguage.googleapis.com',
+      apiKey: 'test-key',
+      createdAt: testDate,
+      inferenceProviderType: InferenceProviderType.gemini,
+    );
+
+    JournalAudio buildAudioEntity({
+      required String id,
+      String? transcript,
+    }) {
+      return JournalAudio(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: AudioData(
+          audioFile: 'test.m4a',
+          audioDirectory: '/tmp',
+          dateFrom: testDate,
+          dateTo: testDate,
+          duration: const Duration(minutes: 2),
+          transcripts: transcript != null
+              ? [
+                  AudioTranscript(
+                    transcript: transcript,
+                    created: testDate,
+                    library: 'whisper',
+                    model: 'base',
+                    detectedLanguage: 'en',
+                  ),
+                ]
+              : null,
+        ),
+      );
+    }
+
+    Task buildTask({required String id}) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: TaskData(
+          title: 'Test Task',
+          dateFrom: testDate,
+          dateTo: testDate,
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          statusHistory: const [],
+        ),
+      );
+    }
+
+    setUp(() {
+      mockJournalRepo = MockJournalRepository();
+      mockAiInputRepo = MockAiInputRepository();
+      mockLabelsRepo = MockLabelsRepository();
+      mockChecklistRepo = MockChecklistRepository();
+      mockCloudRepo = MockCloudInferenceRepository();
+      mockAiConfigRepo = MockAiConfigRepository();
+      mockLoggingService = MockLoggingService();
+
+      // Register LoggingService in GetIt
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+      getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+      container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepo),
+          aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
+          labelsRepositoryProvider.overrideWithValue(mockLabelsRepo),
+          checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
+          cloudInferenceRepositoryProvider.overrideWithValue(mockCloudRepo),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+    });
+
+    test('generateImageFromEntity succeeds with audio entity linked to task',
+        () async {
+      const audioEntityId = 'audio-entity-id';
+      const taskId = 'task-id';
+      final audioEntity = buildAudioEntity(
+        id: audioEntityId,
+        transcript: 'Create a colorful sunset image',
+      );
+      final linkedTask = buildTask(id: taskId);
+      final imageBytes = [1, 2, 3, 4, 5];
+
+      // Mock: Get the audio entity by ID
+      when(() => mockJournalRepo.getJournalEntityById(audioEntityId))
+          .thenAnswer((_) async => audioEntity);
+
+      // Mock: Get linked entities (audio -> task link)
+      when(() => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId))
+          .thenAnswer((_) async => [linkedTask]);
+
+      // Mock: Get linked to entities (task -> entries link for summaries)
+      when(() => mockJournalRepo.getLinkedToEntities(linkedTo: taskId))
+          .thenAnswer((_) async => []);
+
+      // Mock: Build task details JSON for the {{task}} placeholder
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
+          .thenAnswer((_) async => '{"title": "Test Task", "status": "open"}');
+
+      // Mock: Build linked tasks JSON
+      when(() => mockAiInputRepo.buildLinkedTasksJson(taskId))
+          .thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
+
+      // Mock: AI config to return Gemini provider
+      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
+          .thenAnswer((_) async => [testGeminiProvider]);
+
+      // Mock: Cloud repo to generate image
+      when(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any<AiConfigInferenceProvider>(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenAnswer(
+        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+      );
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: audioEntityId).notifier,
+      );
+
+      // Execute the method
+      await notifier.generateImageFromEntity(audioEntityId: audioEntityId);
+
+      // Verify final state is success
+      final finalState = container.read(
+        imageGenerationControllerProvider(entityId: audioEntityId),
+      );
+      expect(finalState, isA<ImageGenerationSuccess>());
+
+      finalState.map(
+        initial: (_) => fail('Should be success'),
+        generating: (_) => fail('Should be success'),
+        success: (s) {
+          // Prompt should contain the transcript
+          expect(s.prompt, contains('Create a colorful sunset image'));
+          expect(s.imageBytes, Uint8List.fromList(imageBytes));
+          expect(s.mimeType, 'image/png');
+        },
+        error: (_) => fail('Should be success'),
+      );
+
+      // Verify the repository calls
+      verify(() => mockJournalRepo.getJournalEntityById(audioEntityId))
+          .called(1);
+      verify(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).called(1);
+    });
+
+    test('generateImageFromEntity handles empty prompt gracefully', () async {
+      const audioEntityId = 'audio-entity-id';
+      const taskId = 'task-id';
+      // Audio entity without transcript -> will produce minimal prompt text
+      final audioEntity = buildAudioEntity(id: audioEntityId);
+      final linkedTask = buildTask(id: taskId);
+
+      when(() => mockJournalRepo.getJournalEntityById(audioEntityId))
+          .thenAnswer((_) async => audioEntity);
+
+      when(() => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId))
+          .thenAnswer((_) async => [linkedTask]);
+
+      when(() => mockJournalRepo.getLinkedToEntities(linkedTo: taskId))
+          .thenAnswer((_) async => []);
+
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
+          .thenAnswer((_) async => '{"title": "Test Task"}');
+
+      when(() => mockAiInputRepo.buildLinkedTasksJson(taskId))
+          .thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
+
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      // Mock AI config returns provider so generation can proceed
+      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
+          .thenAnswer((_) async => [testGeminiProvider]);
+
+      final imageBytes = [1, 2, 3];
+      when(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any<AiConfigInferenceProvider>(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenAnswer(
+        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+      );
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: audioEntityId).notifier,
+      );
+
+      await notifier.generateImageFromEntity(audioEntityId: audioEntityId);
+
+      // Should succeed even with no transcript - prompt will have fallback text
+      final finalState = container.read(
+        imageGenerationControllerProvider(entityId: audioEntityId),
+      );
+      expect(finalState, isA<ImageGenerationSuccess>());
     });
   });
 }
