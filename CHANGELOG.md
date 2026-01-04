@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Ensure SetCoverArtChip widget tests register required dependencies and fallbacks in `getIt` to keep cover-art flows testable
 
+## [0.9.798] - 2026-01-04
+### Added
+- AI Cover Art Generation: Generate task cover art directly from audio descriptions using Gemini's image generation model (Nano Banana Pro)
+  - Trigger from audio entry action menu when linked to a task
+  - Full task context included in prompt (title, checklists, labels, linked task summaries)
+  - `{{current_task_summary}}` placeholder provides learnings and annoyances for visual metaphors
+  - Review modal with accept, edit prompt, and regenerate options
+  - Accepted images automatically set as task cover art
+
+### Changed
+- Cover Art Display: Updated from 2:1 to 16:9 aspect ratio for consistency with generated images
+  - Task expandable app bar now uses 16:9 aspect ratio
+  - Cover art background displays at full resolution (removed cacheHeight constraint)
+- Image Generation: Uses 2K resolution for Full HD quality output (1920x1080 at 16:9)
+
 ## [0.9.797] - 2026-01-04
 ### Fixed
 - Cross-Checklist Drag-and-Drop: Restored ability to move items between checklists

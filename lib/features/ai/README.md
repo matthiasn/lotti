@@ -353,7 +353,7 @@ The system supports multiple inference providers through a modular architecture:
   - Function calling maps to OpenAI-style tool calls with stable IDs and indices
   - Usage statistics tracking (prompt tokens, completion tokens, thoughts tokens, cached tokens)
   - Processing duration measurement for performance monitoring
-  - **Image Generation**: Nano Banana Pro model for generating cover art images (2:1 aspect ratio)
+  - **Image Generation**: Nano Banana Pro model for generating cover art images (16:9 aspect ratio, 2K resolution)
 - **OpenRouter**: Access to multiple models through unified API
 - **Nebius AI Studio**: Enterprise AI platform support
 - **Generic OpenAI-Compatible**: Any service implementing OpenAI's API specification
@@ -820,7 +820,7 @@ The system supports seven AI response types:
    - Generates cover art images directly using AI (Gemini Nano Banana Pro model)
    - Triggered from audio entries linked to tasks via action menu
    - Uses task context and audio transcript to build image prompts
-   - Produces 2:1 aspect ratio images suitable for task cover art
+   - Produces 16:9 aspect ratio images at 2K resolution (1920x1080) suitable for task cover art
    - Review modal allows editing prompt, regenerating, or accepting images
    - Accepted images are saved as journal entries and set as task cover
 
@@ -857,7 +857,7 @@ The AI system supports native image generation for creating task cover art. This
 #### Repository Layer
 - **`GeminiInferenceRepository.generateImage()`**: Direct Gemini API call for image generation
 - **`CloudInferenceRepository.generateImage()`**: Routes to Gemini repository
-- **`GeminiUtils.buildImageGenerationRequestBody()`**: Builds request with 2:1 aspect ratio
+- **`GeminiUtils.buildImageGenerationRequestBody()`**: Builds request with 16:9 aspect ratio and 2K resolution
 
 #### UI Components
 - **`ImageGenerationReviewModal`**: Full-screen modal for image review
@@ -891,8 +891,8 @@ const KnownModel(
 
 The cover art generation system prompt guides the AI to:
 - Generate visually striking, artistic images
-- Use 2:1 aspect ratio for task cover art
-- Incorporate task context and user descriptions
+- Use 16:9 aspect ratio at 2K resolution for task cover art
+- Incorporate task context, user descriptions, and visual metaphors for learnings/annoyances
 - Avoid text in generated images
 - Create unique, creative interpretations
 
