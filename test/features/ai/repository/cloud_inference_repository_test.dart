@@ -9,7 +9,8 @@ import 'package:lotti/features/ai/providers/gemini_inference_repository_provider
 import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
+    show GeminiInferenceRepository, GeneratedImage;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
@@ -2341,6 +2342,172 @@ void main() {
 
       // Thoughts are always captured for thinking-capable models
       expect(capturedConfig!.includeThoughts, isTrue);
+    });
+  });
+
+  group('CloudInferenceRepository - generateImage', () {
+    late MockHttpClient mockHttpClient;
+    late ProviderContainer container;
+    late MockGeminiInferenceRepository mockGeminiRepo;
+    late CloudInferenceRepository repository;
+
+    setUp(() {
+      mockHttpClient = MockHttpClient();
+      mockGeminiRepo = MockGeminiInferenceRepository();
+
+      container = ProviderContainer(
+        overrides: [
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+          ollamaInferenceRepositoryProvider
+              .overrideWithValue(MockOllamaInferenceRepository()),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+    });
+
+    tearDown(() {
+      mockHttpClient.close();
+      container.dispose();
+    });
+
+    AiConfigInferenceProvider createGeminiProvider() {
+      return AiConfigInferenceProvider(
+        id: 'gemini-provider',
+        name: 'Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-api-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+    }
+
+    test('routes to GeminiInferenceRepository for Gemini provider', () async {
+      final provider = createGeminiProvider();
+      const model = 'models/gemini-3-pro-image-preview';
+      const prompt = 'Generate a beautiful sunset';
+      const systemMessage = 'You are an image generator';
+
+      when(
+        () => mockGeminiRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenAnswer(
+        (_) async => const GeneratedImage(
+          bytes: [1, 2, 3, 4, 5],
+          mimeType: 'image/png',
+        ),
+      );
+
+      final result = await repository.generateImage(
+        prompt: prompt,
+        model: model,
+        provider: provider,
+        systemMessage: systemMessage,
+      );
+
+      expect(result.bytes, [1, 2, 3, 4, 5]);
+      expect(result.mimeType, 'image/png');
+
+      verify(
+        () => mockGeminiRepo.generateImage(
+          prompt: prompt,
+          model: model,
+          provider: provider,
+          systemMessage: systemMessage,
+        ),
+      ).called(1);
+    });
+
+    test('throws UnsupportedError for non-Gemini provider', () async {
+      final ollamaProvider = AiConfigInferenceProvider(
+        id: 'ollama-provider',
+        name: 'Ollama',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      expect(
+        () => repository.generateImage(
+          prompt: 'Generate an image',
+          model: 'llama2',
+          provider: ollamaProvider,
+        ),
+        throwsA(isA<UnsupportedError>().having(
+          (e) => e.message,
+          'message',
+          contains('only supported for Gemini providers'),
+        )),
+      );
+    });
+
+    test('works without optional systemMessage', () async {
+      final provider = createGeminiProvider();
+      const model = 'models/gemini-3-pro-image-preview';
+
+      when(
+        () => mockGeminiRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenAnswer(
+        (_) async => const GeneratedImage(
+          bytes: [10, 20, 30],
+          mimeType: 'image/jpeg',
+        ),
+      );
+
+      final result = await repository.generateImage(
+        prompt: 'A cat playing piano',
+        model: model,
+        provider: provider,
+      );
+
+      expect(result.bytes, [10, 20, 30]);
+      expect(result.mimeType, 'image/jpeg');
+
+      verify(
+        () => mockGeminiRepo.generateImage(
+          prompt: 'A cat playing piano',
+          model: model,
+          provider: provider,
+        ),
+      ).called(1);
+    });
+
+    test('propagates exceptions from GeminiInferenceRepository', () async {
+      final provider = createGeminiProvider();
+      const model = 'models/gemini-3-pro-image-preview';
+
+      when(
+        () => mockGeminiRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+        ),
+      ).thenThrow(Exception('Image generation failed'));
+
+      expect(
+        () => repository.generateImage(
+          prompt: 'Generate an image',
+          model: model,
+          provider: provider,
+        ),
+        throwsA(isA<Exception>().having(
+          (e) => e.toString(),
+          'message',
+          contains('Image generation failed'),
+        )),
+      );
     });
   });
 
