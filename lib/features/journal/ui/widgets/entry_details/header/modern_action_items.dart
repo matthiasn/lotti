@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -546,42 +545,13 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
     required String linkedTaskId,
     required Task linkedTask,
   }) async {
-    // Build the prompt from task context and audio transcript
-    final prompt = _buildImageGenerationPrompt(
-      audioEntry: audioEntry,
-      linkedTask: linkedTask,
-    );
-
+    // The modal builds the full prompt using PromptBuilderHelper
+    // for complete task context (checklists, labels, linked tasks, etc.)
     await ImageGenerationReviewModal.show(
       context: context,
       entityId: entryId,
       linkedTaskId: linkedTaskId,
-      initialPrompt: prompt,
       categoryId: linkedTask.meta.categoryId,
     );
-  }
-
-  String _buildImageGenerationPrompt({
-    required JournalAudio audioEntry,
-    required Task linkedTask,
-  }) {
-    final buffer = StringBuffer();
-
-    // Add user's voice description if available (use the latest transcript)
-    final transcripts = audioEntry.data.transcripts;
-    final latestTranscript = transcripts?.lastOrNull?.transcript;
-    if (latestTranscript != null && latestTranscript.isNotEmpty) {
-      buffer
-        ..writeln('User vision (from voice): $latestTranscript')
-        ..writeln();
-    }
-
-    // Add task context
-    final status = linkedTask.data.status.toDbString;
-    buffer
-      ..writeln('Task title: ${linkedTask.data.title}')
-      ..writeln('Task status: $status');
-
-    return buffer.toString();
   }
 }

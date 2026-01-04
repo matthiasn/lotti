@@ -312,6 +312,23 @@ class PromptBuilderHelper {
       prompt = prompt.replaceAll('{{linked_tasks}}', linkedTasksJson);
     }
 
+    // Inject current task's latest summary if requested
+    if (prompt.contains('{{current_task_summary}}')) {
+      String summaryText;
+      try {
+        summaryText = await _buildCurrentTaskSummary(entity);
+      } catch (error, stackTrace) {
+        _logPlaceholderFailure(
+          entity: entity,
+          placeholder: 'current_task_summary',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        summaryText = '[No task summary available]';
+      }
+      prompt = prompt.replaceAll('{{current_task_summary}}', summaryText);
+    }
+
     return prompt;
   }
 
@@ -359,6 +376,55 @@ class PromptBuilderHelper {
 
     // Return original JSON if no linked tasks (no note needed)
     return json;
+  }
+
+  /// Build the current task's latest summary for the given entity.
+  ///
+  /// Works with [Task] entities directly, or finds the linked task for
+  /// images/audio via [_findLinkedTask].
+  ///
+  /// The summary typically contains learnings, annoyances, and key insights
+  /// that can inform visual representation in image generation.
+  ///
+  /// Returns `[No task summary available]` if no summary exists.
+  Future<String> _buildCurrentTaskSummary(JournalEntity entity) async {
+    String? taskId;
+    if (entity is Task) {
+      taskId = entity.id;
+    } else {
+      final linkedTask = await _findLinkedTask(entity);
+      taskId = linkedTask?.id;
+    }
+
+    if (taskId == null) {
+      return '[No task summary available]';
+    }
+
+    // Get linked entities for the task to find AI summaries
+    final linkedEntities =
+        await journalRepository.getLinkedToEntities(linkedTo: taskId);
+
+    // Filter for AiResponseEntry items with taskSummary type, sort by date
+    final summaries = linkedEntities
+        .whereType<AiResponseEntry>()
+        .where((e) => e.data.type == AiResponseType.taskSummary)
+        .toList()
+      ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+
+    if (summaries.isEmpty) {
+      developer.log(
+        'No task summary found for task $taskId',
+        name: 'PromptBuilderHelper',
+      );
+      return '[No task summary available]';
+    }
+
+    final latestSummary = summaries.first.data.response;
+    developer.log(
+      'Found task summary for $taskId (${latestSummary.length} chars)',
+      name: 'PromptBuilderHelper',
+    );
+    return latestSummary;
   }
 
   /// Get task JSON for a given entity

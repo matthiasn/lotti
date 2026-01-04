@@ -40,7 +40,6 @@ void main() {
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
             categoryId: null,
-            initialPrompt: testPrompt,
           ),
         ),
       );
@@ -65,7 +64,6 @@ void main() {
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
             categoryId: null,
-            initialPrompt: testPrompt,
           ),
         ),
       );
@@ -95,7 +93,6 @@ void main() {
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
             categoryId: null,
-            initialPrompt: testPrompt,
           ),
         ),
       );
@@ -135,7 +132,6 @@ void main() {
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
             categoryId: null,
-            initialPrompt: testPrompt,
           ),
         ),
       );
@@ -173,7 +169,6 @@ void main() {
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
             categoryId: null,
-            initialPrompt: testPrompt,
           ),
         ),
       );
@@ -211,7 +206,6 @@ void main() {
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
             categoryId: null,
-            initialPrompt: testPrompt,
           ),
         ),
       );
@@ -233,7 +227,7 @@ void main() {
       expect(find.byType(Image), findsOneWidget);
     });
 
-    testWidgets('prompt editor contains initial prompt text', (tester) async {
+    testWidgets('prompt editor contains prompt from state', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
@@ -252,7 +246,6 @@ void main() {
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
             categoryId: null,
-            initialPrompt: testPrompt,
           ),
         ),
       );
@@ -263,7 +256,7 @@ void main() {
       await tester.tap(find.text('Edit Prompt'));
       await tester.pump();
 
-      // TextField should contain the initial prompt
+      // TextField should contain the prompt from state
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.controller?.text, testPrompt);
     });
@@ -286,7 +279,6 @@ void main() {
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
             categoryId: null,
-            initialPrompt: testPrompt,
           ),
         ),
       );
@@ -309,12 +301,10 @@ void main() {
         entityId: 'id',
         linkedTaskId: 'task-id',
         categoryId: null,
-        initialPrompt: 'prompt',
       );
 
       expect(widget.entityId, 'id');
       expect(widget.linkedTaskId, 'task-id');
-      expect(widget.initialPrompt, 'prompt');
     });
 
     test('categoryId can be null', () {
@@ -322,7 +312,6 @@ void main() {
         entityId: 'id',
         linkedTaskId: 'task-id',
         categoryId: null,
-        initialPrompt: 'prompt',
       );
 
       expect(widget.categoryId, isNull);
@@ -333,7 +322,6 @@ void main() {
         entityId: 'id',
         linkedTaskId: 'task-id',
         categoryId: 'category-123',
-        initialPrompt: 'prompt',
       );
 
       expect(widget.categoryId, 'category-123');
@@ -350,6 +338,12 @@ class _MockImageGenerationController extends ImageGenerationController {
   @override
   ImageGenerationState build({required String entityId}) {
     return _fixedState;
+  }
+
+  @override
+  Future<void> generateImageFromEntity({required String audioEntityId}) {
+    // No-op for tests - we control state through constructor
+    return Future.value();
   }
 
   @override

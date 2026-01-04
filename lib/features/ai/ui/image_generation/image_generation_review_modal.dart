@@ -25,7 +25,6 @@ class ImageGenerationReviewModal extends ConsumerStatefulWidget {
     required this.entityId,
     required this.linkedTaskId,
     required this.categoryId,
-    required this.initialPrompt,
     super.key,
   });
 
@@ -38,15 +37,11 @@ class ImageGenerationReviewModal extends ConsumerStatefulWidget {
   /// Optional category ID for the generated image entry.
   final String? categoryId;
 
-  /// The initial prompt for image generation.
-  final String initialPrompt;
-
   /// Shows the image generation review modal.
   static Future<void> show({
     required BuildContext context,
     required String entityId,
     required String linkedTaskId,
-    required String initialPrompt,
     String? categoryId,
   }) async {
     await ModalUtils.showSinglePageModal<void>(
@@ -56,7 +51,6 @@ class ImageGenerationReviewModal extends ConsumerStatefulWidget {
         entityId: entityId,
         linkedTaskId: linkedTaskId,
         categoryId: categoryId,
-        initialPrompt: initialPrompt,
       ),
     );
   }
@@ -68,15 +62,14 @@ class ImageGenerationReviewModal extends ConsumerStatefulWidget {
 
 class _ImageGenerationReviewModalState
     extends ConsumerState<ImageGenerationReviewModal> {
-  late TextEditingController _promptController;
+  TextEditingController? _promptController;
   bool _isEditingPrompt = false;
 
   @override
   void initState() {
     super.initState();
-    _promptController = TextEditingController(text: widget.initialPrompt);
 
-    // Start generation on mount
+    // Start generation on mount using full entity context
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startGeneration();
     });
@@ -84,7 +77,7 @@ class _ImageGenerationReviewModalState
 
   @override
   void dispose() {
-    _promptController.dispose();
+    _promptController?.dispose();
     super.dispose();
   }
 
@@ -93,7 +86,21 @@ class _ImageGenerationReviewModalState
         .read(
           imageGenerationControllerProvider(entityId: widget.entityId).notifier,
         )
-        .generateImage(prompt: widget.initialPrompt);
+        .generateImageFromEntity(audioEntityId: widget.entityId);
+  }
+
+  /// Gets the current prompt from the controller state.
+  /// Returns null if no prompt has been built yet.
+  String? _getCurrentPrompt() {
+    final state = ref.read(
+      imageGenerationControllerProvider(entityId: widget.entityId),
+    );
+    return state.map(
+      initial: (_) => null,
+      generating: (s) => s.prompt,
+      success: (s) => s.prompt,
+      error: (s) => s.prompt,
+    );
   }
 
   Future<void> _handleAccept(Uint8List imageBytes, String mimeType) async {
@@ -133,20 +140,24 @@ class _ImageGenerationReviewModalState
   }
 
   void _handleEditPrompt() {
+    final currentPrompt = _getCurrentPrompt() ?? '';
+    _promptController?.dispose();
+    _promptController = TextEditingController(text: currentPrompt);
     setState(() {
       _isEditingPrompt = true;
     });
   }
 
   void _handleCancelEdit() {
+    final currentPrompt = _getCurrentPrompt() ?? '';
     setState(() {
       _isEditingPrompt = false;
-      _promptController.text = widget.initialPrompt;
+      _promptController?.text = currentPrompt;
     });
   }
 
   void _handleRegenerateWithNewPrompt() {
-    final newPrompt = _promptController.text.trim();
+    final newPrompt = _promptController?.text.trim() ?? '';
     if (newPrompt.isNotEmpty) {
       setState(() {
         _isEditingPrompt = false;
@@ -320,6 +331,8 @@ class _ImageGenerationReviewModalState
 
   Widget _buildPromptEditor(BuildContext context) {
     final colorScheme = context.colorScheme;
+    // Controller is guaranteed to be initialized by _handleEditPrompt
+    final controller = _promptController!;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -335,7 +348,7 @@ class _ImageGenerationReviewModalState
           ),
           const SizedBox(height: 12),
           TextField(
-            controller: _promptController,
+            controller: controller,
             maxLines: 5,
             decoration: InputDecoration(
               border: OutlineInputBorder(

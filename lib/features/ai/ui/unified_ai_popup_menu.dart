@@ -4,7 +4,6 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
@@ -140,8 +139,11 @@ class UnifiedAiModal {
   }
 
   /// Handles image generation prompts separately from the unified inference flow.
+  ///
   /// Image generation requires the ImageGenerationReviewModal for reviewing
-  /// and accepting generated images.
+  /// and accepting generated images. The modal builds the full prompt using
+  /// PromptBuilderHelper for complete task context (including checklists,
+  /// labels, linked tasks, etc.).
   static Future<void> _handleImageGeneration({
     required BuildContext context,
     required JournalEntity journalEntity,
@@ -159,7 +161,7 @@ class UnifiedAiModal {
 
     final audioEntry = journalEntity;
 
-    // Get the linked task
+    // Get the linked task to determine categoryId
     final journalRepo = ref.read(journalRepositoryProvider);
     final linkedEntities =
         await journalRepo.getLinkedToEntities(linkedTo: audioEntry.id);
@@ -173,14 +175,9 @@ class UnifiedAiModal {
       return;
     }
 
-    // Build the prompt from audio transcript and task context
-    final imagePrompt = _buildImageGenerationPrompt(
-      audioEntry: audioEntry,
-      linkedTask: linkedTask,
-    );
-
     developer.log(
-      'Opening image generation modal with prompt: $imagePrompt',
+      'Opening image generation modal for audio: ${audioEntry.id}, '
+      'task: ${linkedTask.id}',
       name: 'UnifiedAiPopUpMenu',
     );
 
@@ -188,38 +185,13 @@ class UnifiedAiModal {
     if (!context.mounted) return;
 
     // Show the image generation review modal
+    // The modal handles prompt building with full context via PromptBuilderHelper
     await ImageGenerationReviewModal.show(
       context: context,
       entityId: audioEntry.id,
       linkedTaskId: linkedTask.id,
-      initialPrompt: imagePrompt,
       categoryId: linkedTask.meta.categoryId,
     );
-  }
-
-  /// Builds the image generation prompt from an audio entry and its linked task.
-  static String _buildImageGenerationPrompt({
-    required JournalAudio audioEntry,
-    required Task linkedTask,
-  }) {
-    final buffer = StringBuffer();
-
-    // Add user's voice description if available (use the latest transcript)
-    final transcripts = audioEntry.data.transcripts;
-    final latestTranscript = transcripts?.lastOrNull?.transcript;
-    if (latestTranscript != null && latestTranscript.isNotEmpty) {
-      buffer
-        ..writeln('User vision (from voice): $latestTranscript')
-        ..writeln();
-    }
-
-    // Add task context
-    final status = linkedTask.data.status.toDbString;
-    buffer
-      ..writeln('Task title: ${linkedTask.data.title}')
-      ..writeln('Task status: $status');
-
-    return buffer.toString();
   }
 }
 

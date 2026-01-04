@@ -713,6 +713,7 @@ STYLE GUIDELINES:
 - Avoid generic or clichéd imagery
 - Consider the emotional tone of the task (urgent, creative, technical, fun)
 - Make it instantly recognizable at thumbnail size
+- **Use emotional insights** from the task summary (learnings, annoyances) to inform the visual tone
 
 VISUAL METAPHOR OPTIONS:
 - **Progress**: Mountains being climbed, paths being walked, puzzles coming together
@@ -720,29 +721,35 @@ VISUAL METAPHOR OPTIONS:
 - **Creative Work**: Flowing colors, artistic tools, expressive forms
 - **Problem Solving**: Lightbulbs, keys unlocking doors, knots being untied
 - **Completion**: Sunrises, finish lines, celebrations
+- **Frustration/Annoyances**: Tangled threads, storm clouds clearing, obstacles being overcome
+- **Learnings/Insights**: Light bulbs, dawn breaking, puzzle pieces clicking together
 
 OUTPUT:
-Generate a single image that captures the essence of the task based on the provided context and any specific direction from the user's voice description.''',
+Generate a single image that captures the essence of the task based on the provided context, task summary insights, and any specific direction from the user's voice description.''',
   userMessage: '''
 Generate a cover art image for this task based on the context below.
 
 **User's Vision (from voice description):**
 {{audioTranscript}}
 
-**Task Context:**
+**Task Summary (includes learnings and annoyances):**
+{{current_task_summary}}
+
+**Full Task Context:**
 ```json
 {{task}}
 ```
 
 Create a visually memorable image that:
 1. Captures the essence of what this task is about
-2. Reflects the user's specific vision if they described one
-3. Works well as a thumbnail (center-weighted composition)
-4. Uses the 16:9 aspect ratio for wide display with square-crop compatibility
-5. Is instantly recognizable and memorable''',
+2. Incorporates emotional insights from the task summary (learnings, annoyances, key experiences)
+3. Reflects the user's specific vision if they described one
+4. Works well as a thumbnail (center-weighted composition)
+5. Uses the 16:9 aspect ratio for wide display with square-crop compatibility
+6. Is instantly recognizable and memorable''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.imageGeneration,
   useReasoning: false,
   description:
-      'Generate cover art image directly from task context and voice description',
+      'Generate cover art image from task context, summary insights, and voice description',
 );

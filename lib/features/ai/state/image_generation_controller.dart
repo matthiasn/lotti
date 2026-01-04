@@ -2,11 +2,17 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -51,10 +57,81 @@ class ImageGenerationController extends _$ImageGenerationController {
     return const ImageGenerationState.initial();
   }
 
+  /// Generates a cover art image by building the prompt from entity context.
+  ///
+  /// This method uses [PromptBuilderHelper] to build a full prompt with:
+  /// - `{{task}}` - Full task JSON (title, status, checklists, labels, etc.)
+  /// - `{{audioTranscript}}` - User's voice description
+  ///
+  /// Parameters:
+  /// - [audioEntityId]: The ID of the audio entry containing the voice description.
+  Future<void> generateImageFromEntity({
+    required String audioEntityId,
+  }) async {
+    final loggingService = getIt<LoggingService>();
+
+    try {
+      // Get the audio entity
+      final journalRepository = ref.read(journalRepositoryProvider);
+      final entity =
+          await journalRepository.getJournalEntityById(audioEntityId);
+
+      if (entity == null) {
+        throw Exception('Audio entity not found: $audioEntityId');
+      }
+
+      if (entity is! JournalAudio) {
+        throw Exception(
+          'Expected JournalAudio but got ${entity.runtimeType}',
+        );
+      }
+
+      // Build the prompt using PromptBuilderHelper for full context
+      final promptBuilderHelper = _createPromptBuilderHelper();
+      final promptConfig = _createPromptConfigFromPreconfigured();
+
+      final prompt = await promptBuilderHelper.buildPromptWithData(
+        promptConfig: promptConfig,
+        entity: entity,
+      );
+
+      if (prompt == null || prompt.isEmpty) {
+        throw Exception('Failed to build prompt from entity context');
+      }
+
+      developer.log(
+        'Built prompt from entity context (${prompt.length} chars)',
+        name: 'ImageGenerationController',
+      );
+
+      // Generate the image with the built prompt
+      await generateImage(prompt: prompt);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Image generation from entity failed: $e',
+        name: 'ImageGenerationController',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      loggingService.captureException(
+        e,
+        domain: 'ImageGenerationController',
+        subDomain: 'generateImageFromEntity',
+        stackTrace: stackTrace,
+      );
+
+      state = ImageGenerationState.error(
+        prompt: '[Failed to build prompt]',
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
   /// Generates a cover art image from the given prompt.
   ///
-  /// The prompt should describe the image to generate, typically including
-  /// task context and any user-provided description from voice input.
+  /// Use [generateImageFromEntity] to build prompts with full context.
+  /// This method is used for retries or when using an edited prompt.
   Future<void> generateImage({
     required String prompt,
     String? systemMessage,
@@ -167,6 +244,40 @@ class ImageGenerationController extends _$ImageGenerationController {
     return geminiModels.firstWhere(
       (m) => m.outputModalities.contains(Modality.image),
       orElse: () => throw Exception('No image generation model found'),
+    );
+  }
+
+  /// Creates a PromptBuilderHelper with all required repositories.
+  PromptBuilderHelper _createPromptBuilderHelper() {
+    return PromptBuilderHelper(
+      aiInputRepository: ref.read(aiInputRepositoryProvider),
+      journalRepository: ref.read(journalRepositoryProvider),
+      checklistRepository: ref.read(checklistRepositoryProvider),
+      labelsRepository: ref.read(labelsRepositoryProvider),
+    );
+  }
+
+  /// Creates an AiConfigPrompt from the preconfigured cover art prompt.
+  ///
+  /// This allows us to use the PromptBuilderHelper infrastructure
+  /// for placeholder substitution.
+  AiConfigPrompt _createPromptConfigFromPreconfigured() {
+    const preconfigured = coverArtGenerationPrompt;
+    return AiConfigPrompt(
+      id: preconfigured.id,
+      name: preconfigured.name,
+      systemMessage: preconfigured.systemMessage,
+      userMessage: preconfigured.userMessage,
+      defaultModelId: '', // Not used for prompt building
+      modelIds: const [],
+      createdAt: DateTime.now(),
+      useReasoning: preconfigured.useReasoning,
+      requiredInputData: preconfigured.requiredInputData,
+      aiResponseType: preconfigured.aiResponseType,
+      description: preconfigured.description,
+      // Enable tracking to use the preconfigured prompt text
+      trackPreconfigured: true,
+      preconfiguredPromptId: preconfigured.id,
     );
   }
 }
