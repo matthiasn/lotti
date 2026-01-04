@@ -58,7 +58,6 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
         Image.file(
           File(path),
           fit: BoxFit.cover,
-          cacheHeight: 600,
         ),
         const DecoratedBox(
           decoration: BoxDecoration(

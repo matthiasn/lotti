@@ -245,6 +245,8 @@ class GeminiUtils {
       'imageConfig': {
         // Use 16:9 aspect ratio for cover art (widescreen format)
         'aspectRatio': '16:9',
+        // Use 2K resolution for Full HD quality (1920x1080 for 16:9)
+        'imageSize': '2K',
       },
     };
 
