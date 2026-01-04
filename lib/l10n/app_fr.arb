@@ -465,5 +465,24 @@
   "coverArtChipSet": "Définir couverture",
   "coverArtChipActive": "Couverture",
   "coverArtAssign": "Définir comme couverture",
-  "coverArtRemove": "Retirer comme couverture"
+  "coverArtRemove": "Retirer comme couverture",
+
+  "imageGenerationModalTitle": "Image générée",
+  "imageGenerationAcceptButton": "Accepter comme couverture",
+  "imageGenerationEditPromptButton": "Modifier le prompt",
+  "imageGenerationEditPromptLabel": "Modifier le prompt",
+  "imageGenerationCancelEdit": "Annuler",
+  "imageGenerationGenerating": "Génération de l'image...",
+  "imageGenerationError": "Échec de la génération d'image",
+  "imageGenerationSaveError": "Échec de l'enregistrement de l'image: {error}",
+  "@imageGenerationSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "imageGenerationRetry": "Réessayer",
+  "generateCoverArt": "Générer une couverture",
+  "generateCoverArtSubtitle": "Créer une image à partir de la description vocale"
 }

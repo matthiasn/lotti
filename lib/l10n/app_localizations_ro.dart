@@ -3005,37 +3005,38 @@ class AppLocalizationsRo extends AppLocalizations {
       'Invitația nu a putut fi trimisă. Încercați din nou mai târziu.';
 
   @override
-  String get imageGenerationModalTitle => 'Generated Image';
+  String get imageGenerationModalTitle => 'Imagine generată';
 
   @override
-  String get imageGenerationAcceptButton => 'Accept as Cover Art';
+  String get imageGenerationAcceptButton => 'Acceptă ca copertă';
 
   @override
-  String get imageGenerationEditPromptButton => 'Edit Prompt';
+  String get imageGenerationEditPromptButton => 'Editează promptul';
 
   @override
-  String get imageGenerationEditPromptLabel => 'Edit prompt';
+  String get imageGenerationEditPromptLabel => 'Editează promptul';
 
   @override
-  String get imageGenerationCancelEdit => 'Cancel';
+  String get imageGenerationCancelEdit => 'Anulează';
 
   @override
-  String get imageGenerationGenerating => 'Generating image...';
+  String get imageGenerationGenerating => 'Se generează imaginea...';
 
   @override
-  String get imageGenerationError => 'Failed to generate image';
+  String get imageGenerationError => 'Generarea imaginii a eșuat';
 
   @override
   String imageGenerationSaveError(String error) {
-    return 'Failed to save image: $error';
+    return 'Salvarea imaginii a eșuat: $error';
   }
 
   @override
-  String get imageGenerationRetry => 'Retry';
+  String get imageGenerationRetry => 'Reîncearcă';
 
   @override
-  String get generateCoverArt => 'Generate Cover Art';
+  String get generateCoverArt => 'Generează copertă';
 
   @override
-  String get generateCoverArtSubtitle => 'Create image from voice description';
+  String get generateCoverArtSubtitle =>
+      'Creează imagine din descrierea vocală';
 }

@@ -3030,37 +3030,38 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de l\'envoi de l\'invitation. Veuillez réessayer plus tard.';
 
   @override
-  String get imageGenerationModalTitle => 'Generated Image';
+  String get imageGenerationModalTitle => 'Image générée';
 
   @override
-  String get imageGenerationAcceptButton => 'Accept as Cover Art';
+  String get imageGenerationAcceptButton => 'Accepter comme couverture';
 
   @override
-  String get imageGenerationEditPromptButton => 'Edit Prompt';
+  String get imageGenerationEditPromptButton => 'Modifier le prompt';
 
   @override
-  String get imageGenerationEditPromptLabel => 'Edit prompt';
+  String get imageGenerationEditPromptLabel => 'Modifier le prompt';
 
   @override
-  String get imageGenerationCancelEdit => 'Cancel';
+  String get imageGenerationCancelEdit => 'Annuler';
 
   @override
-  String get imageGenerationGenerating => 'Generating image...';
+  String get imageGenerationGenerating => 'Génération de l\'image...';
 
   @override
-  String get imageGenerationError => 'Failed to generate image';
+  String get imageGenerationError => 'Échec de la génération d\'image';
 
   @override
   String imageGenerationSaveError(String error) {
-    return 'Failed to save image: $error';
+    return 'Échec de l\'enregistrement de l\'image: $error';
   }
 
   @override
-  String get imageGenerationRetry => 'Retry';
+  String get imageGenerationRetry => 'Réessayer';
 
   @override
-  String get generateCoverArt => 'Generate Cover Art';
+  String get generateCoverArt => 'Générer une couverture';
 
   @override
-  String get generateCoverArtSubtitle => 'Create image from voice description';
+  String get generateCoverArtSubtitle =>
+      'Créer une image à partir de la description vocale';
 }

@@ -3027,37 +3027,38 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo enviar la invitación. Por favor, inténtelo más tarde.';
 
   @override
-  String get imageGenerationModalTitle => 'Generated Image';
+  String get imageGenerationModalTitle => 'Imagen generada';
 
   @override
-  String get imageGenerationAcceptButton => 'Accept as Cover Art';
+  String get imageGenerationAcceptButton => 'Aceptar como portada';
 
   @override
-  String get imageGenerationEditPromptButton => 'Edit Prompt';
+  String get imageGenerationEditPromptButton => 'Editar prompt';
 
   @override
-  String get imageGenerationEditPromptLabel => 'Edit prompt';
+  String get imageGenerationEditPromptLabel => 'Editar prompt';
 
   @override
-  String get imageGenerationCancelEdit => 'Cancel';
+  String get imageGenerationCancelEdit => 'Cancelar';
 
   @override
-  String get imageGenerationGenerating => 'Generating image...';
+  String get imageGenerationGenerating => 'Generando imagen...';
 
   @override
-  String get imageGenerationError => 'Failed to generate image';
+  String get imageGenerationError => 'Error al generar imagen';
 
   @override
   String imageGenerationSaveError(String error) {
-    return 'Failed to save image: $error';
+    return 'Error al guardar imagen: $error';
   }
 
   @override
-  String get imageGenerationRetry => 'Retry';
+  String get imageGenerationRetry => 'Reintentar';
 
   @override
-  String get generateCoverArt => 'Generate Cover Art';
+  String get generateCoverArt => 'Generar portada';
 
   @override
-  String get generateCoverArtSubtitle => 'Create image from voice description';
+  String get generateCoverArtSubtitle =>
+      'Crear imagen desde descripción de voz';
 }
