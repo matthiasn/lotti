@@ -669,6 +669,32 @@ void main() {
           generationConfig['imageConfig'] as Map<String, dynamic>;
       expect(imageConfig['aspectRatio'], '16:9');
     });
+
+    test('uses 2K resolution for Full HD quality in imageConfig', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate cover art',
+      );
+
+      final generationConfig = body['generationConfig'] as Map<String, dynamic>;
+      final imageConfig =
+          generationConfig['imageConfig'] as Map<String, dynamic>;
+      expect(imageConfig['imageSize'], '2K');
+    });
+
+    test('imageConfig contains both aspectRatio and imageSize', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate a beautiful landscape',
+      );
+
+      final generationConfig = body['generationConfig'] as Map<String, dynamic>;
+      expect(generationConfig.containsKey('imageConfig'), isTrue);
+
+      final imageConfig =
+          generationConfig['imageConfig'] as Map<String, dynamic>;
+      expect(imageConfig.length, 2);
+      expect(imageConfig['aspectRatio'], '16:9');
+      expect(imageConfig['imageSize'], '2K');
+    });
   });
 
   group('GeminiUtils.stripLeadingFraming', () {

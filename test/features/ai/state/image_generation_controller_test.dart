@@ -122,6 +122,91 @@ void main() {
       expect(state1, isA<ImageGenerationInitial>());
       expect(state2, isA<ImageGenerationInitial>());
     });
+
+    test('retryGeneration throws when no prompt available in initial state',
+        () async {
+      const entityId = 'test-entity-id';
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: entityId).notifier,
+      );
+
+      expect(
+        () => notifier.retryGeneration(),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('No prompt available for retry'),
+          ),
+        ),
+      );
+    });
+
+  });
+
+  group('ImageGenerationController.retryGeneration prompt extraction', () {
+    test('extracts prompt from generating state', () {
+      const prompt = 'Test prompt from generating';
+      const state = ImageGenerationState.generating(prompt: prompt);
+
+      final extractedPrompt = state.map(
+        initial: (_) => null,
+        generating: (s) => s.prompt,
+        success: (s) => s.prompt,
+        error: (s) => s.prompt,
+      );
+
+      expect(extractedPrompt, prompt);
+    });
+
+    test('extracts prompt from success state', () {
+      const prompt = 'Test prompt from success';
+      final state = ImageGenerationState.success(
+        prompt: prompt,
+        imageBytes: Uint8List.fromList([1, 2, 3]),
+        mimeType: 'image/png',
+      );
+
+      final extractedPrompt = state.map(
+        initial: (_) => null,
+        generating: (s) => s.prompt,
+        success: (s) => s.prompt,
+        error: (s) => s.prompt,
+      );
+
+      expect(extractedPrompt, prompt);
+    });
+
+    test('extracts prompt from error state', () {
+      const prompt = 'Test prompt from error';
+      const state = ImageGenerationState.error(
+        prompt: prompt,
+        errorMessage: 'Some error',
+      );
+
+      final extractedPrompt = state.map(
+        initial: (_) => null,
+        generating: (s) => s.prompt,
+        success: (s) => s.prompt,
+        error: (s) => s.prompt,
+      );
+
+      expect(extractedPrompt, prompt);
+    });
+
+    test('returns null for initial state', () {
+      const state = ImageGenerationState.initial();
+
+      final extractedPrompt = state.map(
+        initial: (_) => null,
+        generating: (s) => s.prompt,
+        success: (s) => s.prompt,
+        error: (s) => s.prompt,
+      );
+
+      expect(extractedPrompt, isNull);
+    });
   });
 
   group('ImageGenerationState equality and hashCode', () {
