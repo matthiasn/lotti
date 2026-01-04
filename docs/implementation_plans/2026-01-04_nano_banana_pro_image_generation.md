@@ -123,7 +123,7 @@ You are an AI image generator creating cover art for task management.
 TASK: Generate a visually striking image that serves as a memorable visual mnemonic for the task described below.
 
 IMAGE REQUIREMENTS:
-- Aspect ratio: 2:1 (wide cinematic format)
+- Aspect ratio: 16:9 (wide cinematic format)
 - Composition: Center the primary subject within the middle square region
 - This ensures the key visual remains visible when cropped to a square thumbnail
 - Use horizontal margins for atmospheric context and cinematic framing
@@ -156,7 +156,7 @@ USER'S IMAGE DESCRIPTION:
 Generate a cover art image based on the above context and the user's description.
 ''',
   requiredInputData: [InputDataType.task],
-  aiResponseType: AiResponseType.imagePromptGeneration,  // Reuses existing type - conceptually similar
+  aiResponseType: AiResponseType.imageGeneration,  // New type for generated images
   useReasoning: false,
   description:
       'Generate cover art image directly from task context and voice description',
@@ -204,7 +204,7 @@ class ImageGenerationException implements Exception {
 
 /// Generates an image using Gemini 3 Pro Image (Nano Banana Pro)
 ///
-/// Uses the model's native image generation capabilities with 2:1 aspect ratio
+/// Uses the model's native image generation capabilities with 16:9 aspect ratio
 /// optimized for cover art (center-weighted for square thumbnail cropping).
 Future<ImageGenerationResult> generateImage({
   required String prompt,
@@ -212,7 +212,7 @@ Future<ImageGenerationResult> generateImage({
   required String model,
   required String baseUrl,
   required String apiKey,
-  String aspectRatio = '2:1',
+  String aspectRatio = '16:9',
   Duration? timeout,
 }) async {
   final requestTimeout = timeout ?? const Duration(seconds: 120);
@@ -224,7 +224,7 @@ Future<ImageGenerationResult> generateImage({
     apiKey: apiKey,
   );
 
-  // Configure for 2:1 aspect ratio (cover art optimized for center-crop to square)
+  // Configure for 16:9 aspect ratio (cover art optimized for center-crop to square)
   // See: https://ai.google.dev/gemini-api/docs/image-generation
   final requestBody = {
     'contents': [
@@ -238,7 +238,7 @@ Future<ImageGenerationResult> generateImage({
     'generationConfig': {
       'responseModalities': ['TEXT', 'IMAGE'],
       'imageConfig': {
-        'aspectRatio': aspectRatio,  // Default '2:1' for cover art
+        'aspectRatio': aspectRatio,  // Default '16:9' for cover art
       },
     }
   };
