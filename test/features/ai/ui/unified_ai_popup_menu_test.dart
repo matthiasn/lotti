@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart' show Selectable;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -29,6 +31,17 @@ class MockUnifiedAiInferenceRepository extends Mock
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockJournalDb extends Mock implements JournalDb {}
+
+class MockSelectable<T> extends Mock implements Selectable<T> {
+  MockSelectable(this._values);
+
+  final List<T> _values;
+
+  @override
+  Future<List<T>> get() async => _values;
+}
+
 class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
@@ -40,6 +53,7 @@ void main() {
   late MockNavigatorObserver mockNavigatorObserver;
   late MockUnifiedAiInferenceRepository mockInferenceRepository;
   late MockLoggingService mockLoggingService;
+  late MockJournalDb mockJournalDb;
   late List<Override> defaultOverrides;
 
   setUpAll(() {
@@ -54,12 +68,24 @@ void main() {
     mockNavigatorObserver = MockNavigatorObserver();
     mockInferenceRepository = MockUnifiedAiInferenceRepository();
     mockLoggingService = MockLoggingService();
+    mockJournalDb = MockJournalDb();
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
+    if (getIt.isRegistered<JournalDb>()) {
+      getIt.unregister<JournalDb>();
+    }
+    getIt
+      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<JournalDb>(mockJournalDb);
+
+    // Mock JournalDb methods - linksFromId returns a Selectable
+    when(() => mockJournalDb.linksFromId(any(), any()))
+        .thenReturn(MockSelectable<LinkedDbEntry>([]));
+    when(() => mockJournalDb.linkedToJournalEntities(any()))
+        .thenReturn(MockSelectable<JournalDbEntity>([]));
 
     // Mock logging methods
     when(
@@ -951,6 +977,116 @@ void main() {
 
       // Clean up
       scrollController.dispose();
+    });
+  });
+
+  group('Image Generation Handling Tests', () {
+    testWidgets(
+        'image generation prompt from non-audio entry returns early without modal',
+        (tester) async {
+      // Create an image generation prompt
+      final imageGenPrompt = AiConfig.prompt(
+        id: 'img-gen-prompt',
+        name: 'Generate Cover Art',
+        systemMessage: 'Generate cover art',
+        userMessage: 'Generate cover art for this task',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [],
+        aiResponseType: AiResponseType.imageGeneration, // Image generation type
+        description: 'Generate cover art',
+      ) as AiConfigPrompt;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPopUpMenu(
+            journalEntity: testImageEntity, // Not an audio entry
+            linkedFromId: 'some-task-id',
+          ),
+          overrides: [
+            hasAvailablePromptsProvider(testImageEntity.id)
+                .overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(testImageEntity.id)
+                .overrideWith((ref) => Future.value([imageGenPrompt])),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Open the modal
+      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.pumpAndSettle();
+
+      // Select the image generation prompt
+      await tester.tap(find.text('Generate Cover Art'));
+      await tester.pumpAndSettle();
+
+      // The modal should close and no ImageGenerationReviewModal should appear
+      // because the entity is not a JournalAudio
+      expect(find.byType(UnifiedAiPromptsList), findsNothing);
+    });
+
+    testWidgets('image generation prompt from audio entry without linked task',
+        (tester) async {
+      // Create an image generation prompt
+      final imageGenPrompt = AiConfig.prompt(
+        id: 'img-gen-prompt',
+        name: 'Generate Cover Art',
+        systemMessage: 'Generate cover art',
+        userMessage: 'Generate cover art for this task',
+        defaultModelId: 'model-1',
+        modelIds: ['model-1'],
+        createdAt: DateTime.now(),
+        useReasoning: false,
+        requiredInputData: [],
+        aiResponseType: AiResponseType.imageGeneration,
+        description: 'Generate cover art',
+      ) as AiConfigPrompt;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPopUpMenu(
+            journalEntity: testAudioEntity,
+            linkedFromId: null, // No linked task
+          ),
+          overrides: [
+            hasAvailablePromptsProvider(testAudioEntity.id)
+                .overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(testAudioEntity.id)
+                .overrideWith((ref) => Future.value([imageGenPrompt])),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Open the modal
+      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.pumpAndSettle();
+
+      // Select the image generation prompt
+      await tester.tap(find.text('Generate Cover Art'));
+      await tester.pumpAndSettle();
+
+      // Should handle gracefully without crashing
+      expect(find.byType(UnifiedAiPromptsList), findsNothing);
+    });
+  });
+
+  group('isDefaultPromptSync Tests', () {
+    test('returns false when categoryId is null', () {
+      final prompt = testPrompts.first;
+      final result = isDefaultPromptSync(null, prompt);
+      expect(result, isFalse);
+    });
+
+    test('returns false when category is not found', () {
+      final prompt = testPrompts.first;
+      final result = isDefaultPromptSync('non-existent-category', prompt);
+      expect(result, isFalse);
     });
   });
 

@@ -5,16 +5,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeneratedImage;
 import 'package:lotti/features/ai/state/image_generation_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockAiInputRepository extends Mock implements AiInputRepository {}
+
+class MockChecklistRepository extends Mock implements ChecklistRepository {}
+
+class MockLabelsRepository extends Mock implements LabelsRepository {}
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}

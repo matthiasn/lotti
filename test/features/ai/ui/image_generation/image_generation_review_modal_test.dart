@@ -327,6 +327,253 @@ void main() {
       expect(widget.categoryId, 'category-123');
     });
   });
+
+  group('ImageGenerationReviewModal button interactions', () {
+    testWidgets('retry button calls retryGeneration on controller',
+        (tester) async {
+      var retryCallCount = 0;
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _TrackingMockImageGenerationController(
+                const ImageGenerationState.error(
+                  prompt: testPrompt,
+                  errorMessage: 'Test error',
+                ),
+                onRetry: () => retryCallCount++,
+              ),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Tap retry button
+      await tester.tap(find.text('Retry'));
+      await tester.pump();
+
+      expect(retryCallCount, 1);
+    });
+
+    testWidgets('generate button calls generateImage with edited prompt',
+        (tester) async {
+      String? capturedPrompt;
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _TrackingMockImageGenerationController(
+                ImageGenerationState.success(
+                  prompt: testPrompt,
+                  imageBytes: _testImageBytes,
+                  mimeType: 'image/png',
+                ),
+                onGenerateImage: (prompt) => capturedPrompt = prompt,
+              ),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Enter edit mode
+      await tester.tap(find.text('Edit Prompt'));
+      await tester.pump();
+
+      // Clear and enter new prompt
+      final textField = find.byType(TextField);
+      await tester.enterText(textField, 'New edited prompt');
+      await tester.pump();
+
+      // Tap generate button
+      await tester.tap(find.text('Generate Cover Art'));
+      await tester.pump();
+
+      expect(capturedPrompt, 'New edited prompt');
+    });
+
+    testWidgets('generate button does nothing with empty prompt',
+        (tester) async {
+      var generateCallCount = 0;
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _TrackingMockImageGenerationController(
+                ImageGenerationState.success(
+                  prompt: testPrompt,
+                  imageBytes: _testImageBytes,
+                  mimeType: 'image/png',
+                ),
+                onGenerateImage: (_) => generateCallCount++,
+              ),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Enter edit mode
+      await tester.tap(find.text('Edit Prompt'));
+      await tester.pump();
+
+      // Clear prompt to empty
+      final textField = find.byType(TextField);
+      await tester.enterText(textField, '   ');
+      await tester.pump();
+
+      // Tap generate button - should not call generate with empty prompt
+      await tester.tap(find.text('Generate Cover Art'));
+      await tester.pump();
+
+      expect(generateCallCount, 0);
+    });
+
+    testWidgets('edit prompt from error state works', (tester) async {
+      const errorPrompt = 'Error state prompt';
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _MockImageGenerationController(
+                const ImageGenerationState.error(
+                  prompt: errorPrompt,
+                  errorMessage: 'Some error',
+                ),
+              ),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Tap edit button from error state
+      await tester.tap(find.text('Edit Prompt'));
+      await tester.pump();
+
+      // Verify text field contains the error state prompt
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller?.text, errorPrompt);
+    });
+
+    testWidgets('cancel edit resets prompt text to original', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _MockImageGenerationController(
+                ImageGenerationState.success(
+                  prompt: testPrompt,
+                  imageBytes: _testImageBytes,
+                  mimeType: 'image/png',
+                ),
+              ),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Enter edit mode
+      await tester.tap(find.text('Edit Prompt'));
+      await tester.pump();
+
+      // Modify the text
+      final textField = find.byType(TextField);
+      await tester.enterText(textField, 'Modified text');
+      await tester.pump();
+
+      // Cancel edit
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+
+      // Enter edit mode again
+      await tester.tap(find.text('Edit Prompt'));
+      await tester.pump();
+
+      // Verify text was reset to original
+      final updatedTextField = tester.widget<TextField>(find.byType(TextField));
+      expect(updatedTextField.controller?.text, testPrompt);
+    });
+  });
+}
+
+/// Mock controller that tracks method calls for testing.
+class _TrackingMockImageGenerationController extends ImageGenerationController {
+  _TrackingMockImageGenerationController(
+    this._fixedState, {
+    this.onRetry,
+    this.onGenerateImage,
+  });
+
+  final ImageGenerationState _fixedState;
+  final void Function()? onRetry;
+  final void Function(String prompt)? onGenerateImage;
+
+  @override
+  ImageGenerationState build({required String entityId}) {
+    return _fixedState;
+  }
+
+  @override
+  Future<void> generateImageFromEntity({required String audioEntityId}) {
+    return Future.value();
+  }
+
+  @override
+  Future<void> generateImage({required String prompt, String? systemMessage}) {
+    onGenerateImage?.call(prompt);
+    return Future.value();
+  }
+
+  @override
+  Future<void> retryGeneration({String? modifiedPrompt}) {
+    onRetry?.call();
+    return Future.value();
+  }
+
+  @override
+  void reset() {}
 }
 
 /// Mock controller that returns a fixed state for testing.

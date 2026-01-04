@@ -1,15 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/widgets/modal/modern_modal_action_item.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../../test_helper.dart';
 
+class MockEditorStateService extends Mock implements EditorStateService {}
+
+class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockJournalDb extends Mock implements JournalDb {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
 void main() {
   final now = DateTime(2025, 12, 31, 12);
+
+  late MockEditorStateService mockEditorStateService;
+  late MockPersistenceLogic mockPersistenceLogic;
+  late MockJournalDb mockJournalDb;
+  late MockUpdateNotifications mockUpdateNotifications;
+
+  setUpAll(() {
+    mockEditorStateService = MockEditorStateService();
+    mockPersistenceLogic = MockPersistenceLogic();
+    mockJournalDb = MockJournalDb();
+    mockUpdateNotifications = MockUpdateNotifications();
+
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => const Stream<Set<String>>.empty());
+
+    getIt
+      ..registerSingleton<EditorStateService>(mockEditorStateService)
+      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+  });
+
+  tearDownAll(() async {
+    await getIt.reset();
+  });
 
   JournalAudio buildAudioEntry({String id = 'audio-1'}) {
     return JournalAudio(
@@ -147,29 +188,43 @@ void main() {
       expect(find.byType(ModernModalActionItem), findsNothing);
     });
 
-    testWidgets('renders without error when audio linked to task',
+    testWidgets('renders action item when audio linked to task',
         (tester) async {
       final audioEntry = buildAudioEntry();
       final task = buildTask();
 
       await tester.pumpWidget(
-        RiverpodWidgetTestBench(
+        ProviderScope(
           overrides: [
             createEntryControllerOverride(audioEntry),
             createEntryControllerOverride(task),
           ],
-          child: const Scaffold(
-            body: ModernGenerateCoverArtItem(
-              entryId: 'audio-1',
-              linkedFromId: 'task-1',
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ModernGenerateCoverArtItem(
+                entryId: 'audio-1',
+                linkedFromId: 'task-1',
+              ),
             ),
           ),
         ),
       );
-      await tester.pump();
+
+      // Pump frame by frame to allow providers to initialize
+      await tester.pump(); // Initial frame
+      await tester.pump(); // Provider initialization
+      await tester.pump(); // Widget rebuild
 
       // Widget should render without error
       expect(find.byType(ModernGenerateCoverArtItem), findsOneWidget);
+
+      // Should render the action item when audio is linked to a task
+      expect(find.byType(ModernModalActionItem), findsOneWidget);
+
+      // Should have the correct icon
+      expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
     });
   });
 
