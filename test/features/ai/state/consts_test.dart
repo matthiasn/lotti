@@ -8,7 +8,7 @@ import '../../../test_helper.dart';
 void main() {
   group('AiResponseType', () {
     test('should have all expected enum values', () {
-      expect(AiResponseType.values.length, equals(6));
+      expect(AiResponseType.values.length, equals(7));
       expect(AiResponseType.values, contains(AiResponseType.taskSummary));
       expect(AiResponseType.values, contains(AiResponseType.imageAnalysis));
       expect(
@@ -17,6 +17,7 @@ void main() {
       expect(AiResponseType.values, contains(AiResponseType.promptGeneration));
       expect(AiResponseType.values,
           contains(AiResponseType.imagePromptGeneration));
+      expect(AiResponseType.values, contains(AiResponseType.imageGeneration));
     });
 
     test('localizedName returns correct localized strings', () {
@@ -47,6 +48,10 @@ void main() {
         l10n.aiResponseTypeImagePromptGeneration,
         equals('Image Prompt'),
       );
+      expect(
+        l10n.generateCoverArt,
+        equals('Generate Cover Art'),
+      );
     });
 
     test('icon returns correct icons for each type', () {
@@ -60,6 +65,8 @@ void main() {
           equals(Icons.auto_fix_high_outlined));
       expect(AiResponseType.imagePromptGeneration.icon,
           equals(Icons.palette_outlined));
+      expect(AiResponseType.imageGeneration.icon,
+          equals(Icons.auto_awesome_outlined));
     });
 
     test('const values are correctly defined', () {
@@ -69,6 +76,7 @@ void main() {
       expect(checklistUpdatesConst, equals('ChecklistUpdates'));
       expect(promptGenerationConst, equals('PromptGeneration'));
       expect(imagePromptGenerationConst, equals('ImagePromptGeneration'));
+      expect(imageGenerationConst, equals('ImageGeneration'));
     });
 
     testWidgets('localizedName returns correct strings with BuildContext',
@@ -111,6 +119,10 @@ void main() {
         AiResponseType.imagePromptGeneration.localizedName(capturedContext),
         equals('Image Prompt'),
       );
+      expect(
+        AiResponseType.imageGeneration.localizedName(capturedContext),
+        equals('Generate Cover Art'),
+      );
     });
 
     test('isPromptGenerationType returns true for prompt generation types', () {
@@ -123,6 +135,7 @@ void main() {
       expect(AiResponseType.imageAnalysis.isPromptGenerationType, false);
       expect(AiResponseType.audioTranscription.isPromptGenerationType, false);
       expect(AiResponseType.checklistUpdates.isPromptGenerationType, false);
+      expect(AiResponseType.imageGeneration.isPromptGenerationType, false);
     });
   });
 }

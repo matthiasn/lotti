@@ -202,6 +202,8 @@
   "aiSettingsNoProvidersConfigured": "No AI providers configured",
   "aiSettingsPageTitle": "AI Settings",
   "aiSettingsReasoningLabel": "Reasoning",
+  "aiSettingsAddedLabel": "Added",
+  "aiSettingsAddModelTooltip": "Add this model to your provider",
   "aiSettingsSearchHint": "Search AI configurations...",
   "aiSettingsTabModels": "Models",
   "aiSettingsTabPrompts": "Prompts",
@@ -1121,5 +1123,22 @@
   "syncInviteErrorUserNotFound": "User not found. Please verify the scanned code is correct.",
   "syncInviteErrorForbidden": "Permission denied. You may not have access to invite this user.",
   "syncInviteErrorRateLimited": "Too many requests. Please wait a moment and try again.",
-  "syncInviteErrorUnknown": "Failed to send invite. Please try again later."
+  "syncInviteErrorUnknown": "Failed to send invite. Please try again later.",
+
+  "imageGenerationModalTitle": "Generated Image",
+  "imageGenerationAcceptButton": "Accept as Cover Art",
+  "imageGenerationEditPromptButton": "Edit Prompt",
+  "imageGenerationEditPromptLabel": "Edit prompt",
+  "imageGenerationCancelEdit": "Cancel",
+  "imageGenerationGenerating": "Generating image...",
+  "imageGenerationError": "Failed to generate image",
+  "imageGenerationSaveError": "Failed to save image: {error}",
+  "@imageGenerationSaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "imageGenerationRetry": "Retry",
+  "generateCoverArt": "Generate Cover Art",
+  "generateCoverArtSubtitle": "Create image from voice description"
 }

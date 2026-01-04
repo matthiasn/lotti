@@ -493,6 +493,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsReasoningLabel => 'Reasoning';
 
   @override
+  String get aiSettingsAddedLabel => 'Added';
+
+  @override
+  String get aiSettingsAddModelTooltip => 'Add this model to your provider';
+
+  @override
   String get aiSettingsSearchHint => 'Search AI configurations...';
 
   @override
@@ -3003,4 +3009,40 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get syncInviteErrorUnknown =>
       'Einladung konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.';
+
+  @override
+  String get imageGenerationModalTitle => 'Generiertes Bild';
+
+  @override
+  String get imageGenerationAcceptButton => 'Als Cover übernehmen';
+
+  @override
+  String get imageGenerationEditPromptButton => 'Prompt bearbeiten';
+
+  @override
+  String get imageGenerationEditPromptLabel => 'Prompt bearbeiten';
+
+  @override
+  String get imageGenerationCancelEdit => 'Abbrechen';
+
+  @override
+  String get imageGenerationGenerating => 'Bild wird generiert...';
+
+  @override
+  String get imageGenerationError => 'Bildgenerierung fehlgeschlagen';
+
+  @override
+  String imageGenerationSaveError(String error) {
+    return 'Bild konnte nicht gespeichert werden: $error';
+  }
+
+  @override
+  String get imageGenerationRetry => 'Wiederholen';
+
+  @override
+  String get generateCoverArt => 'Cover generieren';
+
+  @override
+  String get generateCoverArtSubtitle =>
+      'Bild aus Sprachbeschreibung erstellen';
 }

@@ -170,4 +170,5 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.checklistUpdates: 'ChecklistUpdates',
   AiResponseType.promptGeneration: 'PromptGeneration',
   AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
+  AiResponseType.imageGeneration: 'ImageGeneration',
 };

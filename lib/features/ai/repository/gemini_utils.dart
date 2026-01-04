@@ -217,6 +217,54 @@ class GeminiUtils {
     return request;
   }
 
+  /// Builds a Gemini request body for image generation.
+  ///
+  /// The Gemini image generation API (Nano Banana Pro) requires specific
+  /// response modalities and generation config to output images.
+  ///
+  /// Parameters:
+  /// - [prompt]: The text prompt describing the image to generate.
+  /// - [systemMessage]: Optional system instruction for guiding generation.
+  static Map<String, dynamic> buildImageGenerationRequestBody({
+    required String prompt,
+    String? systemMessage,
+  }) {
+    final contents = <Map<String, dynamic>>[
+      {
+        'role': 'user',
+        'parts': [
+          {'text': prompt},
+        ],
+      },
+    ];
+
+    final generationConfig = <String, dynamic>{
+      // Request image output
+      'responseModalities': ['IMAGE', 'TEXT'],
+      // Image configuration for cover art
+      'imageConfig': {
+        // Use 16:9 aspect ratio for cover art (widescreen format)
+        'aspectRatio': '16:9',
+      },
+    };
+
+    final request = <String, dynamic>{
+      'contents': contents,
+      'generationConfig': generationConfig,
+    };
+
+    if (systemMessage != null && systemMessage.trim().isNotEmpty) {
+      request['systemInstruction'] = {
+        'role': 'system',
+        'parts': [
+          {'text': systemMessage},
+        ],
+      };
+    }
+
+    return request;
+  }
+
   /// Converts an OpenAI-style message to Gemini content format.
   ///
   /// Returns null for system messages (handled separately as systemInstruction).

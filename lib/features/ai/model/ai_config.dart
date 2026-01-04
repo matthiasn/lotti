@@ -96,6 +96,8 @@ enum AiConfigType {
 ///    the model must also be a reasoning model (`isReasoningModel` = true).
 /// 2. Input Modalities: For every `InputDataType` listed in the prompt's
 ///    `requiredInputData`, the model must support the corresponding input `Modality`.
+/// 3. Output Modalities: For image generation prompts, the model must support
+///    image output (`Modality.image` in `outputModalities`).
 ///
 /// Returns `true` if the model satisfies all prompt requirements, `false` otherwise.
 bool isModelSuitableForPrompt({
@@ -126,6 +128,14 @@ bool isModelSuitableForPrompt({
         // Model lacks a required input modality.
         return false;
       }
+    }
+  }
+
+  // 3. Check Required Output Modalities for Image Generation
+  if (prompt.aiResponseType == AiResponseType.imageGeneration) {
+    // Image generation prompts require models that can output images
+    if (!model.outputModalities.contains(Modality.image)) {
+      return false;
     }
   }
 

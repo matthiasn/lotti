@@ -46,6 +46,10 @@ class InitialModalPageContent extends StatelessWidget {
           entryId: entryId,
           pageIndexNotifier: pageIndexNotifier,
         ),
+        ModernGenerateCoverArtItem(
+          entryId: entryId,
+          linkedFromId: linkedFromId,
+        ),
         ModernShareItem(entryId: entryId),
         ModernTagAddItem(pageIndexNotifier: pageIndexNotifier),
         ModernModalActionItem(

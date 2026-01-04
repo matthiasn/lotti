@@ -353,6 +353,7 @@ The system supports multiple inference providers through a modular architecture:
   - Function calling maps to OpenAI-style tool calls with stable IDs and indices
   - Usage statistics tracking (prompt tokens, completion tokens, thoughts tokens, cached tokens)
   - Processing duration measurement for performance monitoring
+  - **Image Generation**: Nano Banana Pro model for generating cover art images (2:1 aspect ratio)
 - **OpenRouter**: Access to multiple models through unified API
 - **Nebius AI Studio**: Enterprise AI platform support
 - **Generic OpenAI-Compatible**: Any service implementing OpenAI's API specification
@@ -771,7 +772,7 @@ Usage statistics are displayed in the AI Response Summary Modal when available:
 
 ## Response Types
 
-The system supports six AI response types:
+The system supports seven AI response types:
 
 1. **Task Summary** (`AiResponseType.taskSummary`)
    - Generates comprehensive task overviews
@@ -814,6 +815,86 @@ The system supports six AI response types:
    - Designed for copy-paste into AI image generators (Midjourney, DALL-E, Gemini)
    - Includes visual metaphor guidelines, style options, and technical parameters
    - Uses `GeneratedPromptCard` UI with prominent copy button
+
+7. **Image Generation** (`AiResponseType.imageGeneration`)
+   - Generates cover art images directly using AI (Gemini Nano Banana Pro model)
+   - Triggered from audio entries linked to tasks via action menu
+   - Uses task context and audio transcript to build image prompts
+   - Produces 2:1 aspect ratio images suitable for task cover art
+   - Review modal allows editing prompt, regenerating, or accepting images
+   - Accepted images are saved as journal entries and set as task cover
+
+## Image Generation (Cover Art)
+
+### Overview
+
+The AI system supports native image generation for creating task cover art. This feature uses Gemini's image generation model (Nano Banana Pro) to generate images based on task context and user voice descriptions.
+
+### How It Works
+
+1. **Trigger**: User selects "Generate cover art" from an audio entry's action menu (when linked to a task)
+2. **Prompt Building**: System constructs a prompt from:
+   - Audio transcript (user's verbal description of desired image)
+   - Task title and status
+   - System message from preconfigured cover art generation prompt
+3. **Generation**: Gemini image generation model creates the image
+4. **Review Modal**: User can:
+   - Accept the image as cover art
+   - Edit the prompt and regenerate
+   - Cancel without saving
+5. **Import**: Accepted images are saved as journal entries and set as the task's cover art
+
+### Implementation Components
+
+#### State Management
+- **`ImageGenerationController`**: Riverpod controller managing generation state
+- **`ImageGenerationState`**: Freezed union type with states:
+  - `initial`: Idle state before generation
+  - `generating`: In-progress with prompt
+  - `success`: Completed with image bytes and MIME type
+  - `error`: Failed with error message
+
+#### Repository Layer
+- **`GeminiInferenceRepository.generateImage()`**: Direct Gemini API call for image generation
+- **`CloudInferenceRepository.generateImage()`**: Routes to Gemini repository
+- **`GeminiUtils.buildImageGenerationRequestBody()`**: Builds request with 2:1 aspect ratio
+
+#### UI Components
+- **`ImageGenerationReviewModal`**: Full-screen modal for image review
+  - Shows generation progress with spinner
+  - Displays generated image with accept/edit actions
+  - Provides prompt editor for modifications
+  - Handles error states with retry option
+- **`ModernGenerateCoverArtItem`**: Action menu item for triggering generation
+
+#### Image Import
+- **`importGeneratedImageBytes()`**: Helper function to save generated images
+  - Creates journal image entry from bytes
+  - Links to parent task
+  - Optionally sets as task cover art
+
+### Model Configuration
+
+The Nano Banana Pro model is defined in `known_models.dart`:
+```dart
+const KnownModel(
+  providerModelId: 'models/gemini-2.0-flash-preview-image-generation',
+  name: 'Nano Banana Pro',
+  inputModalities: [Modality.text],
+  outputModalities: [Modality.image],
+  isReasoningModel: false,
+  description: 'Gemini image generation model for creating cover art',
+)
+```
+
+### Preconfigured Prompt
+
+The cover art generation system prompt guides the AI to:
+- Generate visually striking, artistic images
+- Use 2:1 aspect ratio for task cover art
+- Incorporate task context and user descriptions
+- Avoid text in generated images
+- Create unique, creative interpretations
 
 ## Function Calling and Tool Use
 

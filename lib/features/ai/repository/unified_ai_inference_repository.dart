@@ -159,7 +159,9 @@ class UnifiedAiInferenceRepository {
       if (entity is Task) {
         // Prompt generation types require an audio entry as input (for the
         // transcript) so they should not appear on task-level menus.
-        if (prompt.aiResponseType.isPromptGenerationType) {
+        // Same for imageGeneration which uses audio descriptions/notes.
+        if (prompt.aiResponseType.isPromptGenerationType ||
+            prompt.aiResponseType == AiResponseType.imageGeneration) {
           return false;
         }
         // Direct task entity - always valid as long as additional modality
@@ -183,8 +185,10 @@ class UnifiedAiInferenceRepository {
       // popup even though they only require task context (not audio file upload).
       // - checklistUpdates: extracts action items from transcript
       // - prompt generation types: use {{audioTranscript}} placeholder
+      // - imageGeneration: generates cover art from audio description/notes
       if (entity is JournalAudio &&
           (prompt.aiResponseType == AiResponseType.checklistUpdates ||
+              prompt.aiResponseType == AiResponseType.imageGeneration ||
               prompt.aiResponseType.isPromptGenerationType)) {
         final linkedEntities = await ref
             .read(journalRepositoryProvider)
@@ -968,6 +972,13 @@ class UnifiedAiInferenceRepository {
         // is saved as an AiResponseEntry which is handled by the caller
         developer.log(
           'Image prompt generation completed for entity ${entity.id}',
+          name: 'UnifiedAiInferenceRepository',
+        );
+      case AiResponseType.imageGeneration:
+        // Image generation is handled separately via ImageGenerationController
+        // This case should not be reached in normal flow
+        developer.log(
+          'Image generation type received in response processing - no-op',
           name: 'UnifiedAiInferenceRepository',
         );
     }

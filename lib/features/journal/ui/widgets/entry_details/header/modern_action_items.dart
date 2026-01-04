@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
@@ -479,5 +481,107 @@ class ModernLabelsItem extends ConsumerWidget {
       initialLabelIds: entry.meta.labelIds ?? <String>[],
       categoryId: entry.meta.categoryId,
     );
+  }
+}
+
+/// Modern styled generate cover art action item.
+/// Shows only for audio entries that are linked to a task.
+class ModernGenerateCoverArtItem extends ConsumerWidget {
+  const ModernGenerateCoverArtItem({
+    required this.entryId,
+    required this.linkedFromId,
+    super.key,
+  });
+
+  final String entryId;
+  final String? linkedFromId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final entryState = ref.watch(provider).value;
+    final entry = entryState?.entry;
+
+    // Only show for audio entries
+    if (entry == null || entry is! JournalAudio) {
+      return const SizedBox.shrink();
+    }
+
+    // Only show when linked to a task
+    final linkedTaskId = linkedFromId;
+    if (linkedTaskId == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Check if the linked entity is actually a task
+    final linkedProvider = entryControllerProvider(id: linkedTaskId);
+    final linkedState = ref.watch(linkedProvider).value;
+    final linkedEntry = linkedState?.entry;
+
+    if (linkedEntry == null || linkedEntry is! Task) {
+      return const SizedBox.shrink();
+    }
+
+    return ModernModalActionItem(
+      icon: Icons.auto_awesome_outlined,
+      title: context.messages.generateCoverArt,
+      subtitle: context.messages.generateCoverArtSubtitle,
+      onTap: () async {
+        Navigator.of(context).pop();
+        if (!context.mounted) return;
+
+        await _openImageGenerationModal(
+          context: context,
+          audioEntry: entry,
+          linkedTaskId: linkedTaskId,
+          linkedTask: linkedEntry,
+        );
+      },
+    );
+  }
+
+  Future<void> _openImageGenerationModal({
+    required BuildContext context,
+    required JournalAudio audioEntry,
+    required String linkedTaskId,
+    required Task linkedTask,
+  }) async {
+    // Build the prompt from task context and audio transcript
+    final prompt = _buildImageGenerationPrompt(
+      audioEntry: audioEntry,
+      linkedTask: linkedTask,
+    );
+
+    await ImageGenerationReviewModal.show(
+      context: context,
+      entityId: entryId,
+      linkedTaskId: linkedTaskId,
+      initialPrompt: prompt,
+      categoryId: linkedTask.meta.categoryId,
+    );
+  }
+
+  String _buildImageGenerationPrompt({
+    required JournalAudio audioEntry,
+    required Task linkedTask,
+  }) {
+    final buffer = StringBuffer();
+
+    // Add user's voice description if available (use the latest transcript)
+    final transcripts = audioEntry.data.transcripts;
+    final latestTranscript = transcripts?.lastOrNull?.transcript;
+    if (latestTranscript != null && latestTranscript.isNotEmpty) {
+      buffer
+        ..writeln('User vision (from voice): $latestTranscript')
+        ..writeln();
+    }
+
+    // Add task context
+    final status = linkedTask.data.status.toDbString;
+    buffer
+      ..writeln('Task title: ${linkedTask.data.title}')
+      ..writeln('Task status: $status');
+
+    return buffer.toString();
   }
 }

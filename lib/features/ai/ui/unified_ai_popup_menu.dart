@@ -4,9 +4,13 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -92,6 +96,17 @@ class UnifiedAiModal {
             name: 'UnifiedAiPopUpMenu',
           );
 
+          // Handle image generation separately
+          if (prompt.aiResponseType == AiResponseType.imageGeneration) {
+            await _handleImageGeneration(
+              context: context,
+              journalEntity: journalEntity,
+              prompt: prompt,
+              ref: ref,
+            );
+            return;
+          }
+
           final targetLinkedEntityId =
               journalEntity is Task ? linkedFromId : journalEntity.id;
 
@@ -122,6 +137,89 @@ class UnifiedAiModal {
       title: context.messages.aiAssistantTitle,
       padding: const EdgeInsets.symmetric(vertical: 20),
     );
+  }
+
+  /// Handles image generation prompts separately from the unified inference flow.
+  /// Image generation requires the ImageGenerationReviewModal for reviewing
+  /// and accepting generated images.
+  static Future<void> _handleImageGeneration({
+    required BuildContext context,
+    required JournalEntity journalEntity,
+    required AiConfigPrompt prompt,
+    required WidgetRef ref,
+  }) async {
+    // Image generation should only be triggered from audio entries
+    if (journalEntity is! JournalAudio) {
+      developer.log(
+        'Image generation triggered from non-audio entry: ${journalEntity.runtimeType}',
+        name: 'UnifiedAiPopUpMenu',
+      );
+      return;
+    }
+
+    final audioEntry = journalEntity;
+
+    // Get the linked task
+    final journalRepo = ref.read(journalRepositoryProvider);
+    final linkedEntities =
+        await journalRepo.getLinkedToEntities(linkedTo: audioEntry.id);
+    final linkedTask = linkedEntities.whereType<Task>().firstOrNull;
+
+    if (linkedTask == null) {
+      developer.log(
+        'No linked task found for audio entry: ${audioEntry.id}',
+        name: 'UnifiedAiPopUpMenu',
+      );
+      return;
+    }
+
+    // Build the prompt from audio transcript and task context
+    final imagePrompt = _buildImageGenerationPrompt(
+      audioEntry: audioEntry,
+      linkedTask: linkedTask,
+    );
+
+    developer.log(
+      'Opening image generation modal with prompt: $imagePrompt',
+      name: 'UnifiedAiPopUpMenu',
+    );
+
+    // Check if context is still valid after async operations
+    if (!context.mounted) return;
+
+    // Show the image generation review modal
+    await ImageGenerationReviewModal.show(
+      context: context,
+      entityId: audioEntry.id,
+      linkedTaskId: linkedTask.id,
+      initialPrompt: imagePrompt,
+      categoryId: linkedTask.meta.categoryId,
+    );
+  }
+
+  /// Builds the image generation prompt from an audio entry and its linked task.
+  static String _buildImageGenerationPrompt({
+    required JournalAudio audioEntry,
+    required Task linkedTask,
+  }) {
+    final buffer = StringBuffer();
+
+    // Add user's voice description if available (use the latest transcript)
+    final transcripts = audioEntry.data.transcripts;
+    final latestTranscript = transcripts?.lastOrNull?.transcript;
+    if (latestTranscript != null && latestTranscript.isNotEmpty) {
+      buffer
+        ..writeln('User vision (from voice): $latestTranscript')
+        ..writeln();
+    }
+
+    // Add task context
+    final status = linkedTask.data.status.toDbString;
+    buffer
+      ..writeln('Task title: ${linkedTask.data.title}')
+      ..writeln('Task status: $status');
+
+    return buffer.toString();
   }
 }
 
