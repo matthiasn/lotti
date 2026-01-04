@@ -58,31 +58,18 @@ class ChecklistItemWrapper extends ConsumerWidget {
         final child = DropRegion(
           formats: Formats.standardFormats,
           onDropOver: (event) => DropOperation.move,
-          onPerformDrop: (event) async {
-            if (event.session.items.isEmpty) {
-              return;
-            }
-            final droppedItem = event.session.items.first;
-            final localData = droppedItem.localData;
-            if (localData != null) {
-              // Pass this item's index as the target position
-              await checklistNotifier.dropChecklistItem(
-                localData,
-                targetIndex: index,
-                targetItemId: itemId,
-              );
-            }
-          },
+          onPerformDrop: (event) => handleChecklistItemDrop(
+            event: event,
+            checklistNotifier: checklistNotifier,
+            targetIndex: index,
+            targetItemId: itemId,
+          ),
           child: DragItemWidget(
-            dragItemProvider: (request) async {
-              final dragItem = DragItem(
-                localData: {
-                  'checklistItemId': item.id,
-                  'checklistId': checklistId,
-                },
-              )..add(Formats.plainText(item.data.title));
-              return dragItem;
-            },
+            dragItemProvider: (request) async => createChecklistItemDragItem(
+              itemId: item.id,
+              checklistId: checklistId,
+              title: item.data.title,
+            ),
             allowedOperations: () => [DropOperation.move],
             dragBuilder: buildDragDecorator,
             child: DraggableWidget(

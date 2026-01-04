@@ -432,7 +432,8 @@ void main() {
               .notifier,
         );
 
-        // Drop item-1 at index 2 (move from first to last)
+        // Drop item-1 at targetIndex 2 (before item-3)
+        // Since item-1 is removed first, actual insertion is at index 1
         await notifier.dropChecklistItem(
           {'checklistItemId': 'item-1', 'checklistId': 'checklist-1'},
           targetIndex: 2,
@@ -446,9 +447,10 @@ void main() {
           ),
         ).captured.single as ChecklistData;
 
-        // item-1 moved from index 0 to index 2
         // Original: [item-1, item-2, item-3]
-        // After moving item-1 to index 2: [item-2, item-1, item-3]
+        // Remove item-1: [item-2, item-3]
+        // targetIndex=2 > oldIndex=0, so newIndex = 2 - 1 = 1
+        // Insert at 1: [item-2, item-1, item-3]
         expect(captured.linkedChecklistItems, ['item-2', 'item-1', 'item-3']);
       });
 
