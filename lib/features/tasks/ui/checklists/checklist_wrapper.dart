@@ -133,6 +133,9 @@ class ChecklistWrapper extends ConsumerWidget {
         return DropOperation.move;
       },
       onPerformDrop: (event) async {
+        if (event.session.items.isEmpty) {
+          return;
+        }
         final item = event.session.items.first;
         final localData = item.localData;
         if (localData != null) {

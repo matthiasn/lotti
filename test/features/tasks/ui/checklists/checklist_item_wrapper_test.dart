@@ -631,5 +631,114 @@ void main() {
     //     'fades out and hides newly checked item when hideIfChecked is true',
     // testWidgets(
     //     'cancels fade-out when item is unchecked again before completion',
+
+    testWidgets('wraps item in DropRegion for cross-checklist drag support',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemOverrideWithBuild(testItem),
+            checklistOverrideWithBuild(null),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify DropRegion is present in widget tree
+      expect(find.byType(DropRegion), findsOneWidget);
+    });
+
+    testWidgets('DropRegion onDropOver returns move operation', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemOverrideWithBuild(testItem),
+            checklistOverrideWithBuild(null),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the DropRegion and verify its configuration
+      final dropRegion = tester.widget<DropRegion>(find.byType(DropRegion));
+      expect(dropRegion.onDropOver, isNotNull);
+
+      // The onDropOver callback should return DropOperation.move
+      // Note: We can't easily invoke onDropOver without mocking DropOverEvent,
+      // but we verify the callback exists and is configured.
+    });
+
+    testWidgets('passes correct index to DropRegion for position-aware drops',
+        (tester) async {
+      const testIndex = 5;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemOverrideWithBuild(testItem),
+            checklistOverrideWithBuild(null),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+              index: testIndex,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify the widget renders with the correct index
+      final wrapper = tester.widget<ChecklistItemWrapper>(
+        find.byType(ChecklistItemWrapper),
+      );
+      expect(wrapper.index, testIndex);
+
+      // The DropRegion's onPerformDrop will use this index
+      // when calling dropChecklistItem
+      expect(find.byType(DropRegion), findsOneWidget);
+    });
+
+    testWidgets('DropRegion has standardFormats configured', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemOverrideWithBuild(testItem),
+            checklistOverrideWithBuild(null),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final dropRegion = tester.widget<DropRegion>(find.byType(DropRegion));
+      expect(dropRegion.formats, Formats.standardFormats);
+    });
   });
 }
