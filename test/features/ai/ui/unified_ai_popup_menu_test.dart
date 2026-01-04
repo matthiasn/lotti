@@ -86,6 +86,9 @@ void main() {
         .thenReturn(MockSelectable<LinkedDbEntry>([]));
     when(() => mockJournalDb.linkedToJournalEntities(any()))
         .thenReturn(MockSelectable<JournalDbEntity>([]));
+    // Mock getLinkedEntities for bidirectional link lookup
+    when(() => mockJournalDb.getLinkedEntities(any()))
+        .thenAnswer((_) async => <JournalEntity>[]);
 
     // Mock logging methods
     when(
