@@ -128,9 +128,16 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
         ),
       );
 
+  /// Handles dropping a checklist item onto this checklist.
+  ///
+  /// If [targetIndex] is provided, the item will be inserted at that position.
+  /// If [targetItemId] is provided, the item will be inserted after that item.
+  /// For same-checklist drops, this enables reordering.
   Future<void> dropChecklistItem(
     Object? localData, {
     String? categoryId,
+    int? targetIndex,
+    String? targetItemId,
   }) async {
     if (localData != null && localData is Map && localData.isNotEmpty) {
       if (localData['checklistItemTitle'] != null) {
@@ -143,7 +150,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
       final droppedChecklistItemId = localData['checklistItemId'] as String;
       final fromChecklistId = localData['checklistId'] as String;
 
+      // Same checklist: reorder
       if (fromChecklistId == id) {
+        await _reorderItem(droppedChecklistItemId, targetIndex, targetItemId);
         return;
       }
 
@@ -177,6 +186,45 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
           )
           .unlinkItem(droppedChecklistItemId);
     }
+  }
+
+  /// Reorders an item within this checklist.
+  Future<void> _reorderItem(
+    String itemId,
+    int? targetIndex,
+    String? targetItemId,
+  ) async {
+    final checklist = state.value;
+    if (checklist == null) return;
+
+    final items = checklist.data.linkedChecklistItems.toList();
+    final oldIndex = items.indexOf(itemId);
+    if (oldIndex == -1) return;
+
+    // Remove from old position
+    items.removeAt(oldIndex);
+
+    // Determine new position
+    int newIndex;
+    if (targetIndex != null) {
+      // Adjust for removal
+      newIndex = targetIndex > oldIndex ? targetIndex - 1 : targetIndex;
+    } else if (targetItemId != null) {
+      final targetIdx = items.indexOf(targetItemId);
+      // Insert after the target item
+      newIndex = targetIdx != -1 ? targetIdx + 1 : items.length;
+    } else {
+      // No position specified, add to end
+      newIndex = items.length;
+    }
+
+    // Clamp to valid range
+    newIndex = newIndex.clamp(0, items.length);
+
+    // Insert at new position
+    items.insert(newIndex, itemId);
+
+    await updateItemOrder(items);
   }
 
   Future<void> dropChecklistNewItem(

@@ -53,80 +53,99 @@ class ChecklistItemWrapper extends ConsumerWidget {
           taskId: taskId,
         )).notifier);
 
-        final child = DragItemWidget(
-          dragItemProvider: (request) async {
-            final dragItem = DragItem(
-              localData: {
-                'checklistItemId': item.id,
-                'checklistId': checklistId,
-              },
-            )..add(Formats.plainText(item.data.title));
-            return dragItem;
+        // Wrap in DropRegion to handle drops on this specific item
+        // This enables both within-list reordering and cross-checklist moves
+        final child = DropRegion(
+          formats: Formats.standardFormats,
+          onDropOver: (event) => DropOperation.move,
+          onPerformDrop: (event) async {
+            final droppedItem = event.session.items.first;
+            final localData = droppedItem.localData;
+            if (localData != null) {
+              // Pass this item's index as the target position
+              await checklistNotifier.dropChecklistItem(
+                localData,
+                targetIndex: index,
+                targetItemId: itemId,
+              );
+            }
           },
-          allowedOperations: () => [DropOperation.move],
-          dragBuilder: buildDragDecorator,
-          child: DraggableWidget(
-            child: Dismissible(
-              key: Key(item.id),
-              dismissThresholds: const {DismissDirection.endToStart: 0.25},
-              onDismissed: (_) async {
-                await itemNotifier.delete();
-                // Also remove from parent checklist to trigger task update
-                await checklistNotifier.unlinkItem(itemId);
-              },
-              background: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ColoredBox(
-                    color: context.colorScheme.error,
-                    child: const Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: EdgeInsets.all(10),
-                        child: Icon(
-                          Icons.delete,
-                          color: Colors.white,
+          child: DragItemWidget(
+            dragItemProvider: (request) async {
+              final dragItem = DragItem(
+                localData: {
+                  'checklistItemId': item.id,
+                  'checklistId': checklistId,
+                },
+              )..add(Formats.plainText(item.data.title));
+              return dragItem;
+            },
+            allowedOperations: () => [DropOperation.move],
+            dragBuilder: buildDragDecorator,
+            child: DraggableWidget(
+              child: Dismissible(
+                key: Key(item.id),
+                dismissThresholds: const {DismissDirection.endToStart: 0.25},
+                onDismissed: (_) async {
+                  await itemNotifier.delete();
+                  // Also remove from parent checklist to trigger task update
+                  await checklistNotifier.unlinkItem(itemId);
+                },
+                background: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ColoredBox(
+                      color: context.colorScheme.error,
+                      child: const Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              direction: DismissDirection.endToStart,
-              confirmDismiss: (_) async {
-                final result = await showDialog<bool>(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: Text(context.messages.checklistItemDelete),
-                      content: Text(
-                        context.messages.checklistItemDeleteWarning,
-                      ),
-                      actions: [
-                        LottiTertiaryButton(
-                          label: context.messages.checklistItemDeleteCancel,
-                          onPressed: () => Navigator.of(context).pop(false),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (_) async {
+                  final result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text(context.messages.checklistItemDelete),
+                        content: Text(
+                          context.messages.checklistItemDeleteWarning,
                         ),
-                        LottiTertiaryButton(
-                          label: context.messages.checklistItemDeleteConfirm,
-                          onPressed: () => Navigator.of(context).pop(true),
-                        ),
-                      ],
-                    );
-                  },
-                );
-                return result ?? false;
-              },
-              child: ChecklistItemWithSuggestionWidget(
-                itemId: item.id,
-                title: item.data.title,
-                isChecked: item.data.isChecked,
-                hideCompleted: hideIfChecked,
-                index: index,
-                onChanged: (checked) =>
-                    ref.read(provider.notifier).updateChecked(checked: checked),
-                onTitleChange: ref.read(provider.notifier).updateTitle,
+                        actions: [
+                          LottiTertiaryButton(
+                            label: context.messages.checklistItemDeleteCancel,
+                            onPressed: () => Navigator.of(context).pop(false),
+                          ),
+                          LottiTertiaryButton(
+                            label: context.messages.checklistItemDeleteConfirm,
+                            onPressed: () => Navigator.of(context).pop(true),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                  return result ?? false;
+                },
+                child: ChecklistItemWithSuggestionWidget(
+                  itemId: item.id,
+                  title: item.data.title,
+                  isChecked: item.data.isChecked,
+                  hideCompleted: hideIfChecked,
+                  index: index,
+                  onChanged: (checked) => ref
+                      .read(provider.notifier)
+                      .updateChecked(checked: checked),
+                  onTitleChange: ref.read(provider.notifier).updateTitle,
+                ),
               ),
             ),
           ),

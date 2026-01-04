@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.797" date="2026-01-04">
+      <description>
+        <p>Cross-Checklist Drag-and-Drop Fix: Restored ability to move items between checklists. Fixed regression from checklist redesign where drag gestures were being intercepted. Now uses unified drag system with item-level drop regions for position-aware drops, enabling both within-list reordering and cross-checklist moves via long-press.</p>
+      </description>
+    </release>
     <release version="0.9.796" date="2026-01-03">
       <description>
         <p>Nano Banana Checklist Redesign: Major UI rewrite with card-based architecture. Features modular widget structure, animated chevron rotation, filter tabs with underline indicator, and three display modes (expanded, collapsed, sorting). Progress ring now hidden when empty in expanded mode. Add input moved to bottom of checklist body with click-to-edit title functionality.</p>

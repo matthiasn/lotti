@@ -8,7 +8,6 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/index.dart';
 
 /// Container widget for all checklists within a task.
 ///
@@ -125,24 +124,16 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
                       ? false // Force collapsed during sorting
                       : sortingState.preExpansionStates[checklistId];
 
-                  return ModernBaseCard(
-                    margin: const EdgeInsets.only(
-                      bottom: AppTheme.cardSpacing,
-                    ),
-                    // Only vertical padding - horizontal padding is handled
-                    // inside ChecklistWidget to allow dividers to extend edge-to-edge
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppTheme.cardPaddingHalf,
-                    ),
-                    child: ChecklistWrapper(
-                      entryId: checklistId,
-                      categoryId: item.categoryId,
-                      taskId: widget.task.id,
-                      isSortingMode: isSorting,
-                      initiallyExpanded: initiallyExpanded,
-                      onExpansionChanged: _onExpansionChanged,
-                      reorderIndex: index,
-                    ),
+                  // ModernBaseCard is now inside ChecklistWrapper to ensure
+                  // DropRegion covers the entire visual card area
+                  return ChecklistWrapper(
+                    entryId: checklistId,
+                    categoryId: item.categoryId,
+                    taskId: widget.task.id,
+                    isSortingMode: isSorting,
+                    initiallyExpanded: initiallyExpanded,
+                    onExpansionChanged: _onExpansionChanged,
+                    reorderIndex: index,
                   );
                 },
               );

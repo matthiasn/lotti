@@ -13,6 +13,7 @@ import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/share_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/cards/index.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 /// A convenience wrapper that wires a checklist instance to its state and
@@ -125,6 +126,7 @@ class ChecklistWrapper extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    // DropRegion wraps the entire card so the whole visual area is a drop target
     return DropRegion(
       formats: Formats.standardFormats,
       onDropOver: (event) {
@@ -140,79 +142,90 @@ class ChecklistWrapper extends ConsumerWidget {
           );
         }
       },
-      child: ChecklistWidget(
-        id: checklist.id,
-        taskId: taskId,
-        title: checklist.data.title,
-        itemIds: checklist.data.linkedChecklistItems,
-        onTitleSave: notifier.updateTitle,
-        onCreateChecklistItem: (title) => notifier.createChecklistItem(
-          title,
-          isChecked: false,
-          categoryId: checklist.meta.categoryId,
+      child: ModernBaseCard(
+        margin: const EdgeInsets.only(
+          bottom: AppTheme.cardSpacing,
         ),
-        updateItemOrder: notifier.updateItemOrder,
-        completionRate: completionRate,
-        completedCount: completionCounts?.completedCount,
-        totalCount: completionCounts?.totalCount,
-        onDelete: ref.read(provider.notifier).delete,
-        isSortingMode: isSortingMode,
-        initiallyExpanded: initiallyExpanded,
-        reorderIndex: reorderIndex,
-        onExpansionChanged: onExpansionChanged != null
-            ? (isExpanded) => onExpansionChanged!(entryId, isExpanded)
-            : null,
-        onExportMarkdown: () async {
-          final messenger = ScaffoldMessenger.of(context);
-          final nothingToExportMsg = context.messages.checklistNothingToExport;
-          final copiedMsg = context.messages.checklistMarkdownCopied;
-          final shareHintMsg = context.messages.checklistShareHint;
-          final exportFailedMsg = context.messages.checklistExportFailed;
+        // Only vertical padding - horizontal padding is handled inside
+        // ChecklistWidget to allow dividers to extend edge-to-edge
+        padding: const EdgeInsets.symmetric(
+          vertical: AppTheme.cardPaddingHalf,
+        ),
+        child: ChecklistWidget(
+          id: checklist.id,
+          taskId: taskId,
+          title: checklist.data.title,
+          itemIds: checklist.data.linkedChecklistItems,
+          onTitleSave: notifier.updateTitle,
+          onCreateChecklistItem: (title) => notifier.createChecklistItem(
+            title,
+            isChecked: false,
+            categoryId: checklist.meta.categoryId,
+          ),
+          updateItemOrder: notifier.updateItemOrder,
+          completionRate: completionRate,
+          completedCount: completionCounts?.completedCount,
+          totalCount: completionCounts?.totalCount,
+          onDelete: ref.read(provider.notifier).delete,
+          isSortingMode: isSortingMode,
+          initiallyExpanded: initiallyExpanded,
+          reorderIndex: reorderIndex,
+          onExpansionChanged: onExpansionChanged != null
+              ? (isExpanded) => onExpansionChanged!(entryId, isExpanded)
+              : null,
+          onExportMarkdown: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final nothingToExportMsg =
+                context.messages.checklistNothingToExport;
+            final copiedMsg = context.messages.checklistMarkdownCopied;
+            final shareHintMsg = context.messages.checklistShareHint;
+            final exportFailedMsg = context.messages.checklistExportFailed;
 
-          try {
-            final resolved = await _resolveChecklistItems(ref, checklist);
-            final markdown = checklistItemsToMarkdown(resolved);
+            try {
+              final resolved = await _resolveChecklistItems(ref, checklist);
+              final markdown = checklistItemsToMarkdown(resolved);
 
-            if (markdown.isEmpty) {
+              if (markdown.isEmpty) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text(nothingToExportMsg)),
+                );
+                return;
+              }
+
+              await ref.read(appClipboardProvider).writePlainText(markdown);
+
+              final prefs = makeSharedPrefsService();
+              final seen = await prefs.getBool(_shareHintSeenKey) ?? false;
+              final effectiveMsg = (!isTestEnv && !seen)
+                  ? '$copiedMsg — $shareHintMsg'
+                  : copiedMsg;
               messenger.showSnackBar(
-                SnackBar(content: Text(nothingToExportMsg)),
+                SnackBar(content: Text(effectiveMsg)),
               );
-              return;
+              if (!isTestEnv && !seen) {
+                await prefs.setBool(key: _shareHintSeenKey, value: true);
+              }
+            } catch (_) {
+              messenger.showSnackBar(SnackBar(
+                content: Text(exportFailedMsg),
+              ));
             }
-
-            await ref.read(appClipboardProvider).writePlainText(markdown);
-
-            final prefs = makeSharedPrefsService();
-            final seen = await prefs.getBool(_shareHintSeenKey) ?? false;
-            final effectiveMsg = (!isTestEnv && !seen)
-                ? '$copiedMsg — $shareHintMsg'
-                : copiedMsg;
-            messenger.showSnackBar(
-              SnackBar(content: Text(effectiveMsg)),
-            );
-            if (!isTestEnv && !seen) {
-              await prefs.setBool(key: _shareHintSeenKey, value: true);
+          },
+          onShareMarkdown: () async {
+            // Build the same markdown and trigger the platform share sheet.
+            try {
+              final resolved = await _resolveChecklistItems(ref, checklist);
+              final shareText = checklistItemsToEmojiList(resolved);
+              if (shareText.isEmpty) {
+                return; // nothing to share
+              }
+              await ShareService.instance
+                  .shareText(text: shareText, subject: checklist.data.title);
+            } catch (_) {
+              // Silently ignore share errors to avoid disrupting UX.
             }
-          } catch (_) {
-            messenger.showSnackBar(SnackBar(
-              content: Text(exportFailedMsg),
-            ));
-          }
-        },
-        onShareMarkdown: () async {
-          // Build the same markdown and trigger the platform share sheet.
-          try {
-            final resolved = await _resolveChecklistItems(ref, checklist);
-            final shareText = checklistItemsToEmojiList(resolved);
-            if (shareText.isEmpty) {
-              return; // nothing to share
-            }
-            await ShareService.instance
-                .shareText(text: shareText, subject: checklist.data.title);
-          } catch (_) {
-            // Silently ignore share errors to avoid disrupting UX.
-          }
-        },
+          },
+        ),
       ),
     );
   }
