@@ -1,7 +1,7 @@
 # One-Shot Image Generation with Nano Banana Pro
 
 **Date:** 2026-01-04
-**Status:** Planned
+**Status:** Planned (Revised)
 
 ## Overview
 
@@ -11,24 +11,25 @@ Enable direct image generation within the app using Gemini 3 Pro Image Preview (
 
 ### Current State
 - Users can generate text prompts for images via the `imagePromptGeneration` response type
-- The system currently uses a Gemini client infrastructure that handles text generation
-- Users must copy generated prompts to external tools and paste resulting images back
+- Image analysis uses a preconfigured prompt without a specialized response type - it just adds text to the image entry
 - Cover art can be assigned to tasks via the existing visual mnemonics system
+- The `importPastedImages` pipeline handles image storage with EXIF, geolocation, and directory structure
 
 ### Goal
 Reduce friction by enabling one-shot image generation directly from voice note transcriptions.
 
 ### Nano Banana Pro (Gemini 3 Pro Image Preview)
 - **Model ID**: `gemini-3-pro-image-preview`
-- **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent`
 - **Capabilities**: Text + Image input, Text + Image output
-- **Response**: Base64-encoded image data in `inline_data.data` field
+- **Response**: Base64-encoded image data in `candidates[0].content.parts[].inline_data.data`
+- **Response format**: Uses snake_case (`inline_data`, `mime_type`) per [Gemini API docs](https://ai.google.dev/gemini-api/docs/image-generation)
 
-### Architecture Decision
-- **Direct generation**: Send task context + audio transcript directly to Nano Banana Pro
-- **No intermediate step**: Unlike `imagePromptGeneration` which creates a text prompt for external tools, this generates the image directly
-- **Preconfigured prompt**: Follows existing patterns with a new entry in `preconfigured_prompts.dart`
-- **Known model**: `gemini-3-pro-image-preview` added to known models with image output modality
+### Architecture Decisions
+1. **No new response type**: Uses existing `imagePromptGeneration` (conceptually similar - generating visual content from task context)
+2. **Model-based detection**: Image generation is detected via `outputModalities: [Modality.image]`
+3. **Preconfigured prompt**: Task context + transcript sent directly to Nano Banana Pro using existing placeholder expansion (`{{task}}`, `{{linked_tasks}}`, `{{audioTranscript}}`)
+4. **Existing pipelines**: Use new `importImageBytesWithId()` (adapts existing pattern), use existing `GeminiUtils.buildGenerateContentUri()` for API calls
+5. **Result is JournalImage**: On accept, save as JournalImage linked to task, set as cover art
 
 ---
 
@@ -55,51 +56,50 @@ const List<KnownModel> geminiModels = [
 ];
 ```
 
-### 1.2 Add New AI Response Type
-**File:** `lib/features/ai/state/consts.dart`
-
-```dart
-const imageGenerationConst = 'ImageGeneration';
-
-enum AiResponseType {
-  // ... existing types ...
-  @JsonValue(imageGenerationConst)
-  imageGeneration,
-}
-```
-
-Update the extension methods:
-```dart
-extension AiResponseTypeDisplay on AiResponseType {
-  String localizedName(BuildContext context) {
-    // ... existing cases ...
-    case AiResponseType.imageGeneration:
-      return l10n.aiResponseTypeImageGeneration;
-  }
-
-  IconData get icon {
-    // ... existing cases ...
-    case AiResponseType.imageGeneration:
-      return Icons.auto_awesome;  // Or Icons.brush
-  }
-}
-```
-
-### 1.3 Add Localization Strings
+### 1.2 Add Localization Strings
 **File:** `lib/l10n/app_en.arb`
 
 ```json
-"aiResponseTypeImageGeneration": "Generated Image",
 "imageGenerationModalTitle": "Generated Image",
 "imageGenerationAcceptButton": "Accept as Cover Art",
-"imageGenerationRejectButton": "Try Again",
 "imageGenerationEditPromptButton": "Edit Prompt",
+"imageGenerationEditPromptLabel": "Edit prompt",
+"imageGenerationCancelEdit": "Cancel",
 "imageGenerationGenerating": "Generating image...",
 "imageGenerationError": "Failed to generate image",
-"imageGenerationRetry": "Retry"
+"imageGenerationSaveError": "Failed to save image: {error}",
+"@imageGenerationSaveError": {
+  "placeholders": {
+    "error": {"type": "String"}
+  }
+},
+"imageGenerationRetry": "Retry",
+"generateCoverArt": "Generate Cover Art",
+"generateCoverArtSubtitle": "Create image from voice description"
 ```
 
-### 1.4 Add Preconfigured Prompt
+**File:** `lib/l10n/app_de.arb`
+
+```json
+"imageGenerationModalTitle": "Generiertes Bild",
+"imageGenerationAcceptButton": "Als Cover übernehmen",
+"imageGenerationEditPromptButton": "Prompt bearbeiten",
+"imageGenerationEditPromptLabel": "Prompt bearbeiten",
+"imageGenerationCancelEdit": "Abbrechen",
+"imageGenerationGenerating": "Bild wird generiert...",
+"imageGenerationError": "Bildgenerierung fehlgeschlagen",
+"imageGenerationSaveError": "Bild konnte nicht gespeichert werden: {error}",
+"@imageGenerationSaveError": {
+  "placeholders": {
+    "error": {"type": "String"}
+  }
+},
+"imageGenerationRetry": "Wiederholen",
+"generateCoverArt": "Cover generieren",
+"generateCoverArtSubtitle": "Bild aus Sprachbeschreibung erstellen"
+```
+
+### 1.3 Add Preconfigured Prompt
 **File:** `lib/features/ai/util/preconfigured_prompts.dart`
 
 Add to the lookup map:
@@ -155,10 +155,9 @@ USER'S IMAGE DESCRIPTION:
 
 Generate a cover art image based on the above context and the user's description.
 ''',
-  // Uses task input for context, transcript comes via placeholder
   requiredInputData: [InputDataType.task],
-  aiResponseType: AiResponseType.imageGeneration,
-  useReasoning: false,  // Image generation doesn't need reasoning
+  aiResponseType: AiResponseType.imagePromptGeneration,  // Reuses existing type - conceptually similar
+  useReasoning: false,
   description:
       'Generate cover art image directly from task context and voice description',
 );
@@ -166,146 +165,15 @@ Generate a cover art image based on the above context and the user's description
 
 ---
 
-## Phase 2: Gemini Client Extension
+## Phase 2: Gemini Image Generation Support
 
-### 2.1 Create Image Generation Repository
-**File:** `lib/features/ai/repository/gemini_image_generation_repository.dart` (NEW)
+### 2.1 Extend GeminiInferenceRepository for Image Generation
+**File:** `lib/features/ai/repository/gemini_inference_repository.dart`
+
+Add image generation method using existing patterns (GeminiUtils for URL building):
 
 ```dart
-import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:typed_data';
-
-import 'package:http/http.dart' as http;
-
-/// Repository for Gemini image generation operations
-class GeminiImageGenerationRepository {
-  GeminiImageGenerationRepository({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
-
-  final http.Client _httpClient;
-
-  static const _defaultTimeout = Duration(seconds: 120);
-  static const _modelId = 'gemini-3-pro-image-preview';
-
-  /// Generates an image from a text prompt using Nano Banana Pro
-  ///
-  /// Returns the generated image as base64-encoded data along with
-  /// any accompanying text description.
-  Future<ImageGenerationResult> generateImage({
-    required String prompt,
-    required String apiKey,
-    String? baseUrl,
-    String aspectRatio = '1:1',  // Default square for cover art
-    String imageSize = '2K',
-    Duration? timeout,
-  }) async {
-    final requestTimeout = timeout ?? _defaultTimeout;
-
-    // Use Gemini API base URL
-    final url = baseUrl ?? 'https://generativelanguage.googleapis.com/v1beta';
-    final endpoint = Uri.parse('$url/models/$_modelId:generateContent');
-
-    final requestBody = {
-      'contents': [
-        {
-          'parts': [
-            {'text': prompt}
-          ]
-        }
-      ],
-      'generationConfig': {
-        'responseModalities': ['TEXT', 'IMAGE'],
-        'imageConfig': {
-          'aspectRatio': aspectRatio,
-          'imageSize': imageSize,
-        }
-      }
-    };
-
-    developer.log(
-      'Sending image generation request - promptLength: ${prompt.length}, '
-      'aspectRatio: $aspectRatio, imageSize: $imageSize',
-      name: 'GeminiImageGenerationRepository',
-    );
-
-    try {
-      final response = await _httpClient
-          .post(
-            endpoint,
-            headers: {
-              'Content-Type': 'application/json',
-              'x-goog-api-key': apiKey,
-            },
-            body: jsonEncode(requestBody),
-          )
-          .timeout(requestTimeout);
-
-      if (response.statusCode != 200) {
-        throw ImageGenerationException(
-          'Failed to generate image (HTTP ${response.statusCode})',
-          statusCode: response.statusCode,
-        );
-      }
-
-      final result = jsonDecode(response.body) as Map<String, dynamic>;
-      return _parseResponse(result);
-    } catch (e) {
-      if (e is ImageGenerationException) rethrow;
-      throw ImageGenerationException(
-        'Failed to generate image: $e',
-        originalError: e,
-      );
-    }
-  }
-
-  ImageGenerationResult _parseResponse(Map<String, dynamic> json) {
-    String? textDescription;
-    Uint8List? imageData;
-    String? mimeType;
-
-    final candidates = json['candidates'] as List<dynamic>?;
-    if (candidates == null || candidates.isEmpty) {
-      throw ImageGenerationException('No candidates in response');
-    }
-
-    final content = candidates[0]['content'] as Map<String, dynamic>?;
-    final parts = content?['parts'] as List<dynamic>?;
-
-    if (parts == null) {
-      throw ImageGenerationException('No parts in response');
-    }
-
-    for (final part in parts) {
-      final partMap = part as Map<String, dynamic>;
-
-      // Check for text part
-      if (partMap.containsKey('text')) {
-        textDescription = partMap['text'] as String;
-      }
-
-      // Check for image part
-      if (partMap.containsKey('inline_data')) {
-        final inlineData = partMap['inline_data'] as Map<String, dynamic>;
-        mimeType = inlineData['mime_type'] as String?;
-        final base64Data = inlineData['data'] as String?;
-        if (base64Data != null) {
-          imageData = base64Decode(base64Data);
-        }
-      }
-    }
-
-    if (imageData == null) {
-      throw ImageGenerationException('No image data in response');
-    }
-
-    return ImageGenerationResult(
-      imageData: imageData,
-      mimeType: mimeType ?? 'image/png',
-      textDescription: textDescription,
-    );
-  }
-}
 
 /// Result of an image generation request
 class ImageGenerationResult {
@@ -322,11 +190,7 @@ class ImageGenerationResult {
 
 /// Exception thrown when image generation fails
 class ImageGenerationException implements Exception {
-  ImageGenerationException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
+  ImageGenerationException(this.message, {this.statusCode, this.originalError});
 
   final String message;
   final int? statusCode;
@@ -335,53 +199,154 @@ class ImageGenerationException implements Exception {
   @override
   String toString() => 'ImageGenerationException: $message';
 }
-```
 
-### 2.2 Add Provider for Image Generation Repository
-**File:** `lib/features/ai/providers/gemini_image_generation_provider.dart` (NEW)
+// Add to GeminiInferenceRepository class:
 
-```dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:lotti/features/ai/repository/gemini_image_generation_repository.dart';
-import 'package:lotti/get_it.dart';
-
-final geminiImageGenerationRepositoryProvider =
-    Provider<GeminiImageGenerationRepository>((ref) {
-  return GeminiImageGenerationRepository(
-    httpClient: getIt<http.Client>(),
-  );
-});
-```
-
-### 2.3 Integrate with CloudInferenceRepository
-**File:** `lib/features/ai/repository/cloud_inference_repository.dart`
-
-Add method for image generation:
-```dart
-/// Generates an image using Nano Banana Pro (Gemini 3 Pro Image)
+/// Generates an image using Gemini 3 Pro Image (Nano Banana Pro)
 ///
-/// Returns the generated image data and optional description
+/// Uses the model's native image generation capabilities with 2:1 aspect ratio
+/// optimized for cover art (center-weighted for square thumbnail cropping).
 Future<ImageGenerationResult> generateImage({
   required String prompt,
+  required String systemMessage,
   required String model,
   required String baseUrl,
   required String apiKey,
-  String aspectRatio = '1:1',
-  String imageSize = '2K',
-  AiConfigInferenceProvider? provider,
+  String aspectRatio = '2:1',
+  Duration? timeout,
 }) async {
-  // Verify it's a Gemini provider
-  if (provider?.inferenceProviderType != InferenceProviderType.gemini) {
-    throw ArgumentError('Image generation requires Gemini provider');
+  final requestTimeout = timeout ?? const Duration(seconds: 120);
+
+  // Build URI using existing pattern
+  final uri = GeminiUtils.buildGenerateContentUri(
+    baseUrl: baseUrl,
+    model: model,
+    apiKey: apiKey,
+  );
+
+  // Configure for 2:1 aspect ratio (cover art optimized for center-crop to square)
+  // See: https://ai.google.dev/gemini-api/docs/image-generation
+  final requestBody = {
+    'contents': [
+      {
+        'role': 'user',
+        'parts': [
+          {'text': '$systemMessage\n\n$prompt'}
+        ]
+      }
+    ],
+    'generationConfig': {
+      'responseModalities': ['TEXT', 'IMAGE'],
+      'imageConfig': {
+        'aspectRatio': aspectRatio,  // Default '2:1' for cover art
+      },
+    }
+  };
+
+  developer.log(
+    'Sending image generation request - model: $model, promptLength: ${prompt.length}',
+    name: 'GeminiInferenceRepository',
+  );
+
+  try {
+    final response = await _httpClient
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(requestBody),
+        )
+        .timeout(requestTimeout);
+
+    if (response.statusCode != 200) {
+      throw ImageGenerationException(
+        'Failed to generate image (HTTP ${response.statusCode}): ${response.body}',
+        statusCode: response.statusCode,
+      );
+    }
+
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+    return _parseImageResponse(result);
+  } catch (e) {
+    if (e is ImageGenerationException) rethrow;
+    throw ImageGenerationException('Failed to generate image: $e', originalError: e);
+  }
+}
+
+ImageGenerationResult _parseImageResponse(Map<String, dynamic> json) {
+  String? textDescription;
+  Uint8List? imageData;
+  String? mimeType;
+
+  final candidates = json['candidates'] as List<dynamic>?;
+  if (candidates == null || candidates.isEmpty) {
+    throw ImageGenerationException('No candidates in response');
   }
 
-  return _geminiImageGenerationRepository.generateImage(
+  final content = candidates[0]['content'] as Map<String, dynamic>?;
+  final parts = content?['parts'] as List<dynamic>?;
+
+  if (parts == null) {
+    throw ImageGenerationException('No parts in response');
+  }
+
+  for (final part in parts) {
+    final partMap = part as Map<String, dynamic>;
+
+    if (partMap.containsKey('text')) {
+      textDescription = partMap['text'] as String;
+    }
+
+    // Gemini API uses snake_case in JSON responses
+    // See: https://ai.google.dev/gemini-api/docs/image-generation
+    if (partMap.containsKey('inline_data')) {
+      final inlineData = partMap['inline_data'] as Map<String, dynamic>;
+      mimeType = inlineData['mime_type'] as String?;
+      final base64Data = inlineData['data'] as String?;
+      if (base64Data != null) {
+        imageData = base64Decode(base64Data);
+      }
+    }
+  }
+
+  if (imageData == null) {
+    throw ImageGenerationException('No image data in response');
+  }
+
+  return ImageGenerationResult(
+    imageData: imageData,
+    mimeType: mimeType ?? 'image/png',
+    textDescription: textDescription,
+  );
+}
+```
+
+### 2.2 Add generateImage to CloudInferenceRepository
+**Note:** `GeminiUtils.buildGenerateContentUri()` already exists - no need to add it.
+**File:** `lib/features/ai/repository/cloud_inference_repository.dart`
+
+```dart
+/// Generates an image using a model with image output capability
+///
+/// Returns the generated image data. Only works with Gemini provider
+/// and models that have Modality.image in outputModalities.
+Future<ImageGenerationResult> generateImage({
+  required String prompt,
+  required String systemMessage,
+  required String model,
+  required String baseUrl,
+  required String apiKey,
+  required AiConfigInferenceProvider provider,
+}) async {
+  if (provider.inferenceProviderType != InferenceProviderType.gemini) {
+    throw ArgumentError('Image generation currently only supports Gemini provider');
+  }
+
+  return _geminiRepository.generateImage(
     prompt: prompt,
-    apiKey: apiKey,
+    systemMessage: systemMessage,
+    model: model,
     baseUrl: baseUrl,
-    aspectRatio: aspectRatio,
-    imageSize: imageSize,
+    apiKey: apiKey,
   );
 }
 ```
@@ -395,6 +360,7 @@ Future<ImageGenerationResult> generateImage({
 
 ```dart
 import 'dart:typed_data';
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'image_generation_state.freezed.dart';
@@ -402,15 +368,18 @@ part 'image_generation_state.freezed.dart';
 @freezed
 class ImageGenerationState with _$ImageGenerationState {
   const factory ImageGenerationState.idle() = ImageGenerationIdle;
+
   const factory ImageGenerationState.generating({
     required String prompt,
   }) = ImageGenerationInProgress;
+
   const factory ImageGenerationState.success({
     required Uint8List imageData,
     required String mimeType,
     required String prompt,
     String? textDescription,
   }) = ImageGenerationSuccess;
+
   const factory ImageGenerationState.error({
     required String message,
     required String prompt,
@@ -422,38 +391,78 @@ class ImageGenerationState with _$ImageGenerationState {
 **File:** `lib/features/ai/state/image_generation_controller.dart` (NEW)
 
 ```dart
-import 'dart:typed_data';
-
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/image_generation_state.dart';
+import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+
+/// Parameters for image generation
+class ImageGenerationParams {
+  const ImageGenerationParams({
+    required this.taskId,
+    required this.audioEntryId,
+  });
+
+  final String taskId;
+  final String audioEntryId;
+}
 
 final imageGenerationControllerProvider = StateNotifierProvider.autoDispose
-    .family<ImageGenerationController, ImageGenerationState, String>(
-  (ref, taskId) => ImageGenerationController(ref, taskId),
+    .family<ImageGenerationController, ImageGenerationState, ImageGenerationParams>(
+  (ref, params) => ImageGenerationController(ref, params),
 );
 
 class ImageGenerationController extends StateNotifier<ImageGenerationState> {
-  ImageGenerationController(this._ref, this._taskId)
+  ImageGenerationController(this._ref, this._params)
       : super(const ImageGenerationState.idle());
 
   final Ref _ref;
-  final String _taskId;
+  final ImageGenerationParams _params;
 
-  /// Generate an image from the given prompt
-  Future<void> generateImage(String prompt) async {
-    state = ImageGenerationState.generating(prompt: prompt);
+  /// Generate an image using the preconfigured prompt with full task context
+  Future<void> generateImage() async {
+    // Get audio entry for context - PromptBuilderHelper will find linked task
+    final audioEntry = _ref.read(entryControllerProvider(id: _params.audioEntryId)).value?.entry;
+
+    if (audioEntry is! JournalAudio) {
+      state = const ImageGenerationState.error(
+        message: 'Audio entry not found',
+        prompt: '',
+      );
+      return;
+    }
+
+    // Check for transcript
+    final transcript = audioEntry.data.transcripts.lastOrNull?.transcript ?? '';
+    if (transcript.isEmpty) {
+      state = const ImageGenerationState.error(
+        message: 'No transcript available',
+        prompt: '',
+      );
+      return;
+    }
+
+    // Declare prompt before try block so it's accessible in catch
+    var prompt = '';
 
     try {
       final cloudRepo = _ref.read(cloudInferenceRepositoryProvider);
       final configRepo = _ref.read(aiConfigRepositoryProvider);
 
-      // Find a Gemini provider with image generation capability
-      final providers = await configRepo.getConfigsByType(
-        AiConfigType.inferenceProvider,
-      );
+      // Find Gemini provider and image-capable model FIRST (needed for prompt config)
+      final providers = await configRepo.getConfigsByType(AiConfigType.inferenceProvider);
+      final models = await configRepo.getConfigsByType(AiConfigType.model);
 
       final geminiProvider = providers
           .whereType<AiConfigInferenceProvider>()
@@ -464,13 +473,28 @@ class ImageGenerationController extends StateNotifier<ImageGenerationState> {
         throw Exception('No Gemini provider configured');
       }
 
+      // Find model with image output capability
+      final imageModel = models
+          .whereType<AiConfigModel>()
+          .where((m) => m.inferenceProviderId == geminiProvider.id)
+          .where((m) => m.outputModalities.contains(Modality.image))
+          .firstOrNull;
+
+      if (imageModel == null) {
+        throw Exception('No image generation model configured. Add Gemini 3 Pro Image model.');
+      }
+
+      // Build the full prompt using existing PromptBuilderHelper
+      // Pass model ID to make prompt config future-proof for validation
+      prompt = await _buildPromptWithContext(audioEntry, imageModel.id);
+      state = ImageGenerationState.generating(prompt: prompt);
+
       final result = await cloudRepo.generateImage(
         prompt: prompt,
-        model: 'gemini-3-pro-image-preview',
+        systemMessage: imageGenerationPrompt.systemMessage,
+        model: imageModel.providerModelId,
         baseUrl: geminiProvider.baseUrl,
         apiKey: geminiProvider.apiKey,
-        aspectRatio: '2:1',  // Cinematic ratio for cover art
-        imageSize: '2K',
         provider: geminiProvider,
       );
 
@@ -488,18 +512,106 @@ class ImageGenerationController extends StateNotifier<ImageGenerationState> {
     }
   }
 
-  /// Reset to idle state
+  /// Generate with a custom/edited prompt (user override)
+  Future<void> generateWithPrompt(String customPrompt) async {
+    state = ImageGenerationState.generating(prompt: customPrompt);
+
+    try {
+      final cloudRepo = _ref.read(cloudInferenceRepositoryProvider);
+      final configRepo = _ref.read(aiConfigRepositoryProvider);
+
+      final providers = await configRepo.getConfigsByType(AiConfigType.inferenceProvider);
+      final models = await configRepo.getConfigsByType(AiConfigType.model);
+
+      final geminiProvider = providers
+          .whereType<AiConfigInferenceProvider>()
+          .where((p) => p.inferenceProviderType == InferenceProviderType.gemini)
+          .firstOrNull;
+
+      if (geminiProvider == null) {
+        throw Exception('No Gemini provider configured');
+      }
+
+      final imageModel = models
+          .whereType<AiConfigModel>()
+          .where((m) => m.inferenceProviderId == geminiProvider.id)
+          .where((m) => m.outputModalities.contains(Modality.image))
+          .firstOrNull;
+
+      if (imageModel == null) {
+        throw Exception('No image generation model configured');
+      }
+
+      final result = await cloudRepo.generateImage(
+        prompt: customPrompt,
+        systemMessage: imageGenerationPrompt.systemMessage,
+        model: imageModel.providerModelId,
+        baseUrl: geminiProvider.baseUrl,
+        apiKey: geminiProvider.apiKey,
+        provider: geminiProvider,
+      );
+
+      state = ImageGenerationState.success(
+        imageData: result.imageData,
+        mimeType: result.mimeType,
+        prompt: customPrompt,
+        textDescription: result.textDescription,
+      );
+    } catch (e) {
+      state = ImageGenerationState.error(
+        message: e.toString(),
+        prompt: customPrompt,
+      );
+    }
+  }
+
+  /// Build prompt using existing PromptBuilderHelper for placeholder expansion.
+  /// The helper handles {{task}}, {{linked_tasks}}, {{audioTranscript}} placeholders.
+  ///
+  /// [modelId] is included to make the prompt config future-proof for validation
+  /// via [isModelSuitableForPrompt] if this code path ever changes.
+  Future<String> _buildPromptWithContext(JournalAudio audioEntry, String modelId) async {
+    final promptBuilderHelper = PromptBuilderHelper(
+      aiInputRepository: _ref.read(aiInputRepositoryProvider),
+      checklistRepository: _ref.read(checklistRepositoryProvider),
+      journalRepository: _ref.read(journalRepositoryProvider),
+      labelsRepository: _ref.read(labelsRepositoryProvider),
+    );
+
+    // Create AiConfigPrompt for placeholder expansion
+    // Model IDs included for future-proofing if validation is ever added
+    final promptConfig = AiConfigPrompt(
+      id: 'image_generation_temp',
+      name: 'Image Generation',
+      systemMessage: imageGenerationPrompt.systemMessage,
+      userMessage: imageGenerationPrompt.userMessage,
+      defaultModelId: modelId,
+      modelIds: [modelId],
+      createdAt: DateTime.now(),
+      requiredInputData: imageGenerationPrompt.requiredInputData,
+      aiResponseType: AiResponseType.imagePromptGeneration,
+      useReasoning: false,
+    );
+
+    // The helper expands {{task}}, {{linked_tasks}}, {{audioTranscript}} placeholders
+    final prompt = await promptBuilderHelper.buildPromptWithData(
+      promptConfig: promptConfig,
+      entity: audioEntry,  // Audio entry - helper will find linked task
+    );
+
+    return prompt ?? '';
+  }
+
   void reset() {
     state = const ImageGenerationState.idle();
   }
 
-  /// Retry with the same prompt
   Future<void> retry() async {
     final currentState = state;
     if (currentState is ImageGenerationError) {
-      await generateImage(currentState.prompt);
+      await generateWithPrompt(currentState.prompt);
     } else if (currentState is ImageGenerationSuccess) {
-      await generateImage(currentState.prompt);
+      await generateWithPrompt(currentState.prompt);
     }
   }
 }
@@ -521,32 +633,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/image_generation_controller.dart';
 import 'package:lotti/features/ai/state/image_generation_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ImageGenerationReviewModal extends ConsumerStatefulWidget {
   const ImageGenerationReviewModal({
     required this.taskId,
-    required this.initialPrompt,
+    required this.audioEntryId,
     super.key,
   });
 
   final String taskId;
-  final String initialPrompt;
+  final String audioEntryId;
 
   static Future<void> show({
     required BuildContext context,
     required String taskId,
-    required String initialPrompt,
+    required String audioEntryId,
   }) async {
     return ModalUtils.showSinglePageModal(
       context: context,
       title: context.messages.imageGenerationModalTitle,
       builder: (context) => ImageGenerationReviewModal(
         taskId: taskId,
-        initialPrompt: initialPrompt,
+        audioEntryId: audioEntryId,
       ),
     );
   }
@@ -560,17 +672,21 @@ class _ImageGenerationReviewModalState
     extends ConsumerState<ImageGenerationReviewModal> {
   late TextEditingController _promptController;
   bool _isEditing = false;
+  bool _isSaving = false;
+
+  ImageGenerationParams get _params => ImageGenerationParams(
+        taskId: widget.taskId,
+        audioEntryId: widget.audioEntryId,
+      );
 
   @override
   void initState() {
     super.initState();
-    _promptController = TextEditingController(text: widget.initialPrompt);
+    _promptController = TextEditingController();
 
     // Start generating immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(imageGenerationControllerProvider(widget.taskId).notifier)
-          .generateImage(widget.initialPrompt);
+      ref.read(imageGenerationControllerProvider(_params).notifier).generateImage();
     });
   }
 
@@ -582,31 +698,33 @@ class _ImageGenerationReviewModalState
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(imageGenerationControllerProvider(widget.taskId));
+    final state = ref.watch(imageGenerationControllerProvider(_params));
+
+    // Update prompt controller when state changes
+    if (state is ImageGenerationSuccess && _promptController.text.isEmpty) {
+      _promptController.text = state.prompt;
+    } else if (state is ImageGenerationError && _promptController.text.isEmpty) {
+      _promptController.text = state.prompt;
+    }
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Image display area
           _buildImageArea(state),
           const SizedBox(height: 16),
-
-          // Prompt editing area (shown when editing)
           if (_isEditing) ...[
             TextField(
               controller: _promptController,
               maxLines: 4,
               decoration: InputDecoration(
-                labelText: 'Edit prompt',
+                labelText: context.messages.imageGenerationEditPromptLabel,
                 border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
           ],
-
-          // Action buttons
           _buildActionButtons(state),
         ],
       ),
@@ -663,10 +781,15 @@ class _ImageGenerationReviewModalState
                 style: TextStyle(color: context.colorScheme.error),
               ),
               const SizedBox(height: 4),
-              Text(
-                message,
-                style: context.textTheme.bodySmall,
-                textAlign: TextAlign.center,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  message,
+                  style: context.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -676,39 +799,37 @@ class _ImageGenerationReviewModalState
   }
 
   Widget _buildActionButtons(ImageGenerationState state) {
+    if (_isSaving) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return state.when(
       idle: () => const SizedBox.shrink(),
       generating: (_) => const SizedBox.shrink(),
       success: (imageData, mimeType, prompt, _) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Reject / Edit button
           OutlinedButton.icon(
-            onPressed: () {
-              setState(() => _isEditing = !_isEditing);
-            },
+            onPressed: () => setState(() => _isEditing = !_isEditing),
             icon: Icon(_isEditing ? Icons.close : Icons.edit),
             label: Text(
               _isEditing
-                  ? 'Cancel'
+                  ? context.messages.imageGenerationCancelEdit
                   : context.messages.imageGenerationEditPromptButton,
             ),
           ),
-
-          // Regenerate (when editing)
           if (_isEditing)
             FilledButton.icon(
               onPressed: () {
                 setState(() => _isEditing = false);
                 ref
-                    .read(imageGenerationControllerProvider(widget.taskId).notifier)
-                    .generateImage(_promptController.text);
+                    .read(imageGenerationControllerProvider(_params).notifier)
+                    .generateWithPrompt(_promptController.text);
               },
               icon: const Icon(Icons.refresh),
               label: Text(context.messages.imageGenerationRetry),
             )
           else
-            // Accept button
             FilledButton.icon(
               onPressed: () => _acceptImage(imageData, mimeType),
               icon: const Icon(Icons.check),
@@ -720,17 +841,13 @@ class _ImageGenerationReviewModalState
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           OutlinedButton.icon(
-            onPressed: () {
-              setState(() => _isEditing = true);
-            },
+            onPressed: () => setState(() => _isEditing = true),
             icon: const Icon(Icons.edit),
             label: Text(context.messages.imageGenerationEditPromptButton),
           ),
           FilledButton.icon(
             onPressed: () {
-              ref
-                  .read(imageGenerationControllerProvider(widget.taskId).notifier)
-                  .retry();
+              ref.read(imageGenerationControllerProvider(_params).notifier).retry();
             },
             icon: const Icon(Icons.refresh),
             label: Text(context.messages.imageGenerationRetry),
@@ -741,98 +858,105 @@ class _ImageGenerationReviewModalState
   }
 
   Future<void> _acceptImage(Uint8List imageData, String mimeType) async {
+    setState(() => _isSaving = true);
     HapticFeedback.selectionClick();
 
-    // Save image to storage and link to task
-    final imagePasteController = ref.read(imagePasteControllerProvider.notifier);
+    try {
+      // Extract extension from mime type (e.g., 'image/png' -> 'png')
+      final extension = mimeType.split('/').last;
 
-    // Save the image bytes as a file and create a JournalImage entry
-    final imageId = await imagePasteController.saveImageFromBytes(
-      imageData,
-      mimeType: mimeType,
-      linkedFromId: widget.taskId,
-    );
-
-    if (imageId != null) {
-      // Set as cover art for the task
-      final taskController = ref.read(
-        entryControllerProvider(id: widget.taskId).notifier,
+      // Use new helper that returns the id
+      final imageId = await importImageBytesWithId(
+        data: imageData,
+        fileExtension: extension,
+        linkedId: widget.taskId,
       );
-      await taskController.setCoverArt(imageId);
-    }
 
-    if (mounted) {
-      Navigator.of(context).pop();
+      if (imageId != null) {
+        // Set as cover art for the task
+        final taskController = ref.read(
+          entryControllerProvider(id: widget.taskId).notifier,
+        );
+        await taskController.setCoverArt(imageId);
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.messages.imageGenerationSaveError(e.toString())),
+          ),
+        );
+      }
     }
   }
 }
 ```
 
-### 4.2 Add saveImageFromBytes to ImagePasteController
-**File:** `lib/features/journal/state/image_paste_controller.dart`
+### 4.2 Add Image Import Helper Function
+**File:** `lib/logic/image_import.dart`
 
-Add method to save image from bytes (extend existing controller):
+Add a variant that returns the created image id for cover art linking:
 ```dart
-/// Saves image bytes to storage and creates a JournalImage entry
+/// Imports image bytes and creates a JournalImage entry, returning the id.
 ///
-/// Returns the ID of the created JournalImage entry, or null on failure
-Future<String?> saveImageFromBytes(
-  Uint8List imageData, {
-  required String mimeType,
-  String? linkedFromId,
+/// This is a variant of [importPastedImages] that returns the created entry's id
+/// for use cases like setting cover art.
+///
+/// Note: Unlike [importPastedImages], this does NOT support [analysisTrigger]
+/// because it's designed for AI-generated images where automatic analysis
+/// would be redundant (we already know the image content from the generation
+/// prompt). If analysis is needed in the future, add the parameter.
+Future<String?> importImageBytesWithId({
+  required Uint8List data,
+  required String fileExtension,
+  String? linkedId,
+  String? categoryId,
 }) async {
-  try {
-    // Generate filename based on timestamp
-    final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-    final extension = mimeType.split('/').last;
-    final filename = 'generated_$timestamp.$extension';
-
-    // Get the images directory
-    final docDir = await getApplicationDocumentsDirectory();
-    final dateDir = DateTime.now().toIso8601String().substring(0, 10);
-    final imagesDir = Directory('${docDir.path}/images/$dateDir');
-    await imagesDir.create(recursive: true);
-
-    // Save the file
-    final file = File('${imagesDir.path}/$filename');
-    await file.writeAsBytes(imageData);
-
-    // Create JournalImage entry
-    final imageId = uuid.v1();
-    final journalImage = JournalImage(
-      meta: Metadata(
-        id: imageId,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-      ),
-      data: ImageData(
-        capturedAt: DateTime.now(),
-        imageId: imageId,
-        imageFile: filename,
-        imageDirectory: 'images/$dateDir',
-      ),
-    );
-
-    // Persist and link
-    await _journalRepo.createJournalEntity(journalImage);
-
-    if (linkedFromId != null) {
-      await _journalRepo.linkEntries(
-        fromId: linkedFromId,
-        toId: imageId,
-      );
-    }
-
-    return imageId;
-  } catch (e) {
-    developer.log(
-      'Failed to save generated image: $e',
-      name: 'ImagePasteController',
+  // Validate file size
+  if (data.length > MediaImportConstants.maxImageFileSizeBytes) {
+    getIt<LoggingService>().captureException(
+      'Image too large: ${data.length} bytes',
+      domain: MediaImportConstants.loggingDomain,
+      subDomain: 'importImageBytesWithId',
     );
     return null;
   }
+
+  // Extract original timestamp from EXIF data, fallback to current time
+  final capturedAt = await _extractImageTimestamp(data);
+  final geolocation = await extractGpsCoordinates(data, capturedAt);
+  final id = uuid.v1();
+
+  final day =
+      DateFormat(AudioRecorderConstants.directoryDateFormat).format(capturedAt);
+  final relativePath = '${MediaImportConstants.imagesDirectoryPrefix}$day/';
+  final directory = await createAssetDirectory(relativePath);
+  final targetFileName = '$id.$fileExtension';
+  final targetFilePath = '$directory$targetFileName';
+
+  final file = await File(targetFilePath).create(recursive: true);
+  await file.writeAsBytes(data);
+
+  final imageData = ImageData(
+    imageId: id,
+    imageFile: targetFileName,
+    imageDirectory: relativePath,
+    capturedAt: capturedAt,
+    geolocation: geolocation,
+  );
+
+  final journalImage = await JournalRepository.createImageEntry(
+    imageData,
+    linkedId: linkedId,
+    categoryId: categoryId,
+  );
+
+  return journalImage?.id;
 }
 ```
 
@@ -843,7 +967,6 @@ Future<String?> saveImageFromBytes(
 ### 5.1 Add "Generate Cover Art" Action to Audio Entry Menu
 **File:** `lib/features/journal/ui/widgets/entry_details/header/modern_action_items.dart`
 
-Add new action item:
 ```dart
 class ModernGenerateCoverArtItem extends ConsumerWidget {
   const ModernGenerateCoverArtItem({
@@ -857,7 +980,7 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Only show for audio entries linked to tasks
+    // Only show for audio entries linked to tasks with transcripts
     final provider = entryControllerProvider(id: entryId);
     final entry = ref.watch(provider).value?.entry;
 
@@ -870,22 +993,24 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
     final parentEntry = ref.watch(parentProvider).value?.entry;
     if (parentEntry is! Task) return const SizedBox.shrink();
 
-    // Get the transcript
-    final transcript = entry.data.transcripts.lastOrNull?.transcript;
-    if (transcript == null || transcript.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    // Check for transcript
+    final hasTranscript = entry.data.transcripts.isNotEmpty &&
+        (entry.data.transcripts.last.transcript?.isNotEmpty ?? false);
+    if (!hasTranscript) return const SizedBox.shrink();
+
+    // Check if Gemini provider with image model is configured
+    // (Could add a provider check here for better UX)
 
     return ModernModalActionItem(
       icon: Icons.auto_awesome,
-      title: context.messages.generateCoverArt,  // Add this localization
-      subtitle: context.messages.generateCoverArtSubtitle,  // Add this
+      title: context.messages.generateCoverArt,
+      subtitle: context.messages.generateCoverArtSubtitle,
       onTap: () {
         Navigator.of(context).pop();
         ImageGenerationReviewModal.show(
           context: context,
           taskId: linkedFromId,
-          initialPrompt: transcript,
+          audioEntryId: entryId,
         );
       },
     );
@@ -896,7 +1021,7 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
 ### 5.2 Add to InitialModalPageContent
 **File:** `lib/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart`
 
-Add after image prompt generation items:
+Add after existing audio-related items:
 ```dart
 ModernGenerateCoverArtItem(
   entryId: entryId,
@@ -906,36 +1031,40 @@ ModernGenerateCoverArtItem(
 
 ---
 
-## Phase 6: Future Scope (Multi-Turn Conversations)
+## Phase 6: Future Scope
 
-This phase is **NOT part of the current MVP** but should be considered in the architecture:
+**NOT part of MVP** - architectural considerations only:
 
-### 6.1 Planned Multi-Turn Features
+### 6.1 Model Thoughts Display (Follow-up Task)
+The Gemini response may include text alongside the image (model's reasoning or description). The current implementation captures this in `textDescription` but only displays it briefly. A future enhancement could:
+- Show expandable "Model Thoughts" section in review modal
+- Persist thoughts alongside the generated image
+- Use thoughts for refinement context in multi-turn conversations
+
+### 6.2 Multi-Turn Conversations
 1. **Iterative Refinement**: "Make the wizard look at the camera"
-2. **Voice Feedback Loop**: Record another voice note to refine the image
-3. **Conversation History**: Track refinement history for each generation session
+2. **Voice Feedback Loop**: Record another voice note to refine
+3. **Conversation History**: Track refinement history per session
+4. **Image Input**: Send previous image + refinement text for edits
 
-### 6.2 Architectural Considerations for Future
-- The `ImageGenerationController` can be extended to maintain conversation history
-- The modal can be extended to show refinement history
-- Image input can be added to the generation request (edit existing images)
+The `ImageGenerationController` can be extended to maintain conversation history.
 
 ---
 
 ## Testing Plan
 
 ### Unit Tests
-1. `GeminiImageGenerationRepository` - API parsing, error handling
-2. `ImageGenerationController` - State transitions
+1. `GeminiInferenceRepository.generateImage()` - API response parsing
+2. `ImageGenerationController` - State transitions, prompt building
 3. `ImageGenerationState` - Freezed equality
 
 ### Widget Tests
 1. `ImageGenerationReviewModal` - Loading, success, error states
-2. Action button behavior (accept, reject, edit, retry)
-3. Integration with task cover art assignment
+2. Action button behavior (accept, edit, retry)
+3. `ModernGenerateCoverArtItem` - Visibility conditions
 
 ### Integration Tests
-1. End-to-end flow: Voice note → Transcript → Generate → Accept → Cover art set
+1. End-to-end: Audio entry → Generate → Accept → Cover art set
 2. Error recovery and retry flows
 
 ---
@@ -945,40 +1074,47 @@ This phase is **NOT part of the current MVP** but should be considered in the ar
 ### New Files
 | File | Purpose |
 |------|---------|
-| `lib/features/ai/repository/gemini_image_generation_repository.dart` | Gemini image generation API client |
-| `lib/features/ai/providers/gemini_image_generation_provider.dart` | Riverpod provider |
 | `lib/features/ai/state/image_generation_state.dart` | Freezed state model |
-| `lib/features/ai/state/image_generation_controller.dart` | State management |
+| `lib/features/ai/state/image_generation_controller.dart` | Generation orchestration with context |
 | `lib/features/ai/ui/image_generation_review_modal.dart` | Review modal UI |
 
 ### Modified Files
 | File | Changes |
 |------|---------|
-| `lib/features/ai/util/known_models.dart` | Add Nano Banana Pro model with image output modality |
+| `lib/features/ai/util/known_models.dart` | Add Nano Banana Pro model |
 | `lib/features/ai/util/preconfigured_prompts.dart` | Add `imageGenerationPrompt` |
-| `lib/features/ai/state/consts.dart` | Add `imageGeneration` response type |
-| `lib/features/ai/repository/cloud_inference_repository.dart` | Add `generateImage` method |
-| `lib/features/journal/state/image_paste_controller.dart` | Add `saveImageFromBytes` method |
-| `lib/features/journal/ui/widgets/entry_details/header/modern_action_items.dart` | Add generate cover art item |
-| `lib/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart` | Add menu item |
+| `lib/features/ai/repository/gemini_inference_repository.dart` | Add `generateImage()` method |
+| `lib/features/ai/repository/cloud_inference_repository.dart` | Add `generateImage()` delegation |
+| `lib/logic/image_import.dart` | Add `importImageBytesWithId()` helper |
+| `lib/features/journal/ui/widgets/entry_details/header/modern_action_items.dart` | Add menu item |
+| `lib/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart` | Wire up menu item |
 | `lib/l10n/app_en.arb` | Add localization strings |
-| `lib/l10n/app_de.arb` | Add German translations |
+| `lib/l10n/app_de.arb` | Add German localization strings |
 
 ---
 
 ## Implementation Order
 
-1. **Phase 1.1**: Add Nano Banana Pro to known models (`known_models.dart`)
-2. **Phase 1.2**: Add `imageGeneration` response type (`consts.dart`)
-3. **Phase 1.3**: Add localization strings (`app_en.arb`)
-4. **Phase 1.4**: Add preconfigured prompt (`preconfigured_prompts.dart`)
+1. **Phase 1.1**: Add Nano Banana Pro to known models
+2. **Phase 1.2**: Add localization strings
+3. **Phase 1.3**: Add preconfigured prompt (with `imagePromptGeneration` response type)
+4. **Phase 2**: Extend GeminiInferenceRepository with `generateImage()`
 5. Run `fvm dart run build_runner build`
-6. **Phase 2**: Create image generation repository
-7. **Phase 3**: Create controller and state
-8. **Phase 4**: Create review modal
-9. **Phase 5**: Integration with audio entry menu
-10. Run analyzer, format, and tests
-11. Manual testing of end-to-end flow
+6. **Phase 3**: Create state and controller
+7. **Phase 4**: Create review modal with existing import pipeline
+8. **Phase 5**: Add menu item integration
+9. Run analyzer, format, and tests
+10. Manual testing of end-to-end flow
+
+---
+
+## Key Design Decisions
+
+1. **No new AiResponseType** - Reuses existing `imagePromptGeneration`, detects image capability from model's `outputModalities`
+2. **Existing import pipeline** - Uses new `importImageBytesWithId()` (adapts existing pattern, returns id for cover art)
+3. **Existing URL patterns** - Uses `GeminiUtils` for API URL construction
+4. **Model-based detection** - Finds model with `Modality.image` in `outputModalities`
+5. **Full task context** - Builds prompt using preconfigured template with `{{task}}`, `{{linked_tasks}}`, `{{audioTranscript}}`
 
 ---
 
