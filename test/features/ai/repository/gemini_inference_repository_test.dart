@@ -2334,6 +2334,346 @@ void main() {
       expect(events.first.choices!.first.delta!.content, 'Success');
     });
   });
+
+  group('generateImage', () {
+    test('successfully generates an image from prompt', () async {
+      // Base64 encoded minimal PNG (1x1 transparent pixel)
+      const base64Png =
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+      final client = _SimpleResponseClient(
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {
+                    'inlineData': {
+                      'mimeType': 'image/png',
+                      'data': base64Png,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final result = await repo.generateImage(
+        prompt: 'Generate a test image',
+        model: 'models/gemini-3-pro-image-preview',
+        provider: provider,
+      );
+
+      expect(result.mimeType, 'image/png');
+      expect(result.bytes, isNotEmpty);
+      expect(result.extension, 'png');
+    });
+
+    test('handles snake_case response format', () async {
+      const base64Png =
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+      final client = _SimpleResponseClient(
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {
+                    'inline_data': {
+                      'mime_type': 'image/jpeg',
+                      'data': base64Png,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final result = await repo.generateImage(
+        prompt: 'Generate a test image',
+        model: 'models/gemini-3-pro-image-preview',
+        provider: provider,
+      );
+
+      expect(result.mimeType, 'image/jpeg');
+      expect(result.extension, 'jpg');
+    });
+
+    test('throws exception when no candidates', () async {
+      final client = _SimpleResponseClient(
+        response: jsonEncode({'candidates': <Map<String, dynamic>>[]}),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      expect(
+        () => repo.generateImage(
+          prompt: 'test',
+          model: 'models/gemini-3-pro-image-preview',
+          provider: provider,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('No candidates'),
+          ),
+        ),
+      );
+    });
+
+    test('throws exception when no image data in response', () async {
+      final client = _SimpleResponseClient(
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {'text': 'No image here'},
+                ],
+              },
+            },
+          ],
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      expect(
+        () => repo.generateImage(
+          prompt: 'test',
+          model: 'models/gemini-3-pro-image-preview',
+          provider: provider,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('No image data'),
+          ),
+        ),
+      );
+    });
+
+    test('throws exception on HTTP error', () async {
+      final client =
+          _ErrorClient(statusCode: 400, body: '{"error": "Bad request"}');
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      expect(
+        () => repo.generateImage(
+          prompt: 'test',
+          model: 'models/gemini-3-pro-image-preview',
+          provider: provider,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('400'),
+          ),
+        ),
+      );
+    });
+
+    test('includes system message when provided', () async {
+      const base64Png =
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+      http.BaseRequest? capturedRequest;
+      final client = _RequestCapturingClient(
+        onRequest: (req) => capturedRequest = req,
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {
+                    'inlineData': {
+                      'mimeType': 'image/png',
+                      'data': base64Png,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await repo.generateImage(
+        prompt: 'Generate a test image',
+        model: 'models/gemini-3-pro-image-preview',
+        provider: provider,
+        systemMessage: 'You are an artist',
+      );
+
+      expect(capturedRequest, isNotNull);
+      final body = (capturedRequest! as http.Request).body;
+      expect(body, contains('You are an artist'));
+      expect(body, contains('systemInstruction'));
+    });
+
+    test('default MIME type when not specified', () async {
+      const base64Png =
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+      final client = _SimpleResponseClient(
+        response: jsonEncode({
+          'candidates': [
+            {
+              'content': {
+                'parts': [
+                  {
+                    'inlineData': {
+                      'data': base64Png,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+
+      final repo = GeminiInferenceRepository(httpClient: client);
+      final provider = AiConfigInferenceProvider(
+        id: 'prov',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        apiKey: 'test-key',
+        name: 'Gemini',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      final result = await repo.generateImage(
+        prompt: 'test',
+        model: 'models/gemini-3-pro-image-preview',
+        provider: provider,
+      );
+
+      // Defaults to image/png when not specified
+      expect(result.mimeType, 'image/png');
+    });
+  });
+
+  group('GeneratedImage', () {
+    test('extension returns correct values', () {
+      expect(
+        const GeneratedImage(bytes: [], mimeType: 'image/png').extension,
+        'png',
+      );
+      expect(
+        const GeneratedImage(bytes: [], mimeType: 'image/jpeg').extension,
+        'jpg',
+      );
+      expect(
+        const GeneratedImage(bytes: [], mimeType: 'image/gif').extension,
+        'gif',
+      );
+      expect(
+        const GeneratedImage(bytes: [], mimeType: 'image/webp').extension,
+        'webp',
+      );
+      expect(
+        const GeneratedImage(bytes: [], mimeType: 'unknown').extension,
+        'png',
+      );
+    });
+  });
+}
+
+/// Simple response client for non-streaming tests
+class _SimpleResponseClient extends http.BaseClient {
+  _SimpleResponseClient({required this.response});
+
+  final String response;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final bytes = utf8.encode(response);
+    final stream = Stream<List<int>>.fromIterable([bytes]);
+    return http.StreamedResponse(stream, 200, headers: {
+      'content-type': 'application/json',
+    });
+  }
+}
+
+/// Error client for testing error handling
+class _ErrorClient extends http.BaseClient {
+  _ErrorClient({required this.statusCode, required this.body});
+
+  final int statusCode;
+  final String body;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final bytes = utf8.encode(body);
+    final stream = Stream<List<int>>.fromIterable([bytes]);
+    return http.StreamedResponse(stream, statusCode, headers: {
+      'content-type': 'application/json',
+    });
+  }
 }
 
 /// Test client with Retry-After header support

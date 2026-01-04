@@ -229,8 +229,8 @@ void main() {
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
-      // 2:1 aspect ratio: 400 / 2 = 200
-      expect(appBar.expandedHeight, 200);
+      // 16:9 aspect ratio: 400 * 9 / 16 = 225
+      expect(appBar.expandedHeight, 225);
     });
 
     testWidgets('contains FlexibleSpaceBar', (tester) async {

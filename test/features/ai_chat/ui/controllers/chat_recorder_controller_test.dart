@@ -116,14 +116,22 @@ void main() {
   });
 
   setUp(() {
-    // Ensure logging is available to avoid getIt lookup errors
-    if (!getIt.isRegistered<LoggingService>()) {
-      getIt.registerSingleton<LoggingService>(_FakeLoggingService());
+    // Ensure logging is available to avoid getIt lookup errors.
+    // Always reset to _FakeLoggingService to ensure consistent state.
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
     }
+    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
   });
 
-  // Intentionally keep LoggingService registered across tests to avoid
-  // late-dispose races during async cleanup.
+  tearDown(() async {
+    // Clean up GetIt state to prevent cross-test contamination
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+    // Allow async cleanup to complete
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  });
 
   test('start() without permission sets errorType and message', () async {
     final mockRecorder = _MockAudioRecorder();
@@ -512,12 +520,9 @@ void main() {
 
   test('stopAndTranscribe logs when recorder.stop throws', () async {
     final mockLogger = _MockLoggingService();
-    if (!getIt.isRegistered<LoggingService>()) {
-      getIt.registerSingleton<LoggingService>(mockLogger);
-    } else {
-      getIt.unregister<LoggingService>();
-      getIt.registerSingleton<LoggingService>(mockLogger);
-    }
+    // Replace the fake with a mock for verification
+    getIt.unregister<LoggingService>();
+    getIt.registerSingleton<LoggingService>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
@@ -563,12 +568,9 @@ void main() {
 
   test('cancel logs when ampSub.cancel and recorder.stop throw', () async {
     final mockLogger = _MockLoggingService();
-    if (!getIt.isRegistered<LoggingService>()) {
-      getIt.registerSingleton<LoggingService>(mockLogger);
-    } else {
-      getIt.unregister<LoggingService>();
-      getIt.registerSingleton<LoggingService>(mockLogger);
-    }
+    // Replace the fake with a mock for verification
+    getIt.unregister<LoggingService>();
+    getIt.registerSingleton<LoggingService>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();
@@ -621,12 +623,9 @@ void main() {
 
   test('cleanup logs when file/dir are missing (PathNotFound)', () async {
     final mockLogger = _MockLoggingService();
-    if (!getIt.isRegistered<LoggingService>()) {
-      getIt.registerSingleton<LoggingService>(mockLogger);
-    } else {
-      getIt.unregister<LoggingService>();
-      getIt.registerSingleton<LoggingService>(mockLogger);
-    }
+    // Replace the fake with a mock for verification
+    getIt.unregister<LoggingService>();
+    getIt.registerSingleton<LoggingService>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
     final mockRecorder = _MockAudioRecorder();

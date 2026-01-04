@@ -969,6 +969,18 @@ abstract class AppLocalizations {
   /// **'Reasoning'**
   String get aiSettingsReasoningLabel;
 
+  /// No description provided for @aiSettingsAddedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get aiSettingsAddedLabel;
+
+  /// No description provided for @aiSettingsAddModelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this model to your provider'**
+  String get aiSettingsAddModelTooltip;
+
   /// No description provided for @aiSettingsSearchHint.
   ///
   /// In en, this message translates to:
@@ -5577,6 +5589,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to send invite. Please try again later.'**
   String get syncInviteErrorUnknown;
+
+  /// No description provided for @imageGenerationModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated Image'**
+  String get imageGenerationModalTitle;
+
+  /// No description provided for @imageGenerationAcceptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept as Cover Art'**
+  String get imageGenerationAcceptButton;
+
+  /// No description provided for @imageGenerationEditPromptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Prompt'**
+  String get imageGenerationEditPromptButton;
+
+  /// No description provided for @imageGenerationEditPromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit prompt'**
+  String get imageGenerationEditPromptLabel;
+
+  /// No description provided for @imageGenerationCancelEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get imageGenerationCancelEdit;
+
+  /// No description provided for @imageGenerationGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating image...'**
+  String get imageGenerationGenerating;
+
+  /// No description provided for @imageGenerationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate image'**
+  String get imageGenerationError;
+
+  /// No description provided for @imageGenerationSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save image: {error}'**
+  String imageGenerationSaveError(String error);
+
+  /// No description provided for @imageGenerationRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get imageGenerationRetry;
+
+  /// No description provided for @generateCoverArt.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Cover Art'**
+  String get generateCoverArt;
+
+  /// No description provided for @generateCoverArtSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create image from voice description'**
+  String get generateCoverArtSubtitle;
 }
 
 class _AppLocalizationsDelegate

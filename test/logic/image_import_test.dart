@@ -1693,6 +1693,229 @@ void main() {
     });
   });
 
+  group('importGeneratedImageBytes', () {
+    test('rejects images exceeding size limit and returns null', () async {
+      // Create data larger than the limit
+      final oversizedData = Uint8List(
+        MediaImportConstants.maxImageFileSizeBytes + 1,
+      );
+
+      // Should return null without throwing
+      final result = await importGeneratedImageBytes(
+        data: oversizedData,
+        fileExtension: 'png',
+        linkedId: 'test-id',
+        categoryId: 'category-id',
+      );
+
+      // Verify null is returned
+      expect(result, isNull);
+
+      // Verify that an exception was logged
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(that: contains('too large')),
+          domain: MediaImportConstants.loggingDomain,
+          subDomain: 'importGeneratedImageBytes',
+        ),
+      ).called(1);
+    });
+
+    test('accepts images within size limit and returns id', () async {
+      // Create data within the limit (small file)
+      final validData = Uint8List(1000); // 1KB file
+
+      // Should succeed and return an ID
+      final result = await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'png',
+        linkedId: 'test-id',
+        categoryId: 'category-id',
+      );
+
+      // Verify an ID is returned
+      expect(result, equals('test-id'));
+
+      // Verify that NO size-related exception was logged
+      verifyNever(
+        () => mockLoggingService.captureException(
+          any<Object>(that: contains('too large')),
+          domain: MediaImportConstants.loggingDomain,
+          subDomain: 'importGeneratedImageBytes',
+        ),
+      );
+    });
+
+    test('passes linkedId to createImageEntry', () async {
+      final validData = Uint8List(1000);
+      const linkedId = 'parent-task-123';
+
+      await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'png',
+        linkedId: linkedId,
+      );
+
+      // Verify the linkedId was passed correctly
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalImage>()),
+          linkedId: captureAny(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          addTags: any(named: 'addTags'),
+        ),
+      ).captured;
+
+      expect(captured[0], isA<JournalImage>());
+      expect(captured[1], equals(linkedId));
+    });
+
+    test('returns null when entry creation throws exception', () async {
+      final validData = Uint8List(1000);
+
+      // Reset and re-setup mock to throw an exception
+      reset(mockPersistenceLogic);
+
+      // Re-setup metadata mock to throw
+      when(
+        () => mockPersistenceLogic.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+          flag: any(named: 'flag'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenThrow(Exception('Database error'));
+
+      final result = await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'png',
+        linkedId: 'test-id',
+      );
+
+      // Should return null when creation throws
+      expect(result, isNull);
+    });
+
+    test('uses provided file extension in filename', () async {
+      final validData = Uint8List(1000);
+
+      await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'jpg',
+        linkedId: 'test-id',
+      );
+
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          addTags: any(named: 'addTags'),
+        ),
+      ).captured.single as JournalImage;
+
+      expect(captured.data.imageFile, endsWith('.jpg'));
+    });
+
+    test('creates image in date-based directory', () async {
+      final validData = Uint8List(1000);
+
+      await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'png',
+      );
+
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          addTags: any(named: 'addTags'),
+        ),
+      ).captured.single as JournalImage;
+
+      // Directory should start with /images/ and have date format
+      expect(captured.data.imageDirectory, startsWith('/images/'));
+      expect(
+        captured.data.imageDirectory,
+        matches(RegExp(r'^/images/\d{4}-\d{2}-\d{2}/$')),
+      );
+    });
+
+    test('exactly at size limit should pass', () async {
+      // Create data exactly at the limit
+      final exactLimitData = Uint8List(
+        MediaImportConstants.maxImageFileSizeBytes,
+      );
+
+      final result = await importGeneratedImageBytes(
+        data: exactLimitData,
+        fileExtension: 'png',
+      );
+
+      // Should succeed (not rejected due to size)
+      expect(result, equals('test-id'));
+
+      // Should NOT log size error for file at exactly the limit
+      verifyNever(
+        () => mockLoggingService.captureException(
+          any<Object>(that: contains('too large')),
+          domain: MediaImportConstants.loggingDomain,
+          subDomain: 'importGeneratedImageBytes',
+        ),
+      );
+    });
+
+    test('supports different file extensions', () async {
+      final validData = Uint8List(500);
+
+      // Test with PNG
+      await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'png',
+      );
+
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(
+          captureAny(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          addTags: any(named: 'addTags'),
+        ),
+      ).captured.last as JournalImage;
+
+      expect(captured.data.imageFile, endsWith('.png'));
+    });
+
+    test('works without linkedId or categoryId', () async {
+      final validData = Uint8List(500);
+
+      final result = await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'png',
+      );
+
+      // Should still succeed
+      expect(result, equals('test-id'));
+
+      // Verify createDbEntity was called (linkedId defaults to null when not provided)
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId', that: isNull),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          addTags: any(named: 'addTags'),
+        ),
+      ).called(1);
+    });
+  });
+
   group('handleDroppedMedia', () {
     Future<File> createTestFile(String filename, int sizeBytes) async {
       final file = File(path.join(tempDir.path, filename));

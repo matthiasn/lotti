@@ -8,7 +8,7 @@ import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 
 /// Expandable app bar for tasks with cover art.
 ///
-/// Displays a SliverAppBar with a 2:1 cinematic aspect ratio cover image,
+/// Displays a SliverAppBar with a 16:9 aspect ratio cover image,
 /// glass-styled back button and action buttons.
 class TaskExpandableAppBar extends StatelessWidget {
   const TaskExpandableAppBar({
@@ -22,8 +22,8 @@ class TaskExpandableAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 2:1 cinematic aspect ratio: height = width / 2
-    final expandedHeight = MediaQuery.of(context).size.width / 2;
+    // 16:9 aspect ratio to match generated cover art
+    final expandedHeight = MediaQuery.of(context).size.width * 9 / 16;
 
     return SliverAppBar(
       expandedHeight: expandedHeight,

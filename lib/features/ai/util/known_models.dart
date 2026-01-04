@@ -104,6 +104,16 @@ const List<KnownModel> gemma3nModels = [
 /// Gemini models - Google's multimodal AI models
 const List<KnownModel> geminiModels = [
   KnownModel(
+    providerModelId: 'models/gemini-3-pro-image-preview',
+    name: 'Gemini 3 Pro Image (Nano Banana Pro)',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text, Modality.image],
+    isReasoningModel: false,
+    description:
+        'High-quality image generation model for cover art and visual mnemonics. '
+        'Generates images directly from task context and voice descriptions.',
+  ),
+  KnownModel(
     providerModelId: 'models/gemini-3-pro-preview',
     name: 'Gemini 3 Pro Preview',
     inputModalities: [Modality.text, Modality.image, Modality.audio],

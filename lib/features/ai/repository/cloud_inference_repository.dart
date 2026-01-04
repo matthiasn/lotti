@@ -468,6 +468,51 @@ class CloudInferenceRepository {
   /// Install a model in Ollama with progress tracking
   Stream<OllamaPullProgress> installModel(String modelName, String baseUrl) =>
       _ollamaRepository.installModel(modelName, baseUrl);
+
+  // -------------------------------------------------------------------------
+  // Image generation
+  // -------------------------------------------------------------------------
+
+  /// Generates an image using the Gemini image generation API.
+  ///
+  /// This method currently only supports Gemini providers with image output
+  /// capability (models with Modality.image in outputModalities).
+  ///
+  /// Parameters:
+  /// - [prompt]: The text prompt describing the image to generate.
+  /// - [model]: The model ID (e.g., 'models/gemini-3-pro-image-preview').
+  /// - [provider]: The inference provider configuration (must be Gemini).
+  /// - [systemMessage]: Optional system instruction for guiding generation.
+  ///
+  /// Returns a [GeneratedImage] containing the image bytes and MIME type.
+  /// Throws an exception if the provider doesn't support image generation.
+  Future<GeneratedImage> generateImage({
+    required String prompt,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    String? systemMessage,
+  }) async {
+    if (provider.inferenceProviderType != InferenceProviderType.gemini) {
+      throw UnsupportedError(
+        'Image generation is only supported for Gemini providers',
+      );
+    }
+
+    developer.log(
+      'CloudInferenceRepository.generateImage called with:\n'
+      '  model: $model\n'
+      '  provider: ${provider.inferenceProviderType}\n'
+      '  promptLength: ${prompt.length}',
+      name: 'CloudInferenceRepository',
+    );
+
+    return _geminiRepository.generateImage(
+      prompt: prompt,
+      model: model,
+      provider: provider,
+      systemMessage: systemMessage,
+    );
+  }
 }
 
 @riverpod

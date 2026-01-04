@@ -511,5 +511,22 @@
   "coverArtChipSet": "Titelbild setzen",
   "coverArtChipActive": "Titelbild",
   "coverArtAssign": "Als Titelbild setzen",
-  "coverArtRemove": "Titelbild entfernen"
+  "coverArtRemove": "Titelbild entfernen",
+
+  "imageGenerationModalTitle": "Generiertes Bild",
+  "imageGenerationAcceptButton": "Als Cover übernehmen",
+  "imageGenerationEditPromptButton": "Prompt bearbeiten",
+  "imageGenerationEditPromptLabel": "Prompt bearbeiten",
+  "imageGenerationCancelEdit": "Abbrechen",
+  "imageGenerationGenerating": "Bild wird generiert...",
+  "imageGenerationError": "Bildgenerierung fehlgeschlagen",
+  "imageGenerationSaveError": "Bild konnte nicht gespeichert werden: {error}",
+  "@imageGenerationSaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "imageGenerationRetry": "Wiederholen",
+  "generateCoverArt": "Cover generieren",
+  "generateCoverArtSubtitle": "Bild aus Sprachbeschreibung erstellen"
 }

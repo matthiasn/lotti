@@ -86,7 +86,7 @@ jobs:
         env:
           CLEAN_AFTER_GEN: "false"  # Keep build artifacts for the verification step
         run: |
-          DOWNLOAD_MISSING_SOURCES=false ./flatpak/prepare_flathub_submission.sh
+          ./flatpak/prepare_flathub_submission.sh
 
       - name: Debug prepared artifacts contents
         run: |

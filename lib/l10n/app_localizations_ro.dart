@@ -493,6 +493,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsReasoningLabel => 'Reasoning';
 
   @override
+  String get aiSettingsAddedLabel => 'Added';
+
+  @override
+  String get aiSettingsAddModelTooltip => 'Add this model to your provider';
+
+  @override
   String get aiSettingsSearchHint => 'Search AI configurations...';
 
   @override
@@ -2997,4 +3003,40 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get syncInviteErrorUnknown =>
       'Invitația nu a putut fi trimisă. Încercați din nou mai târziu.';
+
+  @override
+  String get imageGenerationModalTitle => 'Imagine generată';
+
+  @override
+  String get imageGenerationAcceptButton => 'Acceptă ca copertă';
+
+  @override
+  String get imageGenerationEditPromptButton => 'Editează promptul';
+
+  @override
+  String get imageGenerationEditPromptLabel => 'Editează promptul';
+
+  @override
+  String get imageGenerationCancelEdit => 'Anulează';
+
+  @override
+  String get imageGenerationGenerating => 'Se generează imaginea...';
+
+  @override
+  String get imageGenerationError => 'Generarea imaginii a eșuat';
+
+  @override
+  String imageGenerationSaveError(String error) {
+    return 'Salvarea imaginii a eșuat: $error';
+  }
+
+  @override
+  String get imageGenerationRetry => 'Reîncearcă';
+
+  @override
+  String get generateCoverArt => 'Generează copertă';
+
+  @override
+  String get generateCoverArtSubtitle =>
+      'Creează imagine din descrierea vocală';
 }

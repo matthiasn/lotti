@@ -121,6 +121,8 @@ class _ResponseTypeSelectionModalState
         return Icons.auto_fix_high_outlined;
       case AiResponseType.imagePromptGeneration:
         return Icons.palette_outlined;
+      case AiResponseType.imageGeneration:
+        return Icons.auto_awesome_outlined;
     }
   }
 }

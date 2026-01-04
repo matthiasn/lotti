@@ -604,6 +604,99 @@ void main() {
     });
   });
 
+  group('GeminiUtils.buildImageGenerationRequestBody', () {
+    test('creates request with prompt and image output modalities', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'A beautiful sunset over mountains',
+      );
+
+      expect(body['contents'], isA<List<dynamic>>());
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      expect(contents.length, 1);
+      expect(contents.first['role'], 'user');
+
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      expect(parts.first['text'], 'A beautiful sunset over mountains');
+
+      final generationConfig = body['generationConfig'] as Map<String, dynamic>;
+      expect(generationConfig['responseModalities'], ['IMAGE', 'TEXT']);
+      final imageConfig =
+          generationConfig['imageConfig'] as Map<String, dynamic>;
+      expect(imageConfig['aspectRatio'], '16:9');
+    });
+
+    test('includes system instruction when provided', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate an image',
+        systemMessage: 'You are an image generator',
+      );
+
+      expect(body.containsKey('systemInstruction'), isTrue);
+      final systemInstruction =
+          body['systemInstruction'] as Map<String, dynamic>;
+      expect(systemInstruction['role'], 'system');
+
+      final parts =
+          (systemInstruction['parts'] as List).cast<Map<String, dynamic>>();
+      expect(parts.first['text'], 'You are an image generator');
+    });
+
+    test('omits system instruction when empty', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate an image',
+        systemMessage: '   ',
+      );
+
+      expect(body.containsKey('systemInstruction'), isFalse);
+    });
+
+    test('omits system instruction when null', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate an image',
+      );
+
+      expect(body.containsKey('systemInstruction'), isFalse);
+    });
+
+    test('uses 16:9 aspect ratio for cover art in imageConfig', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate cover art',
+      );
+
+      final generationConfig = body['generationConfig'] as Map<String, dynamic>;
+      final imageConfig =
+          generationConfig['imageConfig'] as Map<String, dynamic>;
+      expect(imageConfig['aspectRatio'], '16:9');
+    });
+
+    test('uses 2K resolution for Full HD quality in imageConfig', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate cover art',
+      );
+
+      final generationConfig = body['generationConfig'] as Map<String, dynamic>;
+      final imageConfig =
+          generationConfig['imageConfig'] as Map<String, dynamic>;
+      expect(imageConfig['imageSize'], '2K');
+    });
+
+    test('imageConfig contains both aspectRatio and imageSize', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate a beautiful landscape',
+      );
+
+      final generationConfig = body['generationConfig'] as Map<String, dynamic>;
+      expect(generationConfig.containsKey('imageConfig'), isTrue);
+
+      final imageConfig =
+          generationConfig['imageConfig'] as Map<String, dynamic>;
+      expect(imageConfig.length, 2);
+      expect(imageConfig['aspectRatio'], '16:9');
+      expect(imageConfig['imageSize'], '2K');
+    });
+  });
+
   group('GeminiUtils.stripLeadingFraming', () {
     test('removes SSE data: lines and JSON array wrappers', () {
       const input = 'data: test\n  data: ignore\n [ {"a":1} , {"b":2}]';

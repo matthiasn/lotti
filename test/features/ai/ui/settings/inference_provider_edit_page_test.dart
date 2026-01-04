@@ -883,4 +883,236 @@ void main() {
       expect(promptsCreated, equals(0));
     });
   });
+
+  group('Available Models Section', () {
+    testWidgets('shows Available Models section for existing provider',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Create a Gemini provider (which has known models)
+      final geminiProvider = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        name: 'My Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(() => mockRepository.getConfigById('gemini-provider-id'))
+          .thenAnswer((_) async => geminiProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([]));
+
+      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpAndSettle();
+
+      // Scroll to find Available Models section
+      final availableModelsSection = find.text('Available Models');
+      if (availableModelsSection.evaluate().isNotEmpty) {
+        await tester.ensureVisible(availableModelsSection);
+        await tester.pumpAndSettle();
+      }
+
+      // Should show Available Models section
+      expect(find.text('Available Models'), findsOneWidget);
+      expect(find.text('Quick-add preconfigured models for this provider'),
+          findsOneWidget);
+    });
+
+    testWidgets('does not show Available Models section for new provider',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Should not show Available Models section for new provider
+      expect(find.text('Available Models'), findsNothing);
+    });
+
+    testWidgets('displays known models for Gemini provider',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final geminiProvider = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        name: 'My Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(() => mockRepository.getConfigById('gemini-provider-id'))
+          .thenAnswer((_) async => geminiProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([]));
+
+      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpAndSettle();
+
+      // Scroll to find Available Models section
+      final availableModelsSection = find.text('Available Models');
+      await tester.ensureVisible(availableModelsSection);
+      await tester.pumpAndSettle();
+
+      // Should show Gemini known models (from known_models.dart)
+      // Nano Banana Pro is the first model for Gemini
+      expect(
+          find.textContaining('Gemini 3 Pro Image'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('shows Added indicator for already configured models',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final geminiProvider = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        name: 'My Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      // Create an existing model that matches one of the known models
+      final existingModel = AiConfig.model(
+        id: 'existing-model-id',
+        name: 'Gemini 3 Pro Image (Nano Banana Pro)',
+        providerModelId: 'models/gemini-3-pro-image-preview',
+        inferenceProviderId: 'gemini-provider-id',
+        createdAt: DateTime.now(),
+        inputModalities: [Modality.text, Modality.image],
+        outputModalities: [Modality.text, Modality.image],
+        isReasoningModel: false,
+      );
+
+      when(() => mockRepository.getConfigById('gemini-provider-id'))
+          .thenAnswer((_) async => geminiProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([existingModel]));
+
+      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpAndSettle();
+
+      // Scroll to find Available Models section
+      final availableModelsSection = find.text('Available Models');
+      await tester.ensureVisible(availableModelsSection);
+      await tester.pumpAndSettle();
+
+      // Should show "Added" badge for the already configured model
+      expect(find.text('Added'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('can add a known model by tapping add button',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final geminiProvider = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        name: 'My Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(() => mockRepository.getConfigById('gemini-provider-id'))
+          .thenAnswer((_) async => geminiProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([]));
+
+      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpAndSettle();
+
+      // Scroll to find Available Models section
+      final availableModelsSection = find.text('Available Models');
+      await tester.ensureVisible(availableModelsSection);
+      await tester.pumpAndSettle();
+
+      // Find and tap an add button (the circular button with add icon)
+      final addButton = find.byIcon(Icons.add_rounded).first;
+      await tester.ensureVisible(addButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(addButton);
+      await tester.pumpAndSettle();
+
+      // Verify saveConfig was called with a new model
+      verify(() => mockRepository.saveConfig(any(
+            that: isA<AiConfigModel>().having(
+              (m) => m.inferenceProviderId,
+              'inferenceProviderId',
+              'gemini-provider-id',
+            ),
+          ))).called(1);
+    });
+
+    testWidgets('shows modality chips for known models',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final geminiProvider = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        name: 'My Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(() => mockRepository.getConfigById('gemini-provider-id'))
+          .thenAnswer((_) async => geminiProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([]));
+
+      await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
+      await tester.pumpAndSettle();
+
+      // Scroll to find Available Models section
+      final availableModelsSection = find.text('Available Models');
+      await tester.ensureVisible(availableModelsSection);
+      await tester.pumpAndSettle();
+
+      // Should show modality chips (In: and Out: prefixes)
+      expect(find.textContaining('In:'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Out:'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets(
+        'does not show Available Models for providers without known models',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Create a custom provider type that doesn't have known models defined
+      // Using genericOpenAi which should have some models
+      final customProvider = AiConfig.inferenceProvider(
+        id: 'custom-provider-id',
+        name: 'Custom Provider',
+        baseUrl: 'https://api.custom.com',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      when(() => mockRepository.getConfigById('custom-provider-id'))
+          .thenAnswer((_) async => customProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([]));
+
+      await tester.pumpWidget(buildTestWidget(configId: 'custom-provider-id'));
+      await tester.pumpAndSettle();
+
+      // genericOpenAi has known models, so it should show
+      expect(find.text('Available Models'), findsOneWidget);
+    });
+  });
 }

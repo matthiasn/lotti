@@ -464,5 +464,24 @@
   "coverArtChipSet": "Establecer portada",
   "coverArtChipActive": "Portada",
   "coverArtAssign": "Establecer como imagen de portada",
-  "coverArtRemove": "Eliminar imagen de portada"
+  "coverArtRemove": "Eliminar imagen de portada",
+
+  "imageGenerationModalTitle": "Imagen generada",
+  "imageGenerationAcceptButton": "Aceptar como portada",
+  "imageGenerationEditPromptButton": "Editar prompt",
+  "imageGenerationEditPromptLabel": "Editar prompt",
+  "imageGenerationCancelEdit": "Cancelar",
+  "imageGenerationGenerating": "Generando imagen...",
+  "imageGenerationError": "Error al generar imagen",
+  "imageGenerationSaveError": "Error al guardar imagen: {error}",
+  "@imageGenerationSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "imageGenerationRetry": "Reintentar",
+  "generateCoverArt": "Generar portada",
+  "generateCoverArtSubtitle": "Crear imagen desde descripción de voz"
 }

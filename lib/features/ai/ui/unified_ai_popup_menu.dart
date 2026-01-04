@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -92,6 +96,16 @@ class UnifiedAiModal {
             name: 'UnifiedAiPopUpMenu',
           );
 
+          // Handle image generation separately
+          if (prompt.aiResponseType == AiResponseType.imageGeneration) {
+            await _handleImageGeneration(
+              context: context,
+              journalEntity: journalEntity,
+              ref: ref,
+            );
+            return;
+          }
+
           final targetLinkedEntityId =
               journalEntity is Task ? linkedFromId : journalEntity.id;
 
@@ -121,6 +135,74 @@ class UnifiedAiModal {
       ),
       title: context.messages.aiAssistantTitle,
       padding: const EdgeInsets.symmetric(vertical: 20),
+    );
+  }
+
+  /// Handles image generation prompts separately from the unified inference flow.
+  ///
+  /// Image generation requires the ImageGenerationReviewModal for reviewing
+  /// and accepting generated images. The modal builds the full prompt using
+  /// PromptBuilderHelper for complete task context (including checklists,
+  /// labels, linked tasks, etc.).
+  static Future<void> _handleImageGeneration({
+    required BuildContext context,
+    required JournalEntity journalEntity,
+    required WidgetRef ref,
+  }) async {
+    // Image generation should only be triggered from audio entries
+    if (journalEntity is! JournalAudio) {
+      developer.log(
+        'Image generation triggered from non-audio entry: ${journalEntity.runtimeType}',
+        name: 'UnifiedAiPopUpMenu',
+      );
+      return;
+    }
+
+    final audioEntry = journalEntity;
+
+    // Get the linked task to determine categoryId
+    // Links can exist in either direction depending on how the entry was created:
+    // 1. entry → task (entry links TO task) - when entry explicitly references a task
+    // 2. task → entry (task links TO entry) - when entry is added as a child of task
+    // We check both directions, matching PromptBuilderHelper._findLinkedTask behavior.
+    final journalRepo = ref.read(journalRepositoryProvider);
+
+    // First try: find tasks that this entry links TO (entry → task)
+    final linkedEntities =
+        await journalRepo.getLinkedEntities(linkedTo: audioEntry.id);
+    var linkedTask = linkedEntities.whereType<Task>().firstOrNull;
+
+    // Fallback: find tasks that link TO this entry (task → entry)
+    if (linkedTask == null) {
+      final fallbackEntities =
+          await journalRepo.getLinkedToEntities(linkedTo: audioEntry.id);
+      linkedTask = fallbackEntities.whereType<Task>().firstOrNull;
+    }
+
+    if (linkedTask == null) {
+      developer.log(
+        'No linked task found for audio entry: ${audioEntry.id}',
+        name: 'UnifiedAiPopUpMenu',
+      );
+      return;
+    }
+
+    developer.log(
+      'Opening image generation modal for audio: ${audioEntry.id}, '
+      'task: ${linkedTask.id}',
+      name: 'UnifiedAiPopUpMenu',
+    );
+
+    // Check if context is still valid after async operations
+    if (!context.mounted) return;
+
+    // Show the image generation review modal
+    // The modal handles prompt building with full context via PromptBuilderHelper
+    await ImageGenerationReviewModal.show(
+      context: context,
+      entityId: audioEntry.id,
+      linkedTaskId: linkedTask.id,
+      categoryId: linkedTask.meta.categoryId,
     );
   }
 }

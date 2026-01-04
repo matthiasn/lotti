@@ -464,5 +464,24 @@
   "coverArtChipSet": "Setează coperta",
   "coverArtChipActive": "Copertă",
   "coverArtAssign": "Setează ca imagine de copertă",
-  "coverArtRemove": "Elimină ca imagine de copertă"
+  "coverArtRemove": "Elimină ca imagine de copertă",
+
+  "imageGenerationModalTitle": "Imagine generată",
+  "imageGenerationAcceptButton": "Acceptă ca copertă",
+  "imageGenerationEditPromptButton": "Editează promptul",
+  "imageGenerationEditPromptLabel": "Editează promptul",
+  "imageGenerationCancelEdit": "Anulează",
+  "imageGenerationGenerating": "Se generează imaginea...",
+  "imageGenerationError": "Generarea imaginii a eșuat",
+  "imageGenerationSaveError": "Salvarea imaginii a eșuat: {error}",
+  "@imageGenerationSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "imageGenerationRetry": "Reîncearcă",
+  "generateCoverArt": "Generează copertă",
+  "generateCoverArtSubtitle": "Creează imagine din descrierea vocală"
 }

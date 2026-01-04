@@ -494,6 +494,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiSettingsReasoningLabel => 'Reasoning';
 
   @override
+  String get aiSettingsAddedLabel => 'Added';
+
+  @override
+  String get aiSettingsAddModelTooltip => 'Add this model to your provider';
+
+  @override
   String get aiSettingsSearchHint => 'Search AI configurations...';
 
   @override
@@ -3019,4 +3025,40 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get syncInviteErrorUnknown =>
       'No se pudo enviar la invitación. Por favor, inténtelo más tarde.';
+
+  @override
+  String get imageGenerationModalTitle => 'Imagen generada';
+
+  @override
+  String get imageGenerationAcceptButton => 'Aceptar como portada';
+
+  @override
+  String get imageGenerationEditPromptButton => 'Editar prompt';
+
+  @override
+  String get imageGenerationEditPromptLabel => 'Editar prompt';
+
+  @override
+  String get imageGenerationCancelEdit => 'Cancelar';
+
+  @override
+  String get imageGenerationGenerating => 'Generando imagen...';
+
+  @override
+  String get imageGenerationError => 'Error al generar imagen';
+
+  @override
+  String imageGenerationSaveError(String error) {
+    return 'Error al guardar imagen: $error';
+  }
+
+  @override
+  String get imageGenerationRetry => 'Reintentar';
+
+  @override
+  String get generateCoverArt => 'Generar portada';
+
+  @override
+  String get generateCoverArtSubtitle =>
+      'Crear imagen desde descripción de voz';
 }

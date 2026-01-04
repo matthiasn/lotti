@@ -8,6 +8,7 @@ const audioTranscriptionConst = 'AudioTranscription';
 const checklistUpdatesConst = 'ChecklistUpdates';
 const promptGenerationConst = 'PromptGeneration';
 const imagePromptGenerationConst = 'ImagePromptGeneration';
+const imageGenerationConst = 'ImageGeneration';
 
 // Ollama API constants
 const ollamaChatEndpoint = '/api/chat';
@@ -41,6 +42,8 @@ enum AiResponseType {
   promptGeneration,
   @JsonValue(imagePromptGenerationConst)
   imagePromptGeneration,
+  @JsonValue(imageGenerationConst)
+  imageGeneration,
 }
 
 extension AiResponseTypeDisplay on AiResponseType {
@@ -59,6 +62,8 @@ extension AiResponseTypeDisplay on AiResponseType {
         return l10n.aiResponseTypePromptGeneration;
       case AiResponseType.imagePromptGeneration:
         return l10n.aiResponseTypeImagePromptGeneration;
+      case AiResponseType.imageGeneration:
+        return l10n.generateCoverArt;
     }
   }
 
@@ -77,6 +82,8 @@ extension AiResponseTypeDisplay on AiResponseType {
         return Icons.auto_fix_high_outlined;
       case AiResponseType.imagePromptGeneration:
         return Icons.palette_outlined;
+      case AiResponseType.imageGeneration:
+        return Icons.auto_awesome_outlined;
     }
   }
 
