@@ -1903,10 +1903,11 @@ void main() {
       // Should still succeed
       expect(result, equals('test-id'));
 
-      // Verify null was passed for linkedId
+      // Verify createDbEntity was called (linkedId defaults to null when not provided)
       verify(
         () => mockPersistenceLogic.createDbEntity(
           any(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId', that: isNull),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
           addTags: any(named: 'addTags'),

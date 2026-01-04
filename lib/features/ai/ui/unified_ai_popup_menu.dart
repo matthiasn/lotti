@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -100,7 +101,6 @@ class UnifiedAiModal {
             await _handleImageGeneration(
               context: context,
               journalEntity: journalEntity,
-              prompt: prompt,
               ref: ref,
             );
             return;
@@ -147,7 +147,6 @@ class UnifiedAiModal {
   static Future<void> _handleImageGeneration({
     required BuildContext context,
     required JournalEntity journalEntity,
-    required AiConfigPrompt prompt,
     required WidgetRef ref,
   }) async {
     // Image generation should only be triggered from audio entries
@@ -162,10 +161,23 @@ class UnifiedAiModal {
     final audioEntry = journalEntity;
 
     // Get the linked task to determine categoryId
+    // Links can exist in either direction depending on how the entry was created:
+    // 1. entry → task (entry links TO task) - when entry explicitly references a task
+    // 2. task → entry (task links TO entry) - when entry is added as a child of task
+    // We check both directions, matching PromptBuilderHelper._findLinkedTask behavior.
     final journalRepo = ref.read(journalRepositoryProvider);
+
+    // First try: find tasks that this entry links TO (entry → task)
     final linkedEntities =
-        await journalRepo.getLinkedToEntities(linkedTo: audioEntry.id);
-    final linkedTask = linkedEntities.whereType<Task>().firstOrNull;
+        await journalRepo.getLinkedEntities(linkedTo: audioEntry.id);
+    var linkedTask = linkedEntities.whereType<Task>().firstOrNull;
+
+    // Fallback: find tasks that link TO this entry (task → entry)
+    if (linkedTask == null) {
+      final fallbackEntities =
+          await journalRepo.getLinkedToEntities(linkedTo: audioEntry.id);
+      linkedTask = fallbackEntities.whereType<Task>().firstOrNull;
+    }
 
     if (linkedTask == null) {
       developer.log(
