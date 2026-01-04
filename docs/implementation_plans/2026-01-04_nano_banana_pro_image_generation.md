@@ -1,7 +1,7 @@
 # One-Shot Image Generation with Nano Banana Pro
 
 **Date:** 2026-01-04
-**Status:** Planned (Revised)
+**Status:** Implemented (Documentation Updated)
 
 ## Overview
 
@@ -24,11 +24,11 @@ Reduce friction by enabling one-shot image generation directly from voice note t
 - **Response**: Base64-encoded image data in `candidates[0].content.parts[].inline_data.data`
 - **Response format**: Uses snake_case (`inline_data`, `mime_type`) per [Gemini API docs](https://ai.google.dev/gemini-api/docs/image-generation)
 
-### Architecture Decisions
-1. **No new response type**: Uses existing `imagePromptGeneration` (conceptually similar - generating visual content from task context)
+### Architecture Decisions (As Implemented)
+1. **New response type**: Added `AiResponseType.imageGeneration` for tracking generated images (distinct from `imagePromptGeneration` which generates text prompts)
 2. **Model-based detection**: Image generation is detected via `outputModalities: [Modality.image]`
-3. **Preconfigured prompt**: Task context + transcript sent directly to Nano Banana Pro using existing placeholder expansion (`{{task}}`, `{{linked_tasks}}`, `{{audioTranscript}}`)
-4. **Existing pipelines**: Use new `importImageBytesWithId()` (adapts existing pattern), use existing `GeminiUtils.buildGenerateContentUri()` for API calls
+3. **Preconfigured prompt**: Task context + transcript sent directly to Nano Banana Pro using existing placeholder expansion (`{{task}}`, `{{linked_tasks}}`, `{{audioTranscript}}`, `{{current_task_summary}}`)
+4. **Existing pipelines**: Use `importGeneratedImageBytes()` helper, use `GeminiUtils.buildImageGenerationRequestBody()` for API calls with 16:9 aspect ratio at 2K resolution
 5. **Result is JournalImage**: On accept, save as JournalImage linked to task, set as cover art
 
 ---
@@ -353,269 +353,89 @@ Future<ImageGenerationResult> generateImage({
 
 ---
 
-## Phase 3: Image Generation Controller
+## Phase 3: Image Generation Controller (As Implemented)
 
-### 3.1 Create Image Generation State
-**File:** `lib/features/ai/state/image_generation_state.dart` (NEW)
+### 3.1 Image Generation State
+**File:** `lib/features/ai/state/image_generation_controller.dart`
+
+The state is defined using Freezed with sealed classes for exhaustive pattern matching:
 
 ```dart
-import 'dart:typed_data';
-
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'image_generation_state.freezed.dart';
-
 @freezed
-class ImageGenerationState with _$ImageGenerationState {
-  const factory ImageGenerationState.idle() = ImageGenerationIdle;
+sealed class ImageGenerationState with _$ImageGenerationState {
+  const factory ImageGenerationState.initial() = ImageGenerationInitial;
 
   const factory ImageGenerationState.generating({
     required String prompt,
-  }) = ImageGenerationInProgress;
+  }) = ImageGenerationGenerating;
 
   const factory ImageGenerationState.success({
-    required Uint8List imageData,
-    required String mimeType,
     required String prompt,
-    String? textDescription,
+    required Uint8List imageBytes,
+    required String mimeType,
   }) = ImageGenerationSuccess;
 
   const factory ImageGenerationState.error({
-    required String message,
     required String prompt,
+    required String errorMessage,
   }) = ImageGenerationError;
 }
 ```
 
-### 3.2 Create Image Generation Controller
-**File:** `lib/features/ai/state/image_generation_controller.dart` (NEW)
+### 3.2 Image Generation Controller
+**File:** `lib/features/ai/state/image_generation_controller.dart`
+
+The controller uses Riverpod codegen with a family provider keyed by entity ID:
 
 ```dart
-import 'package:collection/collection.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
-import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/state/image_generation_state.dart';
-import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+/// Parameters for the image generation controller.
+typedef ImageGenerationParams = ({String entityId});
 
-/// Parameters for image generation
-class ImageGenerationParams {
-  const ImageGenerationParams({
-    required this.taskId,
-    required this.audioEntryId,
-  });
-
-  final String taskId;
-  final String audioEntryId;
-}
-
-final imageGenerationControllerProvider = StateNotifierProvider.autoDispose
-    .family<ImageGenerationController, ImageGenerationState, ImageGenerationParams>(
-  (ref, params) => ImageGenerationController(ref, params),
-);
-
-class ImageGenerationController extends StateNotifier<ImageGenerationState> {
-  ImageGenerationController(this._ref, this._params)
-      : super(const ImageGenerationState.idle());
-
-  final Ref _ref;
-  final ImageGenerationParams _params;
-
-  /// Generate an image using the preconfigured prompt with full task context
-  Future<void> generateImage() async {
-    // Get audio entry for context - PromptBuilderHelper will find linked task
-    final audioEntry = _ref.read(entryControllerProvider(id: _params.audioEntryId)).value?.entry;
-
-    if (audioEntry is! JournalAudio) {
-      state = const ImageGenerationState.error(
-        message: 'Audio entry not found',
-        prompt: '',
-      );
-      return;
-    }
-
-    // Check for transcript
-    final transcript = audioEntry.data.transcripts.lastOrNull?.transcript ?? '';
-    if (transcript.isEmpty) {
-      state = const ImageGenerationState.error(
-        message: 'No transcript available',
-        prompt: '',
-      );
-      return;
-    }
-
-    // Declare prompt before try block so it's accessible in catch
-    var prompt = '';
-
-    try {
-      final cloudRepo = _ref.read(cloudInferenceRepositoryProvider);
-      final configRepo = _ref.read(aiConfigRepositoryProvider);
-
-      // Find Gemini provider and image-capable model FIRST (needed for prompt config)
-      final providers = await configRepo.getConfigsByType(AiConfigType.inferenceProvider);
-      final models = await configRepo.getConfigsByType(AiConfigType.model);
-
-      final geminiProvider = providers
-          .whereType<AiConfigInferenceProvider>()
-          .where((p) => p.inferenceProviderType == InferenceProviderType.gemini)
-          .firstOrNull;
-
-      if (geminiProvider == null) {
-        throw Exception('No Gemini provider configured');
-      }
-
-      // Find model with image output capability
-      final imageModel = models
-          .whereType<AiConfigModel>()
-          .where((m) => m.inferenceProviderId == geminiProvider.id)
-          .where((m) => m.outputModalities.contains(Modality.image))
-          .firstOrNull;
-
-      if (imageModel == null) {
-        throw Exception('No image generation model configured. Add Gemini 3 Pro Image model.');
-      }
-
-      // Build the full prompt using existing PromptBuilderHelper
-      // Pass model ID to make prompt config future-proof for validation
-      prompt = await _buildPromptWithContext(audioEntry, imageModel.id);
-      state = ImageGenerationState.generating(prompt: prompt);
-
-      final result = await cloudRepo.generateImage(
-        prompt: prompt,
-        systemMessage: imageGenerationPrompt.systemMessage,
-        model: imageModel.providerModelId,
-        baseUrl: geminiProvider.baseUrl,
-        apiKey: geminiProvider.apiKey,
-        provider: geminiProvider,
-      );
-
-      state = ImageGenerationState.success(
-        imageData: result.imageData,
-        mimeType: result.mimeType,
-        prompt: prompt,
-        textDescription: result.textDescription,
-      );
-    } catch (e) {
-      state = ImageGenerationState.error(
-        message: e.toString(),
-        prompt: prompt,
-      );
-    }
+/// Controller for generating cover art images using AI.
+@riverpod
+class ImageGenerationController extends _$ImageGenerationController {
+  @override
+  ImageGenerationState build({required String entityId}) {
+    return const ImageGenerationState.initial();
   }
 
-  /// Generate with a custom/edited prompt (user override)
-  Future<void> generateWithPrompt(String customPrompt) async {
-    state = ImageGenerationState.generating(prompt: customPrompt);
-
-    try {
-      final cloudRepo = _ref.read(cloudInferenceRepositoryProvider);
-      final configRepo = _ref.read(aiConfigRepositoryProvider);
-
-      final providers = await configRepo.getConfigsByType(AiConfigType.inferenceProvider);
-      final models = await configRepo.getConfigsByType(AiConfigType.model);
-
-      final geminiProvider = providers
-          .whereType<AiConfigInferenceProvider>()
-          .where((p) => p.inferenceProviderType == InferenceProviderType.gemini)
-          .firstOrNull;
-
-      if (geminiProvider == null) {
-        throw Exception('No Gemini provider configured');
-      }
-
-      final imageModel = models
-          .whereType<AiConfigModel>()
-          .where((m) => m.inferenceProviderId == geminiProvider.id)
-          .where((m) => m.outputModalities.contains(Modality.image))
-          .firstOrNull;
-
-      if (imageModel == null) {
-        throw Exception('No image generation model configured');
-      }
-
-      final result = await cloudRepo.generateImage(
-        prompt: customPrompt,
-        systemMessage: imageGenerationPrompt.systemMessage,
-        model: imageModel.providerModelId,
-        baseUrl: geminiProvider.baseUrl,
-        apiKey: geminiProvider.apiKey,
-        provider: geminiProvider,
-      );
-
-      state = ImageGenerationState.success(
-        imageData: result.imageData,
-        mimeType: result.mimeType,
-        prompt: customPrompt,
-        textDescription: result.textDescription,
-      );
-    } catch (e) {
-      state = ImageGenerationState.error(
-        message: e.toString(),
-        prompt: customPrompt,
-      );
-    }
+  /// Generates a cover art image by building the prompt from entity context.
+  Future<void> generateImageFromEntity({required String audioEntityId}) async {
+    // Get audio entity from repository
+    // Build prompt using PromptBuilderHelper for placeholder expansion
+    // Call generateImage() with the built prompt
   }
 
-  /// Build prompt using existing PromptBuilderHelper for placeholder expansion.
-  /// The helper handles {{task}}, {{linked_tasks}}, {{audioTranscript}} placeholders.
-  ///
-  /// [modelId] is included to make the prompt config future-proof for validation
-  /// via [isModelSuitableForPrompt] if this code path ever changes.
-  Future<String> _buildPromptWithContext(JournalAudio audioEntry, String modelId) async {
-    final promptBuilderHelper = PromptBuilderHelper(
-      aiInputRepository: _ref.read(aiInputRepositoryProvider),
-      checklistRepository: _ref.read(checklistRepositoryProvider),
-      journalRepository: _ref.read(journalRepositoryProvider),
-      labelsRepository: _ref.read(labelsRepositoryProvider),
+  /// Generates a cover art image from the given prompt.
+  Future<void> generateImage({required String prompt, String? systemMessage}) async {
+    state = ImageGenerationState.generating(prompt: prompt);
+    // Get Gemini provider and image generation model
+    // Call cloud inference repository to generate image
+    // Update state to success or error
+  }
+
+  /// Retries image generation with the current or modified prompt.
+  Future<void> retryGeneration({String? modifiedPrompt}) async {
+    final promptToUse = modifiedPrompt ?? state.map(
+      initial: (_) => null,
+      generating: (s) => s.prompt,
+      success: (s) => s.prompt,
+      error: (s) => s.prompt,
     );
-
-    // Create AiConfigPrompt for placeholder expansion
-    // Model IDs included for future-proofing if validation is ever added
-    final promptConfig = AiConfigPrompt(
-      id: 'image_generation_temp',
-      name: 'Image Generation',
-      systemMessage: imageGenerationPrompt.systemMessage,
-      userMessage: imageGenerationPrompt.userMessage,
-      defaultModelId: modelId,
-      modelIds: [modelId],
-      createdAt: DateTime.now(),
-      requiredInputData: imageGenerationPrompt.requiredInputData,
-      aiResponseType: AiResponseType.imagePromptGeneration,
-      useReasoning: false,
-    );
-
-    // The helper expands {{task}}, {{linked_tasks}}, {{audioTranscript}} placeholders
-    final prompt = await promptBuilderHelper.buildPromptWithData(
-      promptConfig: promptConfig,
-      entity: audioEntry,  // Audio entry - helper will find linked task
-    );
-
-    return prompt ?? '';
+    if (promptToUse == null) throw Exception('No prompt available for retry');
+    await generateImage(prompt: promptToUse);
   }
 
-  void reset() {
-    state = const ImageGenerationState.idle();
-  }
-
-  Future<void> retry() async {
-    final currentState = state;
-    if (currentState is ImageGenerationError) {
-      await generateWithPrompt(currentState.prompt);
-    } else if (currentState is ImageGenerationSuccess) {
-      await generateWithPrompt(currentState.prompt);
-    }
-  }
+  void reset() => state = const ImageGenerationState.initial();
 }
 ```
+
+Key implementation details:
+- Uses `@riverpod` codegen (not `StateNotifierProvider`)
+- State and controller are in the same file
+- `generateImageFromEntity()` builds prompts with full task context via `PromptBuilderHelper`
+- `generateImage()` is used for retries or edited prompts
+- Model is looked up from `knownModels` by `outputModalities.contains(Modality.image)`
 
 ---
 
@@ -1093,14 +913,14 @@ The `ImageGenerationController` can be extended to maintain conversation history
 
 ---
 
-## Implementation Order
+## Implementation Order (As Executed)
 
 1. **Phase 1.1**: Add Nano Banana Pro to known models
 2. **Phase 1.2**: Add localization strings
-3. **Phase 1.3**: Add preconfigured prompt (with `imagePromptGeneration` response type)
-4. **Phase 2**: Extend GeminiInferenceRepository with `generateImage()`
+3. **Phase 1.3**: Add preconfigured prompt (with `AiResponseType.imageGeneration`)
+4. **Phase 2**: Add `GeminiUtils.buildImageGenerationRequestBody()` and extend repository
 5. Run `fvm dart run build_runner build`
-6. **Phase 3**: Create state and controller
+6. **Phase 3**: Create state and controller using `@riverpod` codegen
 7. **Phase 4**: Create review modal with existing import pipeline
 8. **Phase 5**: Add menu item integration
 9. Run analyzer, format, and tests
@@ -1108,13 +928,14 @@ The `ImageGenerationController` can be extended to maintain conversation history
 
 ---
 
-## Key Design Decisions
+## Key Design Decisions (As Implemented)
 
-1. **No new AiResponseType** - Reuses existing `imagePromptGeneration`, detects image capability from model's `outputModalities`
-2. **Existing import pipeline** - Uses new `importImageBytesWithId()` (adapts existing pattern, returns id for cover art)
-3. **Existing URL patterns** - Uses `GeminiUtils` for API URL construction
+1. **New AiResponseType.imageGeneration** - Added distinct response type for generated images (separate from `imagePromptGeneration` which generates text prompts)
+2. **Existing import pipeline** - Uses `importGeneratedImageBytes()` helper (adapts existing pattern, returns id for cover art)
+3. **GeminiUtils.buildImageGenerationRequestBody()** - Constructs request with 16:9 aspect ratio at 2K resolution
 4. **Model-based detection** - Finds model with `Modality.image` in `outputModalities`
-5. **Full task context** - Builds prompt using preconfigured template with `{{task}}`, `{{linked_tasks}}`, `{{audioTranscript}}`
+5. **Full task context** - Builds prompt using preconfigured template with `{{task}}`, `{{audioTranscript}}`, `{{current_task_summary}}`
+6. **Riverpod codegen** - Controller uses `@riverpod` annotation instead of manual `StateNotifierProvider`
 
 ---
 

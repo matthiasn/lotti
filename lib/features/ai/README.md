@@ -878,12 +878,13 @@ The AI system supports native image generation for creating task cover art. This
 The Nano Banana Pro model is defined in `known_models.dart`:
 ```dart
 const KnownModel(
-  providerModelId: 'models/gemini-2.0-flash-preview-image-generation',
-  name: 'Nano Banana Pro',
-  inputModalities: [Modality.text],
-  outputModalities: [Modality.image],
+  providerModelId: 'models/gemini-3-pro-image-preview',
+  name: 'Gemini 3 Pro Image (Nano Banana Pro)',
+  inputModalities: [Modality.text, Modality.image],
+  outputModalities: [Modality.text, Modality.image],
   isReasoningModel: false,
-  description: 'Gemini image generation model for creating cover art',
+  description: 'High-quality image generation model for cover art and visual mnemonics. '
+      'Generates images directly from task context and voice descriptions.',
 )
 ```
 

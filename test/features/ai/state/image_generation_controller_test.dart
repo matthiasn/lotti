@@ -132,7 +132,7 @@ void main() {
       );
 
       expect(
-        () => notifier.retryGeneration(),
+        notifier.retryGeneration,
         throwsA(
           isA<Exception>().having(
             (e) => e.toString(),
@@ -142,7 +142,6 @@ void main() {
         ),
       );
     });
-
   });
 
   group('ImageGenerationController.retryGeneration prompt extraction', () {

@@ -171,7 +171,7 @@ void main() {
         final summary1 = buildTaskSummary(
           id: 'summary-1',
           response: 'Old summary from yesterday',
-          dateFrom: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025),
         );
         final summary2 = buildTaskSummary(
           id: 'summary-2',
@@ -179,7 +179,8 @@ void main() {
           dateFrom: DateTime(2025, 1, 2),
         );
 
-        when(() => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
+        when(() =>
+                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
             .thenAnswer((_) async => [summary1, summary2]);
 
         final config = AiConfigPrompt(
@@ -201,13 +202,15 @@ void main() {
         );
 
         expect(result, isNotNull);
-        expect(result, contains('Latest summary with learnings and annoyances'));
+        expect(
+            result, contains('Latest summary with learnings and annoyances'));
         expect(result, isNot(contains('Old summary from yesterday')));
         expect(result, isNot(contains('{{current_task_summary}}')));
       });
 
       test('returns fallback when no task summary exists', () async {
-        when(() => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
+        when(() =>
+                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
             .thenAnswer((_) async => []);
 
         final config = AiConfigPrompt(
@@ -237,14 +240,15 @@ void main() {
         final summary = buildTaskSummary(
           id: 'summary-1',
           response: 'Task summary for linked task',
-          dateFrom: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025),
         );
 
         // Audio links TO task-1 (via getLinkedEntities)
         when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'audio-1'))
             .thenAnswer((_) async => [testTask]);
         // Task-1 has linked summaries
-        when(() => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
+        when(() =>
+                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
             .thenAnswer((_) async => [summary]);
 
         final config = AiConfigPrompt(
@@ -274,7 +278,8 @@ void main() {
         when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'audio-1'))
             .thenAnswer((_) async => []);
         // Fallback: no tasks link TO audio either
-        when(() => mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'))
+        when(() =>
+                mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'))
             .thenAnswer((_) async => []);
 
         final config = AiConfigPrompt(
@@ -304,14 +309,15 @@ void main() {
         final summary = buildTaskSummary(
           id: 'summary-1',
           response: 'Task summary via image',
-          dateFrom: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025),
         );
 
         // Image links TO task-1 (via getLinkedEntities)
         when(() => mockJournalRepository.getLinkedEntities(linkedTo: 'image-1'))
             .thenAnswer((_) async => [testTask]);
         // Task-1 has linked summaries
-        when(() => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
+        when(() =>
+                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
             .thenAnswer((_) async => [summary]);
 
         final config = AiConfigPrompt(
@@ -346,7 +352,7 @@ void main() {
             dateTo: DateTime(2025, 1, 2),
             updatedAt: DateTime(2025, 1, 2),
           ),
-          data: AiResponseData(
+          data: const AiResponseData(
             response: 'This is a transcription, not a summary',
             type: AiResponseType.audioTranscription,
             model: 'test-model',
@@ -357,7 +363,8 @@ void main() {
           ),
         );
 
-        when(() => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
+        when(() =>
+                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
             .thenAnswer((_) async => [transcriptionResponse]);
 
         final config = AiConfigPrompt(
@@ -387,7 +394,7 @@ void main() {
         final oldSummary = buildTaskSummary(
           id: 'summary-old',
           response: 'Old summary',
-          dateFrom: DateTime(2025, 1, 1),
+          dateFrom: DateTime(2025),
         );
         final middleSummary = buildTaskSummary(
           id: 'summary-middle',
@@ -401,7 +408,8 @@ void main() {
         );
 
         // Return in mixed order to test sorting
-        when(() => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
+        when(() =>
+                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
             .thenAnswer(
           (_) async => [middleSummary, oldSummary, newestSummary],
         );
@@ -453,12 +461,14 @@ void main() {
         expect(result, equals('Generate something without task summary.'));
         // Should not have called getLinkedToEntities since placeholder absent
         verifyNever(
-          () => mockJournalRepository.getLinkedToEntities(linkedTo: any(named: 'linkedTo')),
+          () => mockJournalRepository.getLinkedToEntities(
+              linkedTo: any(named: 'linkedTo')),
         );
       });
 
       test('handles error gracefully and returns fallback', () async {
-        when(() => mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
+        when(() =>
+                mockJournalRepository.getLinkedToEntities(linkedTo: 'task-1'))
             .thenThrow(Exception('Database error'));
 
         final config = AiConfigPrompt(
