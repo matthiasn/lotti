@@ -10,7 +10,7 @@ This document describes the design for a timeline-based navigation and filtering
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Task Timeline                                              [14d] [30d] [All]│
+│  Task Timeline                                          [14d] [30d] [90d] [All]│
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │    ▂▂▂▂▄▄▆▆████▆▆▄▄▂▂▂▂▁▁▁▁▁▁▂▂▂▂▄▄▆▆████████▆▆▆▆▄▄▂▂▂▂▁▁▁▁▁▁▂▂▂▂▄▄▆▆▆▆     │
@@ -147,13 +147,16 @@ class TimelineController extends _$TimelineController {
   void expandTimeline();
 }
 
-/// Provides histogram data computed from the database
+/// Provides histogram data grouped by status for stacked bars
 @riverpod
-Future<Map<DateTime, int>> taskHistogram(Ref ref, {
+Future<Map<DateTime, Map<String, int>>> taskHistogramByStatus(Ref ref, {
   required List<String> statuses,
   required List<String> categoryIds,
+  required DateFilterMode dateMode,
 }) async {
-  // Query database for task counts by date
+  // Query database for task counts by date AND status
+  // Returns: { date -> { status -> count } }
+  // Example: { 2024-11-15 -> { 'GROOMED': 5, 'IN PROGRESS': 3, 'OPEN': 2 } }
 }
 ```
 
@@ -185,10 +188,12 @@ enum DateFilterMode {
 ### Database Query for Histogram
 
 ```sql
--- New query in database.drift
-taskCountsByDate:
+-- New query in database.drift for creation date histogram (grouped by status)
+-- Note: date_from is stored as ISO8601 string by Drift
+taskCountsByDateAndStatus:
 SELECT
-  date(date_from / 1000, 'unixepoch') as task_date,
+  date(date_from) as task_date,
+  task_status,
   COUNT(*) as task_count
 FROM journal
 WHERE
@@ -196,14 +201,15 @@ WHERE
   AND deleted = false
   AND task_status IN :taskStatuses
   AND category IN :categories
-  -- Apply existing label/priority filters
-GROUP BY date(date_from / 1000, 'unixepoch')
+GROUP BY date(date_from), task_status
 ORDER BY task_date ASC;
 
--- Alternative for due dates (requires parsing JSON)
-taskCountsByDueDate:
+-- Query for due dates (grouped by status)
+-- WARNING: json_extract requires full table scan - see Performance Considerations
+taskCountsByDueDateAndStatus:
 SELECT
-  json_extract(serialized, '$.meta.data.dueDate') as due_date,
+  date(json_extract(serialized, '$.meta.data.dueDate')) as due_date,
+  task_status,
   COUNT(*) as task_count
 FROM journal
 WHERE
@@ -211,8 +217,27 @@ WHERE
   AND deleted = false
   AND json_extract(serialized, '$.meta.data.dueDate') IS NOT NULL
   AND task_status IN :taskStatuses
-GROUP BY due_date
+GROUP BY date(json_extract(serialized, '$.meta.data.dueDate')), task_status
 ORDER BY due_date ASC;
+
+-- Count of tasks without due dates (for "Undated" bucket)
+taskCountWithoutDueDate:
+SELECT
+  task_status,
+  COUNT(*) as task_count
+FROM journal
+WHERE
+  type = 'Task'
+  AND deleted = false
+  AND (json_extract(serialized, '$.meta.data.dueDate') IS NULL
+       OR json_extract(serialized, '$.meta.data.dueDate') = '')
+  AND task_status IN :taskStatuses
+GROUP BY task_status;
+
+-- Query for filtering task list by date range (creation date)
+-- Add to existing filteredTasks query with optional date bounds
+-- AND (:startDate IS NULL OR date_from >= :startDate)
+-- AND (:endDate IS NULL OR date_from <= :endDate)
 ```
 
 ## Widget Structure
@@ -248,11 +273,13 @@ TaskTimelineWidget (ConsumerStatefulWidget)
 ## Implementation Plan
 
 ### Phase 1: Data Layer (Foundation)
-1. Add `taskCountsByDate` query to `database.drift`
-2. Create `TimelineHistogramProvider` to fetch and cache histogram data
-3. Add `dateRangeFilter` field to `TasksFilter` model
-4. Modify `JournalPageController._runQuery()` to respect date range filter
-5. Write unit tests for histogram query and filtering
+1. Add `taskCountsByDateAndStatus` and `taskCountsByDueDateAndStatus` queries to `database.drift`
+2. Add `taskCountWithoutDueDate` query for the "Undated" bucket
+3. Modify `filteredTasks` and `filteredTasksByDate` queries to accept optional date range bounds
+4. Create `TimelineHistogramProvider` to fetch and cache histogram data by status
+5. Add `dateRangeFilter` and `dateFilterMode` fields to `TasksFilter` model
+6. Modify `JournalPageController._runQuery()` to respect date range filter
+7. Write unit tests for histogram queries and date range filtering
 
 ### Phase 2: State Management
 1. Create `TimelineSelectionState` freezed model
@@ -364,7 +391,15 @@ Use existing theme colors from `lotti/themes/`:
 1. **Histogram caching**: Cache histogram data, invalidate on task changes
 2. **Debounced updates**: When dragging selection, debounce filter refresh (150ms)
 3. **Lazy rendering**: Only render visible histogram bars
-4. **Database indexing**: Ensure `date_from` is indexed for efficient grouping
+4. **Database indexing for creation dates**: The existing `idx_journal_date_from_asc` index supports ordering, but `GROUP BY date(date_from)` may not use it efficiently. Consider adding an expression index:
+   ```sql
+   CREATE INDEX idx_journal_task_date ON journal (date(date_from)) WHERE type = 'Task';
+   ```
+5. **Due date query performance**: The `json_extract()` function requires a full table scan since SQLite cannot index JSON fields. For acceptable performance:
+   - Cache due-date histogram aggressively (invalidate only on task create/update/delete)
+   - Consider future schema migration: add `due_date` as a denormalized indexed column
+   - For large datasets (>10,000 tasks), display a loading indicator during initial computation
+6. **Batch status queries**: Fetch all statuses in a single query rather than per-status queries
 
 ## Design Decisions
 
@@ -391,7 +426,20 @@ In due-date mode, tasks without a due date will be shown in an "Undated" bucket 
 
 ## Success Metrics
 
-1. Users can identify "spikes" of task creation at a glance
-2. Filtering to a date range reduces cognitive load on large backlogs
-3. Navigation between time periods is fluid (<100ms response)
-4. Feature discovery is intuitive (users find it without documentation)
+### Functional Criteria
+1. Timeline accurately reflects task distribution across all date ranges
+2. Selection filtering correctly shows only tasks within the chosen date window
+3. Stacked bars correctly represent task status proportions per time period
+4. Toggle between creation date and due date modes works seamlessly
+
+### Performance Criteria
+1. Initial histogram render completes in <500ms for datasets up to 5,000 tasks
+2. Selection drag interactions maintain 60fps (no frame drops during drag)
+3. Filter refresh after selection change completes in <100ms
+4. Memory footprint increase is <5MB for cached histogram data
+
+### Quality Criteria
+1. All unit tests pass for histogram queries and controller logic
+2. Widget tests cover all interaction states (tap, drag, resize, clear)
+3. Accessibility: VoiceOver/TalkBack correctly announces selection range and task counts
+4. No regressions in existing task filtering functionality
