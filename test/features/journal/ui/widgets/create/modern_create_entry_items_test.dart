@@ -15,6 +15,7 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
@@ -24,7 +25,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -124,7 +124,7 @@ void main() {
         );
 
         // Verify the task item is rendered
-        expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+        expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text('Task'), findsOneWidget);
         expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
       });
@@ -158,7 +158,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify the task item is shown
-        expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+        expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text('Task'), findsOneWidget);
         expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
       });
@@ -218,7 +218,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the task creation item
-        await tester.tap(find.byType(ModernModalEntryTypeItem));
+        await tester.tap(find.byType(CreateMenuListItem));
         await tester.pumpAndSettle();
 
         // Verify navigation was called with the correct path
@@ -282,7 +282,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the task creation item
-        await tester.tap(find.byType(ModernModalEntryTypeItem));
+        await tester.tap(find.byType(CreateMenuListItem));
         await tester.pumpAndSettle();
 
         // Verify navigation was called even with linked ID
@@ -320,7 +320,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the task creation item
-        await tester.tap(find.byType(ModernModalEntryTypeItem));
+        await tester.tap(find.byType(CreateMenuListItem));
         await tester.pumpAndSettle();
 
         // Verify navigation was not called
@@ -378,7 +378,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the event creation item
-        await tester.tap(find.byType(ModernModalEntryTypeItem));
+        await tester.tap(find.byType(CreateMenuListItem));
         await tester.pumpAndSettle();
 
         // Verify navigation was called with the correct path
@@ -436,7 +436,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the event creation item
-        await tester.tap(find.byType(ModernModalEntryTypeItem));
+        await tester.tap(find.byType(CreateMenuListItem));
         await tester.pumpAndSettle();
 
         // Verify navigation was called even with linked ID
@@ -475,7 +475,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the event creation item
-        await tester.tap(find.byType(ModernModalEntryTypeItem));
+        await tester.tap(find.byType(CreateMenuListItem));
         await tester.pumpAndSettle();
 
         // Verify navigation was not called
@@ -527,9 +527,9 @@ void main() {
 
       // Verify the event item is rendered (localized)
       final l10n = AppLocalizations.of(
-        tester.element(find.byType(ModernModalEntryTypeItem)),
+        tester.element(find.byType(CreateMenuListItem)),
       )!;
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.text(l10n.addActionAddEvent), findsOneWidget);
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
     });
@@ -548,9 +548,9 @@ void main() {
 
       // Verify the audio item is rendered (localized)
       final l10n = AppLocalizations.of(
-        tester.element(find.byType(ModernModalEntryTypeItem)),
+        tester.element(find.byType(CreateMenuListItem)),
       )!;
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.text(l10n.addActionAddAudioRecording), findsOneWidget);
       expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
     });
@@ -568,11 +568,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find and tap the item
-      final itemFinder = find.byType(ModernModalEntryTypeItem);
+      final itemFinder = find.byType(CreateMenuListItem);
       expect(itemFinder, findsOneWidget);
 
       // Get the onTap callback
-      final item = tester.widget<ModernModalEntryTypeItem>(itemFinder);
+      final item = tester.widget<CreateMenuListItem>(itemFinder);
       expect(item.onTap, isNotNull);
 
       // Verify the widget structure is correct
@@ -773,9 +773,9 @@ void main() {
 
       // Verify the text item is rendered (localized)
       final l10n = AppLocalizations.of(
-        tester.element(find.byType(ModernModalEntryTypeItem)),
+        tester.element(find.byType(CreateMenuListItem)),
       )!;
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.text(l10n.addActionAddText), findsOneWidget);
       expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
     });
@@ -793,11 +793,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the item
-      final itemFinder = find.byType(ModernModalEntryTypeItem);
+      final itemFinder = find.byType(CreateMenuListItem);
       expect(itemFinder, findsOneWidget);
 
       // Get the onTap callback
-      final item = tester.widget<ModernModalEntryTypeItem>(itemFinder);
+      final item = tester.widget<CreateMenuListItem>(itemFinder);
       expect(item.onTap, isNotNull);
 
       // Verify the widget structure is correct
@@ -841,9 +841,9 @@ void main() {
 
       // Verify the import image item is rendered (localized)
       final l10n = AppLocalizations.of(
-        tester.element(find.byType(ModernModalEntryTypeItem)),
+        tester.element(find.byType(CreateMenuListItem)),
       )!;
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.text(l10n.addActionImportImage), findsOneWidget);
       expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
     });
@@ -861,11 +861,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the item
-      final itemFinder = find.byType(ModernModalEntryTypeItem);
+      final itemFinder = find.byType(CreateMenuListItem);
       expect(itemFinder, findsOneWidget);
 
       // Get the onTap callback
-      final item = tester.widget<ModernModalEntryTypeItem>(itemFinder);
+      final item = tester.widget<CreateMenuListItem>(itemFinder);
       expect(item.onTap, isNotNull);
 
       // Verify the widget structure is correct
@@ -909,9 +909,9 @@ void main() {
 
       // Verify the screenshot item is rendered (localized)
       final l10n = AppLocalizations.of(
-        tester.element(find.byType(ModernModalEntryTypeItem)),
+        tester.element(find.byType(CreateMenuListItem)),
       )!;
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.text(l10n.addActionAddScreenshot), findsOneWidget);
       expect(find.byIcon(Icons.screenshot_monitor_rounded), findsOneWidget);
     });
@@ -929,11 +929,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the item
-      final itemFinder = find.byType(ModernModalEntryTypeItem);
+      final itemFinder = find.byType(CreateMenuListItem);
       expect(itemFinder, findsOneWidget);
 
       // Get the onTap callback
-      final item = tester.widget<ModernModalEntryTypeItem>(itemFinder);
+      final item = tester.widget<CreateMenuListItem>(itemFinder);
       expect(item.onTap, isNotNull);
 
       // Verify the widget structure is correct
@@ -1006,11 +1006,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Assert: SizedBox.shrink() behavior (ModernModalEntryTypeItem not found)
+      // Assert: SizedBox.shrink() behavior (CreateMenuListItem not found)
       final l10n = AppLocalizations.of(
         tester.element(find.byType(Scaffold)),
       )!;
-      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+      expect(find.byType(CreateMenuListItem), findsNothing);
       expect(find.text(l10n.addActionAddEvent), findsNothing);
     });
 
@@ -1041,7 +1041,7 @@ void main() {
       await tester.pump();
 
       // Assert: Defaults to hidden during initial load with no previous value
-      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+      expect(find.byType(CreateMenuListItem), findsNothing);
 
       await flagController.close();
     });
@@ -1069,7 +1069,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Defaults to hidden on error with no previous value
-      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+      expect(find.byType(CreateMenuListItem), findsNothing);
     });
 
     testWidgets('transitions from loading to enabled', (tester) async {
@@ -1095,7 +1095,7 @@ void main() {
 
       // Initial state: loading (no item visible)
       await tester.pump();
-      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+      expect(find.byType(CreateMenuListItem), findsNothing);
 
       // Emit flag enabled
       flagController.add({
@@ -1109,7 +1109,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Item now visible
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
 
       await flagController.close();
@@ -1166,7 +1166,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Final state is enabled, no errors thrown
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await flagController.close();
@@ -1202,11 +1202,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Assert: ModernModalEntryTypeItem is found and localized text visible
+      // Assert: CreateMenuListItem is found and localized text visible
       final l10n = AppLocalizations.of(
-        tester.element(find.byType(ModernModalEntryTypeItem)),
+        tester.element(find.byType(CreateMenuListItem)),
       )!;
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.text(l10n.addActionAddEvent), findsOneWidget);
       // Assert: Icons.event_rounded is found
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -1239,7 +1239,7 @@ void main() {
       final l10n = AppLocalizations.of(
         tester.element(find.byType(Scaffold)),
       )!;
-      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+      expect(find.byType(CreateMenuListItem), findsNothing);
       expect(find.text(l10n.addActionAddEvent), findsNothing);
     });
   });
@@ -1304,7 +1304,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the item to trigger onTap
-      await tester.tap(find.byType(ModernModalEntryTypeItem));
+      await tester.tap(find.byType(CreateMenuListItem));
       await tester.pumpAndSettle();
 
       // Verify task creation was called
@@ -1377,7 +1377,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the item to trigger onTap
-      await tester.tap(find.byType(ModernModalEntryTypeItem));
+      await tester.tap(find.byType(CreateMenuListItem));
       await tester.pumpAndSettle();
 
       // Verify event creation was called
@@ -1492,10 +1492,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify timer item is rendered
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
 
       // Tap the timer item
-      await tester.tap(find.byType(ModernModalEntryTypeItem));
+      await tester.tap(find.byType(CreateMenuListItem));
       await tester.pump();
 
       // Wait for async operation to complete
@@ -1558,7 +1558,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the timer item
-      await tester.tap(find.byType(ModernModalEntryTypeItem));
+      await tester.tap(find.byType(CreateMenuListItem));
       await tester.pump();
 
       // Wait for async operation
@@ -1633,9 +1633,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
 
-      await tester.tap(find.byType(ModernModalEntryTypeItem));
+      await tester.tap(find.byType(CreateMenuListItem));
       await tester.pump();
 
       verify(() => mockEntryCreationService.showAudioRecordingModal(
@@ -1716,9 +1716,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
 
-      await tester.tap(find.byType(ModernModalEntryTypeItem));
+      await tester.tap(find.byType(CreateMenuListItem));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -1779,7 +1779,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the item is rendered
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
     });
   });
@@ -1833,7 +1833,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the item is rendered
-      expect(find.byType(ModernModalEntryTypeItem), findsOneWidget);
+      expect(find.byType(CreateMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.screenshot_monitor_rounded), findsOneWidget);
     });
   });
@@ -1887,7 +1887,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show SizedBox.shrink (nothing visible) when clipboard is empty
-      expect(find.byType(ModernModalEntryTypeItem), findsNothing);
+      expect(find.byType(CreateMenuListItem), findsNothing);
     });
   });
 }

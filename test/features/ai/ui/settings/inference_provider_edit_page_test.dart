@@ -134,13 +134,16 @@ void main() {
       final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
 
-      // Fill in required fields (genericOpenAi default doesn't require API key)
+      // Fill in required fields (genericOpenAi now requires API key)
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'),
           'My New Provider');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'https://api.myservice.com');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, 'Enter your API key'),
+          'sk-test-api-key-12345');
       await tester.pumpAndSettle();
 
       // Scroll to make save button visible

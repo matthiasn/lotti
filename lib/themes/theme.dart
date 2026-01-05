@@ -59,6 +59,14 @@ class AppTheme {
   static const double alphaSurfaceVariantChevron = 0.7;
   static const double alphaDestructive = 0.25;
 
+  // List item alpha values
+  static const double alphaDisabled = 0.38; // Material Design disabled state
+  static const double alphaDivider = 0.15; // Subtle dividers between list items
+  static const double alphaIconTrailing = 0.7; // Secondary/trailing icons
+
+  // List item icon size (slightly larger for visual balance in menus)
+  static const double listItemIconSize = iconSize + 2;
+
   // Slider alpha values
   static const int alphaSliderInactiveTrack = 150;
   static const int alphaSliderOverlay = 100;
