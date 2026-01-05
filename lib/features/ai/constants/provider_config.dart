@@ -48,7 +48,6 @@ class ProviderConfig {
   /// They are suitable for privacy-focused applications.
   static const Set<InferenceProviderType> noApiKeyRequired = {
     InferenceProviderType.gemma3n,
-    InferenceProviderType.genericOpenAi,
     InferenceProviderType.ollama,
     InferenceProviderType.whisper,
   };

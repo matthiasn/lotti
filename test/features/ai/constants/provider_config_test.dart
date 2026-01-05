@@ -82,14 +82,13 @@ void main() {
           ProviderConfig.noApiKeyRequired,
           containsAll([
             InferenceProviderType.gemma3n,
-            InferenceProviderType.genericOpenAi,
             InferenceProviderType.ollama,
             InferenceProviderType.whisper,
           ]),
         );
       });
 
-      test('should not include cloud providers', () {
+      test('should not include cloud providers or genericOpenAi', () {
         expect(
           ProviderConfig.noApiKeyRequired,
           isNot(contains(InferenceProviderType.gemini)),
@@ -102,13 +101,18 @@ void main() {
           ProviderConfig.noApiKeyRequired,
           isNot(contains(InferenceProviderType.anthropic)),
         );
+        // genericOpenAi (OpenAI Compatible) requires API key for authentication
+        expect(
+          ProviderConfig.noApiKeyRequired,
+          isNot(contains(InferenceProviderType.genericOpenAi)),
+        );
       });
 
-      test('genericOpenAi should not require API key', () {
+      test('genericOpenAi should require API key', () {
         expect(
           ProviderConfig.noApiKeyRequired
               .contains(InferenceProviderType.genericOpenAi),
-          isTrue,
+          isFalse,
         );
       });
     });
@@ -158,10 +162,6 @@ void main() {
     group('requiresApiKey', () {
       test('should return false for local providers', () {
         expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.genericOpenAi),
-          isFalse,
-        );
-        expect(
           ProviderConfig.requiresApiKey(InferenceProviderType.ollama),
           isFalse,
         );
@@ -175,7 +175,7 @@ void main() {
         );
       });
 
-      test('should return true for cloud providers', () {
+      test('should return true for cloud providers and genericOpenAi', () {
         expect(
           ProviderConfig.requiresApiKey(InferenceProviderType.gemini),
           isTrue,
@@ -186,6 +186,11 @@ void main() {
         );
         expect(
           ProviderConfig.requiresApiKey(InferenceProviderType.anthropic),
+          isTrue,
+        );
+        // genericOpenAi (OpenAI Compatible) requires API key for authentication
+        expect(
+          ProviderConfig.requiresApiKey(InferenceProviderType.genericOpenAi),
           isTrue,
         );
       });
