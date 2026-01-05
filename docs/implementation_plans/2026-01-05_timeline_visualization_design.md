@@ -131,25 +131,144 @@ abstract class TimelineSelectionState with _$TimelineSelectionState {
 /// Controls timeline state and selection
 @riverpod
 class TimelineController extends _$TimelineController {
+  Timer? _debounceTimer;
+
   @override
   TimelineSelectionState build(bool showTasks) {
-    // Initialize with data from the database
-    // Watch the task filter to stay in sync
+    // Watch JournalPageController state with granular selectors
+    // to avoid unnecessary rebuilds
+    final tasksFilter = ref.watch(
+      journalPageControllerProvider(showTasks)
+          .select((s) => s.tasksFilter),
+    );
+
+    // Extract relevant filter fields for histogram computation
+    final filterTuple = (
+      statuses: tasksFilter.selectedTaskStatuses,
+      categoryIds: tasksFilter.selectedCategoryIds,
+      dateMode: tasksFilter.dateFilterMode,
+    );
+
+    // Watch histogram data - automatically recomputes when filter changes
+    final histogramAsync = ref.watch(
+      taskHistogramByStatusProvider(
+        statuses: filterTuple.statuses.toList(),
+        categoryIds: filterTuple.categoryIds.toList(),
+        dateMode: filterTuple.dateMode,
+      ),
+    );
+
+    // Setup cleanup on dispose
+    ref.onDispose(() {
+      _debounceTimer?.cancel();
+    });
+
+    // Initialize state from histogram data
+    return histogramAsync.when(
+      data: (histogram) => TimelineSelectionState(
+        dataStartDate: _computeStartDate(histogram),
+        dataEndDate: _computeEndDate(histogram),
+        viewWindow: _defaultViewWindow(),
+        selectionWindow: null, // No selection on init (not persisted)
+        histogramByStatus: histogram,
+        isExpanded: _loadExpandedState(), // Persisted via SettingsDb
+        dateMode: filterTuple.dateMode,
+      ),
+      loading: () => TimelineSelectionState.loading(),
+      error: (e, st) => TimelineSelectionState.error(e),
+    );
   }
 
-  void setSelection(DateTimeRange? range);
-  void moveSelectionBy(Duration offset);
-  void resizeSelectionStart(DateTime newStart);
-  void resizeSelectionEnd(DateTime newEnd);
-  void setViewWindow(DateTimeRange window);
-  void clearSelection();
-  void collapseTimeline();
-  void expandTimeline();
+  /// User-driven: Set selection and propagate to JournalPageController
+  void setSelection(DateTimeRange? range) {
+    // Update local state immediately for responsive UI
+    state = state.copyWith(selectionWindow: range);
+
+    // Debounce write-back to JournalPageController to avoid rapid updates
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 150), () {
+      // Write to JournalPageController - this triggers task list refresh
+      ref.read(journalPageControllerProvider(showTasks).notifier)
+          .setDateRangeFilter(range);
+    });
+  }
+
+  /// User-driven: Move selection window by offset
+  void moveSelectionBy(Duration offset) {
+    final current = state.selectionWindow;
+    if (current == null) return;
+
+    final newRange = DateTimeRange(
+      start: current.start.add(offset),
+      end: current.end.add(offset),
+    );
+    setSelection(newRange);
+  }
+
+  /// User-driven: Resize selection start edge
+  void resizeSelectionStart(DateTime newStart) {
+    final current = state.selectionWindow;
+    if (current == null) return;
+
+    // Enforce minimum 1-week selection
+    final minEnd = newStart.add(const Duration(days: 7));
+    final newRange = DateTimeRange(
+      start: newStart,
+      end: current.end.isBefore(minEnd) ? minEnd : current.end,
+    );
+    setSelection(newRange);
+  }
+
+  /// User-driven: Resize selection end edge
+  void resizeSelectionEnd(DateTime newEnd) {
+    final current = state.selectionWindow;
+    if (current == null) return;
+
+    // Enforce minimum 1-week selection
+    final minStart = newEnd.subtract(const Duration(days: 7));
+    final newRange = DateTimeRange(
+      start: current.start.isAfter(minStart) ? minStart : current.start,
+      end: newEnd,
+    );
+    setSelection(newRange);
+  }
+
+  /// User-driven: Clear selection (show all tasks)
+  void clearSelection() {
+    setSelection(null);
+  }
+
+  /// View-only: Change view window (does NOT affect task filtering)
+  void setViewWindow(DateTimeRange window) {
+    state = state.copyWith(viewWindow: window);
+  }
+
+  /// UI state: Collapse timeline (persisted)
+  void collapseTimeline() {
+    state = state.copyWith(isExpanded: false);
+    _persistExpandedState(false);
+  }
+
+  /// UI state: Expand timeline (persisted)
+  void expandTimeline() {
+    state = state.copyWith(isExpanded: true);
+    _persistExpandedState(true);
+  }
+
+  void _persistExpandedState(bool expanded) {
+    // Save to SettingsDb for persistence across restarts
+  }
+
+  bool _loadExpandedState() {
+    // Load from SettingsDb, default based on screen size
+  }
 }
 
 /// Provides histogram data grouped by status for stacked bars
+/// Automatically recomputes when watched filter values change
 @riverpod
-Future<Map<DateTime, Map<String, int>>> taskHistogramByStatus(Ref ref, {
+Future<Map<DateTime, Map<String, int>>> taskHistogramByStatus(
+  Ref ref, {
   required List<String> statuses,
   required List<String> categoryIds,
   required DateFilterMode dateMode,
@@ -157,7 +276,67 @@ Future<Map<DateTime, Map<String, int>>> taskHistogramByStatus(Ref ref, {
   // Query database for task counts by date AND status
   // Returns: { date -> { status -> count } }
   // Example: { 2024-11-15 -> { 'GROOMED': 5, 'IN PROGRESS': 3, 'OPEN': 2 } }
+
+  final db = ref.watch(journalDbProvider);
+
+  if (dateMode == DateFilterMode.creationDate) {
+    return db.taskCountsByDateAndStatus(
+      taskStatuses: statuses,
+      categories: categoryIds,
+    );
+  } else {
+    return db.taskCountsByDueDateAndStatus(
+      taskStatuses: statuses,
+    );
+  }
 }
+```
+
+### Data Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         DATA FLOW                                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  JournalPageController                                                   │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ TasksFilter                                                       │   │
+│  │  ├─ selectedTaskStatuses ──┐                                      │   │
+│  │  ├─ selectedCategoryIds ───┼──► ref.watch (selector)              │   │
+│  │  ├─ dateFilterMode ────────┘         │                            │   │
+│  │  └─ dateRangeFilter ◄────────────────┼─── write-back (debounced)  │   │
+│  └──────────────────────────────────────┼───────────────────────────┘   │
+│                                         │                                │
+│                                         ▼                                │
+│  TimelineController ─────────────────────────────────────────────────   │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ TimelineSelectionState                                            │   │
+│  │  ├─ histogramByStatus ◄──── ref.watch(taskHistogramByStatus)      │   │
+│  │  ├─ selectionWindow ────────► setDateRangeFilter() [user action]  │   │
+│  │  ├─ isExpanded ─────────────► SettingsDb [persisted]              │   │
+│  │  └─ dateMode ◄──────────────── synced from TasksFilter            │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                         │                                │
+│                                         ▼                                │
+│  taskHistogramByStatusProvider ─────────────────────────────────────    │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ Inputs (from selector):                                           │   │
+│  │  ├─ statuses                                                      │   │
+│  │  ├─ categoryIds                                                   │   │
+│  │  └─ dateMode                                                      │   │
+│  │                                                                    │   │
+│  │ Output: Map<DateTime, Map<String, int>>                           │   │
+│  │  └─► Recomputes automatically when inputs change                  │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+LOOP PREVENTION:
+- TimelineController READS from JournalPageController (via selector)
+- TimelineController WRITES to JournalPageController ONLY on user actions
+- Writes are debounced (150ms) to avoid rapid double-updates
+- selectionWindow is NOT persisted, so no stale state on restart
 ```
 
 ### Integration with Existing Filters
