@@ -7,6 +7,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 
 // Constants for timer auto-scroll polling behavior
 const _kTimerScrollPollInterval = Duration(milliseconds: 100);
@@ -50,7 +50,7 @@ class CreateEventItem extends ConsumerWidget {
   }
 
   Widget _buildEventItem(BuildContext context) {
-    return ModernModalEntryTypeItem(
+    return CreateMenuListItem(
       icon: Icons.event_rounded,
       title: context.messages.addActionAddEvent,
       onTap: () async {
@@ -83,7 +83,7 @@ class CreateTaskItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ModernModalEntryTypeItem(
+    return CreateMenuListItem(
       icon: Icons.task_alt_rounded,
       title: context.messages.addActionAddTask,
       onTap: () async {
@@ -118,7 +118,7 @@ class CreateAudioItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
-    return ModernModalEntryTypeItem(
+    return CreateMenuListItem(
       icon: Icons.mic_none_rounded,
       title: context.messages.addActionAddAudioRecording,
       onTap: () {
@@ -148,7 +148,7 @@ class CreateTimerItem extends ConsumerWidget {
         ref.watch(entryControllerProvider(id: linkedFromId)).value?.entry;
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
-    return ModernModalEntryTypeItem(
+    return CreateMenuListItem(
       icon: Icons.timer_outlined,
       title: context.messages.addActionAddTimer,
       onTap: () async {
@@ -193,7 +193,7 @@ class CreateTextItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
-    return ModernModalEntryTypeItem(
+    return CreateMenuListItem(
       icon: Icons.notes_rounded,
       title: context.messages.addActionAddText,
       onTap: () async {
@@ -222,7 +222,7 @@ class ImportImageItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ModernModalEntryTypeItem(
+    return CreateMenuListItem(
       icon: Icons.photo_library_rounded,
       title: context.messages.addActionImportImage,
       onTap: () async {
@@ -252,7 +252,7 @@ class CreateScreenshotItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ModernModalEntryTypeItem(
+    return CreateMenuListItem(
       icon: Icons.screenshot_monitor_rounded,
       title: context.messages.addActionAddScreenshot,
       onTap: () async {
@@ -291,7 +291,7 @@ class PasteImageItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ModernModalEntryTypeItem(
+    return CreateMenuListItem(
       icon: Icons.content_paste_rounded,
       title: context.messages.addActionAddImageFromClipboard,
       onTap: () {
