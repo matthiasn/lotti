@@ -423,8 +423,8 @@ void main() {
     svc.captureEvent('should be skipped again', domain: 'TOGGLE');
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    // Should still be 1 call total (no new calls)
-    verifyNever(() => loggingDb.log(any()));
+    // No additional calls should have been made after disabling
+    verifyNoMoreInteractions(loggingDb);
   });
 
   test('captureException with null stackTrace handles gracefully', () {

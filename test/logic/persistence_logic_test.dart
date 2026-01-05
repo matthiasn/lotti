@@ -1156,7 +1156,8 @@ void main() {
       expect(results.where((r) => r != null).length, 1);
     });
 
-    test('addGeolocationAsync returns null when geolocation already exists',
+    test(
+        'addGeolocationAsync returns existing geolocation if one is already present',
         () async {
       final persistenceLogic = getIt<PersistenceLogic>();
 

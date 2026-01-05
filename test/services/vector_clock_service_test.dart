@@ -69,7 +69,8 @@ void main() {
       expect(hash, isNot(host)); // Hash should differ from original
     });
 
-    test('getHostHash returns null when host is null', () async {
+    test('getHostHash returns a valid hash after service initialization',
+        () async {
       // Create a new service without initializing properly
       await getIt.reset();
       final emptySettingsDb = SettingsDb(inMemoryDatabase: true);
