@@ -778,7 +778,14 @@ void main() {
     sub.close();
     container.dispose();
     await amplitudeController.close();
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+
+    // Wait for cleanup with polling (more reliable than fixed delay)
+    var attempts = 0;
+    const maxAttempts = 20;
+    while (await tempSubdir.exists() && attempts < maxAttempts) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
 
     // Temp directory should be cleaned up by onDispose
     expect(await tempSubdir.exists(), isFalse);

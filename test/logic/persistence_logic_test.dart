@@ -1025,6 +1025,262 @@ void main() {
       // Verifying the update method executes successfully covers the JournalImage branch
       expect(success, true);
     });
+
+    test(
+        'Entity Type Branch Coverage: updateJournalEntityText updates MeasurementEntry',
+        () async {
+      // Create measurable data type first
+      await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);
+
+      final measurementData = MeasurementData(
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        value: 500,
+        dataTypeId: measurableWater.id,
+      );
+
+      final measurementEntry =
+          await getIt<PersistenceLogic>().createMeasurementEntry(
+        data: measurementData,
+        private: false,
+      );
+      expect(measurementEntry, isNotNull);
+
+      const newText = EntryText(plainText: 'Measurement notes');
+      final success = await getIt<PersistenceLogic>().updateJournalEntityText(
+        measurementEntry!.meta.id,
+        newText,
+        DateTime.now(),
+      );
+
+      // Verifying the update method executes successfully covers the MeasurementEntry branch
+      expect(success, true);
+    });
+
+    test(
+        'Entity Type Branch Coverage: updateJournalEntityText updates HabitCompletionEntry',
+        () async {
+      // Create habit definition first
+      await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
+
+      final habitCompletionData = HabitCompletionData(
+        dateFrom: DateTime.now(),
+        dateTo: DateTime.now(),
+        habitId: habitFlossing.id,
+      );
+
+      final habitCompletion =
+          await getIt<PersistenceLogic>().createHabitCompletionEntry(
+        data: habitCompletionData,
+        habitDefinition: habitFlossing,
+      );
+      expect(habitCompletion, isNotNull);
+
+      const newText = EntryText(plainText: 'Habit completion notes');
+      final success = await getIt<PersistenceLogic>().updateJournalEntityText(
+        habitCompletion!.meta.id,
+        newText,
+        DateTime.now(),
+      );
+
+      expect(success, true);
+
+      // Verify the text was updated
+      final updated = await getIt<JournalDb>()
+          .journalEntityById(habitCompletion.meta.id) as HabitCompletionEntry?;
+      expect(updated?.entryText?.plainText, 'Habit completion notes');
+    });
+
+    test('updateTask returns false for non-existent entity', () async {
+      final taskData = TaskData(
+        status: TaskStatus.open(
+          id: uuid.v1(),
+          createdAt: DateTime.now(),
+          utcOffset: 60,
+        ),
+        title: 'test',
+        statusHistory: [],
+        dateTo: DateTime.now(),
+        dateFrom: DateTime.now(),
+      );
+
+      final result = await getIt<PersistenceLogic>().updateTask(
+        journalEntityId: 'non-existent-id',
+        taskData: taskData,
+      );
+
+      expect(result, false);
+    });
+
+    test('updateEvent returns false for non-existent entity', () async {
+      const eventData = EventData(
+        status: EventStatus.tentative,
+        title: 'Test',
+        stars: 0,
+      );
+
+      final result = await getIt<PersistenceLogic>().updateEvent(
+        journalEntityId: 'non-existent-id',
+        data: eventData,
+      );
+
+      expect(result, false);
+    });
+
+    test('addGeolocationAsync prevents concurrent additions for same entity',
+        () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      // Create entry without geolocation
+      final entry = JournalEntity.journalEntry(
+        entryText: const EntryText(plainText: 'Entry for concurrent test'),
+        meta: await persistenceLogic.createMetadata(
+          dateFrom: DateTime.now(),
+        ),
+      );
+      await persistenceLogic.createDbEntity(
+        entry,
+        shouldAddGeolocation: false,
+      );
+
+      // Start two concurrent geolocation additions
+      // addGeolocationAsync returns FutureOr, so wrap in Future for await
+      final future1 =
+          Future.value(persistenceLogic.addGeolocationAsync(entry.meta.id));
+      final future2 =
+          Future.value(persistenceLogic.addGeolocationAsync(entry.meta.id));
+
+      final results = await Future.wait([future1, future2]);
+
+      // One should succeed and one should return null (prevented by race condition guard)
+      expect(results.where((r) => r != null).length, 1);
+    });
+
+    test('addGeolocationAsync returns null when geolocation already exists',
+        () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      // Create entry and add geolocation
+      final entry = JournalEntity.journalEntry(
+        entryText:
+            const EntryText(plainText: 'Entry with existing geolocation'),
+        meta: await persistenceLogic.createMetadata(
+          dateFrom: DateTime.now(),
+        ),
+      );
+      await persistenceLogic.createDbEntity(
+        entry,
+        shouldAddGeolocation: false,
+      );
+
+      // Add geolocation first time
+      final firstResult =
+          await persistenceLogic.addGeolocationAsync(entry.meta.id);
+      expect(firstResult, isNotNull);
+
+      // Try to add again - should return existing geolocation without overwriting
+      final secondResult =
+          await persistenceLogic.addGeolocationAsync(entry.meta.id);
+
+      // Should return the existing geolocation
+      expect(secondResult, isNotNull);
+      expect(secondResult?.latitude, firstResult?.latitude);
+    });
+
+    test('createMetadata generates UUID v5 when uuidV5Input is provided',
+        () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      final meta1 = await persistenceLogic.createMetadata(
+        uuidV5Input: 'unique-input-string',
+      );
+      final meta2 = await persistenceLogic.createMetadata(
+        uuidV5Input: 'unique-input-string',
+      );
+
+      // Same input should generate same UUID v5
+      expect(meta1.id, meta2.id);
+    });
+
+    test('createMetadata generates UUID v1 when uuidV5Input is not provided',
+        () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      final meta1 = await persistenceLogic.createMetadata();
+      final meta2 = await persistenceLogic.createMetadata();
+
+      // Different calls without uuidV5Input should generate different UUIDs
+      expect(meta1.id, isNot(meta2.id));
+    });
+
+    test('createMetadata sets timezone and utcOffset', () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      final meta = await persistenceLogic.createMetadata();
+
+      expect(meta.timezone, isNotNull);
+      expect(meta.utcOffset, isNotNull);
+    });
+
+    test('createMetadata respects optional parameters', () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      final dateFrom = DateTime(2024, 1, 15, 10, 30);
+      final dateTo = DateTime(2024, 1, 15, 11, 30);
+      const tagIds = ['tag1', 'tag2'];
+      const labelIds = ['label1'];
+      const categoryId = 'category-123';
+
+      final meta = await persistenceLogic.createMetadata(
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        private: true,
+        tagIds: tagIds,
+        labelIds: labelIds,
+        categoryId: categoryId,
+        starred: true,
+        flag: EntryFlag.import,
+      );
+
+      expect(meta.dateFrom, dateFrom);
+      expect(meta.dateTo, dateTo);
+      expect(meta.private, true);
+      expect(meta.tagIds, tagIds);
+      expect(meta.labelIds, labelIds);
+      expect(meta.categoryId, categoryId);
+      expect(meta.starred, true);
+      expect(meta.flag, EntryFlag.import);
+    });
+
+    test('updateMetadata with clearLabelIds=true clears labels', () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      // Create entry directly to avoid async geolocation work that can outlive the test
+      final testDate = DateTime(2024, 6, 15, 14, 30);
+      final meta = await persistenceLogic.createMetadata(dateFrom: testDate);
+      final journalEntity = JournalEntity.journalEntry(
+        entryText: const EntryText(plainText: 'Entry with labels'),
+        meta: meta,
+      );
+      await persistenceLogic.createDbEntity(
+        journalEntity,
+        shouldAddGeolocation: false,
+      );
+
+      // First set labels via updateMetadata
+      final metaWithLabels = await persistenceLogic.updateMetadata(
+        journalEntity.meta,
+        labelIds: ['label1', 'label2'],
+      );
+      expect(metaWithLabels.labelIds, ['label1', 'label2']);
+
+      // Then clear labels
+      final metaCleared = await persistenceLogic.updateMetadata(
+        metaWithLabels,
+        clearLabelIds: true,
+      );
+      expect(metaCleared.labelIds, isNull);
+    });
   });
 }
 

@@ -323,4 +323,171 @@ void main() {
       );
     });
   });
+
+  test('captureEvent supports different InsightLevel values', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+
+      logging.captureEvent(
+        'trace message',
+        domain: 'TRACE_TEST',
+        level: InsightLevel.trace,
+      );
+
+      async.flushMicrotasks();
+
+      final logPath = p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      );
+      final content = File(logPath).readAsStringSync();
+      expect(content.contains('[TRACE] TRACE_TEST: trace message'), isTrue);
+    });
+  });
+
+  test('captureEvent supports warn level', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+
+      logging.captureEvent(
+        'warn message',
+        domain: 'WARN_TEST',
+        level: InsightLevel.warn,
+      );
+
+      async.flushMicrotasks();
+
+      final logPath = p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      );
+      final content = File(logPath).readAsStringSync();
+      expect(content.contains('[WARN] WARN_TEST: warn message'), isTrue);
+    });
+  });
+
+  test('captureEvent without subDomain formats line correctly', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+
+      logging.captureEvent(
+        'no subdomain',
+        domain: 'NOSUB',
+      );
+
+      async.flushMicrotasks();
+
+      final logPath = p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      );
+      final content = File(logPath).readAsStringSync();
+      // Should not have extra space before colon when no subDomain
+      expect(content.contains('[INFO] NOSUB: no subdomain'), isTrue);
+      expect(content.contains('NOSUB : '), isFalse); // No trailing space
+    });
+  });
+
+  test('config flag listener dynamically toggles logging', () async {
+    // Create a StreamController to control the flag stream
+    final flagController = StreamController<bool>();
+    addTearDown(flagController.close);
+
+    when(() => journalDb.watchConfigFlag(enableLoggingFlag))
+        .thenAnswer((_) => flagController.stream);
+    when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+
+    final svc = LoggingService()..listenToConfigFlag();
+
+    // Initially disabled (isTestEnv = true means _enableLogging = false)
+    svc.captureEvent('should be skipped', domain: 'TOGGLE');
+    await Future<void>.delayed(Duration.zero);
+    verifyNever(() => loggingDb.log(any()));
+
+    // Enable logging via config flag
+    flagController.add(true);
+    await Future<void>.delayed(Duration.zero);
+
+    svc.captureEvent('should be logged', domain: 'TOGGLE');
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    verify(() => loggingDb.log(any())).called(1);
+
+    // Disable logging via config flag
+    flagController.add(false);
+    await Future<void>.delayed(Duration.zero);
+
+    svc.captureEvent('should be skipped again', domain: 'TOGGLE');
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    // Should still be 1 call total (no new calls)
+    verifyNever(() => loggingDb.log(any()));
+  });
+
+  test('captureException with null stackTrace handles gracefully', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+
+      logging.captureException(
+        'error without stack',
+        domain: 'NULL_STACK',
+      );
+
+      async.flushMicrotasks();
+
+      final logPath = p.join(
+        tempDocs.path,
+        'logs',
+        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      );
+      final content = File(logPath).readAsStringSync();
+      expect(
+          content.contains('[ERROR] NULL_STACK: error without stack'), isTrue);
+    });
+  });
+
+  test('captureEvent uses exception InsightType', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+
+      logging.captureEvent(
+        'exceptional event',
+        domain: 'EXCEPTION_TYPE',
+        type: InsightType.exception,
+      );
+
+      async.flushMicrotasks();
+
+      // Verify DB was called with correct type
+      final captured = verify(() => loggingDb.log(captureAny())).captured;
+      expect(captured.length, equals(1));
+      final logEntry = captured.first as LogEntry;
+      expect(logEntry.type, equals('EXCEPTION'));
+    });
+  });
+
+  test('captureEvent verifies LogEntry level in DB', () {
+    fakeAsync((async) {
+      when(() => loggingDb.log(any())).thenAnswer((_) async => 1);
+
+      logging.captureEvent(
+        'error level event',
+        domain: 'ERROR_TEST',
+        level: InsightLevel.error,
+      );
+
+      async.flushMicrotasks();
+
+      // Verify DB was called with correct level
+      final captured = verify(() => loggingDb.log(captureAny())).captured;
+      expect(captured.length, equals(1));
+      final logEntry = captured.first as LogEntry;
+      expect(logEntry.level, equals('ERROR'));
+      expect(logEntry.domain, equals('ERROR_TEST'));
+      expect(logEntry.message, equals('error level event'));
+    });
+  });
 }

@@ -596,31 +596,33 @@ Additional edge cases if needed:
 
 ---
 
-## Implementation Order
+## Implementation Order (Critical Files First)
 
-### Week 1: Critical Files
-1. **persistence_logic.dart** - Core business logic
-2. **vector_clock_service.dart** - Foundation for sync
-3. **image_import.dart** - @visibleForTesting functions
+### Batch 1: Critical Business Logic
+1. **persistence_logic.dart** (248 lines) - Core entity creation/update logic
+2. **vector_clock_service.dart** (41 lines) - Foundation for sync, no tests exist
+3. **image_import.dart** (197 lines) - @visibleForTesting functions need coverage
 
-### Week 2: High Priority Services
-4. **logging_service.dart** - Error tracking
-5. **notification_service.dart** - User notifications
-6. **link_service.dart** - Entity relationships
-7. **health_import.dart** - Mobile platform tests
+### Batch 2: High Priority Services
+4. **logging_service.dart** (73 lines) - Error tracking infrastructure
+5. **notification_service.dart** (78 lines) - User notifications
+6. **link_service.dart** (21 lines) - Entity relationships
+7. **health_import.dart** (166 lines) - Mobile platform tests needed
 
-### Week 3: Medium Priority
-8. **nav_service.dart** - Navigation logic
-9. **editor_state_service.dart** - Draft management
-10. **file_utils.dart** - File operations
-11. **location.dart** - Geolocation
+### Batch 3: Medium Priority
+8. **nav_service.dart** (83 lines) - Navigation logic
+9. **editor_state_service.dart** (45 lines) - Draft management
+10. **entities_cache_service.dart** (87 lines) - Cache operations
+11. **file_utils.dart** (81 lines) - File operations
+12. **location.dart** (61 lines) - Geolocation
 
-### Week 4: Lower Priority & Verification
-12. **dev_logger.dart** / **dev_log.dart**
-13. **share_service.dart**
-14. **portal_service.dart**
-15. Verify existing tests count in coverage
-16. Add edge cases to well-tested files
+### Batch 4: Utils & Lower Priority
+13. **timezone.dart** (8 lines) - New test file needed
+14. **dev_logger.dart** (15 lines) - New test file needed
+15. **dev_log.dart** (4 lines) - New test file needed
+16. **share_service.dart** (3 lines) - New test file needed
+17. **portal_service.dart** (53 lines) - New test file needed
+18. Remaining utils files - Edge case additions
 
 ---
 
