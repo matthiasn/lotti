@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Ensure SetCoverArtChip widget tests register required dependencies and fallbacks in `getIt` to keep cover-art flows testable
 
+## [0.9.799] - 2026-01-05
+### Changed
+- FAB Addition Menu Redesign: Modernized the add entry bottom sheet with Nano Banana Pro styling
+  - Unified container with single dark background (removed separate card backgrounds)
+  - Clean list items with white icons (removed rounded gradient containers)
+  - Subtle horizontal dividers between menu items
+  - Consistent icon, text, and plus (+) trailing icon layout
+  - Edge-to-edge tap effects for better visual feedback
+
+### Fixed
+- OpenAI Compatible Provider: API Key field now visible when adding or editing providers (#2570)
+  - Removed `genericOpenAi` from `noApiKeyRequired` set as most OpenAI-compatible endpoints require Bearer Token authentication
+  - Authentication section now displays for OpenAI Compatible provider type
+
 ## [0.9.798] - 2026-01-04
 ### Added
 - AI Cover Art Generation: Generate task cover art directly from audio descriptions using Gemini's image generation model (Nano Banana Pro)

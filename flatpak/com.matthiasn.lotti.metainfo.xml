@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.799" date="2026-01-05">
+      <description>
+        <p>FAB Addition Menu Redesign: Modernized the add entry bottom sheet with Nano Banana Pro styling. Features unified dark background (no separate cards), clean white icons without gradient containers, subtle horizontal dividers between items, and edge-to-edge tap effects. Also fixed missing API Key field for OpenAI Compatible provider type (#2570) - authentication section now displays correctly for remote OpenAI-compatible endpoints.</p>
+      </description>
+    </release>
     <release version="0.9.798" date="2026-01-04">
       <description>
         <p>AI Cover Art Generation: Generate task cover art directly from audio descriptions using Gemini's Nano Banana Pro model. Trigger from audio entry action menu when linked to a task. Full task context (title, checklists, labels, summaries) included in prompt. Review modal with accept, edit, and regenerate options. Cover art display updated to 16:9 aspect ratio at full resolution for consistency with generated images.</p>
