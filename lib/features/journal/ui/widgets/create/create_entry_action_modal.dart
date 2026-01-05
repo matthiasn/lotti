@@ -48,18 +48,28 @@ class _CreateEntryMenuList extends StatelessWidget {
       PasteImageItem(linkedFromId, categoryId: categoryId),
     ];
 
+    // Filter out SizedBox.shrink() widgets used to hide conditional items
+    // to ensure dividers only appear between visible items
+    final visibleItems = items.where((widget) {
+      if (widget is SizedBox) {
+        return widget.width != 0.0 || widget.height != 0.0;
+      }
+      return true;
+    }).toList();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < items.length; i++) ...[
-          items[i],
-          if (i < items.length - 1)
+        for (var i = 0; i < visibleItems.length; i++) ...[
+          visibleItems[i],
+          if (i < visibleItems.length - 1)
             Divider(
               height: 1,
               thickness: 0.5,
               indent: AppTheme.cardPadding,
               endIndent: AppTheme.cardPadding,
-              color: context.colorScheme.outline.withValues(alpha: 0.15),
+              color: context.colorScheme.outline
+                  .withValues(alpha: AppTheme.alphaDivider),
             ),
         ],
       ],

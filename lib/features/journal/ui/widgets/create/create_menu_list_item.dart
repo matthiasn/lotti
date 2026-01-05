@@ -25,7 +25,7 @@ class CreateMenuListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final itemColor = isDisabled
-        ? context.colorScheme.onSurface.withValues(alpha: 0.38)
+        ? context.colorScheme.onSurface.withValues(alpha: AppTheme.alphaDisabled)
         : context.colorScheme.onSurface;
 
     return Material(
@@ -42,7 +42,7 @@ class CreateMenuListItem extends StatelessWidget {
               // Leading icon - clean, no container
               Icon(
                 icon,
-                size: AppTheme.iconSize + 2,
+                size: AppTheme.listItemIconSize,
                 color: itemColor,
               ),
               const SizedBox(width: AppTheme.modalChevronSpacerWidth),
@@ -64,7 +64,7 @@ class CreateMenuListItem extends StatelessWidget {
               Icon(
                 Icons.add,
                 size: AppTheme.iconSize,
-                color: itemColor.withValues(alpha: 0.7),
+                color: itemColor.withValues(alpha: AppTheme.alphaIconTrailing),
               ),
             ],
           ),
