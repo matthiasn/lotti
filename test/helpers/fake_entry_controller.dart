@@ -12,12 +12,27 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 export 'package:lotti/features/journal/state/entry_controller.dart'
     show entryControllerProvider;
 
+/// Tracks calls to various toggle methods for testing.
+class ToggleCallTracker {
+  final List<String> toggleStarredCalls = [];
+  final List<String> togglePrivateCalls = [];
+  final List<String> toggleFlaggedCalls = [];
+  final List<String> toggleMapVisibleCalls = [];
+}
+
 /// Fake EntryController that returns a fixed entity state.
 /// Used for testing providers that depend on entryControllerProvider.
 class FakeEntryController extends EntryController {
-  FakeEntryController(this._entity);
+  FakeEntryController(
+    this._entity, {
+    ToggleCallTracker? tracker,
+    bool showMap = false,
+  })  : _tracker = tracker,
+        _showMap = showMap;
 
   final JournalEntity _entity;
+  final ToggleCallTracker? _tracker;
+  final bool _showMap;
 
   @override
   Future<EntryState?> build({required String id}) {
@@ -25,7 +40,7 @@ class FakeEntryController extends EntryController {
     final value = EntryState.saved(
       entryId: id,
       entry: _entity,
-      showMap: false,
+      showMap: _showMap,
       isFocused: false,
       shouldShowEditorToolBar: false,
       formKey: GlobalKey<FormBuilderState>(),
@@ -34,6 +49,26 @@ class FakeEntryController extends EntryController {
     state = AsyncData(value);
     return SynchronousFuture(value);
   }
+
+  @override
+  Future<void> toggleStarred() async {
+    _tracker?.toggleStarredCalls.add(_entity.id);
+  }
+
+  @override
+  Future<void> togglePrivate() async {
+    _tracker?.togglePrivateCalls.add(_entity.id);
+  }
+
+  @override
+  Future<void> toggleFlagged() async {
+    _tracker?.toggleFlaggedCalls.add(_entity.id);
+  }
+
+  @override
+  void toggleMapVisible() {
+    _tracker?.toggleMapVisibleCalls.add(_entity.id);
+  }
 }
 
 /// Helper to create entry controller override that returns a fixed entity.
@@ -41,6 +76,19 @@ Override createEntryControllerOverride(JournalEntity entity) {
   return entryControllerProvider(id: entity.id).overrideWith(
     () => FakeEntryController(entity),
   );
+}
+
+/// Helper to create entry controller override with toggle call tracking.
+/// Returns a tuple of the override and a tracker for assertions.
+(Override, ToggleCallTracker) createEntryControllerOverrideWithTracker(
+  JournalEntity entity, {
+  bool showMap = false,
+}) {
+  final tracker = ToggleCallTracker();
+  final override = entryControllerProvider(id: entity.id).overrideWith(
+    () => FakeEntryController(entity, tracker: tracker, showMap: showMap),
+  );
+  return (override, tracker);
 }
 
 /// Tracks calls to setCoverArt for testing.
@@ -52,10 +100,10 @@ class CoverArtCallTracker {
 /// Used for behavioral testing of cover art functionality.
 class TrackingFakeEntryController extends FakeEntryController {
   // ignore: use_super_parameters, parent uses private `_entity` field
-  TrackingFakeEntryController(JournalEntity entity, this._tracker)
+  TrackingFakeEntryController(JournalEntity entity, this._coverArtTracker)
       : super(entity);
 
-  final CoverArtCallTracker _tracker;
+  final CoverArtCallTracker _coverArtTracker;
   JournalEntity? _currentEntity;
 
   @override
@@ -66,7 +114,7 @@ class TrackingFakeEntryController extends FakeEntryController {
 
   @override
   Future<void> setCoverArt(String? imageId) async {
-    _tracker.calls.add(imageId);
+    _coverArtTracker.calls.add(imageId);
 
     // Update state if it's a task, preserving existing form state
     final entity = _currentEntity ?? super._entity;
