@@ -1092,7 +1092,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalShareAudioHint => 'Compartir audio';
 
   @override
+  String get journalShareHint => 'Share';
+
+  @override
   String get journalSharePhotoHint => 'Compartir foto';
+
+  @override
+  String get journalShowLinkHint => 'Show link';
+
+  @override
+  String get journalHideLinkHint => 'Hide link';
 
   @override
   String get journalShowMapHint => 'Mostrar mapa';

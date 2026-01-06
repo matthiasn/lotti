@@ -1084,7 +1084,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalShareAudioHint => 'Share audio';
 
   @override
+  String get journalShareHint => 'Share';
+
+  @override
   String get journalSharePhotoHint => 'Share photo';
+
+  @override
+  String get journalShowLinkHint => 'Show link';
+
+  @override
+  String get journalHideLinkHint => 'Hide link';
 
   @override
   String get journalShowMapHint => 'Show map';

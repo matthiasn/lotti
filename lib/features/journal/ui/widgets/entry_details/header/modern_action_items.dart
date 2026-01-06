@@ -258,7 +258,7 @@ class ModernShareItem extends ConsumerWidget {
 
     return ActionMenuListItem(
       icon: Icons.share_rounded,
-      title: 'Share',
+      title: context.messages.journalShareHint,
       onTap: () async {
         Navigator.of(context).pop();
 
@@ -360,7 +360,9 @@ class ModernToggleHiddenItem extends ConsumerWidget {
 
     return ActionMenuListItem(
       icon: hidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-      title: hidden ? 'Show link' : 'Hide link',
+      title: hidden
+          ? context.messages.journalShowLinkHint
+          : context.messages.journalHideLinkHint,
       onTap: () {
         final updatedLink = link.copyWith(hidden: !hidden);
         notifier.updateLink(updatedLink);
