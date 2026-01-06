@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.801] - 2026-01-06
+### Changed
+- Entry Actions Menu Redesign: Restyled to match the FAB addition menu with Nano Banana Pro styling
+  - Unified list design with subtle horizontal dividers (removed card-based layout)
+  - Clean icons without gradient containers
+  - Consistent with FAB menu visual language
+  - Conditional item visibility handled at parent level to prevent double dividers
+
 ## [0.9.800] - 2026-01-06
 ### Fixed
 - Calendar View Stale Data: Fixed calendar not updating after adding or modifying entries
