@@ -25,7 +25,8 @@ class CreateMenuListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final itemColor = isDisabled
-        ? context.colorScheme.onSurface.withValues(alpha: AppTheme.alphaDisabled)
+        ? context.colorScheme.onSurface
+            .withValues(alpha: AppTheme.alphaDisabled)
         : context.colorScheme.onSurface;
 
     return Material(

@@ -75,7 +75,11 @@ class DayViewController extends _$DayViewController {
     ref
       ..watch(calendarCategoryVisibilityControllerProvider)
       ..onDispose(() => _updateSubscription?.cancel())
-      ..cacheFor(entryCacheDuration);
+      ..cacheFor(entryCacheDuration)
+      // Riverpod 3 pauses providers when not visible - invalidate on resume
+      // to ensure fresh data is fetched. Must defer to avoid lifecycle callback
+      // restriction that prevents using Ref methods inside onResume.
+      ..onResume(() => Future.microtask(ref.invalidateSelf));
     final data = await _fetch(timeSpanDays: timeSpanDays);
     listen();
     return data;

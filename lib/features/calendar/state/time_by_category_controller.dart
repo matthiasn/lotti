@@ -29,7 +29,12 @@ class TimeByCategoryController extends AsyncNotifier<TimeByCategoryData> {
 
   @override
   Future<TimeByCategoryData> build() async {
-    ref.onDispose(() => _updateSubscription?.cancel());
+    ref
+      ..onDispose(() => _updateSubscription?.cancel())
+      // Riverpod 3 pauses providers when not visible - invalidate on resume
+      // to ensure fresh data is fetched. Must defer to avoid lifecycle callback
+      // restriction that prevents using Ref methods inside onResume.
+      ..onResume(() => Future.microtask(ref.invalidateSelf));
     _listen();
     final timeSpanDays = ref.read(timeFrameControllerProvider);
     return _fetch(timeSpanDays);

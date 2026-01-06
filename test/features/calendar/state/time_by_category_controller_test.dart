@@ -307,6 +307,121 @@ void main() {
     }
   });
 
+  test('refetches data when provider resumes from paused state', () async {
+    // This test verifies the onResume callback that fixes Riverpod 3's
+    // auto-pause behavior where providers stop reacting to changes when
+    // their consumers are not visible.
+
+    // Arrange
+    final now = DateTime.now();
+    final dateFrom = DateTime(now.year, now.month, now.day);
+    final dateTo = dateFrom.add(const Duration(hours: 2));
+
+    final testEntry = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: 'test-entry-id',
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        createdAt: now,
+        updatedAt: now,
+        categoryId: 'test-category-id',
+      ),
+      entryText: const EntryText(plainText: 'Test entry'),
+    );
+
+    final category = CategoryDefinition(
+      id: 'test-category-id',
+      createdAt: now,
+      updatedAt: now,
+      name: 'Test Category',
+      color: '#FF0000',
+      vectorClock: null,
+      private: false,
+      active: true,
+    );
+
+    // Setup mock responses for initial load
+    when(
+      () => mockDb.sortedCalendarEntries(
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => [testEntry]);
+
+    when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+    when(() => mockDb.getJournalEntitiesForIds(any()))
+        .thenAnswer((_) async => []);
+
+    when(() => mockEntitiesCacheService.getCategoryById(any()))
+        .thenReturn(category);
+
+    when(() => mockEntitiesCacheService.sortedCategories)
+        .thenReturn([category]);
+
+    // Act - initial load
+    final subscription = container.listen(
+      timeByCategoryControllerProvider,
+      listener.call,
+      fireImmediately: true,
+    );
+
+    // Wait for initial state
+    await container.read(timeByCategoryControllerProvider.notifier).future;
+
+    // Verify initial fetch
+    verify(
+      () => mockDb.sortedCalendarEntries(
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).called(1);
+
+    // Simulate pause by closing the subscription (simulating user navigating away)
+    subscription.close();
+
+    // Change the data while "paused"
+    final updatedEntry = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: 'updated-entry-id',
+        dateFrom: dateFrom,
+        dateTo: dateTo.add(const Duration(hours: 1)), // Duration changed
+        createdAt: now,
+        updatedAt: now,
+        categoryId: 'test-category-id',
+      ),
+      entryText: const EntryText(plainText: 'Updated entry'),
+    );
+
+    when(
+      () => mockDb.sortedCalendarEntries(
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => [updatedEntry]);
+
+    // Simulate resume by adding a new listener (user navigating back)
+    container.listen(
+      timeByCategoryControllerProvider,
+      listener.call,
+      fireImmediately: true,
+    );
+
+    // Allow microtask for onResume's Future.microtask(ref.invalidateSelf)
+    await Future<void>.delayed(Duration.zero);
+
+    // Wait for the refetch triggered by onResume
+    await container.read(timeByCategoryControllerProvider.notifier).future;
+
+    // Verify the data was refetched (onResume triggered invalidateSelf)
+    verify(
+      () => mockDb.sortedCalendarEntries(
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).called(greaterThanOrEqualTo(1));
+  });
+
   test('timeByDayChart provider transforms time data correctly', () async {
     // Arrange
     final now = DateTime.now();
