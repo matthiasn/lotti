@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.801" date="2026-01-06">
+      <description>
+        <p>Entry Actions Menu Redesign: Restyled to match the FAB addition menu with Nano Banana Pro styling. Features unified list design with subtle horizontal dividers (removed card-based layout), clean icons without gradient containers, and consistent visual language across all modal menus.</p>
+      </description>
+    </release>
     <release version="0.9.800" date="2026-01-06">
       <description>
         <p>Calendar View Stale Data Fix: Fixed calendar not updating after adding or modifying entries. Root cause was Riverpod 3's auto-pause feature pausing providers when widgets are not visible. Added ref.onResume() callbacks to calendar providers that invalidate themselves when resuming, ensuring fresh data is always fetched when returning to the calendar view.</p>

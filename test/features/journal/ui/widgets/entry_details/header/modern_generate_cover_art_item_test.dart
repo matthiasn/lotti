@@ -4,13 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/widgets/modal/modern_modal_action_item.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../helpers/fake_entry_controller.dart';
@@ -136,7 +136,7 @@ void main() {
       await tester.pump();
 
       // Should not find any action item
-      expect(find.byType(ModernModalActionItem), findsNothing);
+      expect(find.byType(ActionMenuListItem), findsNothing);
       expect(find.byType(SizedBox), findsWidgets);
     });
 
@@ -160,7 +160,7 @@ void main() {
       await tester.pump();
 
       // Should not find any action item
-      expect(find.byType(ModernModalActionItem), findsNothing);
+      expect(find.byType(ActionMenuListItem), findsNothing);
     });
 
     testWidgets('shows SizedBox.shrink when linked entry is not a Task',
@@ -185,7 +185,7 @@ void main() {
       await tester.pump();
 
       // Should not find any action item
-      expect(find.byType(ModernModalActionItem), findsNothing);
+      expect(find.byType(ActionMenuListItem), findsNothing);
     });
 
     testWidgets('renders action item when audio linked to task',
@@ -221,7 +221,7 @@ void main() {
       expect(find.byType(ModernGenerateCoverArtItem), findsOneWidget);
 
       // Should render the action item when audio is linked to a task
-      expect(find.byType(ModernModalActionItem), findsOneWidget);
+      expect(find.byType(ActionMenuListItem), findsOneWidget);
 
       // Should have the correct icon
       expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);

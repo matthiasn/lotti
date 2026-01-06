@@ -5,13 +5,15 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -39,11 +41,14 @@ class ModernToggleStarredItem extends ConsumerWidget {
     final entry = entryState.entry;
     final starred = entry?.meta.starred ?? false;
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: starred ? Icons.star_rounded : Icons.star_outline_rounded,
       title: context.messages.journalToggleStarredTitle,
       iconColor: starred ? starredGold : null,
-      onTap: notifier.toggleStarred,
+      onTap: () {
+        notifier.toggleStarred();
+        Navigator.of(context).pop();
+      },
     );
   }
 }
@@ -70,11 +75,14 @@ class ModernTogglePrivateItem extends ConsumerWidget {
     final entry = entryState.entry;
     final private = entry?.meta.private ?? false;
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: private ? Icons.lock_rounded : Icons.lock_open_rounded,
       title: context.messages.journalTogglePrivateTitle,
       iconColor: private ? const Color(0xFFE57373) : null,
-      onTap: notifier.togglePrivate,
+      onTap: () {
+        notifier.togglePrivate();
+        Navigator.of(context).pop();
+      },
     );
   }
 }
@@ -101,11 +109,14 @@ class ModernToggleFlaggedItem extends ConsumerWidget {
     final entry = entryState.entry;
     final flagged = entry?.meta.flag != null;
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: flagged ? Icons.flag_rounded : Icons.flag_outlined,
       title: context.messages.journalToggleFlaggedTitle,
       iconColor: flagged ? const Color(0xFFBA68C8) : null,
-      onTap: notifier.toggleFlagged,
+      onTap: () {
+        notifier.toggleFlagged();
+        Navigator.of(context).pop();
+      },
     );
   }
 }
@@ -134,12 +145,15 @@ class ModernToggleMapItem extends ConsumerWidget {
 
     final showMap = entryState.showMap;
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: showMap ? Icons.map_rounded : Icons.map_outlined,
       title: showMap
           ? context.messages.journalHideMapHint
           : context.messages.journalShowMapHint,
-      onTap: notifier.toggleMapVisible,
+      onTap: () {
+        notifier.toggleMapVisible();
+        Navigator.of(context).pop();
+      },
     );
   }
 }
@@ -179,9 +193,9 @@ class ModernDeleteItem extends ConsumerWidget {
       }
     }
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: Icons.delete_outline_rounded,
-      title: 'Delete entry',
+      title: context.messages.journalDeleteHint,
       isDestructive: true,
       onTap: () async {
         await onPressed();
@@ -214,7 +228,7 @@ class ModernSpeechItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: Icons.transcribe_rounded,
       title: context.messages.speechModalTitle,
       onTap: () => pageIndexNotifier.value = 2,
@@ -242,9 +256,9 @@ class ModernShareItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: Icons.share_rounded,
-      title: 'Share',
+      title: context.messages.journalShareHint,
       onTap: () async {
         Navigator.of(context).pop();
 
@@ -276,7 +290,7 @@ class ModernTagAddItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: Icons.label_outline_rounded,
       title: context.messages.journalTagPlusHint,
       onTap: () => pageIndexNotifier.value = 1,
@@ -297,9 +311,9 @@ class ModernUnlinkItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: Icons.link_off_rounded,
-      title: 'Unlink',
+      title: context.messages.journalUnlinkHint,
       onTap: () async {
         const unlinkKey = 'unlinkKey';
         final result = await showModalActionSheet<String>(
@@ -344,9 +358,11 @@ class ModernToggleHiddenItem extends ConsumerWidget {
     final provider = linkedEntriesControllerProvider(id: link.fromId);
     final notifier = ref.read(provider.notifier);
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: hidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-      title: hidden ? 'Show link' : 'Hide link',
+      title: hidden
+          ? context.messages.journalShowLinkHint
+          : context.messages.journalHideLinkHint,
       onTap: () {
         final updatedLink = link.copyWith(hidden: !hidden);
         notifier.updateLink(updatedLink);
@@ -376,9 +392,9 @@ class ModernCopyImageItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: MdiIcons.contentCopy,
-      title: 'Copy image',
+      title: context.messages.journalCopyImageLabel,
       onTap: () async {
         await notifier.copyImage();
         if (context.mounted) {
@@ -418,7 +434,7 @@ class ModernCopyEntryTextItem extends ConsumerWidget {
         : context.messages.copyAsText;
     final icon = markdown ? Icons.code : MdiIcons.contentCopy;
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: icon,
       title: title,
       onTap: () async {
@@ -456,7 +472,7 @@ class ModernLabelsItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: MdiIcons.labelOutline,
       title: context.messages.entryLabelsActionTitle,
       subtitle: context.messages.entryLabelsActionSubtitle,
@@ -521,7 +537,7 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ModernModalActionItem(
+    return ActionMenuListItem(
       icon: Icons.auto_awesome_outlined,
       title: context.messages.generateCoverArt,
       subtitle: context.messages.generateCoverArtSubtitle,
@@ -552,6 +568,50 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
       entityId: entryId,
       linkedTaskId: linkedTaskId,
       categoryId: linkedTask.meta.categoryId,
+    );
+  }
+}
+
+/// Modern styled link from action item
+class ModernLinkFromItem extends StatelessWidget {
+  const ModernLinkFromItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionMenuListItem(
+      icon: Icons.add_link,
+      title: context.messages.journalLinkFromHint,
+      onTap: () {
+        getIt<LinkService>().linkFrom(entryId);
+        Navigator.of(context).pop();
+      },
+    );
+  }
+}
+
+/// Modern styled link to action item
+class ModernLinkToItem extends StatelessWidget {
+  const ModernLinkToItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionMenuListItem(
+      icon: MdiIcons.target,
+      title: context.messages.journalLinkToHint,
+      onTap: () {
+        getIt<LinkService>().linkTo(entryId);
+        Navigator.of(context).pop();
+      },
     );
   }
 }

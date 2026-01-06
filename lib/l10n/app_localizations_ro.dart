@@ -1090,7 +1090,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalShareAudioHint => 'Împarte audio';
 
   @override
+  String get journalShareHint => 'Share';
+
+  @override
   String get journalSharePhotoHint => 'Împarte foto';
+
+  @override
+  String get journalShowLinkHint => 'Show link';
+
+  @override
+  String get journalHideLinkHint => 'Hide link';
 
   @override
   String get journalShowMapHint => 'Arată harta';

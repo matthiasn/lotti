@@ -2067,11 +2067,29 @@ abstract class AppLocalizations {
   /// **'Share audio'**
   String get journalShareAudioHint;
 
+  /// No description provided for @journalShareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get journalShareHint;
+
   /// No description provided for @journalSharePhotoHint.
   ///
   /// In en, this message translates to:
   /// **'Share photo'**
   String get journalSharePhotoHint;
+
+  /// No description provided for @journalShowLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show link'**
+  String get journalShowLinkHint;
+
+  /// No description provided for @journalHideLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide link'**
+  String get journalHideLinkHint;
 
   /// No description provided for @journalShowMapHint.
   ///

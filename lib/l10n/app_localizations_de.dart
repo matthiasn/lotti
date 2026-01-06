@@ -1090,7 +1090,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalShareAudioHint => 'Audio teilen';
 
   @override
+  String get journalShareHint => 'Share';
+
+  @override
   String get journalSharePhotoHint => 'Foto teilen';
+
+  @override
+  String get journalShowLinkHint => 'Show link';
+
+  @override
+  String get journalHideLinkHint => 'Hide link';
 
   @override
   String get journalShowMapHint => 'Karte anzeigen';
