@@ -312,48 +312,26 @@ void main() {
     // Wait for initial state
     await container.read(dayViewControllerProvider.future);
 
-    // Verify initial fetch
-    verify(
-      () => mockDb.sortedCalendarEntries(
-        rangeStart: any(named: 'rangeStart'),
-        rangeEnd: any(named: 'rangeEnd'),
-      ),
-    ).called(1);
-
-    // Change the data (simulating what happens while paused)
-    when(
-      () => mockDb.sortedCalendarEntries(
-        rangeStart: any(named: 'rangeStart'),
-        rangeEnd: any(named: 'rangeEnd'),
-      ),
-    ).thenAnswer((_) async => [
-          JournalEntity.journalEntry(
-            meta: Metadata(
-              id: 'updated-entry-id',
-              dateFrom: dateFrom,
-              dateTo: dateTo.add(const Duration(hours: 1)),
-              createdAt: now,
-              updatedAt: now,
-            ),
-            entryText: const EntryText(plainText: 'Updated entry'),
-          ),
-        ]);
-
     // Simulate what onResume does: invalidate the provider
     // In production, this is triggered by Riverpod 3's TickerMode-based
     // pause/resume lifecycle when navigating back to the calendar view
     container.invalidate(dayViewControllerProvider);
 
-    // Wait for the refetch
+    // Allow microtask to process the invalidation
+    await Future<void>.delayed(Duration.zero);
+
+    // Wait for the refetch triggered by invalidation
     await container.read(dayViewControllerProvider.future);
 
-    // Verify the data was refetched after invalidation
+    // Verify the data was fetched twice:
+    // 1. Initial load
+    // 2. After invalidation (simulating onResume behavior)
     verify(
       () => mockDb.sortedCalendarEntries(
         rangeStart: any(named: 'rangeStart'),
         rangeEnd: any(named: 'rangeEnd'),
       ),
-    ).called(1);
+    ).called(2);
   });
 
   test('DaySelectionController selects day correctly', () {
