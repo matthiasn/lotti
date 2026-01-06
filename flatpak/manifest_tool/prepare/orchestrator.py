@@ -632,6 +632,10 @@ def _ensure_flatpak_flutter_repo(context: PrepareFlathubContext, printer: _Statu
         [
             "git",
             "clone",
+            "--branch",
+            "0.10.0",
+            "--depth",
+            "1",
             "https://github.com/TheAppgineer/flatpak-flutter.git",
             str(repo_dir),
         ],
@@ -1282,8 +1286,15 @@ def _run_cargo_generator(context: PrepareFlathubContext, inputs: list[Path], out
         "-o",
         str(output_path),
     ]
+    # cargo_generator imports sibling packages (flutter_app_fetcher), so we need
+    # to add the flatpak-flutter repo to PYTHONPATH for those imports to resolve.
+    env = dict(os.environ)
+    existing_pythonpath = env.get("PYTHONPATH", "")
+    repo_path = str(context.flatpak_flutter_repo)
+    env["PYTHONPATH"] = f"{repo_path}:{existing_pythonpath}" if existing_pythonpath else repo_path
     result = _run_command(
         command,
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
