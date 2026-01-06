@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.800" date="2026-01-06">
+      <description>
+        <p>Calendar View Stale Data Fix: Fixed calendar not updating after adding or modifying entries. Root cause was Riverpod 3's auto-pause feature pausing providers when widgets are not visible. Added ref.onResume() callbacks to calendar providers that invalidate themselves when resuming, ensuring fresh data is always fetched when returning to the calendar view.</p>
+      </description>
+    </release>
     <release version="0.9.799" date="2026-01-05">
       <description>
         <p>FAB Addition Menu Redesign: Modernized the add entry bottom sheet with Nano Banana Pro styling. Features unified dark background (no separate cards), clean white icons without gradient containers, subtle horizontal dividers between items, and edge-to-edge tap effects. Also fixed missing API Key field for OpenAI Compatible provider type (#2570) - authentication section now displays correctly for remote OpenAI-compatible endpoints.</p>

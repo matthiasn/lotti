@@ -5,8 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.9.800] - 2026-01-06
 ### Fixed
-- Ensure SetCoverArtChip widget tests register required dependencies and fallbacks in `getIt` to keep cover-art flows testable
+- Calendar View Stale Data: Fixed calendar not updating after adding or modifying entries
+  - Root cause: Riverpod 3's auto-pause feature pauses providers when widgets are not visible
+  - Added `ref.onResume()` callbacks to `DayViewController` and `TimeByCategoryController`
+  - Providers now invalidate themselves when resuming, ensuring fresh data is fetched
+  - Uses `Future.microtask()` to defer invalidation per Riverpod 3 lifecycle callback restrictions
 
 ## [0.9.799] - 2026-01-05
 ### Changed
