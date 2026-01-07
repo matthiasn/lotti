@@ -209,20 +209,20 @@ void main() {
   });
 
   group('completionRate', () {
-    final now = DateTime.now();
-    final lastWeek = now.subtract(const Duration(days: 7));
+    // Use fixed dates to ensure habits are active before the test date (2025-12-30)
+    final activeDate = DateTime(2025, 12, 20);
 
     HabitDefinition createHabit(String id) {
       return HabitDefinition(
         id: id,
         name: 'Habit $id',
         description: 'Description',
-        createdAt: lastWeek,
-        updatedAt: lastWeek,
+        createdAt: activeDate,
+        updatedAt: activeDate,
         vectorClock: null,
         private: false,
         active: true,
-        activeFrom: lastWeek,
+        activeFrom: activeDate,
         habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
       );
     }
@@ -303,20 +303,20 @@ void main() {
   });
 
   group('habitMinY', () {
-    final now = DateTime.now();
-    final lastWeek = now.subtract(const Duration(days: 7));
+    // Use fixed dates to ensure habits are active before the test dates (2025-12-29, 2025-12-30)
+    final activeDate = DateTime(2025, 12, 20);
 
     HabitDefinition createHabit(String id) {
       return HabitDefinition(
         id: id,
         name: 'Habit $id',
         description: 'Description',
-        createdAt: lastWeek,
-        updatedAt: lastWeek,
+        createdAt: activeDate,
+        updatedAt: activeDate,
         vectorClock: null,
         private: false,
         active: true,
-        activeFrom: lastWeek,
+        activeFrom: activeDate,
         habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
       );
     }

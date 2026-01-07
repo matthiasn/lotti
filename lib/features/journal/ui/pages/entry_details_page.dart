@@ -124,6 +124,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
           children: [
             CustomScrollView(
               controller: _scrollController,
+              cacheExtent: 4000,
               slivers: [
                 JournalSliverAppBar(entryId: widget.itemId),
                 SliverToBoxAdapter(

@@ -28,38 +28,48 @@ class LabelSelectionModalUtils {
     final searchController = TextEditingController();
 
     try {
-      await ModalUtils.showSinglePageModal<void>(
+      await ModalUtils.showSingleSliverPageModal<void>(
         context: context,
-        titleWidget: Padding(
-          padding:
-              const EdgeInsets.only(top: 8, left: 20, right: 20, bottom: 8),
-          child: LottiSearchBar(
-            hintText: context.messages.tasksLabelsSheetSearchHint,
-            controller: searchController,
-            useGradientInDark: false,
-            onChanged: (value) => searchNotifier.value = value,
-            onClear: () {
-              searchNotifier.value = '';
-              searchController.clear();
-            },
-            textCapitalization: TextCapitalization.words,
-          ),
-        ),
-        navBarHeight: 80,
-        stickyActionBar:
-            LabelSelectionStickyActionBar(applyController: applyController),
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
-        builder: (ctx) {
-          final minHeight = MediaQuery.of(ctx).size.height * 0.5;
-          return ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minHeight),
-            child: LabelSelectionModalContent(
-              entryId: entryId,
-              initialLabelIds: initialLabelIds,
-              categoryId: categoryId,
-              applyController: applyController,
-              searchQuery: searchNotifier,
+        builder: (modalContext) {
+          return ModalUtils.sliverModalSheetPage(
+            context: modalContext,
+            navBarHeight: 80,
+            showCloseButton: false,
+            titleWidget: Padding(
+              padding: const EdgeInsets.only(
+                top: 8,
+                left: 20,
+                right: 20,
+                bottom: 8,
+              ),
+              child: LottiSearchBar(
+                hintText: context.messages.tasksLabelsSheetSearchHint,
+                controller: searchController,
+                useGradientInDark: false,
+                onChanged: (value) => searchNotifier.value = value,
+                onClear: () {
+                  searchNotifier.value = '';
+                  searchController.clear();
+                },
+                textCapitalization: TextCapitalization.words,
+              ),
             ),
+            stickyActionBar: LabelSelectionStickyActionBar(
+              applyController: applyController,
+            ),
+            slivers: [
+              LabelSelectionSliverContent(
+                entryId: entryId,
+                initialLabelIds: initialLabelIds,
+                categoryId: categoryId,
+                applyController: applyController,
+                searchQuery: searchNotifier,
+              ),
+              // Bottom padding sliver
+              const SliverPadding(
+                padding: EdgeInsets.only(bottom: 100),
+              ),
+            ],
           );
         },
       );

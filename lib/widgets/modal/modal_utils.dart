@@ -179,10 +179,12 @@ class ModalUtils {
     Widget? stickyActionBar,
     ScrollController? scrollController,
     String? title,
+    Widget? titleWidget,
     bool isTopBarLayerAlwaysVisible = true,
     bool showCloseButton = true,
     void Function()? onTapBack,
     double? navBarHeight,
+    double? cacheExtent,
   }) {
     final colorScheme = context.colorScheme;
 
@@ -194,19 +196,20 @@ class ModalUtils {
       useSafeArea: true,
       resizeToAvoidBottomInset: true,
       navBarHeight: navBarHeight ?? 65,
-      topBarTitle: title != null
-          ? Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                title,
-                style: context.textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            )
-          : null,
+      topBarTitle: titleWidget ??
+          (title != null
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    title,
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                )
+              : null),
       isTopBarLayerAlwaysVisible: isTopBarLayerAlwaysVisible,
       leadingNavBarWidget: onTapBack != null
           ? IconButton(
