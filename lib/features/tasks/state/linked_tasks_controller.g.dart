@@ -202,7 +202,7 @@ final class OutgoingLinkedTasksProvider extends $FunctionalProvider<
 }
 
 String _$outgoingLinkedTasksHash() =>
-    r'22d1f2dc6c6aafda071a74faed9e5afda408d22f';
+    r'ba6fad24b848ec12d6a7c8784289dba3391995ce';
 
 /// Provider that resolves outgoing entry links to Task entities.
 ///

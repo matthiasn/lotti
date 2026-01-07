@@ -5,6 +5,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/whats_new/ui/whats_new_indicator.dart';
+import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -21,8 +23,23 @@ class SettingsPage extends ConsumerWidget {
 
     return SliverBoxAdapterPage(
       title: context.messages.navTabTitleSettings,
+      actions: [
+        GestureDetector(
+          onTap: () => WhatsNewModal.show(context),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: WhatsNewIndicator(),
+          ),
+        ),
+      ],
       child: Column(
         children: [
+          AnimatedModernSettingsCardWithIcon(
+            title: "What's New",
+            subtitle: 'See the latest updates and features',
+            icon: Icons.new_releases_outlined,
+            onTap: () => WhatsNewModal.show(context),
+          ),
           AnimatedModernSettingsCardWithIcon(
             title: 'AI Settings',
             subtitle: 'Configure AI providers, models, and prompts',
