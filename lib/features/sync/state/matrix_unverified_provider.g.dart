@@ -35,7 +35,7 @@ final class MatrixUnverifiedControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$matrixUnverifiedControllerHash() =>
-    r'94e71eb9758bf2a01e69b4601d23f0e262cd837d';
+    r'da543420f439121a16e51f4992934379143e27d5';
 
 abstract class _$MatrixUnverifiedController
     extends $AsyncNotifier<List<DeviceKeys>> {

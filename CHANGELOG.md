@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed memory leaks in EditorWidget and TextViewerWidget (ScrollController/FocusNode now properly managed)
   - These optimizations target smooth 60/120fps scrolling, especially for tasks with many checklist items
 
+### Fixed
+- High CPU Usage on Calendar Page (#2578): Removed `ref.onResume(() => ref.invalidateSelf())` from calendar controllers
+  - The pattern caused an infinite rebuild loop (160%+ CPU when idle)
+  - Root cause: `invalidateSelf` on resume triggered rebuild → pause → resume → invalidateSelf cycle
+  - Calendar updates are already handled by existing `onVisibilityChanged()` and stream listeners
+
 ## [0.9.801] - 2026-01-06
 ### Changed
 - Entry Actions Menu Redesign: Restyled to match the FAB addition menu with Nano Banana Pro styling
