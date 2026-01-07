@@ -74,9 +74,9 @@ CARGO_LOCK_SOURCES: tuple[tuple[str, str], ...] = (
     (
         "flutter_vodozemac",
         (
-            # Match the plugin version used in pubspec (0.4.1)
+            # Match the plugin version used in pubspec-sources (0.3.0)
             "https://raw.githubusercontent.com/famedly/dart-vodozemac/"
-            "v0.4.1/rust/Cargo.lock"
+            "5319314eb397bc3c8de06baddbe64fa721596ce0/rust/Cargo.lock"
         ),
     ),
     (
@@ -478,6 +478,7 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _ensure_setup_helper_reference(context, printer)
     _ensure_flatpak_flutter_repo(context, printer)
     _prepare_workspace_files(context, printer)
+    _prestage_local_tool_for_pub_get(context, printer)
     _prime_flutter_sdk(context, printer)
     _run_flatpak_flutter(context, printer)
     _normalize_sqlite_patch(context, printer)
@@ -494,6 +495,29 @@ def _execute_pipeline(context: PrepareFlathubContext, printer: _StatusPrinter) -
     _cleanup(context, printer)
     _maybe_test_build(context, printer)
     _print_summary(context, printer)
+
+
+def _prestage_local_tool_for_pub_get(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
+    """Pre-stage local tool path deps into flatpak-flutter build dir before pub get.
+
+    flatpak-flutter clones the app into `.flatpak-builder/build/lotti` and runs
+    `flutter pub get` there. If the app depends on a local path like
+    `tool/lotti_custom_lint`, ensure that directory exists in the clone before
+    pub get runs by copying it from the repository root.
+    """
+    source_dir = context.repo_root / "tool" / "lotti_custom_lint"
+    if not source_dir.is_dir():
+        return
+    target_root = context.work_dir / ".flatpak-builder" / "build" / "lotti"
+    target_dir = target_root / "tool" / "lotti_custom_lint"
+    try:
+        target_dir.parent.mkdir(parents=True, exist_ok=True)
+        # Copy only if missing or stale
+        if not target_dir.exists():
+            _copytree(source_dir, target_dir)
+            printer.info("Pre-staged tool/lotti_custom_lint for flatpak-flutter pub get")
+    except (OSError, shutil.Error):
+        _LOGGER.debug("Failed to pre-stage local tool path", exc_info=True)
 
 
 def _prepare_directories(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
@@ -526,6 +550,9 @@ def _prepare_manifest_for_flatpak_flutter(context: PrepareFlathubContext, printe
 
     branch_applied, flutter_added, repo_overridden = _prepare_lotti_module_for_flatpak_flutter(modules, context)
 
+    # Ensure local tool path dependencies are available to flatpak-flutter before pub get
+    _ensure_local_tool_paths(context, document, printer)
+
     if branch_applied or flutter_added or repo_overridden:
         document.mark_changed()
     document.save()
@@ -538,6 +565,52 @@ def _prepare_manifest_for_flatpak_flutter(context: PrepareFlathubContext, printe
         printer.info("Injected Flutter SDK git source into lotti module")
     if repo_overridden:
         printer.info(f"Using PR fork URL: {context.pr_head_url}")
+
+
+def _ensure_local_tool_paths(
+    context: PrepareFlathubContext, document: ManifestDocument, printer: _StatusPrinter
+) -> None:
+    """Inject local tool/ path deps into lotti sources for flatpak-flutter.
+
+    flatpak-flutter runs `flutter pub get` before processing foreign.json. If the
+    app depends on a local path (e.g., tool/lotti_custom_lint), ensure it's included
+    as a 'dir' source so it exists under .flatpak-builder/build/<app>/tool/... when
+    pub get runs.
+    """
+    tool_rel = Path("tool/lotti_custom_lint")
+    tool_abs = context.work_dir / tool_rel
+    if not tool_abs.exists():
+        # Try copying from repo_root if not already staged
+        repo_tool = context.repo_root / tool_rel
+        if repo_tool.exists():
+            try:
+                _copytree(repo_tool, tool_abs)
+                printer.info("Staged local tool path: tool/lotti_custom_lint")
+            except Exception as exc:  # noqa: BLE001 - best effort staging, log and continue
+                printer.warn(f"Failed to stage local tool path: {exc}")
+    if not tool_abs.exists():
+        return
+
+    modules = document.ensure_modules()
+    for module in modules:
+        if not isinstance(module, dict) or module.get("name") != "lotti":
+            continue
+        sources = module.setdefault("sources", [])
+        already = any(
+            isinstance(s, dict) and s.get("type") == "dir" and s.get("path") == str(tool_rel) for s in sources
+        )
+        if not already:
+            sources.insert(
+                0,
+                {
+                    "type": "dir",
+                    "path": str(tool_rel),
+                    "dest": str(tool_rel),
+                },
+            )
+            document.mark_changed()
+            printer.info("Injected local tool dir source: tool/lotti_custom_lint")
+        break
 
 
 def _ensure_setup_helper_reference(context: PrepareFlathubContext, printer: _StatusPrinter) -> None:
@@ -559,10 +632,6 @@ def _ensure_flatpak_flutter_repo(context: PrepareFlathubContext, printer: _Statu
         [
             "git",
             "clone",
-            "--branch",
-            "0.10.0",
-            "--depth",
-            "1",
             "https://github.com/TheAppgineer/flatpak-flutter.git",
             str(repo_dir),
         ],
@@ -582,6 +651,7 @@ def _prepare_workspace_files(context: PrepareFlathubContext, printer: _StatusPri
 
     lib_src = repo_root / "lib"
     linux_src = repo_root / "linux"
+    tool_src = repo_root / "tool"
     pubspec_yaml = repo_root / "pubspec.yaml"
     pubspec_lock = repo_root / "pubspec.lock"
 
@@ -596,6 +666,27 @@ def _prepare_workspace_files(context: PrepareFlathubContext, printer: _StatusPri
 
     _copytree(lib_src, work_dir / "lib")
     _copytree(linux_src, work_dir / "linux")
+    # Copy local tool/ path dependencies (e.g., tool/lotti_custom_lint) so flatpak-flutter pub get resolves
+    if tool_src.is_dir():
+        _copytree(tool_src, work_dir / "tool")
+        # Write foreign.json to have flatpak-flutter embed local tool paths into the app sources
+        try:
+            foreign_json = {
+                "app_local_paths": {
+                    "manifest": {
+                        "sources": [
+                            {
+                                "type": "dir",
+                                "path": "tool/lotti_custom_lint",
+                                "dest": "$APP/tool/lotti_custom_lint",
+                            }
+                        ]
+                    }
+                }
+            }
+            (work_dir / "foreign.json").write_text(json.dumps(foreign_json, indent=2) + "\n", encoding="utf-8")
+        except Exception as exc:  # noqa: BLE001 - best effort hint file
+            printer.warn(f"Failed to write foreign.json: {exc}")
     _copyfile(pubspec_yaml, work_dir / "pubspec.yaml")
     _copyfile(pubspec_lock, work_dir / "pubspec.lock")
 
@@ -755,15 +846,6 @@ def _copy_generated_artifacts(context: PrepareFlathubContext, printer: _StatusPr
     helper_target = work_dir / context.setup_helper_basename
     if helper_target.is_file():
         _copyfile(helper_target, output_dir / context.setup_helper_basename)
-
-    # Copy generated/ directory (new flatpak-flutter structure)
-    generated_dir = work_dir / "generated"
-    if generated_dir.is_dir():
-        dest_generated = output_dir / "generated"
-        if dest_generated.exists():
-            shutil.rmtree(dest_generated)
-        _copytree(generated_dir, dest_generated)
-        printer.info("Copied generated/ directory (offline dependency manifests)")
 
     patterns = [
         "**/.flatpak-builder/**/pubspec-sources.json",
@@ -1200,15 +1282,8 @@ def _run_cargo_generator(context: PrepareFlathubContext, inputs: list[Path], out
         "-o",
         str(output_path),
     ]
-    # cargo_generator imports sibling packages (flutter_app_fetcher), so we need
-    # to add the flatpak-flutter repo to PYTHONPATH for those imports to resolve.
-    env = dict(os.environ)
-    existing_pythonpath = env.get("PYTHONPATH", "")
-    repo_path = str(context.flatpak_flutter_repo)
-    env["PYTHONPATH"] = f"{repo_path}:{existing_pythonpath}" if existing_pythonpath else repo_path
     result = _run_command(
         command,
-        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
