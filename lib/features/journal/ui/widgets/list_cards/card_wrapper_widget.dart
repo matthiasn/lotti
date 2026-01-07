@@ -20,20 +20,24 @@ class CardWrapperWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: item.maybeMap(
-        journalImage: (JournalImage image) =>
-            ModernJournalImageCard(item: image),
-        task: (Task task) {
-          return AnimatedModernTaskCard(
-            task: task,
-            showCreationDate: showCreationDate,
-            showDueDate: showDueDate,
-            showCoverArt: showCoverArt,
-          );
-        },
-        orElse: () => ModernJournalCard(item: item),
+    // RepaintBoundary isolates repaints to individual cards,
+    // preventing cascading rebuilds during scroll
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: item.maybeMap(
+          journalImage: (JournalImage image) =>
+              ModernJournalImageCard(item: image),
+          task: (Task task) {
+            return AnimatedModernTaskCard(
+              task: task,
+              showCreationDate: showCreationDate,
+              showDueDate: showDueDate,
+              showCoverArt: showCoverArt,
+            );
+          },
+          orElse: () => ModernJournalCard(item: item),
+        ),
       ),
     );
   }

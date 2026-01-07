@@ -99,6 +99,7 @@ class _InfiniteJournalPageBodyState
         onRefresh: controller.refreshQuery,
         child: CustomScrollView(
           controller: _scrollController,
+          cacheExtent: 1500,
           slivers: <Widget>[
             const JournalSliverAppBar(),
             // Quick filter section below the header with content-aligned padding

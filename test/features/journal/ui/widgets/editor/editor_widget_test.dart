@@ -192,6 +192,66 @@ void main() {
       // Verify context menu builder is configured
       expect(quillEditor.config.contextMenuBuilder, isNotNull);
     });
+
+    testWidgets('uses persistent ScrollController across rebuilds',
+        (WidgetTester tester) async {
+      const entryId = 'scroll-controller-test';
+
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: entryId,
+          showToolbar: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Get the first ScrollController reference
+      final quillEditor1 = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      final scrollController1 = quillEditor1.scrollController;
+      expect(scrollController1, isNotNull);
+
+      // Trigger a rebuild by changing showToolbar
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: entryId,
+          showToolbar: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Get the new ScrollController reference - should be the same instance
+      final quillEditor2 = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      final scrollController2 = quillEditor2.scrollController;
+
+      // The scroll controller should be the same instance (not recreated)
+      expect(scrollController2, same(scrollController1));
+    });
+
+    testWidgets('disposes ScrollController when widget is removed',
+        (WidgetTester tester) async {
+      const entryId = 'scroll-controller-dispose';
+
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: entryId,
+          showToolbar: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Get the ScrollController reference before disposal
+      final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      final scrollController = quillEditor.scrollController;
+      expect(scrollController, isNotNull);
+
+      // Remove the widget from the tree
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+
+      // The widget should be removed without errors
+      // (dispose was called properly)
+      expect(find.byType(EditorWidget), findsNothing);
+    });
   });
 
   group('getSelectedText', () {

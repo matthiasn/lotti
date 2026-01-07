@@ -388,8 +388,8 @@ void main() {
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
-    final content = tester.widget<LabelSelectionModalContent>(
-        find.byType(LabelSelectionModalContent));
+    final content = tester.widget<LabelSelectionSliverContent>(
+        find.byType(LabelSelectionSliverContent));
     expect(content.categoryId, equals('work'));
   });
 
@@ -404,8 +404,8 @@ void main() {
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
 
-    final content = tester.widget<LabelSelectionModalContent>(
-        find.byType(LabelSelectionModalContent));
+    final content = tester.widget<LabelSelectionSliverContent>(
+        find.byType(LabelSelectionSliverContent));
     expect(content.categoryId, isNull);
   });
 
@@ -422,8 +422,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify modal content receives the task's categoryId
-    final content = tester.widget<LabelSelectionModalContent>(
-        find.byType(LabelSelectionModalContent));
+    final content = tester.widget<LabelSelectionSliverContent>(
+        find.byType(LabelSelectionSliverContent));
     expect(content.categoryId, equals('work'));
   });
 

@@ -65,17 +65,21 @@ class LinkedEntriesWidget extends ConsumerWidget {
             final link = entryLinks.elementAt(index);
             final toId = link.toId;
 
-            return EntryDetailsWidget(
-              key: entryKeyBuilder != null
-                  ? entryKeyBuilder!(toId)
-                  : Key('${item.id}-$toId'),
-              itemId: toId,
-              parentTags: item.meta.tagIds?.toSet(),
-              linkedFrom: item,
-              link: link,
-              showAiEntry: includeAiEntries,
-              isHighlighted: highlightedEntryId == toId,
-              isActiveTimer: activeTimerEntryId == toId,
+            // RepaintBoundary isolates repaints to individual entries,
+            // preventing cascading rebuilds during scroll
+            return RepaintBoundary(
+              child: EntryDetailsWidget(
+                key: entryKeyBuilder != null
+                    ? entryKeyBuilder!(toId)
+                    : Key('${item.id}-$toId'),
+                itemId: toId,
+                parentTags: item.meta.tagIds?.toSet(),
+                linkedFrom: item,
+                link: link,
+                showAiEntry: includeAiEntries,
+                isHighlighted: highlightedEntryId == toId,
+                isActiveTimer: activeTimerEntryId == toId,
+              ),
             );
           },
         ),

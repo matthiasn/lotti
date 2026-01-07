@@ -10,12 +10,285 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 
-/// Modern label selection content intended to be embedded inside the
-/// shared Wolt modal (see ModalUtils) to match the Category selection
-/// look and feel. It exposes an `apply()` method to persist selection
-/// via an external controller.
+/// Modern sliver-based label selection content for use within the
+/// shared Wolt sliver modal. Uses SliverList.builder for efficient
+/// lazy rendering during scroll.
 ///
 /// Works with any journal entry type (tasks, events, text entries, etc.).
+class LabelSelectionSliverContent extends ConsumerStatefulWidget {
+  const LabelSelectionSliverContent({
+    required this.entryId,
+    required this.initialLabelIds,
+    required this.applyController,
+    required this.searchQuery,
+    this.categoryId,
+    super.key,
+  });
+
+  final String entryId;
+  final List<String> initialLabelIds;
+  final String? categoryId;
+  final ValueNotifier<Future<bool> Function()?> applyController;
+  final ValueListenable<String> searchQuery;
+
+  @override
+  ConsumerState<LabelSelectionSliverContent> createState() =>
+      _LabelSelectionSliverContentState();
+}
+
+class _LabelSelectionSliverContentState
+    extends ConsumerState<LabelSelectionSliverContent> {
+  late final Set<String> _selectedLabelIds = widget.initialLabelIds.toSet();
+  String _searchRaw = '';
+  String _searchLower = '';
+
+  @override
+  void initState() {
+    super.initState();
+    widget.applyController.value = apply;
+  }
+
+  Future<bool> apply() async {
+    final repository = ref.read(labelsRepositoryProvider);
+    final ids = _selectedLabelIds.toList();
+    final result = await repository.setLabels(
+      journalEntityId: widget.entryId,
+      labelIds: ids,
+    );
+    return result ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categoryId = widget.categoryId;
+    final available = ref.watch(
+      availableLabelsForCategoryProvider(categoryId),
+    );
+    final allLabels = ref.watch(labelsStreamProvider).value ?? [];
+
+    return ValueListenableBuilder<String>(
+      valueListenable: widget.searchQuery,
+      builder: (context, query, _) {
+        _searchRaw = query;
+        _searchLower = query.trim().toLowerCase();
+        return _buildSliverList(context, available, allLabels);
+      },
+    );
+  }
+
+  bool _hasExactMatch(List<LabelDefinition> labels, String query) {
+    final queryLower = query.trim().toLowerCase();
+    return labels.any((label) => label.name.toLowerCase() == queryLower);
+  }
+
+  Widget _buildSliverList(
+    BuildContext context,
+    List<LabelDefinition> labels,
+    List<LabelDefinition> allLabels,
+  ) {
+    // Union available labels with currently assigned ones to allow
+    // unassigning out-of-scope labels.
+    final cache = getIt<EntitiesCacheService>();
+    final assignedDefs = widget.initialLabelIds
+        .map(cache.getLabelById)
+        .whereType<LabelDefinition>()
+        .toList();
+    final result = buildSelectorLabelList(
+      available: labels,
+      assignedDefs: assignedDefs,
+      selectedIds: _selectedLabelIds,
+      searchLower: _searchLower,
+    );
+    final availableIds = result.availableIds;
+    final filtered = result.items;
+
+    final hasQuery = _searchRaw.trim().isNotEmpty;
+    // Check against all labels to prevent duplicate names across categories
+    final hasExactMatch = hasQuery && _hasExactMatch(allLabels, _searchRaw);
+    final showCreateButton = hasQuery && !hasExactMatch;
+
+    if (filtered.isEmpty) {
+      return SliverToBoxAdapter(
+        child: _EmptyState(
+          isSearching: hasQuery,
+          searchQuery: hasQuery ? _searchRaw.trim() : null,
+          onCreateLabel: () =>
+              _openLabelCreator(defaultName: _searchRaw.trim()),
+        ),
+      );
+    }
+
+    // Calculate item count including optional create button
+    final itemCount = filtered.length + (showCreateButton ? 1 : 0);
+
+    return SliverList.builder(
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        // Create button as last item
+        if (showCreateButton && index == filtered.length) {
+          return _CreateButton(
+            searchQuery: _searchRaw.trim(),
+            onCreateLabel: () =>
+                _openLabelCreator(defaultName: _searchRaw.trim()),
+          );
+        }
+
+        final label = filtered[index];
+        final isSelected = _selectedLabelIds.contains(label.id);
+        final outOfCategory = isSelected && !availableIds.contains(label.id);
+        final color = colorFromCssHex(label.color, substitute: Colors.grey);
+
+        final subtitleText = buildLabelSubtitleText(
+          label,
+          outOfCategory: outOfCategory,
+        );
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CheckboxListTile(
+              value: isSelected,
+              title: Text(label.name),
+              subtitle: subtitleText != null ? Text(subtitleText) : null,
+              secondary: CircleAvatar(
+                backgroundColor: color,
+                radius: 12,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+              onChanged: (checked) {
+                setState(() {
+                  if (checked ?? false) {
+                    _selectedLabelIds.add(label.id);
+                  } else {
+                    _selectedLabelIds.remove(label.id);
+                  }
+                });
+              },
+            ),
+            if (index < filtered.length - 1 ||
+                (showCreateButton && index == filtered.length - 1))
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: Theme.of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.12),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openLabelCreator({String? defaultName}) async {
+    final trimmed = defaultName?.trim();
+    final initialName = (trimmed?.isEmpty ?? true) ? null : trimmed;
+    final result = await showModalBottomSheet<LabelDefinition>(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      builder: (context) => LabelEditorSheet(initialName: initialName),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedLabelIds.add(result.id);
+    });
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.isSearching,
+    required this.onCreateLabel,
+    this.searchQuery,
+  });
+
+  final bool isSearching;
+  final VoidCallback onCreateLabel;
+  final String? searchQuery;
+
+  @override
+  Widget build(BuildContext context) {
+    final querySnippet =
+        searchQuery != null && searchQuery!.isNotEmpty ? '"$searchQuery"' : '';
+    final message = isSearching && querySnippet.isNotEmpty
+        ? 'No labels match $querySnippet.'
+        : isSearching
+            ? 'No labels match your search.'
+            : 'No labels available yet.';
+    final buttonLabel = searchQuery != null && searchQuery!.isNotEmpty
+        ? 'Create $querySnippet label'
+        : 'Create label';
+
+    // Calculate minimum height for empty state to fill modal
+    final screenHeight = MediaQuery.of(context).size.height;
+    final minHeight = screenHeight * 0.4;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minHeight),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.label_outline,
+                size: 48,
+                color: Theme.of(context).disabledColor,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: onCreateLabel,
+                icon: const Icon(Icons.add),
+                label: Text(buttonLabel),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateButton extends StatelessWidget {
+  const _CreateButton({
+    required this.searchQuery,
+    required this.onCreateLabel,
+  });
+
+  final String searchQuery;
+  final VoidCallback onCreateLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: FilledButton.icon(
+          onPressed: onCreateLabel,
+          icon: const Icon(Icons.add),
+          label: Text('Create "$searchQuery" label'),
+        ),
+      ),
+    );
+  }
+}
+
+// Keep the old widget for backwards compatibility if needed elsewhere
+/// @Deprecated('Use LabelSelectionSliverContent instead for better scroll performance')
 class LabelSelectionModalContent extends ConsumerStatefulWidget {
   const LabelSelectionModalContent({
     required this.entryId,
@@ -198,81 +471,5 @@ class _LabelSelectionModalContentState
     setState(() {
       _selectedLabelIds.add(result.id);
     });
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.isSearching,
-    required this.onCreateLabel,
-    this.searchQuery,
-  });
-
-  final bool isSearching;
-  final VoidCallback onCreateLabel;
-  final String? searchQuery;
-
-  @override
-  Widget build(BuildContext context) {
-    final querySnippet =
-        searchQuery != null && searchQuery!.isNotEmpty ? '"$searchQuery"' : '';
-    final message = isSearching && querySnippet.isNotEmpty
-        ? 'No labels match $querySnippet.'
-        : isSearching
-            ? 'No labels match your search.'
-            : 'No labels available yet.';
-    final buttonLabel = searchQuery != null && searchQuery!.isNotEmpty
-        ? 'Create $querySnippet label'
-        : 'Create label';
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.label_outline,
-              size: 48,
-              color: Theme.of(context).disabledColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: onCreateLabel,
-              icon: const Icon(Icons.add),
-              label: Text(buttonLabel),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CreateButton extends StatelessWidget {
-  const _CreateButton({
-    required this.searchQuery,
-    required this.onCreateLabel,
-  });
-
-  final String searchQuery;
-  final VoidCallback onCreateLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: FilledButton.icon(
-        onPressed: onCreateLabel,
-        icon: const Icon(Icons.add),
-        label: Text('Create "$searchQuery" label'),
-      ),
-    );
   }
 }

@@ -306,8 +306,8 @@ void main() {
       await tester.tap(find.text('Labels'));
       await tester.pumpAndSettle();
 
-      final content = tester.widget<LabelSelectionModalContent>(
-        find.byType(LabelSelectionModalContent),
+      final content = tester.widget<LabelSelectionSliverContent>(
+        find.byType(LabelSelectionSliverContent),
       );
       expect(content.categoryId, equals('work'));
     });
@@ -326,8 +326,8 @@ void main() {
       await tester.tap(find.text('Labels'));
       await tester.pumpAndSettle();
 
-      final content = tester.widget<LabelSelectionModalContent>(
-        find.byType(LabelSelectionModalContent),
+      final content = tester.widget<LabelSelectionSliverContent>(
+        find.byType(LabelSelectionSliverContent),
       );
       expect(content.categoryId, isNull);
     });
@@ -548,8 +548,8 @@ void main() {
       await tester.tap(find.text('Labels'));
       await tester.pumpAndSettle();
 
-      final content = tester.widget<LabelSelectionModalContent>(
-        find.byType(LabelSelectionModalContent),
+      final content = tester.widget<LabelSelectionSliverContent>(
+        find.byType(LabelSelectionSliverContent),
       );
       expect(content.initialLabelIds, containsAll(['label-1', 'label-2']));
     });

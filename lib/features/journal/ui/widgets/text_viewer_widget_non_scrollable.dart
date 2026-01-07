@@ -30,6 +30,8 @@ class _TextViewerWidgetNonScrollableState
     extends State<TextViewerWidgetNonScrollable> {
   bool _showGradient = false;
   final GlobalKey _quillKey = GlobalKey();
+  final _scrollController = ScrollController();
+  final _focusNode = FocusNode();
   QuillController? _controller;
 
   @override
@@ -51,6 +53,8 @@ class _TextViewerWidgetNonScrollableState
   @override
   void dispose() {
     _controller?.dispose();
+    _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -97,8 +101,8 @@ class _TextViewerWidgetNonScrollableState
                 child: QuillEditor(
                   key: _quillKey,
                   controller: _controller!,
-                  scrollController: ScrollController(),
-                  focusNode: FocusNode(),
+                  scrollController: _scrollController,
+                  focusNode: _focusNode,
                   config: QuillEditorConfig(
                     embedBuilders: [
                       const DividerEmbedBuilder(),

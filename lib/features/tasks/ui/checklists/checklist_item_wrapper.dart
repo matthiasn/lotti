@@ -141,7 +141,8 @@ class ChecklistItemWrapper extends ConsumerWidget {
           ),
         );
 
-        return child;
+        // RepaintBoundary isolates repaints to individual checklist items
+        return RepaintBoundary(child: child);
       },
       error: ErrorWidget.new,
       loading: (_) => const SizedBox.shrink(),

@@ -72,7 +72,7 @@ bool showDictionaryResultSnackbar(
   return true;
 }
 
-class EditorWidget extends ConsumerWidget {
+class EditorWidget extends ConsumerStatefulWidget {
   const EditorWidget({
     required this.entryId,
     super.key,
@@ -87,8 +87,21 @@ class EditorWidget extends ConsumerWidget {
   final EdgeInsets? margin;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: entryId);
+  ConsumerState<EditorWidget> createState() => _EditorWidgetState();
+}
+
+class _EditorWidgetState extends ConsumerState<EditorWidget> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = entryControllerProvider(id: widget.entryId);
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider);
 
@@ -103,7 +116,7 @@ class EditorWidget extends ConsumerWidget {
         : EdgeInsets.zero;
 
     return Card(
-      margin: margin,
+      margin: widget.margin,
       color: shouldShowEditorToolBar
           ? context.colorScheme.surface.brighten()
           : Colors.transparent,
@@ -120,7 +133,7 @@ class EditorWidget extends ConsumerWidget {
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: maxHeight,
+          maxHeight: widget.maxHeight,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -128,12 +141,12 @@ class EditorWidget extends ConsumerWidget {
             if (shouldShowEditorToolBar)
               ToolbarWidget(
                 controller: controller,
-                entryId: entryId,
+                entryId: widget.entryId,
               ),
             Flexible(
               child: QuillEditor(
                 controller: controller,
-                scrollController: ScrollController(),
+                scrollController: _scrollController,
                 focusNode: focusNode,
                 config: QuillEditorConfig(
                   embedBuilders: [
@@ -152,7 +165,7 @@ class EditorWidget extends ConsumerWidget {
                     formatHeader2ToHeaderStyle,
                     formatHeader3ToHeaderStyle,
                   ],
-                  minHeight: minHeight,
+                  minHeight: widget.minHeight,
                   placeholder: context.messages.editorPlaceholder,
                   padding: contentPadding,
                   keyboardAppearance: Theme.of(context).brightness,
@@ -163,7 +176,6 @@ class EditorWidget extends ConsumerWidget {
                       _buildContextMenu(
                     context,
                     rawEditorState,
-                    ref,
                     controller,
                   ),
                 ),
@@ -182,7 +194,6 @@ class EditorWidget extends ConsumerWidget {
   Widget _buildContextMenu(
     BuildContext context,
     QuillRawEditorState rawEditorState,
-    WidgetRef ref,
     QuillController controller,
   ) {
     final selectedText = getSelectedText(controller);
@@ -197,7 +208,7 @@ class EditorWidget extends ConsumerWidget {
         ContextMenuButtonItem(
           label: context.messages.addToDictionary,
           onPressed: () {
-            _addToDictionary(context, ref, trimmedText);
+            _addToDictionary(context, trimmedText);
             // Hide context menu
             ContextMenuController.removeAny();
           },
@@ -216,12 +227,11 @@ class EditorWidget extends ConsumerWidget {
   /// if the entry has no associated category. Silent for other edge cases.
   Future<void> _addToDictionary(
     BuildContext context,
-    WidgetRef ref,
     String term,
   ) async {
     final service = ref.read(speechDictionaryServiceProvider);
     final result = await service.addTermForEntry(
-      entryId: entryId,
+      entryId: widget.entryId,
       term: term,
     );
 
