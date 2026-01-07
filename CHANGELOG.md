@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.802] - 2026-01-07
+### Changed
+- Scroll Performance Optimizations: Significant improvements to reduce jank during scrolling
+  - Added `cacheExtent` to key scrollable views (Entry Details: 4000px, Tasks List: 1500px)
+  - Labels Modal converted to sliver-based architecture with `SliverList.builder` for lazy loading
+  - Added `RepaintBoundary` isolation for task cards, linked entries, and checklist items
+  - Fixed memory leaks in EditorWidget and TextViewerWidget (ScrollController/FocusNode now properly managed)
+  - These optimizations target smooth 60/120fps scrolling, especially for tasks with many checklist items
+
 ## [0.9.801] - 2026-01-06
 ### Changed
 - Entry Actions Menu Redesign: Restyled to match the FAB addition menu with Nano Banana Pro styling
