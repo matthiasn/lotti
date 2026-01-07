@@ -36,8 +36,8 @@ mkdir -p "$WORK_DIR" "$OUTPUT_DIR"
 sed "s/COMMIT_PLACEHOLDER/$COMMIT/" "$SCRIPT_DIR/com.matthiasn.lotti.flatpak-flutter.yml" > "$WORK_DIR/com.matthiasn.lotti.yml"
 
 # Copy foreign.json if present (handles cargokit plugins like flutter_vodozemac)
-if [ -f "$REPO_ROOT/foreign.json" ]; then
-  cp "$REPO_ROOT/foreign.json" "$WORK_DIR/"
+if [ -f "$SCRIPT_DIR/foreign.json" ]; then
+  cp "$SCRIPT_DIR/foreign.json" "$WORK_DIR/"
   echo "Using foreign.json for cargokit dependencies"
 fi
 

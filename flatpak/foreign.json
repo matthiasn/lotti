@@ -1,0 +1,19 @@
+{
+    "flutter_vodozemac": {
+        "cargo_locks": [
+            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.4.1/rust"
+        ],
+        "extra_pubspecs": [
+            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.4.1/cargokit/build_tool"
+        ],
+        "manifest": {
+            "sources": [
+                {
+                    "type": "patch",
+                    "path": "cargokit/run_build_tool.sh.patch",
+                    "dest": ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.4.1/cargokit"
+                }
+            ]
+        }
+    }
+}
