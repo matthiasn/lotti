@@ -4,7 +4,6 @@ runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.llvm20
-  - org.freedesktop.Sdk.Extension.rust-stable
 command: lotti
 finish-args:
   - --share=network
@@ -89,12 +88,12 @@ modules:
   - name: lotti
     buildsystem: simple
     build-options:
-      append-path: /usr/lib/sdk/llvm20/bin:/var/lib/flutter/bin
+      append-path: /usr/lib/sdk/llvm20/bin:/var/lib/rustup/bin:/var/lib/flutter/bin
       prepend-ld-library-path: /usr/lib/sdk/llvm20/lib
       env:
         PUB_CACHE: /run/build/lotti/.pub-cache
-        CARGO_HOME: /run/build/lotti/.cargo
-        RUSTUP_HOME: /run/build/lotti/.cargo
+        CARGO_HOME: /run/build/lotti/cargo
+        RUSTUP_HOME: /var/lib/rustup
         FLUTTER_SUPPRESS_ANALYTICS: "true"
     build-commands:
       - flutter pub get --offline

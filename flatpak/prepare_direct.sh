@@ -35,6 +35,12 @@ mkdir -p "$WORK_DIR" "$OUTPUT_DIR"
 # Using flatpak-flutter compatible manifest (Flutter inside lotti module)
 sed "s/COMMIT_PLACEHOLDER/$COMMIT/" "$SCRIPT_DIR/com.matthiasn.lotti.flatpak-flutter.yml" > "$WORK_DIR/com.matthiasn.lotti.yml"
 
+# Copy foreign.json if present (handles cargokit plugins like flutter_vodozemac)
+if [ -f "$REPO_ROOT/foreign.json" ]; then
+  cp "$REPO_ROOT/foreign.json" "$WORK_DIR/"
+  echo "Using foreign.json for cargokit dependencies"
+fi
+
 # Run flatpak-flutter
 echo "Running flatpak-flutter..."
 cd "$WORK_DIR"
@@ -47,6 +53,11 @@ echo "Copying output..."
 for f in "$WORK_DIR"/*.json "$WORK_DIR"/*.yml "$WORK_DIR"/generated; do
   [ -e "$f" ] && cp -r "$f" "$OUTPUT_DIR/"
 done
+
+# Copy cargokit patch (needed by foreign.json references)
+if [ -d "$SCRIPT_DIR/flatpak-flutter/foreign_deps/cargokit" ]; then
+  cp -r "$SCRIPT_DIR/flatpak-flutter/foreign_deps/cargokit" "$OUTPUT_DIR/"
+fi
 
 echo ""
 echo "Done! Output in: $OUTPUT_DIR"

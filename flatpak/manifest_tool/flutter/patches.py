@@ -26,7 +26,7 @@ _KNOWN_CARGOKIT_PACKAGES = [
 
 _FALLBACK_CARGOKIT_PACKAGES = [
     "super_native_extensions-0.9.1",
-    "flutter_vodozemac-0.2.2",
+    "flutter_vodozemac-0.4.1",
     "irondash_engine_context-0.5.5",
 ]
 

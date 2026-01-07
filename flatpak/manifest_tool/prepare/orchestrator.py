@@ -74,9 +74,9 @@ CARGO_LOCK_SOURCES: tuple[tuple[str, str], ...] = (
     (
         "flutter_vodozemac",
         (
-            # Match the plugin version used in pubspec-sources (0.3.0)
+            # Match the plugin version used in pubspec (0.4.1)
             "https://raw.githubusercontent.com/famedly/dart-vodozemac/"
-            "5319314eb397bc3c8de06baddbe64fa721596ce0/rust/Cargo.lock"
+            "v0.4.1/rust/Cargo.lock"
         ),
     ),
     (
@@ -755,6 +755,15 @@ def _copy_generated_artifacts(context: PrepareFlathubContext, printer: _StatusPr
     helper_target = work_dir / context.setup_helper_basename
     if helper_target.is_file():
         _copyfile(helper_target, output_dir / context.setup_helper_basename)
+
+    # Copy generated/ directory (new flatpak-flutter structure)
+    generated_dir = work_dir / "generated"
+    if generated_dir.is_dir():
+        dest_generated = output_dir / "generated"
+        if dest_generated.exists():
+            shutil.rmtree(dest_generated)
+        _copytree(generated_dir, dest_generated)
+        printer.info("Copied generated/ directory (offline dependency manifests)")
 
     patterns = [
         "**/.flatpak-builder/**/pubspec-sources.json",
