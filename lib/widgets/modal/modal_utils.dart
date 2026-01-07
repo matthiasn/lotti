@@ -184,7 +184,6 @@ class ModalUtils {
     bool showCloseButton = true,
     void Function()? onTapBack,
     double? navBarHeight,
-    double? cacheExtent,
   }) {
     final colorScheme = context.colorScheme;
 
