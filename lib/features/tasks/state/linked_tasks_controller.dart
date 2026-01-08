@@ -1,4 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'linked_tasks_controller.freezed.dart';
@@ -30,4 +32,20 @@ class LinkedTasksController extends _$LinkedTasksController {
   void exitManageMode() {
     state = state.copyWith(manageMode: false);
   }
+}
+
+/// Provider that resolves outgoing entry links to Task entities.
+///
+/// This is used by LinkedToSection to get resolved Task objects
+/// instead of EntryLinks, avoiding the need to watch individual
+/// entryControllerProviders in the widget tree.
+///
+/// Returns `List<JournalEntity>` (all Tasks) - caller should cast with `whereType<Task>()`.
+@riverpod
+List<JournalEntity> outgoingLinkedTasks(
+  Ref ref,
+  String taskId,
+) {
+  final entities = ref.watch(resolvedOutgoingLinkedEntriesProvider(taskId));
+  return entities.whereType<Task>().toList();
 }

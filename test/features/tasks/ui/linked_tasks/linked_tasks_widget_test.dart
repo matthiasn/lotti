@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_from_section.dart';
@@ -47,20 +45,6 @@ void main() {
     );
   }
 
-  EntryLink buildLink({
-    required String toId,
-    String fromId = 'task-main',
-  }) {
-    return EntryLink.basic(
-      id: 'link-$toId',
-      fromId: fromId,
-      toId: toId,
-      createdAt: now,
-      updatedAt: now,
-      vectorClock: null,
-    );
-  }
-
   group('LinkedTasksWidget', () {
     setUp(() async {
       await setUpTestGetIt();
@@ -77,8 +61,8 @@ void main() {
             linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedEntriesController([]),
+            outgoingLinkedTasksProvider('task-main').overrideWith(
+              (ref) => [],
             ),
             linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
               () => _MockLinkedFromEntriesController([]),
@@ -106,8 +90,8 @@ void main() {
             linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedEntriesController([]),
+            outgoingLinkedTasksProvider('task-main').overrideWith(
+              (ref) => [],
             ),
             linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
               () => _MockLinkedFromEntriesController([task]),
@@ -135,8 +119,8 @@ void main() {
             linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedEntriesController([]),
+            outgoingLinkedTasksProvider('task-main').overrideWith(
+              (ref) => [],
             ),
             linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
               () => _MockLinkedFromEntriesController([task]),
@@ -155,9 +139,10 @@ void main() {
       expect(find.text('Incoming Task'), findsOneWidget);
     });
 
-    testWidgets('renders LinkedToSection when there are outgoing links',
+    testWidgets('renders LinkedToSection when there are outgoing tasks',
         (tester) async {
-      final link = buildLink(toId: 'outgoing-task');
+      final outgoingTask =
+          buildTask(id: 'outgoing-task', title: 'Outgoing Task');
 
       await tester.pumpWidget(
         ProviderScope(
@@ -165,8 +150,8 @@ void main() {
             linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedEntriesController([link]),
+            outgoingLinkedTasksProvider('task-main').overrideWith(
+              (ref) => [outgoingTask],
             ),
             linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
               () => _MockLinkedFromEntriesController([]),
@@ -182,13 +167,14 @@ void main() {
 
       expect(find.byType(LinkedToSection), findsOneWidget);
       expect(find.text('LINKED TO'), findsOneWidget);
+      expect(find.text('Outgoing Task'), findsOneWidget);
     });
 
     testWidgets(
         'renders both sections when there are both incoming and outgoing',
         (tester) async {
       final incomingTask = buildTask(id: 'incoming-task', title: 'Incoming');
-      final outgoingLink = buildLink(toId: 'outgoing-task');
+      final outgoingTask = buildTask(id: 'outgoing-task', title: 'Outgoing');
 
       await tester.pumpWidget(
         ProviderScope(
@@ -196,8 +182,8 @@ void main() {
             linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedEntriesController([outgoingLink]),
+            outgoingLinkedTasksProvider('task-main').overrideWith(
+              (ref) => [outgoingTask],
             ),
             linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
               () => _MockLinkedFromEntriesController([incomingTask]),
@@ -236,8 +222,8 @@ void main() {
             linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedEntriesController([]),
+            outgoingLinkedTasksProvider('task-main').overrideWith(
+              (ref) => [],
             ),
             linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
               () => _MockLinkedFromEntriesController([task, textEntry]),
@@ -265,8 +251,8 @@ void main() {
             linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
               _MockLinkedTasksControllerManageMode.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedEntriesController([]),
+            outgoingLinkedTasksProvider('task-main').overrideWith(
+              (ref) => [],
             ),
             linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
               () => _MockLinkedFromEntriesController([task]),
@@ -293,8 +279,8 @@ void main() {
             linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
               LinkedTasksController.new,
             ),
-            linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedEntriesController([]),
+            outgoingLinkedTasksProvider('task-main').overrideWith(
+              (ref) => [],
             ),
             linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
               () => _MockLinkedFromEntriesController([task]),
@@ -311,14 +297,6 @@ void main() {
       expect(find.byType(Column), findsWidgets);
     });
   });
-}
-
-class _MockLinkedEntriesController extends LinkedEntriesController {
-  _MockLinkedEntriesController(this._links);
-  final List<EntryLink> _links;
-
-  @override
-  Future<List<EntryLink>> build({required String id}) async => _links;
 }
 
 class _MockLinkedFromEntriesController extends LinkedFromEntriesController {

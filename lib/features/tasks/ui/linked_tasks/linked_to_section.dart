@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -14,18 +12,18 @@ import 'package:lotti/themes/theme.dart';
 class LinkedToSection extends ConsumerWidget {
   const LinkedToSection({
     required this.taskId,
-    required this.outgoingLinks,
+    required this.outgoingTasks,
     required this.manageMode,
     super.key,
   });
 
   final String taskId;
-  final List<EntryLink> outgoingLinks;
+  final List<Task> outgoingTasks;
   final bool manageMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (outgoingLinks.isEmpty) {
+    if (outgoingTasks.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -57,57 +55,31 @@ class LinkedToSection extends ConsumerWidget {
         ),
         const SizedBox(height: 4),
         // List of linked task text links
-        ...outgoingLinks.map(
-          (link) => _LinkedTaskCardFromLink(
-            taskId: taskId,
-            link: link,
-            manageMode: manageMode,
+        ...outgoingTasks.map(
+          (task) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: LinkedTaskCard(
+              task: task,
+              showUnlinkButton: manageMode,
+              onUnlink:
+                  manageMode ? () => _unlinkTask(context, ref, task.id) : null,
+            ),
           ),
         ),
       ],
     );
   }
-}
 
-/// Widget that resolves an EntryLink to a Task and renders a LinkedTaskCard.
-class _LinkedTaskCardFromLink extends ConsumerWidget {
-  const _LinkedTaskCardFromLink({
-    required this.taskId,
-    required this.link,
-    required this.manageMode,
-  });
-
-  final String taskId;
-  final EntryLink link;
-  final bool manageMode;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Fetch the linked entry
-    final entryAsync = ref.watch(entryControllerProvider(id: link.toId));
-    final entry = entryAsync.value?.entry;
-
-    // Only show if it's a Task
-    if (entry is! Task) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: LinkedTaskCard(
-        task: entry,
-        showUnlinkButton: manageMode,
-        onUnlink: manageMode ? () => _unlinkTask(context, ref) : null,
-      ),
-    );
-  }
-
-  Future<void> _unlinkTask(BuildContext context, WidgetRef ref) async {
+  Future<void> _unlinkTask(
+    BuildContext context,
+    WidgetRef ref,
+    String linkedTaskId,
+  ) async {
     final confirmed = await _showUnlinkConfirmation(context);
     if (confirmed && context.mounted) {
       await ref
           .read(linkedEntriesControllerProvider(id: taskId).notifier)
-          .removeLink(toId: link.toId);
+          .removeLink(toId: linkedTaskId);
     }
   }
 

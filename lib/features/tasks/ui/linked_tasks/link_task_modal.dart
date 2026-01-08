@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -88,13 +89,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
       // Fetch all non-completed tasks
       final tasks = await _db.getTasks(
         starredStatuses: [false, true],
-        taskStatuses: [
-          'OPEN',
-          'GROOMED',
-          'IN PROGRESS',
-          'BLOCKED',
-          'ON HOLD',
-        ],
+        taskStatuses: openTaskStatuses,
         categoryIds: [],
         limit: 200,
       );

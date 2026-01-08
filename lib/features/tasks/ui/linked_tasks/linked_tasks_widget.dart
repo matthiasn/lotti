@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_from_section.dart';
@@ -31,16 +30,17 @@ class LinkedTasksWidget extends ConsumerWidget {
     // Watch UI state
     final uiState = ref.watch(linkedTasksControllerProvider(taskId: taskId));
 
-    // Watch outgoing links (this task -> other tasks)
-    final outgoingLinksAsync =
-        ref.watch(linkedEntriesControllerProvider(id: taskId));
+    // Watch outgoing linked tasks (already resolved and filtered to Tasks)
+    final outgoingTasks = ref
+        .watch(outgoingLinkedTasksProvider(taskId))
+        .whereType<Task>()
+        .toList();
 
     // Watch incoming links (other entries -> this task)
     final incomingEntitiesAsync =
         ref.watch(linkedFromEntriesControllerProvider(id: taskId));
 
     // Handle loading/error states
-    final outgoingLinks = outgoingLinksAsync.value ?? [];
     final incomingEntities = incomingEntitiesAsync.value ?? [];
 
     // Filter incoming to tasks only
@@ -48,7 +48,7 @@ class LinkedTasksWidget extends ConsumerWidget {
 
     // Check if there are any linked tasks to show
     final hasIncoming = incomingTasks.isNotEmpty;
-    final hasOutgoing = outgoingLinks.isNotEmpty;
+    final hasOutgoing = outgoingTasks.isNotEmpty;
 
     // Hide the section entirely if no linked tasks
     if (!hasIncoming && !hasOutgoing) {
@@ -78,12 +78,13 @@ class LinkedTasksWidget extends ConsumerWidget {
               if (hasOutgoing)
                 LinkedToSection(
                   taskId: taskId,
-                  outgoingLinks: outgoingLinks,
+                  outgoingTasks: outgoingTasks,
                   manageMode: uiState.manageMode,
                 ),
             ],
           ),
         ),
+        const SizedBox(height: 12),
       ],
     );
   }
