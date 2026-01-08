@@ -5673,6 +5673,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
+
+  /// No description provided for @linkedTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked Tasks'**
+  String get linkedTasksTitle;
+
+  /// No description provided for @linkedFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'LINKED FROM'**
+  String get linkedFromLabel;
+
+  /// No description provided for @linkedToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'LINKED TO'**
+  String get linkedToLabel;
+
+  /// No description provided for @linkExistingTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Link existing task...'**
+  String get linkExistingTask;
+
+  /// No description provided for @createNewLinkedTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new linked task...'**
+  String get createNewLinkedTask;
+
+  /// No description provided for @manageLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage links...'**
+  String get manageLinks;
+
+  /// No description provided for @showCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Show completed'**
+  String get showCompleted;
+
+  /// No description provided for @unlinkTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink Task'**
+  String get unlinkTaskTitle;
+
+  /// No description provided for @unlinkTaskConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to unlink this task?'**
+  String get unlinkTaskConfirm;
+
+  /// No description provided for @unlinkButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink'**
+  String get unlinkButton;
+
+  /// No description provided for @searchTasksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tasks...'**
+  String get searchTasksHint;
+
+  /// No description provided for @linkedTasksMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked tasks options'**
+  String get linkedTasksMenuTooltip;
 }
 
 class _AppLocalizationsDelegate

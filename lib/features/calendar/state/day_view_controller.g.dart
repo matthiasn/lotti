@@ -33,7 +33,7 @@ final class DayViewControllerProvider extends $AsyncNotifierProvider<
   DayViewController create() => DayViewController();
 }
 
-String _$dayViewControllerHash() => r'40231500b1b10b1a014a28224ff79b01b32d64f3';
+String _$dayViewControllerHash() => r'e23a5344ee15fa1ade1b76d07e6196303538ae81';
 
 abstract class _$DayViewController
     extends $AsyncNotifier<List<CalendarEventData<CalendarEvent>>> {

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.804" date="2026-01-08">
+      <description>
+        <p>Linked Tasks Section: New dedicated UI for viewing and managing task-to-task relationships. Features bidirectional link display with directional indicators (↳ LINKED FROM, ↗ LINKED TO), minimal Linear-style text links with status circles, searchable "Link existing task" modal powered by FTS5, "Create new linked task" for quick subtask creation, and "Manage links" mode for unlinking. Tasks are filtered out from the generic Linked Entries section to avoid duplication.</p>
+      </description>
+    </release>
     <release version="0.9.803" date="2026-01-08">
       <description>
         <p>Calendar Auto-Refresh Fix: Fixed calendar not updating when returning from creating a time recording. Improved visibility change handling to track transitions from invisible to visible, triggering full provider rebuild only when needed. More efficient than the previous onResume approach with zero CPU overhead when staying on the calendar page.</p>

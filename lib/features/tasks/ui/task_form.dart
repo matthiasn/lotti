@@ -8,6 +8,7 @@ import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/task_header_meta_card.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_wrapper.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 
 class TaskForm extends ConsumerWidget {
   const TaskForm({
@@ -46,6 +47,7 @@ class TaskForm extends ConsumerWidget {
           id: taskId,
           aiResponseType: AiResponseType.taskSummary,
         ),
+        LinkedTasksWidget(taskId: taskId),
         ChecklistsWidget(entryId: taskId, task: task),
       ],
     );

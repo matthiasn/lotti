@@ -66,6 +66,58 @@ Tasks in Lotti are structured journal entries that can contain:
 - Linked journal entries (text, images, audio)
 - Categories for organization
 
+## Linked Tasks
+
+Tasks can be linked to other tasks to represent relationships like parent-child, dependencies, or related work. The Linked Tasks section provides a dedicated UI for managing these connections.
+
+### Features
+
+- **Bidirectional Display**: Shows both directions of task relationships
+  - `↳ LINKED FROM`: Tasks that link TO this task (incoming links)
+  - `↗ LINKED TO`: Tasks that this task links TO (outgoing links)
+- **Minimal UI**: Linear-style text links with small status circles (14px)
+  - Open tasks: hollow circle
+  - Completed tasks: filled circle with checkmark
+- **Link Management Menu**:
+  - "Link existing task...": FTS5-powered searchable modal to link an existing task
+  - "Create new linked task...": Creates a subtask inheriting the current task's category
+  - "Manage links...": Toggle mode to show unlink (×) buttons on each linked task
+
+### UI Components
+
+| File | Widget | Description |
+|------|--------|-------------|
+| `linked_tasks_widget.dart` | `LinkedTasksWidget` | Main container, fetches linked entries and renders sections |
+| `linked_tasks_header.dart` | `LinkedTasksHeader` | Title "Linked Tasks" + popup menu for actions |
+| `linked_from_section.dart` | `LinkedFromSection` | Displays incoming task links (↳ LINKED FROM) |
+| `linked_to_section.dart` | `LinkedToSection` | Displays outgoing task links (↗ LINKED TO) |
+| `linked_task_card.dart` | `LinkedTaskCard` | Minimal text link with status circle and optional unlink button |
+| `link_task_modal.dart` | `LinkTaskModal` | Searchable bottom sheet for linking existing tasks |
+
+### State Management
+
+- **LinkedTasksController**: Manages UI state (manageMode toggle)
+- **LinkedEntriesController**: Provides outgoing links (existing controller)
+- **LinkedFromEntriesController**: Provides incoming links (existing controller)
+
+### Location in Task Details
+
+The Linked Tasks section appears between the AI Task Summary and Checklists sections:
+
+```
+[Task Header]
+[AI Task Summary]
+[Linked Tasks]     ← NEW
+[Checklists]
+[Linked Entries]   ← Tasks filtered out here
+```
+
+### Integration Notes
+
+- Tasks are filtered out from the generic "Linked Entries" section via `hideTaskEntries: true` parameter
+- The Link Task Modal excludes the current task and already-linked tasks from search results
+- New linked tasks inherit the parent task's category for organization consistency
+
 ## Key Components
 
 ### Data Models

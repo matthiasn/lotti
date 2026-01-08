@@ -13,6 +13,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
     this.entryKeyBuilder,
     this.highlightedEntryId,
     this.activeTimerEntryId,
+    this.hideTaskEntries = false,
     super.key,
   });
 
@@ -20,6 +21,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
   final GlobalKey Function(String entryId)? entryKeyBuilder;
   final String? highlightedEntryId;
   final String? activeTimerEntryId;
+  final bool hideTaskEntries;
 
   @override
   Widget build(
@@ -77,6 +79,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
                 linkedFrom: item,
                 link: link,
                 showAiEntry: includeAiEntries,
+                hideTaskEntries: hideTaskEntries,
                 isHighlighted: highlightedEntryId == toId,
                 isActiveTimer: activeTimerEntryId == toId,
               ),

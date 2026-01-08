@@ -36,6 +36,7 @@ class EntryDetailsWidget extends ConsumerWidget {
     required this.showAiEntry,
     super.key,
     this.showTaskDetails = false,
+    this.hideTaskEntries = false,
     this.parentTags,
     this.linkedFrom,
     this.link,
@@ -46,6 +47,7 @@ class EntryDetailsWidget extends ConsumerWidget {
   final String itemId;
   final bool showTaskDetails;
   final bool showAiEntry;
+  final bool hideTaskEntries;
   final bool isHighlighted;
   final bool isActiveTimer;
 
@@ -69,6 +71,12 @@ class EntryDetailsWidget extends ConsumerWidget {
     }
 
     final isTask = item is Task;
+
+    // Hide task entries when viewing from a task's linked entries
+    // (tasks are shown in the dedicated Linked Tasks section instead)
+    if (isTask && hideTaskEntries) {
+      return const SizedBox.shrink();
+    }
     final isAudio = item is JournalAudio;
 
     if (isTask && !showTaskDetails) {

@@ -3073,4 +3073,40 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Créer une image à partir de la description vocale';
+
+  @override
+  String get linkedTasksTitle => 'Linked Tasks';
+
+  @override
+  String get linkedFromLabel => 'LINKED FROM';
+
+  @override
+  String get linkedToLabel => 'LINKED TO';
+
+  @override
+  String get linkExistingTask => 'Link existing task...';
+
+  @override
+  String get createNewLinkedTask => 'Create new linked task...';
+
+  @override
+  String get manageLinks => 'Manage links...';
+
+  @override
+  String get showCompleted => 'Show completed';
+
+  @override
+  String get unlinkTaskTitle => 'Unlink Task';
+
+  @override
+  String get unlinkTaskConfirm => 'Are you sure you want to unlink this task?';
+
+  @override
+  String get unlinkButton => 'Unlink';
+
+  @override
+  String get searchTasksHint => 'Search tasks...';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Linked tasks options';
 }
