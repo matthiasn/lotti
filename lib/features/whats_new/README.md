@@ -92,6 +92,29 @@ if (_isNewerVersion(release.version, currentVersion)) {
 }
 ```
 
+### Auto-Show on Version Update
+
+When the app version changes, the modal automatically displays on launch if there are unseen releases.
+
+```dart
+// In whats_new_controller.dart
+@riverpod
+Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
+  // Compare current version to last launched version
+  if (lastLaunchedVersion == null) return false;  // First launch
+  if (lastLaunchedVersion == currentVersion) return false;  // No change
+
+  // Version changed - check if there are unseen releases
+  final state = await ref.read(whatsNewControllerProvider.future);
+  return state.hasUnseenRelease;
+}
+```
+
+- Stores last launched version in SharedPreferences (`whats_new_last_launched_version`)
+- On first launch, shows modal if there are releases available (welcomes new users)
+- On subsequent launches, only shows when version has changed
+- Triggered in `AppScreen` via `ref.listen` on app startup
+
 ### Seen Tracking
 
 - Uses SharedPreferences with keys like `whats_new_seen_0.9.805`

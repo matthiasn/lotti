@@ -13,6 +13,37 @@ WhatsNewService whatsNewService(Ref ref) {
   return WhatsNewService();
 }
 
+/// Provider that checks if the What's New modal should auto-show.
+///
+/// Returns true when:
+/// 1. This is the first app launch ever, OR
+/// 2. The app version has changed since last launch
+/// AND there are unseen releases to show.
+///
+/// Once read, this provider marks the current version as "launched"
+/// so subsequent checks return false until the next version change.
+@riverpod
+Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  final packageInfo = await PackageInfo.fromPlatform();
+  final currentVersion = packageInfo.version;
+
+  const lastLaunchedKey = 'whats_new_last_launched_version';
+  final lastLaunchedVersion = prefs.getString(lastLaunchedKey);
+
+  // Always update the stored version
+  await prefs.setString(lastLaunchedKey, currentVersion);
+
+  // If version hasn't changed, don't auto-show
+  if (lastLaunchedVersion == currentVersion) {
+    return false;
+  }
+
+  // First launch OR version changed - check if there are unseen releases
+  final state = await ref.read(whatsNewControllerProvider.future);
+  return state.hasUnseenRelease;
+}
+
 /// Controller for the "What's New" feature.
 ///
 /// Manages fetching release content and tracking which releases

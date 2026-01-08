@@ -53,6 +53,66 @@ final class WhatsNewServiceProvider extends $FunctionalProvider<WhatsNewService,
 
 String _$whatsNewServiceHash() => r'27677070cf0a2d1f1e8a639a38e3eb9dbc9b4dbb';
 
+/// Provider that checks if the What's New modal should auto-show.
+///
+/// Returns true when:
+/// 1. The app version has changed since last launch
+/// 2. There are unseen releases to show
+///
+/// Once read, this provider marks the current version as "launched"
+/// so subsequent checks return false until the next version change.
+
+@ProviderFor(shouldAutoShowWhatsNew)
+final shouldAutoShowWhatsNewProvider = ShouldAutoShowWhatsNewProvider._();
+
+/// Provider that checks if the What's New modal should auto-show.
+///
+/// Returns true when:
+/// 1. The app version has changed since last launch
+/// 2. There are unseen releases to show
+///
+/// Once read, this provider marks the current version as "launched"
+/// so subsequent checks return false until the next version change.
+
+final class ShouldAutoShowWhatsNewProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
+    with $FutureModifier<bool>, $FutureProvider<bool> {
+  /// Provider that checks if the What's New modal should auto-show.
+  ///
+  /// Returns true when:
+  /// 1. The app version has changed since last launch
+  /// 2. There are unseen releases to show
+  ///
+  /// Once read, this provider marks the current version as "launched"
+  /// so subsequent checks return false until the next version change.
+  ShouldAutoShowWhatsNewProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'shouldAutoShowWhatsNewProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$shouldAutoShowWhatsNewHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<bool> create(Ref ref) {
+    return shouldAutoShowWhatsNew(ref);
+  }
+}
+
+String _$shouldAutoShowWhatsNewHash() =>
+    r'aae5bf63bbd32a65cab3c27cea9bda43c04acf14';
+
 /// Controller for the "What's New" feature.
 ///
 /// Manages fetching release content and tracking which releases
@@ -91,7 +151,7 @@ final class WhatsNewControllerProvider
 }
 
 String _$whatsNewControllerHash() =>
-    r'2c172c1065bedd7796056e4aa5839d4409d10952';
+    r'8524d964cdd943f8aa71ccdc897005e1aa79823e';
 
 /// Controller for the "What's New" feature.
 ///
