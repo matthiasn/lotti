@@ -307,16 +307,17 @@ void main() {
     }
   });
 
-  test('registers onResume callback that triggers invalidation', () async {
-    // This test verifies that the onResume callback is registered and that
-    // invalidating the provider causes a refetch. The full pause/resume
-    // lifecycle (via TickerMode and navigation) is an integration concern
-    // that requires real route transitions to test properly.
+  test('visibility change triggers invalidation on transition to visible',
+      () async {
+    // This test verifies that onVisibilityChanged triggers invalidation
+    // when transitioning from not visible to visible.
     //
-    // The fix for Riverpod 3's auto-pause behavior:
-    //   ..onResume(() => Future.microtask(ref.invalidateSelf))
+    // The fix uses visibility tracking to refresh data:
+    //   if (_isVisible && !wasVisible) {
+    //     Future.microtask(ref.invalidateSelf);
+    //   }
     //
-    // This test verifies the invalidation path works correctly.
+    // This ensures fresh data is fetched when returning to the calendar view.
 
     // Arrange
     final now = DateTime.now();
@@ -375,10 +376,13 @@ void main() {
     // Wait for initial state
     await container.read(timeByCategoryControllerProvider.notifier).future;
 
-    // Simulate what onResume does: invalidate the provider
-    // In production, this is triggered by Riverpod 3's TickerMode-based
-    // pause/resume lifecycle when navigating back to the calendar view
-    container.invalidate(timeByCategoryControllerProvider);
+    // Simulate visibility transition: not visible -> visible
+    // First call will transition from _isVisible=false to _isVisible=true
+    final controller =
+        container.read(timeByCategoryControllerProvider.notifier);
+    final mockVisibilityInfo = MockVisibilityInfo();
+    when(() => mockVisibilityInfo.visibleFraction).thenReturn(1);
+    controller.onVisibilityChanged(mockVisibilityInfo);
 
     // Allow microtask to process the invalidation
     await Future<void>.delayed(Duration.zero);
@@ -388,7 +392,7 @@ void main() {
 
     // Verify the data was fetched twice:
     // 1. Initial load
-    // 2. After invalidation (simulating onResume behavior)
+    // 2. After visibility change triggered invalidation
     verify(
       () => mockDb.sortedCalendarEntries(
         rangeStart: any(named: 'rangeStart'),

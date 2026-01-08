@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.803] - 2026-01-08
+### Fixed
+- Calendar Auto-Refresh: Fixed calendar not updating when returning from creating a time recording
+  - Improved `onVisibilityChanged` to track visibility transitions (invisible → visible)
+  - Uses `ref.invalidateSelf()` on transition instead of direct fetch to ensure full provider rebuild
+  - Added missing `ref.mounted` guard to `DayViewController.onVisibilityChanged`
+  - More efficient than the removed `onResume` approach (no CPU overhead when staying on page)
+
 ## [0.9.802] - 2026-01-07
 ### Changed
 - Scroll Performance Optimizations: Significant improvements to reduce jank during scrolling
