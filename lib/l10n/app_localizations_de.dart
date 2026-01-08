@@ -3056,44 +3056,45 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bild aus Sprachbeschreibung erstellen';
 
   @override
-  String get linkedTasksTitle => 'Linked Tasks';
+  String get linkedTasksTitle => 'Verknüpfte Aufgaben';
 
   @override
-  String get linkedFromLabel => 'LINKED FROM';
+  String get linkedFromLabel => 'VERKNÜPFT VON';
 
   @override
-  String get linkedToLabel => 'LINKED TO';
+  String get linkedToLabel => 'VERKNÜPFT MIT';
 
   @override
-  String get linkExistingTask => 'Link existing task...';
+  String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
 
   @override
-  String get createNewLinkedTask => 'Create new linked task...';
+  String get createNewLinkedTask => 'Neue verknüpfte Aufgabe erstellen...';
 
   @override
-  String get manageLinks => 'Manage links...';
+  String get manageLinks => 'Verknüpfungen verwalten...';
 
   @override
-  String get showCompleted => 'Show completed';
+  String get showCompleted => 'Abgeschlossene anzeigen';
 
   @override
-  String get unlinkTaskTitle => 'Unlink Task';
+  String get unlinkTaskTitle => 'Verknüpfung aufheben';
 
   @override
-  String get unlinkTaskConfirm => 'Are you sure you want to unlink this task?';
+  String get unlinkTaskConfirm =>
+      'Sind Sie sicher, dass Sie die Verknüpfung zu dieser Aufgabe aufheben möchten?';
 
   @override
-  String get unlinkButton => 'Unlink';
+  String get unlinkButton => 'Verknüpfung aufheben';
 
   @override
-  String get searchTasksHint => 'Search tasks...';
+  String get searchTasksHint => 'Aufgaben suchen...';
 
   @override
-  String get linkedTasksMenuTooltip => 'Linked tasks options';
+  String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
 
   @override
-  String get noTasksToLink => 'No tasks available to link';
+  String get noTasksToLink => 'Keine Aufgaben zum Verknüpfen verfügbar';
 
   @override
-  String get noTasksFound => 'No tasks found';
+  String get noTasksFound => 'Keine Aufgaben gefunden';
 }

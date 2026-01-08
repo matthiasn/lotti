@@ -484,5 +484,20 @@
   },
   "imageGenerationRetry": "Réessayer",
   "generateCoverArt": "Générer une couverture",
-  "generateCoverArtSubtitle": "Créer une image à partir de la description vocale"
+  "generateCoverArtSubtitle": "Créer une image à partir de la description vocale",
+
+  "linkedTasksTitle": "Tâches liées",
+  "linkedFromLabel": "LIÉ DEPUIS",
+  "linkedToLabel": "LIÉ À",
+  "linkExistingTask": "Lier une tâche existante...",
+  "createNewLinkedTask": "Créer une nouvelle tâche liée...",
+  "manageLinks": "Gérer les liens...",
+  "showCompleted": "Afficher les terminées",
+  "unlinkTaskTitle": "Délier la tâche",
+  "unlinkTaskConfirm": "Êtes-vous sûr de vouloir délier cette tâche ?",
+  "unlinkButton": "Délier",
+  "searchTasksHint": "Rechercher des tâches...",
+  "linkedTasksMenuTooltip": "Options des tâches liées",
+  "noTasksToLink": "Aucune tâche disponible à lier",
+  "noTasksFound": "Aucune tâche trouvée"
 }

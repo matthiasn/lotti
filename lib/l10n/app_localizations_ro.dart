@@ -3050,44 +3050,45 @@ class AppLocalizationsRo extends AppLocalizations {
       'Creează imagine din descrierea vocală';
 
   @override
-  String get linkedTasksTitle => 'Linked Tasks';
+  String get linkedTasksTitle => 'Sarcini legate';
 
   @override
-  String get linkedFromLabel => 'LINKED FROM';
+  String get linkedFromLabel => 'LEGAT DE LA';
 
   @override
-  String get linkedToLabel => 'LINKED TO';
+  String get linkedToLabel => 'LEGAT LA';
 
   @override
-  String get linkExistingTask => 'Link existing task...';
+  String get linkExistingTask => 'Leagă o sarcină existentă...';
 
   @override
-  String get createNewLinkedTask => 'Create new linked task...';
+  String get createNewLinkedTask => 'Creează o nouă sarcină legată...';
 
   @override
-  String get manageLinks => 'Manage links...';
+  String get manageLinks => 'Gestionează legăturile...';
 
   @override
-  String get showCompleted => 'Show completed';
+  String get showCompleted => 'Afișează finalizate';
 
   @override
-  String get unlinkTaskTitle => 'Unlink Task';
+  String get unlinkTaskTitle => 'Dezleagă sarcina';
 
   @override
-  String get unlinkTaskConfirm => 'Are you sure you want to unlink this task?';
+  String get unlinkTaskConfirm =>
+      'Ești sigur că vrei să dezlegi această sarcină?';
 
   @override
-  String get unlinkButton => 'Unlink';
+  String get unlinkButton => 'Dezleagă';
 
   @override
-  String get searchTasksHint => 'Search tasks...';
+  String get searchTasksHint => 'Caută sarcini...';
 
   @override
-  String get linkedTasksMenuTooltip => 'Linked tasks options';
+  String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
 
   @override
-  String get noTasksToLink => 'No tasks available to link';
+  String get noTasksToLink => 'Nu sunt sarcini disponibile pentru a fi legate';
 
   @override
-  String get noTasksFound => 'No tasks found';
+  String get noTasksFound => 'Nu s-au găsit sarcini';
 }

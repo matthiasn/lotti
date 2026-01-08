@@ -3072,44 +3072,45 @@ class AppLocalizationsEs extends AppLocalizations {
       'Crear imagen desde descripción de voz';
 
   @override
-  String get linkedTasksTitle => 'Linked Tasks';
+  String get linkedTasksTitle => 'Tareas vinculadas';
 
   @override
-  String get linkedFromLabel => 'LINKED FROM';
+  String get linkedFromLabel => 'VINCULADO DESDE';
 
   @override
-  String get linkedToLabel => 'LINKED TO';
+  String get linkedToLabel => 'VINCULADO A';
 
   @override
-  String get linkExistingTask => 'Link existing task...';
+  String get linkExistingTask => 'Vincular tarea existente...';
 
   @override
-  String get createNewLinkedTask => 'Create new linked task...';
+  String get createNewLinkedTask => 'Crear nueva tarea vinculada...';
 
   @override
-  String get manageLinks => 'Manage links...';
+  String get manageLinks => 'Gestionar vínculos...';
 
   @override
-  String get showCompleted => 'Show completed';
+  String get showCompleted => 'Mostrar completadas';
 
   @override
-  String get unlinkTaskTitle => 'Unlink Task';
+  String get unlinkTaskTitle => 'Desvincular tarea';
 
   @override
-  String get unlinkTaskConfirm => 'Are you sure you want to unlink this task?';
+  String get unlinkTaskConfirm =>
+      '¿Estás seguro de que quieres desvincular esta tarea?';
 
   @override
-  String get unlinkButton => 'Unlink';
+  String get unlinkButton => 'Desvincular';
 
   @override
-  String get searchTasksHint => 'Search tasks...';
+  String get searchTasksHint => 'Buscar tareas...';
 
   @override
-  String get linkedTasksMenuTooltip => 'Linked tasks options';
+  String get linkedTasksMenuTooltip => 'Opciones de tareas vinculadas';
 
   @override
-  String get noTasksToLink => 'No tasks available to link';
+  String get noTasksToLink => 'No hay tareas disponibles para vincular';
 
   @override
-  String get noTasksFound => 'No tasks found';
+  String get noTasksFound => 'No se encontraron tareas';
 }
