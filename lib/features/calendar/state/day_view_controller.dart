@@ -58,13 +58,13 @@ class DayViewController extends _$DayViewController {
   }
 
   void onVisibilityChanged(VisibilityInfo info) {
+    if (!ref.mounted) return;
+    final wasVisible = _isVisible;
     _isVisible = info.visibleFraction > 0.5;
-    if (_isVisible) {
-      _fetch().then((latest) {
-        if (latest != state.value) {
-          state = AsyncData(latest);
-        }
-      });
+    // Only refresh when transitioning from not visible to visible
+    // Using invalidateSelf ensures fresh data is fetched via full rebuild
+    if (_isVisible && !wasVisible) {
+      Future.microtask(ref.invalidateSelf);
     }
   }
 

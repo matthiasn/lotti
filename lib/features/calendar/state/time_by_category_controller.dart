@@ -58,14 +58,12 @@ class TimeByCategoryController extends AsyncNotifier<TimeByCategoryData> {
 
   void onVisibilityChanged(VisibilityInfo info) {
     if (!ref.mounted) return;
+    final wasVisible = _isVisible;
     _isVisible = info.visibleFraction > 0.5;
-    if (_isVisible) {
-      final timeSpanDays = ref.read(timeFrameControllerProvider);
-      _fetch(timeSpanDays).then((latest) {
-        if (ref.mounted && latest != state.value) {
-          state = AsyncData(latest);
-        }
-      });
+    // Only refresh when transitioning from not visible to visible
+    // Using invalidateSelf ensures fresh data is fetched via full rebuild
+    if (_isVisible && !wasVisible) {
+      Future.microtask(ref.invalidateSelf);
     }
   }
 
