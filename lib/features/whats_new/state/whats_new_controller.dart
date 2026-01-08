@@ -1,6 +1,7 @@
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,6 +26,10 @@ class WhatsNewController extends _$WhatsNewController {
   Future<WhatsNewState> build() async {
     final service = ref.watch(whatsNewServiceProvider);
 
+    // Get the current app version
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentVersion = packageInfo.version;
+
     // Fetch the index of available releases
     final releases = await service.fetchIndex();
 
@@ -32,9 +37,14 @@ class WhatsNewController extends _$WhatsNewController {
       return const WhatsNewState();
     }
 
-    // Find all unseen releases (releases are already sorted by date descending)
+    // Find all unseen releases that are not newer than the installed version
     final unseenReleases = <WhatsNewContent>[];
     for (final release in releases) {
+      // Skip releases newer than the installed version
+      if (_isNewerVersion(release.version, currentVersion)) {
+        continue;
+      }
+
       final hasSeen = await _hasSeenRelease(release.version);
       if (!hasSeen) {
         final content = await service.fetchContent(release);
@@ -45,6 +55,27 @@ class WhatsNewController extends _$WhatsNewController {
     }
 
     return WhatsNewState(unseenContent: unseenReleases);
+  }
+
+  /// Returns true if [releaseVersion] is newer than [installedVersion].
+  ///
+  /// Compares semantic version strings like "0.9.804" vs "0.9.802".
+  bool _isNewerVersion(String releaseVersion, String installedVersion) {
+    final releaseParts = releaseVersion.split('.').map(int.tryParse).toList();
+    final installedParts =
+        installedVersion.split('.').map(int.tryParse).toList();
+
+    // Compare each part of the version
+    for (var i = 0; i < releaseParts.length && i < installedParts.length; i++) {
+      final release = releaseParts[i] ?? 0;
+      final installed = installedParts[i] ?? 0;
+
+      if (release > installed) return true;
+      if (release < installed) return false;
+    }
+
+    // If all compared parts are equal, check if release has more parts
+    return releaseParts.length > installedParts.length;
   }
 
   /// Checks if the user has seen a specific release version.

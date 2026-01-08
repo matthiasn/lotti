@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
@@ -12,8 +13,27 @@ class MockWhatsNewService extends Mock implements WhatsNewService {}
 class FakeWhatsNewRelease extends Fake implements WhatsNewRelease {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() {
     registerFallbackValue(FakeWhatsNewRelease());
+
+    // Mock PackageInfo platform channel
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('dev.fluttercommunity.plus/package_info'),
+      (MethodCall methodCall) async {
+        if (methodCall.method == 'getAll') {
+          return <String, dynamic>{
+            'appName': 'Lotti',
+            'packageName': 'app.lotti',
+            'version': '99.99.99', // High version to include all test releases
+            'buildNumber': '1',
+          };
+        }
+        return null;
+      },
+    );
   });
 
   late MockWhatsNewService mockService;

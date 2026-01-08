@@ -80,8 +80,27 @@ class WhatsNewModal {
     }
 
     final pageNotifier = ValueNotifier<int>(0);
+    // Track the highest page index viewed (starts at 0 since first page is shown)
+    var maxViewedIndex = 0;
+    pageNotifier.addListener(() {
+      if (pageNotifier.value > maxViewedIndex) {
+        maxViewedIndex = pageNotifier.value;
+      }
+    });
+
     if (!context.mounted) return;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Helper to mark viewed releases as seen
+    Future<void> markViewedAsSeen() async {
+      final controller = ref.read(whatsNewControllerProvider.notifier);
+      for (var i = 0; i <= maxViewedIndex && i < releases.length; i++) {
+        await controller.markAsSeen(releases[i].release.version);
+      }
+    }
+
+    // Track if "Done" was pressed to mark all as seen
+    var markAllOnClose = false;
 
     if (!context.mounted) return;
     await WoltModalSheet.show<void>(
@@ -103,6 +122,10 @@ class WhatsNewModal {
               currentIndex: i,
               totalReleases: releases.length,
               pageNotifier: pageNotifier,
+              onMarkAllSeen: () {
+                markAllOnClose = true;
+                Navigator.of(modalContext).pop();
+              },
             ),
         ];
       },
@@ -113,13 +136,18 @@ class WhatsNewModal {
         context: context,
       ),
       onModalDismissedWithDrag: () {
-        unawaited(
-            ref.read(whatsNewControllerProvider.notifier).markAllAsSeen());
+        unawaited(markViewedAsSeen());
       },
     );
 
-    // Mark all as seen when modal closes
-    await ref.read(whatsNewControllerProvider.notifier).markAllAsSeen();
+    // Mark releases as seen when modal closes
+    if (markAllOnClose) {
+      // "Done" was pressed - mark all releases as seen
+      await ref.read(whatsNewControllerProvider.notifier).markAllAsSeen();
+    } else {
+      // Normal close - only mark viewed releases
+      await markViewedAsSeen();
+    }
   }
 
   static Future<void> _showEmptyModal(BuildContext context, WidgetRef ref) {
@@ -183,6 +211,7 @@ class WhatsNewModal {
     required int currentIndex,
     required int totalReleases,
     required ValueNotifier<int> pageNotifier,
+    required VoidCallback onMarkAllSeen,
   }) {
     final colorScheme = context.colorScheme;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -203,14 +232,13 @@ class WhatsNewModal {
         isLatest: isLatest,
       ),
       heroImageHeight: bannerHeight,
-      stickyActionBar: totalReleases > 1
-          ? _NavigationFooter(
-              totalReleases: totalReleases,
-              currentRelease: currentIndex,
-              colorScheme: colorScheme,
-              onNavigate: (index) => pageNotifier.value = index,
-            )
-          : null,
+      stickyActionBar: _NavigationFooter(
+        totalReleases: totalReleases,
+        currentRelease: currentIndex,
+        colorScheme: colorScheme,
+        onNavigate: (index) => pageNotifier.value = index,
+        onMarkAllSeen: onMarkAllSeen,
+      ),
       child: ConstrainedBox(
         constraints: BoxConstraints(minHeight: minContentHeight),
         child: Padding(
@@ -406,12 +434,14 @@ class _NavigationFooter extends StatelessWidget {
     required this.currentRelease,
     required this.colorScheme,
     required this.onNavigate,
+    required this.onMarkAllSeen,
   });
 
   final int totalReleases;
   final int currentRelease;
   final ColorScheme colorScheme;
   final ValueChanged<int> onNavigate;
+  final VoidCallback onMarkAllSeen;
 
   @override
   Widget build(BuildContext context) {
@@ -432,8 +462,25 @@ class _NavigationFooter extends StatelessWidget {
             ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Skip button (marks all as seen and closes)
+              SizedBox(
+                width: 64,
+                child: TextButton(
+                  onPressed: onMarkAllSeen,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: Text(
+                    'Skip',
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+
               // Left arrow (newer)
               _NavigationArrow(
                 icon: Icons.chevron_left,
@@ -443,11 +490,15 @@ class _NavigationFooter extends StatelessWidget {
                 colorScheme: colorScheme,
               ),
 
-              // Indicator dots
-              _IndicatorDots(
-                total: totalReleases,
-                current: currentRelease,
-                colorScheme: colorScheme,
+              // Indicator dots (centered)
+              Expanded(
+                child: Center(
+                  child: _IndicatorDots(
+                    total: totalReleases,
+                    current: currentRelease,
+                    colorScheme: colorScheme,
+                  ),
+                ),
               ),
 
               // Right arrow (older)
@@ -458,6 +509,9 @@ class _NavigationFooter extends StatelessWidget {
                 tooltip: 'Older release',
                 colorScheme: colorScheme,
               ),
+
+              // Spacer to balance Skip button on left
+              const SizedBox(width: 64),
             ],
           ),
         ),
