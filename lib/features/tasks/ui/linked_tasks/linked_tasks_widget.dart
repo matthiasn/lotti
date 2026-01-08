@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_from_section.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_header.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_to_section.dart';
+import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 /// Widget displaying linked tasks in the task detail view.
 ///
@@ -62,18 +63,27 @@ class LinkedTasksWidget extends ConsumerWidget {
           taskId: taskId,
           hasLinkedTasks: hasIncoming || hasOutgoing,
         ),
-        if (hasIncoming)
-          LinkedFromSection(
-            taskId: taskId,
-            incomingTasks: incomingTasks,
-            manageMode: uiState.manageMode,
+        ModernBaseCard(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (hasIncoming)
+                LinkedFromSection(
+                  taskId: taskId,
+                  incomingTasks: incomingTasks,
+                  manageMode: uiState.manageMode,
+                ),
+              if (hasIncoming && hasOutgoing) const SizedBox(height: 8),
+              if (hasOutgoing)
+                LinkedToSection(
+                  taskId: taskId,
+                  outgoingLinks: outgoingLinks,
+                  manageMode: uiState.manageMode,
+                ),
+            ],
           ),
-        if (hasOutgoing)
-          LinkedToSection(
-            taskId: taskId,
-            outgoingLinks: outgoingLinks,
-            manageMode: uiState.manageMode,
-          ),
+        ),
       ],
     );
   }

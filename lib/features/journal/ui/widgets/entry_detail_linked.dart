@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -36,6 +37,23 @@ class LinkedEntriesWidget extends ConsumerWidget {
 
     if (entryLinks.isEmpty) {
       return const SizedBox.shrink();
+    }
+
+    // When hideTaskEntries is true, check if there are any non-Task entries
+    // to avoid showing an empty "Linked Entries" section
+    if (hideTaskEntries) {
+      var hasNonTaskEntries = false;
+      for (final link in entryLinks) {
+        final entry =
+            ref.watch(entryControllerProvider(id: link.toId)).value?.entry;
+        if (entry != null && entry is! Task) {
+          hasNonTaskEntries = true;
+          break;
+        }
+      }
+      if (!hasNonTaskEntries) {
+        return const SizedBox.shrink();
+      }
     }
 
     final color = context.colorScheme.outline;

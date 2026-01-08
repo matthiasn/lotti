@@ -10,10 +10,12 @@ import 'package:lotti/themes/theme.dart';
 class LinkedFromEntriesWidget extends ConsumerWidget {
   const LinkedFromEntriesWidget(
     this.item, {
+    this.hideTaskEntries = false,
     super.key,
   });
 
   final JournalEntity item;
+  final bool hideTaskEntries;
 
   @override
   Widget build(
@@ -21,7 +23,12 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
     WidgetRef ref,
   ) {
     final provider = linkedFromEntriesControllerProvider(id: item.id);
-    final items = ref.watch(provider).value ?? [];
+    var items = ref.watch(provider).value ?? [];
+
+    // Filter out Task entries if requested (shown in dedicated Linked Tasks section)
+    if (hideTaskEntries) {
+      items = items.where((e) => e is! Task).toList();
+    }
 
     if (items.isEmpty) {
       return const SizedBox.shrink();

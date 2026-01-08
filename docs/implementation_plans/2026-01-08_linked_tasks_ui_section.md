@@ -95,7 +95,7 @@ Added to `lib/l10n/app_en.arb`:
 
 ### Data Flow
 
-```
+```text
 LinkedTasksWidget
 ├── Watches linkedEntriesControllerProvider (outgoing links)
 ├── Watches linkedFromEntriesControllerProvider (incoming links)
@@ -137,7 +137,7 @@ abstract class LinkedTasksState with _$LinkedTasksState {
 
 ## File Structure
 
-```
+```text
 lib/features/tasks/
 ├── state/
 │   ├── linked_tasks_controller.dart

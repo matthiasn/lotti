@@ -157,7 +157,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                           highlightedEntryId: highlightedEntryId,
                           hideTaskEntries: true,
                         ),
-                        LinkedFromEntriesWidget(task),
+                        LinkedFromEntriesWidget(
+                          task,
+                          hideTaskEntries: true,
+                        ),
                       ],
                     ).animate().fadeIn(
                           duration: const Duration(milliseconds: 100),

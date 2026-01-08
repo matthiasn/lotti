@@ -56,11 +56,14 @@ class LinkedFromSection extends ConsumerWidget {
         const SizedBox(height: 4),
         // List of linked task text links
         ...incomingTasks.map(
-          (task) => LinkedTaskCard(
-            task: task,
-            showUnlinkButton: manageMode,
-            onUnlink:
-                manageMode ? () => _unlinkTask(context, ref, task.id) : null,
+          (task) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: LinkedTaskCard(
+              task: task,
+              showUnlinkButton: manageMode,
+              onUnlink:
+                  manageMode ? () => _unlinkTask(context, ref, task.id) : null,
+            ),
           ),
         ),
       ],

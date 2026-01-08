@@ -92,10 +92,13 @@ class _LinkedTaskCardFromLink extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return LinkedTaskCard(
-      task: entry,
-      showUnlinkButton: manageMode,
-      onUnlink: manageMode ? () => _unlinkTask(context, ref) : null,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: LinkedTaskCard(
+        task: entry,
+        showUnlinkButton: manageMode,
+        onUnlink: manageMode ? () => _unlinkTask(context, ref) : null,
+      ),
     );
   }
 

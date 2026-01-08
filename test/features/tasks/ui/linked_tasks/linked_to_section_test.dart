@@ -32,6 +32,20 @@ class MockLinkedEntriesController extends LinkedEntriesController {
   Future<void> removeLink({required String toId}) async {}
 }
 
+class TrackingLinkedEntriesController extends LinkedEntriesController {
+  bool removeLinkCalled = false;
+  String? removeLinkToId;
+
+  @override
+  Future<List<EntryLink>> build({required String id}) async => [];
+
+  @override
+  Future<void> removeLink({required String toId}) async {
+    removeLinkCalled = true;
+    removeLinkToId = toId;
+  }
+}
+
 class MockEntryController extends EntryController {
   MockEntryController({required this.mockEntry});
 
@@ -349,7 +363,7 @@ void main() {
         (tester) async {
       final task = buildTask(title: 'Linked Task');
       final link = buildLink(toId: 'task-1');
-      final mockController = MockLinkedEntriesController();
+      final trackingController = TrackingLinkedEntriesController();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -357,7 +371,7 @@ void main() {
             entryControllerProvider(id: 'task-1')
                 .overrideWith(() => MockEntryController(mockEntry: task)),
             linkedEntriesControllerProvider(id: 'task-main')
-                .overrideWith(() => mockController),
+                .overrideWith(() => trackingController),
           ],
           child: WidgetTestBench(
             child: LinkedToSection(
@@ -376,6 +390,10 @@ void main() {
       // Tap Unlink to confirm
       await tester.tap(find.text('Unlink'));
       await tester.pumpAndSettle();
+
+      // Verify removeLink was called with the correct toId
+      expect(trackingController.removeLinkCalled, isTrue);
+      expect(trackingController.removeLinkToId, 'task-1');
 
       // Dialog should be dismissed
       expect(find.text('Unlink Task'), findsNothing);

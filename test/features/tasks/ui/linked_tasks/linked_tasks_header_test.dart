@@ -349,9 +349,10 @@ void main() {
 
     testWidgets('link modal excludes already linked task IDs', (tester) async {
       final now = DateTime(2025, 12, 31, 12);
-      final linkedTask = Task(
+      // This task is linked FROM another task (incoming)
+      final linkedFromTask = Task(
         meta: Metadata(
-          id: 'linked-task',
+          id: 'linked-from-task',
           createdAt: now,
           updatedAt: now,
           dateFrom: now,
@@ -362,9 +363,10 @@ void main() {
           dateFrom: now,
           dateTo: now,
           statusHistory: const [],
-          title: 'Linked Task',
+          title: 'Linked From Task',
         ),
       );
+      // This is the outgoing link (task-1 links TO outgoing-task)
       final outgoingLink = EntryLink.basic(
         id: 'link-1',
         fromId: 'task-1',
@@ -372,6 +374,52 @@ void main() {
         createdAt: now,
         updatedAt: now,
         vectorClock: null,
+      );
+      // Task that should appear in modal (not linked)
+      final availableTask = Task(
+        meta: Metadata(
+          id: 'available-task',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          status: TaskStatus.open(id: 's2', createdAt: now, utcOffset: 0),
+          dateFrom: now,
+          dateTo: now,
+          statusHistory: const [],
+          title: 'Available Task',
+        ),
+      );
+      // Task that should be excluded (it's the outgoing link target)
+      final outgoingTask = Task(
+        meta: Metadata(
+          id: 'outgoing-task',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          status: TaskStatus.open(id: 's3', createdAt: now, utcOffset: 0),
+          dateFrom: now,
+          dateTo: now,
+          statusHistory: const [],
+          title: 'Outgoing Task',
+        ),
+      );
+
+      // Mock getTasks to return all tasks (the modal filters them)
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [linkedFromTask, availableTask, outgoingTask],
       );
 
       await tester.pumpWidget(
@@ -384,18 +432,30 @@ void main() {
               () => _MockLinkedEntriesController([outgoingLink]),
             ),
             linkedFromEntriesControllerProvider(id: 'task-1').overrideWith(
-              () => _MockLinkedFromEntriesController([linkedTask]),
+              () => _MockLinkedFromEntriesController([linkedFromTask]),
             ),
           ],
-          child: const WidgetTestBench(
+          child: WidgetTestBench(
             mediaQueryData: _largeMediaQuery,
-            child: LinkedTasksHeader(
-              taskId: 'task-1',
-              hasLinkedTasks: true,
+            child: Consumer(
+              // Pre-load the providers so they're ready when the modal opens
+              builder: (context, ref, child) {
+                ref
+                  ..watch(linkedEntriesControllerProvider(id: 'task-1'))
+                  ..watch(linkedFromEntriesControllerProvider(id: 'task-1'));
+                return child!;
+              },
+              child: const LinkedTasksHeader(
+                taskId: 'task-1',
+                hasLinkedTasks: true,
+              ),
             ),
           ),
         ),
       );
+
+      // Wait for providers to load
+      await tester.pumpAndSettle();
 
       // Open menu
       await tester.tap(find.byIcon(Icons.more_vert));
@@ -407,6 +467,13 @@ void main() {
 
       // Modal should open
       expect(find.byType(BottomSheet), findsOneWidget);
+
+      // Available task should be visible (not linked)
+      expect(find.text('Available Task'), findsOneWidget);
+
+      // Linked tasks should be excluded from the modal
+      expect(find.text('Linked From Task'), findsNothing);
+      expect(find.text('Outgoing Task'), findsNothing);
     });
   });
 }

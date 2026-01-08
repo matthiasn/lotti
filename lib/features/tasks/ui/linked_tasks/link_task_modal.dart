@@ -188,6 +188,7 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
             // Handle bar
             Center(
               child: Container(
+                key: const Key('link_task_modal_handle'),
                 width: 40,
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),

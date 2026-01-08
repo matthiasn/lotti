@@ -315,8 +315,8 @@ void main() {
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
 
-      // Handle bar is rendered as a Container with specific decoration
-      expect(find.byType(Container), findsWidgets);
+      // Handle bar is rendered with a specific key
+      expect(find.byKey(const Key('link_task_modal_handle')), findsOneWidget);
     });
 
     testWidgets('shows status icons for tasks', (tester) async {
