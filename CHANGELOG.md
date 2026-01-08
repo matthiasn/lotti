@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.804] - 2026-01-08
+### Added
+- Linked Tasks Section: New dedicated UI section for viewing and managing task-to-task links
+  - Displays bidirectional links with directional indicators (↳ LINKED FROM, ↗ LINKED TO)
+  - Minimal, Linear-style text links with status circles (open/completed)
+  - "Link existing task..." modal with searchable task list (FTS5-powered)
+  - "Create new linked task..." creates a subtask inheriting current task's category
+  - "Manage links..." mode shows unlink buttons for each linked task
+  - Tasks filtered out from generic "Linked Entries" section to avoid duplication
+  - Location: Between AI Task Summary and Checklists sections in task details
+
 ## [0.9.803] - 2026-01-08
 ### Fixed
 - Calendar Auto-Refresh: Fixed calendar not updating when returning from creating a time recording

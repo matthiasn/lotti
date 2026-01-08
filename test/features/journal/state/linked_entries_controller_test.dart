@@ -5,6 +5,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -466,6 +469,119 @@ void main() {
 
       // Assert
       expect(newestId, isNull);
+    });
+  });
+
+  group('HasNonTaskLinkedEntriesProvider', () {
+    const testId = 'test-entry-id';
+    final now = DateTime(2025, 12, 31, 12);
+
+    Task buildTask(String id) => Task(
+          meta: Metadata(
+            id: id,
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: now,
+              utcOffset: 0,
+            ),
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: const [],
+            title: 'Test Task',
+          ),
+        );
+
+    JournalEntry buildJournalEntry(String id) => JournalEntry(
+          meta: Metadata(
+            id: id,
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          entryText: const EntryText(plainText: 'Test entry'),
+        );
+
+    test('returns false when resolved entities is empty', () {
+      // Act
+      final container = ProviderContainer(
+        overrides: [
+          resolvedOutgoingLinkedEntriesProvider(testId).overrideWith(
+            (ref) => <JournalEntity>[],
+          ),
+        ],
+      );
+
+      final result = container.read(hasNonTaskLinkedEntriesProvider(testId));
+
+      // Assert
+      expect(result, isFalse);
+    });
+
+    test('returns false when all entries are Tasks', () {
+      // Arrange
+      final task1 = buildTask('linked-id-1');
+      final task2 = buildTask('linked-id-2');
+
+      // Act
+      final container = ProviderContainer(
+        overrides: [
+          resolvedOutgoingLinkedEntriesProvider(testId).overrideWith(
+            (ref) => [task1, task2],
+          ),
+        ],
+      );
+
+      final result = container.read(hasNonTaskLinkedEntriesProvider(testId));
+
+      // Assert
+      expect(result, isFalse);
+    });
+
+    test('returns true when there is at least one non-Task entry', () {
+      // Arrange
+      final task = buildTask('linked-id-1');
+      final journalEntry = buildJournalEntry('linked-id-2');
+
+      // Act
+      final container = ProviderContainer(
+        overrides: [
+          resolvedOutgoingLinkedEntriesProvider(testId).overrideWith(
+            (ref) => [task, journalEntry],
+          ),
+        ],
+      );
+
+      final result = container.read(hasNonTaskLinkedEntriesProvider(testId));
+
+      // Assert
+      expect(result, isTrue);
+    });
+
+    test('returns true when all entries are non-Task', () {
+      // Arrange
+      final journalEntry1 = buildJournalEntry('linked-id-1');
+      final journalEntry2 = buildJournalEntry('linked-id-2');
+
+      // Act
+      final container = ProviderContainer(
+        overrides: [
+          resolvedOutgoingLinkedEntriesProvider(testId).overrideWith(
+            (ref) => [journalEntry1, journalEntry2],
+          ),
+        ],
+      );
+
+      final result = container.read(hasNonTaskLinkedEntriesProvider(testId));
+
+      // Assert
+      expect(result, isTrue);
     });
   });
 }

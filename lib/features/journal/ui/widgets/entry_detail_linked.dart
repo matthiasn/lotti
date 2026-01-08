@@ -13,6 +13,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
     this.entryKeyBuilder,
     this.highlightedEntryId,
     this.activeTimerEntryId,
+    this.hideTaskEntries = false,
     super.key,
   });
 
@@ -20,6 +21,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
   final GlobalKey Function(String entryId)? entryKeyBuilder;
   final String? highlightedEntryId;
   final String? activeTimerEntryId;
+  final bool hideTaskEntries;
 
   @override
   Widget build(
@@ -34,6 +36,16 @@ class LinkedEntriesWidget extends ConsumerWidget {
 
     if (entryLinks.isEmpty) {
       return const SizedBox.shrink();
+    }
+
+    // When hideTaskEntries is true, check if there are any non-Task entries
+    // to avoid showing an empty "Linked Entries" section
+    if (hideTaskEntries) {
+      final hasNonTaskEntries =
+          ref.watch(hasNonTaskLinkedEntriesProvider(item.id));
+      if (!hasNonTaskEntries) {
+        return const SizedBox.shrink();
+      }
     }
 
     final color = context.colorScheme.outline;
@@ -77,6 +89,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
                 linkedFrom: item,
                 link: link,
                 showAiEntry: includeAiEntries,
+                hideTaskEntries: hideTaskEntries,
                 isHighlighted: highlightedEntryId == toId,
                 isActiveTimer: activeTimerEntryId == toId,
               ),

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
@@ -118,4 +120,42 @@ class NewestLinkedIdController extends _$NewestLinkedIdController {
 
     return newestLinkedId;
   }
+}
+
+/// Provider that resolves outgoing entry links to their actual JournalEntity objects.
+///
+/// This centralizes the resolution logic so that downstream providers can
+/// filter/process the resolved entities without needing to watch individual
+/// entryControllerProviders in loops.
+@riverpod
+List<JournalEntity> resolvedOutgoingLinkedEntries(
+  Ref ref,
+  String id,
+) {
+  final linksAsync = ref.watch(linkedEntriesControllerProvider(id: id));
+  final links = linksAsync.value ?? [];
+
+  final entities = <JournalEntity>[];
+  for (final link in links) {
+    final entryAsync = ref.watch(entryControllerProvider(id: link.toId));
+    final entry = entryAsync.value?.entry;
+    if (entry != null) {
+      entities.add(entry);
+    }
+  }
+
+  return entities;
+}
+
+/// Provider that checks if there are any non-Task entries in the linked entries.
+///
+/// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
+/// section when hideTaskEntries is true.
+@riverpod
+bool hasNonTaskLinkedEntries(
+  Ref ref,
+  String id,
+) {
+  final entities = ref.watch(resolvedOutgoingLinkedEntriesProvider(id));
+  return entities.any((entity) => entity is! Task);
 }

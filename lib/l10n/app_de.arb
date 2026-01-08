@@ -528,5 +528,20 @@
   },
   "imageGenerationRetry": "Wiederholen",
   "generateCoverArt": "Cover generieren",
-  "generateCoverArtSubtitle": "Bild aus Sprachbeschreibung erstellen"
+  "generateCoverArtSubtitle": "Bild aus Sprachbeschreibung erstellen",
+
+  "linkedTasksTitle": "Verknüpfte Aufgaben",
+  "linkedFromLabel": "VERKNÜPFT VON",
+  "linkedToLabel": "VERKNÜPFT MIT",
+  "linkExistingTask": "Vorhandene Aufgabe verknüpfen...",
+  "createNewLinkedTask": "Neue verknüpfte Aufgabe erstellen...",
+  "manageLinks": "Verknüpfungen verwalten...",
+  "showCompleted": "Abgeschlossene anzeigen",
+  "unlinkTaskTitle": "Verknüpfung aufheben",
+  "unlinkTaskConfirm": "Sind Sie sicher, dass Sie die Verknüpfung zu dieser Aufgabe aufheben möchten?",
+  "unlinkButton": "Verknüpfung aufheben",
+  "searchTasksHint": "Aufgaben suchen...",
+  "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
+  "noTasksToLink": "Keine Aufgaben zum Verknüpfen verfügbar",
+  "noTasksFound": "Keine Aufgaben gefunden"
 }

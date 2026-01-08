@@ -3054,4 +3054,47 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Bild aus Sprachbeschreibung erstellen';
+
+  @override
+  String get linkedTasksTitle => 'Verknüpfte Aufgaben';
+
+  @override
+  String get linkedFromLabel => 'VERKNÜPFT VON';
+
+  @override
+  String get linkedToLabel => 'VERKNÜPFT MIT';
+
+  @override
+  String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
+
+  @override
+  String get createNewLinkedTask => 'Neue verknüpfte Aufgabe erstellen...';
+
+  @override
+  String get manageLinks => 'Verknüpfungen verwalten...';
+
+  @override
+  String get showCompleted => 'Abgeschlossene anzeigen';
+
+  @override
+  String get unlinkTaskTitle => 'Verknüpfung aufheben';
+
+  @override
+  String get unlinkTaskConfirm =>
+      'Sind Sie sicher, dass Sie die Verknüpfung zu dieser Aufgabe aufheben möchten?';
+
+  @override
+  String get unlinkButton => 'Verknüpfung aufheben';
+
+  @override
+  String get searchTasksHint => 'Aufgaben suchen...';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
+
+  @override
+  String get noTasksToLink => 'Keine Aufgaben zum Verknüpfen verfügbar';
+
+  @override
+  String get noTasksFound => 'Keine Aufgaben gefunden';
 }

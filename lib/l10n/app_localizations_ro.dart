@@ -3048,4 +3048,47 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Creează imagine din descrierea vocală';
+
+  @override
+  String get linkedTasksTitle => 'Sarcini legate';
+
+  @override
+  String get linkedFromLabel => 'LEGAT DE LA';
+
+  @override
+  String get linkedToLabel => 'LEGAT LA';
+
+  @override
+  String get linkExistingTask => 'Leagă o sarcină existentă...';
+
+  @override
+  String get createNewLinkedTask => 'Creează o nouă sarcină legată...';
+
+  @override
+  String get manageLinks => 'Gestionează legăturile...';
+
+  @override
+  String get showCompleted => 'Afișează finalizate';
+
+  @override
+  String get unlinkTaskTitle => 'Dezleagă sarcina';
+
+  @override
+  String get unlinkTaskConfirm =>
+      'Ești sigur că vrei să dezlegi această sarcină?';
+
+  @override
+  String get unlinkButton => 'Dezleagă';
+
+  @override
+  String get searchTasksHint => 'Caută sarcini...';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
+
+  @override
+  String get noTasksToLink => 'Nu sunt sarcini disponibile pentru a fi legate';
+
+  @override
+  String get noTasksFound => 'Nu s-au găsit sarcini';
 }

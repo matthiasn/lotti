@@ -387,3 +387,226 @@ abstract class _$NewestLinkedIdController extends $AsyncNotifier<String?> {
             ));
   }
 }
+
+/// Provider that resolves outgoing entry links to their actual JournalEntity objects.
+///
+/// This centralizes the resolution logic so that downstream providers can
+/// filter/process the resolved entities without needing to watch individual
+/// entryControllerProviders in loops.
+
+@ProviderFor(resolvedOutgoingLinkedEntries)
+final resolvedOutgoingLinkedEntriesProvider =
+    ResolvedOutgoingLinkedEntriesFamily._();
+
+/// Provider that resolves outgoing entry links to their actual JournalEntity objects.
+///
+/// This centralizes the resolution logic so that downstream providers can
+/// filter/process the resolved entities without needing to watch individual
+/// entryControllerProviders in loops.
+
+final class ResolvedOutgoingLinkedEntriesProvider extends $FunctionalProvider<
+    List<JournalEntity>,
+    List<JournalEntity>,
+    List<JournalEntity>> with $Provider<List<JournalEntity>> {
+  /// Provider that resolves outgoing entry links to their actual JournalEntity objects.
+  ///
+  /// This centralizes the resolution logic so that downstream providers can
+  /// filter/process the resolved entities without needing to watch individual
+  /// entryControllerProviders in loops.
+  ResolvedOutgoingLinkedEntriesProvider._(
+      {required ResolvedOutgoingLinkedEntriesFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'resolvedOutgoingLinkedEntriesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$resolvedOutgoingLinkedEntriesHash();
+
+  @override
+  String toString() {
+    return r'resolvedOutgoingLinkedEntriesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<List<JournalEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  List<JournalEntity> create(Ref ref) {
+    final argument = this.argument as String;
+    return resolvedOutgoingLinkedEntries(
+      ref,
+      argument,
+    );
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<JournalEntity> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<JournalEntity>>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ResolvedOutgoingLinkedEntriesProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$resolvedOutgoingLinkedEntriesHash() =>
+    r'793c13331102795071985b3187b41f46ae2d5822';
+
+/// Provider that resolves outgoing entry links to their actual JournalEntity objects.
+///
+/// This centralizes the resolution logic so that downstream providers can
+/// filter/process the resolved entities without needing to watch individual
+/// entryControllerProviders in loops.
+
+final class ResolvedOutgoingLinkedEntriesFamily extends $Family
+    with $FunctionalFamilyOverride<List<JournalEntity>, String> {
+  ResolvedOutgoingLinkedEntriesFamily._()
+      : super(
+          retry: null,
+          name: r'resolvedOutgoingLinkedEntriesProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Provider that resolves outgoing entry links to their actual JournalEntity objects.
+  ///
+  /// This centralizes the resolution logic so that downstream providers can
+  /// filter/process the resolved entities without needing to watch individual
+  /// entryControllerProviders in loops.
+
+  ResolvedOutgoingLinkedEntriesProvider call(
+    String id,
+  ) =>
+      ResolvedOutgoingLinkedEntriesProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'resolvedOutgoingLinkedEntriesProvider';
+}
+
+/// Provider that checks if there are any non-Task entries in the linked entries.
+///
+/// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
+/// section when hideTaskEntries is true.
+
+@ProviderFor(hasNonTaskLinkedEntries)
+final hasNonTaskLinkedEntriesProvider = HasNonTaskLinkedEntriesFamily._();
+
+/// Provider that checks if there are any non-Task entries in the linked entries.
+///
+/// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
+/// section when hideTaskEntries is true.
+
+final class HasNonTaskLinkedEntriesProvider
+    extends $FunctionalProvider<bool, bool, bool> with $Provider<bool> {
+  /// Provider that checks if there are any non-Task entries in the linked entries.
+  ///
+  /// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
+  /// section when hideTaskEntries is true.
+  HasNonTaskLinkedEntriesProvider._(
+      {required HasNonTaskLinkedEntriesFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'hasNonTaskLinkedEntriesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$hasNonTaskLinkedEntriesHash();
+
+  @override
+  String toString() {
+    return r'hasNonTaskLinkedEntriesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    final argument = this.argument as String;
+    return hasNonTaskLinkedEntries(
+      ref,
+      argument,
+    );
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is HasNonTaskLinkedEntriesProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$hasNonTaskLinkedEntriesHash() =>
+    r'4dc3405a0ba8a0008be8bbe58d4b4aa54c64c49f';
+
+/// Provider that checks if there are any non-Task entries in the linked entries.
+///
+/// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
+/// section when hideTaskEntries is true.
+
+final class HasNonTaskLinkedEntriesFamily extends $Family
+    with $FunctionalFamilyOverride<bool, String> {
+  HasNonTaskLinkedEntriesFamily._()
+      : super(
+          retry: null,
+          name: r'hasNonTaskLinkedEntriesProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Provider that checks if there are any non-Task entries in the linked entries.
+  ///
+  /// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
+  /// section when hideTaskEntries is true.
+
+  HasNonTaskLinkedEntriesProvider call(
+    String id,
+  ) =>
+      HasNonTaskLinkedEntriesProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'hasNonTaskLinkedEntriesProvider';
+}

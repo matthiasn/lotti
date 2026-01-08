@@ -483,5 +483,20 @@
   },
   "imageGenerationRetry": "Reîncearcă",
   "generateCoverArt": "Generează copertă",
-  "generateCoverArtSubtitle": "Creează imagine din descrierea vocală"
+  "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
+
+  "linkedTasksTitle": "Sarcini legate",
+  "linkedFromLabel": "LEGAT DE LA",
+  "linkedToLabel": "LEGAT LA",
+  "linkExistingTask": "Leagă o sarcină existentă...",
+  "createNewLinkedTask": "Creează o nouă sarcină legată...",
+  "manageLinks": "Gestionează legăturile...",
+  "showCompleted": "Afișează finalizate",
+  "unlinkTaskTitle": "Dezleagă sarcina",
+  "unlinkTaskConfirm": "Ești sigur că vrei să dezlegi această sarcină?",
+  "unlinkButton": "Dezleagă",
+  "searchTasksHint": "Caută sarcini...",
+  "linkedTasksMenuTooltip": "Opțiuni sarcini legate",
+  "noTasksToLink": "Nu sunt sarcini disponibile pentru a fi legate",
+  "noTasksFound": "Nu s-au găsit sarcini"
 }

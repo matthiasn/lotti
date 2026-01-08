@@ -36,3 +36,13 @@ const allTaskStatuses = [
   'DONE',
   'REJECTED',
 ];
+
+/// Task statuses that are considered "open" (not completed/rejected).
+/// Used for filtering linkable tasks in task linking UI.
+const openTaskStatuses = [
+  'OPEN',
+  'GROOMED',
+  'IN PROGRESS',
+  'BLOCKED',
+  'ON HOLD',
+];

@@ -1143,5 +1143,20 @@
   },
   "imageGenerationRetry": "Retry",
   "generateCoverArt": "Generate Cover Art",
-  "generateCoverArtSubtitle": "Create image from voice description"
+  "generateCoverArtSubtitle": "Create image from voice description",
+
+  "linkedTasksTitle": "Linked Tasks",
+  "linkedFromLabel": "LINKED FROM",
+  "linkedToLabel": "LINKED TO",
+  "linkExistingTask": "Link existing task...",
+  "createNewLinkedTask": "Create new linked task...",
+  "manageLinks": "Manage links...",
+  "showCompleted": "Show completed",
+  "unlinkTaskTitle": "Unlink Task",
+  "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
+  "unlinkButton": "Unlink",
+  "searchTasksHint": "Search tasks...",
+  "linkedTasksMenuTooltip": "Linked tasks options",
+  "noTasksToLink": "No tasks available to link",
+  "noTasksFound": "No tasks found"
 }

@@ -3070,4 +3070,47 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Crear imagen desde descripción de voz';
+
+  @override
+  String get linkedTasksTitle => 'Tareas vinculadas';
+
+  @override
+  String get linkedFromLabel => 'VINCULADO DESDE';
+
+  @override
+  String get linkedToLabel => 'VINCULADO A';
+
+  @override
+  String get linkExistingTask => 'Vincular tarea existente...';
+
+  @override
+  String get createNewLinkedTask => 'Crear nueva tarea vinculada...';
+
+  @override
+  String get manageLinks => 'Gestionar vínculos...';
+
+  @override
+  String get showCompleted => 'Mostrar completadas';
+
+  @override
+  String get unlinkTaskTitle => 'Desvincular tarea';
+
+  @override
+  String get unlinkTaskConfirm =>
+      '¿Estás seguro de que quieres desvincular esta tarea?';
+
+  @override
+  String get unlinkButton => 'Desvincular';
+
+  @override
+  String get searchTasksHint => 'Buscar tareas...';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Opciones de tareas vinculadas';
+
+  @override
+  String get noTasksToLink => 'No hay tareas disponibles para vincular';
+
+  @override
+  String get noTasksFound => 'No se encontraron tareas';
 }

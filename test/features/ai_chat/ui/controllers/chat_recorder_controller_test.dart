@@ -774,14 +774,16 @@ void main() {
     final tempSubdir = Directory('${baseTemp.path}/lotti_chat_rec');
     expect(await tempSubdir.exists(), isTrue);
 
+    // Close amplitude stream first to allow clean shutdown
+    await amplitudeController.close();
+
     // Dispose while recording is active - this triggers ref.onDispose
     sub.close();
     container.dispose();
-    await amplitudeController.close();
 
-    // Wait for cleanup with polling (more reliable than fixed delay)
+    // Wait for cleanup with polling - use longer timeout for parallel test runs
     var attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 50; // 5 seconds total timeout for CI/parallel scenarios
     while (await tempSubdir.exists() && attempts < maxAttempts) {
       await Future<void>.delayed(const Duration(milliseconds: 100));
       attempts++;

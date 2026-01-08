@@ -12,12 +12,14 @@ class LinkedEntriesWithTimer extends ConsumerWidget {
     required this.item,
     required this.highlightedEntryId,
     this.entryKeyBuilder,
+    this.hideTaskEntries = false,
     super.key,
   });
 
   final JournalEntity item;
   final String? highlightedEntryId;
   final GlobalKey Function(String entryId)? entryKeyBuilder;
+  final bool hideTaskEntries;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,6 +36,7 @@ class LinkedEntriesWithTimer extends ConsumerWidget {
           entryKeyBuilder: entryKeyBuilder,
           highlightedEntryId: highlightedEntryId,
           activeTimerEntryId: activeTimerEntryId,
+          hideTaskEntries: hideTaskEntries,
         );
       },
     );

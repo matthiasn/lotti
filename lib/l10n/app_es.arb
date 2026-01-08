@@ -483,5 +483,20 @@
   },
   "imageGenerationRetry": "Reintentar",
   "generateCoverArt": "Generar portada",
-  "generateCoverArtSubtitle": "Crear imagen desde descripción de voz"
+  "generateCoverArtSubtitle": "Crear imagen desde descripción de voz",
+
+  "linkedTasksTitle": "Tareas vinculadas",
+  "linkedFromLabel": "VINCULADO DESDE",
+  "linkedToLabel": "VINCULADO A",
+  "linkExistingTask": "Vincular tarea existente...",
+  "createNewLinkedTask": "Crear nueva tarea vinculada...",
+  "manageLinks": "Gestionar vínculos...",
+  "showCompleted": "Mostrar completadas",
+  "unlinkTaskTitle": "Desvincular tarea",
+  "unlinkTaskConfirm": "¿Estás seguro de que quieres desvincular esta tarea?",
+  "unlinkButton": "Desvincular",
+  "searchTasksHint": "Buscar tareas...",
+  "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
+  "noTasksToLink": "No hay tareas disponibles para vincular",
+  "noTasksFound": "No se encontraron tareas"
 }
