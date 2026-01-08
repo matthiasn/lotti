@@ -163,7 +163,7 @@ void main() {
     });
 
     testWidgets('renders LinkedTaskCard for each task link', (tester) async {
-      final task1 = buildTask(id: 'task-1', title: 'First Task');
+      final task1 = buildTask(title: 'First Task');
       final task2 = buildTask(id: 'task-2', title: 'Second Task');
       final link1 = buildLink(toId: 'task-1');
       final link2 = buildLink(toId: 'task-2');
@@ -202,7 +202,7 @@ void main() {
           dateFrom: now,
           dateTo: now,
         ),
-        entryText: EntryText(plainText: 'Some text'),
+        entryText: const EntryText(plainText: 'Some text'),
       );
       final link = buildLink(toId: 'text-entry-1');
 
@@ -230,7 +230,7 @@ void main() {
     });
 
     testWidgets('shows unlink buttons in manage mode', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
       final link = buildLink(toId: 'task-1');
 
       await tester.pumpWidget(
@@ -255,7 +255,7 @@ void main() {
     });
 
     testWidgets('hides unlink buttons when not in manage mode', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
       final link = buildLink(toId: 'task-1');
 
       await tester.pumpWidget(
@@ -280,7 +280,7 @@ void main() {
     });
 
     testWidgets('tapping unlink shows confirmation dialog', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
       final link = buildLink(toId: 'task-1');
       final mockController = MockLinkedEntriesController();
 
@@ -314,7 +314,7 @@ void main() {
     });
 
     testWidgets('cancel button dismisses confirmation dialog', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
       final link = buildLink(toId: 'task-1');
 
       await tester.pumpWidget(
@@ -345,8 +345,44 @@ void main() {
       expect(find.text('Unlink Task'), findsNothing);
     });
 
+    testWidgets('confirm unlink calls removeLink on controller',
+        (tester) async {
+      final task = buildTask(title: 'Linked Task');
+      final link = buildLink(toId: 'task-1');
+      final mockController = MockLinkedEntriesController();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: 'task-1')
+                .overrideWith(() => MockEntryController(mockEntry: task)),
+            linkedEntriesControllerProvider(id: 'task-main')
+                .overrideWith(() => mockController),
+          ],
+          child: WidgetTestBench(
+            child: LinkedToSection(
+              taskId: 'task-main',
+              outgoingLinks: [link],
+              manageMode: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      // Tap Unlink to confirm
+      await tester.tap(find.text('Unlink'));
+      await tester.pumpAndSettle();
+
+      // Dialog should be dismissed
+      expect(find.text('Unlink Task'), findsNothing);
+    });
+
     testWidgets('renders section inside a Column', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Test Task');
+      final task = buildTask();
       final link = buildLink(toId: 'task-1');
 
       await tester.pumpWidget(

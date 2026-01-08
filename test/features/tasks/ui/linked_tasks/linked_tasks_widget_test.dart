@@ -218,7 +218,7 @@ void main() {
     });
 
     testWidgets('filters incoming entries to only tasks', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Real Task');
+      final task = buildTask(title: 'Real Task');
       final textEntry = JournalEntry(
         meta: Metadata(
           id: 'text-entry',
@@ -227,7 +227,7 @@ void main() {
           dateFrom: now,
           dateTo: now,
         ),
-        entryText: EntryText(plainText: 'Some text'),
+        entryText: const EntryText(plainText: 'Some text'),
       );
 
       await tester.pumpWidget(
@@ -257,7 +257,7 @@ void main() {
     });
 
     testWidgets('passes manageMode to sections', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
 
       await tester.pumpWidget(
         ProviderScope(
@@ -285,7 +285,7 @@ void main() {
     });
 
     testWidgets('renders inside a Column', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Test Task');
+      final task = buildTask();
 
       await tester.pumpWidget(
         ProviderScope(

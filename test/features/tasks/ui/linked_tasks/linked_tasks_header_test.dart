@@ -1,23 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_header.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-import '../../../../widget_test_utils.dart';
 
 // Larger size to avoid overflow in popup menus
 const _largeMediaQuery = MediaQueryData(size: Size(800, 600));
 
 void main() {
   group('LinkedTasksHeader', () {
+    late MockJournalDb mockJournalDb;
+    late MockFts5Db mockFts5Db;
+    late MockUpdateNotifications mockUpdateNotifications;
+
     setUp(() async {
-      await setUpTestGetIt();
+      await getIt.reset();
+
+      mockJournalDb = MockJournalDb();
+      mockFts5Db = MockFts5Db();
+      mockUpdateNotifications = MockUpdateNotifications();
+
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <JournalEntity>[]);
+      when(() => mockFts5Db.watchFullTextMatches(any()))
+          .thenAnswer((_) => Stream.value(<String>[]));
+
+      getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<Fts5Db>(mockFts5Db);
     });
 
     tearDown(() async {
-      await tearDownTestGetIt();
+      await getIt.reset();
     });
 
     testWidgets('renders title "Linked Tasks"', (tester) async {
@@ -272,5 +310,119 @@ void main() {
       );
       expect(popupMenuButton.tooltip, 'Linked tasks options');
     });
+
+    testWidgets('tapping Link existing task opens modal', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            linkedTasksControllerProvider(taskId: 'task-1').overrideWith(
+              LinkedTasksController.new,
+            ),
+            linkedEntriesControllerProvider(id: 'task-1').overrideWith(
+              () => _MockLinkedEntriesController([]),
+            ),
+            linkedFromEntriesControllerProvider(id: 'task-1').overrideWith(
+              () => _MockLinkedFromEntriesController([]),
+            ),
+          ],
+          child: const WidgetTestBench(
+            mediaQueryData: _largeMediaQuery,
+            child: LinkedTasksHeader(
+              taskId: 'task-1',
+              hasLinkedTasks: false,
+            ),
+          ),
+        ),
+      );
+
+      // Open menu
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      // Tap Link existing task
+      await tester.tap(find.text('Link existing task...'));
+      await tester.pumpAndSettle();
+
+      // Modal should open (shows bottom sheet)
+      expect(find.byType(BottomSheet), findsOneWidget);
+    });
+
+    testWidgets('link modal excludes already linked task IDs', (tester) async {
+      final now = DateTime(2025, 12, 31, 12);
+      final linkedTask = Task(
+        meta: Metadata(
+          id: 'linked-task',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          status: TaskStatus.open(id: 's1', createdAt: now, utcOffset: 0),
+          dateFrom: now,
+          dateTo: now,
+          statusHistory: const [],
+          title: 'Linked Task',
+        ),
+      );
+      final outgoingLink = EntryLink.basic(
+        id: 'link-1',
+        fromId: 'task-1',
+        toId: 'outgoing-task',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            linkedTasksControllerProvider(taskId: 'task-1').overrideWith(
+              LinkedTasksController.new,
+            ),
+            linkedEntriesControllerProvider(id: 'task-1').overrideWith(
+              () => _MockLinkedEntriesController([outgoingLink]),
+            ),
+            linkedFromEntriesControllerProvider(id: 'task-1').overrideWith(
+              () => _MockLinkedFromEntriesController([linkedTask]),
+            ),
+          ],
+          child: const WidgetTestBench(
+            mediaQueryData: _largeMediaQuery,
+            child: LinkedTasksHeader(
+              taskId: 'task-1',
+              hasLinkedTasks: true,
+            ),
+          ),
+        ),
+      );
+
+      // Open menu
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      // Tap Link existing task
+      await tester.tap(find.text('Link existing task...'));
+      await tester.pumpAndSettle();
+
+      // Modal should open
+      expect(find.byType(BottomSheet), findsOneWidget);
+    });
   });
+}
+
+class _MockLinkedEntriesController extends LinkedEntriesController {
+  _MockLinkedEntriesController(this._links);
+  final List<EntryLink> _links;
+
+  @override
+  Future<List<EntryLink>> build({required String id}) async => _links;
+}
+
+class _MockLinkedFromEntriesController extends LinkedFromEntriesController {
+  _MockLinkedFromEntriesController(this._entities);
+  final List<JournalEntity> _entities;
+
+  @override
+  Future<List<JournalEntity>> build({required String id}) async => _entities;
 }

@@ -432,5 +432,466 @@ void main() {
       // Verify modal is open as a BottomSheet
       expect(find.byType(BottomSheet), findsOneWidget);
     });
+
+    testWidgets('shows no tasks message when no tasks available',
+        (tester) async {
+      // Default mock returns empty list
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No tasks available to link'), findsOneWidget);
+    });
+
+    testWidgets('filters tasks by search query', (tester) async {
+      final testTasks = [
+        buildTask(title: 'Apple Task'),
+        buildTask(id: 'task-2', title: 'Banana Task'),
+        buildTask(id: 'task-3', title: 'Cherry Task'),
+      ];
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => testTasks);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // All tasks should be visible initially
+      expect(find.text('Apple Task'), findsOneWidget);
+      expect(find.text('Banana Task'), findsOneWidget);
+      expect(find.text('Cherry Task'), findsOneWidget);
+
+      // Enter search query
+      await tester.enterText(find.byType(TextField), 'banana');
+      await tester.pumpAndSettle();
+
+      // Only matching task should be visible
+      expect(find.text('Apple Task'), findsNothing);
+      expect(find.text('Banana Task'), findsOneWidget);
+      expect(find.text('Cherry Task'), findsNothing);
+    });
+
+    testWidgets('shows no tasks found when search has no matches',
+        (tester) async {
+      final testTasks = [
+        buildTask(title: 'Apple Task'),
+      ];
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => testTasks);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Enter search query with no matches
+      await tester.enterText(find.byType(TextField), 'xyz123');
+      await tester.pumpAndSettle();
+
+      expect(find.text('No tasks found'), findsOneWidget);
+    });
+
+    testWidgets('clear button clears search text', (tester) async {
+      final testTasks = [
+        buildTask(),
+      ];
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => testTasks);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Enter search text
+      await tester.enterText(find.byType(TextField), 'search text');
+      await tester.pumpAndSettle();
+
+      // Clear button should appear
+      expect(find.byIcon(Icons.clear), findsOneWidget);
+
+      // Tap clear button
+      await tester.tap(find.byIcon(Icons.clear));
+      await tester.pumpAndSettle();
+
+      // Search field should be empty
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller?.text, isEmpty);
+    });
+
+    testWidgets('tapping task creates link and closes modal', (tester) async {
+      final testTask = buildTask(id: 'task-to-link', title: 'Task to Link');
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [testTask]);
+
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Tap the task
+      await tester.tap(find.text('Task to Link'));
+      await tester.pumpAndSettle();
+
+      // Verify link was created
+      verify(
+        () => mockPersistenceLogic.createLink(
+          fromId: 'current-task',
+          toId: 'task-to-link',
+        ),
+      ).called(1);
+    });
+
+    testWidgets('shows status labels for blocked tasks', (tester) async {
+      final blockedTask = buildTask(
+        title: 'Blocked Task',
+        status: TaskStatus.blocked(
+          id: 's1',
+          createdAt: now,
+          utcOffset: 0,
+          reason: 'Test reason',
+        ),
+      );
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [blockedTask]);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Blocked'), findsOneWidget);
+      expect(find.byIcon(Icons.block_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows status labels for on hold tasks', (tester) async {
+      final onHoldTask = buildTask(
+        title: 'On Hold Task',
+        status: TaskStatus.onHold(
+          id: 's1',
+          createdAt: now,
+          utcOffset: 0,
+          reason: 'Test reason',
+        ),
+      );
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [onHoldTask]);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('On Hold'), findsOneWidget);
+      expect(find.byIcon(Icons.pause_circle_outline_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows status labels for groomed tasks', (tester) async {
+      final groomedTask = buildTask(
+        title: 'Groomed Task',
+        status: TaskStatus.groomed(id: 's1', createdAt: now, utcOffset: 0),
+      );
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [groomedTask]);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Groomed'), findsOneWidget);
+      expect(find.byIcon(Icons.done_outline_rounded), findsOneWidget);
+    });
+
+    testWidgets('FTS5 matches are used for filtering', (tester) async {
+      final testTasks = [
+        buildTask(title: 'Apple Task'),
+        buildTask(id: 'task-2', title: 'Banana Task'),
+      ];
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => testTasks);
+
+      // FTS5 returns task-2 as a match
+      when(() => mockFts5Db.watchFullTextMatches('special'))
+          .thenAnswer((_) => Stream.value(['task-2']));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Enter search that matches via FTS5
+      await tester.enterText(find.byType(TextField), 'special');
+      await tester.pumpAndSettle();
+
+      // Task-2 should be visible because FTS5 matched it
+      expect(find.text('Banana Task'), findsOneWidget);
+    });
+
+    testWidgets('handles FTS5 error gracefully', (tester) async {
+      final testTasks = [
+        buildTask(),
+      ];
+
+      when(
+        () => mockJournalDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => testTasks);
+
+      // FTS5 throws an error
+      when(() => mockFts5Db.watchFullTextMatches(any()))
+          .thenAnswer((_) => Stream.error(Exception('FTS5 error')));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: WidgetTestBench(
+            child: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  await LinkTaskModal.show(
+                    context: context,
+                    currentTaskId: 'current-task',
+                    existingLinkedIds: const {},
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Enter search
+      await tester.enterText(find.byType(TextField), 'test');
+      await tester.pumpAndSettle();
+
+      // Should fallback to title matching
+      expect(find.text('Test Task'), findsOneWidget);
+    });
   });
 }

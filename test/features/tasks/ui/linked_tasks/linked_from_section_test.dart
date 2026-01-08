@@ -93,7 +93,7 @@ void main() {
     });
 
     testWidgets('renders LinkedTaskCard for each task', (tester) async {
-      final task1 = buildTask(id: 'task-1', title: 'First Task');
+      final task1 = buildTask(title: 'First Task');
       final task2 = buildTask(id: 'task-2', title: 'Second Task');
 
       await tester.pumpWidget(
@@ -116,7 +116,7 @@ void main() {
     });
 
     testWidgets('shows unlink buttons in manage mode', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
 
       await tester.pumpWidget(
         ProviderScope(
@@ -136,7 +136,7 @@ void main() {
     });
 
     testWidgets('hides unlink buttons when not in manage mode', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
 
       await tester.pumpWidget(
         ProviderScope(
@@ -156,7 +156,7 @@ void main() {
     });
 
     testWidgets('tapping unlink shows confirmation dialog', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
       final mockRepo = MockJournalRepository();
 
       await tester.pumpWidget(
@@ -186,7 +186,7 @@ void main() {
     });
 
     testWidgets('cancel button dismisses confirmation dialog', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Linked Task');
+      final task = buildTask(title: 'Linked Task');
 
       await tester.pumpWidget(
         ProviderScope(
@@ -251,7 +251,7 @@ void main() {
     });
 
     testWidgets('renders section inside a Column', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Test Task');
+      final task = buildTask();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -272,7 +272,7 @@ void main() {
     });
 
     testWidgets('renders label with correct styling', (tester) async {
-      final task = buildTask(id: 'task-1', title: 'Test Task');
+      final task = buildTask();
 
       await tester.pumpWidget(
         ProviderScope(

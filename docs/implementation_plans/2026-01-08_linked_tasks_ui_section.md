@@ -51,12 +51,15 @@ Note: "Show completed" toggle was removed - all linked tasks are always shown.
 
 ### Tests
 
-| File | Coverage |
-|------|----------|
-| `test/features/tasks/state/linked_tasks_controller_test.dart` | Controller state management |
-| `test/features/tasks/ui/linked_tasks/linked_tasks_header_test.dart` | Header rendering and menu |
-| `test/features/tasks/ui/linked_tasks/linked_task_card_test.dart` | Card navigation and unlink |
-| `test/features/tasks/ui/linked_tasks/link_task_modal_test.dart` | Search modal functionality |
+| File | Tests | Coverage |
+|------|-------|----------|
+| `test/features/tasks/state/linked_tasks_controller_test.dart` | 8 | Controller state management |
+| `test/features/tasks/ui/linked_tasks/linked_tasks_widget_test.dart` | 11 | Widget integration tests |
+| `test/features/tasks/ui/linked_tasks/linked_tasks_header_test.dart` | 12 | Header rendering, menu, modal opening |
+| `test/features/tasks/ui/linked_tasks/linked_from_section_test.dart` | 10 | Incoming links section |
+| `test/features/tasks/ui/linked_tasks/linked_to_section_test.dart` | 10 | Outgoing links section |
+| `test/features/tasks/ui/linked_tasks/linked_task_card_test.dart` | 21 | Card rendering, navigation, styling |
+| `test/features/tasks/ui/linked_tasks/link_task_modal_test.dart` | 20 | Search modal, filtering, link creation |
 
 ## Files Modified
 
@@ -152,11 +155,14 @@ lib/features/tasks/
 
 ## Test Coverage
 
-All 42 tests pass:
-- Controller state tests (5 tests)
-- Header widget tests (10 tests)
-- Card widget tests (5 tests)
-- Modal widget tests (12+ tests)
+All 92 tests pass:
+- Controller state tests (8 tests)
+- Widget integration tests (11 tests)
+- Header widget tests (12 tests)
+- From section tests (10 tests)
+- To section tests (10 tests)
+- Card widget tests (21 tests)
+- Modal widget tests (20 tests)
 
 ## Critical Files Reference
 
