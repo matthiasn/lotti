@@ -409,14 +409,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.8.1"
-  custom_lint_builder:
-    dependency: transitive
-    description:
-      name: custom_lint_builder
-      sha256: "1128db6f58e71d43842f3b9be7465c83f0c47f4dd8918f878dd6ad3b72a32072"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.8.1"
   custom_lint_core:
     dependency: transitive
     description:
@@ -1289,14 +1281,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
-  hotreloader:
-    dependency: transitive
-    description:
-      name: hotreloader
-      sha256: bc167a1163807b03bada490bfe2df25b0d744df359227880220a5cbd04e5734b
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.3.0"
   html:
     dependency: transitive
     description:
@@ -1670,13 +1654,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
-  lotti_custom_lint:
-    dependency: "direct dev"
-    description:
-      path: "tool/lotti_custom_lint"
-      relative: true
-    source: path
-    version: "0.1.0"
   markdown:
     dependency: transitive
     description:

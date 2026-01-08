@@ -5,3 +5,5 @@ flatpak-flutter/
 
 flatpak-builder-*.tar.xz
 flatpak-builder-*/
+direct-build/
+
