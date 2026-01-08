@@ -12,7 +12,7 @@ cd flatpak
 
 ## How It Works
 
-The script uses [flatpak-flutter](https://github.com/TheAppgineer/flatpak-flutter) directly to generate offline build manifests. This replaces the complex 12,000+ line `manifest_tool` Python orchestrator with ~50 lines of bash.
+The script uses [flatpak-flutter](https://github.com/TheAppgineer/flatpak-flutter) (pinned to v0.10.0) to generate offline build manifests. This replaces the complex 12,000+ line `manifest_tool` Python orchestrator with ~50 lines of bash.
 
 ### What It Does
 
