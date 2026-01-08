@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// A minimal, text-based link for displaying a linked task.
@@ -98,13 +99,14 @@ class LinkedTaskCard extends StatelessWidget {
   }
 
   Color _getStatusColor(BuildContext context, TaskStatus status) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return switch (status) {
       TaskOpen() => context.colorScheme.outline,
       TaskInProgress() => context.colorScheme.primary,
       TaskGroomed() => context.colorScheme.tertiary,
       TaskOnHold() => context.colorScheme.secondary,
       TaskBlocked() => context.colorScheme.error,
-      TaskDone() => Colors.green,
+      TaskDone() => isLight ? taskStatusDarkGreen : taskStatusGreen,
       TaskRejected() => context.colorScheme.outline,
     };
   }

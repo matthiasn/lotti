@@ -1156,5 +1156,7 @@
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",
   "unlinkButton": "Unlink",
   "searchTasksHint": "Search tasks...",
-  "linkedTasksMenuTooltip": "Linked tasks options"
+  "linkedTasksMenuTooltip": "Linked tasks options",
+  "noTasksToLink": "No tasks available to link",
+  "noTasksFound": "No tasks found"
 }

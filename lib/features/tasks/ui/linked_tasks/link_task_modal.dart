@@ -244,8 +244,8 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
                       ? Center(
                           child: Text(
                             _query.isEmpty
-                                ? context.messages.tasksLabelsNoLabels
-                                : context.messages.searchHint,
+                                ? context.messages.noTasksToLink
+                                : context.messages.noTasksFound,
                             style: context.textTheme.bodyMedium?.copyWith(
                               color: context.colorScheme.outline,
                             ),
@@ -299,7 +299,7 @@ class _TaskListTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        _getStatusLabel(status),
+        _getStatusLabel(context, status),
         style: TextStyle(
           color: statusColor,
           fontSize: 12,
@@ -309,15 +309,15 @@ class _TaskListTile extends StatelessWidget {
     );
   }
 
-  String _getStatusLabel(TaskStatus status) {
+  String _getStatusLabel(BuildContext context, TaskStatus status) {
     return status.map(
-      open: (_) => 'Open',
-      groomed: (_) => 'Groomed',
-      inProgress: (_) => 'In Progress',
-      blocked: (_) => 'Blocked',
-      onHold: (_) => 'On Hold',
-      done: (_) => 'Done',
-      rejected: (_) => 'Rejected',
+      open: (_) => context.messages.taskStatusOpen,
+      groomed: (_) => context.messages.taskStatusGroomed,
+      inProgress: (_) => context.messages.taskStatusInProgress,
+      blocked: (_) => context.messages.taskStatusBlocked,
+      onHold: (_) => context.messages.taskStatusOnHold,
+      done: (_) => context.messages.taskStatusDone,
+      rejected: (_) => context.messages.taskStatusRejected,
     );
   }
 

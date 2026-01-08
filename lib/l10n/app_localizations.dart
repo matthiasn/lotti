@@ -5745,6 +5745,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Linked tasks options'**
   String get linkedTasksMenuTooltip;
+
+  /// No description provided for @noTasksToLink.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks available to link'**
+  String get noTasksToLink;
+
+  /// No description provided for @noTasksFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks found'**
+  String get noTasksFound;
 }
 
 class _AppLocalizationsDelegate

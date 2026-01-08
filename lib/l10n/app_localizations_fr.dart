@@ -3109,4 +3109,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get linkedTasksMenuTooltip => 'Linked tasks options';
+
+  @override
+  String get noTasksToLink => 'No tasks available to link';
+
+  @override
+  String get noTasksFound => 'No tasks found';
 }
