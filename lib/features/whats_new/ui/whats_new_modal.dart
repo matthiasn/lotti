@@ -1,30 +1,29 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Modal that displays "What's New" content for all unseen releases.
 ///
-/// Users can swipe between releases (newest first) to catch up on updates
-/// they may have missed. Features an editorial magazine-style design with
-/// 21:9 hero banners and refined typography.
+/// Features an editorial magazine-style design with:
+/// - 21:9 hero banner (fixed header)
+/// - Scrollable markdown content
+/// - Navigation footer with indicator dots
 class WhatsNewModal extends ConsumerStatefulWidget {
   const WhatsNewModal({super.key});
 
   /// Shows the What's New modal.
   static Future<void> show(BuildContext context) async {
-    await ModalUtils.showSinglePageModal<void>(
+    await showDialog<void>(
       context: context,
-      hasTopBarLayer: false,
-      showCloseButton: false,
-      padding: EdgeInsets.zero,
-      builder: (modalContext) => const WhatsNewModal(),
+      barrierDismissible: true,
+      builder: (dialogContext) => const WhatsNewModal(),
     );
   }
 
@@ -33,27 +32,18 @@ class WhatsNewModal extends ConsumerStatefulWidget {
 }
 
 class _WhatsNewModalState extends ConsumerState<WhatsNewModal> {
-  late PageController _pageController;
-  int _currentRelease = 0;
+  final _pageIndexNotifier = ValueNotifier<int>(0);
   WhatsNewController? _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Save controller reference for use in dispose
     _controller = ref.read(whatsNewControllerProvider.notifier);
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
-    // Mark all as seen when modal is dismissed
+    _pageIndexNotifier.dispose();
     _controller?.markAllAsSeen();
     super.dispose();
   }
@@ -61,148 +51,133 @@ class _WhatsNewModalState extends ConsumerState<WhatsNewModal> {
   @override
   Widget build(BuildContext context) {
     final whatsNewAsync = ref.watch(whatsNewControllerProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return whatsNewAsync.when(
       data: (state) {
         final releases = state.unseenContent;
         if (releases.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('No new updates'),
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () {
-                      ref.read(whatsNewControllerProvider.notifier).resetSeenStatus();
-                    },
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Show all releases'),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return _buildEmptyDialog(context, isDark);
         }
 
-        return _WhatsNewReleases(
-          releases: releases,
-          pageController: _pageController,
-          currentRelease: _currentRelease,
-          onReleaseChanged: (index) => setState(() => _currentRelease = index),
-        );
+        return _buildReleasesModal(context, releases, isDark);
       },
-      loading: () => const SizedBox(
-        height: 500,
+      loading: () => _buildLoadingDialog(context, isDark),
+      error: (e, _) => _buildErrorDialog(context, e, isDark),
+    );
+  }
+
+  Widget _buildEmptyDialog(BuildContext context, bool isDark) {
+    return Dialog(
+      backgroundColor: ModalUtils.getModalBackgroundColor(context),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('No new updates'),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () {
+                ref.read(whatsNewControllerProvider.notifier).resetSeenStatus();
+              },
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Show all releases'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingDialog(BuildContext context, bool isDark) {
+    return Dialog(
+      backgroundColor: ModalUtils.getModalBackgroundColor(context),
+      child: const SizedBox(
+        height: 200,
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text('Error loading content: $e'),
-        ),
+    );
+  }
+
+  Widget _buildErrorDialog(BuildContext context, Object error, bool isDark) {
+    return Dialog(
+      backgroundColor: ModalUtils.getModalBackgroundColor(context),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Text('Error loading content: $error'),
       ),
     );
   }
-}
 
-class _WhatsNewReleases extends StatelessWidget {
-  const _WhatsNewReleases({
-    required this.releases,
-    required this.pageController,
-    required this.currentRelease,
-    required this.onReleaseChanged,
-  });
-
-  final List<WhatsNewContent> releases;
-  final PageController pageController;
-  final int currentRelease;
-  final ValueChanged<int> onReleaseChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    // Use 70% of screen height, capped between 500 and 700
+  Widget _buildReleasesModal(
+    BuildContext context,
+    List<WhatsNewContent> releases,
+    bool isDark,
+  ) {
+    final colorScheme = context.colorScheme;
     final screenHeight = MediaQuery.of(context).size.height;
-    final modalHeight = (screenHeight * 0.7).clamp(500.0, 700.0);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth >= WoltModalConfig.pageBreakpoint;
 
-    return SizedBox(
-      height: modalHeight,
-      child: Column(
-        children: [
-          // Release content (swipable between releases)
-          Expanded(
-            child: PageView.builder(
-              controller: pageController,
-              itemCount: releases.length,
-              onPageChanged: onReleaseChanged,
-              itemBuilder: (context, index) {
-                return _ReleaseCard(
-                  content: releases[index],
-                  isLatest: index == 0,
-                );
-              },
-            ),
-          ),
+    // Calculate modal dimensions
+    final modalHeight = (screenHeight * 0.85).clamp(500.0, screenHeight * 0.9);
+    final modalWidth = isWide ? 500.0 : screenWidth;
 
-          // Navigation footer with glassmorphism
-          if (releases.length > 1)
-            _NavigationFooter(
-              totalReleases: releases.length,
-              currentRelease: currentRelease,
-              onNavigate: (index) {
-                pageController.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOutQuart,
-                );
-              },
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A single release card with hero banner, metadata, and content.
-class _ReleaseCard extends StatelessWidget {
-  const _ReleaseCard({
-    required this.content,
-    required this.isLatest,
-  });
-
-  final WhatsNewContent content;
-  final bool isLatest;
-
-  @override
-  Widget build(BuildContext context) {
-    // Combine header and all sections into single scrollable content
-    final allContent = [content.headerMarkdown, ...content.sections].join('\n');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Hero banner with gradient overlay
-        _HeroBanner(
-          imageUrl: content.bannerImageUrl,
-          version: content.release.version,
-          isLatest: isLatest,
-        )
-            .animate()
-            .fadeIn(duration: 500.ms, curve: Curves.easeOut)
-            .slideY(begin: -0.03, end: 0, duration: 500.ms),
-
-        // Scrollable markdown content
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-            child: SelectionArea(
-              child: GptMarkdown(allContent),
-            ),
-          ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Container(
+        width: modalWidth,
+        height: modalHeight,
+        decoration: BoxDecoration(
+          color: ModalUtils.getModalBackgroundColor(context),
+          borderRadius: isWide ? BorderRadius.circular(16) : null,
         ),
-      ],
+        child: ClipRRect(
+          borderRadius: isWide ? BorderRadius.circular(16) : BorderRadius.zero,
+          child: ValueListenableBuilder<int>(
+            valueListenable: _pageIndexNotifier,
+            builder: (context, currentIndex, _) {
+              final content = releases[currentIndex];
+              final allContent = [
+                content.headerMarkdown,
+                ...content.sections,
+              ].join('\n');
+
+              return Column(
+                children: [
+                  // Hero banner (fixed header)
+                  _HeroBanner(
+                    imageUrl: content.bannerImageUrl,
+                    version: content.release.version,
+                    isLatest: currentIndex == 0,
+                  ),
+
+                  // Scrollable markdown content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      child: SelectionArea(
+                        child: GptMarkdown(allContent),
+                      ),
+                    ),
+                  ),
+
+                  // Navigation footer (sticky)
+                  if (releases.length > 1)
+                    _NavigationFooter(
+                      totalReleases: releases.length,
+                      currentRelease: currentIndex,
+                      colorScheme: colorScheme,
+                      onNavigate: (index) => _pageIndexNotifier.value = index,
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
@@ -390,16 +365,17 @@ class _NavigationFooter extends StatelessWidget {
   const _NavigationFooter({
     required this.totalReleases,
     required this.currentRelease,
+    required this.colorScheme,
     required this.onNavigate,
   });
 
   final int totalReleases;
   final int currentRelease;
+  final ColorScheme colorScheme;
   final ValueChanged<int> onNavigate;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
     final canGoNewer = currentRelease > 0;
     final canGoOlder = currentRelease < totalReleases - 1;
 
@@ -425,12 +401,14 @@ class _NavigationFooter extends StatelessWidget {
                 isVisible: canGoNewer,
                 onTap: () => onNavigate(currentRelease - 1),
                 tooltip: 'Newer release',
+                colorScheme: colorScheme,
               ),
 
               // Indicator dots
               _IndicatorDots(
                 total: totalReleases,
                 current: currentRelease,
+                colorScheme: colorScheme,
               ),
 
               // Right arrow (older)
@@ -439,6 +417,7 @@ class _NavigationFooter extends StatelessWidget {
                 isVisible: canGoOlder,
                 onTap: () => onNavigate(currentRelease + 1),
                 tooltip: 'Older release',
+                colorScheme: colorScheme,
               ),
             ],
           ),
@@ -455,17 +434,17 @@ class _NavigationArrow extends StatelessWidget {
     required this.isVisible,
     required this.onTap,
     required this.tooltip,
+    required this.colorScheme,
   });
 
   final IconData icon;
   final bool isVisible;
   final VoidCallback onTap;
   final String tooltip;
+  final ColorScheme colorScheme;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-
     return SizedBox(
       width: 56,
       child: AnimatedOpacity(
@@ -490,15 +469,15 @@ class _IndicatorDots extends StatelessWidget {
   const _IndicatorDots({
     required this.total,
     required this.current,
+    required this.colorScheme,
   });
 
   final int total;
   final int current;
+  final ColorScheme colorScheme;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(total, (index) {
