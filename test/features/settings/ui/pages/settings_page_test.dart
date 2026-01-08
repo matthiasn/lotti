@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/features/whats_new/model/whats_new_state.dart';
+import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
@@ -9,6 +11,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+/// Test controller that returns empty state (no infinite animation).
+class _TestWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() async => const WhatsNewState();
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +59,8 @@ void main() {
           const SettingsPage(),
           overrides: [
             journalDbProvider.overrideWithValue(mockJournalDb),
+            whatsNewControllerProvider
+                .overrideWith(_TestWhatsNewController.new),
           ],
         ),
       );
@@ -95,6 +105,8 @@ void main() {
           const SettingsPage(),
           overrides: [
             journalDbProvider.overrideWithValue(mockJournalDb),
+            whatsNewControllerProvider
+                .overrideWith(_TestWhatsNewController.new),
           ],
         ),
       );
@@ -126,7 +138,11 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SettingsPage(),
-          overrides: [journalDbProvider.overrideWithValue(mockJournalDb)],
+          overrides: [
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            whatsNewControllerProvider
+                .overrideWith(_TestWhatsNewController.new),
+          ],
         ),
       );
 
@@ -161,7 +177,11 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SettingsPage(),
-          overrides: [journalDbProvider.overrideWithValue(mockJournalDb)],
+          overrides: [
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            whatsNewControllerProvider
+                .overrideWith(_TestWhatsNewController.new),
+          ],
         ),
       );
 

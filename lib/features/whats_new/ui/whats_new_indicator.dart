@@ -18,10 +18,12 @@ class _WhatsNewIndicatorState extends ConsumerState<WhatsNewIndicator>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  bool _isAnimationInitialized = false;
 
-  @override
-  void initState() {
-    super.initState();
+  void _ensureAnimationInitialized() {
+    if (_isAnimationInitialized) return;
+    _isAnimationInitialized = true;
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -34,7 +36,9 @@ class _WhatsNewIndicatorState extends ConsumerState<WhatsNewIndicator>
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (_isAnimationInitialized) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -47,6 +51,9 @@ class _WhatsNewIndicatorState extends ConsumerState<WhatsNewIndicator>
         if (!state.hasUnseenRelease) {
           return const SizedBox.shrink();
         }
+
+        // Only initialize animation when needed
+        _ensureAnimationInitialized();
 
         return AnimatedBuilder(
           animation: _animation,

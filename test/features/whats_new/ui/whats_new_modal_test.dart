@@ -6,8 +6,25 @@ import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
+  late MockLoggingService mockLoggingService;
+
+  setUp(() {
+    mockLoggingService = MockLoggingService();
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt.unregister<LoggingService>();
+    }
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
+  });
+
+  tearDown(getIt.reset);
+
   final testRelease1 = WhatsNewRelease(
     version: '0.9.980',
     date: DateTime(2026, 1, 7),

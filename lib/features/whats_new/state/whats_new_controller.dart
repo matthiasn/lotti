@@ -65,6 +65,9 @@ class WhatsNewController extends _$WhatsNewController {
       await prefs.setBool('$_seenKeyPrefix${content.release.version}', true);
     }
 
+    // Check if still mounted after async operations
+    if (!ref.mounted) return;
+
     // Update the state to reflect that all releases have been seen
     state = AsyncData(
       currentState.copyWith(unseenContent: []),
@@ -78,6 +81,9 @@ class WhatsNewController extends _$WhatsNewController {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('$_seenKeyPrefix$version', true);
+
+    // Check if still mounted after async operations
+    if (!ref.mounted) return;
 
     // Remove the seen release from the state
     final remaining = currentState.unseenContent
@@ -97,6 +103,9 @@ class WhatsNewController extends _$WhatsNewController {
     for (final key in keys) {
       await prefs.remove(key);
     }
+
+    // Check if still mounted after async operations
+    if (!ref.mounted) return;
 
     // Refresh the state
     ref.invalidateSelf();
