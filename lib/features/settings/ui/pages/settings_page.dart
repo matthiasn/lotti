@@ -25,7 +25,7 @@ class SettingsPage extends ConsumerWidget {
       title: context.messages.navTabTitleSettings,
       actions: [
         GestureDetector(
-          onTap: () => WhatsNewModal.show(context),
+          onTap: () => WhatsNewModal.show(context, ref),
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
             child: WhatsNewIndicator(),
@@ -38,7 +38,7 @@ class SettingsPage extends ConsumerWidget {
             title: "What's New",
             subtitle: 'See the latest updates and features',
             icon: Icons.new_releases_outlined,
-            onTap: () => WhatsNewModal.show(context),
+            onTap: () => WhatsNewModal.show(context, ref),
           ),
           AnimatedModernSettingsCardWithIcon(
             title: 'AI Settings',

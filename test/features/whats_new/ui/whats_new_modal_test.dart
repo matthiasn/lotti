@@ -65,19 +65,27 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(
-            home: Scaffold(body: WhatsNewModal()),
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => WhatsNewModal.show(context, ref),
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
           ),
         ),
       );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Tap button to show modal
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
 
-      expect(find.text('No new updates'), findsOneWidget);
+      expect(find.text("You're all caught up!"), findsOneWidget);
     });
 
-    testWidgets('displays single release content when one unseen',
+    testWidgets('displays release content when unseen releases exist',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -88,23 +96,31 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(
-            home: Scaffold(body: WhatsNewModal()),
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => WhatsNewModal.show(context, ref),
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
           ),
         ),
       );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Tap button to show modal
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
 
-      // Should have a PageView for releases
-      expect(find.byType(PageView), findsOneWidget);
+      // Should show version badge
+      expect(find.text('v0.9.980'), findsOneWidget);
 
-      // Should NOT show release indicator dots for single release
-      expect(find.byType(AnimatedContainer), findsNothing);
+      // Should show NEW indicator for latest release
+      expect(find.text('NEW'), findsOneWidget);
     });
 
-    testWidgets('displays multiple releases with navigation', (tester) async {
+    testWidgets('displays navigation for multiple releases', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -114,24 +130,32 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(
-            home: Scaffold(body: WhatsNewModal()),
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => WhatsNewModal.show(context, ref),
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
           ),
         ),
       );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Tap button to show modal
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
 
-      // Should have indicator dots for 2 releases
+      // Should show navigation arrow to older release
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+
+      // Should show indicator dots for 2 releases
       final animatedContainers = find.byType(AnimatedContainer);
       expect(animatedContainers, findsNWidgets(2));
-
-      // Should show version number
-      expect(find.text('v0.9.980'), findsOneWidget);
     });
 
-    testWidgets('can swipe between releases', (tester) async {
+    testWidgets('can navigate between releases', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -141,51 +165,33 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(
-            home: Scaffold(body: WhatsNewModal()),
-          ),
-        ),
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Initially showing first release
-      expect(find.text('v0.9.980'), findsOneWidget);
-
-      // Swipe left to go to older release
-      await tester.drag(find.byType(PageView), const Offset(-400, 0));
-      // Allow animation to complete
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-
-      // PageView should still exist after swiping
-      expect(find.byType(PageView), findsOneWidget);
-    });
-
-    testWidgets('shows navigation arrows for multiple releases',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [testContent1, testContent2]),
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => WhatsNewModal.show(context, ref),
+                  child: const Text('Show Modal'),
+                ),
               ),
             ),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: WhatsNewModal()),
           ),
         ),
       );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // Tap button to show modal
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
 
-      // Should show chevron right (to older) but not left (already at newest)
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      // Initially showing first release with NEW badge
+      expect(find.text('NEW'), findsOneWidget);
+      expect(find.text('v0.9.980'), findsOneWidget);
+
+      // Tap right arrow to go to older release
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pumpAndSettle();
+
+      // Now showing second release (no NEW badge)
+      expect(find.text('v0.9.970'), findsOneWidget);
     });
   });
 }
