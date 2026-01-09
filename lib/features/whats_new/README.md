@@ -49,7 +49,7 @@ lotti-docs/whats-new/
   "releases": [
     {
       "version": "0.9.805",
-      "date": "2026-01-09T00:00:00.000",
+      "date": "2026-01-09T00:00:00.000Z",
       "title": "What's New Modal",
       "folder": "0.9.805"
     }
@@ -94,26 +94,34 @@ if (_isNewerVersion(release.version, currentVersion)) {
 
 ### Auto-Show on Version Update
 
-When the app version changes, the modal automatically displays on launch if there are unseen releases.
+The modal automatically displays on app launch when the version changes or on first launch.
 
 ```dart
 // In whats_new_controller.dart
 @riverpod
 Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
-  // Compare current version to last launched version
-  if (lastLaunchedVersion == null) return false;  // First launch
-  if (lastLaunchedVersion == currentVersion) return false;  // No change
+  final prefs = await SharedPreferences.getInstance();
+  final currentVersion = packageInfo.version;
+  final lastLaunchedVersion = prefs.getString('whats_new_last_launched_version');
 
-  // Version changed - check if there are unseen releases
+  // Same version as last launch - don't show
+  if (lastLaunchedVersion == currentVersion) return false;
+
+  // First launch OR version changed - check for unseen releases
   final state = await ref.read(whatsNewControllerProvider.future);
-  return state.hasUnseenRelease;
+  final shouldShow = state.hasUnseenRelease;
+
+  // Only persist after successful read
+  await prefs.setString('whats_new_last_launched_version', currentVersion);
+  return shouldShow;
 }
 ```
 
-- Stores last launched version in SharedPreferences (`whats_new_last_launched_version`)
-- On first launch, shows modal if there are releases available (welcomes new users)
-- On subsequent launches, only shows when version has changed
-- Triggered in `AppScreen` via `ref.listen` on app startup
+- Uses SharedPreferences key `whats_new_last_launched_version` to track last launched version
+- On first launch (`lastLaunchedVersion` is null), shows modal if `state.hasUnseenRelease` is true
+- On subsequent launches, only shows when `currentVersion` differs from `lastLaunchedVersion`
+- Version is persisted only after `whatsNewControllerProvider` succeeds (graceful degradation)
+- Triggered in `AppScreen` via `ref.listen(shouldAutoShowWhatsNewProvider, ...)` on startup
 
 ### Seen Tracking
 
@@ -140,7 +148,7 @@ for (final release in releases) {
 2. Add `content.md` with markdown content
 3. Add `banner.jpg` (21:9 aspect ratio, e.g., 2100x900 or 1050x450)
 4. Update `index.json` with the new release entry (add to top of array)
-5. Update `CHANGELOG.md` and metainfo in the main lotti repo
+5. Update `CHANGELOG.md` and metadata in the main lotti repo
 
 ## UI Components
 

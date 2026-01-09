@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
@@ -55,11 +57,33 @@ class WhatsNewService {
 
         return releases;
       }
-    } catch (e) {
+    } on TimeoutException catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'WHATS_NEW',
+        subDomain: 'fetchIndex.timeout',
+        stackTrace: stackTrace,
+      );
+    } on SocketException catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'WHATS_NEW',
+        subDomain: 'fetchIndex.network',
+        stackTrace: stackTrace,
+      );
+    } on FormatException catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'WHATS_NEW',
+        subDomain: 'fetchIndex.parse',
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
       getIt<LoggingService>().captureException(
         e,
         domain: 'WHATS_NEW',
         subDomain: 'fetchIndex',
+        stackTrace: stackTrace,
       );
     }
 
@@ -84,11 +108,26 @@ class WhatsNewService {
           baseUrl: baseUrl,
         );
       }
-    } catch (e) {
+    } on TimeoutException catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'WHATS_NEW',
+        subDomain: 'fetchContent.timeout',
+        stackTrace: stackTrace,
+      );
+    } on SocketException catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'WHATS_NEW',
+        subDomain: 'fetchContent.network',
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
       getIt<LoggingService>().captureException(
         e,
         domain: 'WHATS_NEW',
         subDomain: 'fetchContent',
+        stackTrace: stackTrace,
       );
     }
 

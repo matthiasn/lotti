@@ -1,6 +1,8 @@
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,9 +33,6 @@ Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
   const lastLaunchedKey = 'whats_new_last_launched_version';
   final lastLaunchedVersion = prefs.getString(lastLaunchedKey);
 
-  // Always update the stored version
-  await prefs.setString(lastLaunchedKey, currentVersion);
-
   // If version hasn't changed, don't auto-show
   if (lastLaunchedVersion == currentVersion) {
     return false;
@@ -41,7 +40,12 @@ Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
 
   // First launch OR version changed - check if there are unseen releases
   final state = await ref.read(whatsNewControllerProvider.future);
-  return state.hasUnseenRelease;
+  final shouldShow = state.hasUnseenRelease;
+
+  // Only persist version after successful provider read
+  await prefs.setString(lastLaunchedKey, currentVersion);
+
+  return shouldShow;
 }
 
 /// Controller for the "What's New" feature.
@@ -55,37 +59,47 @@ class WhatsNewController extends _$WhatsNewController {
 
   @override
   Future<WhatsNewState> build() async {
-    final service = ref.watch(whatsNewServiceProvider);
+    try {
+      final service = ref.watch(whatsNewServiceProvider);
 
-    // Get the current app version
-    final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version;
+      // Get the current app version
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
 
-    // Fetch the index of available releases
-    final releases = await service.fetchIndex();
+      // Fetch the index of available releases
+      final releases = await service.fetchIndex();
 
-    if (releases == null || releases.isEmpty) {
-      return const WhatsNewState();
-    }
-
-    // Find all unseen releases that are not newer than the installed version
-    final unseenReleases = <WhatsNewContent>[];
-    for (final release in releases) {
-      // Skip releases newer than the installed version
-      if (_isNewerVersion(release.version, currentVersion)) {
-        continue;
+      if (releases == null || releases.isEmpty) {
+        return const WhatsNewState();
       }
 
-      final hasSeen = await _hasSeenRelease(release.version);
-      if (!hasSeen) {
-        final content = await service.fetchContent(release);
-        if (content != null) {
-          unseenReleases.add(content);
+      // Find all unseen releases that are not newer than the installed version
+      final unseenReleases = <WhatsNewContent>[];
+      for (final release in releases) {
+        // Skip releases newer than the installed version
+        if (_isNewerVersion(release.version, currentVersion)) {
+          continue;
+        }
+
+        final hasSeen = await _hasSeenRelease(release.version);
+        if (!hasSeen) {
+          final content = await service.fetchContent(release);
+          if (content != null) {
+            unseenReleases.add(content);
+          }
         }
       }
-    }
 
-    return WhatsNewState(unseenContent: unseenReleases);
+      return WhatsNewState(unseenContent: unseenReleases);
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'WHATS_NEW',
+        subDomain: 'build',
+        stackTrace: stackTrace,
+      );
+      return const WhatsNewState();
+    }
   }
 
   /// Returns true if [releaseVersion] is newer than [installedVersion].

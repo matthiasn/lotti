@@ -56,8 +56,9 @@ String _$whatsNewServiceHash() => r'27677070cf0a2d1f1e8a639a38e3eb9dbc9b4dbb';
 /// Provider that checks if the What's New modal should auto-show.
 ///
 /// Returns true when:
-/// 1. The app version has changed since last launch
-/// 2. There are unseen releases to show
+/// 1. This is the first app launch ever, OR
+/// 2. The app version has changed since last launch
+/// AND there are unseen releases to show.
 ///
 /// Once read, this provider marks the current version as "launched"
 /// so subsequent checks return false until the next version change.
@@ -68,8 +69,9 @@ final shouldAutoShowWhatsNewProvider = ShouldAutoShowWhatsNewProvider._();
 /// Provider that checks if the What's New modal should auto-show.
 ///
 /// Returns true when:
-/// 1. The app version has changed since last launch
-/// 2. There are unseen releases to show
+/// 1. This is the first app launch ever, OR
+/// 2. The app version has changed since last launch
+/// AND there are unseen releases to show.
 ///
 /// Once read, this provider marks the current version as "launched"
 /// so subsequent checks return false until the next version change.
@@ -80,8 +82,9 @@ final class ShouldAutoShowWhatsNewProvider
   /// Provider that checks if the What's New modal should auto-show.
   ///
   /// Returns true when:
-  /// 1. The app version has changed since last launch
-  /// 2. There are unseen releases to show
+  /// 1. This is the first app launch ever, OR
+  /// 2. The app version has changed since last launch
+  /// AND there are unseen releases to show.
   ///
   /// Once read, this provider marks the current version as "launched"
   /// so subsequent checks return false until the next version change.
@@ -111,7 +114,7 @@ final class ShouldAutoShowWhatsNewProvider
 }
 
 String _$shouldAutoShowWhatsNewHash() =>
-    r'aae5bf63bbd32a65cab3c27cea9bda43c04acf14';
+    r'f4adab6b8082737fb701aba6a9c502f77f82a798';
 
 /// Controller for the "What's New" feature.
 ///
@@ -151,7 +154,7 @@ final class WhatsNewControllerProvider
 }
 
 String _$whatsNewControllerHash() =>
-    r'8524d964cdd943f8aa71ccdc897005e1aa79823e';
+    r'5f32bbc79e5b9ab93703c333614c67582d9c57d9';
 
 /// Controller for the "What's New" feature.
 ///

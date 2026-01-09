@@ -9,6 +9,7 @@ import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Modal that displays "What's New" content for all unseen releases.
@@ -22,6 +23,38 @@ class WhatsNewModal {
 
   /// Pattern to extract image URLs from markdown: ![alt](url)
   static final _imageUrlPattern = RegExp(r'!\[[^\]]*\]\((https?://[^)]+)\)');
+
+  /// Handles link taps in markdown content.
+  static Future<void> _handleLinkTap(String url, String title) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  /// Builds a styled link with classic blue underline and pointer cursor.
+  static Widget _buildLink(
+    BuildContext context,
+    InlineSpan text,
+    String url,
+    TextStyle style,
+  ) {
+    const linkColor = Colors.blue;
+    return InkWell(
+      onTap: () => _handleLinkTap(url, ''),
+      mouseCursor: SystemMouseCursors.click,
+      child: Text.rich(
+        TextSpan(
+          children: [text],
+          style: style.copyWith(
+            color: linkColor,
+            decoration: TextDecoration.underline,
+            decorationColor: linkColor,
+          ),
+        ),
+      ),
+    );
+  }
 
   /// Custom modal type builder that allows taller dialogs (90% of screen).
   static WoltModalType _modalTypeBuilder(BuildContext context) {
@@ -242,9 +275,13 @@ class WhatsNewModal {
       child: ConstrainedBox(
         constraints: BoxConstraints(minHeight: minContentHeight),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
           child: SelectionArea(
-            child: GptMarkdown(allContent),
+            child: GptMarkdown(
+              allContent,
+              onLinkTap: _handleLinkTap,
+              linkBuilder: _buildLink,
+            ),
           ),
         ),
       ),

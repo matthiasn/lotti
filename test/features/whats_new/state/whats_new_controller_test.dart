@@ -36,6 +36,15 @@ void main() {
     );
   });
 
+  tearDownAll(() {
+    // Clear the PackageInfo mock to prevent leaking to other tests
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('dev.fluttercommunity.plus/package_info'),
+      null,
+    );
+  });
+
   late MockWhatsNewService mockService;
   late ProviderContainer container;
 

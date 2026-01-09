@@ -1,5 +1,12 @@
 # What's New Feature Implementation Plan
 
+> **Note:** This is the original implementation plan. The feature has been implemented with enhancements beyond this plan. See `lib/features/whats_new/README.md` for current documentation including:
+> - Multi-release support (not just latest)
+> - Auto-show on version change or first launch
+> - Smart seen tracking per release
+> - Glassmorphism UI with animated indicator dots
+> - Specific exception handling with logging
+
 ## Overview
 
 This document describes the implementation plan for a "What's New" feature that displays release notes in an engaging, swipable modal. The feature fetches remotely-hosted content (Markdown with images) and tracks which releases users have seen using local storage.

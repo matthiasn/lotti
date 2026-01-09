@@ -21,6 +21,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(FakeUri());
+    registerFallbackValue(StackTrace.current);
   });
 
   setUp(() {
@@ -36,6 +37,7 @@ void main() {
           any<Object>(),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
         )).thenReturn(null);
 
     service = WhatsNewService(httpClient: mockHttpClient);
@@ -117,7 +119,8 @@ void main() {
         verify(() => mockLoggingService.captureException(
               any<Object>(),
               domain: 'WHATS_NEW',
-              subDomain: 'fetchIndex',
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
             )).called(1);
       });
 
@@ -136,7 +139,8 @@ void main() {
         verify(() => mockLoggingService.captureException(
               any<Object>(),
               domain: 'WHATS_NEW',
-              subDomain: 'fetchIndex',
+              subDomain: 'fetchIndex.parse',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
             )).called(1);
       });
 
@@ -223,7 +227,8 @@ Fixed some bugs.
         verify(() => mockLoggingService.captureException(
               any<Object>(),
               domain: 'WHATS_NEW',
-              subDomain: 'fetchContent',
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
             )).called(1);
       });
     });

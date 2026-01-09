@@ -134,15 +134,26 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       })
       // Auto-show What's New modal when app version changes
       ..listen(shouldAutoShowWhatsNewProvider, (prev, next) {
-        next.whenData((shouldShow) {
-          if (shouldShow && mounted) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                WhatsNewModal.show(context, ref);
-              }
-            });
-          }
-        });
+        next.when(
+          data: (shouldShow) {
+            if (shouldShow && mounted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  WhatsNewModal.show(context, ref);
+                }
+              });
+            }
+          },
+          loading: () {},
+          error: (error, stack) {
+            getIt<LoggingService>().captureException(
+              error,
+              domain: 'WHATS_NEW',
+              subDomain: 'shouldAutoShowWhatsNew',
+              stackTrace: stack,
+            );
+          },
+        );
       });
 
     return StreamBuilder<int>(
