@@ -18,6 +18,7 @@ class SettingsPageHeader extends StatelessWidget {
     this.pinned = true,
     this.showBackButton = false,
     this.bottom,
+    this.actions,
     super.key,
   });
 
@@ -26,6 +27,7 @@ class SettingsPageHeader extends StatelessWidget {
   final bool pinned;
   final bool showBackButton;
   final PreferredSizeWidget? bottom;
+  final List<Widget>? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -201,6 +203,7 @@ class SettingsPageHeader extends StatelessWidget {
                             collapseProgress: progress,
                           ),
                         ),
+                        if (actions != null) ...actions!,
                       ],
                     ),
                   ),

@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.805] - 2026-01-09
+### Added
+- What's New Modal: Editorial magazine-style release notes viewer
+  - 21:9 hero banner images with glassmorphism version badge
+  - Multi-release navigation with animated indicator dots
+  - Version filtering: only shows releases matching or older than installed app version
+  - Smart "seen" tracking: only marks releases you actually viewed as seen
+  - Image precaching for smooth page transitions (banners + markdown images)
+  - "Skip" button to dismiss all remaining releases at once
+  - "View past releases" option in empty state to review previous updates
+  - Responsive design: bottom sheet on mobile, centered dialog on desktop
+  - Markdown content support with images resolved from remote content repository
+
 ## [0.9.804] - 2026-01-08
 ### Added
 - Linked Tasks Section: New dedicated UI section for viewing and managing task-to-task links

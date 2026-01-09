@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.805" date="2026-01-09">
+      <description>
+        <p>What's New Modal: Editorial magazine-style release notes viewer. Features 21:9 hero banner images with glassmorphism version badges, multi-release navigation with animated indicator dots, and smart "seen" tracking that only marks releases you actually viewed. Includes version filtering to only show releases matching or older than your installed app version, image precaching for smooth transitions, "Skip" button to dismiss all releases, and "View past releases" option to review previous updates. Responsive design adapts to bottom sheet on mobile or centered dialog on desktop.</p>
+      </description>
+    </release>
     <release version="0.9.804" date="2026-01-08">
       <description>
         <p>Linked Tasks Section: New dedicated UI for viewing and managing task-to-task relationships. Features bidirectional link display with directional indicators (↳ LINKED FROM, ↗ LINKED TO), minimal Linear-style text links with status circles, searchable "Link existing task" modal powered by FTS5, "Create new linked task" for quick subtask creation, and "Manage links" mode for unlinking. Tasks are filtered out from the generic Linked Entries section to avoid duplication.</p>

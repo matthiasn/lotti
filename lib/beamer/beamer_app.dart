@@ -15,6 +15,8 @@ import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_moda
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -125,6 +127,29 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               error,
               domain: 'OUTBOX',
               subDomain: 'notLoggedInGateStream',
+              stackTrace: stack,
+            );
+          },
+        );
+      })
+      // Auto-show What's New modal when app version changes
+      ..listen(shouldAutoShowWhatsNewProvider, (prev, next) {
+        next.when(
+          data: (shouldShow) {
+            if (shouldShow && mounted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  WhatsNewModal.show(context, ref);
+                }
+              });
+            }
+          },
+          loading: () {},
+          error: (error, stack) {
+            getIt<LoggingService>().captureException(
+              error,
+              domain: 'WHATS_NEW',
+              subDomain: 'shouldAutoShowWhatsNew',
               stackTrace: stack,
             );
           },

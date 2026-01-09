@@ -1,0 +1,16 @@
+{
+  "releases": [
+    {
+      "version": "0.9.980",
+      "date": "2026-01-07T00:00:00.000",
+      "title": "January Update",
+      "folder": "0.9.980"
+    },
+    {
+      "version": "0.9.970",
+      "date": "2025-12-15T00:00:00.000",
+      "title": "December Update",
+      "folder": "0.9.970"
+    }
+  ]
+}

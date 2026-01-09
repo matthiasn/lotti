@@ -11,6 +11,7 @@ class SliverBoxAdapterPage extends StatefulWidget {
     this.subtitle,
     this.showBackButton = false,
     this.padding = EdgeInsets.zero,
+    this.actions,
     super.key,
   });
 
@@ -19,6 +20,7 @@ class SliverBoxAdapterPage extends StatefulWidget {
   final String? subtitle;
   final bool showBackButton;
   final EdgeInsets padding;
+  final List<Widget>? actions;
 
   @override
   State<SliverBoxAdapterPage> createState() => _SliverBoxAdapterPageState();
@@ -44,6 +46,7 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
             title: widget.title,
             subtitle: widget.subtitle,
             showBackButton: widget.showBackButton,
+            actions: widget.actions,
           ),
           SliverToBoxAdapter(
             child: Padding(
