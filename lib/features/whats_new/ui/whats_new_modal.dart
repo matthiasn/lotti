@@ -136,6 +136,12 @@ class WhatsNewModal {
     var markAllOnClose = false;
 
     if (!context.mounted) return;
+
+    // Use a darker barrier for better visual separation
+    final barrierColor = isDark
+        ? Colors.black.withValues(alpha: 0.75)
+        : context.colorScheme.outline.withValues(alpha: 0.5);
+
     await WoltModalSheet.show<void>(
       context: context,
       pageIndexNotifier: pageNotifier,
@@ -164,9 +170,19 @@ class WhatsNewModal {
       },
       modalTypeBuilder: _modalTypeBuilder,
       barrierDismissible: true,
-      modalBarrierColor: ModalUtils.getModalBarrierColor(
-        isDark: isDark,
-        context: context,
+      modalBarrierColor: barrierColor,
+      modalDecorator: (child) => DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 32,
+              spreadRadius: 4,
+            ),
+          ],
+        ),
+        child: child,
       ),
       onModalDismissedWithDrag: () {
         unawaited(markViewedAsSeen());
