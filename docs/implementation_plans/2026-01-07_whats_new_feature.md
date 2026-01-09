@@ -25,10 +25,10 @@ This document describes the implementation plan for a "What's New" feature that 
 │  │       ├── index.json            ◄─── List of releases             │       │
 │  │       ├── 0.9.980/                                                │       │
 │  │       │   ├── content.md        ◄─── Markdown with sections       │       │
-│  │       │   └── banner.png        ◄─── Banner image                 │       │
+│  │       │   └── banner.jpg        ◄─── Banner image                 │       │
 │  │       └── 0.9.970/                                                │       │
 │  │           ├── content.md                                          │       │
-│  │           └── banner.png                                          │       │
+│  │           └── banner.jpg                                          │       │
 │  └──────────────────────────────────────────────────────────────────┘       │
 │                           │                                                  │
 │                           ▼                                                  │
@@ -149,11 +149,12 @@ abstract class WhatsNewContent with _$WhatsNewContent {
 @freezed
 abstract class WhatsNewState with _$WhatsNewState {
   const factory WhatsNewState({
-    @Default(false) bool isLoading,
-    @Default(false) bool hasUnseenRelease,
-    WhatsNewContent? latestContent,
-    String? errorMessage,
+    @Default([]) List<WhatsNewContent> unseenContent,
   }) = _WhatsNewState;
+
+  const WhatsNewState._();
+
+  bool get hasUnseenRelease => unseenContent.isNotEmpty;
 }
 ```
 
@@ -187,7 +188,7 @@ class WhatsNewMarkdownParser {
       return _resolveImageUrls(section, baseUrl, release.folder);
     }).toList();
 
-    final bannerImageUrl = '$baseUrl/${release.folder}/banner.png';
+    final bannerImageUrl = '$baseUrl/${release.folder}/banner.jpg';
 
     return WhatsNewContent(
       release: release,
@@ -275,49 +276,56 @@ class WhatsNewController extends _$WhatsNewController {
   @override
   Future<WhatsNewState> build() async {
     final service = ref.watch(whatsNewServiceProvider);
-    final index = await service.fetchIndex();
+    final releases = await service.fetchIndex();
 
-    if (index == null || index.releases.isEmpty) {
+    if (releases == null || releases.isEmpty) {
       return const WhatsNewState();
     }
 
-    // Sort by date descending, get latest
-    final sortedReleases = [...index.releases]
-      ..sort((a, b) => b.date.compareTo(a.date));
-    final latestRelease = sortedReleases.first;
+    final prefs = await SharedPreferences.getInstance();
+    final unseenContent = <WhatsNewContent>[];
 
-    // Check if seen
-    final hasSeenLatest = await _hasSeenRelease(latestRelease.version);
+    // Fetch content for all unseen releases (sorted by date descending)
+    for (final release in releases) {
+      final hasSeen = prefs.getBool('$_seenKeyPrefix${release.version}') ?? false;
+      if (hasSeen) continue;
 
-    if (hasSeenLatest) {
-      return const WhatsNewState(hasUnseenRelease: false);
+      final content = await service.fetchContent(release);
+      if (content != null) {
+        unseenContent.add(content);
+      }
     }
 
-    // Fetch content for latest unseen release
-    final content = await service.fetchContent(latestRelease);
-
-    return WhatsNewState(
-      hasUnseenRelease: true,
-      latestContent: content,
-    );
+    return WhatsNewState(unseenContent: unseenContent);
   }
 
-  Future<bool> _hasSeenRelease(String version) async {
+  Future<void> markAsSeen(String version) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('$_seenKeyPrefix$version') ?? false;
-  }
+    await prefs.setBool('$_seenKeyPrefix$version', true);
 
-  Future<void> markAsSeen() async {
-    final content = state.value?.latestContent;
-    if (content == null) return;
+    // Update state by removing the seen release
+    final current = state.value;
+    if (current == null) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('$_seenKeyPrefix${content.release.version}', true);
-
-    // Update state
     state = AsyncData(
-      state.value!.copyWith(hasUnseenRelease: false),
+      WhatsNewState(
+        unseenContent: current.unseenContent
+            .where((c) => c.release.version != version)
+            .toList(),
+      ),
     );
+  }
+
+  Future<void> markAllAsSeen() async {
+    final current = state.value;
+    if (current == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    for (final content in current.unseenContent) {
+      await prefs.setBool('$_seenKeyPrefix${content.release.version}', true);
+    }
+
+    state = AsyncData(const WhatsNewState());
   }
 }
 ```
@@ -329,33 +337,55 @@ class WhatsNewController extends _$WhatsNewController {
 A subtle pulsing indicator shown on a settings/about button when new content is available:
 
 ```dart
-class WhatsNewIndicator extends ConsumerWidget {
+class WhatsNewIndicator extends ConsumerStatefulWidget {
   const WhatsNewIndicator({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WhatsNewIndicator> createState() => _WhatsNewIndicatorState();
+}
+
+class _WhatsNewIndicatorState extends ConsumerState<WhatsNewIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final whatsNewAsync = ref.watch(whatsNewControllerProvider);
 
     return whatsNewAsync.when(
       data: (state) {
         if (!state.hasUnseenRelease) return const SizedBox.shrink();
 
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.6, end: 1.0),
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOut,
-          builder: (context, value, child) {
+        return AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
             return Container(
               width: 10,
               height: 10,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: context.colorScheme.primary.withOpacity(value),
+                color: context.colorScheme.primary.withOpacity(_animation.value),
               ),
             );
-          },
-          onEnd: () {
-            // Reverse animation (creates pulsing effect)
           },
         );
       },
@@ -399,8 +429,8 @@ class _WhatsNewModalState extends ConsumerState<WhatsNewModal> {
   @override
   void dispose() {
     _pageController.dispose();
-    // Mark as seen when modal is dismissed
-    ref.read(whatsNewControllerProvider.notifier).markAsSeen();
+    // Mark all viewed releases as seen when modal is dismissed
+    ref.read(whatsNewControllerProvider.notifier).markAllAsSeen();
     super.dispose();
   }
 
@@ -410,70 +440,73 @@ class _WhatsNewModalState extends ConsumerState<WhatsNewModal> {
 
     return whatsNewAsync.when(
       data: (state) {
-        final content = state.latestContent;
-        if (content == null) {
+        if (state.unseenContent.isEmpty) {
           return const Center(child: Text('No content available'));
         }
 
-        final allPages = [content.headerMarkdown, ...content.sections];
-        final totalPages = allPages.length;
+        // Display multiple releases via PageView
+        final totalReleases = state.unseenContent.length;
 
-        return Column(
-          children: [
-            // Banner image (persistent across pages)
-            if (content.bannerImageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  content.bannerImageUrl!,
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox(height: 150),
-                ),
-              ),
+        // Each release becomes a page with its own banner and content
+        return PageView.builder(
+          controller: _pageController,
+          itemCount: totalReleases,
+          onPageChanged: (page) => setState(() => _currentPage = page),
+          itemBuilder: (context, index) {
+            final content = state.unseenContent[index];
+            return Column(
+              children: [
+                // Banner image for this release
+                if (content.bannerImageUrl != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      content.bannerImageUrl!,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox(height: 150),
+                    ),
+                  ),
 
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            // Page content (swipable)
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: totalPages,
-                onPageChanged: (page) => setState(() => _currentPage = page),
-                itemBuilder: (context, index) {
-                  return SingleChildScrollView(
+                // Scrollable markdown content
+                Expanded(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: SelectionArea(
-                      child: GptMarkdown(allPages[index]),
+                      child: GptMarkdown(
+                        [content.headerMarkdown, ...content.sections].join('\n\n---\n\n'),
+                      ),
                     ),
-                  );
-                },
-              ),
-            ),
+                  ),
+                ),
 
-            // Page indicator
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(totalPages, (index) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: index == _currentPage ? 24 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color: index == _currentPage
-                          ? context.colorScheme.primary
-                          : context.colorScheme.outline.withOpacity(0.3),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ],
+                // Page indicator
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(totalReleases, (i) {
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: i == _currentPage ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          color: i == _currentPage
+                              ? context.colorScheme.primary
+                              : context.colorScheme.outline.withOpacity(0.3),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
