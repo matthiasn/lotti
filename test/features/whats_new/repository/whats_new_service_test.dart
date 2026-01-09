@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -228,6 +230,78 @@ Fixed some bugs.
               any<Object>(),
               domain: 'WHATS_NEW',
               subDomain: any(named: 'subDomain'),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('returns null and logs timeout on TimeoutException', () async {
+        when(() => mockHttpClient.get(
+              any(),
+              headers: any(named: 'headers'),
+            )).thenThrow(TimeoutException('Timed out'));
+
+        final release = _createRelease('0.9.980');
+        final content = await service.fetchContent(release);
+
+        expect(content, isNull);
+        verify(() => mockLoggingService.captureException(
+              any<Object>(),
+              domain: 'WHATS_NEW',
+              subDomain: 'fetchContent.timeout',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('returns null and logs network error on SocketException', () async {
+        when(() => mockHttpClient.get(
+              any(),
+              headers: any(named: 'headers'),
+            )).thenThrow(const SocketException('No internet'));
+
+        final release = _createRelease('0.9.980');
+        final content = await service.fetchContent(release);
+
+        expect(content, isNull);
+        verify(() => mockLoggingService.captureException(
+              any<Object>(),
+              domain: 'WHATS_NEW',
+              subDomain: 'fetchContent.network',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            )).called(1);
+      });
+    });
+
+    group('fetchIndex exception handling', () {
+      test('returns null and logs timeout on TimeoutException', () async {
+        when(() => mockHttpClient.get(
+              any(),
+              headers: any(named: 'headers'),
+            )).thenThrow(TimeoutException('Timed out'));
+
+        final releases = await service.fetchIndex();
+
+        expect(releases, isNull);
+        verify(() => mockLoggingService.captureException(
+              any<Object>(),
+              domain: 'WHATS_NEW',
+              subDomain: 'fetchIndex.timeout',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('returns null and logs network error on SocketException', () async {
+        when(() => mockHttpClient.get(
+              any(),
+              headers: any(named: 'headers'),
+            )).thenThrow(const SocketException('No internet'));
+
+        final releases = await service.fetchIndex();
+
+        expect(releases, isNull);
+        verify(() => mockLoggingService.captureException(
+              any<Object>(),
+              domain: 'WHATS_NEW',
+              subDomain: 'fetchIndex.network',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
             )).called(1);
       });

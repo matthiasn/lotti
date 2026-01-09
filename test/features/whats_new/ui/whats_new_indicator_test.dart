@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,6 +85,87 @@ void main() {
         isTrue,
       );
     });
+
+    testWidgets('shows nothing during loading state', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            whatsNewControllerProvider.overrideWith(
+              _LoadingWhatsNewController.new,
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: WhatsNewIndicator()),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Should show SizedBox.shrink during loading
+      final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+      expect(
+        sizedBoxes.any((box) => box.width == 0 || box.height == 0),
+        isTrue,
+      );
+    });
+
+    testWidgets('shows nothing on error state', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            whatsNewControllerProvider.overrideWith(
+              _ErrorWhatsNewController.new,
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: WhatsNewIndicator()),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Should show SizedBox.shrink on error
+      final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+      expect(
+        sizedBoxes.any((box) => box.width == 0 || box.height == 0),
+        isTrue,
+      );
+    });
+
+    testWidgets('disposes animation controller properly', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            whatsNewControllerProvider.overrideWith(
+              () => _TestWhatsNewController(
+                WhatsNewState(unseenContent: [testContent]),
+              ),
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: WhatsNewIndicator()),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Verify indicator is shown
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Container && widget.decoration != null,
+        ),
+        findsOneWidget,
+      );
+
+      // Dispose by removing widget - should not throw
+      await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+      await tester.pump();
+    });
   });
 }
 
@@ -94,4 +177,21 @@ class _TestWhatsNewController extends WhatsNewController {
 
   @override
   Future<WhatsNewState> build() async => _state;
+}
+
+/// Test controller that never completes (stays loading).
+class _LoadingWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() {
+    // Return a future that never completes
+    return Completer<WhatsNewState>().future;
+  }
+}
+
+/// Test controller that throws an error.
+class _ErrorWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() async {
+    throw Exception('Test error');
+  }
 }

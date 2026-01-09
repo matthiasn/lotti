@@ -193,6 +193,172 @@ void main() {
       // Now showing second release (no NEW badge)
       expect(find.text('v0.9.970'), findsOneWidget);
     });
+
+    testWidgets('Skip button closes modal', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            whatsNewControllerProvider.overrideWith(
+              () => _TestWhatsNewController(
+                WhatsNewState(unseenContent: [testContent1, testContent2]),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => WhatsNewModal.show(context, ref),
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Tap button to show modal
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
+
+      // Modal is showing
+      expect(find.text('v0.9.980'), findsOneWidget);
+      expect(find.text('Skip'), findsOneWidget);
+
+      // Tap Skip button
+      await tester.tap(find.text('Skip'));
+      await tester.pumpAndSettle();
+
+      // Modal should be closed
+      expect(find.text('v0.9.980'), findsNothing);
+    });
+
+    testWidgets('displays fallback banner when image URL is null',
+        (tester) async {
+      final contentWithoutBanner = WhatsNewContent(
+        release: testRelease1,
+        headerMarkdown: '# January Update',
+        sections: ['## Feature 1'],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            whatsNewControllerProvider.overrideWith(
+              () => _TestWhatsNewController(
+                WhatsNewState(unseenContent: [contentWithoutBanner]),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => WhatsNewModal.show(context, ref),
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Tap button to show modal
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
+
+      // Should show version badge (banner fallback should display)
+      expect(find.text('v0.9.980'), findsOneWidget);
+
+      // Should show auto_awesome icon (part of fallback)
+      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+    });
+
+    testWidgets('view past releases button works', (tester) async {
+      var resetCalled = false;
+      var showCalledCount = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            whatsNewControllerProvider.overrideWith(
+              () => _ResettableWhatsNewController(
+                onReset: () => resetCalled = true,
+                onBuild: () => showCalledCount++,
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => WhatsNewModal.show(context, ref),
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Tap button to show modal (empty state)
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
+
+      // Should show empty state
+      expect(find.text("You're all caught up!"), findsOneWidget);
+      expect(find.text('View past releases'), findsOneWidget);
+
+      // Tap view past releases
+      await tester.tap(find.text('View past releases'));
+      await tester.pumpAndSettle();
+
+      // Reset should have been called
+      expect(resetCalled, isTrue);
+    });
+
+    testWidgets('can navigate back to newer release', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            whatsNewControllerProvider.overrideWith(
+              () => _TestWhatsNewController(
+                WhatsNewState(unseenContent: [testContent1, testContent2]),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => WhatsNewModal.show(context, ref),
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Tap button to show modal
+      await tester.tap(find.text('Show Modal'));
+      await tester.pumpAndSettle();
+
+      // Go to older release
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pumpAndSettle();
+
+      expect(find.text('v0.9.970'), findsOneWidget);
+
+      // Now left arrow should be visible
+      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+
+      // Go back to newer release
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      expect(find.text('v0.9.980'), findsOneWidget);
+    });
   });
 }
 
@@ -204,4 +370,26 @@ class _TestWhatsNewController extends WhatsNewController {
 
   @override
   Future<WhatsNewState> build() async => _state;
+}
+
+/// Test controller that tracks reset calls and returns empty state.
+class _ResettableWhatsNewController extends WhatsNewController {
+  _ResettableWhatsNewController({
+    this.onReset,
+    this.onBuild,
+  });
+
+  final VoidCallback? onReset;
+  final VoidCallback? onBuild;
+
+  @override
+  Future<WhatsNewState> build() async {
+    onBuild?.call();
+    return const WhatsNewState();
+  }
+
+  @override
+  Future<void> resetSeenStatus() async {
+    onReset?.call();
+  }
 }
