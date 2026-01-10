@@ -226,20 +226,20 @@ Display a modal prompting users to set up Gemini when no Gemini provider/models 
     +------+------+
     |             |
     v             v
- Create/Verify  Create 14
+ Create/Verify  Create 18
  2 Models       Prompts
     |             |
     +------+------+
            |
            v
     Create Category
-    - Set allowedPromptIds (all 14)
+    - Set allowedPromptIds (all 18)
     - Set automaticPrompts (5 configs)
            |
            v
     Show Result Dialog
     - Models: 2 created/verified
-    - Prompts: 14 created
+    - Prompts: 18 created
     - Category: 1 created
 ```
 
@@ -340,7 +340,7 @@ Add new method for comprehensive FTUE setup:
 ///
 /// This creates:
 /// 1. Nano Banana and Nano Banana Pro models (if not exist)
-/// 2. Flash and Pro variants for all 7 prompt types (14 prompts)
+/// 2. Flash and Pro variants for all 9 prompt types (18 prompts)
 /// 3. A test category with all prompts enabled and auto-selection configured
 ///
 /// Returns [FtueSetupResult] with details of what was created.

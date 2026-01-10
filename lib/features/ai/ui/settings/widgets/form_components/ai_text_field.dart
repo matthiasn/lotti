@@ -56,29 +56,35 @@ class _AiTextFieldState extends State<AiTextField> {
   bool _isFocused = false;
   String? _errorText;
 
+  void _setErrorText(String? next) {
+    if (next == _errorText) return;
+    setState(() => _errorText = next);
+  }
+
   @override
   void initState() {
     super.initState();
     _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_handleFocusChange);
-    // Validate initial value
-    _validateCurrentValue();
+    // Validate initial value (no setState needed before first build)
+    final value = widget.controller?.text ?? widget.initialValue;
+    _errorText = widget.validator?.call(value);
   }
 
   @override
   void didUpdateWidget(AiTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Re-validate when widget updates (e.g., when form state changes)
-    _validateCurrentValue();
+    // Re-validate only when relevant inputs change
+    if (oldWidget.validator != widget.validator ||
+        oldWidget.controller?.text != widget.controller?.text ||
+        oldWidget.initialValue != widget.initialValue) {
+      _validateCurrentValue();
+    }
   }
 
   void _validateCurrentValue() {
-    if (widget.validator != null) {
-      final value = widget.controller?.text ?? widget.initialValue ?? '';
-      setState(() {
-        _errorText = widget.validator!(value);
-      });
-    }
+    final value = widget.controller?.text ?? widget.initialValue;
+    _setErrorText(widget.validator?.call(value));
   }
 
   @override
@@ -179,15 +185,9 @@ class _AiTextFieldState extends State<AiTextField> {
             focusNode: _focusNode,
             initialValue:
                 widget.controller == null ? widget.initialValue : null,
-            // Don't pass validator to TextFormField - we handle display ourselves
             onChanged: (value) {
               widget.onChanged?.call(value);
-              // Re-validate on change
-              if (widget.validator != null) {
-                setState(() {
-                  _errorText = widget.validator!(value);
-                });
-              }
+              _setErrorText(widget.validator?.call(value));
             },
             enabled: widget.enabled,
             obscureText: widget.obscureText,
