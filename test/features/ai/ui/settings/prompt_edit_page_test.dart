@@ -417,6 +417,10 @@ void main() {
           find.widgetWithText(InkWell, 'Select response type');
       expect(responseTypeCard, findsOneWidget);
 
+      // Scroll to make the card visible (form may have validation errors taking space)
+      await tester.ensureVisible(responseTypeCard);
+      await tester.pumpAndSettle();
+
       await tester.tap(responseTypeCard);
       await tester.pumpAndSettle();
 

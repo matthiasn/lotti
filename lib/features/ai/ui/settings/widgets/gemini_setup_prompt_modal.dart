@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -20,20 +21,34 @@ class GeminiSetupPromptModal extends StatelessWidget {
   final VoidCallback onDismiss;
 
   /// Shows the Gemini setup prompt modal.
+  ///
+  /// Returns true if user chose to set up, false if dismissed.
+  /// Callbacks are invoked after the dialog is fully closed to avoid
+  /// Hero animation conflicts during navigation.
   static Future<void> show(
     BuildContext context, {
     required VoidCallback onSetUp,
     required VoidCallback onDismiss,
   }) async {
-    await showDialog<void>(
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black87,
-      builder: (context) => GeminiSetupPromptModal(
-        onSetUp: onSetUp,
-        onDismiss: onDismiss,
+      builder: (dialogContext) => GeminiSetupPromptModal(
+        onSetUp: () => Navigator.of(dialogContext).pop(true),
+        onDismiss: () => Navigator.of(dialogContext).pop(false),
       ),
     );
+
+    // Use post-frame callback to invoke callbacks after dialog animation completes
+    // This prevents Hero animation conflicts during navigation
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (result ?? false) {
+        onSetUp();
+      } else {
+        onDismiss();
+      }
+    });
   }
 
   @override

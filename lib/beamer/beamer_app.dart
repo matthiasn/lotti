@@ -113,14 +113,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     GeminiSetupPromptModal.show(
       context,
       onSetUp: () {
-        Navigator.of(context).pop();
+        // Modal closes itself, then we navigate
         const AiSettingsNavigationService().navigateToCreateProvider(
           context,
           preselectedType: InferenceProviderType.gemini,
         );
       },
       onDismiss: () {
-        Navigator.of(context).pop();
+        // Modal closes itself, then we persist dismissal
         ref.read(geminiSetupPromptServiceProvider.notifier).dismissPrompt();
       },
     );

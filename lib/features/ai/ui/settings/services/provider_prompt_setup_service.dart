@@ -663,10 +663,10 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       imageModel: modelResult.image,
     );
 
-    // Step 3: Create category with auto-selection
+    // Step 3: Create category with auto-selection (uses all prompts, not just created)
     final category = await _createFtueCategory(
       categoryRepository: categoryRepository,
-      prompts: promptResult.created,
+      prompts: promptResult.allPrompts,
     );
 
     return GeminiFtueResult(
@@ -754,6 +754,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
   }
 
   /// Creates all FTUE prompts with idempotency checks.
+  /// Returns all prompts that should be in the category (both new and existing).
   Future<_FtuePromptResult> _createFtuePrompts({
     required AiConfigRepository repository,
     required AiConfigModel flashModel,
@@ -761,16 +762,18 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     required AiConfigModel imageModel,
   }) async {
     final created = <AiConfigPrompt>[];
+    final allPrompts = <AiConfigPrompt>[]; // All prompts for category (new + existing)
     var skipped = 0;
     const uuid = Uuid();
 
     // Get existing prompts to check for duplicates
     final existingPrompts =
         await repository.getConfigsByType(AiConfigType.prompt);
-    final existingPromptKeys = existingPrompts
-        .whereType<AiConfigPrompt>()
-        .map((p) => '${p.preconfiguredPromptId}_${p.defaultModelId}')
-        .toSet();
+    final existingPromptsMap = <String, AiConfigPrompt>{};
+    for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
+      final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
+      existingPromptsMap[key] = p;
+    }
 
     // Define all prompt configurations
     final promptConfigs = _getFtuePromptConfigs();
@@ -785,7 +788,10 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
 
       // Check for existing prompt with same preconfiguredPromptId + modelId
       final key = '${config.template.id}_${model.id}';
-      if (existingPromptKeys.contains(key)) {
+      final existingPrompt = existingPromptsMap[key];
+      if (existingPrompt != null) {
+        // Prompt already exists, add it to allPrompts but don't recreate
+        allPrompts.add(existingPrompt);
         skipped++;
         continue;
       }
@@ -813,13 +819,17 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       );
 
       await repository.saveConfig(prompt);
-      // Cast the created prompt to AiConfigPrompt since AiConfig.prompt returns AiConfig
-      if (prompt is AiConfigPrompt) {
-        created.add(prompt);
-      }
+      // AiConfig.prompt() creates AiConfigPrompt
+      final createdPrompt = prompt as AiConfigPrompt;
+      created.add(createdPrompt);
+      allPrompts.add(createdPrompt);
     }
 
-    return _FtuePromptResult(created: created, skipped: skipped);
+    return _FtuePromptResult(
+      created: created,
+      skipped: skipped,
+      allPrompts: allPrompts,
+    );
   }
 
   /// Gets all prompt configurations for FTUE (9 types × 2 variants = 18 prompts).
@@ -1079,8 +1089,15 @@ class _FtuePromptResult {
   const _FtuePromptResult({
     required this.created,
     required this.skipped,
+    required this.allPrompts,
   });
 
+  /// Newly created prompts in this run.
   final List<AiConfigPrompt> created;
+
+  /// Number of prompts that already existed and were skipped.
   final int skipped;
+
+  /// All prompts that should be in the category (created + existing).
+  final List<AiConfigPrompt> allPrompts;
 }

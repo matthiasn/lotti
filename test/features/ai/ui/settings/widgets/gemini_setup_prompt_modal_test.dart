@@ -86,7 +86,8 @@ void main() {
       expect(dismissCalled, isTrue);
     });
 
-    testWidgets('static show method displays modal', (tester) async {
+    testWidgets('static show method displays modal and calls onSetUp',
+        (tester) async {
       var setUpCalled = false;
 
       await tester.pumpWidget(
@@ -113,6 +114,9 @@ void main() {
 
       await tester.tap(find.text('Set Up Gemini'));
       await tester.pumpAndSettle();
+
+      // Extra pump to process the post-frame callback
+      await tester.pump();
 
       expect(setUpCalled, isTrue);
     });

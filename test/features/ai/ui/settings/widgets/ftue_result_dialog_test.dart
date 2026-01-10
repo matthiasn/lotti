@@ -6,18 +6,17 @@ import 'package:lotti/features/ai/ui/settings/widgets/ftue_result_dialog.dart';
 void main() {
   group('FtueResultDialog', () {
     testWidgets('displays success state when no errors', (tester) async {
-      final result = GeminiFtueResult(
+      const result = GeminiFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: true,
         categoryName: 'Test Category Gemini Enabled',
-        errors: [],
       );
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: FtueResultDialog(result: result),
           ),
@@ -32,7 +31,7 @@ void main() {
     });
 
     testWidgets('displays warning state when errors present', (tester) async {
-      final result = GeminiFtueResult(
+      const result = GeminiFtueResult(
         modelsCreated: 2,
         modelsVerified: 1,
         promptsCreated: 15,
@@ -43,7 +42,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: FtueResultDialog(result: result),
           ),
@@ -63,18 +62,17 @@ void main() {
 
     testWidgets('shows None when no models created or verified',
         (tester) async {
-      final result = GeminiFtueResult(
+      const result = GeminiFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: true,
         categoryName: 'Test Category',
-        errors: [],
       );
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: FtueResultDialog(result: result),
           ),
@@ -87,18 +85,16 @@ void main() {
 
     testWidgets('does not show category section when not created',
         (tester) async {
-      final result = GeminiFtueResult(
+      const result = GeminiFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: false,
-        categoryName: null,
-        errors: [],
       );
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: FtueResultDialog(result: result),
           ),
@@ -109,14 +105,13 @@ void main() {
     });
 
     testWidgets('Done button closes dialog', (tester) async {
-      final result = GeminiFtueResult(
+      const result = GeminiFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: true,
         categoryName: 'Test Category',
-        errors: [],
       );
 
       await tester.pumpWidget(

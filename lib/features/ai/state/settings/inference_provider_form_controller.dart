@@ -20,7 +20,10 @@ class InferenceProviderFormController
   AiConfigInferenceProvider? _config;
 
   @override
-  Future<InferenceProviderFormState?> build({required String? configId}) async {
+  Future<InferenceProviderFormState?> build({
+    required String? configId,
+    InferenceProviderType? preselectedType,
+  }) async {
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
             as AiConfigInferenceProvider?)
@@ -50,8 +53,34 @@ class InferenceProviderFormController
       );
     }
 
+    // For new providers, use preselectedType if provided
+    final providerType = preselectedType ?? InferenceProviderType.genericOpenAi;
+
+    // Only set defaults when preselectedType is explicitly provided
+    // This maintains backward compatibility with manual provider type selection
+    if (preselectedType != null) {
+      final defaultName = ProviderConfig.getDefaultName(providerType);
+      final defaultBaseUrl = ProviderConfig.getDefaultBaseUrl(providerType);
+
+      if (defaultName.isNotEmpty) {
+        nameController.text = defaultName;
+      }
+      if (defaultBaseUrl.isNotEmpty) {
+        baseUrlController.text = defaultBaseUrl;
+      }
+
+      return InferenceProviderFormState(
+        name: ApiKeyName.pure(defaultName),
+        apiKey: ApiKeyValue.pure('', providerType),
+        baseUrl: BaseUrl.pure(defaultBaseUrl),
+        inferenceProviderType: providerType,
+        lastUpdated: DateTime.now(),
+      );
+    }
+
+    // Default state for manual provider selection (no preselectedType)
     return InferenceProviderFormState(
-      apiKey: const ApiKeyValue.pure('', InferenceProviderType.genericOpenAi),
+      apiKey: ApiKeyValue.pure('', providerType),
       lastUpdated: DateTime.now(),
     );
   }

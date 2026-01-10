@@ -54,12 +54,31 @@ class AiTextField extends StatefulWidget {
 class _AiTextFieldState extends State<AiTextField> {
   late final FocusNode _focusNode;
   bool _isFocused = false;
+  String? _errorText;
 
   @override
   void initState() {
     super.initState();
     _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_handleFocusChange);
+    // Validate initial value
+    _validateCurrentValue();
+  }
+
+  @override
+  void didUpdateWidget(AiTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-validate when widget updates (e.g., when form state changes)
+    _validateCurrentValue();
+  }
+
+  void _validateCurrentValue() {
+    if (widget.validator != null) {
+      final value = widget.controller?.text ?? widget.initialValue ?? '';
+      setState(() {
+        _errorText = widget.validator!(value);
+      });
+    }
   }
 
   @override
@@ -80,6 +99,8 @@ class _AiTextFieldState extends State<AiTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final hasError = _errorText != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -91,7 +112,9 @@ class _AiTextFieldState extends State<AiTextField> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: context.colorScheme.onSurfaceVariant,
+              color: hasError
+                  ? context.colorScheme.error
+                  : context.colorScheme.onSurfaceVariant,
               letterSpacing: 0.3,
             ),
           ),
@@ -103,12 +126,16 @@ class _AiTextFieldState extends State<AiTextField> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                if (_isFocused)
+                if (hasError)
+                  context.colorScheme.errorContainer.withValues(alpha: 0.2)
+                else if (_isFocused)
                   context.colorScheme.surfaceContainerHigh
                       .withValues(alpha: 0.5)
                 else
                   context.colorScheme.surfaceContainer.withValues(alpha: 0.3),
-                if (_isFocused)
+                if (hasError)
+                  context.colorScheme.errorContainer.withValues(alpha: 0.1)
+                else if (_isFocused)
                   context.colorScheme.surfaceContainerHighest
                       .withValues(alpha: 0.4)
                 else
@@ -120,28 +147,48 @@ class _AiTextFieldState extends State<AiTextField> {
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _isFocused
-                  ? context.colorScheme.primary.withValues(alpha: 0.5)
-                  : context.colorScheme.primaryContainer.withValues(alpha: 0.2),
-              width: _isFocused ? 1.5 : 1,
+              color: hasError
+                  ? context.colorScheme.error.withValues(alpha: 0.7)
+                  : _isFocused
+                      ? context.colorScheme.primary.withValues(alpha: 0.5)
+                      : context.colorScheme.primaryContainer
+                          .withValues(alpha: 0.2),
+              width: hasError || _isFocused ? 1.5 : 1,
             ),
-            boxShadow: _isFocused
+            boxShadow: hasError
                 ? [
                     BoxShadow(
-                      color: context.colorScheme.primary.withValues(alpha: 0.1),
+                      color: context.colorScheme.error.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ]
-                : null,
+                : _isFocused
+                    ? [
+                        BoxShadow(
+                          color: context.colorScheme.primary
+                              .withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
           ),
           child: TextFormField(
             controller: widget.controller,
             focusNode: _focusNode,
             initialValue:
                 widget.controller == null ? widget.initialValue : null,
-            validator: widget.validator,
-            onChanged: widget.onChanged,
+            // Don't pass validator to TextFormField - we handle display ourselves
+            onChanged: (value) {
+              widget.onChanged?.call(value);
+              // Re-validate on change
+              if (widget.validator != null) {
+                setState(() {
+                  _errorText = widget.validator!(value);
+                });
+              }
+            },
             enabled: widget.enabled,
             obscureText: widget.obscureText,
             maxLines: widget.obscureText ? 1 : widget.maxLines,
@@ -171,10 +218,12 @@ class _AiTextFieldState extends State<AiTextField> {
                   ? Icon(
                       widget.prefixIcon,
                       size: 20,
-                      color: _isFocused
-                          ? context.colorScheme.primary
-                          : context.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.6),
+                      color: hasError
+                          ? context.colorScheme.error
+                          : _isFocused
+                              ? context.colorScheme.primary
+                              : context.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
                     )
                   : null,
               suffixIcon: widget.suffixIcon,
@@ -192,6 +241,31 @@ class _AiTextFieldState extends State<AiTextField> {
             ),
           ),
         ),
+        // Error text
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 6),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 14,
+                  color: context.colorScheme.error,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    _errorText!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: context.colorScheme.error,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

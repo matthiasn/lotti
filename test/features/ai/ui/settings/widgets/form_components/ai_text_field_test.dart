@@ -103,14 +103,11 @@ void main() {
     testWidgets('shows validation error', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          Form(
-            autovalidateMode: AutovalidateMode.always,
-            child: AiTextField(
-              label: 'Test',
-              controller: controller,
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Field is required' : null,
-            ),
+          AiTextField(
+            label: 'Test',
+            controller: controller,
+            validator: (value) =>
+                value?.isEmpty ?? true ? 'Field is required' : null,
           ),
         ),
       );
