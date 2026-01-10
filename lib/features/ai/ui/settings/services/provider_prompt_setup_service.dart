@@ -762,7 +762,8 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     required AiConfigModel imageModel,
   }) async {
     final created = <AiConfigPrompt>[];
-    final allPrompts = <AiConfigPrompt>[]; // All prompts for category (new + existing)
+    final allPrompts =
+        <AiConfigPrompt>[]; // All prompts for category (new + existing)
     var skipped = 0;
     const uuid = Uuid();
 
