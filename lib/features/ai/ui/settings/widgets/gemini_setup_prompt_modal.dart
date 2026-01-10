@@ -28,6 +28,7 @@ class GeminiSetupPromptModal extends StatelessWidget {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black87,
       builder: (context) => GeminiSetupPromptModal(
         onSetUp: onSetUp,
         onDismiss: onDismiss,
@@ -55,7 +56,9 @@ class GeminiSetupPromptModal extends StatelessWidget {
             _buildFeaturesSection(context),
             const SizedBox(height: 12),
             Text(
-              'You can always set this up later in Settings.',
+              'Gemini is the quickest way to get started. '
+              'Other providers like Ollama for local inference '
+              'can be configured in Settings > AI.',
               style: context.textTheme.bodySmall?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -66,7 +69,7 @@ class GeminiSetupPromptModal extends StatelessWidget {
       actions: [
         LottiTertiaryButton(
           onPressed: onDismiss,
-          label: 'Not Now',
+          label: "Don't Show Again",
         ),
         LottiPrimaryButton(
           onPressed: onSetUp,

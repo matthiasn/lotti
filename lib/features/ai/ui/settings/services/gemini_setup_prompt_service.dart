@@ -1,19 +1,21 @@
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'gemini_setup_prompt_service.g.dart';
 
-/// Key for storing whether the Gemini setup prompt was dismissed
+/// Key for storing whether the Gemini setup prompt was permanently dismissed
 const _dismissedKey = 'gemini_setup_prompt_dismissed';
 
 /// Service that manages the automatic Gemini setup prompt for new users.
 ///
 /// This service:
 /// 1. Checks if any Gemini providers exist
-/// 2. Tracks whether the user has dismissed the prompt
-/// 3. Determines whether to show the setup prompt
+/// 2. Tracks whether the user has dismissed the prompt permanently
+/// 3. Waits for What's New modal to be dismissed first
+/// 4. Determines whether to show the setup prompt
 @riverpod
 class GeminiSetupPromptService extends _$GeminiSetupPromptService {
   @override
@@ -25,17 +27,35 @@ class GeminiSetupPromptService extends _$GeminiSetupPromptService {
   ///
   /// Returns true if:
   /// - No Gemini providers exist AND
-  /// - The user hasn't dismissed the prompt
+  /// - The user hasn't permanently dismissed the prompt AND
+  /// - What's New modal is not showing (no unseen releases)
   Future<bool> _shouldShowPrompt() async {
+    // Check if What's New has unseen content - wait for it to be dismissed first
+    final hasUnseenWhatsNew = await _hasUnseenWhatsNew();
+    if (hasUnseenWhatsNew) {
+      return false;
+    }
+
     // Check if any Gemini providers exist
     final hasGeminiProvider = await _hasGeminiProvider();
     if (hasGeminiProvider) {
       return false;
     }
 
-    // Check if prompt was dismissed
+    // Check if prompt was permanently dismissed
     final wasDismissed = await _wasPromptDismissed();
     return !wasDismissed;
+  }
+
+  /// Checks if the What's New controller has unseen releases.
+  Future<bool> _hasUnseenWhatsNew() async {
+    try {
+      final whatsNewState = await ref.read(whatsNewControllerProvider.future);
+      return whatsNewState.hasUnseenRelease;
+    } catch (_) {
+      // If we can't determine What's New state, don't block Gemini prompt
+      return false;
+    }
   }
 
   /// Checks if any Gemini inference providers exist.

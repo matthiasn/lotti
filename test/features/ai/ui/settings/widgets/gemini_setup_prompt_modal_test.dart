@@ -19,7 +19,11 @@ void main() {
       expect(find.text('Set Up AI Features?'), findsOneWidget);
       expect(find.text('Would you like to set up Gemini AI?'), findsOneWidget);
       expect(
-        find.text('You can always set this up later in Settings.'),
+        find.text(
+          'Gemini is the quickest way to get started. '
+          'Other providers like Ollama for local inference '
+          'can be configured in Settings > AI.',
+        ),
         findsOneWidget,
       );
     });
@@ -62,7 +66,7 @@ void main() {
       expect(setUpCalled, isTrue);
     });
 
-    testWidgets('Not Now button calls onDismiss', (tester) async {
+    testWidgets("Don't Show Again button calls onDismiss", (tester) async {
       var dismissCalled = false;
 
       await tester.pumpWidget(
@@ -76,7 +80,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Not Now'));
+      await tester.tap(find.text("Don't Show Again"));
       await tester.pumpAndSettle();
 
       expect(dismissCalled, isTrue);

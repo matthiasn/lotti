@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.807" date="2026-01-10">
+      <description>
+        <p>Gemini Quick Start: Automatic setup prompt for new users without AI providers configured. Modal appears after What's New is dismissed (no overlapping dialogs). One-click Gemini setup with pre-configured models and prompts. Explains available AI features including audio transcription, image analysis, smart checklists, and task summaries. "Don't Show Again" option persists dismissal permanently. Also notes that other providers like Ollama for local inference are available in Settings.</p>
+      </description>
+    </release>
     <release version="0.9.806" date="2026-01-10">
       <description>
         <p>Upgraded to Flutter 3.38.6.</p>

@@ -12,8 +12,9 @@ part of 'gemini_setup_prompt_service.dart';
 ///
 /// This service:
 /// 1. Checks if any Gemini providers exist
-/// 2. Tracks whether the user has dismissed the prompt
-/// 3. Determines whether to show the setup prompt
+/// 2. Tracks whether the user has dismissed the prompt permanently
+/// 3. Waits for What's New modal to be dismissed first
+/// 4. Determines whether to show the setup prompt
 
 @ProviderFor(GeminiSetupPromptService)
 final geminiSetupPromptServiceProvider = GeminiSetupPromptServiceProvider._();
@@ -22,16 +23,18 @@ final geminiSetupPromptServiceProvider = GeminiSetupPromptServiceProvider._();
 ///
 /// This service:
 /// 1. Checks if any Gemini providers exist
-/// 2. Tracks whether the user has dismissed the prompt
-/// 3. Determines whether to show the setup prompt
+/// 2. Tracks whether the user has dismissed the prompt permanently
+/// 3. Waits for What's New modal to be dismissed first
+/// 4. Determines whether to show the setup prompt
 final class GeminiSetupPromptServiceProvider
     extends $AsyncNotifierProvider<GeminiSetupPromptService, bool> {
   /// Service that manages the automatic Gemini setup prompt for new users.
   ///
   /// This service:
   /// 1. Checks if any Gemini providers exist
-  /// 2. Tracks whether the user has dismissed the prompt
-  /// 3. Determines whether to show the setup prompt
+  /// 2. Tracks whether the user has dismissed the prompt permanently
+  /// 3. Waits for What's New modal to be dismissed first
+  /// 4. Determines whether to show the setup prompt
   GeminiSetupPromptServiceProvider._()
       : super(
           from: null,
@@ -52,14 +55,15 @@ final class GeminiSetupPromptServiceProvider
 }
 
 String _$geminiSetupPromptServiceHash() =>
-    r'50d09f13038f692b039544e54a391116065295b6';
+    r'd278222a03fe2bfdbc1fa101814aa40cd45ea85a';
 
 /// Service that manages the automatic Gemini setup prompt for new users.
 ///
 /// This service:
 /// 1. Checks if any Gemini providers exist
-/// 2. Tracks whether the user has dismissed the prompt
-/// 3. Determines whether to show the setup prompt
+/// 2. Tracks whether the user has dismissed the prompt permanently
+/// 3. Waits for What's New modal to be dismissed first
+/// 4. Determines whether to show the setup prompt
 
 abstract class _$GeminiSetupPromptService extends $AsyncNotifier<bool> {
   FutureOr<bool> build();

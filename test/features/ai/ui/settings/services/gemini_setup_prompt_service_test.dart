@@ -3,10 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
+import 'package:lotti/features/whats_new/model/whats_new_state.dart';
+import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+/// Mock What's New controller that returns no unseen releases
+class _MockWhatsNewController extends WhatsNewController {
+  @override
+  Future<WhatsNewState> build() async => const WhatsNewState();
+}
 
 void main() {
   late MockAiConfigRepository mockRepository;
@@ -22,6 +30,8 @@ void main() {
     return ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        // Override What's New to return no unseen releases
+        whatsNewControllerProvider.overrideWith(_MockWhatsNewController.new),
       ],
     );
   }

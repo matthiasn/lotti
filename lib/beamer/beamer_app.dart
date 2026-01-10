@@ -177,6 +177,16 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
         );
       })
+      // When What's New is dismissed, re-check if Gemini prompt should show
+      ..listen(whatsNewControllerProvider, (prev, next) {
+        final prevHasUnseen = prev?.asData?.value.hasUnseenRelease ?? true;
+        final nextHasUnseen = next.asData?.value.hasUnseenRelease ?? true;
+
+        // If What's New transitioned from unseen to seen, re-check Gemini prompt
+        if (prevHasUnseen && !nextHasUnseen) {
+          ref.invalidate(geminiSetupPromptServiceProvider);
+        }
+      })
       // Auto-show Gemini setup prompt for new users without Gemini provider
       ..listen(geminiSetupPromptServiceProvider, (prev, next) {
         next.when(

@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.807] - 2026-01-10
+### Added
+- Gemini Quick Start: Automatic setup prompt for new users without AI providers configured
+  - Modal appears after What's New is dismissed (no overlapping dialogs)
+  - One-click Gemini setup with pre-configured models and prompts
+  - Explains available AI features: audio transcription, image analysis, smart checklists, task summaries
+  - "Don't Show Again" option persists dismissal permanently
+  - Notes that other providers like Ollama for local inference are available in Settings > AI
+
 ## [0.9.806] - 2026-01-10
 ### Changed
 - Upgraded to Flutter 3.38.6
