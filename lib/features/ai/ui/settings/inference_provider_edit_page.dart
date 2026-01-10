@@ -13,6 +13,8 @@ import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue_result_dialog.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue_setup_dialog.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -23,10 +25,15 @@ import 'package:uuid/uuid.dart';
 class InferenceProviderEditPage extends ConsumerStatefulWidget {
   const InferenceProviderEditPage({
     this.configId,
+    this.preselectedType,
     super.key,
   });
 
   final String? configId;
+
+  /// If provided, pre-selects this provider type for new providers.
+  /// Only used when configId is null (creating a new provider).
+  final InferenceProviderType? preselectedType;
 
   @override
   ConsumerState<InferenceProviderEditPage> createState() =>
@@ -36,6 +43,15 @@ class InferenceProviderEditPage extends ConsumerStatefulWidget {
 class _InferenceProviderEditPageState
     extends ConsumerState<InferenceProviderEditPage> {
   bool _showApiKey = false;
+  bool _isSaving = false;
+
+  /// Helper to get the form controller provider with correct parameters
+  InferenceProviderFormControllerProvider get _formProvider =>
+      inferenceProviderFormControllerProvider(
+        configId: widget.configId,
+        preselectedType:
+            widget.configId == null ? widget.preselectedType : null,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +61,7 @@ class _InferenceProviderEditPageState
         : const AsyncData<AiConfig?>(null);
 
     // Watch the form state to enable/disable save button
-    final formState = ref
-        .watch(
-            inferenceProviderFormControllerProvider(configId: widget.configId))
-        .value;
+    final formState = ref.watch(_formProvider).value;
 
     final isFormValid = formState != null &&
         formState.isValid &&
@@ -56,40 +69,66 @@ class _InferenceProviderEditPageState
 
     // Create save handler that can be used by both app bar action and keyboard shortcut
     Future<void> handleSave() async {
-      if (!isFormValid) return;
+      if (!isFormValid || _isSaving) return;
 
-      final config = formState.toAiConfig();
-      final controller = ref.read(
-        inferenceProviderFormControllerProvider(
-          configId: widget.configId,
-        ).notifier,
-      );
+      setState(() => _isSaving = true);
 
-      if (widget.configId == null) {
-        await controller.addConfig(config);
+      try {
+        final config = formState.toAiConfig();
+        final controller = ref.read(_formProvider.notifier);
 
-        // Offer to set up default prompts for supported providers
-        if (context.mounted && config is AiConfigInferenceProvider) {
-          final setupService = ref.read(providerPromptSetupServiceProvider);
-          await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: config,
-          );
+        if (widget.configId == null) {
+          await controller.addConfig(config);
+
+          // Offer to set up default prompts for supported providers
+          if (context.mounted && config is AiConfigInferenceProvider) {
+            final setupService = ref.read(providerPromptSetupServiceProvider);
+
+            // Use enhanced FTUE for Gemini providers
+            if (config.inferenceProviderType == InferenceProviderType.gemini) {
+              final confirmed = await FtueSetupDialog.show(
+                context,
+                providerName: 'Gemini',
+              );
+
+              if (confirmed && context.mounted) {
+                final result = await setupService.performGeminiFtueSetup(
+                  context: context,
+                  ref: ref,
+                  provider: config,
+                );
+
+                if (result != null && context.mounted) {
+                  await FtueResultDialog.show(context, result: result);
+                }
+              }
+            } else {
+              // Use standard prompt setup for other providers
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: config,
+              );
+            }
+          }
+        } else {
+          await controller.updateConfig(config);
         }
-      } else {
-        await controller.updateConfig(config);
-      }
 
-      if (context.mounted) {
-        Navigator.of(context).pop();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSaving = false);
+        }
       }
     }
 
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, meta: true): () {
-          if (isFormValid) {
+          if (isFormValid && !_isSaving) {
             handleSave();
           }
         },
@@ -150,10 +189,11 @@ class _InferenceProviderEditPageState
             ),
             // Fixed bottom bar
             FormBottomBar(
-              onSave: isFormValid ? handleSave : null,
+              onSave: isFormValid && !_isSaving ? handleSave : null,
               onCancel: () => Navigator.of(context).pop(),
               isFormValid: isFormValid,
               isDirty: widget.configId == null || (formState?.isDirty ?? false),
+              isLoading: _isSaving,
             ),
           ],
         ),
@@ -178,10 +218,7 @@ class _InferenceProviderEditPageState
       );
     }
 
-    final formController = ref.read(
-      inferenceProviderFormControllerProvider(configId: widget.configId)
-          .notifier,
-    );
+    final formController = ref.read(_formProvider.notifier);
 
     return Padding(
       padding: const EdgeInsets.all(20),

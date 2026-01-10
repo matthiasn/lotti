@@ -8,6 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
+import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/gemini_setup_prompt_modal.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -104,6 +108,24 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     });
   }
 
+  void _showGeminiSetupPrompt(BuildContext context, WidgetRef ref) {
+    if (!mounted) return;
+    GeminiSetupPromptModal.show(
+      context,
+      onSetUp: () {
+        // Modal closes itself, then we navigate
+        const AiSettingsNavigationService().navigateToCreateProvider(
+          context,
+          preselectedType: InferenceProviderType.gemini,
+        );
+      },
+      onDismiss: () {
+        // Modal closes itself, then we persist dismissal
+        ref.read(geminiSetupPromptServiceProvider.notifier).dismissPrompt();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Reset toast guard on login, and listen for login-gate events from outbox.
@@ -150,6 +172,39 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               error,
               domain: 'WHATS_NEW',
               subDomain: 'shouldAutoShowWhatsNew',
+              stackTrace: stack,
+            );
+          },
+        );
+      })
+      // When What's New is dismissed, re-check if Gemini prompt should show
+      ..listen(whatsNewControllerProvider, (prev, next) {
+        final prevHasUnseen = prev?.asData?.value.hasUnseenRelease ?? true;
+        final nextHasUnseen = next.asData?.value.hasUnseenRelease ?? true;
+
+        // If What's New transitioned from unseen to seen, re-check Gemini prompt
+        if (prevHasUnseen && !nextHasUnseen) {
+          ref.invalidate(geminiSetupPromptServiceProvider);
+        }
+      })
+      // Auto-show Gemini setup prompt for new users without Gemini provider
+      ..listen(geminiSetupPromptServiceProvider, (prev, next) {
+        next.when(
+          data: (shouldShow) {
+            if (shouldShow && mounted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _showGeminiSetupPrompt(context, ref);
+                }
+              });
+            }
+          },
+          loading: () {},
+          error: (error, stack) {
+            getIt<LoggingService>().captureException(
+              error,
+              domain: 'GEMINI_FTUE',
+              subDomain: 'geminiSetupPromptService',
               stackTrace: stack,
             );
           },

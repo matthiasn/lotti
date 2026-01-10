@@ -483,3 +483,39 @@ String generateModelId(String inferenceProviderId, String providerModelId) {
   // Replace problematic characters for IDs
   return combined.replaceAll(RegExp(r'[/:\-.]'), '_').toLowerCase();
 }
+
+// =============================================================================
+// FTUE (First Time User Experience) Model Constants
+// =============================================================================
+
+/// Model IDs used for Gemini FTUE automation
+const ftueFlashModelId = 'models/gemini-3-flash-preview';
+const ftueProModelId = 'models/gemini-3-pro-preview';
+const ftueImageModelId = 'models/gemini-3-pro-image-preview';
+
+/// Finds a KnownModel by its provider model ID from the geminiModels list.
+/// Returns null if not found.
+KnownModel? findGeminiKnownModel(String providerModelId) {
+  for (final model in geminiModels) {
+    if (model.providerModelId == providerModelId) {
+      return model;
+    }
+  }
+  return null;
+}
+
+/// Returns the three KnownModel configurations needed for Gemini FTUE.
+/// - Flash model for fast text/audio/image input tasks
+/// - Pro model for reasoning tasks
+/// - Image model (Nano Banana Pro) for image generation output
+({KnownModel flash, KnownModel pro, KnownModel image})? getFtueKnownModels() {
+  final flash = findGeminiKnownModel(ftueFlashModelId);
+  final pro = findGeminiKnownModel(ftueProModelId);
+  final image = findGeminiKnownModel(ftueImageModelId);
+
+  if (flash == null || pro == null || image == null) {
+    return null;
+  }
+
+  return (flash: flash, pro: pro, image: image);
+}

@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mock classes
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
+class MockCategoryRepository extends Mock implements CategoryRepository {}
+
 void main() {
   late MockAiConfigRepository mockRepository;
+  late MockCategoryRepository mockCategoryRepository;
   late AiConfig testProvider;
 
   setUpAll(() {
@@ -26,10 +31,23 @@ void main() {
         inferenceProviderType: InferenceProviderType.openAi,
       ),
     );
+    registerFallbackValue(
+      CategoryDefinition(
+        id: 'fallback-category-id',
+        name: 'Fallback Category',
+        color: '#FF0000',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+        active: true,
+      ),
+    );
   });
 
   setUp(() {
     mockRepository = MockAiConfigRepository();
+    mockCategoryRepository = MockCategoryRepository();
 
     testProvider = AiConfig.inferenceProvider(
       id: 'test-provider-id',
@@ -46,12 +64,41 @@ void main() {
         .thenAnswer((_) async => testProvider);
     when(() => mockRepository.getConfigsByType(AiConfigType.model))
         .thenAnswer((_) async => []);
+    when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+        .thenAnswer((_) async => []);
+
+    // Default category mock responses
+    when(
+      () => mockCategoryRepository.createCategory(
+        name: any(named: 'name'),
+        color: any(named: 'color'),
+        icon: any(named: 'icon'),
+      ),
+    ).thenAnswer(
+      (invocation) async => CategoryDefinition(
+        id: 'test-category-id',
+        name: invocation.namedArguments[#name] as String,
+        color: invocation.namedArguments[#color] as String,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        private: false,
+        active: true,
+      ),
+    );
+    when(() => mockCategoryRepository.updateCategory(any()))
+        .thenAnswer((invocation) async {
+      return invocation.positionalArguments[0] as CategoryDefinition;
+    });
+    when(() => mockCategoryRepository.getAllCategories())
+        .thenAnswer((_) async => []);
   });
 
   Widget buildTestWidget({String? configId}) {
     return ProviderScope(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
       ],
       child: MaterialApp(
         localizationsDelegates: const [
@@ -675,7 +722,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Prompt setup dialog should appear
-      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
+      expect(find.text('Set Up AI Features?'), findsOneWidget);
     });
 
     testWidgets('does not show prompt setup dialog for non-Gemini providers',
@@ -721,7 +768,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Prompt setup dialog should NOT appear
-      expect(find.text('Set Up Default Prompts?'), findsNothing);
+      expect(find.text('Set Up AI Features?'), findsNothing);
     });
 
     testWidgets(
@@ -760,7 +807,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Prompt setup dialog should NOT appear for edits
-      expect(find.text('Set Up Default Prompts?'), findsNothing);
+      expect(find.text('Set Up AI Features?'), findsNothing);
     });
 
     testWidgets('creates prompts when user confirms in setup dialog',
@@ -815,13 +862,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Confirm prompt setup
-      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-      await tester.tap(find.text('Set Up Prompts'));
+      expect(find.text('Set Up AI Features?'), findsOneWidget);
+      await tester.tap(find.text('Set Up'));
       await tester.pumpAndSettle();
 
-      // Verify prompts were created (should have 1 provider + 4 models + 4 prompts)
+      // Verify prompts were created
+      // FTUE creates: 3 models + 18 prompts (9 types × 2 variants)
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
-      expect(promptsCreated, equals(4));
+      expect(promptsCreated, equals(18));
     });
 
     testWidgets('skips prompt creation when user declines',
@@ -876,12 +924,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Decline prompt setup
-      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
+      expect(find.text('Set Up AI Features?'), findsOneWidget);
       await tester.tap(find.text('No Thanks'));
       await tester.pumpAndSettle();
 
       // Dialog should close, no prompts created
-      expect(find.text('Set Up Default Prompts?'), findsNothing);
+      expect(find.text('Set Up AI Features?'), findsNothing);
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
       expect(promptsCreated, equals(0));
     });

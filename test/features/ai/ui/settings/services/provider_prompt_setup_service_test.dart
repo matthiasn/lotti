@@ -888,5 +888,73 @@ void main() {
         expect(summaryPrompt.aiResponseType, AiResponseType.taskSummary);
       });
     });
+
+    group('Error Handling', () {
+      testWidgets('should return false when no models exist for provider',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Return empty models list
+        when(() => mockRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => []);
+
+        var result = false;
+        await tester.pumpWidget(createTestWidget(
+          child: const Text('Test Button'),
+          onPressed: (context, ref) async {
+            result = await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ));
+
+        await tester.tap(find.text('Test Button'));
+        await tester.pumpAndSettle();
+
+        // Should return false because no models exist
+        expect(result, isFalse);
+      });
+
+      testWidgets(
+          'should return false when models exist but none belong to provider',
+          (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Return models for a different provider
+        final otherProviderModels = [
+          AiTestDataFactory.createTestModel(
+            id: 'other-provider_model1',
+            name: 'Other Model',
+            inferenceProviderId: 'other-provider-id',
+            inputModalities: [Modality.text],
+          ),
+        ];
+
+        when(() => mockRepository.getConfigsByType(AiConfigType.model))
+            .thenAnswer((_) async => otherProviderModels);
+
+        var result = false;
+        await tester.pumpWidget(createTestWidget(
+          child: const Text('Test Button'),
+          onPressed: (context, ref) async {
+            result = await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ));
+
+        await tester.tap(find.text('Test Button'));
+        await tester.pumpAndSettle();
+
+        // Should return false because no models for this provider
+        expect(result, isFalse);
+      });
+    });
   });
 }

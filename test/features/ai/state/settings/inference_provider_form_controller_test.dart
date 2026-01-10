@@ -727,6 +727,128 @@ void main() {
     });
   });
 
+  group('Preselected Provider Type Tests', () {
+    test(
+        'should pre-fill form with Gemini defaults when preselectedType is Gemini',
+        () async {
+      // Act
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(
+          configId: null,
+          preselectedType: InferenceProviderType.gemini,
+        ).notifier,
+      );
+      final formState = await container.read(
+        inferenceProviderFormControllerProvider(
+          configId: null,
+          preselectedType: InferenceProviderType.gemini,
+        ).future,
+      );
+
+      // Assert
+      expect(formState?.inferenceProviderType,
+          equals(InferenceProviderType.gemini));
+      expect(controller.nameController.text, equals('Gemini'));
+      expect(
+        controller.baseUrlController.text,
+        equals('https://generativelanguage.googleapis.com/v1beta/openai'),
+      );
+      expect(formState?.name.value, equals('Gemini'));
+      expect(
+        formState?.baseUrl.value,
+        equals('https://generativelanguage.googleapis.com/v1beta/openai'),
+      );
+    });
+
+    test(
+        'should pre-fill form with Anthropic defaults when preselectedType is Anthropic',
+        () async {
+      // Act
+      final formState = await container.read(
+        inferenceProviderFormControllerProvider(
+          configId: null,
+          preselectedType: InferenceProviderType.anthropic,
+        ).future,
+      );
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(
+          configId: null,
+          preselectedType: InferenceProviderType.anthropic,
+        ).notifier,
+      );
+
+      // Assert
+      expect(formState?.inferenceProviderType,
+          equals(InferenceProviderType.anthropic));
+      expect(controller.nameController.text, equals('Anthropic'));
+      expect(
+        controller.baseUrlController.text,
+        equals('https://api.anthropic.com/v1'),
+      );
+    });
+
+    test(
+        'should pre-fill form with Ollama defaults when preselectedType is Ollama',
+        () async {
+      // Act
+      final formState = await container.read(
+        inferenceProviderFormControllerProvider(
+          configId: null,
+          preselectedType: InferenceProviderType.ollama,
+        ).future,
+      );
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(
+          configId: null,
+          preselectedType: InferenceProviderType.ollama,
+        ).notifier,
+      );
+
+      // Assert
+      expect(formState?.inferenceProviderType,
+          equals(InferenceProviderType.ollama));
+      expect(controller.nameController.text, equals('Ollama (local)'));
+      expect(
+        controller.baseUrlController.text,
+        equals('http://localhost:11434'),
+      );
+      // Ollama doesn't require API key
+      expect(formState?.apiKey.isValid, isTrue);
+    });
+
+    test('should ignore preselectedType when configId is provided', () async {
+      // Arrange
+      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+        (_) async => testConfig,
+      );
+
+      // Act - provide both configId and preselectedType
+      final formState = await container.read(
+        inferenceProviderFormControllerProvider(
+          configId: 'test-id',
+          preselectedType: InferenceProviderType.gemini,
+        ).future,
+      );
+
+      // Assert - should load existing config, not use preselectedType
+      expect(formState?.inferenceProviderType,
+          equals(InferenceProviderType.genericOpenAi));
+      expect(formState?.name.value, equals('Test API'));
+      verify(() => mockRepository.getConfigById('test-id')).called(1);
+    });
+
+    test('should use genericOpenAi when no preselectedType provided', () async {
+      // Act
+      final formState = await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
+
+      // Assert
+      expect(formState?.inferenceProviderType,
+          equals(InferenceProviderType.genericOpenAi));
+    });
+  });
+
   group('Model Prepopulation Tests', () {
     test('should save config when adding a new inference provider', () async {
       // Arrange
@@ -752,6 +874,120 @@ void main() {
 
       // Assert
       verify(() => mockRepository.saveConfig(newConfig)).called(1);
+    });
+
+    test('should prepopulate models when adding Gemini provider', () async {
+      // Arrange
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => []);
+
+      // Act
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+
+      final geminiConfig = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-gemini-key',
+        name: 'Gemini',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      await controller.addConfig(geminiConfig);
+
+      // Assert - should save provider and check for existing models
+      verify(() => mockRepository.saveConfig(geminiConfig)).called(1);
+      verify(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .called(1);
+    });
+  });
+
+  group('Edge Cases', () {
+    test('should handle inferenceProviderTypeChanged when state is null',
+        () async {
+      // This tests the edge case where inferenceProviderTypeChanged is called
+      // before build() completes. The method should create initial state.
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+
+      // Call the method before awaiting the future
+      controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
+
+      // Now await to ensure state is set
+      final formState = await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
+
+      // The state should have Gemini as the provider type
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.gemini),
+      );
+    });
+
+    test('should handle empty default name for genericOpenAi', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
+
+      // Act - genericOpenAi has no default name
+      controller.inferenceProviderTypeChanged(
+        InferenceProviderType.genericOpenAi,
+      );
+      final formState = container
+          .read(inferenceProviderFormControllerProvider(configId: null))
+          .value;
+
+      // Assert - name should remain empty (no default for genericOpenAi)
+      expect(formState?.inferenceProviderType,
+          equals(InferenceProviderType.genericOpenAi));
+    });
+
+    test('should sync controller text when value differs', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
+
+      // Manually set controller text to something different
+      controller.nameController.text = 'Different Value';
+
+      // Act - call nameChanged with a different value
+      controller.nameChanged('New Value');
+
+      // Assert - controller should be updated
+      expect(controller.nameController.text, equals('New Value'));
+    });
+
+    test('should not update controller when value is same', () async {
+      // Arrange
+      final controller = container.read(
+        inferenceProviderFormControllerProvider(configId: null).notifier,
+      );
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
+
+      // Set initial value
+      controller.nameChanged('Same Value');
+      expect(controller.nameController.text, equals('Same Value'));
+
+      // Act - call with same value
+      controller.nameChanged('Same Value');
+
+      // Assert - should still be the same (no unnecessary updates)
+      expect(controller.nameController.text, equals('Same Value'));
     });
   });
 }
