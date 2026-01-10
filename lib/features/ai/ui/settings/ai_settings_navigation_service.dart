@@ -56,11 +56,17 @@ class AiSettingsNavigationService {
   ///
   /// **Parameters:**
   /// - [context]: BuildContext for navigation
+  /// - [preselectedType]: Optional provider type to pre-select
   ///
   /// **Returns:** Future that completes when navigation finishes
-  Future<void> navigateToCreateProvider(BuildContext context) async {
+  Future<void> navigateToCreateProvider(
+    BuildContext context, {
+    InferenceProviderType? preselectedType,
+  }) async {
     final route = _createSlideRoute(
-      builder: (context) => const InferenceProviderEditPage(),
+      builder: (context) => InferenceProviderEditPage(
+        preselectedType: preselectedType,
+      ),
     );
     await Navigator.of(context).push(route);
   }

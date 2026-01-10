@@ -13,6 +13,8 @@ import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue_result_dialog.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue_setup_dialog.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -23,10 +25,15 @@ import 'package:uuid/uuid.dart';
 class InferenceProviderEditPage extends ConsumerStatefulWidget {
   const InferenceProviderEditPage({
     this.configId,
+    this.preselectedType,
     super.key,
   });
 
   final String? configId;
+
+  /// If provided, pre-selects this provider type for new providers.
+  /// Only used when configId is null (creating a new provider).
+  final InferenceProviderType? preselectedType;
 
   @override
   ConsumerState<InferenceProviderEditPage> createState() =>
@@ -36,9 +43,27 @@ class InferenceProviderEditPage extends ConsumerStatefulWidget {
 class _InferenceProviderEditPageState
     extends ConsumerState<InferenceProviderEditPage> {
   bool _showApiKey = false;
+  bool _hasAppliedPreselectedType = false;
 
   @override
   Widget build(BuildContext context) {
+    // Apply preselected type once when creating a new provider
+    if (!_hasAppliedPreselectedType &&
+        widget.configId == null &&
+        widget.preselectedType != null) {
+      _hasAppliedPreselectedType = true;
+      // Use post-frame callback to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(inferenceProviderFormControllerProvider(
+                      configId: widget.configId)
+                  .notifier)
+              .inferenceProviderTypeChanged(widget.preselectedType!);
+        }
+      });
+    }
+
     // Listen for the config if editing an existing one
     final configAsync = widget.configId != null
         ? ref.watch(aiConfigByIdProvider(widget.configId!))
@@ -71,11 +96,33 @@ class _InferenceProviderEditPageState
         // Offer to set up default prompts for supported providers
         if (context.mounted && config is AiConfigInferenceProvider) {
           final setupService = ref.read(providerPromptSetupServiceProvider);
-          await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: config,
-          );
+
+          // Use enhanced FTUE for Gemini providers
+          if (config.inferenceProviderType == InferenceProviderType.gemini) {
+            final confirmed = await FtueSetupDialog.show(
+              context,
+              providerName: 'Gemini',
+            );
+
+            if (confirmed && context.mounted) {
+              final result = await setupService.performGeminiFtueSetup(
+                context: context,
+                ref: ref,
+                provider: config,
+              );
+
+              if (result != null && context.mounted) {
+                await FtueResultDialog.show(context, result: result);
+              }
+            }
+          } else {
+            // Use standard prompt setup for other providers
+            await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: config,
+            );
+          }
         }
       } else {
         await controller.updateConfig(config);

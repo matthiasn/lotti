@@ -54,6 +54,34 @@ class MaintenancePage extends StatelessWidget {
                 },
               ),
               AnimatedModernSettingsCardWithIcon(
+                title: 'Reset Gemini Setup Prompt',
+                subtitle:
+                    'Show the Gemini AI setup prompt again on next app start',
+                icon: Icons.auto_awesome,
+                onTap: () async {
+                  final confirmed = await showConfirmationModal(
+                    context: context,
+                    message: 'This will show the Gemini setup prompt again the '
+                        'next time you open the app. Continue?',
+                    confirmLabel: 'Reset',
+                  );
+                  if (!confirmed) return;
+                  final removed =
+                      await clearPrefsByPrefix('gemini_setup_prompt_');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          removed > 0
+                              ? 'Gemini setup prompt will show on next app start'
+                              : 'Gemini setup prompt was already reset',
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              AnimatedModernSettingsCardWithIcon(
                 title: context.messages.maintenanceDeleteEditorDb,
                 subtitle: context.messages.maintenanceDeleteEditorDbDescription,
                 icon: Icons.edit_note_rounded,

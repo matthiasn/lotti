@@ -1,9 +1,13 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -566,4 +570,517 @@ class _ModelSelection {
   final AiConfigModel? audioModel;
   final AiConfigModel reasoningModel;
   final AiConfigModel? imageModel;
+}
+
+// =============================================================================
+// FTUE (First Time User Experience) Setup
+// =============================================================================
+
+/// Result of the Gemini FTUE setup process.
+class GeminiFtueResult {
+  const GeminiFtueResult({
+    required this.modelsCreated,
+    required this.modelsVerified,
+    required this.promptsCreated,
+    required this.promptsSkipped,
+    required this.categoryCreated,
+    this.categoryName,
+    this.errors = const [],
+  });
+
+  final int modelsCreated;
+  final int modelsVerified;
+  final int promptsCreated;
+  final int promptsSkipped;
+  final bool categoryCreated;
+  final String? categoryName;
+  final List<String> errors;
+
+  int get totalModels => modelsCreated + modelsVerified;
+  int get totalPrompts => promptsCreated + promptsSkipped;
+}
+
+/// Configuration for a prompt to create during FTUE.
+class FtuePromptConfig {
+  const FtuePromptConfig({
+    required this.template,
+    required this.modelVariant,
+    required this.promptName,
+  });
+
+  final PreconfiguredPrompt template;
+
+  /// Which model to use: 'flash', 'pro', or 'image'
+  final String modelVariant;
+  final String promptName;
+}
+
+/// Extension to add Gemini FTUE functionality to ProviderPromptSetupService.
+extension GeminiFtueSetup on ProviderPromptSetupService {
+  /// Performs comprehensive FTUE setup for Gemini providers.
+  ///
+  /// This creates:
+  /// 1. Three models (Flash, Pro, Nano Banana Pro) if they don't exist
+  /// 2. 18 prompts (Flash and Pro variants for 9 prompt types)
+  /// 3. A test category with all prompts enabled and auto-selection configured
+  ///
+  /// Returns [GeminiFtueResult] with details of what was created.
+  Future<GeminiFtueResult?> performGeminiFtueSetup({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AiConfigInferenceProvider provider,
+  }) async {
+    // Only works with Gemini providers
+    if (provider.inferenceProviderType != InferenceProviderType.gemini) {
+      return null;
+    }
+
+    final repository = ref.read(aiConfigRepositoryProvider);
+    final categoryRepository = ref.read(categoryRepositoryProvider);
+
+    // Step 1: Create/verify models
+    final modelResult = await _ensureFtueModelsExist(
+      repository: repository,
+      providerId: provider.id,
+    );
+
+    if (modelResult == null) {
+      return const GeminiFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        errors: ['Failed to find required Gemini model configurations'],
+      );
+    }
+
+    // Step 2: Create prompts
+    final promptResult = await _createFtuePrompts(
+      repository: repository,
+      flashModel: modelResult.flash,
+      proModel: modelResult.pro,
+      imageModel: modelResult.image,
+    );
+
+    // Step 3: Create category with auto-selection
+    final category = await _createFtueCategory(
+      categoryRepository: categoryRepository,
+      prompts: promptResult.created,
+    );
+
+    return GeminiFtueResult(
+      modelsCreated: modelResult.created.length,
+      modelsVerified: modelResult.verified.length,
+      promptsCreated: promptResult.created.length,
+      promptsSkipped: promptResult.skipped,
+      categoryCreated: category != null,
+      categoryName: category?.name,
+    );
+  }
+
+  /// Ensures the three FTUE models exist for the given provider.
+  Future<_FtueModelResult?> _ensureFtueModelsExist({
+    required AiConfigRepository repository,
+    required String providerId,
+  }) async {
+    final knownModels = getFtueKnownModels();
+    if (knownModels == null) {
+      return null;
+    }
+
+    final allModels = await repository.getConfigsByType(AiConfigType.model);
+    final providerModels = allModels
+        .whereType<AiConfigModel>()
+        .where((m) => m.inferenceProviderId == providerId)
+        .toList();
+
+    final created = <AiConfigModel>[];
+    final verified = <AiConfigModel>[];
+    const uuid = Uuid();
+
+    // Process each model type
+    final modelConfigs = [
+      (known: knownModels.flash, id: ftueFlashModelId),
+      (known: knownModels.pro, id: ftueProModelId),
+      (known: knownModels.image, id: ftueImageModelId),
+    ];
+
+    AiConfigModel? flashModel;
+    AiConfigModel? proModel;
+    AiConfigModel? imageModel;
+
+    for (final config in modelConfigs) {
+      // Check if model with same providerModelId already exists
+      final existing = providerModels.firstWhereOrNull(
+        (m) => m.providerModelId == config.id,
+      );
+
+      AiConfigModel model;
+      if (existing != null) {
+        verified.add(existing);
+        model = existing;
+      } else {
+        // Create new model
+        model = config.known.toAiConfigModel(
+          id: uuid.v4(),
+          inferenceProviderId: providerId,
+        );
+        await repository.saveConfig(model);
+        created.add(model);
+      }
+
+      // Assign to appropriate variable
+      if (config.id == ftueFlashModelId) {
+        flashModel = model;
+      } else if (config.id == ftueProModelId) {
+        proModel = model;
+      } else if (config.id == ftueImageModelId) {
+        imageModel = model;
+      }
+    }
+
+    if (flashModel == null || proModel == null || imageModel == null) {
+      return null;
+    }
+
+    return _FtueModelResult(
+      flash: flashModel,
+      pro: proModel,
+      image: imageModel,
+      created: created,
+      verified: verified,
+    );
+  }
+
+  /// Creates all FTUE prompts with idempotency checks.
+  Future<_FtuePromptResult> _createFtuePrompts({
+    required AiConfigRepository repository,
+    required AiConfigModel flashModel,
+    required AiConfigModel proModel,
+    required AiConfigModel imageModel,
+  }) async {
+    final created = <AiConfigPrompt>[];
+    var skipped = 0;
+    const uuid = Uuid();
+
+    // Get existing prompts to check for duplicates
+    final existingPrompts =
+        await repository.getConfigsByType(AiConfigType.prompt);
+    final existingPromptKeys = existingPrompts
+        .whereType<AiConfigPrompt>()
+        .map((p) => '${p.preconfiguredPromptId}_${p.defaultModelId}')
+        .toSet();
+
+    // Define all prompt configurations
+    final promptConfigs = _getFtuePromptConfigs();
+
+    for (final config in promptConfigs) {
+      final model = switch (config.modelVariant) {
+        'flash' => flashModel,
+        'pro' => proModel,
+        'image' => imageModel,
+        _ => flashModel,
+      };
+
+      // Check for existing prompt with same preconfiguredPromptId + modelId
+      final key = '${config.template.id}_${model.id}';
+      if (existingPromptKeys.contains(key)) {
+        skipped++;
+        continue;
+      }
+
+      // Determine useReasoning based on model variant and prompt type
+      // Flash with thinking for most tasks, Pro with reasoning, no reasoning for image gen
+      final useReasoning = config.modelVariant != 'image' ||
+          config.template.aiResponseType != AiResponseType.imageGeneration;
+
+      final prompt = AiConfig.prompt(
+        id: uuid.v4(),
+        name: config.promptName,
+        systemMessage: config.template.systemMessage,
+        userMessage: config.template.userMessage,
+        defaultModelId: model.id,
+        modelIds: [model.id],
+        createdAt: DateTime.now(),
+        useReasoning: useReasoning,
+        requiredInputData: config.template.requiredInputData,
+        aiResponseType: config.template.aiResponseType,
+        description: config.template.description,
+        trackPreconfigured: true,
+        preconfiguredPromptId: config.template.id,
+        defaultVariables: config.template.defaultVariables,
+      );
+
+      await repository.saveConfig(prompt);
+      // Cast the created prompt to AiConfigPrompt since AiConfig.prompt returns AiConfig
+      if (prompt is AiConfigPrompt) {
+        created.add(prompt);
+      }
+    }
+
+    return _FtuePromptResult(created: created, skipped: skipped);
+  }
+
+  /// Gets all prompt configurations for FTUE (9 types × 2 variants = 18 prompts).
+  List<FtuePromptConfig> _getFtuePromptConfigs() {
+    return const [
+      // Audio Transcription
+      FtuePromptConfig(
+        template: audioTranscriptionPrompt,
+        modelVariant: 'flash',
+        promptName: 'Audio Transcription Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: audioTranscriptionPrompt,
+        modelVariant: 'pro',
+        promptName: 'Audio Transcription Gemini Pro',
+      ),
+
+      // Audio Transcription with Task Context
+      FtuePromptConfig(
+        template: audioTranscriptionWithTaskContextPrompt,
+        modelVariant: 'flash',
+        promptName: 'Audio Transcription (Task Context) Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: audioTranscriptionWithTaskContextPrompt,
+        modelVariant: 'pro',
+        promptName: 'Audio Transcription (Task Context) Gemini Pro',
+      ),
+
+      // Task Summary
+      FtuePromptConfig(
+        template: taskSummaryPrompt,
+        modelVariant: 'flash',
+        promptName: 'Task Summary Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: taskSummaryPrompt,
+        modelVariant: 'pro',
+        promptName: 'Task Summary Gemini Pro',
+      ),
+
+      // Checklist Updates
+      FtuePromptConfig(
+        template: checklistUpdatesPrompt,
+        modelVariant: 'flash',
+        promptName: 'Checklist Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: checklistUpdatesPrompt,
+        modelVariant: 'pro',
+        promptName: 'Checklist Gemini Pro',
+      ),
+
+      // Image Analysis
+      FtuePromptConfig(
+        template: imageAnalysisPrompt,
+        modelVariant: 'flash',
+        promptName: 'Image Analysis Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: imageAnalysisPrompt,
+        modelVariant: 'pro',
+        promptName: 'Image Analysis Gemini Pro',
+      ),
+
+      // Image Analysis in Task Context
+      FtuePromptConfig(
+        template: imageAnalysisInTaskContextPrompt,
+        modelVariant: 'flash',
+        promptName: 'Image Analysis (Task Context) Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: imageAnalysisInTaskContextPrompt,
+        modelVariant: 'pro',
+        promptName: 'Image Analysis (Task Context) Gemini Pro',
+      ),
+
+      // Generate Coding Prompt
+      FtuePromptConfig(
+        template: promptGenerationPrompt,
+        modelVariant: 'flash',
+        promptName: 'Coding Prompt Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: promptGenerationPrompt,
+        modelVariant: 'pro',
+        promptName: 'Coding Prompt Gemini Pro',
+      ),
+
+      // Generate Image Prompt
+      FtuePromptConfig(
+        template: imagePromptGenerationPrompt,
+        modelVariant: 'flash',
+        promptName: 'Image Prompt Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: imagePromptGenerationPrompt,
+        modelVariant: 'pro',
+        promptName: 'Image Prompt Gemini Pro',
+      ),
+
+      // Cover Art Generation (uses image model for Pro variant)
+      FtuePromptConfig(
+        template: coverArtGenerationPrompt,
+        modelVariant: 'flash',
+        promptName: 'Cover Art Gemini Flash',
+      ),
+      FtuePromptConfig(
+        template: coverArtGenerationPrompt,
+        modelVariant: 'image', // Uses Nano Banana Pro
+        promptName: 'Cover Art Gemini Pro',
+      ),
+    ];
+  }
+
+  /// Creates the FTUE test category with all prompts enabled and auto-selection.
+  Future<CategoryDefinition?> _createFtueCategory({
+    required CategoryRepository categoryRepository,
+    required List<AiConfigPrompt> prompts,
+  }) async {
+    const categoryName = 'Test Category Gemini Enabled';
+
+    // Build allowedPromptIds from all created prompts
+    final allowedPromptIds = prompts.map((p) => p.id).toList();
+
+    // Build automaticPrompts map with auto-selection logic
+    final automaticPrompts = _buildFtueAutomaticPrompts(prompts);
+
+    try {
+      // Create the category
+      final category = await categoryRepository.createCategory(
+        name: categoryName,
+        color: '#4285F4', // Google Blue
+      );
+
+      // Update with prompts configuration
+      final updatedCategory = category.copyWith(
+        allowedPromptIds: allowedPromptIds,
+        automaticPrompts: automaticPrompts,
+      );
+
+      await categoryRepository.updateCategory(updatedCategory);
+
+      return updatedCategory;
+    } catch (e) {
+      // Category might already exist
+      return null;
+    }
+  }
+
+  /// Builds the automaticPrompts map with FTUE auto-selection logic.
+  ///
+  /// Auto-selection rules:
+  /// - Checklist, Coding Prompt: Pro model
+  /// - Image Generation: Nano Banana Pro (image model)
+  /// - Everything else: Flash with thinking
+  Map<AiResponseType, List<String>> _buildFtueAutomaticPrompts(
+    List<AiConfigPrompt> prompts,
+  ) {
+    final map = <AiResponseType, List<String>>{};
+
+    // Helper to find prompt by name suffix and response type
+    String? findPromptId(String nameSuffix, AiResponseType type) {
+      return prompts
+          .firstWhereOrNull(
+            (p) => p.name.endsWith(nameSuffix) && p.aiResponseType == type,
+          )
+          ?.id;
+    }
+
+    // Audio Transcription -> Flash
+    final audioFlash = findPromptId(
+      'Gemini Flash',
+      AiResponseType.audioTranscription,
+    );
+    if (audioFlash != null) {
+      map[AiResponseType.audioTranscription] = [audioFlash];
+    }
+
+    // Image Analysis -> Flash
+    final imageFlash = findPromptId(
+      'Gemini Flash',
+      AiResponseType.imageAnalysis,
+    );
+    if (imageFlash != null) {
+      map[AiResponseType.imageAnalysis] = [imageFlash];
+    }
+
+    // Task Summary -> Flash
+    final summaryFlash = findPromptId(
+      'Gemini Flash',
+      AiResponseType.taskSummary,
+    );
+    if (summaryFlash != null) {
+      map[AiResponseType.taskSummary] = [summaryFlash];
+    }
+
+    // Checklist Updates -> Pro (needs stronger reasoning)
+    final checklistPro = findPromptId(
+      'Gemini Pro',
+      AiResponseType.checklistUpdates,
+    );
+    if (checklistPro != null) {
+      map[AiResponseType.checklistUpdates] = [checklistPro];
+    }
+
+    // Prompt Generation -> Pro (code prompts need stronger reasoning)
+    final promptGenPro = findPromptId(
+      'Gemini Pro',
+      AiResponseType.promptGeneration,
+    );
+    if (promptGenPro != null) {
+      map[AiResponseType.promptGeneration] = [promptGenPro];
+    }
+
+    // Image Prompt Generation -> Flash
+    final imagePromptFlash = findPromptId(
+      'Gemini Flash',
+      AiResponseType.imagePromptGeneration,
+    );
+    if (imagePromptFlash != null) {
+      map[AiResponseType.imagePromptGeneration] = [imagePromptFlash];
+    }
+
+    // Image Generation -> Pro (uses Nano Banana Pro image model)
+    final imageGenPro = findPromptId(
+      'Gemini Pro',
+      AiResponseType.imageGeneration,
+    );
+    if (imageGenPro != null) {
+      map[AiResponseType.imageGeneration] = [imageGenPro];
+    }
+
+    return map;
+  }
+}
+
+/// Internal result class for model creation.
+class _FtueModelResult {
+  const _FtueModelResult({
+    required this.flash,
+    required this.pro,
+    required this.image,
+    required this.created,
+    required this.verified,
+  });
+
+  final AiConfigModel flash;
+  final AiConfigModel pro;
+  final AiConfigModel image;
+  final List<AiConfigModel> created;
+  final List<AiConfigModel> verified;
+}
+
+/// Internal result class for prompt creation.
+class _FtuePromptResult {
+  const _FtuePromptResult({
+    required this.created,
+    required this.skipped,
+  });
+
+  final List<AiConfigPrompt> created;
+  final int skipped;
 }
