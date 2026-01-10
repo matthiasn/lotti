@@ -1,7 +1,7 @@
 # Gemini FTUE Automation - Implementation Plan
 
 **Date:** 2026-01-10
-**Status:** Planned
+**Status:** Implemented
 
 ## Overview
 
@@ -128,9 +128,9 @@ Display a modal prompting users to set up Gemini when no Gemini provider/models 
 **Rationale:** Keeps related functionality together, allows reuse of existing helper methods.
 
 ### Q3: How to handle existing prompts/models with same name?
-**Decision:** Check by `providerModelId` for models and `preconfiguredPromptId + model name` for prompts. Skip if exists.
+**Decision:** Check by `providerModelId` for models and `preconfiguredPromptId + defaultModelId` for prompts. Skip if exists.
 
-**Rationale:** Prevents duplicates while allowing users to customize existing items.
+**Rationale:** Using stable identifiers (`preconfiguredPromptId` + `defaultModelId`) instead of name-based matching prevents duplicates reliably, even if users rename prompts. This approach is more robust than name suffix matching.
 
 ### Q4: Should the category creation be optional?
 **Decision:** Always create the category as part of FTUE setup.
@@ -581,20 +581,49 @@ List<PromptSetupConfig> _getGeminiFtuePromptConfigs({
 #### 2.5 Implement Category Creation
 
 ```dart
-Future<CategoryDefinition?> _createGeminiTestCategory({
+/// Creates or updates the FTUE test category with all prompts enabled and auto-selection.
+///
+/// If the category already exists, it will be updated with the new prompts.
+/// Returns a tuple of (category, wasCreated) where wasCreated is true if
+/// a new category was created, false if an existing one was updated.
+Future<(CategoryDefinition?, bool)> _createOrUpdateFtueCategory({
   required CategoryRepository categoryRepository,
   required List<AiConfigPrompt> prompts,
+  required String flashModelId,
+  required String proModelId,
+  required String imageModelId,
 }) async {
   const categoryName = 'Test Category Gemini Enabled';
 
   // Build allowedPromptIds from all created prompts
   final allowedPromptIds = prompts.map((p) => p.id).toList();
 
-  // Build automaticPrompts map with auto-selection logic
-  // Key: AiResponseType, Value: List of prompt IDs to run
-  final automaticPrompts = _buildAutomaticPromptsMap(prompts);
+  // Build automaticPrompts map with auto-selection logic using stable IDs
+  final automaticPrompts = _buildAutomaticPromptsMap(
+    prompts,
+    flashModelId: flashModelId,
+    proModelId: proModelId,
+    imageModelId: imageModelId,
+  );
 
-  // Create the category
+  // Check if category already exists
+  final allCategories = await categoryRepository.getAllCategories();
+  final existingCategory = allCategories
+      .where((c) => c.name == categoryName && c.deletedAt == null)
+      .firstOrNull;
+
+  if (existingCategory != null) {
+    // Update existing category with new prompts
+    final updatedCategory = existingCategory.copyWith(
+      allowedPromptIds: allowedPromptIds,
+      automaticPrompts: automaticPrompts,
+    );
+
+    await categoryRepository.updateCategory(updatedCategory);
+    return (updatedCategory, false); // false = was updated, not created
+  }
+
+  // Create new category
   final category = await categoryRepository.createCategory(
     name: categoryName,
     color: '#4285F4', // Google Blue
@@ -608,82 +637,78 @@ Future<CategoryDefinition?> _createGeminiTestCategory({
 
   await categoryRepository.updateCategory(updatedCategory);
 
-  return updatedCategory;
+  return (updatedCategory, true); // true = was created
 }
 
+/// Builds the automaticPrompts map with FTUE auto-selection logic.
+///
+/// Uses stable identifiers (preconfiguredPromptId + modelId) for matching
+/// instead of fragile name-based matching.
+///
+/// Auto-selection rules:
+/// - Checklist, Coding Prompt: Pro model
+/// - Image Generation: Nano Banana Pro (image model)
+/// - Everything else: Flash with thinking
 Map<AiResponseType, List<String>> _buildAutomaticPromptsMap(
-  List<AiConfigPrompt> prompts,
-) {
+  List<AiConfigPrompt> prompts, {
+  required String flashModelId,
+  required String proModelId,
+  required String imageModelId,
+}) {
   final map = <AiResponseType, List<String>>{};
 
-  // Helper to find prompt by name suffix and response type
-  String? findPromptId(String nameSuffix, AiResponseType type) {
-    return prompts.firstWhereOrNull(
-      (p) => p.name.endsWith(nameSuffix) && p.aiResponseType == type,
-    )?.id;
+  // Helper to find prompt by preconfiguredPromptId + modelId
+  // This is more stable than name-based matching
+  String? findPromptId(String preconfiguredId, String modelId) {
+    return prompts
+        .firstWhereOrNull(
+          (p) =>
+              p.preconfiguredPromptId == preconfiguredId &&
+              p.defaultModelId == modelId,
+        )
+        ?.id;
   }
 
-  // Audio Transcription -> Flash (with thinking mode via useReasoning=true)
-  final audioFlash = findPromptId(
-    'Gemini Flash',
-    AiResponseType.audioTranscription,
-  );
+  // Audio Transcription -> Flash
+  final audioFlash = findPromptId('audio_transcription', flashModelId);
   if (audioFlash != null) {
     map[AiResponseType.audioTranscription] = [audioFlash];
   }
 
-  // Image Analysis -> Flash (with thinking mode)
-  final imageFlash = findPromptId(
-    'Gemini Flash',
-    AiResponseType.imageAnalysis,
-  );
+  // Image Analysis (task context) -> Flash
+  final imageFlash = findPromptId('image_analysis_task_context', flashModelId);
   if (imageFlash != null) {
     map[AiResponseType.imageAnalysis] = [imageFlash];
   }
 
-  // Task Summary -> Flash (with thinking mode)
-  final summaryFlash = findPromptId(
-    'Gemini Flash',
-    AiResponseType.taskSummary,
-  );
+  // Task Summary -> Flash
+  final summaryFlash = findPromptId('task_summary', flashModelId);
   if (summaryFlash != null) {
     map[AiResponseType.taskSummary] = [summaryFlash];
   }
 
-  // Checklist Updates -> Pro (needs stronger reasoning for function calls)
-  final checklistPro = findPromptId(
-    'Gemini Pro',
-    AiResponseType.checklistUpdates,
-  );
+  // Checklist Updates -> Pro (needs stronger reasoning)
+  final checklistPro = findPromptId('checklist_updates', proModelId);
   if (checklistPro != null) {
     map[AiResponseType.checklistUpdates] = [checklistPro];
   }
 
   // Prompt Generation -> Pro (code prompts need stronger reasoning)
-  final promptGenPro = findPromptId(
-    'Gemini Pro',
-    AiResponseType.promptGeneration,
-  );
+  final promptGenPro = findPromptId('prompt_generation', proModelId);
   if (promptGenPro != null) {
     map[AiResponseType.promptGeneration] = [promptGenPro];
   }
 
-  // Image Prompt Generation -> Flash (with thinking mode)
-  final imagePromptFlash = findPromptId(
-    'Gemini Flash',
-    AiResponseType.imagePromptGeneration,
-  );
+  // Image Prompt Generation -> Flash
+  final imagePromptFlash = findPromptId('image_prompt_generation', flashModelId);
   if (imagePromptFlash != null) {
     map[AiResponseType.imagePromptGeneration] = [imagePromptFlash];
   }
 
-  // Image Generation -> Pro (uses Nano Banana Pro image model)
-  final imageGenPro = findPromptId(
-    'Gemini Pro',
-    AiResponseType.imageGeneration,
-  );
-  if (imageGenPro != null) {
-    map[AiResponseType.imageGeneration] = [imageGenPro];
+  // Image Generation -> Image model (Nano Banana Pro)
+  final imageGenImage = findPromptId('cover_art_generation', imageModelId);
+  if (imageGenImage != null) {
+    map[AiResponseType.imageGeneration] = [imageGenImage];
   }
 
   return map;
