@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.806] - 2026-01-10
+### Changed
+- Upgraded to Flutter 3.38.6
+
 ## [0.9.805] - 2026-01-09
 ### Added
 - What's New Modal: Editorial magazine-style release notes viewer
