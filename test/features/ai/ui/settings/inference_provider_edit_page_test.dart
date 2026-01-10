@@ -90,6 +90,8 @@ void main() {
         .thenAnswer((invocation) async {
       return invocation.positionalArguments[0] as CategoryDefinition;
     });
+    when(() => mockCategoryRepository.getAllCategories())
+        .thenAnswer((_) async => []);
   });
 
   Widget buildTestWidget({String? configId}) {

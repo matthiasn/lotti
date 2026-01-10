@@ -56,13 +56,13 @@ class FtueResultDialog extends StatelessWidget {
               label: 'Prompts',
               value: _buildPromptValue(),
             ),
-            if (result.categoryCreated) ...[
+            if (result.categoryCreated || result.categoryUpdated) ...[
               const SizedBox(height: 8),
               _buildResultItem(
                 context,
                 icon: Icons.folder_outlined,
                 label: 'Category',
-                value: result.categoryName ?? 'Created',
+                value: _buildCategoryValue(),
               ),
             ],
             if (hasErrors) ...[
@@ -132,6 +132,17 @@ class FtueResultDialog extends StatelessWidget {
       parts.add('${result.promptsSkipped} skipped');
     }
     return parts.isEmpty ? 'None' : parts.join(', ');
+  }
+
+  String _buildCategoryValue() {
+    final name = result.categoryName ?? 'Test Category';
+    if (result.categoryCreated) {
+      return '$name (created)';
+    }
+    if (result.categoryUpdated) {
+      return '$name (updated)';
+    }
+    return name;
   }
 
   Widget _buildResultItem(

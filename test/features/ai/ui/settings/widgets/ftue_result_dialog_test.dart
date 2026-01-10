@@ -26,7 +26,10 @@ void main() {
       expect(find.text('Setup Complete'), findsOneWidget);
       expect(find.text('3 created'), findsOneWidget);
       expect(find.text('18 created'), findsOneWidget);
-      expect(find.text('Test Category Gemini Enabled'), findsOneWidget);
+      expect(
+        find.text('Test Category Gemini Enabled (created)'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
@@ -81,6 +84,30 @@ void main() {
 
       // Models should show "None"
       expect(find.text('None'), findsOneWidget);
+    });
+
+    testWidgets('shows category as updated when categoryUpdated is true',
+        (tester) async {
+      const result = GeminiFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 3,
+        promptsCreated: 0,
+        promptsSkipped: 18,
+        categoryCreated: false,
+        categoryUpdated: true,
+        categoryName: 'Test Category',
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FtueResultDialog(result: result),
+          ),
+        ),
+      );
+
+      expect(find.text('Test Category (updated)'), findsOneWidget);
+      expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
     });
 
     testWidgets('does not show category section when not created',
