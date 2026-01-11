@@ -12,6 +12,9 @@ import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
+import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
+import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
+import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -472,6 +475,32 @@ class LottiChecklistStrategy extends ConversationStrategy {
             response: 'Error processing language detection.',
           );
         }
+      } else if (call.function.name == TaskFunctions.updateTaskEstimate) {
+        // Delegate to TaskEstimateHandler
+        final estimateHandler = TaskEstimateHandler(
+          task: checklistHandler.task,
+          journalRepository: ref.read(journalRepositoryProvider),
+          onTaskUpdated: (updatedTask) {
+            // Sync state across all handlers
+            checklistHandler.task = updatedTask;
+            batchChecklistHandler.task = updatedTask;
+            checklistHandler.onTaskUpdated?.call(updatedTask);
+          },
+        );
+        await estimateHandler.processToolCall(call, manager);
+      } else if (call.function.name == TaskFunctions.updateTaskDueDate) {
+        // Delegate to TaskDueDateHandler
+        final dueDateHandler = TaskDueDateHandler(
+          task: checklistHandler.task,
+          journalRepository: ref.read(journalRepositoryProvider),
+          onTaskUpdated: (updatedTask) {
+            // Sync state across all handlers
+            checklistHandler.task = updatedTask;
+            batchChecklistHandler.task = updatedTask;
+            checklistHandler.onTaskUpdated?.call(updatedTask);
+          },
+        );
+        await dueDateHandler.processToolCall(call, manager);
       } else if (call.function.name == 'assign_task_labels') {
         // Assign labels to task (add-only) with rate limiting (handled upstream if needed)
         try {

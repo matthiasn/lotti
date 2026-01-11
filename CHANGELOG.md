@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.808] - 2026-01-11
+### Added
+- Voice-Controlled Task Properties: Set time estimates and due dates via voice during audio recordings
+  - `update_task_estimate`: Converts natural language durations ("2 hours", "half a day") to task estimates
+  - `update_task_due_date`: Resolves relative dates ("Friday", "next week") to absolute due dates
+  - Current date injected into AI prompt for accurate relative date resolution
+  - Only sets values when not already set (preserves manual edits)
+  - Treats zero-duration estimates as "not set" for intuitive behavior
+
 ## [0.9.807] - 2026-01-10
 ### Added
 - Gemini Quick Start: Automatic setup prompt for new users without AI providers configured
