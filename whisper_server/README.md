@@ -33,10 +33,26 @@ A high-performance, production-ready Python FastAPI server that provides local W
 ## Setup
 
 ### **1. Install Dependencies**
+
+Choose the requirements file for your platform:
+
 ```bash
 cd whisper_server
+
+# For CUDA GPUs (NVIDIA):
 pip install -r requirements.txt
+
+# For Apple Silicon (M1/M2/M3):
+pip install -r requirements_apple_silicon.txt
+
+# For Linux (CPU or generic):
+pip install -r requirements_linux.txt
 ```
+
+**Platform-specific notes**:
+- **requirements.txt**: Full CUDA support with flash attention and 8-bit quantization
+- **requirements_apple_silicon.txt**: Optimized for MPS acceleration on Apple Silicon
+- **requirements_linux.txt**: Simplified dependencies for Linux without CUDA
 
 **Note**: Some optimizations require specific hardware/software:
 - **Flash Attention**: Requires CUDA and may need compilation

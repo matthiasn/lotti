@@ -867,9 +867,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify prompts were created
-      // FTUE creates: 3 models + 18 prompts (9 types × 2 variants)
+      // FTUE creates: 3 models + 9 prompts (optimized assignment)
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
-      expect(promptsCreated, equals(18));
+      expect(promptsCreated, equals(9));
     });
 
     testWidgets('skips prompt creation when user declines',
