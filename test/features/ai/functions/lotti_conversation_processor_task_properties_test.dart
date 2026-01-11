@@ -854,7 +854,7 @@ void main() {
       // Verify tool response indicates error
       expect(
           capturedToolResponses['tool-1'], contains('Invalid due date format'));
-      expect(capturedToolResponses['tool-1'], contains('ISO 8601'));
+      expect(capturedToolResponses['tool-1'], contains('YYYY-MM-DD'));
     });
 
     test('should reject empty date string', () async {

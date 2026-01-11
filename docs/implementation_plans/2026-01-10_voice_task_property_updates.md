@@ -22,9 +22,9 @@ These integrate into the existing checklist processing flow, enabling voice-driv
 
 2. **AI Handles Parsing**: The AI converts natural language ("2 hours", "next Friday") to structured data (minutes, ISO dates). This leverages LLM capabilities and keeps Dart code simple.
 
-3. **Inline Handler Pattern**: Follow the `set_task_language` pattern in `LottiChecklistStrategy` rather than creating separate handler classes. This keeps changes minimal and consistent.
+3. **Separate Handler Classes**: Use dedicated `TaskEstimateHandler` and `TaskDueDateHandler` classes for better testability and separation of concerns. The conversation processor delegates to these handlers.
 
-4. **Update Logic**: Only set values when currently null (matches `set_task_language` pattern). This prevents voice updates from overwriting manually-set values. If a value already exists, respond with a skip message informing the AI the value was not changed.
+4. **Update Logic**: Only set values when currently empty. For due dates, this means null. For estimates, both null and `Duration.zero` are treated as "not set" (since a zero-duration estimate is meaningless). This prevents voice updates from overwriting manually-set values. If a value already exists, respond with a skip message informing the AI the value was not changed.
 
 ---
 
@@ -293,7 +293,7 @@ Future<void> _processUpdateTaskDueDate(
 fvm flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
-Note: This step is only needed if you add freezed classes. The inline handler pattern doesn't require result classes.
+Note: This step is only needed if you add freezed classes. The handler classes use plain Dart result classes (`TaskEstimateResult`, `TaskDueDateResult`) which don't require code generation.
 
 ---
 
@@ -301,8 +301,10 @@ Note: This step is only needed if you add freezed classes. The inline handler pa
 
 | File | Change |
 |------|--------|
-| `lib/features/ai/functions/task_functions.dart` | Add function definitions (no result classes needed) |
-| `lib/features/ai/functions/lotti_conversation_processor.dart` | Add inline handler logic in `LottiChecklistStrategy` |
+| `lib/features/ai/functions/task_functions.dart` | Add function definitions |
+| `lib/features/ai/functions/task_estimate_handler.dart` | New handler class with `TaskEstimateResult` |
+| `lib/features/ai/functions/task_due_date_handler.dart` | New handler class with `TaskDueDateResult` |
+| `lib/features/ai/functions/lotti_conversation_processor.dart` | Delegate to handler classes in `LottiChecklistStrategy` |
 
 **Note:** `checklist_tool_selector.dart` does NOT need modification - `TaskFunctions.getTools()` is already included in `unified_ai_inference_repository.dart` (lines 570, 594, 1556).
 

@@ -303,7 +303,6 @@ void main() {
         expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('positive integer'));
-        expect(result.requestedMinutes, 0);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -323,7 +322,33 @@ void main() {
         expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
         expect(result.error, contains('positive integer'));
-        expect(result.requestedMinutes, -30);
+
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+      });
+
+      test('should reject minutes exceeding max bound', () async {
+        final task = createTask();
+        // Create tool call with minutes > maxEstimateMinutes (10080)
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call_estimate_123',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_task_estimate',
+            arguments: '{"minutes": 999999}',
+          ),
+        );
+
+        final handler = TaskEstimateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        expect(result.success, isFalse);
+        expect(result.wasSkipped, isFalse);
+        expect(result.error, isNotNull);
+        expect(result.error, contains('10080'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -549,6 +574,88 @@ void main() {
         expect(updated.data.due, DateTime(2024, 1, 25));
         expect(updated.data.estimate, const Duration(minutes: 60));
         expect(updated.meta.id, 'test-task-id');
+      });
+
+      test('should accept double minutes (rounded)', () async {
+        final task = createTask();
+        // AI might send 120.0 instead of 120
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call_estimate_123',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_task_estimate',
+            arguments: '{"minutes": 120.5}',
+          ),
+        );
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        final handler = TaskEstimateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        expect(result.success, isTrue);
+        expect(result.requestedMinutes, 121); // rounded from 120.5
+        expect(
+          result.updatedTask!.data.estimate,
+          const Duration(minutes: 121),
+        );
+      });
+
+      test('should accept string minutes', () async {
+        final task = createTask();
+        // AI might send "90" as a string
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call_estimate_123',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_task_estimate',
+            arguments: '{"minutes": "90"}',
+          ),
+        );
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        final handler = TaskEstimateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        expect(result.success, isTrue);
+        expect(result.requestedMinutes, 90);
+        expect(result.updatedTask!.data.estimate, const Duration(minutes: 90));
+      });
+
+      test('should reject non-numeric string minutes', () async {
+        final task = createTask();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call_estimate_123',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_task_estimate',
+            arguments: '{"minutes": "two hours"}',
+          ),
+        );
+
+        final handler = TaskEstimateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        expect(result.success, isFalse);
+        expect(result.error, isNotNull);
+        expect(result.error, contains('two hours'));
+
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
     });
   });

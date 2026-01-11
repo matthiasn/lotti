@@ -6,6 +6,37 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+/// Maximum allowed estimate in minutes (1 week).
+///
+/// This prevents overflow issues and unreasonably large estimates from
+/// untrusted AI input.
+const int maxEstimateMinutes = 10080;
+
+/// Parses a minutes value from potentially untrusted AI input.
+///
+/// Handles int, double (rounded), and numeric strings. Returns null if
+/// parsing fails or the value is out of bounds.
+int? parseMinutes(dynamic value) {
+  if (value == null) return null;
+
+  int? minutes;
+  if (value is int) {
+    minutes = value;
+  } else if (value is double) {
+    minutes = value.round();
+  } else if (value is String) {
+    // Try parsing as int first, then as double
+    minutes = int.tryParse(value) ?? double.tryParse(value)?.round();
+  }
+
+  // Validate bounds
+  if (minutes == null || minutes <= 0 || minutes > maxEstimateMinutes) {
+    return null;
+  }
+
+  return minutes;
+}
+
 /// Result of processing an estimate update tool call.
 ///
 /// Contains detailed information about the outcome for testing and logging.
@@ -141,24 +172,28 @@ class TaskEstimateHandler {
   ]) async {
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
-      final minutes = args['minutes'] as int?;
+      final rawMinutes = args['minutes'];
       final confidence = args['confidence'] as String?;
       final reason = args['reason'] as String?;
 
+      // Robustly parse minutes (handles int, double, string)
+      final minutes = parseMinutes(rawMinutes);
+
       developer.log(
-        'Processing update_task_estimate: $minutes min '
+        'Processing update_task_estimate: raw=$rawMinutes, parsed=$minutes min '
         '(confidence: $confidence, reason: $reason)',
         name: 'TaskEstimateHandler',
       );
 
       // Validate minutes value
-      if (minutes == null || minutes <= 0) {
-        const message = 'Invalid estimate: minutes must be a positive integer.';
+      if (minutes == null) {
+        final message = 'Invalid estimate: minutes must be a positive integer '
+            'between 1 and $maxEstimateMinutes. Received: $rawMinutes';
         _sendResponse(call.id, message, manager);
         return TaskEstimateResult(
           success: false,
           message: message,
-          requestedMinutes: minutes,
+          requestedMinutes: rawMinutes is int ? rawMinutes : null,
           reason: reason,
           confidence: confidence,
           error: message,

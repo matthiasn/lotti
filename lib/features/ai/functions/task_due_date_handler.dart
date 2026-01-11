@@ -4,7 +4,14 @@ import 'dart:developer' as developer;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+/// Pattern for validating date-only format (YYYY-MM-DD).
+///
+/// We require date-only format to ensure due dates are stored consistently
+/// without time/timezone surprises.
+final _dateOnlyPattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
 
 /// Result of processing a due date update tool call.
 ///
@@ -175,10 +182,13 @@ class TaskDueDateHandler {
         );
       }
 
-      // Parse date string
-      final dueDate = DateTime.tryParse(dueDateStr);
-      if (dueDate == null) {
-        const message = 'Invalid due date format. Use ISO 8601 (YYYY-MM-DD).';
+      // Validate date-only format (YYYY-MM-DD) to prevent time/timezone issues
+      final isDateOnly = _dateOnlyPattern.hasMatch(dueDateStr);
+      final parsed = DateTime.tryParse(dueDateStr);
+
+      if (!isDateOnly || parsed == null) {
+        final message = 'Invalid due date format. Use YYYY-MM-DD (e.g., '
+            '2024-01-19). Received: $dueDateStr';
         _sendResponse(call.id, message, manager);
         return TaskDueDateResult(
           success: false,
@@ -188,6 +198,9 @@ class TaskDueDateHandler {
           error: message,
         );
       }
+
+      // Normalize to midnight to ensure consistent storage
+      final dueDate = parsed.dayAtMidnight;
 
       // Check if due date already exists
       final currentDue = task.data.due;

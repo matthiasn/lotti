@@ -332,16 +332,10 @@ void main() {
         expect(result.success, isFalse);
         expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
-        expect(result.error, contains('ISO 8601'));
+        expect(result.error, contains('YYYY-MM-DD'));
         expect(result.requestedDate, isNull);
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-        verify(
-          () => mockManager.addToolResponse(
-            toolCallId: 'call_due_date_456',
-            response: 'Invalid due date format. Use ISO 8601 (YYYY-MM-DD).',
-          ),
-        ).called(1);
       });
 
       test('should reject partial date format', () async {
@@ -357,7 +351,7 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.error, isNotNull);
-        expect(result.error, contains('ISO 8601'));
+        expect(result.error, contains('YYYY-MM-DD'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -496,12 +490,11 @@ void main() {
     });
 
     group('date format variations', () {
-      test('should accept full ISO 8601 datetime', () async {
+      test('should reject full ISO 8601 datetime (requires date-only)',
+          () async {
         final task = createTask();
+        // Datetime format should be rejected - we require YYYY-MM-DD only
         final toolCall = createDueDateToolCall(dueDate: '2024-01-19T10:30:00');
-
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -510,17 +503,18 @@ void main() {
 
         final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isTrue);
-        expect(result.requestedDate, DateTime(2024, 1, 19, 10, 30));
+        expect(result.success, isFalse);
+        expect(result.error, isNotNull);
+        expect(result.error, contains('YYYY-MM-DD'));
+
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
 
-      test('should accept ISO 8601 with timezone', () async {
+      test('should reject ISO 8601 with timezone (requires date-only)',
+          () async {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-01-19T10:30:00Z');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
-
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: mockJournalRepo,
@@ -528,9 +522,11 @@ void main() {
 
         final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isTrue);
-        expect(result.requestedDate, isNotNull);
-        // The exact time depends on timezone, but it should parse successfully
+        expect(result.success, isFalse);
+        expect(result.error, isNotNull);
+        expect(result.error, contains('YYYY-MM-DD'));
+
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
 
       test('should handle date at year boundary', () async {
@@ -567,6 +563,28 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.requestedDate, DateTime(2024, 2, 29));
+      });
+
+      test('should normalize to midnight', () async {
+        final task = createTask();
+        final toolCall = createDueDateToolCall(dueDate: '2024-01-19');
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        final handler = TaskDueDateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        expect(result.success, isTrue);
+        // Date should be normalized to midnight (00:00:00)
+        expect(result.requestedDate, DateTime(2024, 1, 19));
+        expect(result.requestedDate!.hour, 0);
+        expect(result.requestedDate!.minute, 0);
+        expect(result.requestedDate!.second, 0);
       });
     });
 
