@@ -157,5 +157,39 @@ void main() {
       final loadedHost = await newService.getHost();
       expect(loadedHost, originalHost);
     });
+
+    test('catches up when previous clock has higher counter for our host',
+        () async {
+      final host = await service.getHost();
+      await service.setNextAvailableCounter(10);
+
+      // Simulate a previous clock (e.g., from synced data) with higher counter
+      final previousClock = VectorClock({host!: 100, 'other-host': 5});
+
+      final newClock =
+          await service.getNextVectorClock(previous: previousClock);
+
+      // Should use previousHostCounter + 1, not our local counter
+      expect(newClock.vclock[host], 101);
+      // Local counter should be updated to stay ahead
+      expect(await service.getNextAvailableCounter(), 102);
+    });
+
+    test('does not catch up when previous clock has lower counter for our host',
+        () async {
+      final host = await service.getHost();
+      await service.setNextAvailableCounter(100);
+
+      // Previous clock has a lower counter for our host
+      final previousClock = VectorClock({host!: 50, 'other-host': 5});
+
+      final newClock =
+          await service.getNextVectorClock(previous: previousClock);
+
+      // Should use our local counter, not the previous one
+      expect(newClock.vclock[host], 100);
+      // Local counter incremented normally
+      expect(await service.getNextAvailableCounter(), 101);
+    });
   });
 }

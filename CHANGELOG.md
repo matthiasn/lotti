@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.809] - 2026-01-11
+### Fixed
+- Cover Art Display: Fixed image cropping on mobile devices where sides were cut off
+  - Changed from BoxFit.cover to BoxFit.fitWidth with top alignment
+  - Ensures full 16:9 cover art is visible without side cropping
+- Cover Art Set/Unset: Fixed cover art changes not persisting after database sync
+  - Vector clock counter could fall behind synced data, causing updates to be rejected
+  - Added auto-catch-up logic to detect stale counters and recover automatically
+
 ## [0.9.808] - 2026-01-11
 ### Added
 - Voice-Controlled Task Properties: Set time estimates and due dates via voice during audio recordings

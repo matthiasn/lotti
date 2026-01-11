@@ -81,12 +81,26 @@ class VectorClockService {
 
   // TODO: only increment after successful insertion
   Future<VectorClock> getNextVectorClock({VectorClock? previous}) async {
-    final nextAvailableCounter = _nextAvailableCounter;
-    await increment();
+    // Check if the previous clock has a higher counter for our host than
+    // our local _nextAvailableCounter. This handles cases where the DB was
+    // copied/synced and has higher counters than our local counter.
+    final previousHostCounter = previous?.vclock[_host];
+    final int effectiveCounter;
+
+    if (previousHostCounter != null &&
+        previousHostCounter >= _nextAvailableCounter) {
+      // Previous clock has a counter >= ours for our host - catch up
+      effectiveCounter = previousHostCounter + 1;
+      await setNextAvailableCounter(effectiveCounter + 1);
+    } else {
+      // Normal case - use our local counter and increment for next time
+      effectiveCounter = _nextAvailableCounter;
+      await increment();
+    }
 
     return VectorClock({
       ...?previous?.vclock,
-      _host: nextAvailableCounter,
+      _host: effectiveCounter,
     });
   }
 }

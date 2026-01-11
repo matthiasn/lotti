@@ -57,7 +57,12 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
       children: [
         Image.file(
           File(path),
-          fit: BoxFit.cover,
+          fit: BoxFit.fitWidth,
+          alignment: Alignment.topCenter,
+          errorBuilder: (context, error, stackTrace) {
+            imageCache.clear();
+            return const SizedBox.shrink();
+          },
         ),
         const DecoratedBox(
           decoration: BoxDecoration(
