@@ -7,7 +7,7 @@ import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 ///
 /// Displays a preview of what will be created:
 /// - 3 models (Flash, Pro, Nano Banana Pro)
-/// - 18 prompts (Flash and Pro variants for 9 prompt types)
+/// - 9 prompts (optimized assignment: Pro for complex tasks, Flash for fast processing)
 /// - 1 category (Test Category Gemini Enabled)
 class FtueSetupDialog extends StatelessWidget {
   const FtueSetupDialog({
@@ -156,8 +156,8 @@ class FtueSetupDialog extends StatelessWidget {
           _buildPreviewItem(
             context,
             icon: Icons.chat_bubble_outline,
-            title: '18 Prompts',
-            subtitle: 'Flash & Pro variants for 9 prompt types',
+            title: '9 Prompts',
+            subtitle: 'Optimized: Pro for complex tasks, Flash for speed',
           ),
           const SizedBox(height: 8),
 

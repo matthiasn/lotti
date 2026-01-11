@@ -28,7 +28,7 @@ void main() {
 
       expect(find.text('What will be created:'), findsOneWidget);
       expect(find.text('3 Models'), findsOneWidget);
-      expect(find.text('18 Prompts'), findsOneWidget);
+      expect(find.text('9 Prompts'), findsOneWidget);
       expect(find.text('1 Category'), findsOneWidget);
     });
 
@@ -44,7 +44,7 @@ void main() {
       expect(
           find.text('Flash, Pro, and Nano Banana Pro (image)'), findsOneWidget);
       expect(
-        find.text('Flash & Pro variants for 9 prompt types'),
+        find.text('Optimized: Pro for complex tasks, Flash for speed'),
         findsOneWidget,
       );
       expect(find.text('Test Category Gemini Enabled'), findsOneWidget);

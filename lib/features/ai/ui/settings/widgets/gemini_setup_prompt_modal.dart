@@ -22,7 +22,8 @@ class GeminiSetupPromptModal extends StatelessWidget {
 
   /// Shows the Gemini setup prompt modal.
   ///
-  /// Returns true if user chose to set up, false if dismissed.
+  /// Returns true if user chose to set up, false if dismissed permanently,
+  /// null if dismissed temporarily (by tapping outside).
   /// Callbacks are invoked after the dialog is fully closed to avoid
   /// Hero animation conflicts during navigation.
   static Future<void> show(
@@ -30,9 +31,9 @@ class GeminiSetupPromptModal extends StatelessWidget {
     required VoidCallback onSetUp,
     required VoidCallback onDismiss,
   }) async {
-    final result = await showDialog<bool>(
+    // barrierDismissible defaults to true, allowing temporary dismissal by tapping outside
+    final result = await showDialog<bool?>(
       context: context,
-      barrierDismissible: false,
       barrierColor: Colors.black87,
       builder: (dialogContext) => GeminiSetupPromptModal(
         onSetUp: () => Navigator.of(dialogContext).pop(true),
@@ -43,10 +44,15 @@ class GeminiSetupPromptModal extends StatelessWidget {
     // Use post-frame callback to invoke callbacks after dialog animation completes
     // This prevents Hero animation conflicts during navigation
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (result ?? false) {
-        onSetUp();
-      } else {
-        onDismiss();
+      // Three states: true = set up, false = permanent dismiss, null = temporary dismiss
+      switch (result) {
+        case true:
+          onSetUp();
+        case false:
+          onDismiss();
+        case null:
+          // Tapped outside - do nothing, dialog will reappear next time
+          break;
       }
     });
   }

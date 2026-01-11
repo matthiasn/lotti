@@ -838,115 +838,75 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     );
   }
 
-  /// Gets all prompt configurations for FTUE (9 types × 2 variants = 18 prompts).
+  /// Gets all prompt configurations for FTUE.
+  ///
+  /// Model assignments:
+  /// - Gemini Pro: Cover Art, Coding, Image Prompts, Checklists (complex reasoning)
+  /// - Gemini Flash: All other text prompts (fast processing)
+  /// - Nano Banana Pro: Image generation (cover art output)
   List<FtuePromptConfig> _getFtuePromptConfigs() {
     return const [
-      // Audio Transcription
+      // Audio Transcription -> Flash (fast processing)
       FtuePromptConfig(
         template: audioTranscriptionPrompt,
         modelVariant: 'flash',
         promptName: 'Audio Transcription Gemini Flash',
       ),
-      FtuePromptConfig(
-        template: audioTranscriptionPrompt,
-        modelVariant: 'pro',
-        promptName: 'Audio Transcription Gemini Pro',
-      ),
 
-      // Audio Transcription with Task Context
+      // Audio Transcription with Task Context -> Flash (fast processing)
       FtuePromptConfig(
         template: audioTranscriptionWithTaskContextPrompt,
         modelVariant: 'flash',
         promptName: 'Audio Transcription (Task Context) Gemini Flash',
       ),
-      FtuePromptConfig(
-        template: audioTranscriptionWithTaskContextPrompt,
-        modelVariant: 'pro',
-        promptName: 'Audio Transcription (Task Context) Gemini Pro',
-      ),
 
-      // Task Summary
+      // Task Summary -> Flash (fast processing)
       FtuePromptConfig(
         template: taskSummaryPrompt,
         modelVariant: 'flash',
         promptName: 'Task Summary Gemini Flash',
       ),
-      FtuePromptConfig(
-        template: taskSummaryPrompt,
-        modelVariant: 'pro',
-        promptName: 'Task Summary Gemini Pro',
-      ),
 
-      // Checklist Updates
-      FtuePromptConfig(
-        template: checklistUpdatesPrompt,
-        modelVariant: 'flash',
-        promptName: 'Checklist Gemini Flash',
-      ),
+      // Checklist Updates -> Pro (complex reasoning needed)
       FtuePromptConfig(
         template: checklistUpdatesPrompt,
         modelVariant: 'pro',
         promptName: 'Checklist Gemini Pro',
       ),
 
-      // Image Analysis
+      // Image Analysis -> Flash (fast processing)
       FtuePromptConfig(
         template: imageAnalysisPrompt,
         modelVariant: 'flash',
         promptName: 'Image Analysis Gemini Flash',
       ),
-      FtuePromptConfig(
-        template: imageAnalysisPrompt,
-        modelVariant: 'pro',
-        promptName: 'Image Analysis Gemini Pro',
-      ),
 
-      // Image Analysis in Task Context
+      // Image Analysis in Task Context -> Flash (fast processing)
       FtuePromptConfig(
         template: imageAnalysisInTaskContextPrompt,
         modelVariant: 'flash',
         promptName: 'Image Analysis (Task Context) Gemini Flash',
       ),
-      FtuePromptConfig(
-        template: imageAnalysisInTaskContextPrompt,
-        modelVariant: 'pro',
-        promptName: 'Image Analysis (Task Context) Gemini Pro',
-      ),
 
-      // Generate Coding Prompt
-      FtuePromptConfig(
-        template: promptGenerationPrompt,
-        modelVariant: 'flash',
-        promptName: 'Coding Prompt Gemini Flash',
-      ),
+      // Generate Coding Prompt -> Pro (complex reasoning needed)
       FtuePromptConfig(
         template: promptGenerationPrompt,
         modelVariant: 'pro',
         promptName: 'Coding Prompt Gemini Pro',
       ),
 
-      // Generate Image Prompt
-      FtuePromptConfig(
-        template: imagePromptGenerationPrompt,
-        modelVariant: 'flash',
-        promptName: 'Image Prompt Gemini Flash',
-      ),
+      // Generate Image Prompt -> Pro (complex reasoning needed)
       FtuePromptConfig(
         template: imagePromptGenerationPrompt,
         modelVariant: 'pro',
         promptName: 'Image Prompt Gemini Pro',
       ),
 
-      // Cover Art Generation (uses image model for Pro variant)
+      // Cover Art Generation -> Nano Banana Pro (image generation model)
       FtuePromptConfig(
         template: coverArtGenerationPrompt,
-        modelVariant: 'flash',
-        promptName: 'Cover Art Gemini Flash',
-      ),
-      FtuePromptConfig(
-        template: coverArtGenerationPrompt,
-        modelVariant: 'image', // Uses Nano Banana Pro
-        promptName: 'Cover Art Gemini Pro',
+        modelVariant: 'image', // Uses Nano Banana Pro for image generation
+        promptName: 'Cover Art Nano Banana Pro',
       ),
     ];
   }
@@ -1016,9 +976,9 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
   /// instead of fragile name-based matching.
   ///
   /// Auto-selection rules:
-  /// - Checklist, Coding Prompt: Pro model
-  /// - Image Generation: Nano Banana Pro (image model)
-  /// - Everything else: Flash with thinking
+  /// - Checklist, Coding Prompt, Image Prompt: Pro model (complex reasoning)
+  /// - Image Generation: Nano Banana Pro (image model with reasoning enabled)
+  /// - Everything else: Flash (fast processing)
   Map<AiResponseType, List<String>> _buildFtueAutomaticPrompts(
     List<AiConfigPrompt> prompts, {
     required String flashModelId,
@@ -1039,45 +999,44 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
           ?.id;
     }
 
-    // Audio Transcription -> Flash
+    // Audio Transcription -> Flash (fast processing)
     final audioFlash = findPromptId('audio_transcription', flashModelId);
     if (audioFlash != null) {
       map[AiResponseType.audioTranscription] = [audioFlash];
     }
 
-    // Image Analysis (task context) -> Flash
+    // Image Analysis (task context) -> Flash (fast processing)
     final imageFlash =
         findPromptId('image_analysis_task_context', flashModelId);
     if (imageFlash != null) {
       map[AiResponseType.imageAnalysis] = [imageFlash];
     }
 
-    // Task Summary -> Flash
+    // Task Summary -> Flash (fast processing)
     final summaryFlash = findPromptId('task_summary', flashModelId);
     if (summaryFlash != null) {
       map[AiResponseType.taskSummary] = [summaryFlash];
     }
 
-    // Checklist Updates -> Pro (needs stronger reasoning)
+    // Checklist Updates -> Pro (complex reasoning needed)
     final checklistPro = findPromptId('checklist_updates', proModelId);
     if (checklistPro != null) {
       map[AiResponseType.checklistUpdates] = [checklistPro];
     }
 
-    // Prompt Generation -> Pro (code prompts need stronger reasoning)
+    // Prompt Generation -> Pro (complex reasoning needed for code prompts)
     final promptGenPro = findPromptId('prompt_generation', proModelId);
     if (promptGenPro != null) {
       map[AiResponseType.promptGeneration] = [promptGenPro];
     }
 
-    // Image Prompt Generation -> Flash
-    final imagePromptFlash =
-        findPromptId('image_prompt_generation', flashModelId);
-    if (imagePromptFlash != null) {
-      map[AiResponseType.imagePromptGeneration] = [imagePromptFlash];
+    // Image Prompt Generation -> Pro (complex reasoning needed)
+    final imagePromptPro = findPromptId('image_prompt_generation', proModelId);
+    if (imagePromptPro != null) {
+      map[AiResponseType.imagePromptGeneration] = [imagePromptPro];
     }
 
-    // Image Generation -> Image model (Nano Banana Pro)
+    // Image Generation -> Nano Banana Pro (image model with reasoning enabled)
     final imageGenImage = findPromptId('cover_art_generation', imageModelId);
     if (imageGenImage != null) {
       map[AiResponseType.imageGeneration] = [imageGenImage];
