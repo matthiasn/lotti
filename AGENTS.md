@@ -28,6 +28,8 @@
 - Framework: `flutter_test` with helpers in `test/`. Name tests `*_test.dart` and co‑locate by feature (e.g., `test/features/...`).
 - Run: `flutter test` or better via mcp. Integration: `make integration_test`.
 - Aim to maintain/improve coverage; open report with `make coverage`.
+- Do not run all tests unless specifically asked to do so. Takes too long, uses too much context.
+- In CI, tests are run with `very_good test` in the same thread. This runs faster on low-end machines such as the CI runner, but requires extra careful cleanup of resources to avoid causes issues in other tests.
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `ci:`). Keep subjects concise and imperative.
