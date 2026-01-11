@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.810" date="2026-01-11">
+      <description>
+        <p>Flatpak Fixes: Resolved several console warnings in the Flatpak version. Fixed keyring access error by adding D-Bus permission for org.freedesktop.secrets, enabling secure storage to work properly. Fixed cursor theme warning by exposing host cursor theme paths. Removed invalid fontconfig overrides that caused "Cannot load default config file" errors. Added Flatpak-specific icon path to eliminate application icon warnings.</p>
+      </description>
+    </release>
     <release version="0.9.809" date="2026-01-11">
       <description>
         <p>Cover Art Fixes: Fixed image cropping on mobile where sides were cut off - now displays full 16:9 cover art without side cropping. Also fixed cover art set/unset not persisting after database sync. The vector clock counter could fall behind synced data, causing updates to be silently rejected. Added auto-catch-up logic that detects stale counters and recovers automatically.</p>

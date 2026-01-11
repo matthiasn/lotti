@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.810] - 2026-01-11
+### Fixed
+- Flatpak: Fixed keyring access error by adding D-Bus permission for org.freedesktop.secrets
+- Flatpak: Fixed cursor theme warning by exposing host cursor theme paths via XCURSOR_PATH
+- Flatpak: Fixed fontconfig error by removing invalid FONTCONFIG_PATH/FONTCONFIG_FILE overrides from wrapper script
+- Flatpak: Fixed application icon warning by adding Flatpak-specific icon path to the icon search paths
+
 ## [0.9.809] - 2026-01-11
 ### Fixed
 - Cover Art Display: Fixed image cropping on mobile devices where sides were cut off
