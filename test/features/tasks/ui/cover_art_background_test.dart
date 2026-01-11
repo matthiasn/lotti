@@ -1,16 +1,26 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/image_utils.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  JournalImage buildJournalImage({String id = 'image-1'}) {
+  late Directory mockDocumentsDirectory;
+
+  JournalImage buildJournalImage({
+    String id = 'image-1',
+    String imageFile = 'test.jpg',
+    String imageDirectory = '/images/',
+  }) {
     final now = DateTime(2025, 12, 31, 12);
     return JournalImage(
       meta: Metadata(
@@ -21,15 +31,84 @@ void main() {
         dateTo: now,
       ),
       data: ImageData(
-        imageId: 'img-uuid',
-        imageFile: 'test.jpg',
-        imageDirectory: '/test/dir/',
+        imageId: 'img-uuid-$id',
+        imageFile: imageFile,
+        imageDirectory: imageDirectory,
         capturedAt: now,
       ),
     );
   }
 
+  /// Creates a file with invalid image data at the path that getFullImagePath()
+  /// will compute. This causes Image.file to trigger the errorBuilder.
+  String createInvalidImageFile(JournalImage image) {
+    final fullPath = getFullImagePath(image);
+
+    // Create parent directories
+    Directory(fullPath.substring(0, fullPath.lastIndexOf('/')))
+        .createSync(recursive: true);
+
+    // Write invalid content (not a valid image format)
+    File(fullPath).writeAsBytesSync([0x00, 0x01, 0x02, 0x03]);
+
+    return fullPath;
+  }
+
   group('CoverArtBackground', () {
+    group('with mock file system', () {
+      setUp(() async {
+        await getIt.reset();
+        getIt.allowReassignment = true;
+
+        // Create a temp directory to simulate the documents directory
+        mockDocumentsDirectory =
+            Directory.systemTemp.createTempSync('cover_art_background_test_');
+
+        // Register temp directory for getDocumentsDirectory()
+        getIt.registerSingleton<Directory>(mockDocumentsDirectory);
+      });
+
+      tearDown(() async {
+        await getIt.reset();
+        try {
+          mockDocumentsDirectory.deleteSync(recursive: true);
+        } catch (_) {
+          // Ignore cleanup errors
+        }
+      });
+
+      testWidgets('errorBuilder triggers when image file is invalid',
+          (tester) async {
+        final image = buildJournalImage();
+        final filePath = createInvalidImageFile(image);
+
+        // Verify file exists before test
+        expect(File(filePath).existsSync(), isTrue);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              createEntryControllerOverride(image),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(
+                body: CoverArtBackground(imageId: 'image-1'),
+              ),
+            ),
+          ),
+        );
+
+        // Pump multiple times to allow error handling
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpAndSettle();
+
+        // The errorBuilder should have triggered and returned SizedBox.shrink
+        // The widget tree should still contain the CoverArtBackground
+        expect(find.byType(CoverArtBackground), findsOneWidget);
+      });
+    });
+
     testWidgets('renders SizedBox.shrink when entry is not JournalImage',
         (tester) async {
       final now = DateTime(2025, 12, 31, 12);

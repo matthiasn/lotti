@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.809" date="2026-01-11">
+      <description>
+        <p>Cover Art Fixes: Fixed image cropping on mobile where sides were cut off - now displays full 16:9 cover art without side cropping. Also fixed cover art set/unset not persisting after database sync. The vector clock counter could fall behind synced data, causing updates to be silently rejected. Added auto-catch-up logic that detects stale counters and recovers automatically.</p>
+      </description>
+    </release>
     <release version="0.9.808" date="2026-01-11">
       <description>
         <p>Voice-Controlled Task Properties: Set time estimates and due dates via voice during audio recordings. Say things like "this will take about 2 hours" or "due by Friday" and the AI will update your task properties automatically. Converts natural language durations to task estimates and resolves relative dates to absolute due dates. Only sets values when not already set, preserving your manual edits.</p>

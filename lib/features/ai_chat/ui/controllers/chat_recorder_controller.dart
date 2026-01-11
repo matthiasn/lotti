@@ -95,31 +95,33 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     // Clean up resources when the provider is disposed
     ref.onDispose(() {
       _maxTimer?.cancel();
-      // Wrap in Future to catch exceptions and prevent them from bubbling up
+      // Capture references before async cleanup
       final ampSub = _ampSub;
-      if (ampSub != null) {
-        unawaited(ampSub.cancel().catchError((Object e) {}));
-      }
       final recorder = _recorder;
-      if (recorder != null) {
-        unawaited(recorder.dispose().catchError((Object e) {}));
-      }
-      // Clean up files asynchronously
       final filePath = _filePath;
       final tempDir = _tempDir;
-      if (filePath != null) {
-        unawaited(
-          File(filePath).delete().then((_) {}).catchError((Object e) {}),
-        );
+
+      // Chain cleanup operations sequentially to avoid race conditions
+      Future<void> cleanup() async {
+        try {
+          await ampSub?.cancel();
+        } catch (_) {}
+        try {
+          await recorder?.dispose();
+        } catch (_) {}
+        try {
+          if (filePath != null) {
+            await File(filePath).delete();
+          }
+        } catch (_) {}
+        try {
+          if (tempDir != null) {
+            await tempDir.delete(recursive: true);
+          }
+        } catch (_) {}
       }
-      if (tempDir != null) {
-        unawaited(
-          tempDir
-              .delete(recursive: true)
-              .then((_) {})
-              .catchError((Object e) {}),
-        );
-      }
+
+      unawaited(cleanup());
     });
 
     return const ChatRecorderState.initial();

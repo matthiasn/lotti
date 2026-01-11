@@ -703,7 +703,8 @@ Your goal is to generate a high-quality image that serves as a visual mnemonic -
 
 COMPOSITION REQUIREMENTS:
 - **Aspect Ratio**: Always use 16:9 wide format (1920x1080 pixels)
-- **Center-Weighted Safe Zone**: Place the main subject in the center 50% of the image width
+- **Dynamic Island Safe Zone**: Avoid placing important elements (text, faces, key objects) in the top-center area of the image. This region may be partially obscured by the iPhone Dynamic Island hardware notch. Background elements, sky, patterns, or non-essential visuals are fine there.
+- **Center-Weighted Safe Zone**: Place the main subject in the center 50% of the image width, but NOT at the very top
 - **Strong Central Focus**: The center portion should tell the complete visual story
 - **Avoid Edge-Heavy Elements**: Don't place important elements in the outer quarters
 
@@ -746,7 +747,8 @@ Create a visually memorable image that:
 3. Reflects the user's specific vision if they described one
 4. Works well as a thumbnail (center-weighted composition)
 5. Uses the 16:9 aspect ratio for wide display with square-crop compatibility
-6. Is instantly recognizable and memorable''',
+6. Is instantly recognizable and memorable
+7. Avoids placing text, faces, or key elements in the top-center area (Dynamic Island safe zone)''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.imageGeneration,
   useReasoning: false,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -13,6 +14,7 @@ class VectorClockService {
   }
   late int _nextAvailableCounter;
   late String _host;
+  Future<void>? _lock;
 
   Future<void> init() async {
     _host = await _getHost() ?? await setNewHost();
@@ -81,12 +83,39 @@ class VectorClockService {
 
   // TODO: only increment after successful insertion
   Future<VectorClock> getNextVectorClock({VectorClock? previous}) async {
-    final nextAvailableCounter = _nextAvailableCounter;
-    await increment();
+    // Wait for any pending operation to complete (mutex pattern)
+    while (_lock != null) {
+      await _lock;
+    }
 
-    return VectorClock({
-      ...?previous?.vclock,
-      _host: nextAvailableCounter,
-    });
+    final completer = Completer<void>();
+    _lock = completer.future;
+
+    try {
+      // Check if the previous clock has a higher counter for our host than
+      // our local _nextAvailableCounter. This handles cases where the DB was
+      // copied/synced and has higher counters than our local counter.
+      final previousHostCounter = previous?.vclock[_host];
+      final int effectiveCounter;
+
+      if (previousHostCounter != null &&
+          previousHostCounter >= _nextAvailableCounter) {
+        // Previous clock has a counter >= ours for our host - catch up
+        effectiveCounter = previousHostCounter + 1;
+        await setNextAvailableCounter(effectiveCounter + 1);
+      } else {
+        // Normal case - use our local counter and increment for next time
+        effectiveCounter = _nextAvailableCounter;
+        await increment();
+      }
+
+      return VectorClock({
+        ...?previous?.vclock,
+        _host: effectiveCounter,
+      });
+    } finally {
+      _lock = null;
+      completer.complete();
+    }
   }
 }
