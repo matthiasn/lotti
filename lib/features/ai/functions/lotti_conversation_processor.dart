@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
+import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -470,6 +471,180 @@ class LottiChecklistStrategy extends ConversationStrategy {
           manager.addToolResponse(
             toolCallId: call.id,
             response: 'Error processing language detection.',
+          );
+        }
+      } else if (call.function.name == TaskFunctions.updateTaskEstimate) {
+        // Handle task estimate update
+        try {
+          final args =
+              jsonDecode(call.function.arguments) as Map<String, dynamic>;
+          final minutes = args['minutes'] as int?;
+          final confidence = args['confidence'] as String?;
+          final reason = args['reason'] as String?;
+
+          developer.log(
+            'Processing update_task_estimate: $minutes min '
+            '(confidence: $confidence, reason: $reason)',
+            name: 'LottiConversationProcessor',
+          );
+
+          if (minutes == null || minutes <= 0) {
+            manager.addToolResponse(
+              toolCallId: call.id,
+              response: 'Invalid estimate: minutes must be a positive integer.',
+            );
+          } else {
+            // Only set if currently null or zero (treat zero as "not set")
+            final currentEstimate = checklistHandler.task.data.estimate;
+            final hasExistingEstimate = currentEstimate != null &&
+                currentEstimate.inMinutes > 0;
+            if (hasExistingEstimate) {
+              developer.log(
+                'Task already has estimate: ${currentEstimate.inMinutes} minutes',
+                name: 'LottiConversationProcessor',
+              );
+              manager.addToolResponse(
+                toolCallId: call.id,
+                response:
+                    'Estimate already set to ${currentEstimate.inMinutes} minutes. Skipped.',
+              );
+            } else {
+              final newEstimate = Duration(minutes: minutes);
+              final updatedTask = checklistHandler.task.copyWith(
+                data:
+                    checklistHandler.task.data.copyWith(estimate: newEstimate),
+              );
+
+              try {
+                final journalRepo = ref.read(journalRepositoryProvider);
+                await journalRepo.updateJournalEntity(updatedTask);
+
+                // Update handler references
+                checklistHandler.task = updatedTask;
+                batchChecklistHandler.task = updatedTask;
+                checklistHandler.onTaskUpdated?.call(updatedTask);
+
+                developer.log(
+                  'Successfully set task estimate to $minutes minutes',
+                  name: 'LottiConversationProcessor',
+                );
+
+                manager.addToolResponse(
+                  toolCallId: call.id,
+                  response: 'Task estimate updated to $minutes minutes.',
+                );
+              } catch (e) {
+                developer.log(
+                  'Failed to update task estimate',
+                  name: 'LottiConversationProcessor',
+                  error: e,
+                );
+                manager.addToolResponse(
+                  toolCallId: call.id,
+                  response:
+                      'Failed to set estimate. Continuing without estimate update.',
+                );
+              }
+            }
+          }
+        } catch (e) {
+          developer.log(
+            'Error processing update_task_estimate: $e',
+            name: 'LottiConversationProcessor',
+            error: e,
+          );
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: 'Error processing task estimate update.',
+          );
+        }
+      } else if (call.function.name == TaskFunctions.updateTaskDueDate) {
+        // Handle task due date update
+        try {
+          final args =
+              jsonDecode(call.function.arguments) as Map<String, dynamic>;
+          final dueDateStr = args['dueDate'] as String?;
+          final confidence = args['confidence'] as String?;
+          final reason = args['reason'] as String?;
+
+          developer.log(
+            'Processing update_task_due_date: $dueDateStr '
+            '(confidence: $confidence, reason: $reason)',
+            name: 'LottiConversationProcessor',
+          );
+
+          if (dueDateStr == null || dueDateStr.isEmpty) {
+            manager.addToolResponse(
+              toolCallId: call.id,
+              response: 'Invalid due date: date string is required.',
+            );
+          } else {
+            final dueDate = DateTime.tryParse(dueDateStr);
+            if (dueDate == null) {
+              manager.addToolResponse(
+                toolCallId: call.id,
+                response: 'Invalid due date format. Use ISO 8601 (YYYY-MM-DD).',
+              );
+            } else {
+              // Only set if currently null (matches set_task_language pattern)
+              final currentDue = checklistHandler.task.data.due;
+              if (currentDue != null) {
+                developer.log(
+                  'Task already has due date: ${currentDue.toIso8601String().split('T')[0]}',
+                  name: 'LottiConversationProcessor',
+                );
+                manager.addToolResponse(
+                  toolCallId: call.id,
+                  response:
+                      'Due date already set to ${currentDue.toIso8601String().split('T')[0]}. Skipped.',
+                );
+              } else {
+                final updatedTask = checklistHandler.task.copyWith(
+                  data: checklistHandler.task.data.copyWith(due: dueDate),
+                );
+
+                try {
+                  final journalRepo = ref.read(journalRepositoryProvider);
+                  await journalRepo.updateJournalEntity(updatedTask);
+
+                  // Update handler references
+                  checklistHandler.task = updatedTask;
+                  batchChecklistHandler.task = updatedTask;
+                  checklistHandler.onTaskUpdated?.call(updatedTask);
+
+                  developer.log(
+                    'Successfully set task due date to $dueDateStr',
+                    name: 'LottiConversationProcessor',
+                  );
+
+                  manager.addToolResponse(
+                    toolCallId: call.id,
+                    response: 'Task due date updated to $dueDateStr.',
+                  );
+                } catch (e) {
+                  developer.log(
+                    'Failed to update task due date',
+                    name: 'LottiConversationProcessor',
+                    error: e,
+                  );
+                  manager.addToolResponse(
+                    toolCallId: call.id,
+                    response:
+                        'Failed to set due date. Continuing without due date update.',
+                  );
+                }
+              }
+            }
+          }
+        } catch (e) {
+          developer.log(
+            'Error processing update_task_due_date: $e',
+            name: 'LottiConversationProcessor',
+            error: e,
+          );
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: 'Error processing task due date update.',
           );
         }
       } else if (call.function.name == 'assign_task_labels') {
