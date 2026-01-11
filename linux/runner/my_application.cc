@@ -21,6 +21,7 @@ static const gchar* const ICON_PRODUCTION_PATH = "data/flutter_assets/assets/ico
 static const gchar* const ICON_DEVELOPMENT_PATH = "assets/icon/app_icon_512.png";
 static const gchar* const ICON_ALTERNATIVE_PATH = "../assets/icon/app_icon_512.png";
 static const gchar* const ICON_RELATIVE_PATH = "../../../assets/icon/app_icon_512.png";
+static const gchar* const ICON_FLATPAK_PATH = "/app/share/icons/hicolor/512x512/apps/com.matthiasn.lotti.png";
 static const gchar* const ICON_THEME_NAME = "com.matthiasn.lotti";
 static const gchar* const APP_TITLE = "Lotti";
 static const gchar* const WINDOW_NAME = "lotti";
@@ -104,7 +105,10 @@ static void my_application_activate(GApplication* application) {
 
   // Try multiple icon paths to work in both development and production environments
   gboolean icon_loaded = FALSE;
-  
+
+  // Try Flatpak path first (absolute path, only exists in Flatpak environment)
+  icon_loaded = try_load_icon(window, ICON_FLATPAK_PATH, "flatpak");
+
   // Define icon paths once to avoid duplication
   const gchar* const icon_paths_to_try[] = {
     ICON_PRODUCTION_PATH,    // Production path
@@ -113,16 +117,18 @@ static void my_application_activate(GApplication* application) {
     ICON_RELATIVE_PATH,      // Relative path from build directory
     NULL
   };
-  
-  // Try executable-relative paths first
-  for (gsize i = 0; icon_paths_to_try[i] != NULL && !icon_loaded; i++) {
-    gchar* icon_path = get_icon_path_relative_to_exe(icon_paths_to_try[i]);
-    if (icon_path != NULL) {
-      icon_loaded = try_load_icon(window, icon_path, "executable-relative");
-      g_free(icon_path);
+
+  // Try executable-relative paths
+  if (!icon_loaded) {
+    for (gsize i = 0; icon_paths_to_try[i] != NULL && !icon_loaded; i++) {
+      gchar* icon_path = get_icon_path_relative_to_exe(icon_paths_to_try[i]);
+      if (icon_path != NULL) {
+        icon_loaded = try_load_icon(window, icon_path, "executable-relative");
+        g_free(icon_path);
+      }
     }
   }
-  
+
   // Fallback to hardcoded paths if executable-relative paths failed
   if (!icon_loaded) {
     for (gsize i = 0; icon_paths_to_try[i] != NULL && !icon_loaded; i++) {
