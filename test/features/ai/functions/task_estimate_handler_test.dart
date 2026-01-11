@@ -328,7 +328,7 @@ void main() {
 
       test('should reject minutes exceeding max bound', () async {
         final task = createTask();
-        // Create tool call with minutes > maxEstimateMinutes (10080)
+        // Create tool call with minutes > maxEstimateMinutes (1440)
         const toolCall = ChatCompletionMessageToolCall(
           id: 'call_estimate_123',
           type: ChatCompletionMessageToolCallType.function,
@@ -348,7 +348,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.wasSkipped, isFalse);
         expect(result.error, isNotNull);
-        expect(result.error, contains('10080'));
+        expect(result.error, contains('1440'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
@@ -488,10 +488,10 @@ void main() {
     });
 
     group('edge cases', () {
-      test('should handle large minute values', () async {
+      test('should handle max allowed minute value (24 hours)', () async {
         final task = createTask();
-        // 1 week in minutes
-        final toolCall = createEstimateToolCall(minutes: 10080);
+        // 24 hours in minutes (max allowed)
+        final toolCall = createEstimateToolCall(minutes: 1440);
 
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -504,10 +504,10 @@ void main() {
         final result = await handler.processToolCall(toolCall, mockManager);
 
         expect(result.success, isTrue);
-        expect(result.requestedMinutes, 10080);
+        expect(result.requestedMinutes, 1440);
         expect(
           result.updatedTask!.data.estimate,
-          const Duration(minutes: 10080),
+          const Duration(minutes: 1440),
         );
       });
 

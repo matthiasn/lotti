@@ -6,11 +6,11 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-/// Maximum allowed estimate in minutes (1 week).
+/// Maximum allowed estimate in minutes (24 hours).
 ///
-/// This prevents overflow issues and unreasonably large estimates from
-/// untrusted AI input.
-const int maxEstimateMinutes = 10080;
+/// Tasks requiring more than a day should be broken into smaller subtasks.
+/// This also prevents overflow issues from untrusted AI input.
+const int maxEstimateMinutes = 1440;
 
 /// Parses a minutes value from potentially untrusted AI input.
 ///

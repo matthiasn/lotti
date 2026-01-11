@@ -59,9 +59,10 @@ class TaskFunctions {
               'minutes': {
                 'type': 'integer',
                 'minimum': 1,
-                'maximum': 525600,
-                'description': 'Time estimate in minutes. Convert: 1 hour = 60, '
-                    '1 day = 480 (work) or 1440 (full), 1 week = 2400 (work).',
+                'maximum': 1440,
+                'description': 'Time estimate in minutes (max 24 hours). '
+                    'Convert: 1 hour = 60, half day = 240, full day = 480. '
+                    'Tasks over a day should be broken into subtasks.',
               },
               'reason': {
                 'type': 'string',
