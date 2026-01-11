@@ -69,7 +69,7 @@ FLATHUB_DIR="$REPO_ROOT/../com.matthiasn.lotti"
 if [ -d "$FLATHUB_DIR" ]; then
   echo ""
   echo "Copying to flathub repo: $FLATHUB_DIR"
-  cp -r "$OUTPUT_DIR"/* "$FLATHUB_DIR/"
+  cp -r "$OUTPUT_DIR/." "$FLATHUB_DIR/"
   echo "Flathub repo updated."
 else
   echo ""
