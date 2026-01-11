@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.811] - 2026-01-11
+### Changed
+- Gemini FTUE Streamlined: Reduced default prompts from 18 to 9 with optimized model assignments
+  - Gemini Pro: Checklists, Coding Prompts, Image Prompts (complex reasoning tasks)
+  - Gemini Flash: Audio Transcription, Task Summary, Image Analysis (fast processing)
+  - Nano Banana Pro: Cover Art generation (with reasoning mode enabled for reliable image output)
+- Gemini Setup Modal: Now dismissible by tapping outside (temporary skip)
+  - Tapping outside closes the modal but doesn't permanently dismiss it
+  - Modal will reappear on next app start, allowing users to set up later
+  - "Don't Show Again" button still permanently dismisses the prompt
+
 ## [0.9.810] - 2026-01-11
 ### Fixed
 - Flatpak: Fixed keyring access error by adding D-Bus permission for org.freedesktop.secrets
