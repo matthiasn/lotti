@@ -1,12 +1,12 @@
 # Flatpak Build - Direct Approach
 
-This documents the simplified `prepare_direct.sh` workflow for generating Flathub manifests.
+This documents the simplified `prepare_flathub_build.sh` workflow for generating Flathub manifests.
 
 ## Quick Start
 
 ```bash
 cd flatpak
-./prepare_direct.sh <commit-hash>
+./prepare_flathub_build.sh <commit-hash>
 # Output in direct-build/output/
 ```
 
@@ -21,6 +21,7 @@ The script uses [flatpak-flutter](https://github.com/TheAppgineer/flatpak-flutte
 3. Copies `foreign.json` for custom plugin support
 4. Runs flatpak-flutter to generate all dependency manifests
 5. Outputs everything to `direct-build/output/`
+6. Copies output to `../com.matthiasn.lotti` flathub repo (if present)
 
 ### Output Structure
 
@@ -41,16 +42,18 @@ direct-build/output/
 ## Release Workflow
 
 ```bash
-# 1. Generate manifest for new commit
-cd flatpak
-./prepare_direct.sh <commit-hash>
+# 1. Ensure flathub repo is cloned as sibling
+# (only needed once)
+cd ..
+git clone git@github.com:flathub/com.matthiasn.lotti.git
 
-# 2. Copy to flathub repo
-cp direct-build/output/com.matthiasn.lotti.yml /path/to/flathub-repo/
-cp -r direct-build/output/generated/* /path/to/flathub-repo/generated/
+# 2. Generate manifest and copy to flathub repo
+cd lotti2/flatpak
+./prepare_flathub_build.sh <commit-hash>
+# Script automatically copies output to ../com.matthiasn.lotti/
 
 # 3. Commit and create PR
-cd /path/to/flathub-repo
+cd ../../com.matthiasn.lotti
 git add -A
 git commit -m "chore: release X.X.X"
 git push
@@ -99,7 +102,7 @@ grep -A5 "flutter_vodozemac:" pubspec.lock
 
 ### com.matthiasn.lotti.flatpak-flutter.yml
 
-The source manifest template. Uses `COMMIT_PLACEHOLDER` which gets replaced by `prepare_direct.sh`.
+The source manifest template. Uses `COMMIT_PLACEHOLDER` which gets replaced by `prepare_flathub_build.sh`.
 
 **When to update:**
 - Adding/removing permissions (finish-args)
@@ -176,7 +179,7 @@ sed -i "s/flutter_vodozemac-[0-9.]*/flutter_vodozemac-$VERSION/g" flatpak/foreig
 
 | File | Purpose |
 |------|---------|
-| `prepare_direct.sh` | Main script (~50 lines) |
+| `prepare_flathub_build.sh` | Main script (~50 lines) |
 | `foreign.json` | Custom plugin definitions |
 | `com.matthiasn.lotti.flatpak-flutter.yml` | Manifest template |
 | `flatpak-flutter/` | Cloned tool (gitignored) |

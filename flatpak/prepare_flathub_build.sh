@@ -63,3 +63,16 @@ fi
 echo ""
 echo "Done! Output in: $OUTPUT_DIR"
 ls -la "$OUTPUT_DIR"
+
+# Copy to flathub release repo if it exists
+FLATHUB_DIR="$REPO_ROOT/../com.matthiasn.lotti"
+if [ -d "$FLATHUB_DIR" ]; then
+  echo ""
+  echo "Copying to flathub repo: $FLATHUB_DIR"
+  cp -r "$OUTPUT_DIR/." "$FLATHUB_DIR/"
+  echo "Flathub repo updated."
+else
+  echo ""
+  echo "Flathub repo not found at $FLATHUB_DIR - skipping copy."
+  echo "Clone it with: git clone git@github.com:flathub/com.matthiasn.lotti.git $FLATHUB_DIR"
+fi
