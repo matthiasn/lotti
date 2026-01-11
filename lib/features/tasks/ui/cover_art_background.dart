@@ -60,7 +60,7 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
           fit: BoxFit.fitWidth,
           alignment: Alignment.topCenter,
           errorBuilder: (context, error, stackTrace) {
-            imageCache.clear();
+            imageCache.evict(FileImage(File(path)));
             return const SizedBox.shrink();
           },
         ),
