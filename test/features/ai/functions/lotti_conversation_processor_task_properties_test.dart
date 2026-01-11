@@ -312,6 +312,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
@@ -386,6 +389,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
@@ -450,6 +456,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
@@ -517,6 +526,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
@@ -589,6 +601,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
@@ -653,6 +668,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
@@ -725,6 +743,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
@@ -789,6 +810,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
@@ -853,6 +877,9 @@ void main() {
       );
 
       final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
       when(() => mockConversationManager.events)
           .thenAnswer((_) => streamController.stream);
 
