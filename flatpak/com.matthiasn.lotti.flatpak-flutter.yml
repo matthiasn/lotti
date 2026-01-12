@@ -15,8 +15,6 @@ finish-args:
   - --filesystem=xdg-documents/Lotti:create
   - --filesystem=xdg-pictures:ro
   - --filesystem=xdg-download/Lotti:create
-  # D-Bus access for libsecret/keyring (secure storage)
-  - --talk-name=org.freedesktop.secrets
   # Cursor theme access (fixes "Unable to load from cursor theme" warning)
   - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
 modules:
