@@ -3113,4 +3113,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noTasksFound => 'No se encontraron tareas';
+
+  @override
+  String get whatsNewSkipButton => 'Omitir';
+
+  @override
+  String get whatsNewDoneButton => 'Listo';
 }

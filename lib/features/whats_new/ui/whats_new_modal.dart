@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -500,6 +501,7 @@ class _NavigationFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final canGoNewer = currentRelease > 0;
     final canGoOlder = currentRelease < totalReleases - 1;
+    final isLastPage = !canGoOlder;
 
     return ClipRect(
       child: BackdropFilter(
@@ -516,22 +518,13 @@ class _NavigationFooter extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Skip button (marks all as seen and closes)
-              SizedBox(
-                width: 64,
-                child: TextButton(
-                  onPressed: onMarkAllSeen,
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+              // Skip button (hidden on last page)
+              _buildActionButton(
+                context,
+                label: context.messages.whatsNewSkipButton,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+                isVisible: !isLastPage,
               ),
 
               // Left arrow (newer)
@@ -563,12 +556,46 @@ class _NavigationFooter extends StatelessWidget {
                 colorScheme: colorScheme,
               ),
 
-              // Spacer to balance Skip button on left
-              const SizedBox(width: 64),
+              // Done button (shown on last page)
+              _buildActionButton(
+                context,
+                label: context.messages.whatsNewDoneButton,
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w600,
+                isVisible: isLastPage,
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Builds a footer action button (Skip or Done).
+  Widget _buildActionButton(
+    BuildContext context, {
+    required String label,
+    required Color color,
+    required FontWeight fontWeight,
+    required bool isVisible,
+  }) {
+    return SizedBox(
+      width: 64,
+      child: isVisible
+          ? TextButton(
+              onPressed: onMarkAllSeen,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: fontWeight,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

@@ -5757,6 +5757,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No tasks found'**
   String get noTasksFound;
+
+  /// No description provided for @whatsNewSkipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get whatsNewSkipButton;
+
+  /// No description provided for @whatsNewDoneButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get whatsNewDoneButton;
 }
 
 class _AppLocalizationsDelegate

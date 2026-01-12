@@ -499,5 +499,8 @@
   "searchTasksHint": "Rechercher des tâches...",
   "linkedTasksMenuTooltip": "Options des tâches liées",
   "noTasksToLink": "Aucune tâche disponible à lier",
-  "noTasksFound": "Aucune tâche trouvée"
+  "noTasksFound": "Aucune tâche trouvée",
+
+  "whatsNewSkipButton": "Ignorer",
+  "whatsNewDoneButton": "Terminé"
 }

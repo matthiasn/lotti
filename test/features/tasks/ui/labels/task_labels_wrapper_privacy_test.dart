@@ -61,7 +61,8 @@ JournalEntity _taskNoLabels() {
 }
 
 void main() {
-  testWidgets('shows wrapper but no label chips when only private labels and showPrivate=false',
+  testWidgets(
+      'shows wrapper but no label chips when only private labels and showPrivate=false',
       (tester) async {
     final cacheService = MockEntitiesCacheService();
     final editorStateService = MockEditorStateService();
