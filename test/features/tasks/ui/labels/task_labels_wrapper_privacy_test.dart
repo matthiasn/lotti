@@ -61,7 +61,7 @@ JournalEntity _taskNoLabels() {
 }
 
 void main() {
-  testWidgets('hides wrapper when only private labels and showPrivate=false',
+  testWidgets('shows wrapper but no label chips when only private labels and showPrivate=false',
       (tester) async {
     final cacheService = MockEntitiesCacheService();
     final editorStateService = MockEditorStateService();
@@ -98,7 +98,9 @@ void main() {
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
 
-    // Wrapper should be hidden; no header text
-    expect(find.text('Labels'), findsNothing);
+    // Wrapper should show to allow adding labels and setting estimates,
+    // but no label chips should be displayed when only private labels exist
+    // and showPrivate is false
+    expect(find.text('Add Label'), findsOneWidget);
   });
 }

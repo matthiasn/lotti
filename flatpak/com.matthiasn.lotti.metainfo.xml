@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.812" date="2026-01-13">
+      <description>
+        <p>Task Estimate Fix: Fixed the task estimate field not appearing on Linux and fresh installs. The estimate chip was incorrectly hidden when no labels were defined in the app. Now the estimate and "Add Label" controls always appear, regardless of whether any labels exist.</p>
+      </description>
+    </release>
     <release version="0.9.811" date="2026-01-11">
       <description>
         <p>Gemini FTUE Streamlined: Simplified the first-time user experience by reducing default prompts from 18 to 9 with optimized model assignments. Gemini Pro handles complex reasoning tasks (Checklists, Coding Prompts, Image Prompts), Gemini Flash handles fast processing (Audio Transcription, Task Summary, Image Analysis), and Nano Banana Pro handles Cover Art generation with reasoning mode enabled for reliable image output. The Gemini Setup Modal is now dismissible by tapping outside for a temporary skip - it will reappear on next app start, while "Don't Show Again" still permanently dismisses it.</p>
