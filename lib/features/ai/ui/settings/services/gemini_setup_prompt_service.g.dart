@@ -55,7 +55,7 @@ final class GeminiSetupPromptServiceProvider
 }
 
 String _$geminiSetupPromptServiceHash() =>
-    r'd278222a03fe2bfdbc1fa101814aa40cd45ea85a';
+    r'e679ac524a63f899c9462888bc3a3c8f34eacdf6';
 
 /// Service that manages the automatic Gemini setup prompt for new users.
 ///

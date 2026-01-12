@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
@@ -10,11 +12,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
-class MaintenancePage extends StatelessWidget {
+class MaintenancePage extends ConsumerWidget {
   const MaintenancePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final maintenance = getIt<Maintenance>();
     final db = getIt<JournalDb>();
     Theme.of(context);
@@ -54,31 +56,20 @@ class MaintenancePage extends StatelessWidget {
                 },
               ),
               AnimatedModernSettingsCardWithIcon(
-                title: 'Reset Gemini Setup Prompt',
-                subtitle:
-                    'Show the Gemini AI setup prompt again on next app start',
+                title: context.messages.settingsResetGeminiTitle,
+                subtitle: context.messages.settingsResetGeminiSubtitle,
                 icon: Icons.auto_awesome,
                 onTap: () async {
                   final confirmed = await showConfirmationModal(
                     context: context,
-                    message: 'This will show the Gemini setup prompt again the '
-                        'next time you open the app. Continue?',
-                    confirmLabel: 'Reset',
+                    message:
+                        context.messages.settingsResetGeminiConfirmQuestion,
+                    confirmLabel: context.messages.settingsResetGeminiConfirm,
                   );
                   if (!confirmed) return;
-                  final removed =
-                      await clearPrefsByPrefix('gemini_setup_prompt_');
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          removed > 0
-                              ? 'Gemini setup prompt will show on next app start'
-                              : 'Gemini setup prompt was already reset',
-                        ),
-                      ),
-                    );
-                  }
+                  await ref
+                      .read(geminiSetupPromptServiceProvider.notifier)
+                      .resetDismissal();
                 },
               ),
               AnimatedModernSettingsCardWithIcon(

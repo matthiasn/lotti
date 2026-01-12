@@ -546,5 +546,10 @@
   "noTasksFound": "Keine Aufgaben gefunden",
 
   "whatsNewSkipButton": "Überspringen",
-  "whatsNewDoneButton": "Fertig"
+  "whatsNewDoneButton": "Fertig",
+
+  "settingsResetGeminiTitle": "Gemini-Einrichtungsdialog zurücksetzen",
+  "settingsResetGeminiSubtitle": "Den Gemini AI-Einrichtungsdialog erneut anzeigen",
+  "settingsResetGeminiConfirmQuestion": "Der Gemini-Einrichtungsdialog wird erneut angezeigt. Fortfahren?",
+  "settingsResetGeminiConfirm": "Zurücksetzen"
 }

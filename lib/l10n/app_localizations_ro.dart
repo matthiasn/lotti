@@ -640,6 +640,21 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get settingsResetGeminiTitle =>
+      'Resetează dialogul de configurare Gemini';
+
+  @override
+  String get settingsResetGeminiSubtitle =>
+      'Afișează din nou dialogul de configurare Gemini AI';
+
+  @override
+  String get settingsResetGeminiConfirmQuestion =>
+      'Aceasta va afișa din nou dialogul de configurare Gemini. Continui?';
+
+  @override
+  String get settingsResetGeminiConfirm => 'Resetează';
+
+  @override
   String get colorLabel => 'Culoare:';
 
   @override

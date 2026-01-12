@@ -260,6 +260,10 @@
       }
     }
   },
+  "settingsResetGeminiTitle": "Reset Gemini Setup Dialog",
+  "settingsResetGeminiSubtitle": "Show the Gemini AI setup dialog again",
+  "settingsResetGeminiConfirmQuestion": "This will show the Gemini setup dialog again. Continue?",
+  "settingsResetGeminiConfirm": "Reset",
   "colorLabel": "Color:",
   "colorPickerError": "Invalid Hex color",
   "colorPickerHint": "Enter Hex color or pick",

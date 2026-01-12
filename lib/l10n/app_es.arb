@@ -501,5 +501,10 @@
   "noTasksFound": "No se encontraron tareas",
 
   "whatsNewSkipButton": "Omitir",
-  "whatsNewDoneButton": "Listo"
+  "whatsNewDoneButton": "Listo",
+
+  "settingsResetGeminiTitle": "Restablecer diálogo de configuración de Gemini",
+  "settingsResetGeminiSubtitle": "Mostrar el diálogo de configuración de Gemini AI de nuevo",
+  "settingsResetGeminiConfirmQuestion": "Esto mostrará el diálogo de configuración de Gemini de nuevo. ¿Continuar?",
+  "settingsResetGeminiConfirm": "Restablecer"
 }

@@ -1233,6 +1233,30 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Reset zero hints} one{Reset one hint} other{Reset {count} hints}}'**
   String settingsResetHintsResult(int count);
 
+  /// No description provided for @settingsResetGeminiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Gemini Setup Dialog'**
+  String get settingsResetGeminiTitle;
+
+  /// No description provided for @settingsResetGeminiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the Gemini AI setup dialog again'**
+  String get settingsResetGeminiSubtitle;
+
+  /// No description provided for @settingsResetGeminiConfirmQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'This will show the Gemini setup dialog again. Continue?'**
+  String get settingsResetGeminiConfirmQuestion;
+
+  /// No description provided for @settingsResetGeminiConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get settingsResetGeminiConfirm;
+
   /// No description provided for @colorLabel.
   ///
   /// In en, this message translates to:
