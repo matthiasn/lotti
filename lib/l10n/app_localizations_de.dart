@@ -642,6 +642,21 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get settingsResetGeminiTitle =>
+      'Gemini-Einrichtungsdialog zurücksetzen';
+
+  @override
+  String get settingsResetGeminiSubtitle =>
+      'Den Gemini AI-Einrichtungsdialog erneut anzeigen';
+
+  @override
+  String get settingsResetGeminiConfirmQuestion =>
+      'Der Gemini-Einrichtungsdialog wird erneut angezeigt. Fortfahren?';
+
+  @override
+  String get settingsResetGeminiConfirm => 'Zurücksetzen';
+
+  @override
   String get colorLabel => 'Farbe:';
 
   @override

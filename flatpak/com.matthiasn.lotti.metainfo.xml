@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.814" date="2026-01-12">
+      <description>
+        <p>Gemini Setup Dialog Reset Fix: Fixed the reset functionality not working properly. Migrated storage from SharedPreferences to SettingsDb (SQLite) for improved reliability. The reset now takes effect immediately without requiring an app restart. Also localized the reset dialog strings for internationalization support.</p>
+      </description>
+    </release>
     <release version="0.9.813" date="2026-01-12">
       <description>
         <p>What's New Modal Improvements: Added a "Done" button on the last page for clearer completion flow. The "Skip" button is now hidden on the last page, replaced with "Done" on the right. Button labels now use proper localization (l10n) for internationalization support.</p>

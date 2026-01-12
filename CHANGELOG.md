@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.814] - 2026-01-12
+### Fixed
+- Gemini Setup Dialog Reset: Fixed reset not working properly
+  - Migrated storage from SharedPreferences to SettingsDb (SQLite) for reliability
+  - Reset now takes effect immediately without requiring app restart
+  - Maintenance page now properly invalidates the provider state
+
+### Changed
+- Localized the Gemini setup dialog reset strings in maintenance settings
+
 ## [0.9.813] - 2026-01-12
 ### Changed
 - What's New Modal: Added "Done" button on the last page for clearer completion

@@ -1,8 +1,9 @@
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 part 'gemini_setup_prompt_service.g.dart';
 
@@ -72,21 +73,22 @@ class GeminiSetupPromptService extends _$GeminiSetupPromptService {
 
   /// Checks if the prompt was previously dismissed.
   Future<bool> _wasPromptDismissed() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_dismissedKey) ?? false;
+    final settingsDb = getIt<SettingsDb>();
+    final value = await settingsDb.itemByKey(_dismissedKey);
+    return value == 'true';
   }
 
   /// Marks the prompt as dismissed so it won't show again.
   Future<void> dismissPrompt() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_dismissedKey, true);
+    final settingsDb = getIt<SettingsDb>();
+    await settingsDb.saveSettingsItem(_dismissedKey, 'true');
     state = const AsyncValue.data(false);
   }
 
   /// Resets the dismissal state (useful for testing or user preference reset).
   Future<void> resetDismissal() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_dismissedKey);
+    final settingsDb = getIt<SettingsDb>();
+    await settingsDb.removeSettingsItem(_dismissedKey);
     ref.invalidateSelf();
   }
 }

@@ -501,5 +501,10 @@
   "noTasksFound": "Nu s-au găsit sarcini",
 
   "whatsNewSkipButton": "Omite",
-  "whatsNewDoneButton": "Gata"
+  "whatsNewDoneButton": "Gata",
+
+  "settingsResetGeminiTitle": "Resetează dialogul de configurare Gemini",
+  "settingsResetGeminiSubtitle": "Afișează din nou dialogul de configurare Gemini AI",
+  "settingsResetGeminiConfirmQuestion": "Aceasta va afișa din nou dialogul de configurare Gemini. Continui?",
+  "settingsResetGeminiConfirm": "Resetează"
 }
