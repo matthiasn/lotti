@@ -498,5 +498,8 @@
   "searchTasksHint": "Caută sarcini...",
   "linkedTasksMenuTooltip": "Opțiuni sarcini legate",
   "noTasksToLink": "Nu sunt sarcini disponibile pentru a fi legate",
-  "noTasksFound": "Nu s-au găsit sarcini"
+  "noTasksFound": "Nu s-au găsit sarcini",
+
+  "whatsNewSkipButton": "Omite",
+  "whatsNewDoneButton": "Gata"
 }

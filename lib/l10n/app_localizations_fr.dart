@@ -3116,4 +3116,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noTasksFound => 'Aucune tâche trouvée';
+
+  @override
+  String get whatsNewSkipButton => 'Ignorer';
+
+  @override
+  String get whatsNewDoneButton => 'Terminé';
 }

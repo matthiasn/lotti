@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.813] - 2026-01-12
+### Changed
+- What's New Modal: Added "Done" button on the last page for clearer completion
+  - "Skip" button hidden on last page, replaced with "Done" on the right
+  - Button labels now use localization (l10n) for proper internationalization
+- Cover Art Display: Reverted to `BoxFit.cover` for better mobile display
+
+### Fixed
+- Gemini Setup Dialogs: Fixed dialogs disappearing when resizing the app window
+  - Added `useRootNavigator: true` to ensure dialogs survive widget tree rebuilds
+  - Affects both the Gemini setup prompt modal and FTUE setup dialog
+
 ## [0.9.812] - 2026-01-13
 ### Fixed
 - Task Estimate Field: Fixed estimate field not appearing on Linux (and fresh installs)

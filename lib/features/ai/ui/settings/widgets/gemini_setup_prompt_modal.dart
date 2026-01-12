@@ -32,9 +32,12 @@ class GeminiSetupPromptModal extends StatelessWidget {
     required VoidCallback onDismiss,
   }) async {
     // barrierDismissible defaults to true, allowing temporary dismissal by tapping outside
+    // useRootNavigator ensures dialog survives widget tree rebuilds (e.g., window resize)
     final result = await showDialog<bool?>(
       context: context,
       barrierColor: Colors.black87,
+      // ignore: avoid_redundant_argument_values
+      useRootNavigator: true,
       builder: (dialogContext) => GeminiSetupPromptModal(
         onSetUp: () => Navigator.of(dialogContext).pop(true),
         onDismiss: () => Navigator.of(dialogContext).pop(false),

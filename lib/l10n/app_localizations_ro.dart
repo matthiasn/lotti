@@ -3091,4 +3091,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get noTasksFound => 'Nu s-au găsit sarcini';
+
+  @override
+  String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get whatsNewDoneButton => 'Gata';
 }

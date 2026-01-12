@@ -1158,5 +1158,8 @@
   "searchTasksHint": "Search tasks...",
   "linkedTasksMenuTooltip": "Linked tasks options",
   "noTasksToLink": "No tasks available to link",
-  "noTasksFound": "No tasks found"
+  "noTasksFound": "No tasks found",
+
+  "whatsNewSkipButton": "Skip",
+  "whatsNewDoneButton": "Done"
 }

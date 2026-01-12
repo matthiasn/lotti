@@ -3097,4 +3097,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noTasksFound => 'Keine Aufgaben gefunden';
+
+  @override
+  String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get whatsNewDoneButton => 'Fertig';
 }

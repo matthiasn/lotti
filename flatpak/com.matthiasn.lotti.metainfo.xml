@@ -31,6 +31,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.813" date="2026-01-12">
+      <description>
+        <p>What's New Modal Improvements: Added a "Done" button on the last page for clearer completion flow. The "Skip" button is now hidden on the last page, replaced with "Done" on the right. Button labels now use proper localization (l10n) for internationalization support.</p>
+        <p>Cover Art Display: Reverted to BoxFit.cover for better display on mobile devices.</p>
+        <p>Dialog Stability Fix: Fixed Gemini setup dialogs disappearing when resizing the app window. Both the Gemini setup prompt modal and FTUE setup dialog now survive widget tree rebuilds during window resize.</p>
+      </description>
+    </release>
     <release version="0.9.812" date="2026-01-13">
       <description>
         <p>Task Estimate Fix: Fixed the task estimate field not appearing on Linux and fresh installs. The estimate chip was incorrectly hidden when no labels were defined in the app. Now the estimate and "Add Label" controls always appear, regardless of whether any labels exist.</p>

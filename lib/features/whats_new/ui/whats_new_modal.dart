@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -516,22 +517,24 @@ class _NavigationFooter extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Skip button (marks all as seen and closes)
+              // Skip button (marks all as seen and closes) - hidden on last page
               SizedBox(
                 width: 64,
-                child: TextButton(
-                  onPressed: onMarkAllSeen,
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+                child: canGoOlder
+                    ? TextButton(
+                        onPressed: onMarkAllSeen,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                        ),
+                        child: Text(
+                          context.messages.whatsNewSkipButton,
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
+                    : null,
               ),
 
               // Left arrow (newer)
@@ -563,8 +566,25 @@ class _NavigationFooter extends StatelessWidget {
                 colorScheme: colorScheme,
               ),
 
-              // Spacer to balance Skip button on left
-              const SizedBox(width: 64),
+              // Done button on last page, spacer otherwise
+              SizedBox(
+                width: 64,
+                child: !canGoOlder
+                    ? TextButton(
+                        onPressed: onMarkAllSeen,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                        ),
+                        child: Text(
+                          context.messages.whatsNewDoneButton,
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
             ],
           ),
         ),

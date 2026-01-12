@@ -543,5 +543,8 @@
   "searchTasksHint": "Aufgaben suchen...",
   "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
   "noTasksToLink": "Keine Aufgaben zum Verknüpfen verfügbar",
-  "noTasksFound": "Keine Aufgaben gefunden"
+  "noTasksFound": "Keine Aufgaben gefunden",
+
+  "whatsNewSkipButton": "Überspringen",
+  "whatsNewDoneButton": "Fertig"
 }

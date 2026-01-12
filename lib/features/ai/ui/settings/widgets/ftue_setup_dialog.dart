@@ -20,8 +20,11 @@ class FtueSetupDialog extends StatelessWidget {
   /// Shows the FTUE setup dialog and returns true if user confirms setup.
   static Future<bool> show(BuildContext context,
       {required String providerName}) async {
+    // useRootNavigator ensures dialog survives widget tree rebuilds (e.g., window resize)
     return await showDialog<bool>(
           context: context,
+          // ignore: avoid_redundant_argument_values
+          useRootNavigator: true,
           builder: (context) => FtueSetupDialog(providerName: providerName),
         ) ??
         false;

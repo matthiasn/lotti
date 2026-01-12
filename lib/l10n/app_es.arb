@@ -498,5 +498,8 @@
   "searchTasksHint": "Buscar tareas...",
   "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
   "noTasksToLink": "No hay tareas disponibles para vincular",
-  "noTasksFound": "No se encontraron tareas"
+  "noTasksFound": "No se encontraron tareas",
+
+  "whatsNewSkipButton": "Omitir",
+  "whatsNewDoneButton": "Listo"
 }
