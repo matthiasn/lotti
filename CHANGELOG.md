@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `useRootNavigator: true` to ensure dialogs survive widget tree rebuilds
   - Affects both the Gemini setup prompt modal and FTUE setup dialog
 
-## [0.9.812] - 2026-01-13
+## [0.9.812] - 2026-01-12
 ### Fixed
 - Task Estimate Field: Fixed estimate field not appearing on Linux (and fresh installs)
   - The estimate chip was incorrectly hidden when no labels were defined in the app

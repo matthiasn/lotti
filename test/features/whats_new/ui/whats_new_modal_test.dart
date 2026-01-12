@@ -54,29 +54,36 @@ void main() {
     bannerImageUrl: 'https://example.com/banner2.png',
   );
 
+  /// Creates a test widget with localization and provider scope configured.
+  Widget createTestWidget({
+    required WhatsNewController Function() controllerBuilder,
+  }) {
+    return ProviderScope(
+      overrides: [
+        whatsNewControllerProvider.overrideWith(controllerBuilder),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Consumer(
+            builder: (context, ref, _) => ElevatedButton(
+              onPressed: () => WhatsNewModal.show(context, ref),
+              child: const Text('Show Modal'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   group('WhatsNewModal', () {
     testWidgets('displays no updates message when content is empty',
         (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                const WhatsNewState(),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            const WhatsNewState(),
           ),
         ),
       );
@@ -91,25 +98,9 @@ void main() {
     testWidgets('displays release content when unseen releases exist',
         (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [testContent1]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [testContent1]),
           ),
         ),
       );
@@ -127,25 +118,9 @@ void main() {
 
     testWidgets('displays navigation for multiple releases', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [testContent1, testContent2]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [testContent1, testContent2]),
           ),
         ),
       );
@@ -164,25 +139,9 @@ void main() {
 
     testWidgets('can navigate between releases', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [testContent1, testContent2]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [testContent1, testContent2]),
           ),
         ),
       );
@@ -205,25 +164,9 @@ void main() {
 
     testWidgets('Skip button closes modal', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [testContent1, testContent2]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [testContent1, testContent2]),
           ),
         ),
       );
@@ -253,25 +196,9 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [contentWithoutBanner]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [contentWithoutBanner]),
           ),
         ),
       );
@@ -289,29 +216,11 @@ void main() {
 
     testWidgets('view past releases button works', (tester) async {
       var resetCalled = false;
-      var showCalledCount = 0;
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _ResettableWhatsNewController(
-                onReset: () => resetCalled = true,
-                onBuild: () => showCalledCount++,
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _ResettableWhatsNewController(
+            onReset: () => resetCalled = true,
           ),
         ),
       );
@@ -334,25 +243,9 @@ void main() {
 
     testWidgets('can navigate back to newer release', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [testContent1, testContent2]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [testContent1, testContent2]),
           ),
         ),
       );
@@ -393,15 +286,12 @@ class _TestWhatsNewController extends WhatsNewController {
 class _ResettableWhatsNewController extends WhatsNewController {
   _ResettableWhatsNewController({
     this.onReset,
-    this.onBuild,
   });
 
   final VoidCallback? onReset;
-  final VoidCallback? onBuild;
 
   @override
   Future<WhatsNewState> build() async {
-    onBuild?.call();
     return const WhatsNewState();
   }
 

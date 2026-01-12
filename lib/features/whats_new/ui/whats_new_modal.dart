@@ -501,6 +501,7 @@ class _NavigationFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final canGoNewer = currentRelease > 0;
     final canGoOlder = currentRelease < totalReleases - 1;
+    final isLastPage = !canGoOlder;
 
     return ClipRect(
       child: BackdropFilter(
@@ -517,24 +518,13 @@ class _NavigationFooter extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Skip button (marks all as seen and closes) - hidden on last page
-              SizedBox(
-                width: 64,
-                child: canGoOlder
-                    ? TextButton(
-                        onPressed: onMarkAllSeen,
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                        ),
-                        child: Text(
-                          context.messages.whatsNewSkipButton,
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      )
-                    : null,
+              // Skip button (hidden on last page)
+              _buildActionButton(
+                context,
+                label: context.messages.whatsNewSkipButton,
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+                isVisible: !isLastPage,
               ),
 
               // Left arrow (newer)
@@ -566,29 +556,46 @@ class _NavigationFooter extends StatelessWidget {
                 colorScheme: colorScheme,
               ),
 
-              // Done button on last page, spacer otherwise
-              SizedBox(
-                width: 64,
-                child: !canGoOlder
-                    ? TextButton(
-                        onPressed: onMarkAllSeen,
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                        ),
-                        child: Text(
-                          context.messages.whatsNewDoneButton,
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      )
-                    : null,
+              // Done button (shown on last page)
+              _buildActionButton(
+                context,
+                label: context.messages.whatsNewDoneButton,
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w600,
+                isVisible: isLastPage,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Builds a footer action button (Skip or Done).
+  Widget _buildActionButton(
+    BuildContext context, {
+    required String label,
+    required Color color,
+    required FontWeight fontWeight,
+    required bool isVisible,
+  }) {
+    return SizedBox(
+      width: 64,
+      child: isVisible
+          ? TextButton(
+              onPressed: onMarkAllSeen,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: fontWeight,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
