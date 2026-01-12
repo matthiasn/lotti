@@ -22,7 +22,7 @@ COMMIT="${1:-$(git -C "$REPO_ROOT" rev-parse origin/main)}"
 echo "Using commit: ${COMMIT:0:12}"
 
 # Clone flatpak-flutter if missing (pinned for reproducibility)
-FLATPAK_FLUTTER_VERSION="0.10.0"
+FLATPAK_FLUTTER_VERSION="0.11.0"
 if [ ! -d "$SCRIPT_DIR/flatpak-flutter" ]; then
   echo "Cloning flatpak-flutter v${FLATPAK_FLUTTER_VERSION}..."
   git clone --depth 1 --branch "$FLATPAK_FLUTTER_VERSION" https://github.com/TheAppgineer/flatpak-flutter.git "$SCRIPT_DIR/flatpak-flutter"
