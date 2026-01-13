@@ -92,6 +92,7 @@ class MockConversationRepository extends ConversationRepository {
     List<ChatCompletionTool>? tools,
     double temperature = 0.7,
     ConversationStrategy? strategy,
+    bool isReasoningModel = false,
   }) async {
     if (sendMessageDelegate != null) {
       await sendMessageDelegate!(
@@ -1334,6 +1335,116 @@ void main() {
       expect(prompt, isNotNull);
       // When no work done yet, should provide guidance
       expect(prompt, contains("haven't created or updated"));
+    });
+
+    test('should handle suggest_checklist_completion function call', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-suggest',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'suggest_checklist_completion',
+              arguments:
+                  '{"suggestions": [{"title": "Item 1"}, {"title": "Item 2"}]}',
+            ),
+          ),
+        ],
+        manager: mockConversationManager,
+      );
+
+      // Verify tool response was added
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-suggest',
+            response: any(named: 'response'),
+          )).called(1);
+    });
+
+    test('should handle suggest_checklist_completion with empty suggestions',
+        () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-suggest-empty',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'suggest_checklist_completion',
+              arguments: '{"suggestions": []}',
+            ),
+          ),
+        ],
+        manager: mockConversationManager,
+      );
+
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-suggest-empty',
+            response: any(named: 'response'),
+          )).called(1);
+    });
+
+    test('should handle suggest_checklist_completion with invalid JSON',
+        () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-suggest-invalid',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'suggest_checklist_completion',
+              arguments: 'invalid json',
+            ),
+          ),
+        ],
+        manager: mockConversationManager,
+      );
+
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-suggest-invalid',
+            response: any(named: 'response'),
+          )).called(1);
+    });
+
+    test('should handle batch checklist items with parsing error', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-batch-invalid',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_multiple_checklist_items',
+              arguments: 'not valid json at all',
+            ),
+          ),
+        ],
+        manager: mockConversationManager,
+      );
+
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-batch-invalid',
+            response: any(named: 'response'),
+          )).called(1);
+    });
+
+    test('should handle unknown function call gracefully', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'tool-unknown',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'unknown_function_name',
+              arguments: '{}',
+            ),
+          ),
+        ],
+        manager: mockConversationManager,
+      );
+
+      // Should not throw, and should handle gracefully
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-unknown',
+            response: any(named: 'response'),
+          )).called(1);
     });
   });
 }

@@ -140,6 +140,7 @@ class LottiConversationProcessor {
         tools: tools,
         temperature: 0.1,
         strategy: strategy,
+        isReasoningModel: model.isReasoningModel,
       );
 
       // Collect results from strategy

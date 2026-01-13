@@ -3,6 +3,53 @@ import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_ser
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
+/// Common interface for FTUE result data used by the dialog.
+class FtueResultData {
+  const FtueResultData({
+    required this.modelsCreated,
+    required this.modelsVerified,
+    required this.promptsCreated,
+    required this.promptsSkipped,
+    required this.categoryCreated,
+    required this.categoryUpdated,
+    this.categoryName,
+    this.errors = const [],
+  });
+
+  /// Creates from a GeminiFtueResult
+  factory FtueResultData.fromGemini(GeminiFtueResult result) => FtueResultData(
+        modelsCreated: result.modelsCreated,
+        modelsVerified: result.modelsVerified,
+        promptsCreated: result.promptsCreated,
+        promptsSkipped: result.promptsSkipped,
+        categoryCreated: result.categoryCreated,
+        categoryUpdated: result.categoryUpdated,
+        categoryName: result.categoryName,
+        errors: result.errors,
+      );
+
+  /// Creates from an OpenAiFtueResult
+  factory FtueResultData.fromOpenAi(OpenAiFtueResult result) => FtueResultData(
+        modelsCreated: result.modelsCreated,
+        modelsVerified: result.modelsVerified,
+        promptsCreated: result.promptsCreated,
+        promptsSkipped: result.promptsSkipped,
+        categoryCreated: result.categoryCreated,
+        categoryUpdated: result.categoryUpdated,
+        categoryName: result.categoryName,
+        errors: result.errors,
+      );
+
+  final int modelsCreated;
+  final int modelsVerified;
+  final int promptsCreated;
+  final int promptsSkipped;
+  final bool categoryCreated;
+  final bool categoryUpdated;
+  final String? categoryName;
+  final List<String> errors;
+}
+
 /// Dialog shown after FTUE setup completes to display results.
 ///
 /// Shows what was created:
@@ -16,16 +63,35 @@ class FtueResultDialog extends StatelessWidget {
     super.key,
   });
 
-  final GeminiFtueResult result;
+  const FtueResultDialog._internal({
+    required this.result,
+  });
 
-  /// Shows the FTUE result dialog.
+  final FtueResultData result;
+
+  /// Shows the FTUE result dialog for Gemini.
   static Future<void> show(
     BuildContext context, {
     required GeminiFtueResult result,
   }) async {
     await showDialog<void>(
       context: context,
-      builder: (context) => FtueResultDialog(result: result),
+      builder: (context) => FtueResultDialog._internal(
+        result: FtueResultData.fromGemini(result),
+      ),
+    );
+  }
+
+  /// Shows the FTUE result dialog for OpenAI.
+  static Future<void> showOpenAi(
+    BuildContext context, {
+    required OpenAiFtueResult result,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => FtueResultDialog._internal(
+        result: FtueResultData.fromOpenAi(result),
+      ),
     );
   }
 

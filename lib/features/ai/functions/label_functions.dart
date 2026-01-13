@@ -26,7 +26,7 @@ class LabelFunctions {
         function: FunctionObject(
           name: assignTaskLabels,
           description:
-              'Assign one or more existing labels to the current task. Add-only; will not remove existing labels. Prefer `labels` with per-label confidence; `labelIds` is deprecated.',
+              'Assign one or more existing labels to the current task. Add-only; will not remove existing labels. Use `labels` array (preferred) with per-label confidence, or `labelIds` array (deprecated). At least one must be provided.',
           parameters: {
             'type': 'object',
             'properties': {
@@ -44,12 +44,12 @@ class LabelFunctions {
                     },
                     'confidence': {
                       'type': 'string',
-                      'enum': ['low', 'medium', 'high', 'very_high'],
                       'description':
-                          'Confidence for selecting this label. Low should be omitted.',
+                          'Confidence for selecting this label (low, medium, high, very_high). Low should be omitted.',
                     },
                   },
                   'required': ['id'],
+                  'additionalProperties': false,
                 },
               },
               'labelIds': {
@@ -59,15 +59,9 @@ class LabelFunctions {
                 'items': {'type': 'string'},
               },
             },
-            // Accept either `labels` or legacy `labelIds`.
-            'oneOf': [
-              {
-                'required': ['labels']
-              },
-              {
-                'required': ['labelIds']
-              }
-            ],
+            // Note: oneOf removed for OpenAI reasoning model compatibility.
+            // Handler accepts either `labels` or `labelIds`.
+            'additionalProperties': false,
           },
         ),
       ),

@@ -81,6 +81,7 @@ class MockConversationRepository extends ConversationRepository {
     List<ChatCompletionTool>? tools,
     double temperature = 0.7,
     ConversationStrategy? strategy,
+    bool isReasoningModel = false,
   }) async {
     if (sendMessageDelegate != null) {
       await sendMessageDelegate!(
