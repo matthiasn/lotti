@@ -330,7 +330,6 @@ class CloudInferenceRepository {
         baseUrl: baseUrl,
         apiKey: apiKey,
         audioBase64: audioBase64,
-        model: model,
         prompt: prompt,
       );
     }
@@ -380,11 +379,12 @@ class CloudInferenceRepository {
 
   /// Transcribes audio using OpenAI's dedicated transcription API.
   /// This API supports more audio formats including m4a.
+  /// Note: Always uses the Whisper model (_openAiWhisperModel) as it's the only
+  /// model supported by OpenAI's transcription endpoint.
   Stream<CreateChatCompletionStreamResponse> _transcribeWithOpenAiApi({
     required String baseUrl,
     required String apiKey,
     required String audioBase64,
-    required String model,
     required String prompt,
   }) {
     return Stream.fromFuture(
