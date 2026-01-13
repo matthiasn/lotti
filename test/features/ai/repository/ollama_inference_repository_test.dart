@@ -1323,7 +1323,7 @@ void main() {
       );
 
       expect(
-        stream.toList,
+        stream.toList(),
         throwsA(predicate((e) =>
             e is Exception && e.toString().contains('failed with status 500'))),
       );
