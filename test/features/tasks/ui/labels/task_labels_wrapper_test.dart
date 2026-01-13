@@ -427,7 +427,7 @@ void main() {
     expect(content.categoryId, equals('work'));
   });
 
-  testWidgets('hides wrapper when no labels assigned and none available',
+  testWidgets('shows wrapper even when no labels assigned and none available',
       (tester) async {
     when(() => cacheService.sortedLabels).thenReturn(const <LabelDefinition>[]);
     final task = taskWithLabels(const []);
@@ -435,18 +435,7 @@ void main() {
     await tester.pumpWidget(buildWrapper(task));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add Label'), findsNothing);
-  });
-
-  testWidgets('shows wrapper when labels available even if none assigned',
-      (tester) async {
-    when(() => cacheService.sortedLabels)
-        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
-    final task = taskWithLabels(const []);
-
-    await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
-
+    // Wrapper should always show to allow adding labels and setting estimates
     expect(find.text('Add Label'), findsOneWidget);
   });
 
