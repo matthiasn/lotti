@@ -162,8 +162,9 @@ class LottiBatchChecklistHandler extends FunctionHandler {
 I noticed an error in your function call.
 
 Required format for multiple items (array of objects):
-{"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3", "isChecked": true}]}
- - Always use objects with a title (max 400 chars); optional isChecked true if explicitly done.
+{"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3"}]}
+ - Always use objects with a title (max 400 chars).
+ - All new items are created as unchecked (not done).
  - Do NOT send a comma-separated string or an array of strings.
 
 You already successfully created these checklist items: ${successfulDescriptions.join(', ')}
@@ -200,11 +201,12 @@ Do NOT recreate the items that were already successful.''';
 
       if (checklistIds.isEmpty) {
         // Create a new "TODOs" checklist with all items (preserve order)
+        // Force isChecked to false for new items - AI should not create items as completed
         final checklistItems = <ChecklistItemData>[
           for (final item in items)
             ChecklistItemData(
               title: item['title'] as String,
-              isChecked: (item['isChecked'] as bool?) ?? false,
+              isChecked: false, // Always create items as unchecked
               linkedChecklists: [],
             )
         ];
@@ -244,7 +246,8 @@ Do NOT recreate the items that were already successful.''';
 
         for (final item in items) {
           final title = item['title'] as String;
-          final isChecked = (item['isChecked'] as bool?) ?? false;
+          // Always create items as unchecked - AI should not create items as completed
+          const isChecked = false;
 
           final newItem = await checklistRepository.addItemToChecklist(
             checklistId: checklistId,

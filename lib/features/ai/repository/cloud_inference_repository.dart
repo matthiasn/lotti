@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show base64Decode;
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
@@ -17,6 +18,9 @@ import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cloud_inference_repository.g.dart';
+
+/// OpenAI's Whisper model ID for audio transcription
+const _openAiWhisperModel = 'whisper-1';
 
 class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
@@ -97,7 +101,7 @@ class CloudInferenceRepository {
   Stream<CreateChatCompletionStreamResponse> generate(
     String prompt, {
     required String model,
-    required double temperature,
+    required double? temperature,
     required String baseUrl,
     required String apiKey,
     String? systemMessage,
@@ -121,7 +125,7 @@ class CloudInferenceRepository {
       return _ollamaRepository.generateText(
         prompt: prompt,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         systemMessage: systemMessage,
         maxCompletionTokens: maxCompletionTokens,
         provider: provider,
@@ -144,7 +148,7 @@ class CloudInferenceRepository {
       return _geminiRepository.generateText(
         prompt: prompt,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         systemMessage: systemMessage,
         maxCompletionTokens: maxCompletionTokens,
         provider: provider,
@@ -190,7 +194,7 @@ class CloudInferenceRepository {
     required String baseUrl,
     required String apiKey,
     required String model,
-    required double temperature,
+    required double? temperature,
     required List<String> images,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
@@ -208,7 +212,7 @@ class CloudInferenceRepository {
       return _ollamaRepository.generateWithImages(
         prompt: prompt,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         images: images,
         maxCompletionTokens: maxCompletionTokens,
         provider: provider!,
@@ -313,7 +317,26 @@ class CloudInferenceRepository {
       );
     }
 
-    // For other providers, use the standard OpenAI-compatible format
+    // For OpenAI, use the transcription API which supports m4a format
+    // The chat completions audio input only accepts wav/mp3, but the app
+    // records in m4a format. The transcription API is more compatible.
+    if (provider.inferenceProviderType == InferenceProviderType.openAi) {
+      developer.log(
+        'Using OpenAI transcription API for audio (m4a compatible)',
+        name: 'CloudInferenceRepository',
+      );
+
+      return _transcribeWithOpenAiApi(
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        audioBase64: audioBase64,
+        model: model,
+        prompt: prompt,
+      );
+    }
+
+    // For other providers (Gemini, etc.), use the standard OpenAI-compatible format
+    // Gemini accepts audio in various formats through its chat completions API
     if (tools != null && tools.isNotEmpty) {
       developer.log(
         'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
@@ -355,6 +378,90 @@ class CloudInferenceRepository {
         .asBroadcastStream();
   }
 
+  /// Transcribes audio using OpenAI's dedicated transcription API.
+  /// This API supports more audio formats including m4a.
+  Stream<CreateChatCompletionStreamResponse> _transcribeWithOpenAiApi({
+    required String baseUrl,
+    required String apiKey,
+    required String audioBase64,
+    required String model,
+    required String prompt,
+  }) {
+    return Stream.fromFuture(
+      () async {
+        try {
+          // Decode base64 to bytes for the multipart request
+          final audioBytes = base64Decode(audioBase64);
+
+          // Build the multipart request to OpenAI's transcription endpoint
+          final uri = Uri.parse(baseUrl).resolve('/v1/audio/transcriptions');
+          final request = http.MultipartRequest('POST', uri)
+            ..headers['Authorization'] = 'Bearer $apiKey'
+            ..fields['model'] = _openAiWhisperModel
+            ..fields['response_format'] = 'text'
+            ..files.add(http.MultipartFile.fromBytes(
+              'file',
+              audioBytes,
+              filename: 'audio.m4a',
+            ));
+
+          if (prompt.isNotEmpty) {
+            request.fields['prompt'] = prompt;
+          }
+
+          developer.log(
+            'Sending transcription request to OpenAI - url: $uri, audioSize: ${audioBytes.length}',
+            name: 'CloudInferenceRepository',
+          );
+
+          final streamedResponse = await request.send();
+          final response = await http.Response.fromStream(streamedResponse);
+
+          if (response.statusCode != 200) {
+            developer.log(
+              'OpenAI transcription failed: HTTP ${response.statusCode}',
+              name: 'CloudInferenceRepository',
+              error: response.body,
+            );
+            throw Exception(
+              'OpenAI transcription failed (HTTP ${response.statusCode}): ${response.body}',
+            );
+          }
+
+          // The response is plain text when response_format is 'text'
+          final text = response.body;
+
+          developer.log(
+            'OpenAI transcription successful - length: ${text.length}',
+            name: 'CloudInferenceRepository',
+          );
+
+          // Return as a chat completion stream response for consistency
+          return CreateChatCompletionStreamResponse(
+            id: 'transcription-${DateTime.now().millisecondsSinceEpoch}',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: text,
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+        } catch (e) {
+          developer.log(
+            'OpenAI transcription failed',
+            name: 'CloudInferenceRepository',
+            error: e,
+          );
+          rethrow;
+        }
+      }(),
+    ).asBroadcastStream();
+  }
+
   /// Generate with full conversation history for multi-turn interactions.
   ///
   /// This method properly routes to provider-specific multi-turn implementations:
@@ -373,13 +480,14 @@ class CloudInferenceRepository {
   Stream<CreateChatCompletionStreamResponse> generateWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
-    required double temperature,
+    required double? temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
+    bool isReasoningModel = false,
   }) {
     developer.log(
       'CloudInferenceRepository.generateWithMessages called with:\n'
@@ -411,7 +519,7 @@ class CloudInferenceRepository {
       return _geminiRepository.generateTextWithMessages(
         messages: messages,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         thinkingConfig: finalThinking,
         provider: provider,
         thoughtSignatures: thoughtSignatures,
@@ -428,7 +536,7 @@ class CloudInferenceRepository {
       return _ollamaRepository.generateTextWithMessages(
         messages: messages,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         provider: provider,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
@@ -448,11 +556,23 @@ class CloudInferenceRepository {
       );
     }
 
+    // For OpenAI reasoning models, don't pass temperature (they don't support it)
+    final isOpenAiReasoningModel = isReasoningModel &&
+        provider.inferenceProviderType == InferenceProviderType.openAi;
+    final effectiveTemperature = isOpenAiReasoningModel ? null : temperature;
+
+    if (isOpenAiReasoningModel) {
+      developer.log(
+        'OpenAI reasoning model detected - nullifying temperature parameter',
+        name: 'CloudInferenceRepository',
+      );
+    }
+
     final res = client.createChatCompletionStream(
       request: _createBaseRequest(
         messages: messages,
         model: model,
-        temperature: temperature,
+        temperature: effectiveTemperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
       ),

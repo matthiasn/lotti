@@ -102,6 +102,25 @@ class _InferenceProviderEditPageState
                   await FtueResultDialog.show(context, result: result);
                 }
               }
+            } else if (config.inferenceProviderType ==
+                InferenceProviderType.openAi) {
+              // Use enhanced FTUE for OpenAI providers
+              final confirmed = await FtueSetupDialog.show(
+                context,
+                providerName: 'OpenAI',
+              );
+
+              if (confirmed && context.mounted) {
+                final result = await setupService.performOpenAiFtueSetup(
+                  context: context,
+                  ref: ref,
+                  provider: config,
+                );
+
+                if (result != null && context.mounted) {
+                  await FtueResultDialog.showOpenAi(context, result: result);
+                }
+              }
             } else {
               // Use standard prompt setup for other providers
               await setupService.offerPromptSetup(

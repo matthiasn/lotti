@@ -68,5 +68,57 @@ void main() {
         'low': 2,
       });
     });
+
+    test('neither labels nor labelIds → returns empty selectedIds', () {
+      // Test when AI calls function without providing either parameter
+      final args = jsonEncode({
+        'someOtherField': 'value',
+      });
+
+      final result = parseLabelCallArgs(args);
+      expect(result.selectedIds, isEmpty);
+      expect(result.droppedLow, 0);
+      expect(result.legacyUsed, isFalse);
+      expect(result.totalCandidates, 0);
+      expect(result.confidenceBreakdown, {
+        'very_high': 0,
+        'high': 0,
+        'medium': 0,
+        'low': 0,
+      });
+    });
+
+    test('empty labels array → returns empty selectedIds', () {
+      final args = jsonEncode({
+        'labels': <Map<String, dynamic>>[],
+      });
+
+      final result = parseLabelCallArgs(args);
+      expect(result.selectedIds, isEmpty);
+      expect(result.droppedLow, 0);
+      expect(result.legacyUsed, isFalse);
+      expect(result.totalCandidates, 0);
+    });
+
+    test('empty labelIds array → returns empty selectedIds', () {
+      final args = jsonEncode({
+        'labelIds': <String>[],
+      });
+
+      final result = parseLabelCallArgs(args);
+      expect(result.selectedIds, isEmpty);
+      expect(result.droppedLow, 0);
+      expect(result.legacyUsed, isTrue); // labelIds was present but empty
+      expect(result.totalCandidates, 0);
+    });
+
+    test('invalid JSON → returns empty selectedIds gracefully', () {
+      const args = 'not valid json {{{';
+
+      final result = parseLabelCallArgs(args);
+      expect(result.selectedIds, isEmpty);
+      expect(result.droppedLow, 0);
+      expect(result.legacyUsed, isFalse);
+    });
   });
 }

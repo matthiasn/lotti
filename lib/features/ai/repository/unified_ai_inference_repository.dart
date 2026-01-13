@@ -351,13 +351,20 @@ class UnifiedAiInferenceRepository {
       // Start timing the inference
       final stopwatch = Stopwatch()..start();
 
+      // Don't pass temperature for OpenAI's reasoning models (o3, o4-mini)
+      // as they don't support this parameter. Other providers' reasoning models
+      // (like Gemini, Ollama) do support temperature.
+      final isOpenAiReasoningModel = model.isReasoningModel &&
+          provider.inferenceProviderType == InferenceProviderType.openAi;
+      final temperature = isOpenAiReasoningModel ? null : 0.6;
+
       final stream = await _runCloudInference(
         prompt: prompt,
         model: model,
         provider: provider,
         images: images,
         audioBase64: audioBase64,
-        temperature: 0.6,
+        temperature: temperature,
         systemMessage: systemMessage,
         entity: entity,
         promptConfig: promptConfig,
@@ -439,6 +446,7 @@ class UnifiedAiInferenceRepository {
         toolCalls: toolCalls,
         usage: usage,
         durationMs: durationMs,
+        temperature: temperature,
       );
 
       onStatusChange(InferenceStatus.idle);
@@ -543,7 +551,7 @@ class UnifiedAiInferenceRepository {
     required AiConfigInferenceProvider provider,
     required List<String> images,
     required String? audioBase64,
-    required double temperature,
+    required double? temperature,
     required JournalEntity entity,
     required AiConfigPrompt promptConfig,
     required bool isAiStreamingEnabled,
@@ -690,6 +698,7 @@ class UnifiedAiInferenceRepository {
     List<ChatCompletionMessageToolCall>? toolCalls,
     CompletionUsage? usage,
     int? durationMs,
+    double? temperature,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
@@ -741,9 +750,10 @@ class UnifiedAiInferenceRepository {
     }
 
     // Create AI response data
+    // Note: temperature is computed earlier based on model.isReasoningModel
     final data = AiResponseData(
       model: model.providerModelId,
-      temperature: 0.6,
+      temperature: temperature,
       systemMessage: promptConfig.systemMessage,
       prompt: prompt,
       promptId: promptConfig.id,
@@ -1359,6 +1369,16 @@ class UnifiedAiInferenceRepository {
           final parsed = parseLabelCallArgs(toolCall.function.arguments);
           final requested =
               LinkedHashSet<String>.from(parsed.selectedIds).toList();
+
+          // Defensive check: warn if AI called without valid labels
+          if (requested.isEmpty) {
+            developer.log(
+              'assign_task_labels called without valid labels or labelIds - '
+              'raw args: ${toolCall.function.arguments}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
 
           // Phase 3: filter suppressed IDs for this task (hard filter)
           final suppressedSet =

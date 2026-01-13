@@ -284,6 +284,25 @@ const List<KnownModel> openaiModels = [
     supportsFunctionCalling: true,
     description: 'Faster, more affordable reasoning model',
   ),
+  KnownModel(
+    providerModelId: 'gpt-4o-audio-preview-2025-06-03',
+    name: 'GPT-4o Audio',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description:
+        'Multimodal model with native audio understanding for transcription and voice tasks',
+  ),
+  KnownModel(
+    providerModelId: 'gpt-image-1',
+    name: 'GPT Image 1',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text, Modality.image],
+    isReasoningModel: false,
+    description:
+        'Advanced image generation model for creating visual content from text descriptions',
+  ),
 ];
 
 /// Anthropic models - Advanced language and multimodal models
@@ -539,4 +558,48 @@ KnownModel? findGeminiKnownModel(String providerModelId) {
   }
 
   return (flash: flash, pro: pro, image: image);
+}
+
+// =============================================================================
+// OpenAI FTUE (First Time User Experience) Model Constants
+// =============================================================================
+
+/// Model IDs used for OpenAI FTUE automation
+const ftueOpenAiReasoningModelId = 'o3-2025-04-16';
+const ftueOpenAiFlashModelId = 'o4-mini-2025-04-16';
+const ftueOpenAiAudioModelId = 'gpt-4o-audio-preview-2025-06-03';
+const ftueOpenAiImageModelId = 'gpt-image-1';
+
+/// Finds a KnownModel by its provider model ID from the openaiModels list.
+/// Returns null if not found.
+KnownModel? findOpenAiKnownModel(String providerModelId) {
+  for (final model in openaiModels) {
+    if (model.providerModelId == providerModelId) {
+      return model;
+    }
+  }
+  return null;
+}
+
+/// Returns the four KnownModel configurations needed for OpenAI FTUE.
+/// - Flash model (o4-mini) for fast processing tasks
+/// - Reasoning model (o3) for complex reasoning tasks
+/// - Audio model (GPT-4o Audio) for transcription
+/// - Image model (GPT Image 1) for image generation output
+({
+  KnownModel flash,
+  KnownModel reasoning,
+  KnownModel audio,
+  KnownModel image,
+})? getOpenAiFtueKnownModels() {
+  final flash = findOpenAiKnownModel(ftueOpenAiFlashModelId);
+  final reasoning = findOpenAiKnownModel(ftueOpenAiReasoningModelId);
+  final audio = findOpenAiKnownModel(ftueOpenAiAudioModelId);
+  final image = findOpenAiKnownModel(ftueOpenAiImageModelId);
+
+  if (flash == null || reasoning == null || audio == null || image == null) {
+    return null;
+  }
+
+  return (flash: flash, reasoning: reasoning, audio: audio, image: image);
 }

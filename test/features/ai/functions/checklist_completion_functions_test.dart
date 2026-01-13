@@ -20,7 +20,8 @@ void main() {
     expect(itemSchema['type'], equals('object'));
     final itemProps = itemSchema['properties']! as Map<String, Object?>;
     expect(itemProps.containsKey('title'), isTrue);
-    expect(itemProps.containsKey('isChecked'), isTrue);
+    // Note: isChecked was removed from new item schema - all items are created unchecked
+    expect(itemProps.containsKey('isChecked'), isFalse);
   });
 
   test('update_checklist_items tool requires array of update objects', () {
