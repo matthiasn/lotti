@@ -363,6 +363,97 @@
   "dailyOsEditBudget": "Edit Budget",
   "dailyOsDeleteBudget": "Delete Budget?",
   "dailyOsDeleteBudgetConfirm": "This will remove the time budget from your day plan.",
+  "dailyOsPlan": "Plan",
+  "dailyOsActual": "Actual",
+  "dailyOsDuplicateBudget": "A budget for \"{categoryName}\" already exists",
+  "@dailyOsDuplicateBudget": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsInvalidTimeRange": "Invalid time range",
+  "dailyOsTimesUp": "Time's up",
+  "dailyOsTimeLeft": "{time} left",
+  "@dailyOsTimeLeft": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsTimeOver": "+{time} over",
+  "@dailyOsTimeOver": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsHoursPlanned": "{count, plural, =1{1 hour planned} other{{count} hours planned}}",
+  "@dailyOsHoursPlanned": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsHoursMinutesPlanned": "{hours}h {minutes}m planned",
+  "@dailyOsHoursMinutesPlanned": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsMinutesPlanned": "{count} min planned",
+  "@dailyOsMinutesPlanned": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsEntry": "Entry",
+  "dailyOsFailedToLoadBudgets": "Failed to load budgets",
+  "dailyOsFailedToLoadTimeline": "Failed to load timeline",
+  "dailyOsChooseCategory": "Choose a category...",
+  "dailyOsDurationHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@dailyOsDurationHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsDurationHoursMinutes": "{hours}h {minutes}m",
+  "@dailyOsDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsDurationMinutes": "{count} minutes",
+  "@dailyOsDurationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsDuration30m": "30m",
+  "dailyOsDuration1h": "1h",
+  "dailyOsDuration2h": "2h",
+  "dailyOsDuration3h": "3h",
+  "dailyOsDuration4h": "4h",
   "dashboardActiveLabel": "Active:",
   "dashboardAddChartsTitle": "Add Charts:",
   "dashboardAddHabitButton": "Habit Charts",

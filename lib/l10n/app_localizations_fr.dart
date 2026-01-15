@@ -960,6 +960,102 @@ class AppLocalizationsFr extends AppLocalizations {
       'This will remove the time budget from your day plan.';
 
   @override
+  String get dailyOsPlan => 'Plan';
+
+  @override
+  String get dailyOsActual => 'Actual';
+
+  @override
+  String dailyOsDuplicateBudget(String categoryName) {
+    return 'A budget for \"$categoryName\" already exists';
+  }
+
+  @override
+  String get dailyOsInvalidTimeRange => 'Invalid time range';
+
+  @override
+  String get dailyOsTimesUp => 'Time\'s up';
+
+  @override
+  String dailyOsTimeLeft(String time) {
+    return '$time left';
+  }
+
+  @override
+  String dailyOsTimeOver(String time) {
+    return '+$time over';
+  }
+
+  @override
+  String dailyOsHoursPlanned(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours planned',
+      one: '1 hour planned',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsHoursMinutesPlanned(int hours, int minutes) {
+    return '${hours}h ${minutes}m planned';
+  }
+
+  @override
+  String dailyOsMinutesPlanned(int count) {
+    return '$count min planned';
+  }
+
+  @override
+  String get dailyOsEntry => 'Entry';
+
+  @override
+  String get dailyOsFailedToLoadBudgets => 'Failed to load budgets';
+
+  @override
+  String get dailyOsFailedToLoadTimeline => 'Failed to load timeline';
+
+  @override
+  String get dailyOsChooseCategory => 'Choose a category...';
+
+  @override
+  String dailyOsDurationHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsDurationHoursMinutes(int hours, int minutes) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
+  String dailyOsDurationMinutes(int count) {
+    return '$count minutes';
+  }
+
+  @override
+  String get dailyOsDuration30m => '30m';
+
+  @override
+  String get dailyOsDuration1h => '1h';
+
+  @override
+  String get dailyOsDuration2h => '2h';
+
+  @override
+  String get dailyOsDuration3h => '3h';
+
+  @override
+  String get dailyOsDuration4h => '4h';
+
+  @override
   String get dashboardActiveLabel => 'Actif :';
 
   @override

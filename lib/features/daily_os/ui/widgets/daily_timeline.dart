@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
@@ -68,7 +69,7 @@ class _TimelineContent extends StatelessWidget {
               ),
               const SizedBox(width: AppTheme.spacingSmall),
               Text(
-                'Timeline',
+                context.messages.dailyOsTimeline,
                 style: context.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -99,7 +100,7 @@ class _TimelineContent extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Plan',
+                      context.messages.dailyOsPlan,
                       style: context.textTheme.labelSmall?.copyWith(
                         color: context.colorScheme.onSurfaceVariant,
                       ),
@@ -115,7 +116,7 @@ class _TimelineContent extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Actual',
+                      context.messages.dailyOsActual,
                       style: context.textTheme.labelSmall?.copyWith(
                         color: context.colorScheme.onSurfaceVariant,
                       ),
@@ -196,6 +197,7 @@ class _TimelineContent extends StatelessWidget {
                       return _PlannedBlockWidget(
                         slot: slot,
                         startHour: startHour,
+                        date: data.date,
                       );
                     }).toList(),
                   ),
@@ -261,10 +263,12 @@ class _PlannedBlockWidget extends ConsumerWidget {
   const _PlannedBlockWidget({
     required this.slot,
     required this.startHour,
+    required this.date,
   });
 
   final PlannedTimeSlot slot;
   final int startHour;
+  final DateTime date;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -297,7 +301,7 @@ class _PlannedBlockWidget extends ConsumerWidget {
           }
         },
         onLongPress: () {
-          PlannedBlockEditModal.show(context, slot.block);
+          PlannedBlockEditModal.show(context, slot.block, date);
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -493,14 +497,14 @@ class _EmptyTimelineState extends StatelessWidget {
           ),
           const SizedBox(height: AppTheme.spacingMedium),
           Text(
-            'No timeline entries',
+            context.messages.dailyOsNoTimeline,
             style: context.textTheme.titleMedium?.copyWith(
               color: context.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppTheme.spacingSmall),
           Text(
-            'Start a timer or add planned blocks to see your day.',
+            context.messages.dailyOsNoTimelineHint,
             style: context.textTheme.bodyMedium?.copyWith(
               color:
                   context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
@@ -552,7 +556,7 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(width: AppTheme.spacingMedium),
           Expanded(
             child: Text(
-              'Failed to load timeline',
+              context.messages.dailyOsFailedToLoadTimeline,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.error,
               ),

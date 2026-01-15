@@ -1809,6 +1809,138 @@ abstract class AppLocalizations {
   /// **'This will remove the time budget from your day plan.'**
   String get dailyOsDeleteBudgetConfirm;
 
+  /// No description provided for @dailyOsPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get dailyOsPlan;
+
+  /// No description provided for @dailyOsActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get dailyOsActual;
+
+  /// No description provided for @dailyOsDuplicateBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'A budget for \"{categoryName}\" already exists'**
+  String dailyOsDuplicateBudget(String categoryName);
+
+  /// No description provided for @dailyOsInvalidTimeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid time range'**
+  String get dailyOsInvalidTimeRange;
+
+  /// No description provided for @dailyOsTimesUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Time\'s up'**
+  String get dailyOsTimesUp;
+
+  /// No description provided for @dailyOsTimeLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} left'**
+  String dailyOsTimeLeft(String time);
+
+  /// No description provided for @dailyOsTimeOver.
+  ///
+  /// In en, this message translates to:
+  /// **'+{time} over'**
+  String dailyOsTimeOver(String time);
+
+  /// No description provided for @dailyOsHoursPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour planned} other{{count} hours planned}}'**
+  String dailyOsHoursPlanned(int count);
+
+  /// No description provided for @dailyOsHoursMinutesPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h {minutes}m planned'**
+  String dailyOsHoursMinutesPlanned(int hours, int minutes);
+
+  /// No description provided for @dailyOsMinutesPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min planned'**
+  String dailyOsMinutesPlanned(int count);
+
+  /// No description provided for @dailyOsEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry'**
+  String get dailyOsEntry;
+
+  /// No description provided for @dailyOsFailedToLoadBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load budgets'**
+  String get dailyOsFailedToLoadBudgets;
+
+  /// No description provided for @dailyOsFailedToLoadTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load timeline'**
+  String get dailyOsFailedToLoadTimeline;
+
+  /// No description provided for @dailyOsChooseCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a category...'**
+  String get dailyOsChooseCategory;
+
+  /// No description provided for @dailyOsDurationHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String dailyOsDurationHours(int count);
+
+  /// No description provided for @dailyOsDurationHoursMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h {minutes}m'**
+  String dailyOsDurationHoursMinutes(int hours, int minutes);
+
+  /// No description provided for @dailyOsDurationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} minutes'**
+  String dailyOsDurationMinutes(int count);
+
+  /// No description provided for @dailyOsDuration30m.
+  ///
+  /// In en, this message translates to:
+  /// **'30m'**
+  String get dailyOsDuration30m;
+
+  /// No description provided for @dailyOsDuration1h.
+  ///
+  /// In en, this message translates to:
+  /// **'1h'**
+  String get dailyOsDuration1h;
+
+  /// No description provided for @dailyOsDuration2h.
+  ///
+  /// In en, this message translates to:
+  /// **'2h'**
+  String get dailyOsDuration2h;
+
+  /// No description provided for @dailyOsDuration3h.
+  ///
+  /// In en, this message translates to:
+  /// **'3h'**
+  String get dailyOsDuration3h;
+
+  /// No description provided for @dailyOsDuration4h.
+  ///
+  /// In en, this message translates to:
+  /// **'4h'**
+  String get dailyOsDuration4h;
+
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:

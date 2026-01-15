@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -14,16 +13,22 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class PlannedBlockEditModal extends ConsumerStatefulWidget {
   const PlannedBlockEditModal({
     required this.block,
+    required this.date,
     super.key,
   });
 
   final PlannedBlock block;
+  final DateTime date;
 
-  static Future<void> show(BuildContext context, PlannedBlock block) {
+  static Future<void> show(
+    BuildContext context,
+    PlannedBlock block,
+    DateTime date,
+  ) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => PlannedBlockEditModal(block: block),
+      builder: (context) => PlannedBlockEditModal(block: block, date: date),
     );
   }
 
@@ -236,7 +241,7 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
                 const SizedBox(width: AppTheme.spacingMedium),
                 Expanded(
                   child: FilledButton(
-                    onPressed: _handleSave,
+                    onPressed: _isValidTimeRange() ? _handleSave : null,
                     child: Text(context.messages.dailyOsSave),
                   ),
                 ),
@@ -256,24 +261,29 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
     final durationMinutes = endMinutes - startMinutes;
 
     if (durationMinutes <= 0) {
-      return 'Invalid time range';
+      return context.messages.dailyOsInvalidTimeRange;
     }
 
     if (durationMinutes >= 60) {
       final hours = durationMinutes ~/ 60;
       final mins = durationMinutes % 60;
-      if (mins == 0) return '$hours hour${hours == 1 ? '' : 's'}';
-      return '${hours}h ${mins}m';
+      if (mins == 0) return context.messages.dailyOsDurationHours(hours);
+      return context.messages.dailyOsDurationHoursMinutes(hours, mins);
     }
-    return '$durationMinutes minutes';
+    return context.messages.dailyOsDurationMinutes(durationMinutes);
+  }
+
+  bool _isValidTimeRange() {
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    return endMinutes > startMinutes;
   }
 
   Future<void> _handleSave() async {
-    final selectedDate = ref.read(dailyOsSelectedDateProvider);
     final baseDate = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
+      widget.date.year,
+      widget.date.month,
+      widget.date.day,
     );
 
     final updatedBlock = widget.block.copyWith(
@@ -287,7 +297,7 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
     );
 
     await ref
-        .read(dayPlanControllerProvider(date: selectedDate).notifier)
+        .read(dayPlanControllerProvider(date: widget.date).notifier)
         .updatePlannedBlock(updatedBlock);
 
     if (mounted) {
@@ -318,9 +328,8 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
     );
 
     if ((confirmed ?? false) && mounted) {
-      final selectedDate = ref.read(dailyOsSelectedDateProvider);
       await ref
-          .read(dayPlanControllerProvider(date: selectedDate).notifier)
+          .read(dayPlanControllerProvider(date: widget.date).notifier)
           .removePlannedBlock(widget.block.id);
       if (mounted) {
         Navigator.pop(context);

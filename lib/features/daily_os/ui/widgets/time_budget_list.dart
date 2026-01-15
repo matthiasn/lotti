@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os/state/time_budget_progress_controller.da
 import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_edit_modal.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -46,7 +47,7 @@ class TimeBudgetList extends ConsumerWidget {
                   ),
                   const SizedBox(width: AppTheme.spacingSmall),
                   Text(
-                    'Time Budgets',
+                    context.messages.dailyOsTimeBudgets,
                     style: context.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -111,6 +112,7 @@ class TimeBudgetList extends ConsumerWidget {
                         context,
                         progress.budget,
                         progress.category,
+                        selectedDate,
                       );
                     },
                   ),
@@ -198,14 +200,14 @@ class _EmptyBudgetsState extends StatelessWidget {
           ),
           const SizedBox(height: AppTheme.spacingMedium),
           Text(
-            'No time budgets',
+            context.messages.dailyOsNoBudgets,
             style: context.textTheme.titleMedium?.copyWith(
               color: context.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppTheme.spacingSmall),
           Text(
-            'Add budgets to track how you spend your time across categories.',
+            context.messages.dailyOsNoBudgetsHint,
             style: context.textTheme.bodyMedium?.copyWith(
               color:
                   context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
@@ -218,7 +220,7 @@ class _EmptyBudgetsState extends StatelessWidget {
               AddBudgetSheet.show(context, date);
             },
             icon: const Icon(Icons.add),
-            label: const Text('Add Budget'),
+            label: Text(context.messages.dailyOsAddBudget),
           ),
         ],
       ),
@@ -265,7 +267,7 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(width: AppTheme.spacingMedium),
           Expanded(
             child: Text(
-              'Failed to load budgets',
+              context.messages.dailyOsFailedToLoadBudgets,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.error,
               ),

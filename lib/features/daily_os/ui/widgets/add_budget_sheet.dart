@@ -56,13 +56,30 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
     final category = _selectedCategory;
     if (category == null) return;
 
-    // Get current budgets to determine sort order
-    final dayPlanEntity = ref.read(
-      dayPlanControllerProvider(date: widget.date),
-    );
-    final currentBudgets = dayPlanEntity.value is DayPlanEntry
-        ? (dayPlanEntity.value! as DayPlanEntry).data.budgets
-        : <TimeBudget>[];
+    // Get the day plan - await to ensure we have the latest data
+    final dayPlanController =
+        ref.read(dayPlanControllerProvider(date: widget.date).notifier);
+    final dayPlanAsync = ref.read(dayPlanControllerProvider(date: widget.date));
+
+    // If data is still loading, wait for it
+    DayPlanEntry? dayPlanEntry;
+    if (dayPlanAsync.isLoading) {
+      // Wait for the provider to resolve
+      final resolved = await ref.read(
+        dayPlanControllerProvider(date: widget.date).future,
+      );
+      dayPlanEntry = resolved is DayPlanEntry ? resolved : null;
+    } else {
+      dayPlanEntry =
+          dayPlanAsync.value is DayPlanEntry ? dayPlanAsync.value! as DayPlanEntry : null;
+    }
+
+    if (dayPlanEntry == null) {
+      // Cannot determine existing budgets, don't allow add
+      return;
+    }
+
+    final currentBudgets = dayPlanEntry.data.budgets;
 
     // Check for duplicate category
     final hasDuplicate = currentBudgets.any((b) => b.categoryId == category.id);
@@ -71,7 +88,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'A budget for "${category.name}" already exists',
+              context.messages.dailyOsDuplicateBudget(category.name),
             ),
             behavior: SnackBarBehavior.floating,
           ),
@@ -87,9 +104,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
       sortOrder: currentBudgets.length,
     );
 
-    await ref
-        .read(dayPlanControllerProvider(date: widget.date).notifier)
-        .addBudget(budget);
+    await dayPlanController.addBudget(budget);
 
     if (mounted) {
       Navigator.pop(context);
@@ -189,7 +204,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       const SizedBox(width: AppTheme.spacingSmall),
                       Expanded(
                         child: Text(
-                          'Choose a category...',
+                          context.messages.dailyOsChooseCategory,
                           style: context.textTheme.bodyMedium?.copyWith(
                             color: context.colorScheme.onSurfaceVariant,
                           ),
@@ -218,27 +233,27 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
               runSpacing: 8,
               children: [
                 _DurationChip(
-                  label: '30m',
+                  label: context.messages.dailyOsDuration30m,
                   isSelected: _plannedMinutes == 30,
                   onTap: () => setState(() => _plannedMinutes = 30),
                 ),
                 _DurationChip(
-                  label: '1h',
+                  label: context.messages.dailyOsDuration1h,
                   isSelected: _plannedMinutes == 60,
                   onTap: () => setState(() => _plannedMinutes = 60),
                 ),
                 _DurationChip(
-                  label: '2h',
+                  label: context.messages.dailyOsDuration2h,
                   isSelected: _plannedMinutes == 120,
                   onTap: () => setState(() => _plannedMinutes = 120),
                 ),
                 _DurationChip(
-                  label: '3h',
+                  label: context.messages.dailyOsDuration3h,
                   isSelected: _plannedMinutes == 180,
                   onTap: () => setState(() => _plannedMinutes = 180),
                 ),
                 _DurationChip(
-                  label: '4h',
+                  label: context.messages.dailyOsDuration4h,
                   isSelected: _plannedMinutes == 240,
                   onTap: () => setState(() => _plannedMinutes = 240),
                 ),

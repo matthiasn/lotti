@@ -89,6 +89,7 @@ void main() {
           body: TimeBudgetEditModal(
             budget: budget,
             category: category,
+            date: testDate,
           ),
         ),
       ),

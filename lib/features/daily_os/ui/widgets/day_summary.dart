@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -46,7 +47,9 @@ class DaySummary extends ConsumerWidget {
                       ),
                       const SizedBox(width: AppTheme.spacingMedium),
                       Text(
-                        isComplete ? 'Day Complete' : 'Day Summary',
+                        isComplete
+                            ? context.messages.dailyOsDayComplete
+                            : context.messages.dailyOsDaySummary,
                         style: context.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -61,21 +64,23 @@ class DaySummary extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: _StatItem(
-                          label: 'Planned',
+                          label: context.messages.dailyOsPlanned,
                           value: _formatDuration(stats.totalPlanned),
                           icon: MdiIcons.targetAccount,
                         ),
                       ),
                       Expanded(
                         child: _StatItem(
-                          label: 'Recorded',
+                          label: context.messages.dailyOsRecorded,
                           value: _formatDuration(stats.totalRecorded),
                           icon: MdiIcons.clockCheck,
                         ),
                       ),
                       Expanded(
                         child: _StatItem(
-                          label: stats.isOverBudget ? 'Over' : 'Remaining',
+                          label: stats.isOverBudget
+                              ? context.messages.dailyOsOver
+                              : context.messages.dailyOsRemaining,
                           value: _formatDuration(stats.totalRemaining.abs()),
                           icon: stats.isOverBudget
                               ? MdiIcons.alertCircle
@@ -104,7 +109,7 @@ class DaySummary extends ConsumerWidget {
                       children: [
                         _ActionButton(
                           icon: MdiIcons.checkAll,
-                          label: 'Done for today',
+                          label: context.messages.dailyOsDoneForToday,
                           onPressed: () {
                             ref
                                 .read(
@@ -116,7 +121,7 @@ class DaySummary extends ConsumerWidget {
                         ),
                         _ActionButton(
                           icon: MdiIcons.contentCopy,
-                          label: 'Copy to tomorrow',
+                          label: context.messages.dailyOsCopyToTomorrow,
                           onPressed: () {
                             // TODO: Implement copy budgets to next day
                           },
@@ -144,7 +149,7 @@ class DaySummary extends ConsumerWidget {
                           const SizedBox(width: AppTheme.spacingSmall),
                           Expanded(
                             child: Text(
-                              'Great job! You completed your day.',
+                              context.messages.dailyOsCompletionMessage,
                               style: context.textTheme.bodyMedium?.copyWith(
                                 color: Colors.green.shade700,
                               ),
@@ -238,7 +243,7 @@ class _OverallProgressBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Overall Progress',
+              context.messages.dailyOsOverallProgress,
               style: context.textTheme.labelMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),

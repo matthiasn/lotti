@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -14,16 +13,19 @@ class TimeBudgetEditModal extends ConsumerStatefulWidget {
   const TimeBudgetEditModal({
     required this.budget,
     required this.category,
+    required this.date,
     super.key,
   });
 
   final TimeBudget budget;
   final CategoryDefinition? category;
+  final DateTime date;
 
   static Future<void> show(
     BuildContext context,
     TimeBudget budget,
     CategoryDefinition? category,
+    DateTime date,
   ) {
     return showModalBottomSheet<void>(
       context: context,
@@ -31,6 +33,7 @@ class TimeBudgetEditModal extends ConsumerStatefulWidget {
       builder: (context) => TimeBudgetEditModal(
         budget: budget,
         category: category,
+        date: date,
       ),
     );
   }
@@ -163,27 +166,27 @@ class _TimeBudgetEditModalState extends ConsumerState<TimeBudgetEditModal> {
               runSpacing: 8,
               children: [
                 _DurationChip(
-                  label: '30m',
+                  label: context.messages.dailyOsDuration30m,
                   isSelected: _plannedMinutes == 30,
                   onTap: () => setState(() => _plannedMinutes = 30),
                 ),
                 _DurationChip(
-                  label: '1h',
+                  label: context.messages.dailyOsDuration1h,
                   isSelected: _plannedMinutes == 60,
                   onTap: () => setState(() => _plannedMinutes = 60),
                 ),
                 _DurationChip(
-                  label: '2h',
+                  label: context.messages.dailyOsDuration2h,
                   isSelected: _plannedMinutes == 120,
                   onTap: () => setState(() => _plannedMinutes = 120),
                 ),
                 _DurationChip(
-                  label: '3h',
+                  label: context.messages.dailyOsDuration3h,
                   isSelected: _plannedMinutes == 180,
                   onTap: () => setState(() => _plannedMinutes = 180),
                 ),
                 _DurationChip(
-                  label: '4h',
+                  label: context.messages.dailyOsDuration4h,
                   isSelected: _plannedMinutes == 240,
                   onTap: () => setState(() => _plannedMinutes = 240),
                 ),
@@ -223,9 +226,8 @@ class _TimeBudgetEditModalState extends ConsumerState<TimeBudgetEditModal> {
       plannedMinutes: _plannedMinutes,
     );
 
-    final selectedDate = ref.read(dailyOsSelectedDateProvider);
     await ref
-        .read(dayPlanControllerProvider(date: selectedDate).notifier)
+        .read(dayPlanControllerProvider(date: widget.date).notifier)
         .updateBudget(updatedBudget);
 
     if (mounted) {
@@ -256,9 +258,8 @@ class _TimeBudgetEditModalState extends ConsumerState<TimeBudgetEditModal> {
     );
 
     if ((confirmed ?? false) && mounted) {
-      final selectedDate = ref.read(dailyOsSelectedDateProvider);
       await ref
-          .read(dayPlanControllerProvider(date: selectedDate).notifier)
+          .read(dayPlanControllerProvider(date: widget.date).notifier)
           .removeBudget(widget.budget.id);
       if (mounted) {
         Navigator.pop(context);

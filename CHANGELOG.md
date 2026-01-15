@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.823] - 2026-01-24
+### Added
+- Daily Operating System: New time management feature for planning and tracking your day
+  - Day Plan entity with time budgets, planned blocks, and pinned tasks
+  - Timeline view comparing planned vs actual time allocation
+  - Time budget cards with progress tracking and category-based coloring
+  - Budget reordering via drag-and-drop with preserved sort order
+  - Planned block editor with time range validation
+  - Day summary with overall progress and completion tracking
+  - Cross-highlight between timeline and budget cards for visual correlation
+  - Plan agreement flow: draft → agreed → reviewed workflow
+  - Automatic day plan creation with smart defaults
+
 ## [0.9.822] - 2026-01-24
 ### Fixed
 - Task Time Tracking: Audio recording duration no longer counts toward time spent

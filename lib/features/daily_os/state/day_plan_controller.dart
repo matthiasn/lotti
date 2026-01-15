@@ -210,17 +210,31 @@ class DayPlanController extends _$DayPlanController {
   /// Reorders budgets according to the new order.
   ///
   /// Takes a list of budget IDs in the desired order.
+  /// Budgets not in the list are preserved and appended at the end.
   Future<void> reorderBudgets(List<String> budgetIdsInNewOrder) async {
     final current = state.value;
     if (current is! DayPlanEntry) return;
 
     final budgetMap = {for (final b in current.data.budgets) b.id: b};
+    final processedIds = <String>{};
     final reorderedBudgets = <TimeBudget>[];
 
+    // First, add budgets in the specified order
     for (var i = 0; i < budgetIdsInNewOrder.length; i++) {
-      final budget = budgetMap[budgetIdsInNewOrder[i]];
+      final budgetId = budgetIdsInNewOrder[i];
+      final budget = budgetMap[budgetId];
       if (budget != null) {
         reorderedBudgets.add(budget.copyWith(sortOrder: i));
+        processedIds.add(budgetId);
+      }
+    }
+
+    // Then, append any budgets that weren't in the list (preserve them)
+    var nextSortOrder = reorderedBudgets.length;
+    for (final budget in current.data.budgets) {
+      if (!processedIds.contains(budget.id)) {
+        reorderedBudgets.add(budget.copyWith(sortOrder: nextSortOrder));
+        nextSortOrder++;
       }
     }
 

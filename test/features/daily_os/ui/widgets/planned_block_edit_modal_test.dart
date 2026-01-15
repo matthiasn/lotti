@@ -115,7 +115,7 @@ void main() {
       ],
       child: Builder(
         builder: (context) => Scaffold(
-          body: PlannedBlockEditModal(block: block),
+          body: PlannedBlockEditModal(block: block, date: testDate),
         ),
       ),
     );
