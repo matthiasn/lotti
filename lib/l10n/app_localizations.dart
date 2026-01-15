@@ -1539,6 +1539,258 @@ abstract class AppLocalizations {
   /// **'Custom Color'**
   String get customColor;
 
+  /// No description provided for @dailyOsTodayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dailyOsTodayButton;
+
+  /// No description provided for @dailyOsTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get dailyOsTimeline;
+
+  /// No description provided for @dailyOsTimeBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Budgets'**
+  String get dailyOsTimeBudgets;
+
+  /// No description provided for @dailyOsDaySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Day Summary'**
+  String get dailyOsDaySummary;
+
+  /// No description provided for @dailyOsDayComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Day Complete'**
+  String get dailyOsDayComplete;
+
+  /// No description provided for @dailyOsPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get dailyOsPlanned;
+
+  /// No description provided for @dailyOsRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded'**
+  String get dailyOsRecorded;
+
+  /// No description provided for @dailyOsRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get dailyOsRemaining;
+
+  /// No description provided for @dailyOsOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Over'**
+  String get dailyOsOver;
+
+  /// No description provided for @dailyOsDoneForToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Done for today'**
+  String get dailyOsDoneForToday;
+
+  /// No description provided for @dailyOsCopyToTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to tomorrow'**
+  String get dailyOsCopyToTomorrow;
+
+  /// No description provided for @dailyOsAddBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Budget'**
+  String get dailyOsAddBudget;
+
+  /// No description provided for @dailyOsSelectCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Category'**
+  String get dailyOsSelectCategory;
+
+  /// No description provided for @dailyOsPlannedDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned Duration'**
+  String get dailyOsPlannedDuration;
+
+  /// No description provided for @dailyOsAgreeToPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Agree to Plan'**
+  String get dailyOsAgreeToPlan;
+
+  /// No description provided for @dailyOsReAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-agree'**
+  String get dailyOsReAgree;
+
+  /// No description provided for @dailyOsDraftMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan is in draft. Agree to lock it in.'**
+  String get dailyOsDraftMessage;
+
+  /// No description provided for @dailyOsReviewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes detected. Review your plan.'**
+  String get dailyOsReviewMessage;
+
+  /// No description provided for @dailyOsCompletionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Great job! You completed your day.'**
+  String get dailyOsCompletionMessage;
+
+  /// No description provided for @dailyOsNoTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'No timeline entries'**
+  String get dailyOsNoTimeline;
+
+  /// No description provided for @dailyOsNoTimelineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a timer or add planned blocks to see your day.'**
+  String get dailyOsNoTimelineHint;
+
+  /// No description provided for @dailyOsNoBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'No time budgets'**
+  String get dailyOsNoBudgets;
+
+  /// No description provided for @dailyOsNoBudgetsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add budgets to track how you spend your time across categories.'**
+  String get dailyOsNoBudgetsHint;
+
+  /// No description provided for @dailyOsOverBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Over budget'**
+  String get dailyOsOverBudget;
+
+  /// No description provided for @dailyOsNearLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Near limit'**
+  String get dailyOsNearLimit;
+
+  /// No description provided for @dailyOsOnTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'On track'**
+  String get dailyOsOnTrack;
+
+  /// No description provided for @dailyOsOverallProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall Progress'**
+  String get dailyOsOverallProgress;
+
+  /// No description provided for @dailyOsViewModeClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get dailyOsViewModeClassic;
+
+  /// No description provided for @dailyOsViewModeDailyOs.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily OS'**
+  String get dailyOsViewModeDailyOs;
+
+  /// No description provided for @dailyOsEditPlannedBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Planned Block'**
+  String get dailyOsEditPlannedBlock;
+
+  /// No description provided for @dailyOsTimeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Range'**
+  String get dailyOsTimeRange;
+
+  /// No description provided for @dailyOsStartTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get dailyOsStartTime;
+
+  /// No description provided for @dailyOsEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get dailyOsEndTime;
+
+  /// No description provided for @dailyOsCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get dailyOsCategory;
+
+  /// No description provided for @dailyOsUncategorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncategorized'**
+  String get dailyOsUncategorized;
+
+  /// No description provided for @dailyOsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get dailyOsNote;
+
+  /// No description provided for @dailyOsAddNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note...'**
+  String get dailyOsAddNote;
+
+  /// No description provided for @dailyOsCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get dailyOsCancel;
+
+  /// No description provided for @dailyOsSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get dailyOsSave;
+
+  /// No description provided for @dailyOsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get dailyOsDelete;
+
+  /// No description provided for @dailyOsDeletePlannedBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Block?'**
+  String get dailyOsDeletePlannedBlock;
+
+  /// No description provided for @dailyOsDeletePlannedBlockConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove the planned block from your timeline.'**
+  String get dailyOsDeletePlannedBlockConfirm;
+
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:

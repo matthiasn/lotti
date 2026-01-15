@@ -95,7 +95,7 @@ final class DailyOsControllerProvider
   DailyOsController create() => DailyOsController();
 }
 
-String _$dailyOsControllerHash() => r'a48162a997950117851c615ce5b2dab5522af76f';
+String _$dailyOsControllerHash() => r'0070bfc8b6a6a350c3987d50f289ddc30d7bc2bd';
 
 /// Main controller for the Daily OS view.
 ///
@@ -115,3 +115,50 @@ abstract class _$DailyOsController extends $AsyncNotifier<DailyOsState> {
     element.handleCreate(ref, build);
   }
 }
+
+/// Provides just the highlighted category ID for efficient rebuilds.
+
+@ProviderFor(highlightedCategoryId)
+final highlightedCategoryIdProvider = HighlightedCategoryIdProvider._();
+
+/// Provides just the highlighted category ID for efficient rebuilds.
+
+final class HighlightedCategoryIdProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  /// Provides just the highlighted category ID for efficient rebuilds.
+  HighlightedCategoryIdProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'highlightedCategoryIdProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$highlightedCategoryIdHash();
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    return highlightedCategoryId(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$highlightedCategoryIdHash() =>
+    r'd62a980bb4ef76cee3b1358cbebea31add1a6caa';

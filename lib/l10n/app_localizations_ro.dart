@@ -818,6 +818,135 @@ class AppLocalizationsRo extends AppLocalizations {
   String get customColor => 'Custom Color';
 
   @override
+  String get dailyOsTodayButton => 'Today';
+
+  @override
+  String get dailyOsTimeline => 'Timeline';
+
+  @override
+  String get dailyOsTimeBudgets => 'Time Budgets';
+
+  @override
+  String get dailyOsDaySummary => 'Day Summary';
+
+  @override
+  String get dailyOsDayComplete => 'Day Complete';
+
+  @override
+  String get dailyOsPlanned => 'Planned';
+
+  @override
+  String get dailyOsRecorded => 'Recorded';
+
+  @override
+  String get dailyOsRemaining => 'Remaining';
+
+  @override
+  String get dailyOsOver => 'Over';
+
+  @override
+  String get dailyOsDoneForToday => 'Done for today';
+
+  @override
+  String get dailyOsCopyToTomorrow => 'Copy to tomorrow';
+
+  @override
+  String get dailyOsAddBudget => 'Add Budget';
+
+  @override
+  String get dailyOsSelectCategory => 'Select Category';
+
+  @override
+  String get dailyOsPlannedDuration => 'Planned Duration';
+
+  @override
+  String get dailyOsAgreeToPlan => 'Agree to Plan';
+
+  @override
+  String get dailyOsReAgree => 'Re-agree';
+
+  @override
+  String get dailyOsDraftMessage => 'Plan is in draft. Agree to lock it in.';
+
+  @override
+  String get dailyOsReviewMessage => 'Changes detected. Review your plan.';
+
+  @override
+  String get dailyOsCompletionMessage => 'Great job! You completed your day.';
+
+  @override
+  String get dailyOsNoTimeline => 'No timeline entries';
+
+  @override
+  String get dailyOsNoTimelineHint =>
+      'Start a timer or add planned blocks to see your day.';
+
+  @override
+  String get dailyOsNoBudgets => 'No time budgets';
+
+  @override
+  String get dailyOsNoBudgetsHint =>
+      'Add budgets to track how you spend your time across categories.';
+
+  @override
+  String get dailyOsOverBudget => 'Over budget';
+
+  @override
+  String get dailyOsNearLimit => 'Near limit';
+
+  @override
+  String get dailyOsOnTrack => 'On track';
+
+  @override
+  String get dailyOsOverallProgress => 'Overall Progress';
+
+  @override
+  String get dailyOsViewModeClassic => 'Classic';
+
+  @override
+  String get dailyOsViewModeDailyOs => 'Daily OS';
+
+  @override
+  String get dailyOsEditPlannedBlock => 'Edit Planned Block';
+
+  @override
+  String get dailyOsTimeRange => 'Time Range';
+
+  @override
+  String get dailyOsStartTime => 'Start';
+
+  @override
+  String get dailyOsEndTime => 'End';
+
+  @override
+  String get dailyOsCategory => 'Category';
+
+  @override
+  String get dailyOsUncategorized => 'Uncategorized';
+
+  @override
+  String get dailyOsNote => 'Note';
+
+  @override
+  String get dailyOsAddNote => 'Add a note...';
+
+  @override
+  String get dailyOsCancel => 'Cancel';
+
+  @override
+  String get dailyOsSave => 'Save';
+
+  @override
+  String get dailyOsDelete => 'Delete';
+
+  @override
+  String get dailyOsDeletePlannedBlock => 'Delete Block?';
+
+  @override
+  String get dailyOsDeletePlannedBlockConfirm =>
+      'This will remove the planned block from your timeline.';
+
+  @override
   String get dashboardActiveLabel => 'Activ:';
 
   @override
