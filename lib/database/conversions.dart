@@ -80,6 +80,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
       workout: (_) => 'WorkoutEntry',
       habitCompletion: (_) => 'HabitCompletionEntry',
       survey: (_) => 'SurveyEntry',
+      dayPlan: (_) => 'DayPlanEntry',
     ),
     subtype: subtype,
     serialized: json.encode(entity),

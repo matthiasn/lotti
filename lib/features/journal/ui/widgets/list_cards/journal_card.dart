@@ -267,6 +267,16 @@ class ModernJournalCard extends StatelessWidget {
                     ci.data.isChecked ? TextDecoration.lineThrough : null,
               ),
             );
+          case final DayPlanEntry dayPlan:
+            return Text(
+              dayPlan.data.dayLabel ?? 'Day Plan',
+              style: context.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: isCompact
+                    ? AppTheme.titleFontSizeCompact
+                    : AppTheme.titleFontSize,
+              ),
+            );
         }
       }(),
     );
