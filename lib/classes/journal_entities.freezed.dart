@@ -2534,6 +2534,8 @@ JournalEntity _$JournalEntityFromJson(Map<String, dynamic> json) {
       return HabitCompletionEntry.fromJson(json);
     case 'survey':
       return SurveyEntry.fromJson(json);
+    case 'dayPlan':
+      return DayPlanEntry.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'JournalEntity',
@@ -2694,6 +2696,7 @@ extension JournalEntityPatterns on JournalEntity {
     TResult Function(WorkoutEntry value)? workout,
     TResult Function(HabitCompletionEntry value)? habitCompletion,
     TResult Function(SurveyEntry value)? survey,
+    TResult Function(DayPlanEntry value)? dayPlan,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -2724,6 +2727,8 @@ extension JournalEntityPatterns on JournalEntity {
         return habitCompletion(_that);
       case SurveyEntry() when survey != null:
         return survey(_that);
+      case DayPlanEntry() when dayPlan != null:
+        return dayPlan(_that);
       case _:
         return orElse();
     }
@@ -2757,6 +2762,7 @@ extension JournalEntityPatterns on JournalEntity {
     required TResult Function(WorkoutEntry value) workout,
     required TResult Function(HabitCompletionEntry value) habitCompletion,
     required TResult Function(SurveyEntry value) survey,
+    required TResult Function(DayPlanEntry value) dayPlan,
   }) {
     final _that = this;
     switch (_that) {
@@ -2786,6 +2792,8 @@ extension JournalEntityPatterns on JournalEntity {
         return habitCompletion(_that);
       case SurveyEntry():
         return survey(_that);
+      case DayPlanEntry():
+        return dayPlan(_that);
     }
   }
 
@@ -2816,6 +2824,7 @@ extension JournalEntityPatterns on JournalEntity {
     TResult? Function(WorkoutEntry value)? workout,
     TResult? Function(HabitCompletionEntry value)? habitCompletion,
     TResult? Function(SurveyEntry value)? survey,
+    TResult? Function(DayPlanEntry value)? dayPlan,
   }) {
     final _that = this;
     switch (_that) {
@@ -2845,6 +2854,8 @@ extension JournalEntityPatterns on JournalEntity {
         return habitCompletion(_that);
       case SurveyEntry() when survey != null:
         return survey(_that);
+      case DayPlanEntry() when dayPlan != null:
+        return dayPlan(_that);
       case _:
         return null;
     }
@@ -2903,6 +2914,9 @@ extension JournalEntityPatterns on JournalEntity {
     TResult Function(Metadata meta, SurveyData data, EntryText? entryText,
             Geolocation? geolocation)?
         survey,
+    TResult Function(Metadata meta, DayPlanData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        dayPlan,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -2943,6 +2957,9 @@ extension JournalEntityPatterns on JournalEntity {
             _that.meta, _that.data, _that.entryText, _that.geolocation);
       case SurveyEntry() when survey != null:
         return survey(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case DayPlanEntry() when dayPlan != null:
+        return dayPlan(
             _that.meta, _that.data, _that.entryText, _that.geolocation);
       case _:
         return orElse();
@@ -3003,6 +3020,9 @@ extension JournalEntityPatterns on JournalEntity {
     required TResult Function(Metadata meta, SurveyData data,
             EntryText? entryText, Geolocation? geolocation)
         survey,
+    required TResult Function(Metadata meta, DayPlanData data,
+            EntryText? entryText, Geolocation? geolocation)
+        dayPlan,
   }) {
     final _that = this;
     switch (_that) {
@@ -3042,6 +3062,9 @@ extension JournalEntityPatterns on JournalEntity {
             _that.meta, _that.data, _that.entryText, _that.geolocation);
       case SurveyEntry():
         return survey(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case DayPlanEntry():
+        return dayPlan(
             _that.meta, _that.data, _that.entryText, _that.geolocation);
     }
   }
@@ -3099,6 +3122,9 @@ extension JournalEntityPatterns on JournalEntity {
     TResult? Function(Metadata meta, SurveyData data, EntryText? entryText,
             Geolocation? geolocation)?
         survey,
+    TResult? Function(Metadata meta, DayPlanData data, EntryText? entryText,
+            Geolocation? geolocation)?
+        dayPlan,
   }) {
     final _that = this;
     switch (_that) {
@@ -3138,6 +3164,9 @@ extension JournalEntityPatterns on JournalEntity {
             _that.meta, _that.data, _that.entryText, _that.geolocation);
       case SurveyEntry() when survey != null:
         return survey(
+            _that.meta, _that.data, _that.entryText, _that.geolocation);
+      case DayPlanEntry() when dayPlan != null:
+        return dayPlan(
             _that.meta, _that.data, _that.entryText, _that.geolocation);
       case _:
         return null;
@@ -5327,6 +5356,178 @@ class _$SurveyEntryCopyWithImpl<$Res> implements $SurveyEntryCopyWith<$Res> {
   @pragma('vm:prefer-inline')
   $SurveyDataCopyWith<$Res> get data {
     return $SurveyDataCopyWith<$Res>(_self.data, (value) {
+      return _then(_self.copyWith(data: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $EntryTextCopyWith<$Res>? get entryText {
+    if (_self.entryText == null) {
+      return null;
+    }
+
+    return $EntryTextCopyWith<$Res>(_self.entryText!, (value) {
+      return _then(_self.copyWith(entryText: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+      return null;
+    }
+
+    return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+      return _then(_self.copyWith(geolocation: value));
+    });
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class DayPlanEntry implements JournalEntity {
+  const DayPlanEntry(
+      {required this.meta,
+      required this.data,
+      this.entryText,
+      this.geolocation,
+      final String? $type})
+      : $type = $type ?? 'dayPlan';
+  factory DayPlanEntry.fromJson(Map<String, dynamic> json) =>
+      _$DayPlanEntryFromJson(json);
+
+  @override
+  final Metadata meta;
+  final DayPlanData data;
+  @override
+  final EntryText? entryText;
+  @override
+  final Geolocation? geolocation;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $DayPlanEntryCopyWith<DayPlanEntry> get copyWith =>
+      _$DayPlanEntryCopyWithImpl<DayPlanEntry>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$DayPlanEntryToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is DayPlanEntry &&
+            (identical(other.meta, meta) || other.meta == meta) &&
+            (identical(other.data, data) || other.data == data) &&
+            (identical(other.entryText, entryText) ||
+                other.entryText == entryText) &&
+            (identical(other.geolocation, geolocation) ||
+                other.geolocation == geolocation));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, meta, data, entryText, geolocation);
+
+  @override
+  String toString() {
+    return 'JournalEntity.dayPlan(meta: $meta, data: $data, entryText: $entryText, geolocation: $geolocation)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $DayPlanEntryCopyWith<$Res>
+    implements $JournalEntityCopyWith<$Res> {
+  factory $DayPlanEntryCopyWith(
+          DayPlanEntry value, $Res Function(DayPlanEntry) _then) =
+      _$DayPlanEntryCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {Metadata meta,
+      DayPlanData data,
+      EntryText? entryText,
+      Geolocation? geolocation});
+
+  @override
+  $MetadataCopyWith<$Res> get meta;
+  $DayPlanDataCopyWith<$Res> get data;
+  @override
+  $EntryTextCopyWith<$Res>? get entryText;
+  @override
+  $GeolocationCopyWith<$Res>? get geolocation;
+}
+
+/// @nodoc
+class _$DayPlanEntryCopyWithImpl<$Res> implements $DayPlanEntryCopyWith<$Res> {
+  _$DayPlanEntryCopyWithImpl(this._self, this._then);
+
+  final DayPlanEntry _self;
+  final $Res Function(DayPlanEntry) _then;
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? meta = null,
+    Object? data = null,
+    Object? entryText = freezed,
+    Object? geolocation = freezed,
+  }) {
+    return _then(DayPlanEntry(
+      meta: null == meta
+          ? _self.meta
+          : meta // ignore: cast_nullable_to_non_nullable
+              as Metadata,
+      data: null == data
+          ? _self.data
+          : data // ignore: cast_nullable_to_non_nullable
+              as DayPlanData,
+      entryText: freezed == entryText
+          ? _self.entryText
+          : entryText // ignore: cast_nullable_to_non_nullable
+              as EntryText?,
+      geolocation: freezed == geolocation
+          ? _self.geolocation
+          : geolocation // ignore: cast_nullable_to_non_nullable
+              as Geolocation?,
+    ));
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $MetadataCopyWith<$Res> get meta {
+    return $MetadataCopyWith<$Res>(_self.meta, (value) {
+      return _then(_self.copyWith(meta: value));
+    });
+  }
+
+  /// Create a copy of JournalEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $DayPlanDataCopyWith<$Res> get data {
+    return $DayPlanDataCopyWith<$Res>(_self.data, (value) {
       return _then(_self.copyWith(data: value));
     });
   }

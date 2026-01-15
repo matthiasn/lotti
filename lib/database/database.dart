@@ -1047,6 +1047,20 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).toList();
   }
 
+  Future<DayPlanEntry?> getDayPlanById(String id) async {
+    final res = await dayPlanById(id).get();
+    if (res.isEmpty) return null;
+    return fromDbEntity(res.first) as DayPlanEntry;
+  }
+
+  Future<List<DayPlanEntry>> getDayPlansInRange({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final res = await dayPlansInRange(rangeStart, rangeEnd).get();
+    return res.map((e) => fromDbEntity(e) as DayPlanEntry).toList();
+  }
+
   Future<List<JournalEntity>> getQuantitativeByType({
     required String type,
     required DateTime rangeStart,

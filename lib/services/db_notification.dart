@@ -59,3 +59,4 @@ const audioNotification = 'AUDIO';
 const imageNotification = 'IMAGE';
 const workoutNotification = 'WORKOUT';
 const aiResponseNotification = 'AI_RESPONSE';
+const dayPlanNotification = 'DAY_PLAN';
