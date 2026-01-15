@@ -3,18 +3,37 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/services/whisper_server_manager.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+/// Mode for whisper transcription backend
+enum WhisperBackendMode {
+  /// whisper.cpp server (native binary, multipart upload)
+  whisperCpp,
+
+  /// Python whisper_api_server.py (JSON with base64)
+  pythonServer,
+}
 
 /// Repository for handling Whisper-specific inference operations
 ///
 /// This repository handles audio transcription using a locally running
-/// Whisper instance.
+/// Whisper instance. Supports both:
+/// - whisper.cpp server (native, faster, used in Flatpak)
+/// - Python whisper_api_server.py (development, legacy)
 class WhisperInferenceRepository {
-  WhisperInferenceRepository({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+  WhisperInferenceRepository({
+    http.Client? httpClient,
+    WhisperServerManager? serverManager,
+    WhisperBackendMode? backendMode,
+  })  : _httpClient = httpClient ?? http.Client(),
+        _serverManager = serverManager,
+        _backendMode = backendMode ?? WhisperBackendMode.whisperCpp;
 
   final http.Client _httpClient;
+  final WhisperServerManager? _serverManager;
+  final WhisperBackendMode _backendMode;
 
   /// Transcribes audio using a locally running Whisper instance
   ///
@@ -38,9 +57,9 @@ class WhisperInferenceRepository {
     required String model,
     required String audioBase64,
     required String baseUrl,
-    String? prompt, // Made optional since it's not used
-    int? maxCompletionTokens, // Already optional, not used
-    Duration? timeout, // Optional timeout override
+    String? prompt,
+    int? maxCompletionTokens,
+    Duration? timeout,
   }) {
     // Validate required inputs consistently
     if (model.isEmpty) {
@@ -66,62 +85,28 @@ class WhisperInferenceRepository {
       () async {
         try {
           developer.log(
-            'Sending audio transcription request to local Whisper server - '
-            'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}, '
-            'timeout: ${requestTimeout.inMinutes} minutes',
+            'Sending audio transcription request - '
+            'backend: $_backendMode, baseUrl: $baseUrl, model: $model, '
+            'audioLength: ${audioBase64.length}, timeout: $timeoutMinutes min',
             name: 'WhisperInferenceRepository',
           );
 
-          final response = await _httpClient
-              .post(
-            Uri.parse(baseUrl).resolve('/v1/audio/transcriptions'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'model': model,
-              'audio': audioBase64,
-            }),
-          )
-              .timeout(
-            requestTimeout,
-            onTimeout: () {
-              throw WhisperTranscriptionException(
-                timeoutErrorMessage,
-                statusCode:
-                    httpStatusRequestTimeout, // HTTP 408 Request Timeout
-              );
-            },
-          );
-
-          if (response.statusCode != 200) {
-            developer.log(
-              'Failed to transcribe audio: HTTP ${response.statusCode}',
-              name: 'WhisperInferenceRepository',
-              error: response.body,
-            );
-            throw WhisperTranscriptionException(
-              'Failed to transcribe audio (HTTP ${response.statusCode}). '
-              'Please check your audio file and try again.',
-              statusCode: response.statusCode,
-            );
-          }
-
-          final result = jsonDecode(response.body) as Map<String, dynamic>;
-
-          // Validate response structure
-          if (!result.containsKey('text')) {
-            developer.log(
-              'Invalid response from Whisper server: missing text field',
-              name: 'WhisperInferenceRepository',
-              error: result,
-            );
-            throw WhisperTranscriptionException(
-              'Invalid response from transcription service: missing text field',
-            );
-          }
-
-          final text = result['text'] as String;
+          final text = switch (_backendMode) {
+            WhisperBackendMode.whisperCpp => await _transcribeWithWhisperCpp(
+                audioBase64: audioBase64,
+                baseUrl: baseUrl,
+                timeout: requestTimeout,
+                timeoutErrorMessage: timeoutErrorMessage,
+              ),
+            WhisperBackendMode.pythonServer =>
+              await _transcribeWithPythonServer(
+                model: model,
+                audioBase64: audioBase64,
+                baseUrl: baseUrl,
+                timeout: requestTimeout,
+                timeoutErrorMessage: timeoutErrorMessage,
+              ),
+          };
 
           developer.log(
             'Successfully transcribed audio - transcriptionLength: ${text.length}',
@@ -143,10 +128,8 @@ class WhisperInferenceRepository {
             created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           );
         } on WhisperTranscriptionException {
-          // Re-throw our custom exceptions as-is
           rethrow;
         } on TimeoutException catch (e) {
-          // Handle timeout exceptions from HTTP client
           developer.log(
             'Transcription request timed out',
             name: 'WhisperInferenceRepository',
@@ -154,11 +137,10 @@ class WhisperInferenceRepository {
           );
           throw WhisperTranscriptionException(
             timeoutErrorMessage,
-            statusCode: httpStatusRequestTimeout, // HTTP 408 Request Timeout
+            statusCode: httpStatusRequestTimeout,
             originalError: e,
           );
         } on FormatException catch (e) {
-          // Handle JSON parsing errors
           developer.log(
             'Failed to parse response from Whisper server',
             name: 'WhisperInferenceRepository',
@@ -169,7 +151,6 @@ class WhisperInferenceRepository {
             originalError: e,
           );
         } catch (e) {
-          // Wrap other exceptions
           developer.log(
             'Unexpected error during audio transcription',
             name: 'WhisperInferenceRepository',
@@ -182,6 +163,145 @@ class WhisperInferenceRepository {
         }
       }(),
     ).asBroadcastStream();
+  }
+
+  /// Transcribes audio using whisper.cpp server (multipart form upload)
+  Future<String> _transcribeWithWhisperCpp({
+    required String audioBase64,
+    required String baseUrl,
+    required Duration timeout,
+    required String timeoutErrorMessage,
+  }) async {
+    // Ensure server is running if we have a manager
+    final serverManager = _serverManager;
+    if (serverManager != null) {
+      final result = await serverManager.ensureRunning();
+      if (!result.success) {
+        throw WhisperTranscriptionException(
+          'Failed to start Whisper server: ${result.message}',
+        );
+      }
+    }
+
+    // Decode base64 to bytes
+    final audioBytes = base64Decode(audioBase64);
+
+    // Create multipart request
+    final uri = Uri.parse(baseUrl).resolve('/inference');
+    final request = http.MultipartRequest('POST', uri);
+
+    // Add audio file
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        audioBytes,
+        filename: 'audio.wav',
+      ),
+    );
+
+    // Add optional parameters
+    request.fields['temperature'] = '0.0';
+    request.fields['response_format'] = 'json';
+
+    // Send request
+    final streamedResponse = await request.send().timeout(
+      timeout,
+      onTimeout: () {
+        throw WhisperTranscriptionException(
+          timeoutErrorMessage,
+          statusCode: httpStatusRequestTimeout,
+        );
+      },
+    );
+
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 200) {
+      developer.log(
+        'whisper.cpp transcription failed: HTTP ${response.statusCode}',
+        name: 'WhisperInferenceRepository',
+        error: response.body,
+      );
+      throw WhisperTranscriptionException(
+        'Failed to transcribe audio (HTTP ${response.statusCode}). '
+        'Please check your audio file and try again.',
+        statusCode: response.statusCode,
+      );
+    }
+
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+
+    // whisper.cpp returns {"text": "..."} format
+    if (!result.containsKey('text')) {
+      developer.log(
+        'Invalid response from whisper.cpp: missing text field',
+        name: 'WhisperInferenceRepository',
+        error: result,
+      );
+      throw WhisperTranscriptionException(
+        'Invalid response from transcription service: missing text field',
+      );
+    }
+
+    return result['text'] as String;
+  }
+
+  /// Transcribes audio using Python whisper_api_server.py (JSON with base64)
+  Future<String> _transcribeWithPythonServer({
+    required String model,
+    required String audioBase64,
+    required String baseUrl,
+    required Duration timeout,
+    required String timeoutErrorMessage,
+  }) async {
+    final response = await _httpClient
+        .post(
+      Uri.parse(baseUrl).resolve('/v1/audio/transcriptions'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'model': model,
+        'audio': audioBase64,
+      }),
+    )
+        .timeout(
+      timeout,
+      onTimeout: () {
+        throw WhisperTranscriptionException(
+          timeoutErrorMessage,
+          statusCode: httpStatusRequestTimeout,
+        );
+      },
+    );
+
+    if (response.statusCode != 200) {
+      developer.log(
+        'Python server transcription failed: HTTP ${response.statusCode}',
+        name: 'WhisperInferenceRepository',
+        error: response.body,
+      );
+      throw WhisperTranscriptionException(
+        'Failed to transcribe audio (HTTP ${response.statusCode}). '
+        'Please check your audio file and try again.',
+        statusCode: response.statusCode,
+      );
+    }
+
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (!result.containsKey('text')) {
+      developer.log(
+        'Invalid response from Python server: missing text field',
+        name: 'WhisperInferenceRepository',
+        error: result,
+      );
+      throw WhisperTranscriptionException(
+        'Invalid response from transcription service: missing text field',
+      );
+    }
+
+    return result['text'] as String;
   }
 }
 

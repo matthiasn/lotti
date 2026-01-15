@@ -73,3 +73,50 @@ class ProviderConfig {
     return !noApiKeyRequired.contains(type);
   }
 }
+
+/// Configuration for the local Whisper transcription service
+///
+/// This class provides constants and utilities for the whisper.cpp
+/// server integration used in Flatpak builds.
+class WhisperConfig {
+  const WhisperConfig._();
+
+  /// Default host for the whisper server
+  static const String defaultHost = '127.0.0.1';
+
+  /// Default port for the whisper server
+  static const int defaultPort = 8084;
+
+  /// Default model to use for transcription
+  /// Using quantized base model for good balance of speed and accuracy
+  static const String defaultModel = 'ggml-base-q5_1.bin';
+
+  /// Timeout for server startup in seconds
+  static const int serverStartupTimeoutSeconds = 30;
+
+  /// Timeout for health checks in seconds
+  static const int healthCheckTimeoutSeconds = 5;
+
+  /// Base URL for the local whisper server
+  static String get defaultBaseUrl => 'http://$defaultHost:$defaultPort';
+
+  /// Available model names that can be used with whisper.cpp
+  /// These map to the GGML format models from Hugging Face
+  static const List<String> availableModels = [
+    'ggml-tiny-q5_1.bin',
+    'ggml-tiny.en.bin',
+    'ggml-base-q5_1.bin',
+    'ggml-base.en.bin',
+    'ggml-small-q5_1.bin',
+    'ggml-small.en.bin',
+    'ggml-medium-q5_0.bin',
+    'ggml-medium.bin',
+    'ggml-large-v3-q5_0.bin',
+    'ggml-large-v3.bin',
+  ];
+
+  /// Check if a model name is valid
+  static bool isValidModel(String modelName) {
+    return availableModels.contains(modelName);
+  }
+}

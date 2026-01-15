@@ -26,7 +26,12 @@ void main() {
 
   setUp(() {
     mockHttpClient = MockHttpClient();
-    repository = WhisperInferenceRepository(httpClient: mockHttpClient);
+    // Use Python server backend for tests (JSON-based API)
+    // whisperCpp backend uses multipart form data which requires different mocking
+    repository = WhisperInferenceRepository(
+      httpClient: mockHttpClient,
+      backendMode: WhisperBackendMode.pythonServer,
+    );
   });
 
   tearDown(() {
