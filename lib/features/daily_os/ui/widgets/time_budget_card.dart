@@ -4,6 +4,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
@@ -88,13 +90,17 @@ class TimeBudgetCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          category?.name ?? 'Uncategorized',
+                          category?.name ??
+                              context.messages.dailyOsUncategorized,
                           style: context.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
-                          _formatPlannedDuration(progress.plannedDuration),
+                          _formatPlannedDuration(
+                            progress.plannedDuration,
+                            context.messages,
+                          ),
                           style: context.textTheme.bodySmall?.copyWith(
                             color: context.colorScheme.onSurfaceVariant,
                           ),
@@ -134,7 +140,7 @@ class TimeBudgetCard extends ConsumerWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _getEntryTitle(entry),
+                                _getEntryTitle(entry, context.messages),
                                 style: context.textTheme.bodySmall,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -163,20 +169,20 @@ class TimeBudgetCard extends ConsumerWidget {
     );
   }
 
-  String _formatPlannedDuration(Duration duration) {
+  String _formatPlannedDuration(Duration duration, AppLocalizations messages) {
     if (duration.inHours > 0) {
       final hours = duration.inHours;
       final mins = duration.inMinutes % 60;
-      if (mins == 0) return '$hours hour${hours == 1 ? '' : 's'} planned';
-      return '${hours}h ${mins}m planned';
+      if (mins == 0) return messages.dailyOsHoursPlanned(hours);
+      return messages.dailyOsHoursMinutesPlanned(hours, mins);
     }
-    return '${duration.inMinutes} min planned';
+    return messages.dailyOsMinutesPlanned(duration.inMinutes);
   }
 
-  String _getEntryTitle(JournalEntity entry) {
+  String _getEntryTitle(JournalEntity entry, AppLocalizations messages) {
     return switch (entry) {
       Task(:final data) => data.title,
-      _ => 'Entry',
+      _ => messages.dailyOsEntry,
     };
   }
 }
@@ -208,24 +214,28 @@ class _StatusText extends StatelessWidget {
   }
 
   (String, Color) _getStatusTextAndColor(BuildContext context) {
+    final messages = context.messages;
     switch (progress.status) {
       case BudgetProgressStatus.overBudget:
         final over = progress.recordedDuration - progress.plannedDuration;
-        return ('+${_formatDuration(over)} over', context.colorScheme.error);
+        return (
+          messages.dailyOsTimeOver(_formatDuration(over)),
+          context.colorScheme.error,
+        );
 
       case BudgetProgressStatus.exhausted:
-        return ("Time's up", Colors.orange);
+        return (messages.dailyOsTimesUp, Colors.orange);
 
       case BudgetProgressStatus.nearLimit:
         return (
-          '${_formatDuration(progress.remainingDuration)} left',
-          Colors.orange
+          messages.dailyOsTimeLeft(_formatDuration(progress.remainingDuration)),
+          Colors.orange,
         );
 
       case BudgetProgressStatus.underBudget:
         return (
-          '${_formatDuration(progress.remainingDuration)} left',
-          context.colorScheme.onSurfaceVariant
+          messages.dailyOsTimeLeft(_formatDuration(progress.remainingDuration)),
+          context.colorScheme.onSurfaceVariant,
         );
     }
   }

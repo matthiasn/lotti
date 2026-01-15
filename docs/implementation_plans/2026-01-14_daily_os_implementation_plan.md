@@ -911,4 +911,71 @@ From the design spec, every implementation decision should honor:
 
 ---
 
+## Appendix C: Future UI/UX Improvements
+
+Based on frontend design review (2026-01-15), the following enhancements are recommended for Phase 5 (Polish):
+
+### High Priority
+
+| Item | Description | Effort |
+|------|-------------|--------|
+| **Animated progress bar** | Use `TweenAnimationBuilder` to animate fill width changes | Low |
+| **Staggered budget card entrance** | Add fade-in + slide animation with staggered delays when list loads | Medium |
+| **Ripple feedback on chips** | Replace `GestureDetector` with `InkWell` on `_DurationChip` | Low |
+
+### Medium Priority
+
+| Item | Description | Effort |
+|------|-------------|--------|
+| **Pulse current time indicator** | Add subtle animation to the red "now" line to draw attention | Low |
+| **Selected chip scale effect** | Use `AnimatedScale` to slightly enlarge selected duration chips | Low |
+| **Extract shared `DurationChip`** | DRY: Move duplicate `_DurationChip` from both sheets to `lib/features/daily_os/ui/widgets/duration_chip.dart` | Low |
+
+### Low Priority
+
+| Item | Description | Effort |
+|------|-------------|--------|
+| **Larger progress bar** | Increase height from 8px to 10-12px for better visibility | Trivial |
+| **Tabular figures on duration labels** | Apply `FontFeature.tabularFigures()` to `30m`, `1h`, etc. for alignment | Trivial |
+| **Theme color for "Time's up"** | Replace `Colors.orange` with theme-derived warning color | Trivial |
+| **Quarter-hour tick marks** | Add subtle tick marks between hour grid lines on timeline | Low |
+| **IconButton.filled for delete** | Use filled variant with error color for delete action | Trivial |
+
+### Code Snippets
+
+**Animated Progress Bar:**
+```dart
+TweenAnimationBuilder<double>(
+  tween: Tween(begin: 0, end: fillWidth),
+  duration: const Duration(milliseconds: 400),
+  curve: Curves.easeOutCubic,
+  builder: (context, value, child) => Container(width: value, ...),
+)
+```
+
+**Duration Chip with Ripple:**
+```dart
+InkWell(
+  borderRadius: BorderRadius.circular(20),
+  onTap: onTap,
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    decoration: BoxDecoration(...),
+    child: Text(label, ...),
+  ),
+)
+```
+
+**Staggered Entrance Animation:**
+```dart
+// In TimeBudgetList, wrap each card:
+AnimatedOpacity(
+  opacity: 1.0,
+  duration: Duration(milliseconds: 300 + (index * 50)),
+  child: SlideTransition(...),
+)
+```
+
+---
+
 *This implementation plan will be updated as development progresses.*

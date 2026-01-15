@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_header.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_summary.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_list.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -55,8 +56,8 @@ class DailyOsPage extends ConsumerWidget {
                           final data = dayPlan.data;
                           if (data.isDraft) {
                             return _AgreementBanner(
-                              message: 'Plan is in draft. Agree to lock it in.',
-                              actionLabel: 'Agree to Plan',
+                              message: context.messages.dailyOsDraftMessage,
+                              actionLabel: context.messages.dailyOsAgreeToPlan,
                               onAction: () {
                                 ref
                                     .read(
@@ -70,8 +71,8 @@ class DailyOsPage extends ConsumerWidget {
                           }
                           if (data.needsReview) {
                             return _AgreementBanner(
-                              message: 'Changes detected. Review your plan.',
-                              actionLabel: 'Re-agree',
+                              message: context.messages.dailyOsReviewMessage,
+                              actionLabel: context.messages.dailyOsReAgree,
                               onAction: () {
                                 ref
                                     .read(

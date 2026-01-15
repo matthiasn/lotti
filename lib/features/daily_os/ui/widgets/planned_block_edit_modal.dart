@@ -236,7 +236,7 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
                 const SizedBox(width: AppTheme.spacingMedium),
                 Expanded(
                   child: FilledButton(
-                    onPressed: _handleSave,
+                    onPressed: _isValidTimeRange() ? _handleSave : null,
                     child: Text(context.messages.dailyOsSave),
                   ),
                 ),
@@ -256,16 +256,22 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
     final durationMinutes = endMinutes - startMinutes;
 
     if (durationMinutes <= 0) {
-      return 'Invalid time range';
+      return context.messages.dailyOsInvalidTimeRange;
     }
 
     if (durationMinutes >= 60) {
       final hours = durationMinutes ~/ 60;
       final mins = durationMinutes % 60;
-      if (mins == 0) return '$hours hour${hours == 1 ? '' : 's'}';
-      return '${hours}h ${mins}m';
+      if (mins == 0) return context.messages.dailyOsDurationHours(hours);
+      return context.messages.dailyOsDurationHoursMinutes(hours, mins);
     }
-    return '$durationMinutes minutes';
+    return context.messages.dailyOsDurationMinutes(durationMinutes);
+  }
+
+  bool _isValidTimeRange() {
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    return endMinutes > startMinutes;
   }
 
   Future<void> _handleSave() async {

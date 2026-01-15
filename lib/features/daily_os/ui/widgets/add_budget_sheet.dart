@@ -71,7 +71,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'A budget for "${category.name}" already exists',
+              context.messages.dailyOsDuplicateBudget(category.name),
             ),
             behavior: SnackBarBehavior.floating,
           ),
@@ -189,7 +189,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       const SizedBox(width: AppTheme.spacingSmall),
                       Expanded(
                         child: Text(
-                          'Choose a category...',
+                          context.messages.dailyOsChooseCategory,
                           style: context.textTheme.bodyMedium?.copyWith(
                             color: context.colorScheme.onSurfaceVariant,
                           ),
