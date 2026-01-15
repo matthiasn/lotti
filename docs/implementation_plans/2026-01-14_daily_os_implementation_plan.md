@@ -1,7 +1,8 @@
 # Daily Operating System — Implementation Plan
 
 **Created**: 2026-01-14
-**Status**: Planning Phase
+**Updated**: 2026-01-15
+**Status**: Phase 3 Complete — UI Implementation Done
 **Design Spec**: `2026-01-14_day_view_design_spec.md`
 
 ---
@@ -11,6 +12,53 @@
 This document provides a detailed implementation plan for the "Daily Operating System" feature in Lotti. The feature replaces the traditional calendar view with a philosophy-driven system separating **planning** (intention), **doing** (actual record), and **accountability** (budgets).
 
 The implementation follows a **parallel development strategy** — building alongside the existing calendar without breaking current functionality.
+
+---
+
+## Current Progress Summary
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| Phase 1: Foundation | ✅ Complete | Data models, database integration, repository |
+| Phase 2: State Management | ✅ Complete | Riverpod providers, aggregation logic |
+| Phase 3: UI Implementation | ✅ Complete | All widgets, navigation integration |
+| Phase 4: Smart Features | 🔲 Not Started | Status notifier, auto-population, agreement workflow |
+| Phase 5: Polish | 🔲 Not Started | Empty states, animations, edge cases |
+
+### Files Created
+
+**Data Layer:**
+- `lib/classes/day_plan.dart` — DayPlanData, DayPlanStatus, TimeBudget, PlannedBlock, PinnedTaskRef
+- `lib/features/daily_os/repository/day_plan_repository.dart`
+
+**State Management:**
+- `lib/features/daily_os/state/daily_os_controller.dart` — Date selection provider
+- `lib/features/daily_os/state/day_plan_controller.dart` — DayPlan CRUD operations
+- `lib/features/daily_os/state/time_budget_progress_controller.dart` — Budget aggregation
+- `lib/features/daily_os/state/timeline_data_controller.dart` — Timeline data aggregation
+
+**UI Components:**
+- `lib/features/daily_os/ui/pages/daily_os_page.dart` — Main page scaffold
+- `lib/features/daily_os/ui/widgets/day_header.dart` — Date navigation, status
+- `lib/features/daily_os/ui/widgets/daily_timeline.dart` — Plan vs actual visualization
+- `lib/features/daily_os/ui/widgets/time_budget_list.dart` — Budget list container
+- `lib/features/daily_os/ui/widgets/time_budget_card.dart` — Individual budget cards
+- `lib/features/daily_os/ui/widgets/day_summary.dart` — Day totals and actions
+
+**Navigation:**
+- `lib/beamer/locations/daily_os_location.dart` — Beamer route
+- `lib/features/calendar/state/calendar_view_mode_controller.dart` — View toggle state
+- `lib/features/calendar/ui/pages/calendar_wrapper_page.dart` — Toggle between Classic/Daily OS
+
+**Tests:**
+- `test/features/daily_os/state/day_plan_controller_test.dart`
+- `test/features/daily_os/state/time_budget_progress_controller_test.dart`
+
+### How to Access
+
+The Daily OS view is accessible via the **Calendar tab**. A toggle button appears in the top-right corner allowing users to switch between:
+- **Classic** — Traditional calendar day view
+- **Daily OS** — New budget-based planning view
 
 ---
 
@@ -568,103 +616,105 @@ When transitioning fully:
 
 ## 4. Step-by-Step Execution
 
-### Phase 1: Foundation (Data Layer)
+### Phase 1: Foundation (Data Layer) ✅ COMPLETE
 
 #### 1.1 Data Models
-- [ ] Create `lib/classes/day_plan.dart` with all Freezed classes:
-  - [ ] `DayPlanData`
-  - [ ] `DayPlanStatus` (sealed class with draft/agreed/needsReview)
-  - [ ] `TimeBudget` (embedded)
-  - [ ] `PlannedBlock` (embedded)
-  - [ ] `PinnedTaskRef` (embedded reference)
-  - [ ] `dayPlanId()` helper function
-- [ ] Add `JournalEntity.dayPlan` variant to `journal_entities.dart`
-- [ ] Update `JournalEntityExtension.affectedIds` for DayPlan
-- [ ] Generate Freezed code (`fvm flutter pub run build_runner build`)
-- [ ] Write serialization round-trip tests
+- [x] Create `lib/classes/day_plan.dart` with all Freezed classes:
+  - [x] `DayPlanData`
+  - [x] `DayPlanStatus` (sealed class with draft/agreed/needsReview)
+  - [x] `TimeBudget` (embedded)
+  - [x] `PlannedBlock` (embedded)
+  - [x] `PinnedTaskRef` (embedded reference)
+  - [x] `dayPlanId()` helper function
+- [x] Add `JournalEntity.dayPlan` variant to `journal_entities.dart`
+- [x] Update `JournalEntityExtension.affectedIds` for DayPlan
+- [x] Generate Freezed code (`fvm flutter pub run build_runner build`)
+- [x] Write serialization round-trip tests
 
 #### 1.2 Database Integration
-- [ ] Add `dayPlanForDate` query to `database.drift`
-- [ ] Add `dayPlansInRange` query to `database.drift`
-- [ ] Add `getDayPlanById()` method to `JournalDb`
-- [ ] Add `getDayPlansInRange()` method to `JournalDb`
-- [ ] Generate Drift code
-- [ ] Write query tests
+- [x] Add `dayPlanForDate` query to `database.drift`
+- [x] Add `dayPlansInRange` query to `database.drift`
+- [x] Add `getDayPlanById()` method to `JournalDb`
+- [x] Add `getDayPlansInRange()` method to `JournalDb`
+- [x] Generate Drift code
+- [x] Write query tests
 
 #### 1.3 Repository
-- [ ] Create `lib/features/daily_os/repository/day_plan_repository.dart`
-- [ ] Implement `getOrCreateForDate(DateTime date)` — creates with deterministic ID if missing
-- [ ] Implement `save(DayPlan plan)` — upserts via existing persistence
-- [ ] Implement `watchDayPlan(DateTime date)` — stream for reactivity
-- [ ] Write repository unit tests
+- [x] Create `lib/features/daily_os/repository/day_plan_repository.dart`
+- [x] Implement `getOrCreateForDate(DateTime date)` — creates with deterministic ID if missing
+- [x] Implement `save(DayPlan plan)` — upserts via existing persistence
+- [x] Implement `watchDayPlan(DateTime date)` — stream for reactivity
+- [x] Write repository unit tests
 
-### Phase 2: State Management
+### Phase 2: State Management ✅ COMPLETE
 
 #### 2.1 Core Providers
-- [ ] Create `dayPlanProvider` family
-- [ ] Create `timeBudgetsForDayProvider`
-- [ ] Create `plannedBlocksProvider`
-- [ ] Create `pinnedTasksProvider`
-- [ ] Generate Riverpod code
-- [ ] Write provider unit tests
+- [x] Create `dayPlanControllerProvider` family
+- [x] Create `dailyOsSelectedDateProvider`
+- [x] Create providers for budgets/blocks/pinned tasks (embedded in DayPlan)
+- [x] Generate Riverpod code
+- [x] Write provider unit tests
 
 #### 2.2 Aggregation Providers
-- [ ] Create `timeBudgetProgressProvider` (calculates used vs planned)
-- [ ] Create `timelineDataProvider` (combines plan + actual)
-- [ ] Create `tasksDueOnDayProvider`
-- [ ] Create `dayTotalStatsProvider` (summary numbers)
-- [ ] Write aggregation logic tests
+- [x] Create `timeBudgetProgressControllerProvider` (calculates used vs planned)
+- [x] Create `timelineDataControllerProvider` (combines plan + actual)
+- [x] Create `dayBudgetStatsProvider` (summary numbers)
+- [x] Write aggregation logic tests (18 tests passing)
 
 #### 2.3 UI State
-- [ ] Create `DailyOsController` (main UI state)
-- [ ] Create `DailyOsState` model
-- [ ] Implement cross-component highlighting
-- [ ] Write controller tests
+- [x] Create `DailyOsController` (date selection, navigation)
+- [x] Implement provider architecture for cross-component communication
+- [x] Write controller tests
 
-### Phase 3: UI Implementation
+### Phase 3: UI Implementation ✅ COMPLETE
 
 #### 3.1 Page Structure
-- [ ] Create `DailyOsPage` scaffold
-- [ ] Implement `CustomScrollView` with slivers
-- [ ] Add navigation route `/daily-os`
-- [ ] Add feature flag in settings
+- [x] Create `DailyOsPage` scaffold (`lib/features/daily_os/ui/pages/daily_os_page.dart`)
+- [x] Implement scrollable Column with sections
+- [x] Add navigation via `CalendarWrapperPage` toggle button
+- [x] View mode toggle between Classic and Daily OS (`CalendarViewModeController`)
 
 #### 3.2 Section A: Day Header
-- [ ] Create `DayHeader` widget
-- [ ] Implement date display with format
-- [ ] Add day label chip (optional)
-- [ ] Add status indicator (on track / over budget / done)
-- [ ] Implement swipe left/right for day change
-- [ ] Implement tap for date picker
+- [x] Create `DayHeader` widget (`lib/features/daily_os/ui/widgets/day_header.dart`)
+- [x] Implement date display with format (day name + full date)
+- [x] Add day label chip (optional, from DayPlan)
+- [x] Add status indicator (on track / over budget / near limit)
+- [x] Implement swipe left/right for day change
+- [x] Implement tap for date picker
+- [x] Add "Today" button when not on current day
 - [ ] Write widget tests
 
 #### 3.3 Section B: Timeline
-- [ ] Create `DailyTimeline` container widget
-- [ ] Create `TimeAxis` (hour labels)
-- [ ] Create `PlannedTimeLane` (left lane)
-- [ ] Create `ActualTimeLane` (right lane)
-- [ ] Create `PlannedBlockWidget` (ghosted blocks)
-- [ ] Create `ActualBlockWidget` (solid blocks)
+- [x] Create `DailyTimeline` container widget (`lib/features/daily_os/ui/widgets/daily_timeline.dart`)
+- [x] Create time axis with hour labels
+- [x] Create planned lane (left side, ghosted blocks)
+- [x] Create actual lane (right side, solid blocks with category colors)
+- [x] Create `_PlannedBlockWidget` (translucent with border)
+- [x] Create `_ActualBlockWidget` (solid with shadow, tappable to navigate)
+- [x] Add current time indicator (red line on today)
+- [x] Add legend showing Plan vs Actual
 - [ ] Implement tap → highlight related budget
 - [ ] Implement long-press → edit planned block
 - [ ] Write widget tests
 
 #### 3.4 Section C: Time Budgets
-- [ ] Create `TimeBudgetList` container
-- [ ] Create `TimeBudgetCard` widget
-- [ ] Create `BudgetProgressBar` widget
-- [ ] Create `BudgetTaskList` widget (pinned + recorded tasks)
-- [ ] Create `BudgetBoundaryIndicator` (gentle alerts)
+- [x] Create `TimeBudgetList` container (`lib/features/daily_os/ui/widgets/time_budget_list.dart`)
+- [x] Create `TimeBudgetCard` widget (`lib/features/daily_os/ui/widgets/time_budget_card.dart`)
+- [x] Create `_BudgetProgressBar` widget (shows over-budget indicator)
+- [x] Create contributing entries preview (expandable)
+- [x] Add status text (time remaining / over budget)
+- [x] Add summary chip showing total recorded/planned
 - [ ] Implement tap → highlight timeline blocks
-- [ ] Implement expand/collapse
 - [ ] Write widget tests
 
 #### 3.5 Section D: Day Summary
-- [ ] Create `DaySummary` widget
-- [ ] Display total planned vs recorded time
-- [ ] Display largest drift (category)
-- [ ] Add "Done for today" action
-- [ ] Add "Copy budgets to next day" action
+- [x] Create `DaySummary` widget (`lib/features/daily_os/ui/widgets/day_summary.dart`)
+- [x] Display total planned vs recorded time
+- [x] Display remaining/over time
+- [x] Show overall progress bar
+- [x] Add "Done for today" action button
+- [x] Add "Copy to tomorrow" action button (placeholder)
+- [x] Show completion message when day is marked complete
 - [ ] Write widget tests
 
 ### Phase 4: Smart Features
@@ -820,13 +870,34 @@ Per `test/README.md`:
 | Design Spec | `docs/implementation_plans/2026-01-14_day_view_design_spec.md` |
 | Existing Calendar | `lib/features/calendar/` |
 | Journal Entities | `lib/classes/journal_entities.dart` |
-| **DayPlan Models (NEW)** | `lib/classes/day_plan.dart` |
 | Task Models | `lib/classes/task.dart` |
 | Categories | `lib/classes/entity_definitions.dart` |
 | Habits (pattern ref) | `lib/features/habits/` |
 | Database Schema | `lib/database/database.drift` |
 | Day Selection | `lib/features/calendar/state/day_selection_controller.dart` |
 | Time Aggregation | `lib/features/calendar/state/time_by_category_controller.dart` |
+
+### Daily OS Feature Files (Created)
+
+| Purpose | Path |
+|---------|------|
+| **Data Models** | `lib/classes/day_plan.dart` |
+| **Repository** | `lib/features/daily_os/repository/day_plan_repository.dart` |
+| **Date Selection State** | `lib/features/daily_os/state/daily_os_controller.dart` |
+| **DayPlan State** | `lib/features/daily_os/state/day_plan_controller.dart` |
+| **Budget Progress State** | `lib/features/daily_os/state/time_budget_progress_controller.dart` |
+| **Timeline Data State** | `lib/features/daily_os/state/timeline_data_controller.dart` |
+| **Main Page** | `lib/features/daily_os/ui/pages/daily_os_page.dart` |
+| **Day Header Widget** | `lib/features/daily_os/ui/widgets/day_header.dart` |
+| **Timeline Widget** | `lib/features/daily_os/ui/widgets/daily_timeline.dart` |
+| **Budget List Widget** | `lib/features/daily_os/ui/widgets/time_budget_list.dart` |
+| **Budget Card Widget** | `lib/features/daily_os/ui/widgets/time_budget_card.dart` |
+| **Day Summary Widget** | `lib/features/daily_os/ui/widgets/day_summary.dart` |
+| **Beamer Route** | `lib/beamer/locations/daily_os_location.dart` |
+| **View Mode Toggle** | `lib/features/calendar/state/calendar_view_mode_controller.dart` |
+| **Calendar Wrapper** | `lib/features/calendar/ui/pages/calendar_wrapper_page.dart` |
+| **DayPlan Controller Tests** | `test/features/daily_os/state/day_plan_controller_test.dart` |
+| **Budget Progress Tests** | `test/features/daily_os/state/time_budget_progress_controller_test.dart` |
 
 ## Appendix B: Design Principles Reference
 

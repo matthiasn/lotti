@@ -140,6 +140,21 @@ class DayPlanController extends _$DayPlanController {
     await updatePlan(updated);
   }
 
+  /// Updates an existing planned block.
+  Future<void> updatePlannedBlock(PlannedBlock block) async {
+    final current = state.value;
+    if (current is! DayPlanEntry) return;
+
+    final updatedBlocks = current.data.plannedBlocks.map((b) {
+      return b.id == block.id ? block : b;
+    }).toList();
+
+    final updated = current.copyWith(
+      data: current.data.copyWith(plannedBlocks: updatedBlocks),
+    );
+    await updatePlan(updated);
+  }
+
   /// Removes a planned block.
   Future<void> removePlannedBlock(String blockId) async {
     final current = state.value;

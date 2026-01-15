@@ -61,7 +61,7 @@ class ServiceConfig:
     AUDIO_CHUNK_SIZE_SECONDS = int(os.getenv("AUDIO_CHUNK_SIZE_SECONDS", "30"))  # Model limit is 30s
     # Reduce overlap to trim redundant decoding work per chunk
     AUDIO_OVERLAP_SECONDS = float(os.getenv("AUDIO_OVERLAP_SECONDS", "0.5"))
-    MAX_AUDIO_DURATION_SECONDS = 300
+    MAX_AUDIO_DURATION_SECONDS = 900
 
     # Transcription decode capping (env-tunable)
     TOKENS_PER_SEC = float(os.getenv("TOKENS_PER_SEC", "3.2"))

@@ -24,6 +24,7 @@ class DailyOsState {
     required this.timelineData,
     this.expandedSection,
     this.isEditingPlan = false,
+    this.highlightedCategoryId,
   });
 
   final DateTime selectedDate;
@@ -32,6 +33,9 @@ class DailyOsState {
   final DailyTimelineData timelineData;
   final DailyOsSection? expandedSection;
   final bool isEditingPlan;
+
+  /// Currently highlighted category ID for cross-component communication.
+  final String? highlightedCategoryId;
 
   /// Whether the current plan is a draft.
   bool get isDraft => dayPlan?.data.isDraft ?? true;
@@ -66,7 +70,9 @@ class DailyOsState {
     DailyTimelineData? timelineData,
     DailyOsSection? expandedSection,
     bool? isEditingPlan,
+    String? highlightedCategoryId,
     bool clearExpandedSection = false,
+    bool clearHighlight = false,
   }) {
     return DailyOsState(
       selectedDate: selectedDate ?? this.selectedDate,
@@ -77,6 +83,9 @@ class DailyOsState {
           ? null
           : (expandedSection ?? this.expandedSection),
       isEditingPlan: isEditingPlan ?? this.isEditingPlan,
+      highlightedCategoryId: clearHighlight
+          ? null
+          : (highlightedCategoryId ?? this.highlightedCategoryId),
     );
   }
 }
@@ -156,4 +165,35 @@ class DailyOsController extends _$DailyOsController {
 
     state = AsyncData(current.copyWith(isEditingPlan: editing));
   }
+
+  /// Highlights a category across timeline and budget sections.
+  ///
+  /// Tapping a timeline block or budget card will highlight the related
+  /// category in both sections for visual correlation.
+  void highlightCategory(String? categoryId) {
+    final current = state.value;
+    if (current == null) return;
+
+    if (categoryId == null || current.highlightedCategoryId == categoryId) {
+      // Clear highlight if same category tapped again or null passed
+      state = AsyncData(current.copyWith(clearHighlight: true));
+    } else {
+      state = AsyncData(current.copyWith(highlightedCategoryId: categoryId));
+    }
+  }
+
+  /// Clears any category highlighting.
+  void clearHighlight() {
+    final current = state.value;
+    if (current == null) return;
+
+    state = AsyncData(current.copyWith(clearHighlight: true));
+  }
+}
+
+/// Provides just the highlighted category ID for efficient rebuilds.
+@riverpod
+String? highlightedCategoryId(Ref ref) {
+  final controllerAsync = ref.watch(dailyOsControllerProvider);
+  return controllerAsync.value?.highlightedCategoryId;
 }
