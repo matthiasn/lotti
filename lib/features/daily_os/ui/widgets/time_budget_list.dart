@@ -1,8 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
+import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_budget_edit_modal.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -20,7 +25,7 @@ class TimeBudgetList extends ConsumerWidget {
     return budgetProgressAsync.when(
       data: (budgets) {
         if (budgets.isEmpty) {
-          return const _EmptyBudgetsState();
+          return _EmptyBudgetsState(date: selectedDate);
         }
 
         return Column(
@@ -52,14 +57,65 @@ class TimeBudgetList extends ConsumerWidget {
               ),
             ),
 
-            // Budget cards
-            ...budgets.map(
-              (progress) => TimeBudgetCard(
-                progress: progress,
-                onTap: () {
-                  // TODO: Expand or navigate to budget details
-                },
-              ),
+            // Reorderable budget cards
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: budgets.length,
+              onReorder: (oldIndex, newIndex) {
+                // Adjust index for removal
+                final adjustedNewIndex =
+                    newIndex > oldIndex ? newIndex - 1 : newIndex;
+
+                // Create new order of budget IDs
+                final budgetIds = budgets.map((p) => p.budget.id).toList();
+                final movedId = budgetIds.removeAt(oldIndex);
+                budgetIds.insert(adjustedNewIndex, movedId);
+
+                // Update the order in the controller
+                ref
+                    .read(
+                        dayPlanControllerProvider(date: selectedDate).notifier)
+                    .reorderBudgets(budgetIds);
+              },
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final animValue =
+                        Curves.easeInOut.transform(animation.value);
+                    final elevation = lerpDouble(0, 6, animValue);
+                    return Material(
+                      elevation: elevation ?? 0,
+                      color: Colors.transparent,
+                      shadowColor: context.colorScheme.shadow,
+                      child: child,
+                    );
+                  },
+                  child: child,
+                );
+              },
+              itemBuilder: (context, index) {
+                final progress = budgets[index];
+                return ReorderableDragStartListener(
+                  key: ValueKey(progress.budget.id),
+                  index: index,
+                  child: TimeBudgetCard(
+                    progress: progress,
+                    onTap: () {
+                      // TODO: Expand or navigate to budget details
+                    },
+                    onLongPress: () {
+                      TimeBudgetEditModal.show(
+                        context,
+                        progress.budget,
+                        progress.category,
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ],
         );
@@ -116,7 +172,9 @@ class _BudgetsSummaryChip extends StatelessWidget {
 
 /// Empty state when no budgets are defined.
 class _EmptyBudgetsState extends StatelessWidget {
-  const _EmptyBudgetsState();
+  const _EmptyBudgetsState({required this.date});
+
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +215,7 @@ class _EmptyBudgetsState extends StatelessWidget {
           const SizedBox(height: AppTheme.spacingLarge),
           FilledButton.tonalIcon(
             onPressed: () {
-              // TODO: Open add budget dialog
+              AddBudgetSheet.show(context, date);
             },
             icon: const Icon(Icons.add),
             label: const Text('Add Budget'),

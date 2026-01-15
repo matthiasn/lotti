@@ -950,6 +950,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'This will remove the planned block from your timeline.';
 
   @override
+  String get dailyOsEditBudget => 'Edit Budget';
+
+  @override
+  String get dailyOsDeleteBudget => 'Delete Budget?';
+
+  @override
+  String get dailyOsDeleteBudgetConfirm =>
+      'This will remove the time budget from your day plan.';
+
+  @override
   String get dashboardActiveLabel => 'Actif :';
 
   @override

@@ -1791,6 +1791,24 @@ abstract class AppLocalizations {
   /// **'This will remove the planned block from your timeline.'**
   String get dailyOsDeletePlannedBlockConfirm;
 
+  /// No description provided for @dailyOsEditBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Budget'**
+  String get dailyOsEditBudget;
+
+  /// No description provided for @dailyOsDeleteBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Budget?'**
+  String get dailyOsDeleteBudget;
+
+  /// No description provided for @dailyOsDeleteBudgetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove the time budget from your day plan.'**
+  String get dailyOsDeleteBudgetConfirm;
+
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:
