@@ -308,5 +308,92 @@ void main() {
       verify(() => mockDb.getDayPlanById(planId))
           .called(greaterThanOrEqualTo(2));
     });
+
+    test('reorderBudgets updates sortOrder of budgets', () async {
+      final existingPlan = createTestPlan(
+        budgets: const [
+          TimeBudget(
+            id: 'budget-1',
+            categoryId: 'cat-1',
+            plannedMinutes: 60,
+          ),
+          TimeBudget(
+            id: 'budget-2',
+            categoryId: 'cat-2',
+            plannedMinutes: 90,
+            sortOrder: 1,
+          ),
+          TimeBudget(
+            id: 'budget-3',
+            categoryId: 'cat-3',
+            plannedMinutes: 120,
+            sortOrder: 2,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => existingPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      // Reorder: move budget-3 to the first position
+      await notifier.reorderBudgets(['budget-3', 'budget-1', 'budget-2']);
+
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.budgets.length, equals(3));
+
+      // Verify the new order and sortOrder values
+      expect(savedPlan.data.budgets[0].id, equals('budget-3'));
+      expect(savedPlan.data.budgets[0].sortOrder, equals(0));
+      expect(savedPlan.data.budgets[1].id, equals('budget-1'));
+      expect(savedPlan.data.budgets[1].sortOrder, equals(1));
+      expect(savedPlan.data.budgets[2].id, equals('budget-2'));
+      expect(savedPlan.data.budgets[2].sortOrder, equals(2));
+    });
+
+    test('updateBudget updates budget plannedMinutes', () async {
+      final existingPlan = createTestPlan(
+        budgets: const [
+          TimeBudget(
+            id: 'budget-1',
+            categoryId: 'cat-1',
+            plannedMinutes: 60,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => existingPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      const updatedBudget = TimeBudget(
+        id: 'budget-1',
+        categoryId: 'cat-1',
+        plannedMinutes: 120,
+      );
+      await notifier.updateBudget(updatedBudget);
+
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.budgets.length, equals(1));
+      expect(savedPlan.data.budgets.first.plannedMinutes, equals(120));
+    });
   });
 }

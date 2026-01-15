@@ -72,7 +72,8 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
       return [];
     }
 
-    final budgets = dayPlanEntity.data.budgets;
+    final budgets = [...dayPlanEntity.data.budgets]
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     if (budgets.isEmpty) {
       return [];
     }

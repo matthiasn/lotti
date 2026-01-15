@@ -14,12 +14,14 @@ class TimeBudgetCard extends ConsumerWidget {
   const TimeBudgetCard({
     required this.progress,
     this.onTap,
+    this.onLongPress,
     this.isExpanded = false,
     super.key,
   });
 
   final TimeBudgetProgress progress;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final bool isExpanded;
 
   @override
@@ -33,126 +35,129 @@ class TimeBudgetCard extends ConsumerWidget {
     final highlightedId = ref.watch(highlightedCategoryIdProvider);
     final isHighlighted = categoryId != null && highlightedId == categoryId;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingLarge,
-        vertical: AppTheme.spacingSmall / 2,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        border:
-            isHighlighted ? Border.all(color: categoryColor, width: 2) : null,
-        boxShadow: isHighlighted
-            ? [
-                BoxShadow(
-                  color: categoryColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: ModernBaseCard(
-        onTap: () {
-          // Highlight this category
-          if (categoryId != null) {
-            ref
-                .read(dailyOsControllerProvider.notifier)
-                .highlightCategory(categoryId);
-          }
-          // Also call the original onTap if provided
-          onTap?.call();
-        },
-        margin: EdgeInsets.zero,
-        padding: const EdgeInsets.all(AppTheme.cardPaddingCompact),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Row(
-              children: [
-                // Category icon
-                if (category != null) ...[
-                  ColorIcon(categoryColor, size: 24),
-                  const SizedBox(width: AppTheme.spacingMedium),
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacingLarge,
+          vertical: AppTheme.spacingSmall / 2,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+          border:
+              isHighlighted ? Border.all(color: categoryColor, width: 2) : null,
+          boxShadow: isHighlighted
+              ? [
+                  BoxShadow(
+                    color: categoryColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: ModernBaseCard(
+          onTap: () {
+            // Highlight this category
+            if (categoryId != null) {
+              ref
+                  .read(dailyOsControllerProvider.notifier)
+                  .highlightCategory(categoryId);
+            }
+            // Also call the original onTap if provided
+            onTap?.call();
+          },
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.all(AppTheme.cardPaddingCompact),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                children: [
+                  // Category icon
+                  if (category != null) ...[
+                    ColorIcon(categoryColor, size: 24),
+                    const SizedBox(width: AppTheme.spacingMedium),
+                  ],
+
+                  // Category name and planned duration
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category?.name ?? 'Uncategorized',
+                          style: context.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _formatPlannedDuration(progress.plannedDuration),
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Status text
+                  _StatusText(progress: progress),
                 ],
+              ),
 
-                // Category name and planned duration
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        category?.name ?? 'Uncategorized',
-                        style: context.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        _formatPlannedDuration(progress.plannedDuration),
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: context.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Status text
-                _StatusText(progress: progress),
-              ],
-            ),
-
-            const SizedBox(height: AppTheme.spacingMedium),
-
-            // Progress bar
-            _BudgetProgressBar(
-              progress: progress,
-              categoryColor: categoryColor,
-            ),
-
-            // Expanded content (task list preview)
-            if (isExpanded && progress.contributingEntries.isNotEmpty) ...[
               const SizedBox(height: AppTheme.spacingMedium),
-              const Divider(height: 1),
-              const SizedBox(height: AppTheme.spacingSmall),
-              ...progress.contributingEntries.take(3).map(
-                    (entry) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        children: [
-                          Icon(
-                            MdiIcons.checkCircle,
-                            size: 14,
-                            color: categoryColor.withValues(alpha: 0.7),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _getEntryTitle(entry),
-                              style: context.textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+
+              // Progress bar
+              _BudgetProgressBar(
+                progress: progress,
+                categoryColor: categoryColor,
+              ),
+
+              // Expanded content (task list preview)
+              if (isExpanded && progress.contributingEntries.isNotEmpty) ...[
+                const SizedBox(height: AppTheme.spacingMedium),
+                const Divider(height: 1),
+                const SizedBox(height: AppTheme.spacingSmall),
+                ...progress.contributingEntries.take(3).map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          children: [
+                            Icon(
+                              MdiIcons.checkCircle,
+                              size: 14,
+                              color: categoryColor.withValues(alpha: 0.7),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _getEntryTitle(entry),
+                                style: context.textTheme.bodySmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                if (progress.contributingEntries.length > 3)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '+${progress.contributingEntries.length - 3} more',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
-              if (progress.contributingEntries.length > 3)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    '+${progress.contributingEntries.length - 3} more',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

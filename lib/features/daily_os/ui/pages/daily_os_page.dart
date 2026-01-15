@@ -4,6 +4,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
+import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_header.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_summary.dart';
@@ -114,22 +115,10 @@ class DailyOsPage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _showAddBudgetSheet(context, ref, selectedDate);
+          AddBudgetSheet.show(context, selectedDate);
         },
         child: const Icon(Icons.add),
       ),
-    );
-  }
-
-  void _showAddBudgetSheet(
-    BuildContext context,
-    WidgetRef ref,
-    DateTime date,
-  ) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _AddBudgetSheet(date: date),
     );
   }
 }
@@ -191,199 +180,6 @@ class _AgreementBanner extends StatelessWidget {
             child: Text(actionLabel),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Bottom sheet for adding a new budget.
-class _AddBudgetSheet extends ConsumerStatefulWidget {
-  const _AddBudgetSheet({required this.date});
-
-  final DateTime date;
-
-  @override
-  ConsumerState<_AddBudgetSheet> createState() => _AddBudgetSheetState();
-}
-
-class _AddBudgetSheetState extends ConsumerState<_AddBudgetSheet> {
-  String? _selectedCategoryId;
-  int _plannedMinutes = 60;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(AppTheme.spacingLarge),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppTheme.spacingLarge),
-
-            // Title
-            Text(
-              'Add Time Budget',
-              style: context.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppTheme.spacingLarge),
-
-            // Category selector placeholder
-            Text(
-              'Select Category',
-              style: context.textTheme.labelLarge,
-            ),
-            const SizedBox(height: AppTheme.spacingSmall),
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spacingMedium),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: context.colorScheme.outline.withValues(alpha: 0.3),
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    MdiIcons.folderOutline,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: AppTheme.spacingSmall),
-                  Text(
-                    'Choose a category...',
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AppTheme.spacingLarge),
-
-            // Duration selector
-            Text(
-              'Planned Duration',
-              style: context.textTheme.labelLarge,
-            ),
-            const SizedBox(height: AppTheme.spacingSmall),
-            Row(
-              children: [
-                _DurationChip(
-                  label: '30m',
-                  isSelected: _plannedMinutes == 30,
-                  onTap: () => setState(() => _plannedMinutes = 30),
-                ),
-                const SizedBox(width: 8),
-                _DurationChip(
-                  label: '1h',
-                  isSelected: _plannedMinutes == 60,
-                  onTap: () => setState(() => _plannedMinutes = 60),
-                ),
-                const SizedBox(width: 8),
-                _DurationChip(
-                  label: '2h',
-                  isSelected: _plannedMinutes == 120,
-                  onTap: () => setState(() => _plannedMinutes = 120),
-                ),
-                const SizedBox(width: 8),
-                _DurationChip(
-                  label: '3h',
-                  isSelected: _plannedMinutes == 180,
-                  onTap: () => setState(() => _plannedMinutes = 180),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: AppTheme.spacingMedium),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _selectedCategoryId != null
-                        ? () {
-                            // TODO: Add budget
-                            Navigator.pop(context);
-                          }
-                        : null,
-                    child: const Text('Add Budget'),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppTheme.spacingMedium),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Duration selection chip.
-class _DurationChip extends StatelessWidget {
-  const _DurationChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer
-              : context.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? context.colorScheme.primary
-                : context.colorScheme.outline.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Text(
-          label,
-          style: context.textTheme.labelLarge?.copyWith(
-            color: isSelected
-                ? context.colorScheme.onPrimaryContainer
-                : context.colorScheme.onSurfaceVariant,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
       ),
     );
   }
