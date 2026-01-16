@@ -20,7 +20,8 @@ def _get_device() -> str:
                 # Need at least 10GB for Voxtral Mini 3B
                 if mem_gb >= 10:
                     return "cuda"
-            except Exception:
+            except (RuntimeError, AssertionError):
+                # CUDA device query failed, fall through to MPS/CPU
                 pass
 
         # Check for MPS (Apple Silicon)

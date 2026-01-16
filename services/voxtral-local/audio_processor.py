@@ -269,8 +269,8 @@ class AudioProcessor:
             if len(audio_array.shape) > 1:
                 audio_array = np.mean(audio_array, axis=1)
             return audio_array, sample_rate
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"soundfile loading failed, trying torchaudio: {e}")
 
         # Fallback to torchaudio
         try:
@@ -279,8 +279,8 @@ class AudioProcessor:
             waveform, sample_rate = torchaudio.load(audio_io)
             audio_array = waveform.mean(dim=0).numpy()
             return audio_array, sample_rate
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"torchaudio loading failed, trying temp file: {e}")
 
         # Final fallback: temp file + librosa
         return self._load_from_temp_file(audio_bytes)
@@ -470,7 +470,9 @@ class AudioProcessor:
 
     def _get_audio_hash(self, audio_array: NDArray[np.float32]) -> str:
         """Generate hash for audio array for caching."""
-        return hashlib.md5(audio_array.tobytes()).hexdigest()[:16]
+        return hashlib.md5(
+            audio_array.tobytes(), usedforsecurity=False
+        ).hexdigest()[:16]
 
     def _clean_cache(self) -> None:
         """Clean old cache entries."""

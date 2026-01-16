@@ -1,6 +1,7 @@
 """Tests for model manager module."""
 
 import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -35,7 +36,7 @@ class TestVoxtralModelManager:
         with patch("model_manager.ServiceConfig") as mock_config:
             mock_config.DEFAULT_DEVICE = "cpu"
             mock_config.MODEL_ID = "mistralai/Voxtral-Mini-3B-2507"
-            mock_config.CACHE_DIR = Path("/tmp/voxtral-test")
+            mock_config.CACHE_DIR = Path(tempfile.gettempdir()) / "voxtral-test"
             manager = VoxtralModelManager()
             return manager
 

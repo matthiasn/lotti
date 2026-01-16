@@ -101,8 +101,9 @@ class VoxtralModelManager:
 
                 await loop.run_in_executor(
                     None,
-                    lambda: snapshot_download(
+                    lambda: snapshot_download(  # nosec B615 - user downloads latest model on demand
                         repo_id=self.model_id,
+                        revision="main",
                         cache_dir=self.cache_dir / "models",
                         local_dir=ServiceConfig.get_model_path(),
                         local_dir_use_symlinks=False,
@@ -166,15 +167,17 @@ class VoxtralModelManager:
                 loop = asyncio.get_event_loop()
 
                 def load_model_sync() -> None:
-                    # Load processor
-                    self.processor = AutoProcessor.from_pretrained(
+                    # Load processor from local cache (no download)
+                    self.processor = AutoProcessor.from_pretrained(  # nosec B615 - local_files_only=True
                         model_path,
                         local_files_only=True,
                         trust_remote_code=True,
+                        revision="main",
                     )
                     logger.info("Loaded processor for Voxtral")
 
                     # Load model with appropriate settings based on device
+                    # (local_files_only=True loads from local cache)
                     model_kwargs: Dict[str, Any] = {
                         "local_files_only": True,
                         "trust_remote_code": True,
@@ -189,15 +192,15 @@ class VoxtralModelManager:
                         model_kwargs["device_map"] = None
 
                     try:
-                        self.model = VoxtralForConditionalGeneration.from_pretrained(
-                            model_path, **model_kwargs
+                        self.model = VoxtralForConditionalGeneration.from_pretrained(  # nosec B615
+                            model_path, revision="main", **model_kwargs
                         )
                     except Exception as e:
                         logger.warning(f"First load attempt failed: {e}")
                         # Fallback: try without device_map
                         model_kwargs.pop("device_map", None)
-                        self.model = VoxtralForConditionalGeneration.from_pretrained(
-                            model_path, **model_kwargs
+                        self.model = VoxtralForConditionalGeneration.from_pretrained(  # nosec B615
+                            model_path, revision="main", **model_kwargs
                         )
                         # Move to device manually
                         if self.device != "cpu":
