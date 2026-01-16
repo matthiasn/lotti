@@ -75,6 +75,9 @@ class VoxtralInferenceRepository {
     if (baseUrl.isEmpty) {
       throw ArgumentError('Base URL cannot be empty');
     }
+    if (audioBase64.isEmpty) {
+      throw ArgumentError('Audio payload cannot be empty');
+    }
 
     // Voxtral supports 30 min audio, so use longer timeout
     final requestTimeout =

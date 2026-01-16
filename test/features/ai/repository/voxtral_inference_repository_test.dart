@@ -301,6 +301,18 @@ void main() {
         );
       });
 
+      test('should throw ArgumentError for empty audioBase64', () {
+        expect(
+          () => repository.transcribeAudio(
+            model: model,
+            audioBase64: '',
+            baseUrl: baseUrl,
+          ),
+          throwsA(isA<ArgumentError>().having(
+              (e) => e.message, 'message', 'Audio payload cannot be empty')),
+        );
+      });
+
       test('should handle HTTP error responses', () async {
         // Arrange
         when(() => mockHttpClient.post(

@@ -33,6 +33,7 @@ Build a new local transcription service using Mistral AI's Voxtral model as a sw
 ## Existing Code to Reuse
 
 ### From `services/gemma-local/`
+
 | File | Reusability | Notes |
 |------|-------------|-------|
 | `main.py` | High | FastAPI structure, endpoints, request models |
@@ -42,11 +43,13 @@ Build a new local transcription service using Mistral AI's Voxtral model as a sw
 | `streaming.py` | High | SSE streaming implementation |
 
 ### From `whisper_server/`
+
 | File | Reusability | Notes |
 |------|-------------|-------|
 | `whisper_api_server.py` | Medium | OpenAI transcription endpoint pattern |
 
 ### From Flutter Client
+
 | File | Reusability | Notes |
 |------|-------------|-------|
 | `gemma3n_inference_repository.dart` | High | Template for `voxtral_inference_repository.dart` |
@@ -155,13 +158,77 @@ services/voxtral-local/
 ```
 
 #### 7.6 Performance Expectations
+
 | Audio Duration | Transformers | vLLM (estimated) |
 |----------------|--------------|------------------|
 | 1 minute       | ~30s         | ~2-3s            |
 | 5 minutes      | ~2.5min      | ~10-15s          |
 | 30 minutes     | ~15min       | ~1-2min          |
 
-*Note: Actual performance varies by hardware. vLLM requires CUDA; MPS support is limited.*
+*Note: Actual performance varies by hardware. Standard vLLM requires CUDA.*
+
+### Phase 8: vLLM-Metal for Apple Silicon (Exploration)
+
+**Intent**: Enable vLLM-level performance on Apple Silicon Macs without requiring NVIDIA GPUs.
+
+#### 8.1 What We Know
+
+**vLLM-Metal** ([github.com/vllm-project/vllm-metal](https://github.com/vllm-project/vllm-metal)):
+- Community-maintained hardware plugin for vLLM on Apple Silicon
+- Uses MLX as primary compute backend (not PyTorch MPS)
+- Provides OpenAI-compatible API (same as standard vLLM)
+- 158 commits, 7 contributors, 89 releases - actively developed
+- Apache 2.0 license
+
+**Key Features**:
+- MLX-accelerated inference (reportedly outperforms PyTorch MPS)
+- Unified memory architecture - zero-copy operations
+- Paged attention for efficient KV cache
+- Full vLLM compatibility (engine, scheduler, API)
+
+**Unknown/To Investigate**:
+- Whether Voxtral/audio models are supported (not documented)
+- Actual performance vs Transformers on Apple Silicon
+- Stability and maturity for production use
+
+#### 8.2 Alternative Explored: mlx-voxtral
+
+We investigated [mlx-voxtral](https://pypi.org/project/mlx-voxtral/) - a dedicated MLX implementation of Voxtral:
+- ✅ Optimized for Apple Silicon
+- ✅ Supports 4-bit/8-bit quantization (3.2GB vs 9.5GB model size)
+- ❌ Only 4 commits, no releases - project appears inactive
+- ❌ CLI-only, would need server wrapper
+
+**Decision**: Focus on vllm-metal as it's more actively maintained and provides standard vLLM API.
+
+#### 8.3 Next Steps
+
+1. **Install vllm-metal** on Apple Silicon test machine
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/vllm-project/vllm-metal/main/install.sh | bash
+   ```
+
+2. **Test Voxtral model loading**
+   - Verify if `mistralai/Voxtral-Mini-3B-2507` loads successfully
+   - Check if audio processing pipeline works
+
+3. **Benchmark performance**
+   - Compare against current Transformers backend
+   - Measure tokens/second and memory usage
+
+4. **If successful**: Add `VOXTRAL_BACKEND=vllm-metal` option
+   - Route requests to vllm-metal's OpenAI-compatible API
+   - Fall back to Transformers if vllm-metal unavailable
+
+#### 8.4 Configuration Options (Planned)
+
+| Backend | Platform | Status |
+|---------|----------|--------|
+| `transformers` | All (CUDA, MPS, CPU) | ✅ Implemented |
+| `vllm` | CUDA only | 📋 Planned |
+| `vllm-metal` | Apple Silicon | 🔬 Investigating |
+
+Environment variable: `VOXTRAL_BACKEND=transformers|vllm|vllm-metal`
 
 ## Dependencies
 
@@ -253,13 +320,19 @@ lib/features/ai/repository/
 
 ## Design Decisions (Confirmed)
 
-1. **Serving Approach**: Start with **Transformers**, then add **vLLM** for performance
-   - Phase 1-6: Transformers backend (simpler, works on all platforms)
-   - Phase 7: Add vLLM backend option for substantial performance gains
-   - vLLM is critical for longer transcriptions (30-min meetings would take 15+ min with Transformers vs ~2 min with vLLM)
-   - User can select backend via config: `VOXTRAL_BACKEND=transformers|vllm`
+1. **Serving Approach**: Start with **Transformers**, explore accelerated backends
+   - Phase 1-6: ✅ Transformers backend (implemented, works on all platforms)
+   - Phase 7: vLLM backend for CUDA users (requires NVIDIA GPU with 10GB+ VRAM)
+   - Phase 8: vLLM-Metal for Apple Silicon (under investigation)
+   - User can select backend via config: `VOXTRAL_BACKEND=transformers|vllm|vllm-metal`
 
-2. **Port allocation**: Use **11344** (next after Gemma's 11343)
+2. **Transformers Optimizations Applied**:
+   - ✅ SDPA attention (`attn_implementation="sdpa"`)
+   - ✅ `torch.inference_mode()` for all devices
+   - ✅ bfloat16 precision on GPU
+   - ⚠️ Limited gains on MPS - MLX-based solutions may be faster
+
+3. **Port allocation**: Use **11344** (next after Gemma's 11343)
 
 3. **UI integration**: Add as **separate AI service option** alongside Gemma 3N in AI settings
    - Users explicitly choose Voxtral as their transcription service

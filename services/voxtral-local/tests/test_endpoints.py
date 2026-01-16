@@ -80,8 +80,14 @@ class TestChatCompletionsEndpoint:
                 "messages": [{"role": "user", "content": "Hello"}],
             },
         )
-        # Returns 400 (no audio), 404 (model not downloaded), or 500 (model load failed)
-        assert response.status_code in [400, 404, 500]
+        # Should return 400 (no audio) or 404 (model not downloaded)
+        # Do not accept 500 as it masks actual server errors
+        assert response.status_code in [400, 404], (
+            f"Expected 400 or 404, got {response.status_code}: {response.text}"
+        )
+        # Verify error message is present in response
+        response_json = response.json()
+        assert "detail" in response_json or "error" in response_json
 
 
 class TestModelPullEndpoint:
@@ -153,12 +159,13 @@ class TestContextExtraction:
         """Test context extraction handles empty messages."""
         messages = []
 
-        context_parts = []
-        for message in messages:
-            role = message.get("role", "")
-            content = message.get("content", "")
-            if isinstance(content, str) and content.strip():
-                context_parts.append(content)
+        # Extract content from messages (empty list case)
+        context_parts = [
+            message.get("content", "")
+            for message in messages
+            if isinstance(message.get("content", ""), str)
+            and message.get("content", "").strip()
+        ]
 
         context = "\n".join(context_parts) if context_parts else None
 
