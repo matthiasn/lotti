@@ -414,7 +414,7 @@ async def _transcribe_single(
         )
 
     # Move inputs to device with correct dtype
-    inputs = inputs.to(model_manager.device, dtype=torch.bfloat16)
+    inputs = inputs.to(model_manager.device, dtype=ServiceConfig.TORCH_DTYPE)
 
     # Generate
     gen_config = ServiceConfig.get_generation_config("transcription")

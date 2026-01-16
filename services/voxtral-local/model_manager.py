@@ -46,13 +46,15 @@ class VoxtralModelManager:
 
         self._log_memory_usage("startup")
 
-    async def download_model(
-        self, progress_callback: Optional[Any] = None
-    ) -> AsyncGenerator[Dict[str, Any], None]:
+    async def download_model(self) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Download model from Hugging Face with progress tracking.
 
-        Yields progress updates as dictionaries.
+        Yields progress updates as dictionaries with keys:
+        - status: Current status message
+        - progress: Percentage (0-100)
+        - total: Total size in bytes
+        - completed: Completed size in bytes
         """
         async with self._lock:
             try:

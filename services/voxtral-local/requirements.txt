@@ -1,6 +1,6 @@
 # Core dependencies
-torch>=2.1.0
-transformers>=4.45.0
+torch>=2.2.0
+transformers>=4.53.0
 
 # Voxtral tokenizer (requires Python <3.14)
 mistral-common>=1.5.0
@@ -9,9 +9,9 @@ mistral-common>=1.5.0
 huggingface-hub>=0.19.0
 
 # Web framework
-fastapi>=0.100.0
+fastapi>=0.109.1
 uvicorn>=0.23.0
-pydantic>=2.0.0
+pydantic>=2.4.0
 
 # Audio processing
 numpy>=1.24.0
