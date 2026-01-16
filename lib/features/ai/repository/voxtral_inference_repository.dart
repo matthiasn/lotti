@@ -4,6 +4,8 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Voxtral-specific inference operations
@@ -19,6 +21,22 @@ class VoxtralInferenceRepository {
 
   /// Default base URL for local Voxtral server
   static const String defaultBaseUrl = 'http://127.0.0.1:11344/';
+
+  /// Safely log exception to LoggingService if available
+  void _logException(
+    Object exception, {
+    required String subDomain,
+    StackTrace? stackTrace,
+  }) {
+    if (getIt.isRegistered<LoggingService>()) {
+      getIt<LoggingService>().captureException(
+        exception,
+        domain: 'VOXTRAL',
+        subDomain: subDomain,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
   /// Transcribes audio using a locally running Voxtral instance
   ///
@@ -128,22 +146,26 @@ class VoxtralInferenceRepository {
               name: 'VoxtralInferenceRepository',
               error: response.body,
             );
-            throw VoxtralModelNotAvailableException(
+            final exception = VoxtralModelNotAvailableException(
               'Voxtral model is not available. Please download it first.',
               modelName: model,
               statusCode: response.statusCode,
             );
+            _logException(exception, subDomain: 'model_not_available');
+            throw exception;
           } else if (response.statusCode != 200) {
             developer.log(
               'Failed to transcribe audio: HTTP ${response.statusCode}',
               name: 'VoxtralInferenceRepository',
               error: response.body,
             );
-            throw VoxtralInferenceException(
+            final exception = VoxtralInferenceException(
               'Failed to transcribe audio (HTTP ${response.statusCode}). '
               'Please check your audio file and try again.',
               statusCode: response.statusCode,
             );
+            _logException(exception, subDomain: 'http_error');
+            throw exception;
           }
 
           final result = jsonDecode(response.body) as Map<String, dynamic>;
@@ -176,50 +198,57 @@ class VoxtralInferenceRepository {
               created: result['created'] as int? ??
                   DateTime.now().millisecondsSinceEpoch ~/ 1000,
             );
-          } catch (e) {
+          } catch (e, stackTrace) {
             developer.log(
               'Invalid response from Voxtral server: failed to parse response',
               name: 'VoxtralInferenceRepository',
               error: result,
             );
-            throw VoxtralInferenceException(
+            final exception = VoxtralInferenceException(
               'Invalid response from transcription service: $e',
               originalError: e,
             );
+            _logException(
+              exception,
+              subDomain: 'invalid_response',
+              stackTrace: stackTrace,
+            );
+            throw exception;
           }
+        } on VoxtralModelNotAvailableException {
+          rethrow;
         } on VoxtralInferenceException {
           rethrow;
-        } on TimeoutException catch (e) {
+        } on TimeoutException catch (e, stackTrace) {
           developer.log(
             'Transcription request timed out',
             name: 'VoxtralInferenceRepository',
             error: e,
           );
+          _logException(e, subDomain: 'timeout', stackTrace: stackTrace);
           throw VoxtralInferenceException(
             timeoutErrorMessage,
             statusCode: httpStatusRequestTimeout,
             originalError: e,
           );
-        } on FormatException catch (e) {
+        } on FormatException catch (e, stackTrace) {
           developer.log(
             'Failed to parse response from Voxtral server',
             name: 'VoxtralInferenceRepository',
             error: e,
           );
+          _logException(e, subDomain: 'format_error', stackTrace: stackTrace);
           throw VoxtralInferenceException(
             'Invalid response format from transcription service',
             originalError: e,
           );
-        } catch (e) {
-          if (e is VoxtralModelNotAvailableException) {
-            rethrow;
-          }
-
+        } catch (e, stackTrace) {
           developer.log(
             'Unexpected error during audio transcription',
             name: 'VoxtralInferenceRepository',
             error: e,
           );
+          _logException(e, subDomain: 'unexpected', stackTrace: stackTrace);
           throw VoxtralInferenceException(
             'Failed to transcribe audio: $e',
             originalError: e,

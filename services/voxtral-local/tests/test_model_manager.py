@@ -1,7 +1,6 @@
 """Tests for model manager module."""
 
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -31,12 +30,12 @@ class TestVoxtralModelManager:
     """Tests for VoxtralModelManager class."""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self, tmp_path):
         """Create a VoxtralModelManager instance."""
         with patch("model_manager.ServiceConfig") as mock_config:
             mock_config.DEFAULT_DEVICE = "cpu"
             mock_config.MODEL_ID = "mistralai/Voxtral-Mini-3B-2507"
-            mock_config.CACHE_DIR = Path(tempfile.gettempdir()) / "voxtral-test"
+            mock_config.CACHE_DIR = tmp_path / "voxtral-test"
             manager = VoxtralModelManager()
             return manager
 
@@ -89,8 +88,6 @@ class TestVoxtralModelManager:
 
     def test_refresh_config_updates_model_id(self, manager):
         """Test refresh_config updates configuration."""
-        old_model_id = manager.model_id
-
         with patch("model_manager.ServiceConfig.MODEL_ID", "new-model-id"), \
              patch("model_manager.ServiceConfig.DEFAULT_DEVICE", "cpu"):
             manager.refresh_config()

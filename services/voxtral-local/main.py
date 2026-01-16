@@ -470,6 +470,15 @@ async def pull_model(
     request: ModelPullRequest,
 ) -> Union[StreamingResponse, Dict[str, Any]]:
     """Download model from HuggingFace."""
+    # Validate requested model matches configured model
+    configured_model = ServiceConfig.MODEL_ID
+    if request.model_name != configured_model:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Requested model '{request.model_name}' does not match "
+            f"configured model '{configured_model}'. "
+            f"Set VOXTRAL_MODEL_ID environment variable to change the model.",
+        )
 
     async def generate() -> Any:
         try:

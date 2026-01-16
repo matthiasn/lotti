@@ -161,5 +161,7 @@ class TestAudioProcessor:
     @pytest.mark.asyncio
     async def test_process_audio_base64_invalid_raises(self, processor):
         """Test processing invalid base64 raises error."""
-        with pytest.raises(Exception):
+        import binascii
+
+        with pytest.raises(binascii.Error):
             await processor.process_audio_base64("not-valid-base64!", request_id="test")

@@ -53,7 +53,7 @@ Build a new local transcription service using Mistral AI's Voxtral model as a sw
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    Flutter App (Lotti)                       │
 ├─────────────────────────────────────────────────────────────┤
@@ -146,7 +146,8 @@ vllm serve mistralai/Voxtral-Mini-3B-2507 \
 - **Continuous batching**: Better throughput for concurrent requests
 
 #### 7.5 Files to Add for vLLM Support
-```
+
+```text
 services/voxtral-local/
 ├── vllm_server.py           # vLLM process manager
 ├── vllm_client.py           # Client for vLLM OpenAI API
@@ -165,7 +166,8 @@ services/voxtral-local/
 ## Dependencies
 
 ### Python Service (`services/voxtral-local/requirements.txt`)
-```
+
+```text
 torch>=2.1.0
 transformers>=4.45.0
 mistral-common>=1.8.1
@@ -182,7 +184,8 @@ python-dotenv>=1.0.0
 ```
 
 ### Optional (for vLLM-based serving)
-```
+
+```text
 vllm[audio]>=0.6.0
 ```
 
@@ -227,7 +230,7 @@ class VoxtralConfig:
 
 ## Files to Create
 
-```
+```text
 services/voxtral-local/
 ├── main.py                    # FastAPI application
 ├── config.py                  # Configuration settings
