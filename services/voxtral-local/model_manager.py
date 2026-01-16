@@ -103,9 +103,9 @@ class VoxtralModelManager:
 
                 await loop.run_in_executor(
                     None,
-                    lambda: snapshot_download(  # nosec B615 - user downloads latest model on demand
+                    lambda: snapshot_download(  # nosec B615 - pinned via MODEL_REVISION
                         repo_id=self.model_id,
-                        revision="main",
+                        revision=ServiceConfig.MODEL_REVISION,
                         cache_dir=self.cache_dir / "models",
                         local_dir=ServiceConfig.get_model_path(),
                         local_dir_use_symlinks=False,
@@ -170,11 +170,11 @@ class VoxtralModelManager:
 
                 def load_model_sync() -> None:
                     # Load processor from local cache (no download)
-                    self.processor = AutoProcessor.from_pretrained(  # nosec B615 - local_files_only=True
+                    self.processor = AutoProcessor.from_pretrained(  # nosec B615
                         model_path,
                         local_files_only=True,
                         trust_remote_code=True,
-                        revision="main",
+                        revision=ServiceConfig.MODEL_REVISION,
                     )
                     logger.info("Loaded processor for Voxtral")
 
@@ -195,14 +195,18 @@ class VoxtralModelManager:
 
                     try:
                         self.model = VoxtralForConditionalGeneration.from_pretrained(  # nosec B615
-                            model_path, revision="main", **model_kwargs
+                            model_path,
+                            revision=ServiceConfig.MODEL_REVISION,
+                            **model_kwargs,
                         )
                     except Exception as e:
                         logger.warning(f"First load attempt failed: {e}")
                         # Fallback: try without device_map
                         model_kwargs.pop("device_map", None)
                         self.model = VoxtralForConditionalGeneration.from_pretrained(  # nosec B615
-                            model_path, revision="main", **model_kwargs
+                            model_path,
+                            revision=ServiceConfig.MODEL_REVISION,
+                            **model_kwargs,
                         )
                         # Move to device manually
                         if self.device != "cpu":

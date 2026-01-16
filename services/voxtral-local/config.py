@@ -40,6 +40,13 @@ class ServiceConfig:
 
     # Model settings
     MODEL_ID = os.getenv("VOXTRAL_MODEL_ID", "mistralai/Voxtral-Mini-3B-2507")
+    # Pin to specific revision for reproducibility (override with VOXTRAL_MODEL_REVISION)
+    # Known revisions:
+    #   Mini 3B:  3060fe34b35ba5d44202ce9ff3c097642914f8f3
+    #   Small 24B: da5b42409f279fdd92febee0511a6c32828569c1
+    MODEL_REVISION = os.getenv(
+        "VOXTRAL_MODEL_REVISION", "3060fe34b35ba5d44202ce9ff3c097642914f8f3"
+    )
     DEFAULT_DEVICE = _get_device()
     TORCH_DTYPE = torch.bfloat16 if DEFAULT_DEVICE in ["cuda", "mps"] else torch.float32
 
