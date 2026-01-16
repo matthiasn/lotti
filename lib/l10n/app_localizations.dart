@@ -843,6 +843,18 @@ abstract class AppLocalizations {
   /// **'Whisper (local)'**
   String get aiProviderWhisperName;
 
+  /// No description provided for @aiProviderVoxtralDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Voxtral transcription (up to 30 min audio, 9 languages)'**
+  String get aiProviderVoxtralDescription;
+
+  /// No description provided for @aiProviderVoxtralName.
+  ///
+  /// In en, this message translates to:
+  /// **'Voxtral (local)'**
+  String get aiProviderVoxtralName;
+
   /// No description provided for @aiResponseTypeAudioTranscription.
   ///
   /// In en, this message translates to:

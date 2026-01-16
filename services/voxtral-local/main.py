@@ -326,6 +326,18 @@ async def chat_completion(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _audio_array_to_base64(audio_array: NDArray[np.float32], sample_rate: int) -> str:
+    """Convert numpy audio array to base64-encoded WAV."""
+    import io
+    import base64
+    import soundfile as sf
+
+    buffer = io.BytesIO()
+    sf.write(buffer, audio_array, sample_rate, format='WAV')
+    buffer.seek(0)
+    return base64.b64encode(buffer.read()).decode('utf-8')
+
+
 async def _transcribe_single(
     audio_array: NDArray[np.float32],
     context: Optional[str],
@@ -347,68 +359,76 @@ async def _transcribe_single(
     if max_val > 1.0:
         audio_array = audio_array / max_val
 
-    # Build transcription instruction with context
-    instruction_parts = []
-    if context:
+    # Check if we have context that requires chat template
+    has_context = context and context.strip()
+
+    if has_context:
+        # Use chat template with context for context-aware transcription
+        # Build transcription instruction with context
+        instruction_parts = []
         instruction_parts.append(context)
 
-    if language and language != "auto":
-        instruction_parts.append(f"Transcribe the following audio in {language}.")
+        if language and language != "auto":
+            instruction_parts.append(f"Transcribe the following audio in {language}.")
+        else:
+            instruction_parts.append("Transcribe the following audio.")
+
+        # Explicitly request plain text output (not JSON)
+        instruction_parts.append(
+            "IMPORTANT: Return ONLY the plain text transcription. "
+            "Do NOT wrap it in JSON, XML, or any other format. "
+            "Just output the spoken words as plain text."
+        )
+
+        transcription_instruction = "\n\n".join(instruction_parts)
+
+        # Convert audio to base64 for the chat template
+        audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
+
+        # Build conversation for Voxtral with base64 audio
+        conversation = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "audio", "base64": audio_base64},
+                    {"type": "text", "text": transcription_instruction},
+                ],
+            }
+        ]
+
+        logger.info(f"[REQ {req_id}] Using chat template with context")
+        inputs = model_manager.processor.apply_chat_template(conversation)
     else:
-        instruction_parts.append("Transcribe the following audio.")
+        # Use dedicated transcription request for simple transcription
+        logger.info(f"[REQ {req_id}] Using transcription request mode")
 
-    transcription_instruction = "\n\n".join(instruction_parts)
+        # Convert audio to base64 for the transcription request
+        audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
 
-    # Build conversation for Voxtral
-    conversation = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "audio", "audio": audio_array},
-                {"type": "text", "text": transcription_instruction},
-            ],
-        }
-    ]
-
-    # Process with Voxtral
-    try:
-        inputs = model_manager.processor.apply_chat_template(
-            conversation,
-            add_generation_prompt=True,
-            tokenize=True,
-            return_dict=True,
-            return_tensors="pt",
-        )
-    except Exception as e:
-        logger.warning(f"[REQ {req_id}] Chat template failed: {e}, using fallback")
-        inputs = model_manager.processor(
-            text="Transcribe this audio.",
-            audio=audio_array,
-            sampling_rate=ServiceConfig.AUDIO_SAMPLE_RATE,
-            return_tensors="pt",
+        # Use apply_transcription_request for pure transcription
+        lang_code = language if language and language != "auto" else None
+        inputs = model_manager.processor.apply_transcription_request(
+            audio=f"data:audio/wav;base64,{audio_base64}",
+            model_id=ServiceConfig.MODEL_ID,
+            language=lang_code,
         )
 
-    # Move to device
-    inputs = {
-        k: v.to(model_manager.device) if hasattr(v, "to") else v
-        for k, v in inputs.items()
-    }
+    # Move inputs to device with correct dtype
+    inputs = inputs.to(model_manager.device, dtype=torch.bfloat16)
 
     # Generate
     gen_config = ServiceConfig.get_generation_config("transcription")
-    gen_config["pad_token_id"] = model_manager.processor.tokenizer.pad_token_id
-    gen_config["eos_token_id"] = model_manager.processor.tokenizer.eos_token_id
 
     t0 = time.perf_counter()
-    with torch.inference_mode() if model_manager.device == "cpu" else torch.no_grad():
+    with torch.inference_mode():
         outputs = model_manager.model.generate(**inputs, **gen_config)
     t1 = time.perf_counter()
 
-    # Decode
-    input_length = inputs["input_ids"].shape[1] if "input_ids" in inputs else 0
-    transcription = model_manager.processor.tokenizer.decode(
-        outputs[0][input_length:], skip_special_tokens=True
-    )
+    # Decode - skip input tokens
+    input_length = inputs.input_ids.shape[1] if hasattr(inputs, 'input_ids') else inputs["input_ids"].shape[1]
+    transcription = model_manager.processor.batch_decode(
+        outputs[:, input_length:], skip_special_tokens=True
+    )[0]
 
     new_tokens = max(0, outputs.shape[1] - input_length)
     logger.info(

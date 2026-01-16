@@ -106,8 +106,6 @@ class ServiceConfig:
         base_config: Dict[str, Any] = {
             "do_sample": False,  # Deterministic for transcription
             "use_cache": True,
-            "pad_token_id": None,  # Will be set from tokenizer
-            "eos_token_id": None,  # Will be set from tokenizer
         }
 
         if task_type == "transcription":

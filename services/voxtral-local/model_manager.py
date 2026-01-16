@@ -180,6 +180,7 @@ class VoxtralModelManager:
                         "trust_remote_code": True,
                         "torch_dtype": ServiceConfig.TORCH_DTYPE,
                         "low_cpu_mem_usage": True,
+                        "attn_implementation": "sdpa",  # Use scaled dot-product attention
                     }
 
                     if self.device in ["cuda", "mps"]:

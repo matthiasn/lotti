@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.815] - 2026-01-16
+### Added
+- Voxtral Local Transcription: New local AI transcription service using Mistral's Voxtral model
+  - Supports up to 30 minutes of audio transcription (vs 5 minutes for Gemma 3N)
+  - 9 languages with automatic detection (English, Spanish, French, Portuguese, Hindi, German, Dutch, Italian, Arabic)
+  - Context-aware transcription with speech dictionary support for improved accuracy
+  - Two model options: Voxtral Mini 3B (~9.5GB VRAM) and Voxtral Small 24B (~55GB VRAM)
+  - Runs locally on Apple Silicon (MPS) or NVIDIA GPUs (CUDA)
+  - OpenAI-compatible API with full Flutter integration
+  - New Python service at `services/voxtral-local/` on port 11344
+
 ## [0.9.814] - 2026-01-12
 ### Fixed
 - Gemini Setup Dialog Reset: Fixed reset not working properly

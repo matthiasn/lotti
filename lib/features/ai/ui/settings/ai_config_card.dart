@@ -272,6 +272,8 @@ class AiConfigCard extends ConsumerWidget {
           return Icons.mic;
         case InferenceProviderType.gemma3n:
           return Icons.multitrack_audio;
+        case InferenceProviderType.voxtral:
+          return Icons.record_voice_over;
       }
     } else if (config is AiConfigModel) {
       final model = config as AiConfigModel;

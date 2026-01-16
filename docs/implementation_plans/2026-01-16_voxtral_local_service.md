@@ -119,7 +119,7 @@ Build a new local transcription service using Mistral AI's Voxtral model as a sw
 
 ### Phase 7: vLLM Integration (Performance Optimization)
 
-**Rationale**: vLLM provides 14-24x throughput gains over raw Transformers inference. For longer audio (e.g., 30-minute meeting transcriptions), this translates to dramatically reduced wait times.
+**Rationale**: vLLM provides substantial throughput gains over raw Transformers inference. For longer audio (e.g., 30-minute meeting transcriptions), this translates to dramatically reduced wait times.
 
 #### 7.1 vLLM Server Setup
 1. Add `vllm_server.py` - wrapper to start vLLM serve process
@@ -252,7 +252,7 @@ lib/features/ai/repository/
 
 1. **Serving Approach**: Start with **Transformers**, then add **vLLM** for performance
    - Phase 1-6: Transformers backend (simpler, works on all platforms)
-   - Phase 7: Add vLLM backend option for 14-24x performance gains
+   - Phase 7: Add vLLM backend option for substantial performance gains
    - vLLM is critical for longer transcriptions (30-min meetings would take 15+ min with Transformers vs ~2 min with vLLM)
    - User can select backend via config: `VOXTRAL_BACKEND=transformers|vllm`
 

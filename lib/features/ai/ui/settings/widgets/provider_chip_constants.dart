@@ -83,6 +83,10 @@ class ProviderChipConstants {
       dark: Color(0xFF81C784),
       light: Color(0xFF66BB6A), // Light Green
     ),
+    InferenceProviderType.voxtral: (
+      dark: Color(0xFFFF6B6B),
+      light: Color(0xFFE53935), // Mistral Red/Coral
+    ),
   };
 
   /// Get provider color for the current theme
