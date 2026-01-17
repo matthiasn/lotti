@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/gemini_config.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -23,13 +24,15 @@ class CloudInferenceRepository {
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
         _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
-        _gemma3nRepository = Gemma3nInferenceRepository(httpClient: httpClient);
+        _gemma3nRepository = Gemma3nInferenceRepository(httpClient: httpClient),
+        _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient);
 
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
   final WhisperInferenceRepository _whisperRepository;
   final Gemma3nInferenceRepository _gemma3nRepository;
+  final VoxtralInferenceRepository _voxtralRepository;
 
   /// Helper method to create common request parameters
   CreateChatCompletionRequest _createBaseRequest({
@@ -315,6 +318,17 @@ class CloudInferenceRepository {
     // For Gemma 3n, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.gemma3n) {
       return _gemma3nRepository.transcribeAudio(
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        prompt: prompt,
+        maxCompletionTokens: maxCompletionTokens,
+      );
+    }
+
+    // For Voxtral, use the dedicated repository
+    if (provider.inferenceProviderType == InferenceProviderType.voxtral) {
+      return _voxtralRepository.transcribeAudio(
         model: model,
         audioBase64: audioBase64,
         baseUrl: baseUrl,

@@ -24,6 +24,7 @@ class ProviderConfig {
     InferenceProviderType.openAi: 'https://api.openai.com/v1',
     InferenceProviderType.anthropic: 'https://api.anthropic.com/v1',
     InferenceProviderType.openRouter: 'https://openrouter.ai/api/v1',
+    InferenceProviderType.voxtral: 'http://localhost:11344',
     InferenceProviderType.whisper: 'http://localhost:8084',
   };
 
@@ -39,6 +40,7 @@ class ProviderConfig {
     InferenceProviderType.openAi: 'OpenAI',
     InferenceProviderType.anthropic: 'Anthropic',
     InferenceProviderType.openRouter: 'OpenRouter',
+    InferenceProviderType.voxtral: 'Voxtral (local)',
     InferenceProviderType.whisper: 'Whisper (local)',
   };
 
@@ -49,6 +51,7 @@ class ProviderConfig {
   static const Set<InferenceProviderType> noApiKeyRequired = {
     InferenceProviderType.gemma3n,
     InferenceProviderType.ollama,
+    InferenceProviderType.voxtral,
     InferenceProviderType.whisper,
   };
 

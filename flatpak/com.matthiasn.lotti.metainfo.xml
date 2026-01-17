@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.815" date="2026-01-16">
+      <description>
+        <p>Voxtral Local Transcription: Added a new local AI transcription service using Mistral's Voxtral model. Supports up to 30 minutes of audio transcription (compared to 5 minutes for Gemma 3N) with 9 languages and automatic language detection. Features context-aware transcription with speech dictionary support for improved accuracy on technical terms and proper nouns. Two model options available: Voxtral Mini 3B (~9.5GB VRAM) for local/edge deployment and Voxtral Small 24B (~55GB VRAM) for higher accuracy. Runs locally on Apple Silicon (MPS) or NVIDIA GPUs (CUDA) with full privacy - no data leaves your device.</p>
+      </description>
+    </release>
     <release version="0.9.814" date="2026-01-12">
       <description>
         <p>Gemini Setup Dialog Reset Fix: Fixed the reset functionality not working properly. Migrated storage from SharedPreferences to SettingsDb (SQLite) for improved reliability. The reset now takes effect immediately without requiring an app restart. Also localized the reset dialog strings for internationalization support.</p>

@@ -425,6 +425,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
+  String get aiProviderVoxtralDescription =>
+      'Local Voxtral transcription (up to 30 min audio, 9 languages)';
+
+  @override
+  String get aiProviderVoxtralName => 'Voxtral (local)';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Audio Transcription';
 
   @override

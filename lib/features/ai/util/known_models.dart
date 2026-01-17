@@ -68,6 +68,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
   InferenceProviderType.whisper: whisperModels,
+  InferenceProviderType.voxtral: voxtralModels,
 };
 
 /// Gemma 3n models - Local multimodal AI models with audio transcription
@@ -473,6 +474,39 @@ const List<KnownModel> whisperModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description: 'Most accurate local Whisper model',
+  ),
+];
+
+/// Voxtral models - Mistral's speech-to-text models (running locally)
+///
+/// These models run locally using the Voxtral service and provide high-quality
+/// audio transcription with support for up to 30 minutes of audio and 9 languages.
+/// They use an OpenAI-compatible chat completions API with context support,
+/// allowing speech dictionaries and task context to be passed for improved accuracy.
+///
+/// Note: Users must download these models using the service's model pull endpoint
+/// before they can be used in the application.
+const List<KnownModel> voxtralModels = [
+  KnownModel(
+    providerModelId: 'mistralai/Voxtral-Mini-3B-2507',
+    name: 'Voxtral Mini 3B',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Efficient local transcription model designed for edge deployment. '
+        'Supports up to 30 minutes of audio with 9 languages (auto-detected). '
+        'Requires approximately 9.5GB VRAM.',
+  ),
+  KnownModel(
+    providerModelId: 'mistralai/Voxtral-Small-24B-2507',
+    name: 'Voxtral Small 24B',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'High-accuracy transcription model for production use. '
+        'Supports up to 30 minutes of audio with 9 languages (auto-detected). '
+        'Requires approximately 55GB VRAM (multi-GPU recommended).',
   ),
 ];
 
