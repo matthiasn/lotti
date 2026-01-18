@@ -105,11 +105,18 @@ Build a new local transcription service using Mistral AI's Voxtral model as a sw
 ### Phase 4: API Endpoints
 1. Implement `/v1/audio/transcriptions` (OpenAI-compatible)
 2. Implement `/v1/chat/completions` with audio support
+   - **SSE Streaming**: When `stream: true`, each 60-second audio chunk is transcribed
+     and streamed as a separate SSE event. This provides real-time visual feedback
+     as transcription progresses, rather than waiting for the entire audio to complete.
+   - Non-streaming mode returns a single JSON response after all chunks are processed.
 3. Add `/v1/models/pull` for model download
 4. Add `/health` and `/v1/models` endpoints
 
 ### Phase 5: Flutter Integration
 1. Create `VoxtralInferenceRepository` based on Gemma3n pattern
+   - Uses `async*` generator for true streaming - yields each chunk as received from SSE
+   - Parses SSE events and emits `CreateChatCompletionStreamResponse` for each chunk
+   - Provides progressive transcription feedback to UI consumers
 2. Add Voxtral option to AI settings UI
 3. Wire up transcription feature to use Voxtral
 4. Add model download UI (similar to Gemma 3N)

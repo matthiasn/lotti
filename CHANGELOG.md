@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.816] - 2026-01-18
+### Changed
+- Voxtral Streaming Transcription: Audio transcription now streams progressively as each 60-second chunk completes
+  - Each chunk's transcription is sent as an SSE event, providing real-time visual feedback
+  - No more waiting for the entire audio to process before seeing results
+  - Particularly useful for longer recordings (2+ minutes) where chunk-level progress is meaningful
+- AI Streaming Enabled by Default: The `enableAiStreamingFlag` now defaults to `true` for new installations
+  - Streaming responses provide better visual feedback during AI inference
+  - Existing users can enable in Settings → Flags → "Enable AI streaming responses"
+
 ## [0.9.815] - 2026-01-16
 ### Added
 - Voxtral Local Transcription: New local AI transcription service using Mistral's Voxtral model

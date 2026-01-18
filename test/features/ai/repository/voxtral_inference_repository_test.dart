@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
@@ -14,12 +15,75 @@ class MockHttpClient extends Mock implements http.Client {}
 
 class FakeRequest extends Fake implements http.Request {}
 
+class FakeBaseRequest extends Fake implements http.BaseRequest {}
+
+/// Creates a mock SSE stream response for testing
+http.StreamedResponse createSseStreamedResponse({
+  required List<Map<String, dynamic>> events,
+  int statusCode = 200,
+}) {
+  final sseLines = <String>[];
+
+  for (final event in events) {
+    sseLines.add('data: ${jsonEncode(event)}\n\n');
+  }
+  sseLines.add('data: [DONE]\n\n');
+
+  final stream = Stream.fromIterable([utf8.encode(sseLines.join())]);
+  return http.StreamedResponse(stream, statusCode);
+}
+
+/// Creates a mock SSE event for a chunk with content
+Map<String, dynamic> createSseChunkEvent({
+  required String content,
+  String? id,
+  String? finishReason,
+  int? created,
+  String model = 'voxtral-mini',
+}) {
+  return {
+    'id': id ?? 'chatcmpl-test',
+    'object': 'chat.completion.chunk',
+    'created': created ?? 1234567890,
+    'model': model,
+    'choices': [
+      {
+        'index': 0,
+        'delta': {'content': content},
+        'finish_reason': finishReason,
+      }
+    ],
+  };
+}
+
+/// Creates a final SSE event with finish_reason but no content
+Map<String, dynamic> createSseFinalEvent({
+  String? id,
+  int? created,
+  String model = 'voxtral-mini',
+}) {
+  return {
+    'id': id ?? 'chatcmpl-test',
+    'object': 'chat.completion.chunk',
+    'created': created ?? 1234567890,
+    'model': model,
+    'choices': [
+      {
+        'index': 0,
+        'delta': <String, dynamic>{},
+        'finish_reason': 'stop',
+      }
+    ],
+  };
+}
+
 void main() {
   late VoxtralInferenceRepository repository;
   late MockHttpClient mockHttpClient;
 
   setUpAll(() {
     registerFallbackValue(FakeRequest());
+    registerFallbackValue(FakeBaseRequest());
     registerFallbackValue(Uri.parse('http://localhost:11344'));
   });
 
@@ -35,29 +99,19 @@ void main() {
       const audioBase64 = 'base64_audio_data';
       const prompt = 'Test context';
 
-      test('should transcribe audio successfully', () async {
-        // Arrange
-        const expectedText = 'Transcribed text';
-        final responseBody = {
-          'id': 'voxtral-123',
-          'choices': [
-            {
-              'message': {
-                'content': expectedText,
-              },
-            },
-          ],
-          'created': 1234567890,
-        };
+      test('should transcribe audio with streaming', () async {
+        // Arrange - simulate multiple chunks being streamed
+        const chunk1 = 'This is the first chunk.';
+        const chunk2 = ' This is the second chunk.';
+        final events = [
+          createSseChunkEvent(content: chunk1),
+          createSseChunkEvent(content: chunk2),
+          createSseFinalEvent(),
+        ];
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode(responseBody),
-              200,
-            ));
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -67,29 +121,25 @@ void main() {
           prompt: prompt,
         );
 
-        final result = await stream.first;
+        final results = await stream.toList();
 
-        // Assert
-        expect(result.choices?.first.delta?.content, equals(expectedText));
-        expect(result.id, equals('voxtral-123'));
+        // Assert - should receive 2 chunks with content
+        expect(results.length, equals(2));
+        expect(results[0].choices?.first.delta?.content, equals(chunk1));
+        expect(results[1].choices?.first.delta?.content, equals(chunk2));
 
         // Verify the request
-        final captured = verify(() => mockHttpClient.post(
-              captureAny(),
-              headers: captureAny(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.Request;
+        expect(request.url.toString(), equals('$baseUrl/v1/chat/completions'));
+        expect(request.headers['Content-Type'], contains('application/json'));
+        expect(request.headers['Accept'], contains('text/event-stream'));
 
-        final uri = captured[0] as Uri;
-        expect(uri.toString(), equals('$baseUrl/v1/chat/completions'));
-
-        final headers = captured[1] as Map<String, String>;
-        expect(headers['Content-Type'], contains('application/json'));
-
-        final requestBody =
-            jsonDecode(captured[2] as String) as Map<String, dynamic>;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['model'], equals(model));
         expect(requestBody['audio'], equals(audioBase64));
+        expect(requestBody['stream'], isTrue); // Streaming enabled
         expect(requestBody['temperature'], equals(0.0)); // Deterministic
         expect(requestBody['max_tokens'], equals(4096)); // Default for Voxtral
 
@@ -100,28 +150,46 @@ void main() {
             (messages[0] as Map<String, dynamic>)['content'], equals(prompt));
       });
 
+      test('should transcribe single chunk audio', () async {
+        // Arrange - single chunk
+        const transcribedText = 'Transcribed text from single segment.';
+        final events = [
+          createSseChunkEvent(content: transcribedText),
+          createSseFinalEvent(),
+        ];
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        // Act
+        final stream = repository.transcribeAudio(
+          model: model,
+          audioBase64: audioBase64,
+          baseUrl: baseUrl,
+          prompt: prompt,
+        );
+
+        final results = await stream.toList();
+
+        // Assert
+        expect(results.length, equals(1));
+        expect(
+            results[0].choices?.first.delta?.content, equals(transcribedText));
+        expect(results[0].id, equals('chatcmpl-test'));
+      });
+
       test('should transcribe audio without prompt', () async {
         // Arrange
         const expectedText = 'Transcribed text';
-        final responseBody = {
-          'id': 'voxtral-123',
-          'choices': [
-            {
-              'message': {
-                'content': expectedText,
-              },
-            },
-          ],
-        };
+        final events = [
+          createSseChunkEvent(content: expectedText),
+          createSseFinalEvent(),
+        ];
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode(responseBody),
-              200,
-            ));
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -130,19 +198,16 @@ void main() {
           baseUrl: baseUrl,
         );
 
-        final result = await stream.first;
+        final results = await stream.toList();
 
         // Assert
-        expect(result.choices?.first.delta?.content, equals(expectedText));
+        expect(results.length, equals(1));
+        expect(results[0].choices?.first.delta?.content, equals(expectedText));
 
-        final captured = verify(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
-
-        final requestBody =
-            jsonDecode(captured.first as String) as Map<String, dynamic>;
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         final messages = requestBody['messages'] as List<dynamic>;
         expect((messages[0] as Map<String, dynamic>)['content'],
             equals('Transcribe this audio.'));
@@ -150,24 +215,14 @@ void main() {
 
       test('should use custom max completion tokens', () async {
         // Arrange
-        final responseBody = {
-          'choices': [
-            {
-              'message': {
-                'content': 'Text',
-              },
-            },
-          ],
-        };
+        final events = [
+          createSseChunkEvent(content: 'Text'),
+          createSseFinalEvent(),
+        ];
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode(responseBody),
-              200,
-            ));
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -177,40 +232,26 @@ void main() {
           maxCompletionTokens: 8000,
         );
 
-        await stream.first;
+        await stream.toList();
 
         // Assert
-        final captured = verify(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
-
-        final requestBody =
-            jsonDecode(captured.first as String) as Map<String, dynamic>;
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['max_tokens'], equals(8000));
       });
 
       test('should include language hint when provided', () async {
         // Arrange
-        final responseBody = {
-          'choices': [
-            {
-              'message': {
-                'content': 'Text',
-              },
-            },
-          ],
-        };
+        final events = [
+          createSseChunkEvent(content: 'Text'),
+          createSseFinalEvent(),
+        ];
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode(responseBody),
-              200,
-            ));
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -220,40 +261,26 @@ void main() {
           language: 'de',
         );
 
-        await stream.first;
+        await stream.toList();
 
         // Assert
-        final captured = verify(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
-
-        final requestBody =
-            jsonDecode(captured.first as String) as Map<String, dynamic>;
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['language'], equals('de'));
       });
 
       test('should not include language hint for auto', () async {
         // Arrange
-        final responseBody = {
-          'choices': [
-            {
-              'message': {
-                'content': 'Text',
-              },
-            },
-          ],
-        };
+        final events = [
+          createSseChunkEvent(content: 'Text'),
+          createSseFinalEvent(),
+        ];
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode(responseBody),
-              200,
-            ));
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
 
         // Act
         final stream = repository.transcribeAudio(
@@ -263,27 +290,25 @@ void main() {
           language: 'auto',
         );
 
-        await stream.first;
+        await stream.toList();
 
         // Assert
-        final captured = verify(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
-
-        final requestBody =
-            jsonDecode(captured.first as String) as Map<String, dynamic>;
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody.containsKey('language'), isFalse);
       });
 
       test('should throw ArgumentError for empty model', () {
         expect(
-          () => repository.transcribeAudio(
-            model: '',
-            audioBase64: audioBase64,
-            baseUrl: baseUrl,
-          ),
+          () => repository
+              .transcribeAudio(
+                model: '',
+                audioBase64: audioBase64,
+                baseUrl: baseUrl,
+              )
+              .toList(),
           throwsA(isA<ArgumentError>().having(
               (e) => e.message, 'message', 'Model name cannot be empty')),
         );
@@ -291,11 +316,13 @@ void main() {
 
       test('should throw ArgumentError for empty baseUrl', () {
         expect(
-          () => repository.transcribeAudio(
-            model: model,
-            audioBase64: audioBase64,
-            baseUrl: '',
-          ),
+          () => repository
+              .transcribeAudio(
+                model: model,
+                audioBase64: audioBase64,
+                baseUrl: '',
+              )
+              .toList(),
           throwsA(isA<ArgumentError>()
               .having((e) => e.message, 'message', 'Base URL cannot be empty')),
         );
@@ -303,11 +330,13 @@ void main() {
 
       test('should throw ArgumentError for empty audioBase64', () {
         expect(
-          () => repository.transcribeAudio(
-            model: model,
-            audioBase64: '',
-            baseUrl: baseUrl,
-          ),
+          () => repository
+              .transcribeAudio(
+                model: model,
+                audioBase64: '',
+                baseUrl: baseUrl,
+              )
+              .toList(),
           throwsA(isA<ArgumentError>().having(
               (e) => e.message, 'message', 'Audio payload cannot be empty')),
         );
@@ -315,24 +344,20 @@ void main() {
 
       test('should handle HTTP error responses', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Server error',
-              500,
-            ));
+        final stream = Stream.fromIterable([utf8.encode('Server error')]);
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => http.StreamedResponse(stream, 500),
+        );
 
         // Act & Assert
-        final stream = repository.transcribeAudio(
+        final transcriptionStream = repository.transcribeAudio(
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
         );
 
         expect(
-          stream.first,
+          transcriptionStream.toList(),
           throwsA(isA<VoxtralInferenceException>()
               .having((e) => e.message, 'message', contains('HTTP 500'))
               .having((e) => e.statusCode, 'statusCode', 500)),
@@ -342,23 +367,19 @@ void main() {
       test(
           'should throw VoxtralModelNotAvailableException when model is missing',
           () async {
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Model not found',
-              404,
-            ));
+        final stream = Stream.fromIterable([utf8.encode('Model not found')]);
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => http.StreamedResponse(stream, 404),
+        );
 
-        final stream = repository.transcribeAudio(
+        final transcriptionStream = repository.transcribeAudio(
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
         );
 
         expect(
-          stream.first,
+          transcriptionStream.toList(),
           throwsA(isA<VoxtralModelNotAvailableException>()
               .having((e) => e.modelName, 'modelName', model)
               .having((e) => e.statusCode, 'statusCode', 404)),
@@ -368,13 +389,9 @@ void main() {
       test('should handle timeout', () {
         fakeAsync((FakeAsync async) {
           // Arrange
-          when(() => mockHttpClient.post(
-                any(),
-                headers: any(named: 'headers'),
-                body: any(named: 'body'),
-              )).thenAnswer((_) async {
+          when(() => mockHttpClient.send(any())).thenAnswer((_) async {
             await Future<void>.delayed(const Duration(seconds: 2));
-            return http.Response('', 200);
+            return createSseStreamedResponse(events: []);
           });
 
           // Act under fake time
@@ -387,7 +404,7 @@ void main() {
             timeout: const Duration(milliseconds: 100),
           );
 
-          stream.first.then((_) {
+          stream.toList().then((_) {
             completed = true;
           }, onError: (Object e) {
             error = e;
@@ -412,131 +429,91 @@ void main() {
         });
       });
 
-      test('should handle invalid JSON response', () async {
-        // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Invalid JSON',
-              200,
-            ));
+      test('should handle malformed SSE data gracefully', () async {
+        // Arrange - mix valid and invalid SSE events
+        const sseData = '''
+data: {"id": "test", "choices": [{"delta": {"content": "Valid chunk"}, "index": 0, "finish_reason": null}], "object": "chat.completion.chunk", "created": 1234}
 
-        // Act & Assert
-        final stream = repository.transcribeAudio(
+data: invalid json here
+
+data: {"id": "test", "choices": [{"delta": {}, "index": 0, "finish_reason": "stop"}], "object": "chat.completion.chunk", "created": 1234}
+
+data: [DONE]
+
+''';
+
+        final stream = Stream.fromIterable([utf8.encode(sseData)]);
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => http.StreamedResponse(stream, 200),
+        );
+
+        // Act
+        final transcriptionStream = repository.transcribeAudio(
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
         );
 
-        expect(
-          stream.first,
-          throwsA(isA<VoxtralInferenceException>().having((e) => e.message,
-              'message', contains('Invalid response format'))),
-        );
+        final results = await transcriptionStream.toList();
+
+        // Assert - should still get the valid chunk
+        expect(results.length, equals(1));
+        expect(results[0].choices?.first.delta?.content, equals('Valid chunk'));
       });
 
-      test('should handle missing choices in response', () async {
-        // Arrange
-        final responseBody = {
-          'id': 'voxtral-123',
-          // Missing 'choices'
-        };
+      test('should handle empty stream gracefully', () async {
+        // Arrange - only [DONE] marker, no content
+        const sseData = 'data: [DONE]\n\n';
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode(responseBody),
-              200,
-            ));
+        final stream = Stream.fromIterable([utf8.encode(sseData)]);
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => http.StreamedResponse(stream, 200),
+        );
 
-        // Act & Assert
-        final stream = repository.transcribeAudio(
+        // Act
+        final transcriptionStream = repository.transcribeAudio(
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
         );
 
-        expect(
-          stream.first,
-          throwsA(isA<VoxtralInferenceException>().having(
-              (e) => e.message,
-              'message',
-              contains('Invalid response from transcription service'))),
-        );
+        final results = await transcriptionStream.toList();
+
+        // Assert - empty result for empty stream
+        expect(results, isEmpty);
       });
 
-      test('should handle empty choices array', () async {
-        // Arrange
-        final responseBody = {
-          'id': 'voxtral-123',
-          'choices': <dynamic>[],
-        };
+      test('should handle multiple chunks with proper ordering', () async {
+        // Arrange - 5 sequential chunks
+        final events = [
+          createSseChunkEvent(content: 'Chunk 1. '),
+          createSseChunkEvent(content: 'Chunk 2. '),
+          createSseChunkEvent(content: 'Chunk 3. '),
+          createSseChunkEvent(content: 'Chunk 4. '),
+          createSseChunkEvent(content: 'Chunk 5.'),
+          createSseFinalEvent(),
+        ];
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode(responseBody),
-              200,
-            ));
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
 
-        // Act & Assert
+        // Act
         final stream = repository.transcribeAudio(
           model: model,
           audioBase64: audioBase64,
           baseUrl: baseUrl,
         );
 
-        expect(
-          stream.first,
-          throwsA(isA<VoxtralInferenceException>().having(
-              (e) => e.message,
-              'message',
-              contains('Invalid response from transcription service'))),
-        );
-      });
+        final results = await stream.toList();
 
-      test('should handle missing message content', () async {
-        // Arrange
-        final responseBody = {
-          'id': 'voxtral-123',
-          'choices': [
-            <String, dynamic>{
-              'message': <String, dynamic>{
-                // Missing 'content'
-              },
-            },
-          ],
-        };
-
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode(responseBody),
-              200,
-            ));
-
-        // Act & Assert
-        final stream = repository.transcribeAudio(
-          model: model,
-          audioBase64: audioBase64,
-          baseUrl: baseUrl,
-        );
-
-        expect(
-          stream.first,
-          throwsA(isA<VoxtralInferenceException>().having(
-              (e) => e.message,
-              'message',
-              contains('Invalid response from transcription service'))),
-        );
+        // Assert - all chunks in order
+        expect(results.length, equals(5));
+        expect(results[0].choices?.first.delta?.content, equals('Chunk 1. '));
+        expect(results[1].choices?.first.delta?.content, equals('Chunk 2. '));
+        expect(results[2].choices?.first.delta?.content, equals('Chunk 3. '));
+        expect(results[3].choices?.first.delta?.content, equals('Chunk 4. '));
+        expect(results[4].choices?.first.delta?.content, equals('Chunk 5.'));
       });
     });
 

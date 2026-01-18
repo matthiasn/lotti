@@ -1,5 +1,6 @@
 """Main FastAPI application for Voxtral Local Service."""
 
+import asyncio
 import json
 import logging
 import os
@@ -8,7 +9,7 @@ import time
 import uuid
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -231,6 +232,7 @@ async def chat_completion(
     OpenAI-compatible chat completion endpoint with audio transcription support.
 
     When audio data is provided, performs transcription.
+    Supports streaming mode (stream=true) for progressive chunk-by-chunk output.
     """
     try:
         req_id = uuid.uuid4().hex[:8]
@@ -249,7 +251,7 @@ async def chat_completion(
 
         # Check if this is audio transcription
         if request.audio:
-            logger.info(f"[REQ {req_id}] Audio transcription via chat completions")
+            logger.info(f"[REQ {req_id}] Audio transcription via chat completions (stream={request.stream})")
 
             # Extract full context from messages (system + user messages)
             context_parts = []
@@ -274,43 +276,57 @@ async def chat_completion(
                 request_id=req_id,
             )
             t1 = time.perf_counter()
+            logger.info(f"[REQ {req_id}] Audio processing took {t1-t0:.2f}s")
 
-            # Handle chunked vs single audio
-            if isinstance(result[0], list):
-                audio_chunks, prompt = result
-                transcription = await _process_chunks(
-                    audio_chunks, prompt, request.language, req_id
+            # Handle streaming vs non-streaming response
+            if request.stream:
+                # Stream each chunk's transcription as it completes
+                return StreamingResponse(
+                    _stream_transcription(result, request, context_prompt, req_id, t0),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "Connection": "keep-alive",
+                        "X-Accel-Buffering": "no",  # Disable nginx buffering
+                    },
                 )
             else:
-                audio_array, prompt = result
-                transcription = await _transcribe_single(
-                    audio_array, prompt, request.language, req_id
+                # Non-streaming: process all and return single response
+                if isinstance(result[0], list):
+                    audio_chunks, prompt = result
+                    transcription = await _process_chunks(
+                        audio_chunks, prompt, request.language, req_id
+                    )
+                else:
+                    audio_array, prompt = result
+                    transcription = await _transcribe_single(
+                        audio_array, prompt, request.language, req_id
+                    )
+
+                t2 = time.perf_counter()
+                logger.info(
+                    f"[REQ {req_id}] Done. AudioProc={(t1-t0):.2f}s, "
+                    f"Transcribe={(t2-t1):.2f}s"
                 )
 
-            t2 = time.perf_counter()
-            logger.info(
-                f"[REQ {req_id}] Done. AudioProc={(t1-t0):.2f}s, "
-                f"Transcribe={(t2-t1):.2f}s"
-            )
-
-            return {
-                "id": f"chatcmpl-{req_id}",
-                "object": "chat.completion",
-                "created": int(time.time()),
-                "model": request.model,
-                "choices": [
-                    {
-                        "index": 0,
-                        "message": {"role": "assistant", "content": transcription},
-                        "finish_reason": "stop",
-                    }
-                ],
-                "usage": {
-                    "prompt_tokens": 0,
-                    "completion_tokens": len(transcription.split()),
-                    "total_tokens": len(transcription.split()),
-                },
-            }
+                return {
+                    "id": f"chatcmpl-{req_id}",
+                    "object": "chat.completion",
+                    "created": int(time.time()),
+                    "model": request.model,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "message": {"role": "assistant", "content": transcription},
+                            "finish_reason": "stop",
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": 0,
+                        "completion_tokens": len(transcription.split()),
+                        "total_tokens": len(transcription.split()),
+                    },
+                }
 
         else:
             # Text-only chat not supported yet
@@ -324,6 +340,147 @@ async def chat_completion(
     except Exception as e:
         logger.error(f"Chat completion error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _stream_transcription(
+    result: Union[
+        Tuple[NDArray[np.float32], str], Tuple[List[NDArray[np.float32]], str]
+    ],
+    request: ChatCompletionRequest,
+    context_prompt: Optional[str],
+    req_id: str,
+    t0: float,
+) -> Any:
+    """
+    Stream transcription chunks as SSE events.
+
+    Each chunk's transcription is sent as a separate SSE event, providing
+    real-time feedback to the client as each 60-second segment is processed.
+    """
+    try:
+        created_time = int(time.time())
+        chunk_index = 0
+
+        if isinstance(result[0], list):
+            # Multiple chunks - stream each one
+            audio_chunks, prompt = result
+            total_chunks = len(audio_chunks)
+            logger.info(f"[REQ {req_id}] Streaming {total_chunks} audio chunks")
+
+            for i, chunk in enumerate(audio_chunks):
+                try:
+                    logger.info(f"[REQ {req_id}] Transcribing chunk {i+1}/{total_chunks}")
+                    chunk_transcription = await _transcribe_single(
+                        chunk, prompt, request.language, req_id
+                    )
+
+                    if chunk_transcription.strip():
+                        # Add space separator between chunks (except first)
+                        content = chunk_transcription.strip()
+                        if chunk_index > 0:
+                            content = " " + content
+
+                        # Send SSE event with chunk transcription
+                        event_data = {
+                            "id": f"chatcmpl-{req_id}",
+                            "object": "chat.completion.chunk",
+                            "created": created_time,
+                            "model": request.model,
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "delta": {"content": content},
+                                    "finish_reason": None,
+                                }
+                            ],
+                        }
+                        yield f"data: {json.dumps(event_data)}\n\n"
+                        chunk_index += 1
+
+                except Exception as e:
+                    logger.warning(f"[REQ {req_id}] Chunk {i+1} failed: {e}")
+                    # Send error indicator in stream
+                    error_content = f" [Chunk {i+1} failed]"
+                    if chunk_index == 0:
+                        error_content = error_content.strip()
+                    event_data = {
+                        "id": f"chatcmpl-{req_id}",
+                        "object": "chat.completion.chunk",
+                        "created": created_time,
+                        "model": request.model,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": error_content},
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(event_data)}\n\n"
+                    chunk_index += 1
+
+        else:
+            # Single audio segment - stream as one chunk
+            audio_array, prompt = result
+            logger.info(f"[REQ {req_id}] Transcribing single audio segment")
+
+            transcription = await _transcribe_single(
+                audio_array, prompt, request.language, req_id
+            )
+
+            if transcription.strip():
+                event_data = {
+                    "id": f"chatcmpl-{req_id}",
+                    "object": "chat.completion.chunk",
+                    "created": created_time,
+                    "model": request.model,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {"content": transcription.strip()},
+                            "finish_reason": None,
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(event_data)}\n\n"
+
+        # Send final chunk with finish_reason
+        final_event = {
+            "id": f"chatcmpl-{req_id}",
+            "object": "chat.completion.chunk",
+            "created": created_time,
+            "model": request.model,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {},
+                    "finish_reason": "stop",
+                }
+            ],
+        }
+        yield f"data: {json.dumps(final_event)}\n\n"
+        yield "data: [DONE]\n\n"
+
+        t_end = time.perf_counter()
+        logger.info(f"[REQ {req_id}] Streaming complete. Total time: {t_end-t0:.2f}s")
+
+    except Exception as e:
+        logger.error(f"[REQ {req_id}] Streaming error: {e}", exc_info=True)
+        error_event = {
+            "id": f"chatcmpl-{req_id}",
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": request.model,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"content": f"[Error: {str(e)}]"},
+                    "finish_reason": "stop",
+                }
+            ],
+        }
+        yield f"data: {json.dumps(error_event)}\n\n"
+        yield "data: [DONE]\n\n"
 
 
 def _audio_array_to_base64(audio_array: NDArray[np.float32], sample_rate: int) -> str:
@@ -413,30 +570,37 @@ async def _transcribe_single(
             language=lang_code,
         )
 
-    # Move inputs to device with correct dtype
-    inputs = inputs.to(model_manager.device, dtype=ServiceConfig.TORCH_DTYPE)
+    # Run blocking inference in thread pool to avoid blocking event loop
+    # This allows SSE events to be sent between chunks
+    def _run_inference():
+        # Move inputs to device with correct dtype
+        device_inputs = inputs.to(model_manager.device, dtype=ServiceConfig.TORCH_DTYPE)
 
-    # Generate
-    gen_config = ServiceConfig.get_generation_config("transcription")
+        # Generate
+        gen_config = ServiceConfig.get_generation_config("transcription")
 
-    t0 = time.perf_counter()
-    with torch.inference_mode():
-        outputs = model_manager.model.generate(**inputs, **gen_config)
-    t1 = time.perf_counter()
+        t0 = time.perf_counter()
+        with torch.inference_mode():
+            outputs = model_manager.model.generate(**device_inputs, **gen_config)
+        t1 = time.perf_counter()
 
-    # Decode - skip input tokens
-    input_length = inputs.input_ids.shape[1] if hasattr(inputs, 'input_ids') else inputs["input_ids"].shape[1]
-    transcription = model_manager.processor.batch_decode(
-        outputs[:, input_length:], skip_special_tokens=True
-    )[0]
+        # Decode - skip input tokens
+        input_length = device_inputs.input_ids.shape[1] if hasattr(device_inputs, 'input_ids') else device_inputs["input_ids"].shape[1]
+        transcription = model_manager.processor.batch_decode(
+            outputs[:, input_length:], skip_special_tokens=True
+        )[0]
 
-    new_tokens = max(0, outputs.shape[1] - input_length)
-    logger.info(
-        f"[REQ {req_id}] Generated {new_tokens} tokens in {t1-t0:.2f}s "
-        f"({new_tokens/max(0.001, t1-t0):.1f} tok/s)"
-    )
+        new_tokens = max(0, outputs.shape[1] - input_length)
+        logger.info(
+            f"[REQ {req_id}] Generated {new_tokens} tokens in {t1-t0:.2f}s "
+            f"({new_tokens/max(0.001, t1-t0):.1f} tok/s)"
+        )
 
-    return transcription.strip()
+        return transcription.strip()
+
+    # Run in thread pool to not block event loop (enables SSE streaming)
+    transcription = await asyncio.to_thread(_run_inference)
+    return transcription
 
 
 async def _process_chunks(

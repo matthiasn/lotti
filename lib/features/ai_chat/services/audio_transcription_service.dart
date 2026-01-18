@@ -27,6 +27,23 @@ class AudioTranscriptionService {
   /// Note: The audio payload is base64-encoded to match current API
   /// requirements; this can be revisited once streaming uploads are supported.
   Future<String> transcribe(String filePath) async {
+    final buffer = StringBuffer();
+    // ignore: prefer_foreach - await for is required for async stream iteration
+    await for (final chunk in transcribeStream(filePath)) {
+      buffer.write(chunk);
+    }
+    return buffer.toString();
+  }
+
+  /// Transcribes audio from a local file at [filePath] with streaming output.
+  ///
+  /// Yields each transcribed chunk as it's received from the inference provider,
+  /// allowing the UI to display progressive transcription results.
+  ///
+  /// For providers that support chunk-by-chunk streaming (like Voxtral),
+  /// each yield represents a portion of the audio (e.g., 60-second segments).
+  /// For other providers, the entire transcription may come as a single chunk.
+  Stream<String> transcribeStream(String filePath) async* {
     final aiRepo = ref.read(aiConfigRepositoryProvider);
     // Fetch models and providers in parallel to reduce I/O latency
     final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
@@ -64,7 +81,6 @@ class AudioTranscriptionService {
     final audioBase64 = base64Encode(bytes);
 
     final cloud = ref.read(cloudInferenceRepositoryProvider);
-    final buffer = StringBuffer();
     final stream = cloud.generateWithAudio(
       _kTranscriptionPrompt,
       model: model.providerModelId,
@@ -77,9 +93,10 @@ class AudioTranscriptionService {
 
     await for (final chunk in stream) {
       final content = chunk.choices?.firstOrNull?.delta?.content ?? '';
-      if (content.isNotEmpty) buffer.write(content);
+      if (content.isNotEmpty) {
+        yield content;
+      }
     }
-    return buffer.toString();
   }
 }
 

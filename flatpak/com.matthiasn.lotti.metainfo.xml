@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.816" date="2026-01-18">
+      <description>
+        <p>Voxtral Streaming Transcription: Audio transcription now streams progressively as each 60-second chunk completes. Each chunk's transcription is sent as a Server-Sent Event (SSE), providing real-time visual feedback instead of waiting for the entire audio to process. Particularly useful for longer recordings where you can see progress as it happens. AI streaming responses are now enabled by default for new installations - existing users can enable this in Settings → Flags.</p>
+      </description>
+    </release>
     <release version="0.9.815" date="2026-01-16">
       <description>
         <p>Voxtral Local Transcription: Added a new local AI transcription service using Mistral's Voxtral model. Supports up to 30 minutes of audio transcription (compared to 5 minutes for Gemma 3N) with 9 languages and automatic language detection. Features context-aware transcription with speech dictionary support for improved accuracy on technical terms and proper nouns. Two model options available: Voxtral Mini 3B (~9.5GB VRAM) for local/edge deployment and Voxtral Small 24B (~55GB VRAM) for higher accuracy. Runs locally on Apple Silicon (MPS) or NVIDIA GPUs (CUDA) with full privacy - no data leaves your device.</p>

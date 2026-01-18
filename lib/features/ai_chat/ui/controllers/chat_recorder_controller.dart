@@ -29,6 +29,7 @@ class ChatRecorderState {
     required this.status,
     required this.amplitudeHistory,
     this.transcript,
+    this.partialTranscript,
     this.error,
     this.errorType,
   });
@@ -37,6 +38,7 @@ class ChatRecorderState {
       : status = ChatRecorderStatus.idle,
         amplitudeHistory = const <double>[],
         transcript = null,
+        partialTranscript = null,
         error = null,
         errorType = null;
 
@@ -44,6 +46,7 @@ class ChatRecorderState {
   final ChatRecorderStatus status;
   final List<double> amplitudeHistory; // dBFS history
   final String? transcript; // last finished transcript waiting to be consumed
+  final String? partialTranscript; // in-progress transcript during streaming
   final String? error;
   final ChatRecorderErrorType? errorType;
 
@@ -52,6 +55,7 @@ class ChatRecorderState {
     ChatRecorderStatus? status,
     List<double>? amplitudeHistory,
     String? transcript,
+    String? partialTranscript,
     String? error,
     ChatRecorderErrorType? errorType,
   }) {
@@ -59,6 +63,7 @@ class ChatRecorderState {
       status: status ?? this.status,
       amplitudeHistory: amplitudeHistory ?? this.amplitudeHistory,
       transcript: transcript,
+      partialTranscript: partialTranscript,
       error: error,
       errorType: errorType,
     );
@@ -289,15 +294,19 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     }
 
     try {
-      final transcript = await _transcribe(filePath);
+      final transcript = await _transcribe(filePath, currentOpId);
       // Only update state if this operation is still current and ref is valid
       if (currentOpId == _operationId && ref.mounted) {
+        // partialTranscript cleared automatically (defaults to null)
         state = state.copyWith(
-            status: ChatRecorderStatus.idle, transcript: transcript);
+          status: ChatRecorderStatus.idle,
+          transcript: transcript,
+        );
       }
     } catch (e) {
       // Only update state if this operation is still current and ref is valid
       if (currentOpId == _operationId && ref.mounted) {
+        // partialTranscript cleared automatically (defaults to null)
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
           error: 'Transcription failed: $e',
@@ -347,15 +356,40 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     }
   }
 
-  // Always Gemini Flash for v1 per requirements
-  Future<String> _transcribe(String filePath) async {
-    final result = await _transcriptionService.transcribe(filePath);
+  // Transcribes audio with streaming updates to partialTranscript
+  Future<String> _transcribe(String filePath, int operationId) async {
+    final buffer = StringBuffer();
+    var chunkCount = 0;
+
+    await for (final chunk
+        in _transcriptionService.transcribeStream(filePath)) {
+      chunkCount++;
+      buffer.write(chunk);
+
+      getIt<LoggingService>().captureEvent(
+        'chat_transcription_chunk_received: chunk=$chunkCount, '
+        'chunkLen=${chunk.length}, totalLen=${buffer.length}',
+        domain: 'ChatRecorderController',
+        subDomain: 'transcribe',
+      );
+
+      // Update partialTranscript for progressive UI feedback
+      // Only if this operation is still current and ref is valid
+      if (operationId == _operationId && ref.mounted) {
+        state = state.copyWith(
+          status: ChatRecorderStatus.processing,
+          partialTranscript: buffer.toString(),
+        );
+      }
+    }
+
     getIt<LoggingService>().captureEvent(
-      'chat_transcription_completed',
+      'chat_transcription_completed: totalChunks=$chunkCount, '
+      'totalLen=${buffer.length}',
       domain: 'ChatRecorderController',
       subDomain: 'transcribe',
     );
-    return result;
+    return buffer.toString();
   }
 
   // Normalize dBFS history to 0.05..1.0 range for UI
