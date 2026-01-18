@@ -49,7 +49,11 @@ void main() {
       );
       expect(
         audioTranscriptionPrompt.userMessage,
-        contains('punctuation and paragraph breaks'),
+        contains('proper punctuation'),
+      );
+      expect(
+        audioTranscriptionPrompt.userMessage,
+        contains('new paragraph'),
       );
 
       // Audio transcription with task context
@@ -63,7 +67,11 @@ void main() {
       );
       expect(
         audioTranscriptionWithTaskContextPrompt.userMessage,
-        contains('punctuation and paragraph breaks'),
+        contains('proper punctuation'),
+      );
+      expect(
+        audioTranscriptionWithTaskContextPrompt.userMessage,
+        contains('new paragraph'),
       );
     });
 
@@ -72,11 +80,15 @@ void main() {
         () {
       expect(
         audioTranscriptionWithTaskContextPrompt.userMessage,
-        contains('Task Context'),
+        contains('Task Summary'),
       );
       expect(
         audioTranscriptionWithTaskContextPrompt.userMessage,
-        contains('{{task}}'),
+        contains('{{current_task_summary}}'),
+      );
+      expect(
+        audioTranscriptionWithTaskContextPrompt.userMessage,
+        contains('do NOT include in output'),
       );
       expect(
         audioTranscriptionWithTaskContextPrompt.systemMessage,
@@ -85,6 +97,10 @@ void main() {
       expect(
         audioTranscriptionWithTaskContextPrompt.systemMessage,
         contains('new action items'),
+      );
+      expect(
+        audioTranscriptionWithTaskContextPrompt.systemMessage,
+        contains('Output ONLY the transcription'),
       );
     });
   });
