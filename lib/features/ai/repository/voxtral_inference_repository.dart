@@ -281,10 +281,6 @@ class VoxtralInferenceRepository {
         originalError: e,
       );
     } catch (e, stackTrace) {
-      if (e is VoxtralModelNotAvailableException) {
-        rethrow;
-      }
-
       developer.log(
         'Unexpected error during audio transcription',
         name: 'VoxtralInferenceRepository',

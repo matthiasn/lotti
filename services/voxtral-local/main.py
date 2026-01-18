@@ -480,7 +480,12 @@ async def _stream_transcription(
             "choices": [
                 {
                     "index": 0,
-                    "delta": {"content": f"[Error: {str(e)}]"},
+                    "delta": {
+                        "content": (
+                            "[Error: An internal error occurred during streaming. "
+                            "Please try again later.]"
+                        )
+                    },
                     "finish_reason": "stop",
                 }
             ],

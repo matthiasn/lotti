@@ -339,7 +339,6 @@ class TestTranscriptionPrompt:
     def test_grammar_instruction_is_language_agnostic(self):
         """Test that grammar instruction works for all languages, not just English."""
         context = None
-        language = None
 
         instruction_parts = []
 
