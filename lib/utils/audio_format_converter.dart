@@ -1,9 +1,20 @@
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
+/// Exception thrown when audio format conversion fails.
+class AudioConversionException implements Exception {
+  AudioConversionException(this.message);
+  final String? message;
+
+  @override
+  String toString() =>
+      'AudioConversionException: ${message ?? "Unknown error"}';
+}
 
 /// Result of an audio format conversion operation.
 class AudioConversionResult {
@@ -26,7 +37,7 @@ class AudioConversionResult {
 ///
 /// Supports conversion from M4A/AAC to WAV format, which is required
 /// by some cloud transcription services like Voxtral Cloud.
-class AudioFormatConverter {
+abstract final class AudioFormatConverter {
   /// Converts an M4A audio file to WAV format.
   ///
   /// The output file is created in the system's temporary directory
@@ -58,7 +69,13 @@ class AudioFormatConverter {
       } else {
         return _convertWithFfmpegKit(inputPath, outputPath);
       }
-    } catch (e) {
+    } catch (e, s) {
+      developer.log(
+        'Audio conversion error',
+        name: 'AudioFormatConverter',
+        error: e,
+        stackTrace: s,
+      );
       return AudioConversionResult(
         success: false,
         error: 'Audio conversion error: $e',

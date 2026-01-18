@@ -514,9 +514,7 @@ class UnifiedAiInferenceRepository {
       final result = await AudioFormatConverter.convertM4aToWav(fullPath);
 
       if (!result.success || result.outputPath == null) {
-        throw Exception(
-          'Failed to convert audio for Mistral: ${result.error}',
-        );
+        throw AudioConversionException(result.error);
       }
 
       try {

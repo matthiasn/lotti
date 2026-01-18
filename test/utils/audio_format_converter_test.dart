@@ -76,6 +76,26 @@ void main() {
       });
     });
 
+    group('AudioConversionException', () {
+      test('toString includes message', () {
+        final exception = AudioConversionException('FFmpeg not found');
+
+        expect(
+          exception.toString(),
+          equals('AudioConversionException: FFmpeg not found'),
+        );
+      });
+
+      test('toString handles null message', () {
+        final exception = AudioConversionException(null);
+
+        expect(
+          exception.toString(),
+          equals('AudioConversionException: Unknown error'),
+        );
+      });
+    });
+
     group('convertM4aToWav', () {
       test('returns error when input file does not exist', () async {
         final result = await AudioFormatConverter.convertM4aToWav(
