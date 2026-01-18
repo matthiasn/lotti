@@ -7,7 +7,6 @@ part 'ai_config.g.dart';
 enum InferenceProviderType {
   anthropic,
   gemini,
-  gemma3n,
   genericOpenAi,
   nebiusAiStudio,
   openAi,

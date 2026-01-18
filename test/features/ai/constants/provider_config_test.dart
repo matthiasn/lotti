@@ -10,7 +10,6 @@ void main() {
           ProviderConfig.defaultBaseUrls.keys.toSet(),
           containsAll([
             InferenceProviderType.gemini,
-            InferenceProviderType.gemma3n,
             InferenceProviderType.genericOpenAi,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
@@ -18,6 +17,7 @@ void main() {
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
             InferenceProviderType.whisper,
+            InferenceProviderType.voxtral,
           ]),
         );
       });
@@ -46,7 +46,6 @@ void main() {
           ProviderConfig.defaultNames.keys.toSet(),
           containsAll([
             InferenceProviderType.gemini,
-            InferenceProviderType.gemma3n,
             InferenceProviderType.genericOpenAi,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
@@ -54,6 +53,7 @@ void main() {
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
             InferenceProviderType.whisper,
+            InferenceProviderType.voxtral,
           ]),
         );
       });
@@ -81,9 +81,9 @@ void main() {
         expect(
           ProviderConfig.noApiKeyRequired,
           containsAll([
-            InferenceProviderType.gemma3n,
             InferenceProviderType.ollama,
             InferenceProviderType.whisper,
+            InferenceProviderType.voxtral,
           ]),
         );
       });
@@ -166,7 +166,7 @@ void main() {
           isFalse,
         );
         expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.gemma3n),
+          ProviderConfig.requiresApiKey(InferenceProviderType.voxtral),
           isFalse,
         );
         expect(

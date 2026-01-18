@@ -759,18 +759,6 @@ abstract class AppLocalizations {
   /// **'Google Gemini'**
   String get aiProviderGeminiName;
 
-  /// No description provided for @aiProviderGemma3nDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Local Gemma 3n model with audio transcription capabilities'**
-  String get aiProviderGemma3nDescription;
-
-  /// No description provided for @aiProviderGemma3nName.
-  ///
-  /// In en, this message translates to:
-  /// **'Gemma 3n (local)'**
-  String get aiProviderGemma3nName;
-
   /// No description provided for @aiProviderGenericOpenAiDescription.
   ///
   /// In en, this message translates to:

@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -14,7 +13,6 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
-import 'package:lotti/features/ai/ui/gemma_model_install_dialog.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
@@ -262,66 +260,19 @@ class _UnifiedAiProgressContentState
             name: 'UnifiedAiProgressContent',
           );
 
-          // Check for model installation errors (both Ollama and Gemma)
+          // Check for model installation errors (Ollama)
           final error = actualControllerState?.error;
-          if (error is ModelNotInstalledException ||
-              error is ModelNotAvailableException) {
-            final modelName = error is ModelNotInstalledException
-                ? error.modelName
-                : (error as ModelNotAvailableException?)?.modelName ??
-                    'unknown';
+          if (error is ModelNotInstalledException) {
+            final modelName = error.modelName;
 
             developer.log(
-              '${error.runtimeType} detected for model: $modelName',
+              'ModelNotInstalledException detected for model: $modelName',
               name: 'UnifiedAiProgressContent',
             );
 
-            // Determine if it's a Gemma model by checking provider configuration
-            // In Riverpod 3, use ref.watch with AsyncValue.when to properly
-            // keep the auto-dispose provider alive and handle async states
-            final providersAsync = ref.watch(aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
-            ));
-
-            return providersAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) => OllamaModelInstallDialog(
-                modelName: modelName,
-                onModelInstalled: () => _handleModelInstalled('Ollama'),
-              ),
-              data: (providers) {
-                final gemmaProvider = providers
-                    .whereType<AiConfigInferenceProvider>()
-                    .where((AiConfigInferenceProvider p) =>
-                        p.inferenceProviderType ==
-                        InferenceProviderType.gemma3n)
-                    .firstOrNull;
-
-                final isGemmaModel = gemmaProvider != null;
-
-                if (isGemmaModel) {
-                  developer.log(
-                    'Showing GemmaModelInstallDialog for model: $modelName',
-                    name: 'UnifiedAiProgressContent',
-                  );
-
-                  return GemmaModelInstallDialog(
-                    modelName: modelName,
-                    onModelInstalled: () => _handleModelInstalled('Gemma'),
-                  );
-                } else {
-                  // It's an Ollama model
-                  developer.log(
-                    'Showing OllamaModelInstallDialog for model: $modelName',
-                    name: 'UnifiedAiProgressContent',
-                  );
-
-                  return OllamaModelInstallDialog(
-                    modelName: modelName,
-                    onModelInstalled: () => _handleModelInstalled('Ollama'),
-                  );
-                }
-              },
+            return OllamaModelInstallDialog(
+              modelName: modelName,
+              onModelInstalled: () => _handleModelInstalled('Ollama'),
             );
           }
 

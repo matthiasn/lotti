@@ -94,15 +94,6 @@ void main() {
                 'Voxtral model ${model.name} should not have maxCompletionTokens defined',
           );
         }
-
-        for (final model in gemma3nModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'Gemma3n model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
       });
 
       test(
@@ -226,7 +217,6 @@ void main() {
           knownModelsByProvider.keys.toSet(),
           containsAll([
             InferenceProviderType.gemini,
-            InferenceProviderType.gemma3n,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
@@ -329,15 +319,6 @@ void main() {
           expect(model.description, contains('9 languages'),
               reason:
                   '${model.name} description should mention language support');
-        }
-      });
-    });
-
-    group('Gemma3n Models', () {
-      test('should have audio input capability', () {
-        for (final model in gemma3nModels) {
-          expect(model.inputModalities, contains(Modality.audio),
-              reason: '${model.name} should accept audio input');
         }
       });
     });

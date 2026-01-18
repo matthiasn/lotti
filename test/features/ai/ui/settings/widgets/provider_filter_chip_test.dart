@@ -177,7 +177,7 @@ void main() {
         (InferenceProviderType.genericOpenAi, 'Generic OpenAI'),
         (InferenceProviderType.nebiusAiStudio, 'Nebius'),
         (InferenceProviderType.whisper, 'Whisper'),
-        (InferenceProviderType.gemma3n, 'Gemma'),
+        (InferenceProviderType.voxtral, 'Voxtral'),
       ];
 
       for (final (type, name) in providers) {

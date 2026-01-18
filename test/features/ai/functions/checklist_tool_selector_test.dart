@@ -45,11 +45,11 @@ void main() {
         InferenceProviderType.openAi,
         InferenceProviderType.anthropic,
         InferenceProviderType.gemini,
-        InferenceProviderType.gemma3n,
         InferenceProviderType.genericOpenAi,
         InferenceProviderType.openRouter,
         InferenceProviderType.nebiusAiStudio,
         InferenceProviderType.whisper,
+        InferenceProviderType.voxtral,
       ];
 
       for (final type in nonOllamaProviders) {

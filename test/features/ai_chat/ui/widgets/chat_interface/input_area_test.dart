@@ -64,7 +64,8 @@ void main() {
     expect(find.byIcon(Icons.mic), findsOneWidget);
   });
 
-  testWidgets('TranscriptionProgress shows partial transcript during processing',
+  testWidgets(
+      'TranscriptionProgress shows partial transcript during processing',
       (tester) async {
     await tester.pumpWidget(
       wrap(

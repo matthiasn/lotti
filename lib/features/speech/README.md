@@ -167,7 +167,7 @@ surface color instead of the dark-mode gradient to keep the card feeling clean.
 9. **Entry Creation**: Audio file is saved and journal entry created
 10. **Transcription**: If enabled, ASR service processes the audio
 11. **Linked Entity Support**: If recording is linked to a task, both entities track the transcription progress
-12. **Provider Selection**: Transcription can use Whisper or Gemma 3n (local) providers based on configuration
+12. **Provider Selection**: Transcription can use Whisper or Voxtral (local) providers based on configuration
 
 ## Testing
 
@@ -267,10 +267,11 @@ The speech feature supports multiple transcription providers:
 - High accuracy with various audio formats
 - Context-aware transcription when linked to tasks
 
-### Gemma 3n (Local)
-- New local Gemma model with audio transcription capabilities
+### Voxtral (Local)
+- Local Voxtral model with audio transcription capabilities
 - No API key required - runs entirely locally
 - Provides high-quality transcription with streaming support
+- Supports up to 30 minutes of audio transcription
 - Automatically selected when configured as a provider
 
 ## Speech Dictionary Service
