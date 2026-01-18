@@ -812,4 +812,174 @@ void main() {
     expect(state.transcript, isNull);
     expect(state.error, isNull);
   });
+
+  test('partialTranscript updates progressively during streaming transcription',
+      () async {
+    final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+    final mockRecorder = _MockAudioRecorder();
+    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+    when(() => mockRecorder.onAmplitudeChanged(any()))
+        .thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(() => mockRecorder.start(any<record.RecordConfig>(),
+        path: any(named: 'path'))).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String;
+      await File(path).create(recursive: true);
+    });
+    when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+    // Mock transcription service that streams chunks progressively
+    final mockSvc = _MockTranscriptionService();
+    final streamController = StreamController<String>();
+
+    when(() => mockSvc.transcribeStream(any()))
+        .thenAnswer((_) => streamController.stream);
+
+    final container = ProviderContainer(overrides: [
+      audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 10),
+          )),
+    ]);
+    addTearDown(container.dispose);
+
+    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub.close);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    await controller.start();
+
+    // Start transcription (non-blocking)
+    final transcribeFuture = controller.stopAndTranscribe();
+
+    // Allow the stream to be set up
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    // Emit first chunk
+    streamController.add('Hello ');
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    var state = container.read(chatRecorderControllerProvider);
+    expect(state.status, ChatRecorderStatus.processing);
+    expect(state.partialTranscript, 'Hello ');
+
+    // Emit second chunk
+    streamController.add('world');
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    state = container.read(chatRecorderControllerProvider);
+    expect(state.partialTranscript, 'Hello world');
+
+    // Complete the stream
+    await streamController.close();
+    await transcribeFuture;
+
+    // Final state should have transcript and clear partialTranscript
+    state = container.read(chatRecorderControllerProvider);
+    expect(state.status, ChatRecorderStatus.idle);
+    expect(state.transcript, 'Hello world');
+    expect(state.partialTranscript, isNull);
+  });
+
+  test('partialTranscript is cleared when transcription completes', () async {
+    final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+    final mockRecorder = _MockAudioRecorder();
+    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+    when(() => mockRecorder.onAmplitudeChanged(any()))
+        .thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(() => mockRecorder.start(any<record.RecordConfig>(),
+        path: any(named: 'path'))).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String;
+      await File(path).create(recursive: true);
+    });
+    when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+    final mockSvc = _MockTranscriptionService();
+    when(() => mockSvc.transcribeStream(any()))
+        .thenAnswer((_) => Stream.fromIterable(['Complete transcript']));
+
+    final container = ProviderContainer(overrides: [
+      audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 10),
+          )),
+    ]);
+    addTearDown(container.dispose);
+
+    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub.close);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    await controller.start();
+    await controller.stopAndTranscribe();
+
+    final state = container.read(chatRecorderControllerProvider);
+    expect(state.transcript, 'Complete transcript');
+    expect(state.partialTranscript, isNull);
+  });
+
+  test('partialTranscript is cleared on cancel during processing', () async {
+    final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+    final mockRecorder = _MockAudioRecorder();
+    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+    when(() => mockRecorder.onAmplitudeChanged(any()))
+        .thenAnswer((_) => Stream<record.Amplitude>.empty());
+    when(() => mockRecorder.start(any<record.RecordConfig>(),
+        path: any(named: 'path'))).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String;
+      await File(path).create(recursive: true);
+    });
+    when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+
+    // Create a stream that never completes (simulates long transcription)
+    final mockSvc = _MockTranscriptionService();
+    final neverEndingController = StreamController<String>();
+
+    when(() => mockSvc.transcribeStream(any()))
+        .thenAnswer((_) => neverEndingController.stream);
+
+    final container = ProviderContainer(overrides: [
+      audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
+      chatRecorderControllerProvider.overrideWith(() => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => baseTemp,
+            config: const ChatRecorderConfig(maxSeconds: 10),
+          )),
+    ]);
+    addTearDown(() async {
+      await neverEndingController.close();
+      container.dispose();
+    });
+
+    final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+    addTearDown(sub.close);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    await controller.start();
+
+    // Start transcription but don't await (it will hang)
+    unawaited(controller.stopAndTranscribe());
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    // Emit partial transcript
+    neverEndingController.add('Partial');
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    var state = container.read(chatRecorderControllerProvider);
+    expect(state.partialTranscript, 'Partial');
+
+    // Cancel should clear partialTranscript
+    await controller.cancel();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    state = container.read(chatRecorderControllerProvider);
+    expect(state.status, ChatRecorderStatus.idle);
+    expect(state.partialTranscript, isNull);
+  });
 }

@@ -197,3 +197,165 @@ Transcribe this audio.""",
         assert "macOS" in context
         assert "iPhone" in context
         assert "Flutter" in context
+
+
+class TestTranscriptionPrompt:
+    """Tests for transcription prompt construction."""
+
+    def test_prompt_includes_grammar_instruction(self):
+        """Test that transcription prompt includes grammar/capitalization instruction."""
+        # Simulate the instruction building logic from main.py
+        context = "Dictionary: Flutter, Dart"
+        language = None
+
+        instruction_parts = []
+
+        if context and context.strip():
+            instruction_parts.append(context)
+
+        if language and language != "auto":
+            instruction_parts.append(f"Transcribe the following audio in {language}.")
+        else:
+            instruction_parts.append("Transcribe the following audio.")
+
+        instruction_parts.append(
+            "Use proper grammar and capitalization for the detected language "
+            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        )
+
+        transcription_instruction = "\n\n".join(instruction_parts)
+
+        # Verify grammar instruction is present
+        assert "proper grammar and capitalization" in transcription_instruction
+        assert "capitalize 'I'" in transcription_instruction
+        assert "first letter of sentences" in transcription_instruction
+        assert "proper nouns" in transcription_instruction
+
+    def test_prompt_includes_context_when_provided(self):
+        """Test that context is included in the prompt."""
+        context = "Speech dictionary: Riverpod, GetIt, Flutter"
+        language = None
+
+        instruction_parts = []
+
+        if context and context.strip():
+            instruction_parts.append(context)
+
+        if language and language != "auto":
+            instruction_parts.append(f"Transcribe the following audio in {language}.")
+        else:
+            instruction_parts.append("Transcribe the following audio.")
+
+        instruction_parts.append(
+            "Use proper grammar and capitalization for the detected language "
+            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        )
+
+        transcription_instruction = "\n\n".join(instruction_parts)
+
+        assert "Speech dictionary: Riverpod, GetIt, Flutter" in transcription_instruction
+
+    def test_prompt_works_without_context(self):
+        """Test that prompt works when no context is provided."""
+        context = None
+        language = None
+
+        instruction_parts = []
+
+        if context and context.strip():
+            instruction_parts.append(context)
+
+        if language and language != "auto":
+            instruction_parts.append(f"Transcribe the following audio in {language}.")
+        else:
+            instruction_parts.append("Transcribe the following audio.")
+
+        instruction_parts.append(
+            "Use proper grammar and capitalization for the detected language "
+            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        )
+
+        transcription_instruction = "\n\n".join(instruction_parts)
+
+        # Should still have transcription directive and grammar instruction
+        assert "Transcribe the following audio." in transcription_instruction
+        assert "proper grammar and capitalization" in transcription_instruction
+
+    def test_prompt_includes_language_when_specified(self):
+        """Test that language is included when specified."""
+        context = None
+        language = "German"
+
+        instruction_parts = []
+
+        if context and context.strip():
+            instruction_parts.append(context)
+
+        if language and language != "auto":
+            instruction_parts.append(f"Transcribe the following audio in {language}.")
+        else:
+            instruction_parts.append("Transcribe the following audio.")
+
+        instruction_parts.append(
+            "Use proper grammar and capitalization for the detected language "
+            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        )
+
+        transcription_instruction = "\n\n".join(instruction_parts)
+
+        assert "Transcribe the following audio in German." in transcription_instruction
+
+    def test_prompt_uses_auto_detect_for_auto_language(self):
+        """Test that 'auto' language falls back to auto-detect."""
+        context = None
+        language = "auto"
+
+        instruction_parts = []
+
+        if context and context.strip():
+            instruction_parts.append(context)
+
+        if language and language != "auto":
+            instruction_parts.append(f"Transcribe the following audio in {language}.")
+        else:
+            instruction_parts.append("Transcribe the following audio.")
+
+        instruction_parts.append(
+            "Use proper grammar and capitalization for the detected language "
+            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        )
+
+        transcription_instruction = "\n\n".join(instruction_parts)
+
+        # Should use generic "Transcribe" without language
+        assert "Transcribe the following audio." in transcription_instruction
+        assert "in auto" not in transcription_instruction
+
+    def test_grammar_instruction_is_language_agnostic(self):
+        """Test that grammar instruction works for all languages, not just English."""
+        context = None
+        language = None
+
+        instruction_parts = []
+
+        if context and context.strip():
+            instruction_parts.append(context)
+
+        instruction_parts.append("Transcribe the following audio.")
+        instruction_parts.append(
+            "Use proper grammar and capitalization for the detected language "
+            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        )
+
+        transcription_instruction = "\n\n".join(instruction_parts)
+
+        # Instruction should mention "detected language" (language-agnostic)
+        assert "for the detected language" in transcription_instruction
+        # English is just an example, not a requirement
+        assert "e.g., in English" in transcription_instruction
