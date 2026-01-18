@@ -340,4 +340,214 @@ void main() {
     expect(result, 'ok');
     await dir.delete(recursive: true);
   });
+
+  test('transcribeStream yields chunks progressively', () async {
+    final aiRepo = AiConfigRepository(sharedDb);
+    await aiRepo.saveConfig(
+      AiConfig.inferenceProvider(
+        id: 'p1',
+        baseUrl: 'http://localhost:1234',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      ),
+      fromSync: true,
+    );
+    await aiRepo.saveConfig(
+      AiConfig.model(
+        id: 'm1',
+        name: 'gemini-2.5-flash',
+        providerModelId: 'gemini-2.5-flash',
+        inferenceProviderId: 'p1',
+        createdAt: DateTime.now(),
+        inputModalities: const [Modality.audio],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      ),
+      fromSync: true,
+    );
+
+    final dir = await Directory.systemTemp.createTemp('svc_stream_');
+    final file = File('${dir.path}/d.m4a');
+    await file.writeAsBytes([10, 11, 12]);
+
+    final mockCloud = _MockCloudRepo();
+    when(
+      () => mockCloud.generateWithAudio(
+        any(),
+        model: any(named: 'model'),
+        audioBase64: any(named: 'audioBase64'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        provider: any(named: 'provider'),
+        maxCompletionTokens: any(named: 'maxCompletionTokens'),
+        overrideClient: any(named: 'overrideClient'),
+        tools: any(named: 'tools'),
+      ),
+    ).thenAnswer(
+      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
+        const CreateChatCompletionStreamResponse(
+          id: '1',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: 'First '),
+            ),
+          ],
+        ),
+        const CreateChatCompletionStreamResponse(
+          id: '2',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: 'Second '),
+            ),
+          ],
+        ),
+        const CreateChatCompletionStreamResponse(
+          id: '3',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: 'Third'),
+            ),
+          ],
+        ),
+      ]),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final svc = container.read(audioTranscriptionServiceProvider);
+
+    // Collect chunks as they're yielded
+    final chunks = <String>[];
+    await svc.transcribeStream(file.path).forEach(chunks.add);
+
+    // Verify chunks were yielded progressively (not all at once)
+    expect(chunks, hasLength(3));
+    expect(chunks[0], 'First ');
+    expect(chunks[1], 'Second ');
+    expect(chunks[2], 'Third');
+
+    // Verify concatenation matches full transcription
+    expect(chunks.join(), 'First Second Third');
+
+    await dir.delete(recursive: true);
+  });
+
+  test('transcribeStream skips empty chunks', () async {
+    final aiRepo = AiConfigRepository(sharedDb);
+    await aiRepo.saveConfig(
+      AiConfig.inferenceProvider(
+        id: 'p1',
+        baseUrl: 'http://localhost:1234',
+        apiKey: 'k',
+        name: 'Gemini',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      ),
+      fromSync: true,
+    );
+    await aiRepo.saveConfig(
+      AiConfig.model(
+        id: 'm1',
+        name: 'gemini-2.5-flash',
+        providerModelId: 'gemini-2.5-flash',
+        inferenceProviderId: 'p1',
+        createdAt: DateTime.now(),
+        inputModalities: const [Modality.audio],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      ),
+      fromSync: true,
+    );
+
+    final dir = await Directory.systemTemp.createTemp('svc_empty_');
+    final file = File('${dir.path}/e.m4a');
+    await file.writeAsBytes([13, 14, 15]);
+
+    final mockCloud = _MockCloudRepo();
+    when(
+      () => mockCloud.generateWithAudio(
+        any(),
+        model: any(named: 'model'),
+        audioBase64: any(named: 'audioBase64'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        provider: any(named: 'provider'),
+        maxCompletionTokens: any(named: 'maxCompletionTokens'),
+        overrideClient: any(named: 'overrideClient'),
+        tools: any(named: 'tools'),
+      ),
+    ).thenAnswer(
+      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
+        const CreateChatCompletionStreamResponse(
+          id: '1',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: ''),
+            ),
+          ],
+        ),
+        const CreateChatCompletionStreamResponse(
+          id: '2',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: 'content'),
+            ),
+          ],
+        ),
+        const CreateChatCompletionStreamResponse(
+          id: '3',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(content: ''),
+            ),
+          ],
+        ),
+      ]),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final svc = container.read(audioTranscriptionServiceProvider);
+
+    final chunks = <String>[];
+    await svc.transcribeStream(file.path).forEach(chunks.add);
+
+    // Should only yield non-empty chunks
+    expect(chunks, hasLength(1));
+    expect(chunks[0], 'content');
+
+    await dir.delete(recursive: true);
+  });
 }

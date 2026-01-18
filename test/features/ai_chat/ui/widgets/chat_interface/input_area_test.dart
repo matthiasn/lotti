@@ -63,4 +63,135 @@ void main() {
 
     expect(find.byIcon(Icons.mic), findsOneWidget);
   });
+
+  testWidgets('TranscriptionProgress shows partial transcript during processing',
+      (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        InputArea(
+          controller: TextEditingController(),
+          scrollController: ScrollController(),
+          isLoading: false,
+          canSend: true,
+          requiresModelSelection: false,
+          categoryId: 'cat',
+          onSendMessage: (_) {},
+        ),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => _ProcessingRecorderController(
+              partialTranscript: 'Transcribing audio...',
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Use pump() instead of pumpAndSettle() because CircularProgressIndicator
+    // animates continuously and would cause pumpAndSettle to timeout
+    await tester.pump();
+
+    // Should show the partial transcript text
+    expect(find.text('Transcribing audio...'), findsOneWidget);
+    // Should show the transcribe icon
+    expect(find.byIcon(Icons.transcribe), findsOneWidget);
+    // Should show a progress indicator
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    // Should not show the text field
+    expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('TranscriptionProgress updates as transcript grows',
+      (tester) async {
+    final controller = _ProcessingRecorderController(
+      partialTranscript: 'First chunk',
+    );
+
+    await tester.pumpWidget(
+      wrap(
+        InputArea(
+          controller: TextEditingController(),
+          scrollController: ScrollController(),
+          isLoading: false,
+          canSend: true,
+          requiresModelSelection: false,
+          categoryId: 'cat',
+          onSendMessage: (_) {},
+        ),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(() => controller),
+        ],
+      ),
+    );
+
+    // Use pump() due to CircularProgressIndicator animation
+    await tester.pump();
+    expect(find.text('First chunk'), findsOneWidget);
+
+    // Update the partial transcript
+    controller.updatePartialTranscript('First chunk Second chunk');
+    await tester.pump();
+
+    expect(find.text('First chunk Second chunk'), findsOneWidget);
+  });
+
+  testWidgets(
+      'InputArea shows TextField when processing without partialTranscript',
+      (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        InputArea(
+          controller: TextEditingController(),
+          scrollController: ScrollController(),
+          isLoading: false,
+          canSend: true,
+          requiresModelSelection: false,
+          categoryId: 'cat',
+          onSendMessage: (_) {},
+        ),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => _ProcessingRecorderController(
+              partialTranscript: null,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Use pump() due to CircularProgressIndicator animation
+    await tester.pump();
+
+    // Should show the text field (disabled) since no partialTranscript
+    expect(find.byType(TextField), findsOneWidget);
+    // Should show progress indicator in the button
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+}
+
+/// Test controller that returns a processing state with optional partialTranscript
+class _ProcessingRecorderController extends ChatRecorderController {
+  _ProcessingRecorderController({
+    required String? partialTranscript,
+  }) : _partialTranscript = partialTranscript;
+
+  String? _partialTranscript;
+
+  @override
+  ChatRecorderState build() {
+    return ChatRecorderState(
+      status: ChatRecorderStatus.processing,
+      amplitudeHistory: const [],
+      partialTranscript: _partialTranscript,
+    );
+  }
+
+  void updatePartialTranscript(String newValue) {
+    _partialTranscript = newValue;
+    state = ChatRecorderState(
+      status: ChatRecorderStatus.processing,
+      amplitudeHistory: const [],
+      partialTranscript: _partialTranscript,
+    );
+  }
 }

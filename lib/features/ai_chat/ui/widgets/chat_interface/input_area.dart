@@ -117,68 +117,73 @@ class InputAreaState extends ConsumerState<InputArea> {
                     .read(chatRecorderControllerProvider.notifier)
                     .stopAndTranscribe(),
               )
-            : Row(
-                children: [
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: TextField(
-                        key: const ValueKey('chat_text_field'),
-                        controller: widget.controller,
-                        decoration: InputDecoration(
-                          hintText: widget.requiresModelSelection
-                              ? 'Select a model to start chatting'
-                              : 'Ask about your tasks and productivity...',
-                          filled: true,
-                          fillColor: theme.colorScheme.surfaceContainerHigh
-                              .withValues(alpha: 0.85),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(
-                                color: theme.colorScheme.outline
-                                    .withValues(alpha: 0.10)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(
-                                color: theme.colorScheme.outline
-                                    .withValues(alpha: 0.10)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(
-                              color: theme.colorScheme.primary,
-                              width: 2,
+            : (recState.status == ChatRecorderStatus.processing &&
+                    recState.partialTranscript != null)
+                ? _TranscriptionProgress(
+                    partialTranscript: recState.partialTranscript!,
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: TextField(
+                            key: const ValueKey('chat_text_field'),
+                            controller: widget.controller,
+                            decoration: InputDecoration(
+                              hintText: widget.requiresModelSelection
+                                  ? 'Select a model to start chatting'
+                                  : 'Ask about your tasks and productivity...',
+                              filled: true,
+                              fillColor: theme.colorScheme.surfaceContainerHigh
+                                  .withValues(alpha: 0.85),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide(
+                                    color: theme.colorScheme.outline
+                                        .withValues(alpha: 0.10)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide(
+                                    color: theme.colorScheme.outline
+                                        .withValues(alpha: 0.10)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 2,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
                             ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
+                            maxLines: null,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: widget.canSend ? _sendMessage : null,
+                            enabled: recState.status !=
+                                    ChatRecorderStatus.processing &&
+                                widget.canSend,
                           ),
                         ),
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: widget.canSend ? _sendMessage : null,
-                        enabled:
-                            recState.status != ChatRecorderStatus.processing &&
-                                widget.canSend,
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      if (recState.status != ChatRecorderStatus.recording)
+                        IconButton.filled(
+                          icon: _buildTrailingIcon(
+                            isProcessing: recState.status ==
+                                ChatRecorderStatus.processing,
+                          ),
+                          onPressed: _buildTrailingOnPressed(
+                            recState: recState,
+                          ),
+                          tooltip: _buildTrailingTooltip(recState: recState),
+                        ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  if (recState.status != ChatRecorderStatus.recording)
-                    IconButton.filled(
-                      icon: _buildTrailingIcon(
-                        isProcessing:
-                            recState.status == ChatRecorderStatus.processing,
-                      ),
-                      onPressed: _buildTrailingOnPressed(
-                        recState: recState,
-                      ),
-                      tooltip: _buildTrailingTooltip(recState: recState),
-                    ),
-                ],
-              ),
       ),
     );
   }
@@ -288,6 +293,71 @@ class ChatVoiceControls extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Shows streaming transcription progress with the partial text
+class _TranscriptionProgress extends StatelessWidget {
+  const _TranscriptionProgress({
+    required this.partialTranscript,
+  });
+
+  final String partialTranscript;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 120),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHigh
+                  .withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: SingleChildScrollView(
+              reverse: true, // Keep latest text visible
+              child: Text(
+                partialTranscript,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 48,
+          height: 48,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              Icon(
+                Icons.transcribe,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

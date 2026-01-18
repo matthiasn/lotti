@@ -41,7 +41,11 @@ class VoxtralInferenceRepository {
   /// Transcribes audio using a locally running Voxtral instance
   ///
   /// This method sends audio data to a local Voxtral server for transcription
-  /// using the OpenAI-compatible chat completions endpoint.
+  /// using the OpenAI-compatible chat completions endpoint with SSE streaming.
+  ///
+  /// The server streams each audio chunk's transcription as it completes,
+  /// providing real-time feedback for long recordings. Each 60-second chunk
+  /// is processed and streamed separately.
   ///
   /// Args:
   ///   model: The Voxtral model to use (e.g., 'voxtral-mini')
@@ -54,7 +58,7 @@ class VoxtralInferenceRepository {
   ///   language: Optional language hint (auto-detected if not specified)
   ///
   /// Returns:
-  ///   Stream of chat completion responses containing the transcribed text
+  ///   Stream of chat completion responses, one per transcribed chunk
   ///
   /// Throws:
   ///   ArgumentError if required parameters are empty
@@ -67,7 +71,7 @@ class VoxtralInferenceRepository {
     int? maxCompletionTokens,
     Duration? timeout,
     String? language,
-  }) {
+  }) async* {
     // Validate required inputs
     if (model.isEmpty) {
       throw ArgumentError('Model name cannot be empty');
@@ -90,175 +94,204 @@ class VoxtralInferenceRepository {
         'This can happen with very long audio files or slow processing. '
         'Please try with a shorter recording or check your Voxtral server.';
 
-    // Create a stream that performs the async transcription operation
-    return Stream.fromFuture(
-      () async {
-        try {
-          developer.log(
-            'Sending audio transcription request to local Voxtral server - '
-            'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}, '
-            'timeout: ${requestTimeout.inMinutes} minutes',
-            name: 'VoxtralInferenceRepository',
-          );
+    developer.log(
+      'Sending streaming audio transcription request to local Voxtral server - '
+      'baseUrl: $baseUrl, model: $model, audioLength: ${audioBase64.length}, '
+      'timeout: ${requestTimeout.inMinutes} minutes',
+      name: 'VoxtralInferenceRepository',
+    );
 
-          // Build messages with full context (including speech dictionary)
-          final messages = <Map<String, dynamic>>[
-            {
-              'role': 'user',
-              'content': prompt != null && prompt.isNotEmpty
-                  ? prompt
-                  : 'Transcribe this audio.'
-            }
-          ];
+    // Build messages with full context (including speech dictionary)
+    final messages = <Map<String, dynamic>>[
+      {
+        'role': 'user',
+        'content': prompt != null && prompt.isNotEmpty
+            ? prompt
+            : 'Transcribe this audio.',
+      }
+    ];
 
-          // Build request body
-          final requestBody = <String, dynamic>{
-            'model': model,
-            'messages': messages,
-            'temperature': 0.0, // Deterministic for transcription
-            'max_tokens': maxCompletionTokens ?? 4096,
-            'audio': audioBase64,
-          };
+    // Build request body with streaming enabled
+    final requestBody = <String, dynamic>{
+      'model': model,
+      'messages': messages,
+      'temperature': 0.0, // Deterministic for transcription
+      'max_tokens': maxCompletionTokens ?? 4096,
+      'audio': audioBase64,
+      'stream': true, // Enable SSE streaming
+    };
 
-          // Add language hint if provided
-          if (language != null && language.isNotEmpty && language != 'auto') {
-            requestBody['language'] = language;
-          }
+    // Add language hint if provided
+    if (language != null && language.isNotEmpty && language != 'auto') {
+      requestBody['language'] = language;
+    }
 
-          final response = await _httpClient
-              .post(
-            Uri.parse(baseUrl).resolve('v1/chat/completions'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode(requestBody),
-          )
-              .timeout(
-            requestTimeout,
-            onTimeout: () {
-              throw VoxtralInferenceException(
-                timeoutErrorMessage,
-                statusCode: httpStatusRequestTimeout,
-              );
-            },
-          );
+    try {
+      // Create streaming request
+      final request = http.Request(
+        'POST',
+        Uri.parse(baseUrl).resolve('v1/chat/completions'),
+      );
+      request.headers['Content-Type'] = 'application/json';
+      request.headers['Accept'] = 'text/event-stream';
+      request.body = jsonEncode(requestBody);
 
-          if (response.statusCode == 404) {
-            developer.log(
-              'Model not downloaded: HTTP 404',
-              name: 'VoxtralInferenceRepository',
-              error: response.body,
-            );
-            final exception = VoxtralModelNotAvailableException(
-              'Voxtral model is not available. Please download it first.',
-              modelName: model,
-              statusCode: response.statusCode,
-            );
-            _logException(exception, subDomain: 'model_not_available');
-            throw exception;
-          } else if (response.statusCode != 200) {
-            developer.log(
-              'Failed to transcribe audio: HTTP ${response.statusCode}',
-              name: 'VoxtralInferenceRepository',
-              error: response.body,
-            );
-            final exception = VoxtralInferenceException(
-              'Failed to transcribe audio (HTTP ${response.statusCode}). '
-              'Please check your audio file and try again.',
-              statusCode: response.statusCode,
-            );
-            _logException(exception, subDomain: 'http_error');
-            throw exception;
-          }
-
-          final result = jsonDecode(response.body) as Map<String, dynamic>;
-
-          // Extract text from response
-          try {
-            final choices = result['choices'] as List<dynamic>;
-            final firstChoice = choices[0] as Map<String, dynamic>;
-            final message = firstChoice['message'] as Map<String, dynamic>;
-            final text = message['content'] as String;
-
-            developer.log(
-              'Successfully transcribed audio - transcriptionLength: ${text.length}',
-              name: 'VoxtralInferenceRepository',
-            );
-
-            // Create a stream response to match the expected format
-            return CreateChatCompletionStreamResponse(
-              id: result['id'] as String? ??
-                  'voxtral-${DateTime.now().millisecondsSinceEpoch}',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: text,
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: result['created'] as int? ??
-                  DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            );
-          } catch (e, stackTrace) {
-            developer.log(
-              'Invalid response from Voxtral server: failed to parse response',
-              name: 'VoxtralInferenceRepository',
-              error: result,
-            );
-            final exception = VoxtralInferenceException(
-              'Invalid response from transcription service: $e',
-              originalError: e,
-            );
-            _logException(
-              exception,
-              subDomain: 'invalid_response',
-              stackTrace: stackTrace,
-            );
-            throw exception;
-          }
-        } on VoxtralModelNotAvailableException {
-          rethrow;
-        } on VoxtralInferenceException {
-          rethrow;
-        } on TimeoutException catch (e, stackTrace) {
-          developer.log(
-            'Transcription request timed out',
-            name: 'VoxtralInferenceRepository',
-            error: e,
-          );
-          _logException(e, subDomain: 'timeout', stackTrace: stackTrace);
+      final streamedResponse = await _httpClient.send(request).timeout(
+        requestTimeout,
+        onTimeout: () {
           throw VoxtralInferenceException(
             timeoutErrorMessage,
             statusCode: httpStatusRequestTimeout,
-            originalError: e,
           );
-        } on FormatException catch (e, stackTrace) {
-          developer.log(
-            'Failed to parse response from Voxtral server',
-            name: 'VoxtralInferenceRepository',
-            error: e,
-          );
-          _logException(e, subDomain: 'format_error', stackTrace: stackTrace);
-          throw VoxtralInferenceException(
-            'Invalid response format from transcription service',
-            originalError: e,
-          );
-        } catch (e, stackTrace) {
-          developer.log(
-            'Unexpected error during audio transcription',
-            name: 'VoxtralInferenceRepository',
-            error: e,
-          );
-          _logException(e, subDomain: 'unexpected', stackTrace: stackTrace);
-          throw VoxtralInferenceException(
-            'Failed to transcribe audio: $e',
-            originalError: e,
-          );
+        },
+      );
+
+      if (streamedResponse.statusCode == 404) {
+        developer.log(
+          'Model not downloaded: HTTP 404',
+          name: 'VoxtralInferenceRepository',
+        );
+        final exception = VoxtralModelNotAvailableException(
+          'Voxtral model is not available. Please download it first.',
+          modelName: model,
+          statusCode: streamedResponse.statusCode,
+        );
+        _logException(exception, subDomain: 'model_not_available');
+        throw exception;
+      } else if (streamedResponse.statusCode != 200) {
+        final body = await streamedResponse.stream.bytesToString();
+        developer.log(
+          'Failed to transcribe audio: HTTP ${streamedResponse.statusCode}',
+          name: 'VoxtralInferenceRepository',
+          error: body,
+        );
+        final exception = VoxtralInferenceException(
+          'Failed to transcribe audio (HTTP ${streamedResponse.statusCode}). '
+          'Please check your audio file and try again.',
+          statusCode: streamedResponse.statusCode,
+        );
+        _logException(exception, subDomain: 'http_error');
+        throw exception;
+      }
+
+      // Parse SSE stream
+      var chunksReceived = 0;
+      await for (final chunk
+          in streamedResponse.stream.transform(utf8.decoder)) {
+        // SSE format: "data: {...}\n\n"
+        for (final line in chunk.split('\n')) {
+          if (line.startsWith('data: ')) {
+            final data = line.substring(6).trim();
+
+            // Check for stream end
+            if (data == '[DONE]') {
+              developer.log(
+                'Streaming complete - received $chunksReceived chunks',
+                name: 'VoxtralInferenceRepository',
+              );
+              return;
+            }
+
+            try {
+              final json = jsonDecode(data) as Map<String, dynamic>;
+              final choices = json['choices'] as List<dynamic>?;
+
+              if (choices != null && choices.isNotEmpty) {
+                final choice = choices[0] as Map<String, dynamic>;
+                final delta = choice['delta'] as Map<String, dynamic>?;
+                final content = delta?['content'] as String?;
+                final finishReason = choice['finish_reason'] as String?;
+
+                // Only yield chunks with actual content
+                if (content != null && content.isNotEmpty) {
+                  chunksReceived++;
+                  developer.log(
+                    'Received chunk $chunksReceived: ${content.length} chars',
+                    name: 'VoxtralInferenceRepository',
+                  );
+
+                  yield CreateChatCompletionStreamResponse(
+                    id: json['id'] as String? ??
+                        'voxtral-${DateTime.now().millisecondsSinceEpoch}',
+                    choices: [
+                      ChatCompletionStreamResponseChoice(
+                        delta: ChatCompletionStreamResponseDelta(
+                          content: content,
+                        ),
+                        index: 0,
+                        finishReason: finishReason != null
+                            ? ChatCompletionFinishReason.values.firstWhere(
+                                (e) => e.name == finishReason,
+                                orElse: () => ChatCompletionFinishReason.stop,
+                              )
+                            : null,
+                      ),
+                    ],
+                    object: 'chat.completion.chunk',
+                    created: json['created'] as int? ??
+                        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                  );
+                }
+
+                // Handle finish_reason without content (final chunk)
+                if (finishReason == 'stop' &&
+                    (content == null || content.isEmpty)) {
+                  developer.log(
+                    'Received stop signal',
+                    name: 'VoxtralInferenceRepository',
+                  );
+                }
+              }
+            } on FormatException catch (e) {
+              developer.log(
+                'Failed to parse SSE chunk: $data',
+                name: 'VoxtralInferenceRepository',
+                error: e,
+              );
+              // Continue processing other chunks
+            }
+          }
         }
-      }(),
-    ).asBroadcastStream();
+      }
+    } on VoxtralModelNotAvailableException {
+      rethrow;
+    } on VoxtralInferenceException {
+      rethrow;
+    } on TimeoutException catch (e, stackTrace) {
+      developer.log(
+        'Transcription request timed out',
+        name: 'VoxtralInferenceRepository',
+        error: e,
+      );
+      _logException(e, subDomain: 'timeout', stackTrace: stackTrace);
+      throw VoxtralInferenceException(
+        timeoutErrorMessage,
+        statusCode: httpStatusRequestTimeout,
+        originalError: e,
+      );
+    } on FormatException catch (e, stackTrace) {
+      developer.log(
+        'Failed to parse response from Voxtral server',
+        name: 'VoxtralInferenceRepository',
+        error: e,
+      );
+      _logException(e, subDomain: 'format_error', stackTrace: stackTrace);
+      throw VoxtralInferenceException(
+        'Invalid response format from transcription service',
+        originalError: e,
+      );
+    } catch (e, stackTrace) {
+      developer.log(
+        'Unexpected error during audio transcription',
+        name: 'VoxtralInferenceRepository',
+        error: e,
+      );
+      _logException(e, subDomain: 'unexpected', stackTrace: stackTrace);
+      throw VoxtralInferenceException(
+        'Failed to transcribe audio: $e',
+        originalError: e,
+      );
+    }
   }
 
   /// Check if Voxtral server is healthy and model is available

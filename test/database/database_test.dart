@@ -43,6 +43,7 @@ Directory setupTestDirectory() {
 final Set<String> expectedActiveFlagNames = {
   privateFlag,
   enableTooltipFlag,
+  enableAiStreamingFlag,
 };
 
 final expectedFlags = <ConfigFlag>{
@@ -70,7 +71,7 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableAiStreamingFlag,
     description: 'Enable AI streaming responses?',
-    status: false,
+    status: true,
   ),
   const ConfigFlag(
     name: resendAttachments,

@@ -30,7 +30,7 @@ Future<void> initConfigFlags(
     const ConfigFlag(
       name: enableAiStreamingFlag,
       description: 'Enable AI streaming responses?',
-      status: false,
+      status: true,
     ),
   );
   await db.insertFlagIfNotExists(
