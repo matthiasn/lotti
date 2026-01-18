@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.817" date="2026-01-18">
+      <description>
+        <p>Mistral Cloud Provider: Added a new cloud transcription option using Mistral's Voxtral API. Supports the voxtral-small-2507 model for high-accuracy cloud transcription with automatic audio format conversion from M4A to WAV for API compatibility. Uses FFmpegKit on iOS/Android/macOS and system FFmpeg on Linux/Windows. The Voxtral model is auto-created when adding a Mistral provider.</p>
+        <p>Audio Transcription Improvements: Improved context handling to prevent previous transcripts from bleeding into new ones. Now uses task summary instead of full task JSON for cleaner context. Added explicit instructions that context is for terminology only. Transcriptions now include paragraph breaks on small pauses or topic changes for better readability.</p>
+      </description>
+    </release>
     <release version="0.9.816" date="2026-01-18">
       <description>
         <p>Voxtral Streaming Transcription: Audio transcription now streams progressively as each 60-second chunk completes. Each chunk's transcription is sent as a Server-Sent Event (SSE), providing real-time visual feedback instead of waiting for the entire audio to process. Particularly useful for longer recordings where you can see progress as it happens. AI streaming responses are now enabled by default for new installations - existing users can enable this in Settings → Flags.</p>

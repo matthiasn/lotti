@@ -75,7 +75,7 @@ class AudioFormatConverter {
       // FFmpeg command arguments for M4A to WAV conversion (16-bit PCM)
       // -i: input file
       // -acodec pcm_s16le: 16-bit little-endian PCM (standard WAV format)
-      // -ar 16000: 16kHz sample rate (good for speech recognition)
+      // -ar 8000: 8kHz sample rate (keeps file size under 20MB for long audio)
       // -ac 1: mono channel (sufficient for speech)
       // -y: overwrite output file if exists
       final result = await Process.run(
@@ -86,7 +86,7 @@ class AudioFormatConverter {
           '-acodec',
           'pcm_s16le',
           '-ar',
-          '16000',
+          '8000',
           '-ac',
           '1',
           '-y',
@@ -122,11 +122,11 @@ class AudioFormatConverter {
     // FFmpeg command to convert M4A to WAV (16-bit PCM)
     // -i: input file
     // -acodec pcm_s16le: 16-bit little-endian PCM (standard WAV format)
-    // -ar 16000: 16kHz sample rate (good for speech recognition)
+    // -ar 8000: 8kHz sample rate (keeps file size under 20MB for long audio)
     // -ac 1: mono channel (sufficient for speech)
     // -y: overwrite output file if exists
     final command =
-        '-i "$inputPath" -acodec pcm_s16le -ar 16000 -ac 1 -y "$outputPath"';
+        '-i "$inputPath" -acodec pcm_s16le -ar 8000 -ac 1 -y "$outputPath"';
 
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
