@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import uuid
+from contextlib import asynccontextmanager
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -64,11 +65,36 @@ except Exception as _e:
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup/shutdown events."""
+    # Startup
+    logger.info(f"Starting Voxtral Local Service with model: {ServiceConfig.MODEL_ID}")
+    logger.info(f"Device: {ServiceConfig.DEFAULT_DEVICE}")
+    logger.info(
+        f"Torch version: {torch.__version__}; dtype: {ServiceConfig.TORCH_DTYPE}"
+    )
+    logger.info(
+        f"Max audio duration: {ServiceConfig.MAX_AUDIO_DURATION_SECONDS}s "
+        f"({ServiceConfig.MAX_AUDIO_DURATION_SECONDS/60:.0f} min)"
+    )
+
+    if model_manager.is_model_available():
+        logger.info("Model files found. Ready to load on first request.")
+    else:
+        logger.info("Model not downloaded. Use /v1/models/pull to download.")
+
+    yield
+    # Shutdown (nothing to do currently)
+
+
 # Create FastAPI app
 app = FastAPI(
     title="Voxtral Local Service",
     description="Local Voxtral model service with OpenAI-compatible API for speech transcription",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -120,26 +146,6 @@ class ModelInfo(BaseModel):
     owned_by: str = "local"
     capabilities: Dict[str, bool]
     size_gb: Optional[float] = None
-
-
-# Startup event
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Initialize service on startup."""
-    logger.info(f"Starting Voxtral Local Service with model: {ServiceConfig.MODEL_ID}")
-    logger.info(f"Device: {ServiceConfig.DEFAULT_DEVICE}")
-    logger.info(
-        f"Torch version: {torch.__version__}; dtype: {ServiceConfig.TORCH_DTYPE}"
-    )
-    logger.info(
-        f"Max audio duration: {ServiceConfig.MAX_AUDIO_DURATION_SECONDS}s "
-        f"({ServiceConfig.MAX_AUDIO_DURATION_SECONDS/60:.0f} min)"
-    )
-
-    if model_manager.is_model_available():
-        logger.info("Model files found. Ready to load on first request.")
-    else:
-        logger.info("Model not downloaded. Use /v1/models/pull to download.")
 
 
 # Health check
