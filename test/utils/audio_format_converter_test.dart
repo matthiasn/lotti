@@ -107,9 +107,35 @@ void main() {
         expect(result.outputPath, isNull);
       });
 
-      // Note: Actual conversion tests require integration testing since
-      // FFmpegKit is a native plugin that isn't available in unit tests.
-      // The conversion logic is tested indirectly through integration tests.
+      test('returns error for invalid audio file on Linux/Windows', () async {
+        // Skip on macOS/iOS/Android where FFmpegKit is used (native plugin)
+        if (!Platform.isLinux && !Platform.isWindows) {
+          return;
+        }
+
+        final tempDir = await getTemporaryDirectory();
+        if (!tempDir.existsSync()) {
+          tempDir.createSync(recursive: true);
+        }
+
+        // Create a dummy file that isn't valid audio
+        final dummyFile = File('${tempDir.path}/invalid_audio.m4a');
+        await dummyFile.writeAsBytes([0, 1, 2, 3, 4, 5]);
+
+        try {
+          final result = await AudioFormatConverter.convertM4aToWav(
+            dummyFile.path,
+          );
+
+          // Either FFmpeg fails (invalid audio) or FFmpeg not installed
+          expect(result.success, isFalse);
+          expect(result.error, isNotNull);
+        } finally {
+          if (dummyFile.existsSync()) {
+            await dummyFile.delete();
+          }
+        }
+      });
     });
 
     group('deleteConvertedFile', () {
