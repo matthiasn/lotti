@@ -42,6 +42,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.anthropic: 'anthropic',
   InferenceProviderType.gemini: 'gemini',
   InferenceProviderType.genericOpenAi: 'genericOpenAi',
+  InferenceProviderType.mistral: 'mistral',
   InferenceProviderType.nebiusAiStudio: 'nebiusAiStudio',
   InferenceProviderType.openAi: 'openAi',
   InferenceProviderType.openRouter: 'openRouter',

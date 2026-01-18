@@ -318,6 +318,13 @@ class CloudInferenceRepository {
       );
     }
 
+    // Use WAV format for Mistral (audio is converted to WAV before sending)
+    // Use MP3 format for other providers
+    final audioFormat =
+        provider.inferenceProviderType == InferenceProviderType.mistral
+            ? ChatCompletionMessageInputAudioFormat.wav
+            : ChatCompletionMessageInputAudioFormat.mp3;
+
     return client
         .createChatCompletionStream(
           request: _createBaseRequest(
@@ -329,7 +336,7 @@ class CloudInferenceRepository {
                     ChatCompletionMessageContentPart.audio(
                       inputAudio: ChatCompletionMessageInputAudio(
                         data: audioBase64,
-                        format: ChatCompletionMessageInputAudioFormat.mp3,
+                        format: audioFormat,
                       ),
                     ),
                   ],

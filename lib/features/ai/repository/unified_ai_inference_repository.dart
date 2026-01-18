@@ -45,6 +45,7 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/dev_log.dart';
+import 'package:lotti/utils/audio_format_converter.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -288,7 +289,7 @@ class UnifiedAiInferenceRepository {
 
       // Prepare any additional data (images, audio)
       final images = await _prepareImages(promptConfig, entity);
-      final audioBase64 = await _prepareAudio(promptConfig, entity);
+      final audioBase64 = await _prepareAudio(promptConfig, entity, provider);
 
       // Run the inference
       final buffer = StringBuffer();
@@ -479,10 +480,14 @@ class UnifiedAiInferenceRepository {
     return [base64String];
   }
 
-  /// Prepare audio if required
+  /// Prepare audio if required.
+  ///
+  /// For Mistral cloud provider, M4A files are converted to WAV format
+  /// since the Mistral API only accepts WAV or MP3.
   Future<String?> _prepareAudio(
     AiConfigPrompt promptConfig,
     JournalEntity entity,
+    AiConfigInferenceProvider provider,
   ) async {
     // Skip audio preparation entirely for prompt generation types - they use
     // transcript text via {{audioTranscript}} placeholder, not audio files
@@ -497,6 +502,34 @@ class UnifiedAiInferenceRepository {
     if (entity is! JournalAudio) return null;
 
     final fullPath = await AudioUtils.getFullAudioPath(entity);
+
+    // For Mistral cloud, convert M4A to WAV
+    if (provider.inferenceProviderType == InferenceProviderType.mistral &&
+        AudioFormatConverter.isM4aFile(fullPath)) {
+      developer.log(
+        'Converting M4A to WAV for Mistral cloud',
+        name: 'UnifiedAiInferenceRepository',
+      );
+
+      final result = await AudioFormatConverter.convertM4aToWav(fullPath);
+
+      if (!result.success || result.outputPath == null) {
+        throw Exception(
+          'Failed to convert audio for Mistral: ${result.error}',
+        );
+      }
+
+      try {
+        final wavFile = File(result.outputPath!);
+        final bytes = await wavFile.readAsBytes();
+        return base64Encode(bytes);
+      } finally {
+        // Clean up temp WAV file
+        await AudioFormatConverter.deleteConvertedFile(result.outputPath);
+      }
+    }
+
+    // No conversion needed - read original file
     final file = File(fullPath);
     final bytes = await file.readAsBytes();
     return base64Encode(bytes);

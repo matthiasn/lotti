@@ -18,6 +18,7 @@ class ProviderConfig {
     InferenceProviderType.gemini:
         'https://generativelanguage.googleapis.com/v1beta/openai',
     InferenceProviderType.genericOpenAi: 'http://localhost:8002/v1',
+    InferenceProviderType.mistral: 'https://api.mistral.ai/v1',
     InferenceProviderType.nebiusAiStudio: 'https://api.studio.nebius.com/v1',
     InferenceProviderType.ollama: 'http://localhost:11434',
     InferenceProviderType.openAi: 'https://api.openai.com/v1',
@@ -33,6 +34,7 @@ class ProviderConfig {
   static const Map<InferenceProviderType, String> defaultNames = {
     InferenceProviderType.gemini: 'Gemini',
     InferenceProviderType.genericOpenAi: 'AI Proxy (local)',
+    InferenceProviderType.mistral: 'Mistral',
     InferenceProviderType.nebiusAiStudio: 'Nebius AI Studio',
     InferenceProviderType.ollama: 'Ollama (local)',
     InferenceProviderType.openAi: 'OpenAI',

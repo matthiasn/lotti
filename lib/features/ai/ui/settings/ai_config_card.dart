@@ -260,6 +260,8 @@ class AiConfigCard extends ConsumerWidget {
           return Icons.psychology;
         case InferenceProviderType.gemini:
           return Icons.diamond;
+        case InferenceProviderType.mistral:
+          return Icons.record_voice_over;
         case InferenceProviderType.openRouter:
           return Icons.hub;
         case InferenceProviderType.ollama:
