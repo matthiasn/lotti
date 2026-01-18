@@ -516,59 +516,44 @@ async def _transcribe_single(
     if max_val > 1.0:
         audio_array = audio_array / max_val
 
-    # Check if we have context that requires chat template
-    has_context = context and context.strip()
+    # Build transcription instruction
+    instruction_parts = []
 
-    if has_context:
-        # Use chat template with context for context-aware transcription
-        # Build transcription instruction with context
-        instruction_parts = []
+    # Include context (speech dictionary, task context, etc.) if provided
+    if context and context.strip():
         instruction_parts.append(context)
 
-        if language and language != "auto":
-            instruction_parts.append(f"Transcribe the following audio in {language}.")
-        else:
-            instruction_parts.append("Transcribe the following audio.")
-
-        # Explicitly request plain text output (not JSON)
-        instruction_parts.append(
-            "IMPORTANT: Return ONLY the plain text transcription. "
-            "Do NOT wrap it in JSON, XML, or any other format. "
-            "Just output the spoken words as plain text."
-        )
-
-        transcription_instruction = "\n\n".join(instruction_parts)
-
-        # Convert audio to base64 for the chat template
-        audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
-
-        # Build conversation for Voxtral with base64 audio
-        conversation = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "audio", "base64": audio_base64},
-                    {"type": "text", "text": transcription_instruction},
-                ],
-            }
-        ]
-
-        logger.info(f"[REQ {req_id}] Using chat template with context")
-        inputs = model_manager.processor.apply_chat_template(conversation)
+    # Add transcription directive
+    if language and language != "auto":
+        instruction_parts.append(f"Transcribe the following audio in {language}.")
     else:
-        # Use dedicated transcription request for simple transcription
-        logger.info(f"[REQ {req_id}] Using transcription request mode")
+        instruction_parts.append("Transcribe the following audio.")
 
-        # Convert audio to base64 for the transcription request
-        audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
+    # Request proper grammar and plain text output
+    instruction_parts.append(
+        "Use proper grammar and capitalization for the detected language "
+        "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+        "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+    )
 
-        # Use apply_transcription_request for pure transcription
-        lang_code = language if language and language != "auto" else None
-        inputs = model_manager.processor.apply_transcription_request(
-            audio=f"data:audio/wav;base64,{audio_base64}",
-            model_id=ServiceConfig.MODEL_ID,
-            language=lang_code,
-        )
+    transcription_instruction = "\n\n".join(instruction_parts)
+
+    # Convert audio to base64 for the chat template
+    audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
+
+    # Build conversation for Voxtral
+    conversation = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "audio", "base64": audio_base64},
+                {"type": "text", "text": transcription_instruction},
+            ],
+        }
+    ]
+
+    logger.info(f"[REQ {req_id}] Transcribing with chat template")
+    inputs = model_manager.processor.apply_chat_template(conversation)
 
     # Run blocking inference in thread pool to avoid blocking event loop
     # This allows SSE events to be sent between chunks
