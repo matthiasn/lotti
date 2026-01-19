@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert' show base64Decode;
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/ai/providers/ollama_inference_repository_provider
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/gemini_config.dart';
@@ -19,21 +19,21 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cloud_inference_repository.g.dart';
 
-/// OpenAI's Whisper model ID for audio transcription
-const _openAiWhisperModel = 'whisper-1';
-
 class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
         _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
-        _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient);
+        _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
+        _openAiTranscriptionRepository =
+            OpenAiTranscriptionRepository(httpClient: httpClient);
 
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
   final WhisperInferenceRepository _whisperRepository;
   final VoxtralInferenceRepository _voxtralRepository;
+  final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
 
   /// Helper method to create common request parameters
   CreateChatCompletionRequest _createBaseRequest({
@@ -317,25 +317,27 @@ class CloudInferenceRepository {
       );
     }
 
-    // For OpenAI, use the transcription API which supports m4a format
-    // The chat completions audio input only accepts wav/mp3, but the app
-    // records in m4a format. The transcription API is more compatible.
-    if (provider.inferenceProviderType == InferenceProviderType.openAi) {
+    // For OpenAI transcription models (gpt-4o-transcribe, gpt-4o-mini-transcribe),
+    // use the dedicated transcription repository. These models require the
+    // /v1/audio/transcriptions endpoint, not chat completions.
+    if (provider.inferenceProviderType == InferenceProviderType.openAi &&
+        OpenAiTranscriptionRepository.isOpenAiTranscriptionModel(model)) {
       developer.log(
-        'Using OpenAI transcription API for audio (m4a compatible)',
+        'Using OpenAI transcription endpoint for model: $model',
         name: 'CloudInferenceRepository',
       );
-
-      return _transcribeWithOpenAiApi(
-        baseUrl: baseUrl,
-        apiKey: apiKey,
+      return _openAiTranscriptionRepository.transcribeAudio(
+        model: model,
         audioBase64: audioBase64,
+        apiKey: apiKey,
         prompt: prompt,
       );
     }
 
-    // For other providers (Gemini, etc.), use the standard OpenAI-compatible format
-    // Gemini accepts audio in various formats through its chat completions API
+    // For all other providers (OpenAI chat models, Gemini, etc.), use the standard
+    // OpenAI-compatible chat completions format with audio content parts.
+    // Note: Audio must be converted to WAV format before calling this method
+    // (handled by UnifiedAiInferenceRepository._prepareAudio).
     if (tools != null && tools.isNotEmpty) {
       developer.log(
         'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
@@ -343,10 +345,11 @@ class CloudInferenceRepository {
       );
     }
 
-    // Use WAV format for Mistral (audio is converted to WAV before sending)
-    // Use MP3 format for other providers
+    // Use WAV format for Mistral and OpenAI (audio is converted to WAV before sending)
+    // Use MP3 format for other providers (Gemini accepts various formats)
     final audioFormat =
-        provider.inferenceProviderType == InferenceProviderType.mistral
+        (provider.inferenceProviderType == InferenceProviderType.mistral ||
+                provider.inferenceProviderType == InferenceProviderType.openAi)
             ? ChatCompletionMessageInputAudioFormat.wav
             : ChatCompletionMessageInputAudioFormat.mp3;
 
@@ -375,91 +378,6 @@ class CloudInferenceRepository {
           ),
         )
         .asBroadcastStream();
-  }
-
-  /// Transcribes audio using OpenAI's dedicated transcription API.
-  /// This API supports more audio formats including m4a.
-  /// Note: Always uses the Whisper model (_openAiWhisperModel) as it's the only
-  /// model supported by OpenAI's transcription endpoint.
-  Stream<CreateChatCompletionStreamResponse> _transcribeWithOpenAiApi({
-    required String baseUrl,
-    required String apiKey,
-    required String audioBase64,
-    required String prompt,
-  }) {
-    return Stream.fromFuture(
-      () async {
-        try {
-          // Decode base64 to bytes for the multipart request
-          final audioBytes = base64Decode(audioBase64);
-
-          // Build the multipart request to OpenAI's transcription endpoint
-          final uri = Uri.parse(baseUrl).resolve('/v1/audio/transcriptions');
-          final request = http.MultipartRequest('POST', uri)
-            ..headers['Authorization'] = 'Bearer $apiKey'
-            ..fields['model'] = _openAiWhisperModel
-            ..fields['response_format'] = 'text'
-            ..files.add(http.MultipartFile.fromBytes(
-              'file',
-              audioBytes,
-              filename: 'audio.m4a',
-            ));
-
-          if (prompt.isNotEmpty) {
-            request.fields['prompt'] = prompt;
-          }
-
-          developer.log(
-            'Sending transcription request to OpenAI - url: $uri, audioSize: ${audioBytes.length}',
-            name: 'CloudInferenceRepository',
-          );
-
-          final streamedResponse = await request.send();
-          final response = await http.Response.fromStream(streamedResponse);
-
-          if (response.statusCode != 200) {
-            developer.log(
-              'OpenAI transcription failed: HTTP ${response.statusCode}',
-              name: 'CloudInferenceRepository',
-              error: response.body,
-            );
-            throw Exception(
-              'OpenAI transcription failed (HTTP ${response.statusCode}): ${response.body}',
-            );
-          }
-
-          // The response is plain text when response_format is 'text'
-          final text = response.body;
-
-          developer.log(
-            'OpenAI transcription successful - length: ${text.length}',
-            name: 'CloudInferenceRepository',
-          );
-
-          // Return as a chat completion stream response for consistency
-          return CreateChatCompletionStreamResponse(
-            id: 'transcription-${DateTime.now().millisecondsSinceEpoch}',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: text,
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          );
-        } catch (e) {
-          developer.log(
-            'OpenAI transcription failed',
-            name: 'CloudInferenceRepository',
-            error: e,
-          );
-          rethrow;
-        }
-      }(),
-    ).asBroadcastStream();
   }
 
   /// Generate with full conversation history for multi-turn interactions.

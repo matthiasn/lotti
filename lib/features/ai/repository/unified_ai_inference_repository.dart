@@ -512,11 +512,16 @@ class UnifiedAiInferenceRepository {
 
     final fullPath = await AudioUtils.getFullAudioPath(entity);
 
-    // For Mistral cloud, convert M4A to WAV
-    if (provider.inferenceProviderType == InferenceProviderType.mistral &&
-        AudioFormatConverterService.isM4aFile(fullPath)) {
+    // For Mistral and OpenAI cloud, convert M4A to WAV
+    // OpenAI's chat completions audio input only accepts wav/mp3
+    final needsWavConversion = (provider.inferenceProviderType ==
+                InferenceProviderType.mistral ||
+            provider.inferenceProviderType == InferenceProviderType.openAi) &&
+        AudioFormatConverterService.isM4aFile(fullPath);
+
+    if (needsWavConversion) {
       developer.log(
-        'Converting M4A to WAV for Mistral cloud',
+        'Converting M4A to WAV for ${provider.inferenceProviderType}',
         name: 'UnifiedAiInferenceRepository',
       );
 

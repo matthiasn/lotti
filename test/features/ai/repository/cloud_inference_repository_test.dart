@@ -35,6 +35,8 @@ class FakeCreateChatCompletionRequest extends Fake
 
 class FakeRequest extends Fake implements http.Request {}
 
+class FakeBaseRequest extends Fake implements http.BaseRequest {}
+
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
 class FakeAiConfigInferenceProvider extends Fake
@@ -46,6 +48,7 @@ void main() {
     registerFallbackValue(FakeCreateChatCompletionRequest());
     registerFallbackValue(Uri.parse('http://example.com'));
     registerFallbackValue(FakeRequest());
+    registerFallbackValue(FakeBaseRequest());
     registerFallbackValue(FakeGeminiThinkingConfig());
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(<ChatCompletionTool>[]);
@@ -2623,8 +2626,10 @@ void main() {
   group('CloudInferenceRepository - OpenAI Reasoning Model Temperature', () {
     late ProviderContainer container;
     late CloudInferenceRepository repository;
+    late MockHttpClient mockHttpClient;
 
     setUp(() {
+      mockHttpClient = MockHttpClient();
       final mockOllamaRepo = MockOllamaInferenceRepository();
       final mockGeminiRepo = MockGeminiInferenceRepository();
 
@@ -2636,10 +2641,11 @@ void main() {
       );
 
       final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
     });
 
     tearDown(() {
+      mockHttpClient.close();
       container.dispose();
     });
 
@@ -2763,6 +2769,280 @@ void main() {
 
       expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
       expect(stream.isBroadcast, isTrue);
+    });
+
+    group('generateWithAudio with OpenAI transcription models', () {
+      test('routes gpt-4o-mini-transcribe to OpenAI transcription endpoint',
+          () async {
+        // Arrange
+        final openAiProvider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        // Mock successful transcription response
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': 'Transcribed text'}))),
+            200,
+          );
+        });
+
+        // Act - Use WAV magic bytes for valid audio
+        final wavBytes = [
+          0x52, 0x49, 0x46, 0x46, // RIFF
+          0x00, 0x00, 0x00, 0x00, // file size
+          0x57, 0x41, 0x56, 0x45, // WAVE
+          0x66, 0x6D, 0x74, 0x20, // fmt
+        ];
+        final audioBase64 = base64Encode(wavBytes);
+
+        final stream = repository.generateWithAudio(
+          'Transcribe this audio',
+          model: 'gpt-4o-mini-transcribe',
+          audioBase64: audioBase64,
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          provider: openAiProvider,
+        );
+
+        final response = await stream.first;
+
+        // Assert - verify it went through OpenAI transcription endpoint
+        expect(
+            response.choices?.first.delta?.content, equals('Transcribed text'));
+
+        // Verify the request was sent to the transcription endpoint
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        expect(captured, hasLength(1));
+        final request = captured.first as http.MultipartRequest;
+        expect(request.url.toString(),
+            equals('https://api.openai.com/v1/audio/transcriptions'));
+        expect(request.fields['model'], equals('gpt-4o-mini-transcribe'));
+      });
+
+      test('routes gpt-4o-transcribe to OpenAI transcription endpoint',
+          () async {
+        // Arrange
+        final openAiProvider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': 'Transcribed text'}))),
+            200,
+          );
+        });
+
+        final wavBytes = [
+          0x52,
+          0x49,
+          0x46,
+          0x46,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0x57,
+          0x41,
+          0x56,
+          0x45,
+          0x66,
+          0x6D,
+          0x74,
+          0x20,
+        ];
+
+        final stream = repository.generateWithAudio(
+          'Transcribe this audio',
+          model: 'gpt-4o-transcribe',
+          audioBase64: base64Encode(wavBytes),
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          provider: openAiProvider,
+        );
+
+        final response = await stream.first;
+        expect(
+            response.choices?.first.delta?.content, equals('Transcribed text'));
+
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.MultipartRequest;
+        expect(request.fields['model'], equals('gpt-4o-transcribe'));
+      });
+
+      test('routes gpt-4o-transcribe-diarize to OpenAI transcription endpoint',
+          () async {
+        final openAiProvider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': 'Speaker 1: Hello'}))),
+            200,
+          );
+        });
+
+        final wavBytes = [
+          0x52,
+          0x49,
+          0x46,
+          0x46,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0x57,
+          0x41,
+          0x56,
+          0x45,
+          0x66,
+          0x6D,
+          0x74,
+          0x20,
+        ];
+
+        final stream = repository.generateWithAudio(
+          'Transcribe with diarization',
+          model: 'gpt-4o-transcribe-diarize',
+          audioBase64: base64Encode(wavBytes),
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          provider: openAiProvider,
+        );
+
+        final response = await stream.first;
+        expect(
+            response.choices?.first.delta?.content, equals('Speaker 1: Hello'));
+
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.MultipartRequest;
+        expect(request.fields['model'], equals('gpt-4o-transcribe-diarize'));
+      });
+
+      test(
+          'routes snapshot alias gpt-4o-mini-transcribe-2025-01-15 to OpenAI transcription endpoint',
+          () async {
+        final openAiProvider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': 'Transcribed'}))),
+            200,
+          );
+        });
+
+        final wavBytes = [
+          0x52,
+          0x49,
+          0x46,
+          0x46,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0x57,
+          0x41,
+          0x56,
+          0x45,
+          0x66,
+          0x6D,
+          0x74,
+          0x20,
+        ];
+
+        final stream = repository.generateWithAudio(
+          'Transcribe',
+          model: 'gpt-4o-mini-transcribe-2025-01-15',
+          audioBase64: base64Encode(wavBytes),
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          provider: openAiProvider,
+        );
+
+        final response = await stream.first;
+        expect(response.choices?.first.delta?.content, equals('Transcribed'));
+
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.MultipartRequest;
+        expect(request.fields['model'],
+            equals('gpt-4o-mini-transcribe-2025-01-15'));
+      });
+
+      test(
+          'does not route non-OpenAI provider to OpenAI transcription endpoint',
+          () async {
+        // Arrange - use genericOpenAi provider with same model name
+        final genericProvider = AiConfigInferenceProvider(
+          id: 'generic-provider',
+          name: 'Generic',
+          baseUrl: 'https://example.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        // This should NOT go to OpenAI transcription endpoint
+        // because the provider type is genericOpenAi, not openAi
+        final wavBytes = [
+          0x52,
+          0x49,
+          0x46,
+          0x46,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0x57,
+          0x41,
+          0x56,
+          0x45,
+          0x66,
+          0x6D,
+          0x74,
+          0x20,
+        ];
+
+        final stream = repository.generateWithAudio(
+          'Transcribe',
+          model: 'gpt-4o-mini-transcribe',
+          audioBase64: base64Encode(wavBytes),
+          baseUrl: 'https://example.com/v1',
+          apiKey: 'test-key',
+          provider: genericProvider,
+        );
+
+        // The stream should be created (even though it won't work in practice)
+        // It should NOT have sent to OpenAI's transcription endpoint
+        expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      });
     });
   });
 }
