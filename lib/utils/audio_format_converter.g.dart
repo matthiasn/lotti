@@ -55,4 +55,4 @@ final class AudioFormatConverterProvider extends $FunctionalProvider<
 }
 
 String _$audioFormatConverterHash() =>
-    r'3c38339c5aac583b352c1d6bc9b4968a29b8e589';
+    r'6360379fe09f736ad2e8cd072ff5518894d62323';

@@ -120,7 +120,6 @@ class ServiceConfig:
             base_config.update(
                 {
                     "max_new_tokens": cls.MAX_TOKENS_TRANSCRIPTION,
-                    "temperature": 0.0,  # Completely deterministic
                     "do_sample": False,  # No sampling - greedy decoding
                     "num_beams": 1,  # Greedy decoding
                 }

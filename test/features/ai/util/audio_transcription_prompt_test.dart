@@ -53,7 +53,7 @@ void main() {
       );
       expect(
         audioTranscriptionPrompt.userMessage,
-        contains('new paragraph'),
+        contains('paragraph'),
       );
 
       // Audio transcription with task context
@@ -71,7 +71,7 @@ void main() {
       );
       expect(
         audioTranscriptionWithTaskContextPrompt.userMessage,
-        contains('new paragraph'),
+        contains('paragraph'),
       );
     });
 
@@ -80,7 +80,7 @@ void main() {
         () {
       expect(
         audioTranscriptionWithTaskContextPrompt.userMessage,
-        contains('Task Summary'),
+        contains('Task context'),
       );
       expect(
         audioTranscriptionWithTaskContextPrompt.userMessage,
@@ -89,14 +89,6 @@ void main() {
       expect(
         audioTranscriptionWithTaskContextPrompt.userMessage,
         contains('do NOT include in output'),
-      );
-      expect(
-        audioTranscriptionWithTaskContextPrompt.systemMessage,
-        contains('completed checklist items'),
-      );
-      expect(
-        audioTranscriptionWithTaskContextPrompt.systemMessage,
-        contains('new action items'),
       );
       expect(
         audioTranscriptionWithTaskContextPrompt.systemMessage,

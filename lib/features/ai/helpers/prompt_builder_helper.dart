@@ -698,24 +698,25 @@ class PromptBuilderHelper {
   }
 
   /// Build speech dictionary prompt text for a given entity.
-  /// Returns formatted text with dictionary terms from the task's category,
-  /// or empty string if no dictionary is available.
+  /// Returns formatted text with dictionary terms from the entity's category
+  /// (or linked task's category), or empty string if no dictionary is available.
   Future<String> _buildSpeechDictionaryPromptText(JournalEntity entity) async {
-    // Get the task (directly or via linked entity)
-    final task = entity is Task ? entity : await _findLinkedTask(entity);
-    if (task == null) {
-      developer.log(
-        'Speech dictionary: no task found for entity ${entity.id}',
-        name: 'PromptBuilderHelper',
-      );
-      return '';
+    // First check if the entity itself has a category
+    var categoryId = entity.meta.categoryId;
+    var source = 'entity';
+
+    // If no direct category, try to get it from a linked task
+    if (categoryId == null) {
+      final task = entity is Task ? entity : await _findLinkedTask(entity);
+      if (task != null) {
+        categoryId = task.meta.categoryId;
+        source = 'linked task';
+      }
     }
 
-    // Get the category ID from the task
-    final categoryId = task.meta.categoryId;
     if (categoryId == null) {
       developer.log(
-        'Speech dictionary: task ${task.id} has no category',
+        'Speech dictionary: no category found for entity ${entity.id}',
         name: 'PromptBuilderHelper',
       );
       return '';
@@ -756,7 +757,7 @@ class PromptBuilderHelper {
 
     developer.log(
       'Speech dictionary: injecting ${dictionary.length} terms from '
-      'category "${category.name}": ${dictionary.join(", ")}',
+      '$source category "${category.name}": ${dictionary.join(", ")}',
       name: 'PromptBuilderHelper',
     );
 

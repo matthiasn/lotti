@@ -438,47 +438,15 @@ const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
   name: 'Audio Transcription with Task Context',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content.
-Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
-
-CRITICAL RULES:
-1. Output ONLY the transcription of the current audio - nothing else
-2. NEVER include or reference previous transcripts from the task context
-3. The task summary below is ONLY for understanding terminology and context
-4. Do NOT append, prepend, or mix any text from the context into your output
-
-When transcribing, pay attention to:
-1. Any mentions of completed checklist items (e.g., "I finished...", "I've completed...", "That's done")
-2. Any new action items or tasks mentioned (e.g., "I need to...", "Next I'll...", "We should...")''',
+Output ONLY the transcription - do NOT include any text from the context below.''',
   userMessage: '''
-Please transcribe the provided audio.
-Format the transcription clearly with proper punctuation.
-Start a new paragraph when there are small pauses or topic changes in the speech.
-If there are multiple speakers, try to indicate speaker changes.
-Remove filler words.
+Transcribe the provided audio with proper punctuation and paragraph breaks.
+Remove filler words. If multiple speakers, indicate speaker changes.
 
 {{speech_dictionary}}
 
-**Task Summary (for context and terminology ONLY - do NOT include in output):**
-{{current_task_summary}}
-
-**Related Tasks (for context ONLY - do NOT include in output):**
-```json
-{{linked_tasks}}
-```
-
-IMPORTANT: The task summary and related tasks above are ONLY for:
-- Understanding domain-specific terminology
-- Recognizing names, places, and technical terms
-- Knowing the context of the conversation
-
-Your output must be ONLY the transcription of the current audio.
-Do NOT copy, reference, or include any text from the task summary in your response.
-
-When you hear something that sounds like a term from the speech dictionary,
-you MUST use the exact spelling from the dictionary - the audio may be unclear but
-these are the correct spellings for this context.
-
-{{correction_examples}}''',
+**Task context (for terminology only, do NOT include in output):**
+{{current_task_summary}}''',
   requiredInputData: [InputDataType.audioFiles, InputDataType.task],
   aiResponseType: AiResponseType.audioTranscription,
   useReasoning: false,

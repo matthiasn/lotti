@@ -534,15 +534,31 @@ async def _transcribe_single(
     if context and context.strip():
         instruction_parts.append(context)
 
-    # Add transcription directive
+    # Add transcription directive with explicit language preservation
+    # CRITICAL: Voxtral must NOT translate - output must match source language
     if language and language != "auto":
-        instruction_parts.append(f"Transcribe the following audio in {language}.")
+        instruction_parts.append(
+            f"Transcribe the following audio in {language}. "
+            "Output the transcription in the SAME language as spoken - do NOT translate."
+        )
     else:
-        instruction_parts.append("Transcribe the following audio.")
+        instruction_parts.append(
+            "Transcribe the following audio in its ORIGINAL language. "
+            "Do NOT translate to English or any other language. "
+            "Output the exact words spoken in the same language as the speaker."
+        )
+
+    # Add speech dictionary instruction if context was provided
+    if context and context.strip():
+        instruction_parts.append(
+            "IMPORTANT: If a word sounds similar to any term in the speech dictionary or context above, "
+            "use the exact spelling from the dictionary. The audio may be unclear but those are the "
+            "correct spellings for this context."
+        )
 
     # Request proper grammar and plain text output
     instruction_parts.append(
-        "Use proper grammar and capitalization for the detected language "
+        "Use proper grammar and capitalization appropriate for the detected language "
         "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
         "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
     )
