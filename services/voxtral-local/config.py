@@ -68,6 +68,11 @@ class ServiceConfig:
     TOKENS_PER_SEC = float(os.getenv("TOKENS_PER_SEC", "4.0"))
     TOKEN_BUFFER = int(os.getenv("TOKEN_BUFFER", "64"))
 
+    # Generation timeout (prevents hangs on problematic audio)
+    # Total timeout = base + (audio_duration * multiplier)
+    GENERATION_TIMEOUT_BASE = float(os.getenv("GENERATION_TIMEOUT_BASE", "60"))  # 60s base
+    GENERATION_TIMEOUT_MULTIPLIER = float(os.getenv("GENERATION_TIMEOUT_MULTIPLIER", "0.5"))  # 0.5x audio duration
+
     # API settings
     MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "2"))
     REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "900"))  # 15 min for long audio
@@ -122,6 +127,7 @@ class ServiceConfig:
                     "max_new_tokens": cls.MAX_TOKENS_TRANSCRIPTION,
                     "do_sample": False,  # No sampling - greedy decoding
                     "num_beams": 1,  # Greedy decoding
+                    # No repetition penalty - causes garbage output
                 }
             )
         else:  # general

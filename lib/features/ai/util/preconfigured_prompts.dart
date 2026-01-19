@@ -416,9 +416,10 @@ const audioTranscriptionPrompt = PreconfiguredPrompt(
   name: 'Audio Transcription',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content.
-Your goal is to provide accurate, well-formatted transcriptions of audio recordings.''',
+Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
+IMPORTANT: Do NOT translate - transcribe in the original spoken language.''',
   userMessage: '''
-Please transcribe the provided audio file(s).
+Transcribe the provided audio file(s). Do NOT translate - keep the original language.
 Format the transcription clearly with proper punctuation.
 Start a new paragraph when there are small pauses or topic changes in the speech.
 If there are multiple speakers, try to indicate speaker changes.
@@ -438,9 +439,11 @@ const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
   name: 'Audio Transcription with Task Context',
   systemMessage: '''
 You are a helpful AI assistant that transcribes audio content.
-Output ONLY the transcription - do NOT include any text from the context below.''',
+Output ONLY the transcription - do NOT include any text from the context below.
+IMPORTANT: Do NOT translate - transcribe in the original spoken language.''',
   userMessage: '''
 Transcribe the provided audio with proper punctuation and paragraph breaks.
+Do NOT translate - keep the original language.
 Remove filler words. If multiple speakers, indicate speaker changes.
 
 {{speech_dictionary}}
