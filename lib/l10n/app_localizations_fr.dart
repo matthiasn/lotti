@@ -426,6 +426,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderVoxtralName => 'Voxtral (local)';
 
   @override
+  String get aiProviderMistralDescription => 'Mistral AI cloud API';
+
+  @override
+  String get aiProviderMistralName => 'Mistral';
+
+  @override
   String get aiResponseTypeAudioTranscription => 'Audio Transcription';
 
   @override

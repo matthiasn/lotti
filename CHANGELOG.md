@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.817] - 2026-01-18
+### Added
+- Mistral Cloud Provider: New cloud transcription option using Mistral's Voxtral API
+  - Supports the `voxtral-small-2507` model for high-accuracy cloud transcription
+  - Automatic audio format conversion from M4A to WAV (8kHz mono) for API compatibility
+  - Uses FFmpegKit on iOS/Android/macOS, system FFmpeg on Linux/Windows
+  - Auto-creates the Voxtral model when adding a Mistral provider
+
+### Changed
+- Audio Transcription Prompts: Improved context handling to prevent transcript bleed
+  - Now uses task summary instead of full task JSON for cleaner context
+  - Added explicit instructions that context is for terminology only, not to be included in output
+  - Transcriptions now include paragraph breaks on small pauses or topic changes
+
 ## [0.9.816] - 2026-01-18
 ### Changed
 - Voxtral Streaming Transcription: Audio transcription now streams progressively as each 60-second chunk completes

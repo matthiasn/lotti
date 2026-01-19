@@ -60,6 +60,7 @@ class KnownModel {
 /// Known models for each inference provider type
 const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.gemini: geminiModels,
+  InferenceProviderType.mistral: mistralModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
   InferenceProviderType.ollama: ollamaModels,
   InferenceProviderType.openAi: openaiModels,
@@ -475,6 +476,24 @@ const List<KnownModel> voxtralModels = [
     description: 'High-accuracy transcription model for production use. '
         'Supports up to 30 minutes of audio with 9 languages (auto-detected). '
         'Requires approximately 55GB VRAM (multi-GPU recommended).',
+  ),
+];
+
+/// Mistral models - Mistral AI cloud models
+///
+/// These models run on Mistral's cloud API (api.mistral.ai) and include
+/// both language models and audio transcription capabilities.
+/// Audio files are automatically converted to WAV format before upload.
+const List<KnownModel> mistralModels = [
+  KnownModel(
+    providerModelId: 'voxtral-small-2507',
+    name: 'Voxtral Small 2507',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'High-accuracy cloud transcription model. '
+        'Supports up to 30 minutes of audio with 9 languages (auto-detected). '
+        'Audio is automatically converted to WAV format.',
   ),
 ];
 

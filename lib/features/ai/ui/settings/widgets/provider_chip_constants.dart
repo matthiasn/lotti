@@ -81,7 +81,11 @@ class ProviderChipConstants {
     ),
     InferenceProviderType.voxtral: (
       dark: Color(0xFFFF6B6B),
-      light: Color(0xFFE53935), // Mistral Red/Coral
+      light: Color(0xFFE53935), // Red/Coral
+    ),
+    InferenceProviderType.mistral: (
+      dark: Color(0xFFFFB74D),
+      light: Color(0xFFFF9800), // Mistral Orange/Gold
     ),
   };
 

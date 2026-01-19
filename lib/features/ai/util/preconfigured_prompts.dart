@@ -419,7 +419,8 @@ You are a helpful AI assistant that transcribes audio content.
 Your goal is to provide accurate, well-formatted transcriptions of audio recordings.''',
   userMessage: '''
 Please transcribe the provided audio file(s).
-Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
+Format the transcription clearly with proper punctuation.
+Start a new paragraph when there are small pauses or topic changes in the speech.
 If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
 
@@ -439,35 +440,41 @@ const audioTranscriptionWithTaskContextPrompt = PreconfiguredPrompt(
 You are a helpful AI assistant that transcribes audio content.
 Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
 
-When transcribing audio in the context of a task, pay attention to:
+CRITICAL RULES:
+1. Output ONLY the transcription of the current audio - nothing else
+2. NEVER include or reference previous transcripts from the task context
+3. The task summary below is ONLY for understanding terminology and context
+4. Do NOT append, prepend, or mix any text from the context into your output
+
+When transcribing, pay attention to:
 1. Any mentions of completed checklist items (e.g., "I finished...", "I've completed...", "That's done")
-2. Any new action items or tasks mentioned (e.g., "I need to...", "Next I'll...", "We should...")
-
-Include these observations in your transcription so the user can update their task accordingly.
-
-RELATED TASKS CONTEXT:
-You may receive a `linked_tasks` object containing related parent/child tasks.
-Use this context to better understand domain terms and recognize references to related work.''',
+2. Any new action items or tasks mentioned (e.g., "I need to...", "Next I'll...", "We should...")''',
   userMessage: '''
 Please transcribe the provided audio.
-Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
+Format the transcription clearly with proper punctuation.
+Start a new paragraph when there are small pauses or topic changes in the speech.
 If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
 
 {{speech_dictionary}}
 
-**Task Context:**
-```json
-{{task}}
-```
+**Task Summary (for context and terminology ONLY - do NOT include in output):**
+{{current_task_summary}}
 
-**Related Tasks:**
+**Related Tasks (for context ONLY - do NOT include in output):**
 ```json
 {{linked_tasks}}
 ```
 
-The task context provides names, places, and concepts relevant to this recording.
-When you hear something that sounds like a term from the speech dictionary above,
+IMPORTANT: The task summary and related tasks above are ONLY for:
+- Understanding domain-specific terminology
+- Recognizing names, places, and technical terms
+- Knowing the context of the conversation
+
+Your output must be ONLY the transcription of the current audio.
+Do NOT copy, reference, or include any text from the task summary in your response.
+
+When you hear something that sounds like a term from the speech dictionary,
 you MUST use the exact spelling from the dictionary - the audio may be unclear but
 these are the correct spellings for this context.
 

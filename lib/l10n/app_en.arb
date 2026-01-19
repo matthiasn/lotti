@@ -167,6 +167,8 @@
   "aiProviderWhisperName": "Whisper (local)",
   "aiProviderVoxtralDescription": "Local Voxtral transcription (up to 30 min audio, 9 languages)",
   "aiProviderVoxtralName": "Voxtral (local)",
+  "aiProviderMistralDescription": "Mistral AI cloud API",
+  "aiProviderMistralName": "Mistral",
   "aiResponseTypeAudioTranscription": "Audio Transcription",
   "aiResponseTypeChecklistUpdates": "Checklist Updates",
   "aiResponseTypeImageAnalysis": "Image Analysis",

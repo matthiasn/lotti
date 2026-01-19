@@ -843,6 +843,18 @@ abstract class AppLocalizations {
   /// **'Voxtral (local)'**
   String get aiProviderVoxtralName;
 
+  /// No description provided for @aiProviderMistralDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistral AI cloud API'**
+  String get aiProviderMistralDescription;
+
+  /// No description provided for @aiProviderMistralName.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistral'**
+  String get aiProviderMistralName;
+
   /// No description provided for @aiResponseTypeAudioTranscription.
   ///
   /// In en, this message translates to:

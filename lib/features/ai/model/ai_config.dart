@@ -8,6 +8,7 @@ enum InferenceProviderType {
   anthropic,
   gemini,
   genericOpenAi,
+  mistral,
   nebiusAiStudio,
   openAi,
   openRouter,
