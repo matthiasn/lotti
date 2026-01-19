@@ -20,6 +20,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
+from threading import Thread
+from transformers import TextIteratorStreamer
 
 # Load environment variables
 env_path = Path(__file__).parent / ".env"
@@ -193,7 +195,7 @@ async def transcribe_audio(request: TranscriptionRequest) -> Dict[str, Any]:
         result = await audio_processor.process_audio_base64(
             request.file,
             request.prompt,
-            use_chunking=True,
+            use_chunking=False,
             request_id=req_id,
         )
         t1 = time.perf_counter()
@@ -278,7 +280,7 @@ async def chat_completion(
             result = await audio_processor.process_audio_base64(
                 request.audio,
                 context_prompt,
-                use_chunking=True,
+                use_chunking=False,
                 request_id=req_id,
             )
             t1 = time.perf_counter()
@@ -426,29 +428,28 @@ async def _stream_transcription(
                     chunk_index += 1
 
         else:
-            # Single audio segment - stream as one chunk
+            # Single audio segment - stream token by token
             audio_array, prompt = result
-            logger.info(f"[REQ {req_id}] Transcribing single audio segment")
+            logger.info(f"[REQ {req_id}] Starting token-by-token streaming")
 
-            transcription = await _transcribe_single(
+            async for token in _transcribe_streaming(
                 audio_array, prompt, request.language, req_id
-            )
-
-            if transcription.strip():
-                event_data = {
-                    "id": f"chatcmpl-{req_id}",
-                    "object": "chat.completion.chunk",
-                    "created": created_time,
-                    "model": request.model,
-                    "choices": [
-                        {
-                            "index": 0,
-                            "delta": {"content": transcription.strip()},
-                            "finish_reason": None,
-                        }
-                    ],
-                }
-                yield f"data: {json.dumps(event_data)}\n\n"
+            ):
+                if token:
+                    event_data = {
+                        "id": f"chatcmpl-{req_id}",
+                        "object": "chat.completion.chunk",
+                        "created": created_time,
+                        "model": request.model,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": token},
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(event_data)}\n\n"
 
         # Send final chunk with finish_reason
         final_event = {
@@ -613,6 +614,115 @@ async def _transcribe_single(
     # Run in thread pool to not block event loop (enables SSE streaming)
     transcription = await asyncio.to_thread(_run_inference)
     return transcription
+
+
+async def _transcribe_streaming(
+    audio_array: NDArray[np.float32],
+    context: Optional[str],
+    language: Optional[str],
+    req_id: str,
+):
+    """Transcribe audio with true token-by-token streaming."""
+    logger.info(f"[REQ {req_id}] Starting streaming transcription")
+
+    # Ensure audio is float32 and 1D
+    if audio_array.dtype != np.float32:
+        audio_array = audio_array.astype(np.float32)
+    if audio_array.ndim == 2:
+        audio_array = np.mean(audio_array, axis=0)
+    audio_array = np.squeeze(audio_array)
+
+    # Normalize
+    max_val = np.abs(audio_array).max()
+    if max_val > 1.0:
+        audio_array = audio_array / max_val
+
+    # Build transcription instruction
+    instruction_parts = []
+
+    if context and context.strip():
+        instruction_parts.append(context)
+
+    if language and language != "auto":
+        instruction_parts.append(
+            f"Transcribe the following audio in {language}. "
+            "Output the transcription in the SAME language as spoken - do NOT translate."
+        )
+    else:
+        instruction_parts.append(
+            "Transcribe the following audio in its ORIGINAL language. "
+            "Do NOT translate to English or any other language. "
+            "Output the exact words spoken in the same language as the speaker."
+        )
+
+    if context and context.strip():
+        instruction_parts.append(
+            "IMPORTANT: If a word sounds similar to any term in the speech dictionary or context above, "
+            "use the exact spelling from the dictionary. The audio may be unclear but those are the "
+            "correct spellings for this context."
+        )
+
+    instruction_parts.append(
+        "Use proper grammar and capitalization appropriate for the detected language "
+        "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+        "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+    )
+
+    transcription_instruction = "\n\n".join(instruction_parts)
+
+    # Convert audio to base64 for the chat template
+    audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
+
+    # Build conversation for Voxtral
+    conversation = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "audio", "base64": audio_base64},
+                {"type": "text", "text": transcription_instruction},
+            ],
+        }
+    ]
+
+    logger.info(f"[REQ {req_id}] Applying chat template for streaming")
+    inputs = model_manager.processor.apply_chat_template(conversation)
+
+    # Create streamer for token-by-token output
+    streamer = TextIteratorStreamer(
+        model_manager.processor.tokenizer,
+        skip_prompt=True,
+        skip_special_tokens=True,
+    )
+
+    # Move inputs to device
+    device_inputs = inputs.to(model_manager.device, dtype=ServiceConfig.TORCH_DTYPE)
+
+    # Get generation config
+    gen_config = ServiceConfig.get_generation_config("transcription")
+    gen_config["streamer"] = streamer
+
+    # Start generation in background thread
+    def _generate():
+        with torch.inference_mode():
+            model_manager.model.generate(**device_inputs, **gen_config)
+
+    generation_thread = Thread(target=_generate)
+    generation_thread.start()
+
+    # Yield tokens as they're generated
+    token_count = 0
+    t0 = time.perf_counter()
+    for text in streamer:
+        if text:
+            token_count += 1
+            yield text
+
+    generation_thread.join()
+    t1 = time.perf_counter()
+    logger.info(
+        f"[REQ {req_id}] Streamed ~{token_count} tokens in {t1-t0:.2f}s "
+        f"({token_count/max(0.001, t1-t0):.1f} tok/s)"
+    )
 
 
 async def _process_chunks(

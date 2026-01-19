@@ -342,3 +342,24 @@ class TestTranscriptionPrompt:
         # Should NOT include dictionary-specific instruction when no context
         assert "speech dictionary" not in transcription_instruction
         assert "sounds similar" not in transcription_instruction
+
+
+class TestStreamingSupport:
+    """Tests for streaming transcription support."""
+
+    def test_text_iterator_streamer_import(self):
+        """Test that TextIteratorStreamer can be imported."""
+        from transformers import TextIteratorStreamer
+        assert TextIteratorStreamer is not None
+
+    def test_streaming_function_exists(self):
+        """Test that _transcribe_streaming function exists in main module."""
+        from main import _transcribe_streaming
+        import inspect
+        assert inspect.isasyncgenfunction(_transcribe_streaming)
+
+    def test_non_streaming_function_exists(self):
+        """Test that _transcribe_single function exists in main module."""
+        from main import _transcribe_single
+        import inspect
+        assert inspect.iscoroutinefunction(_transcribe_single)

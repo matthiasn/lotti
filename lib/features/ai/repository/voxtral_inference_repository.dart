@@ -71,6 +71,7 @@ class VoxtralInferenceRepository {
     int? maxCompletionTokens,
     Duration? timeout,
     String? language,
+    bool stream = true,
   }) async* {
     // Validate required inputs
     if (model.isEmpty) {
@@ -118,7 +119,7 @@ class VoxtralInferenceRepository {
       'temperature': 0.0, // Deterministic for transcription
       'max_tokens': maxCompletionTokens ?? 4096,
       'audio': audioBase64,
-      'stream': true, // Enable SSE streaming
+      'stream': stream,
     };
 
     // Add language hint if provided
