@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -43,9 +44,15 @@ class PromptCapabilityFilter {
 
   /// Check if an inference provider type is local-only
   bool _isLocalOnlyProvider(InferenceProviderType providerType) {
+    return isLocalOnlyProviderType(providerType);
+  }
+
+  /// Check if an inference provider type is local-only (static for testing)
+  @visibleForTesting
+  static bool isLocalOnlyProviderType(InferenceProviderType providerType) {
     return providerType == InferenceProviderType.whisper ||
         providerType == InferenceProviderType.ollama ||
-        providerType == InferenceProviderType.gemma3n;
+        providerType == InferenceProviderType.voxtral;
   }
 
   /// Filter a list of prompts to only include those available on current platform

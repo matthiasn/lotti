@@ -226,7 +226,7 @@ void main() {
         expect(result, isFalse);
       });
 
-      test('returns false when provider is Gemma3N', () async {
+      test('returns false when provider is Voxtral', () async {
         // Skip on desktop
         if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
           return;
@@ -234,33 +234,33 @@ void main() {
 
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
-          defaultModelId: 'gemma3n-model',
+          defaultModelId: 'voxtral-model',
         );
 
         final model = AiTestDataFactory.createTestModel(
-          id: 'gemma3n-model',
-          name: 'Gemma 3N Model',
-          inferenceProviderId: 'gemma3n-provider',
+          id: 'voxtral-model',
+          name: 'Voxtral Model',
+          inferenceProviderId: 'voxtral-provider',
         );
 
         final provider = AiTestDataFactory.createTestProvider(
-          id: 'gemma3n-provider',
-          name: 'Gemma 3N',
-          type: InferenceProviderType.gemma3n,
+          id: 'voxtral-provider',
+          name: 'Voxtral',
+          type: InferenceProviderType.voxtral,
           baseUrl: '',
           apiKey: '',
         );
 
-        when(() => mockRepo.getConfigById('gemma3n-model'))
+        when(() => mockRepo.getConfigById('voxtral-model'))
             .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('gemma3n-provider'))
+        when(() => mockRepo.getConfigById('voxtral-provider'))
             .thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
 
         // Assert
-        // Gemma3N is local-only, should be unavailable on mobile
+        // Voxtral is local-only, should be unavailable on mobile
         expect(result, isFalse);
       });
 

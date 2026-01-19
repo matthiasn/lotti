@@ -5,14 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/gemma3n_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
-import 'package:lotti/features/ai/ui/gemma_model_install_dialog.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -558,57 +556,7 @@ void main() {
     const entityId = 'dialog-entity';
     const promptId = 'dialog-prompt';
 
-    testWidgets('shows Gemma install dialog when Gemma provider is configured',
-        (tester) async {
-      final gemmaProvider = AiTestDataFactory.createTestProvider(
-        id: 'gemma-provider',
-        name: 'Gemma Provider',
-        type: InferenceProviderType.gemma3n,
-        baseUrl: 'http://localhost:11434/',
-      );
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          const UnifiedAiProgressContent(
-            entityId: entityId,
-            promptId: promptId,
-          ),
-          overrides: [
-            aiConfigByIdProvider(promptId).overrideWith(
-              (ref) async => testPromptConfig,
-            ),
-            aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider,
-            ).overrideWith(
-              () => MockAiConfigByTypeController([gemmaProvider]),
-            ),
-            unifiedAiControllerOverride(
-              UnifiedAiState(
-                message: '',
-                error: ModelNotAvailableException(
-                  'Missing model',
-                  modelName: 'gemma-3n-E2B-it',
-                  statusCode: 404,
-                ),
-              ),
-            ),
-            inferenceStatusControllerProvider(
-              id: entityId,
-              aiResponseType: testPromptConfig.aiResponseType,
-            ).overrideWith(
-              () => _TestInferenceStatusController(InferenceStatus.error),
-            ),
-            triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.byType(GemmaModelInstallDialog), findsOneWidget);
-    });
-
-    testWidgets('shows Ollama install dialog when Gemma provider is absent',
+    testWidgets('shows Ollama install dialog for model not installed error',
         (tester) async {
       final ollamaProvider = AiTestDataFactory.createTestProvider(
         id: 'ollama-provider',

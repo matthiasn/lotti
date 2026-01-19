@@ -94,15 +94,16 @@ void main() {
         expect(color, equals(const Color(0xFFFF8A65))); // Deep Orange dark
       });
 
-      test('returns correct dark color for Gemma3n provider', () {
-        const type = InferenceProviderType.gemma3n;
+      test('returns correct dark color for Voxtral provider', () {
+        const type = InferenceProviderType.voxtral;
 
         final color = ProviderChipConstants.getProviderColor(
           type,
           isDark: true,
         );
 
-        expect(color, equals(const Color(0xFF81C784))); // Light Green dark
+        expect(
+            color, equals(const Color(0xFFFF6B6B))); // Mistral Red/Coral dark
       });
     });
 
@@ -195,15 +196,15 @@ void main() {
         expect(color, equals(const Color(0xFFFF5722))); // Deep Orange
       });
 
-      test('returns correct light color for Gemma3n provider', () {
-        const type = InferenceProviderType.gemma3n;
+      test('returns correct light color for Voxtral provider', () {
+        const type = InferenceProviderType.voxtral;
 
         final color = ProviderChipConstants.getProviderColor(
           type,
           isDark: false,
         );
 
-        expect(color, equals(const Color(0xFF66BB6A))); // Light Green
+        expect(color, equals(const Color(0xFFE53935))); // Mistral Red/Coral
       });
     });
 

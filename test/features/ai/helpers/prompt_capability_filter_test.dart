@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
@@ -411,20 +412,172 @@ void main() {
       });
     });
 
-    group('_isLocalOnlyProvider', () {
-      test('identifies Whisper as local-only', () {
-        // This is a private method, so we test it indirectly through
-        // isPromptAvailableOnPlatform
-        // The actual logic is tested through the integration tests above
-        expect(InferenceProviderType.whisper, isNotNull);
+    group('isLocalOnlyProviderType', () {
+      test('returns true for Whisper', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.whisper,
+          ),
+          isTrue,
+        );
       });
 
-      test('identifies Ollama as local-only', () {
-        expect(InferenceProviderType.ollama, isNotNull);
+      test('returns true for Ollama', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.ollama,
+          ),
+          isTrue,
+        );
       });
 
-      test('identifies Gemma3N as local-only', () {
-        expect(InferenceProviderType.gemma3n, isNotNull);
+      test('returns true for Voxtral', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.voxtral,
+          ),
+          isTrue,
+        );
+      });
+
+      test('returns false for cloud providers', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.openAi,
+          ),
+          isFalse,
+        );
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.anthropic,
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false for Gemini', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.gemini,
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false for genericOpenAi', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.genericOpenAi,
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false for nebiusAiStudio', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.nebiusAiStudio,
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false for openRouter', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.openRouter,
+          ),
+          isFalse,
+        );
+      });
+    });
+
+    group('Mobile platform simulation', () {
+      late bool originalIsDesktop;
+      late bool originalIsMobile;
+
+      setUp(() {
+        // Save original values
+        originalIsDesktop = platform.isDesktop;
+        originalIsMobile = platform.isMobile;
+      });
+
+      tearDown(() {
+        // Restore original values
+        platform.isDesktop = originalIsDesktop;
+        platform.isMobile = originalIsMobile;
+      });
+
+      test('filters out local-only providers on mobile', () async {
+        // Override platform to simulate mobile
+        platform.isDesktop = false;
+        platform.isMobile = true;
+
+        // Arrange
+        final prompt = AiTestDataFactory.createTestPrompt(
+          defaultModelId: 'voxtral-model',
+        );
+
+        final model = AiTestDataFactory.createTestModel(
+          id: 'voxtral-model',
+          name: 'Voxtral Model',
+          inferenceProviderId: 'voxtral-provider',
+        );
+
+        final provider = AiTestDataFactory.createTestProvider(
+          id: 'voxtral-provider',
+          name: 'Voxtral',
+          type: InferenceProviderType.voxtral,
+          baseUrl: '',
+          apiKey: '',
+        );
+
+        when(() => mockRepo.getConfigById('voxtral-model'))
+            .thenAnswer((_) async => model);
+        when(() => mockRepo.getConfigById('voxtral-provider'))
+            .thenAnswer((_) async => provider);
+
+        // Act
+        final result = await filter.isPromptAvailableOnPlatform(prompt);
+
+        // Assert - Voxtral is local-only, should be unavailable on mobile
+        expect(result, isFalse);
+      });
+
+      test('allows cloud providers on mobile', () async {
+        // Override platform to simulate mobile
+        platform.isDesktop = false;
+        platform.isMobile = true;
+
+        // Arrange
+        final prompt = AiTestDataFactory.createTestPrompt(
+          defaultModelId: 'gemini-model',
+        );
+
+        final model = AiTestDataFactory.createTestModel(
+          id: 'gemini-model',
+          name: 'Gemini Model',
+          inferenceProviderId: 'gemini-provider',
+        );
+
+        final provider = AiTestDataFactory.createTestProvider(
+          id: 'gemini-provider',
+          name: 'Gemini',
+          type: InferenceProviderType.gemini,
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'test-key',
+        );
+
+        when(() => mockRepo.getConfigById('gemini-model'))
+            .thenAnswer((_) async => model);
+        when(() => mockRepo.getConfigById('gemini-provider'))
+            .thenAnswer((_) async => provider);
+
+        // Act
+        final result = await filter.isPromptAvailableOnPlatform(prompt);
+
+        // Assert - Gemini is cloud-based, should be available on mobile
+        expect(result, isTrue);
       });
     });
 
