@@ -107,6 +107,9 @@ class MockLabelsRepository extends Mock implements LabelsRepository {}
 
 class MockSelectable<T> extends Mock implements Selectable<T> {}
 
+class MockAudioFormatConverterService extends Mock
+    implements AudioFormatConverterService {}
+
 void main() {
   UnifiedAiInferenceRepository? repository;
   late ProviderContainer container;
@@ -122,6 +125,7 @@ void main() {
   late MockCategoryRepository mockCategoryRepo;
   late MockPromptCapabilityFilter mockPromptCapabilityFilter;
   late MockLabelsRepository mockLabelsRepository;
+  late MockAudioFormatConverterService mockAudioFormatConverter;
   late TestChecklistCompletionService testChecklistCompletionService;
 
   setUpAll(() {
@@ -159,6 +163,7 @@ void main() {
     mockCategoryRepo = MockCategoryRepository();
     mockPromptCapabilityFilter = MockPromptCapabilityFilter();
     mockLabelsRepository = MockLabelsRepository();
+    mockAudioFormatConverter = MockAudioFormatConverterService();
     testChecklistCompletionService = TestChecklistCompletionService();
 
     reset(mockJournalDb);
@@ -213,6 +218,8 @@ void main() {
         labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
         checklistCompletionServiceProvider
             .overrideWith(() => testChecklistCompletionService),
+        audioFormatConverterProvider
+            .overrideWithValue(mockAudioFormatConverter),
       ],
     );
 
@@ -2316,9 +2323,17 @@ void main() {
         when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
             .thenAnswer((_) async => []);
 
+        // Mock audio converter to return failure (simulating FFmpeg not available)
+        when(() => mockAudioFormatConverter.convertM4aToWav(any())).thenAnswer(
+          (_) async => AudioConversionResult(
+            success: false,
+            error: 'FFmpeg conversion failed: not available in test',
+          ),
+        );
+
         try {
-          // This should throw AudioConversionException because FFmpeg
-          // is not available in the test environment
+          // This should throw AudioConversionException because the mock
+          // returns a failure result
           await expectLater(
             repository!.runInference(
               entityId: 'test-id',

@@ -505,13 +505,14 @@ class UnifiedAiInferenceRepository {
 
     // For Mistral cloud, convert M4A to WAV
     if (provider.inferenceProviderType == InferenceProviderType.mistral &&
-        AudioFormatConverter.isM4aFile(fullPath)) {
+        AudioFormatConverterService.isM4aFile(fullPath)) {
       developer.log(
         'Converting M4A to WAV for Mistral cloud',
         name: 'UnifiedAiInferenceRepository',
       );
 
-      final result = await AudioFormatConverter.convertM4aToWav(fullPath);
+      final audioConverter = ref.read(audioFormatConverterProvider);
+      final result = await audioConverter.convertM4aToWav(fullPath);
 
       if (!result.success || result.outputPath == null) {
         throw AudioConversionException(result.error);
@@ -523,7 +524,7 @@ class UnifiedAiInferenceRepository {
         return base64Encode(bytes);
       } finally {
         // Clean up temp WAV file
-        await AudioFormatConverter.deleteConvertedFile(result.outputPath);
+        await audioConverter.deleteConvertedFile(result.outputPath);
       }
     }
 
