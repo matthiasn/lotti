@@ -709,19 +709,32 @@ async def _transcribe_streaming(
     generation_thread = Thread(target=_generate)
     generation_thread.start()
 
-    # Yield tokens as they're generated
+    # Yield tokens in batches to reduce overhead
+    # Batching every 6 tokens balances SSE/JSON overhead with smooth progress display
     token_count = 0
+    batch_size = 6
+    token_buffer = []
     t0 = time.perf_counter()
+
     for text in streamer:
         if text:
             token_count += 1
-            yield text
+            token_buffer.append(text)
+
+            # Yield when we have enough tokens
+            if len(token_buffer) >= batch_size:
+                yield "".join(token_buffer)
+                token_buffer = []
+
+    # Yield any remaining tokens
+    if token_buffer:
+        yield "".join(token_buffer)
 
     generation_thread.join()
     t1 = time.perf_counter()
     logger.info(
         f"[REQ {req_id}] Streamed ~{token_count} tokens in {t1-t0:.2f}s "
-        f"({token_count/max(0.001, t1-t0):.1f} tok/s)"
+        f"({token_count/(t1-t0) if t1 > t0 else 0:.1f} tok/s, batched every {batch_size})"
     )
 
 
