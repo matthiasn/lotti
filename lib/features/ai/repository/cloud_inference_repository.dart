@@ -281,6 +281,7 @@ class CloudInferenceRepository {
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
     List<ChatCompletionTool>? tools,
+    bool stream = true,
   }) {
     final client = overrideClient ??
         OpenAIClient(
@@ -307,6 +308,7 @@ class CloudInferenceRepository {
         baseUrl: baseUrl,
         prompt: prompt,
         maxCompletionTokens: maxCompletionTokens,
+        stream: stream,
       );
     }
 

@@ -927,6 +927,7 @@ void main() {
               audioBase64: any(named: 'audioBase64'),
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
+              stream: any(named: 'stream'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(
@@ -1025,6 +1026,7 @@ void main() {
               audioBase64: any(named: 'audioBase64'),
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
+              stream: any(named: 'stream'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(

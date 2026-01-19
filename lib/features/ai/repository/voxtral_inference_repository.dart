@@ -128,11 +128,65 @@ class VoxtralInferenceRepository {
     }
 
     try {
+      final uri = Uri.parse(baseUrl).resolve('v1/chat/completions');
+
+      // Handle non-streaming request
+      if (!stream) {
+        final response = await _httpClient
+            .post(
+              uri,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode(requestBody),
+            )
+            .timeout(
+              requestTimeout,
+              onTimeout: () => throw VoxtralInferenceException(
+                timeoutErrorMessage,
+                statusCode: httpStatusRequestTimeout,
+              ),
+            );
+
+        if (response.statusCode == 404) {
+          throw VoxtralModelNotAvailableException(
+            'Voxtral model is not available. Please download it first.',
+            modelName: model,
+            statusCode: response.statusCode,
+          );
+        } else if (response.statusCode != 200) {
+          throw VoxtralInferenceException(
+            'Failed to transcribe audio (HTTP ${response.statusCode}).',
+            statusCode: response.statusCode,
+          );
+        }
+
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final choices = json['choices'] as List<dynamic>?;
+        if (choices != null && choices.isNotEmpty) {
+          final choice = choices[0] as Map<String, dynamic>;
+          final message = choice['message'] as Map<String, dynamic>?;
+          final content = message?['content'] as String?;
+          if (content != null && content.isNotEmpty) {
+            yield CreateChatCompletionStreamResponse(
+              id: json['id'] as String? ??
+                  'voxtral-${DateTime.now().millisecondsSinceEpoch}',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(content: content),
+                  index: 0,
+                  finishReason: ChatCompletionFinishReason.stop,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: json['created'] as int? ??
+                  DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            );
+          }
+        }
+        return;
+      }
+
       // Create streaming request
-      final request = http.Request(
-        'POST',
-        Uri.parse(baseUrl).resolve('v1/chat/completions'),
-      );
+      final request = http.Request('POST', uri);
       request.headers['Content-Type'] = 'application/json';
       request.headers['Accept'] = 'text/event-stream';
       request.body = jsonEncode(requestBody);

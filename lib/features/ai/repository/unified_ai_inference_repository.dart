@@ -361,6 +361,7 @@ class UnifiedAiInferenceRepository {
         systemMessage: systemMessage,
         entity: entity,
         promptConfig: promptConfig,
+        isAiStreamingEnabled: isAiStreamingEnabled,
       );
 
       // Process the stream and accumulate tool calls
@@ -545,6 +546,7 @@ class UnifiedAiInferenceRepository {
     required double temperature,
     required JournalEntity entity,
     required AiConfigPrompt promptConfig,
+    required bool isAiStreamingEnabled,
   }) async {
     final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
 
@@ -564,6 +566,7 @@ class UnifiedAiInferenceRepository {
         apiKey: provider.apiKey,
         provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
+        stream: isAiStreamingEnabled,
       );
     } else if (images.isNotEmpty) {
       // No function calling tools for image analysis tasks
