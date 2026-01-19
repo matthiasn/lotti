@@ -61,7 +61,7 @@ void main() {
   });
 
   ProviderContainer createContainer({bool hasUnseenWhatsNew = false}) {
-    return ProviderContainer(
+    final container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
         whatsNewControllerProvider.overrideWith(
@@ -71,6 +71,8 @@ void main() {
         ),
       ],
     );
+    addTearDown(container.dispose);
+    return container;
   }
 
   group('AiSetupPromptService', () {
