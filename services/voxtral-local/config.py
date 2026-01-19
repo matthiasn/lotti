@@ -60,7 +60,7 @@ class ServiceConfig:
     MAX_AUDIO_SIZE_MB = int(os.getenv("MAX_AUDIO_SIZE_MB", "100"))
     AUDIO_SAMPLE_RATE = 16000
     SUPPORTED_AUDIO_FORMATS = ["wav", "mp3", "m4a", "flac", "ogg", "webm"]
-    AUDIO_CHUNK_SIZE_SECONDS = int(os.getenv("AUDIO_CHUNK_SIZE_SECONDS", "60"))
+    AUDIO_CHUNK_SIZE_SECONDS = int(os.getenv("AUDIO_CHUNK_SIZE_SECONDS", "300"))  # 5 min chunks
     AUDIO_OVERLAP_SECONDS = float(os.getenv("AUDIO_OVERLAP_SECONDS", "1.0"))
     MAX_AUDIO_DURATION_SECONDS = 1800  # 30 minutes - Voxtral's limit
 

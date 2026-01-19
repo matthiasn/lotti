@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.818" date="2026-01-19">
+      <description>
+        <p>Voxtral Token Streaming: Upgraded local Voxtral transcription from chunk-level to true token-by-token streaming. Text now appears progressively as it's generated instead of waiting for full 60-second chunks to complete. Tokens are batched in groups of 6 for smooth display without excessive network overhead. The streaming behavior is configurable via Settings → Flags. Non-streaming mode is available for approximately 20% faster processing when real-time progress display isn't needed.</p>
+      </description>
+    </release>
     <release version="0.9.817" date="2026-01-18">
       <description>
         <p>Mistral Cloud Provider: Added a new cloud transcription option using Mistral's Voxtral API. Supports the voxtral-small-2507 model for high-accuracy cloud transcription with automatic audio format conversion from M4A to WAV for API compatibility. Uses FFmpegKit on iOS/Android/macOS and system FFmpeg on Linux/Windows. The Voxtral model is auto-created when adding a Mistral provider.</p>
