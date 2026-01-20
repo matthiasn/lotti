@@ -37,13 +37,16 @@ A high-performance, production-ready Python FastAPI server that provides local W
 Choose the requirements file for your platform:
 
 ```bash
-cd whisper_server
+cd services/whisper_server
 
 # For CUDA GPUs (NVIDIA):
 pip install -r requirements.txt
 
-# For Apple Silicon (M1/M2/M3):
+# For Apple Silicon (M1/M2/M3/M4):
 pip install -r requirements_apple_silicon.txt
+
+# For macOS Intel:
+pip install -r requirements_macos_intel.txt
 
 # For Linux (CPU or generic):
 pip install -r requirements_linux.txt
