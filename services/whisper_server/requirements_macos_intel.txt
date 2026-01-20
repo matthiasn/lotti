@@ -1,5 +1,6 @@
 # Requirements for macOS Intel (x86_64) - CPU inference
-torch==2.9.1
+# Note: PyTorch dropped x86_64 macOS support after 2.2.x
+torch==2.2.2
 fastapi>=0.100.0,<1.0.0
 uvicorn>=0.15.0,<1.0.0
 pydantic>=2.7.0,<3.0.0

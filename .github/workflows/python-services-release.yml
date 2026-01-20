@@ -213,7 +213,7 @@ jobs:
         working-directory: services/whisper_server
         run: |
           pip install --upgrade pip
-          pip install -r requirements_apple_silicon.txt
+          pip install -r requirements_macos_intel.txt
           pip install pyinstaller
 
       - name: Build binary
