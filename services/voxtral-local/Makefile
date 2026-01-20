@@ -1,6 +1,6 @@
 # Makefile for Voxtral Local Service
 
-.PHONY: help install install-dev test lint format type-check clean run build
+.PHONY: help install install-dev test lint format clean run build
 
 # Default target
 help: ## Show this help message
