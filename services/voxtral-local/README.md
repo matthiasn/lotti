@@ -145,15 +145,27 @@ The binary will be created at `dist/voxtral_server`.
 
 ### Pre-built Binaries
 
-Pre-built binaries for Linux and macOS are available in [GitHub Releases](https://github.com/matthiasn/lotti/releases). Download and extract:
+Pre-built binaries for Linux and macOS are available in [GitHub Releases](https://github.com/matthiasn/lotti/releases).
+
+| Platform | Architecture | Filename |
+|----------|--------------|----------|
+| Linux | x64 | `voxtral_server-linux-x64.tar.gz` |
+| macOS | Intel (x64) | `voxtral_server-macos-x64.tar.gz` |
+| macOS | Apple Silicon (ARM64) | `voxtral_server-macos-arm64.tar.gz` |
+
+Download and extract:
 
 ```bash
-# Linux
+# Linux (x64)
 tar -xzvf voxtral_server-linux-x64.tar.gz
 ./voxtral_server
 
-# macOS
+# macOS Intel
 tar -xzvf voxtral_server-macos-x64.tar.gz
+./voxtral_server
+
+# macOS Apple Silicon (M1/M2/M3/M4)
+tar -xzvf voxtral_server-macos-arm64.tar.gz
 ./voxtral_server
 ```
 
