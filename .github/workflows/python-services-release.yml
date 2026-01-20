@@ -49,14 +49,19 @@ jobs:
           tar -czvf voxtral_server-linux-x64.tar.gz voxtral_server
           mv voxtral_server-linux-x64.tar.gz ../
 
+      - name: Create GitHub Release
+        run: gh release create --prerelease --generate-notes --target $GITHUB_SHA $GITHUB_REF_NAME || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload to GitHub Releases
         run: gh release upload $GITHUB_REF_NAME services/voxtral-local/voxtral_server-linux-x64.tar.gz --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-voxtral-macos:
-    name: Build Voxtral Server (macOS)
-    runs-on: macos-latest
+    name: Build Voxtral Server (macOS x64)
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v5
 
@@ -87,6 +92,11 @@ jobs:
           cd dist
           tar -czvf voxtral_server-macos-x64.tar.gz voxtral_server
           mv voxtral_server-macos-x64.tar.gz ../
+
+      - name: Create GitHub Release
+        run: gh release create --prerelease --generate-notes --target $GITHUB_SHA $GITHUB_REF_NAME || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload to GitHub Releases
         run: gh release upload $GITHUB_REF_NAME services/voxtral-local/voxtral_server-macos-x64.tar.gz --clobber
@@ -126,6 +136,11 @@ jobs:
           cd dist
           tar -czvf voxtral_server-macos-arm64.tar.gz voxtral_server
           mv voxtral_server-macos-arm64.tar.gz ../
+
+      - name: Create GitHub Release
+        run: gh release create --prerelease --generate-notes --target $GITHUB_SHA $GITHUB_REF_NAME || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload to GitHub Releases
         run: gh release upload $GITHUB_REF_NAME services/voxtral-local/voxtral_server-macos-arm64.tar.gz --clobber
@@ -168,14 +183,19 @@ jobs:
           tar -czvf whisper_server-linux-x64.tar.gz whisper_api_server
           mv whisper_server-linux-x64.tar.gz ../
 
+      - name: Create GitHub Release
+        run: gh release create --prerelease --generate-notes --target $GITHUB_SHA $GITHUB_REF_NAME || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload to GitHub Releases
         run: gh release upload $GITHUB_REF_NAME whisper_server/whisper_server-linux-x64.tar.gz --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-whisper-macos:
-    name: Build Whisper Server (macOS)
-    runs-on: macos-latest
+    name: Build Whisper Server (macOS x64)
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v5
 
@@ -206,6 +226,11 @@ jobs:
           cd dist
           tar -czvf whisper_server-macos-x64.tar.gz whisper_api_server
           mv whisper_server-macos-x64.tar.gz ../
+
+      - name: Create GitHub Release
+        run: gh release create --prerelease --generate-notes --target $GITHUB_SHA $GITHUB_REF_NAME || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload to GitHub Releases
         run: gh release upload $GITHUB_REF_NAME whisper_server/whisper_server-macos-x64.tar.gz --clobber
@@ -245,6 +270,11 @@ jobs:
           cd dist
           tar -czvf whisper_server-macos-arm64.tar.gz whisper_api_server
           mv whisper_server-macos-arm64.tar.gz ../
+
+      - name: Create GitHub Release
+        run: gh release create --prerelease --generate-notes --target $GITHUB_SHA $GITHUB_REF_NAME || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload to GitHub Releases
         run: gh release upload $GITHUB_REF_NAME whisper_server/whisper_server-macos-arm64.tar.gz --clobber
