@@ -1,0 +1,171 @@
+name: Python Services Release
+
+on:
+  push:
+    tags:
+      - '**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-voxtral-linux:
+    name: Build Voxtral Server (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: services/voxtral-local/requirements.txt
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1
+
+      - name: Install Python dependencies
+        working-directory: services/voxtral-local
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build binary
+        working-directory: services/voxtral-local
+        run: pyinstaller voxtral_server.spec
+
+      - name: Package binary
+        working-directory: services/voxtral-local
+        run: |
+          cd dist
+          tar -czvf voxtral_server-linux-x64.tar.gz voxtral_server
+          mv voxtral_server-linux-x64.tar.gz ../
+
+      - name: Upload to GitHub Releases
+        run: gh release upload $GITHUB_REF_NAME services/voxtral-local/voxtral_server-linux-x64.tar.gz --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-voxtral-macos:
+    name: Build Voxtral Server (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: services/voxtral-local/requirements.txt
+
+      - name: Install system dependencies
+        run: brew install ffmpeg libsndfile
+
+      - name: Install Python dependencies
+        working-directory: services/voxtral-local
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build binary
+        working-directory: services/voxtral-local
+        run: pyinstaller voxtral_server.spec
+
+      - name: Package binary
+        working-directory: services/voxtral-local
+        run: |
+          cd dist
+          tar -czvf voxtral_server-macos-x64.tar.gz voxtral_server
+          mv voxtral_server-macos-x64.tar.gz ../
+
+      - name: Upload to GitHub Releases
+        run: gh release upload $GITHUB_REF_NAME services/voxtral-local/voxtral_server-macos-x64.tar.gz --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-whisper-linux:
+    name: Build Whisper Server (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: whisper_server/requirements.txt
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1
+
+      - name: Install Python dependencies
+        working-directory: whisper_server
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements_linux.txt
+          pip install pyinstaller
+
+      - name: Build binary
+        working-directory: whisper_server
+        run: pyinstaller whisper_api_server.spec
+
+      - name: Package binary
+        working-directory: whisper_server
+        run: |
+          cd dist
+          tar -czvf whisper_server-linux-x64.tar.gz whisper_api_server
+          mv whisper_server-linux-x64.tar.gz ../
+
+      - name: Upload to GitHub Releases
+        run: gh release upload $GITHUB_REF_NAME whisper_server/whisper_server-linux-x64.tar.gz --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-whisper-macos:
+    name: Build Whisper Server (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: whisper_server/requirements.txt
+
+      - name: Install system dependencies
+        run: brew install ffmpeg libsndfile
+
+      - name: Install Python dependencies
+        working-directory: whisper_server
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements_apple_silicon.txt
+          pip install pyinstaller
+
+      - name: Build binary
+        working-directory: whisper_server
+        run: pyinstaller whisper_api_server.spec
+
+      - name: Package binary
+        working-directory: whisper_server
+        run: |
+          cd dist
+          tar -czvf whisper_server-macos-x64.tar.gz whisper_api_server
+          mv whisper_server-macos-x64.tar.gz ../
+
+      - name: Upload to GitHub Releases
+        run: gh release upload $GITHUB_REF_NAME whisper_server/whisper_server-macos-x64.tar.gz --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

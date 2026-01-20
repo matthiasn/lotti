@@ -84,20 +84,33 @@ The server will:
 
 Build a standalone executable using PyInstaller:
 
-1. **Install PyInstaller:**
-   ```bash
-   pip install pyinstaller
-   ```
+```bash
+# Using the build script (recommended)
+./build_binary.sh
 
-2. **Build the executable:**
-   ```bash
-   pyinstaller whisper_api_server.spec
-   ```
+# Or manually:
+pip install pyinstaller
+pyinstaller whisper_api_server.spec
+```
 
-3. **Run the executable:**
-   ```bash
-   ./dist/whisper_api_server
-   ```
+Run the executable:
+```bash
+./dist/whisper_api_server
+```
+
+### **Pre-built Binaries**
+
+Pre-built binaries for Linux and macOS are available in [GitHub Releases](https://github.com/matthiasn/lotti/releases):
+
+```bash
+# Linux
+tar -xzvf whisper_server-linux-x64.tar.gz
+./whisper_api_server
+
+# macOS
+tar -xzvf whisper_server-macos-x64.tar.gz
+./whisper_api_server
+```
 
 ### **Command Line Tool**
 

@@ -118,15 +118,44 @@ Environment variables (set in `.env`):
 - ~10-15s for 5-minute audio
 - ~1-2min for 30-minute audio
 
-## Comparison with Other Services
+## Comparison with Whisper
 
-| Feature | Voxtral | Gemma 3N | Whisper |
-|---------|---------|----------|---------|
-| Max audio | 30 min | 5 min | ~30 min |
-| VRAM | 9.5 GB | 6-12 GB | 2-10 GB |
-| Languages | 9 | Limited | 99 |
-| HF token | Not needed | Required | Not needed |
-| License | Apache 2.0 | Gemma | MIT |
+| Feature | Voxtral | Whisper |
+|---------|---------|---------|
+| Max audio | 30 min | ~30 min |
+| VRAM | 9.5 GB | 2-10 GB |
+| Languages | 9 | 99 |
+| HF token | Not needed | Not needed |
+| License | Apache 2.0 | MIT |
+
+## Building Standalone Binary
+
+Build a standalone executable that doesn't require Python:
+
+```bash
+# Using the build script
+./build_binary.sh
+
+# Or manually with PyInstaller
+pip install pyinstaller
+pyinstaller voxtral_server.spec
+```
+
+The binary will be created at `dist/voxtral_server`.
+
+### Pre-built Binaries
+
+Pre-built binaries for Linux and macOS are available in [GitHub Releases](https://github.com/matthiasn/lotti/releases). Download and extract:
+
+```bash
+# Linux
+tar -xzvf voxtral_server-linux-x64.tar.gz
+./voxtral_server
+
+# macOS
+tar -xzvf voxtral_server-macos-x64.tar.gz
+./voxtral_server
+```
 
 ## Troubleshooting
 
