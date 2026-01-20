@@ -520,6 +520,213 @@ data: [DONE]
         expect(results[3].choices?.first.delta?.content, equals('Chunk 4. '));
         expect(results[4].choices?.first.delta?.content, equals('Chunk 5.'));
       });
+
+      group('non-streaming mode', () {
+        test('should transcribe audio without streaming', () async {
+          // Arrange - non-streaming response
+          final responseBody = {
+            'id': 'chatcmpl-test',
+            'object': 'chat.completion',
+            'created': 1234567890,
+            'choices': [
+              {
+                'index': 0,
+                'message': {
+                  'role': 'assistant',
+                  'content': 'Transcribed text.'
+                },
+                'finish_reason': 'stop',
+              }
+            ],
+          };
+
+          when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              )).thenAnswer(
+            (_) async => http.Response(jsonEncode(responseBody), 200),
+          );
+
+          // Act
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            prompt: prompt,
+            stream: false,
+          );
+
+          final results = await stream.toList();
+
+          // Assert
+          expect(results.length, equals(1));
+          expect(results[0].choices?.first.delta?.content,
+              equals('Transcribed text.'));
+          expect(results[0].id, equals('chatcmpl-test'));
+
+          // Verify request body has stream: false
+          final captured = verify(() => mockHttpClient.post(
+                captureAny(),
+                headers: any(named: 'headers'),
+                body: captureAny(named: 'body'),
+              )).captured;
+          final requestBody =
+              jsonDecode(captured[1] as String) as Map<String, dynamic>;
+          expect(requestBody['stream'], isFalse);
+        });
+
+        test('should handle 404 error in non-streaming mode', () async {
+          when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              )).thenAnswer(
+            (_) async => http.Response('Model not found', 404),
+          );
+
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            stream: false,
+          );
+
+          expect(
+            stream.toList(),
+            throwsA(isA<VoxtralModelNotAvailableException>()
+                .having((e) => e.statusCode, 'statusCode', 404)),
+          );
+        });
+
+        test('should handle HTTP error in non-streaming mode', () async {
+          when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              )).thenAnswer(
+            (_) async => http.Response('Server error', 500),
+          );
+
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            stream: false,
+          );
+
+          expect(
+            stream.toList(),
+            throwsA(isA<VoxtralInferenceException>()
+                .having((e) => e.statusCode, 'statusCode', 500)),
+          );
+        });
+
+        test('should handle empty choices in non-streaming mode', () async {
+          final responseBody = {
+            'id': 'test',
+            'object': 'chat.completion',
+            'created': 1234567890,
+            'choices': <dynamic>[],
+          };
+
+          when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              )).thenAnswer(
+            (_) async => http.Response(jsonEncode(responseBody), 200),
+          );
+
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            stream: false,
+          );
+
+          final results = await stream.toList();
+          expect(results, isEmpty);
+        });
+
+        test('should use fallback id when missing in non-streaming mode',
+            () async {
+          final responseBody = {
+            'object': 'chat.completion',
+            'choices': [
+              {
+                'index': 0,
+                'message': {'role': 'assistant', 'content': 'Text'},
+                'finish_reason': 'stop',
+              }
+            ],
+          };
+
+          when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              )).thenAnswer(
+            (_) async => http.Response(jsonEncode(responseBody), 200),
+          );
+
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            stream: false,
+          );
+
+          final results = await stream.toList();
+          expect(results.length, equals(1));
+          expect(results[0].id, startsWith('voxtral-'));
+        });
+
+        test('should handle timeout in non-streaming mode', () {
+          fakeAsync((FakeAsync async) {
+            when(() => mockHttpClient.post(
+                  any(),
+                  headers: any(named: 'headers'),
+                  body: any(named: 'body'),
+                )).thenAnswer((_) async {
+              await Future<void>.delayed(const Duration(seconds: 2));
+              return http.Response('{}', 200);
+            });
+
+            Object? error;
+            var completed = false;
+            final stream = repository.transcribeAudio(
+              model: model,
+              audioBase64: audioBase64,
+              baseUrl: baseUrl,
+              stream: false,
+              timeout: const Duration(milliseconds: 100),
+            );
+
+            stream.toList().then((_) {
+              completed = true;
+            }, onError: (Object e) {
+              error = e;
+              completed = true;
+            });
+
+            final plan = buildRetryBackoffPlan(
+              maxRetries: 1,
+              timeout: const Duration(milliseconds: 100),
+              baseDelay: Duration.zero,
+              epsilon: const Duration(milliseconds: 1),
+            );
+            async.elapseRetryPlan(plan);
+
+            expect(completed, isTrue);
+            final err = error;
+            expect(err, isA<VoxtralInferenceException>());
+            if (err is VoxtralInferenceException) {
+              expect(err.statusCode, 408);
+            }
+          });
+        });
+      });
     });
 
     group('checkHealth', () {
