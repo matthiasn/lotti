@@ -13,7 +13,7 @@ install: ## Install production dependencies
 
 install-dev: ## Install development and test dependencies
 	pip install -r requirements.txt
-	pip install flake8 black isort pyinstaller
+	pip install -r requirements-dev.txt
 
 ##@ Testing
 test: ## Run all tests

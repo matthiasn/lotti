@@ -1,0 +1,8 @@
+# Development and build dependencies
+flake8
+black
+isort
+pyinstaller
+pytest
+pytest-cov
+pytest-watch
