@@ -97,9 +97,7 @@ class VoxtralModelManager:
 
                 # Voxtral is Apache 2.0, no token required
                 # But we still support it if provided for faster downloads
-                hf_token = os.environ.get("HF_TOKEN") or os.environ.get(
-                    "HUGGING_FACE_HUB_TOKEN"
-                )
+                hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
 
                 await loop.run_in_executor(
                     None,
@@ -273,8 +271,7 @@ class VoxtralModelManager:
         self.model_id = ServiceConfig.MODEL_ID
         self.device = ServiceConfig.DEFAULT_DEVICE
         logger.info(
-            f"Configuration refreshed: {old_model_id} -> {self.model_id}, "
-            f"device: {self.device}"
+            f"Configuration refreshed: {old_model_id} -> {self.model_id}, " f"device: {self.device}"
         )
 
     def is_model_available(self) -> bool:
@@ -299,9 +296,7 @@ class VoxtralModelManager:
 
         if self.is_model_available():
             model_path = ServiceConfig.get_model_path()
-            total_size = sum(
-                f.stat().st_size for f in model_path.rglob("*") if f.is_file()
-            )
+            total_size = sum(f.stat().st_size for f in model_path.rglob("*") if f.is_file())
             info["size_bytes"] = total_size
             info["size_gb"] = round(total_size / (1024**3), 2)
 

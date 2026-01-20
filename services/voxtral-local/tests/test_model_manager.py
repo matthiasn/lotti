@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -79,8 +79,9 @@ class TestVoxtralModelManager:
         mock_path.rglob.return_value = [mock_file]
         mock_path.exists.return_value = True
 
-        with patch("model_manager.ServiceConfig.is_model_cached", return_value=True), \
-             patch("model_manager.ServiceConfig.get_model_path", return_value=mock_path):
+        with patch("model_manager.ServiceConfig.is_model_cached", return_value=True), patch(
+            "model_manager.ServiceConfig.get_model_path", return_value=mock_path
+        ):
             info = await manager.get_model_info()
 
             assert "size_bytes" in info
@@ -88,8 +89,9 @@ class TestVoxtralModelManager:
 
     def test_refresh_config_updates_model_id(self, manager):
         """Test refresh_config updates configuration."""
-        with patch("model_manager.ServiceConfig.MODEL_ID", "new-model-id"), \
-             patch("model_manager.ServiceConfig.DEFAULT_DEVICE", "cpu"):
+        with patch("model_manager.ServiceConfig.MODEL_ID", "new-model-id"), patch(
+            "model_manager.ServiceConfig.DEFAULT_DEVICE", "cpu"
+        ):
             manager.refresh_config()
 
         assert manager.model_id == "new-model-id"

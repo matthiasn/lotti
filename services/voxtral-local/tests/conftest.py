@@ -30,6 +30,7 @@ def sample_audio_base64(sample_audio_16khz):
     """Generate base64-encoded WAV audio."""
     import base64
     import io
+
     import soundfile as sf
 
     buffer = io.BytesIO()

@@ -103,7 +103,7 @@ Environment variables (set in `.env`):
 | `VOXTRAL_MODEL_ID` | mistralai/Voxtral-Mini-3B-2507 | Model to use |
 | `VOXTRAL_DEVICE` | auto | Device (auto, cuda, mps, cpu) |
 | `MAX_AUDIO_SIZE_MB` | 100 | Max audio file size |
-| `AUDIO_CHUNK_SIZE_SECONDS` | 60 | Chunk size for long audio |
+| `AUDIO_CHUNK_SIZE_SECONDS` | 300 | Chunk size for long audio (5 min default) |
 
 ## Performance
 

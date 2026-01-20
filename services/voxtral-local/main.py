@@ -10,6 +10,7 @@ import uuid
 from contextlib import asynccontextmanager
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from threading import Thread
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -20,7 +21,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
-from threading import Thread
 from transformers import TextIteratorStreamer
 
 # Load environment variables
@@ -43,9 +43,7 @@ try:
     root_logger.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
 
     log_file = ServiceConfig.LOG_DIR / "service.log"
-    file_handler = RotatingFileHandler(
-        log_file, maxBytes=5 * 1024 * 1024, backupCount=3
-    )
+    file_handler = RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=3)
     file_handler.setLevel(getattr(logging, ServiceConfig.LOG_LEVEL))
     fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(fmt)
@@ -54,8 +52,7 @@ try:
 
     if os.getenv("LOG_TO_STDOUT", "0").lower() in ("1", "true", "yes", "on"):
         if not any(
-            isinstance(h, logging.StreamHandler)
-            and getattr(h, "stream", None) is sys.stdout
+            isinstance(h, logging.StreamHandler) and getattr(h, "stream", None) is sys.stdout
             for h in root_logger.handlers
         ):
             sh = logging.StreamHandler(sys.stdout)
@@ -74,9 +71,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info(f"Starting Voxtral Local Service with model: {ServiceConfig.MODEL_ID}")
     logger.info(f"Device: {ServiceConfig.DEFAULT_DEVICE}")
-    logger.info(
-        f"Torch version: {torch.__version__}; dtype: {ServiceConfig.TORCH_DTYPE}"
-    )
+    logger.info(f"Torch version: {torch.__version__}; dtype: {ServiceConfig.TORCH_DTYPE}")
     logger.info(
         f"Max audio duration: {ServiceConfig.MAX_AUDIO_DURATION_SECONDS}s "
         f"({ServiceConfig.MAX_AUDIO_DURATION_SECONDS/60:.0f} min)"
@@ -203,14 +198,10 @@ async def transcribe_audio(request: TranscriptionRequest) -> Dict[str, Any]:
         # Handle chunked vs single audio
         if isinstance(result[0], list):
             audio_chunks, prompt = result
-            transcription = await _process_chunks(
-                audio_chunks, prompt, request.language, req_id
-            )
+            transcription = await _process_chunks(audio_chunks, prompt, request.language, req_id)
         else:
             audio_array, prompt = result
-            transcription = await _transcribe_single(
-                audio_array, prompt, request.language, req_id
-            )
+            transcription = await _transcribe_single(audio_array, prompt, request.language, req_id)
 
         t2 = time.perf_counter()
         logger.info(
@@ -259,7 +250,9 @@ async def chat_completion(
 
         # Check if this is audio transcription
         if request.audio:
-            logger.info(f"[REQ {req_id}] Audio transcription via chat completions (stream={request.stream})")
+            logger.info(
+                f"[REQ {req_id}] Audio transcription via chat completions (stream={request.stream})"
+            )
 
             # Extract full context from messages (system + user messages)
             context_parts = []
@@ -273,7 +266,9 @@ async def chat_completion(
                         context_parts.append(content)
 
             context_prompt = "\n".join(context_parts) if context_parts else None
-            logger.info(f"[REQ {req_id}] Context: {context_prompt[:200] if context_prompt else 'None'}...")
+            logger.info(
+                f"[REQ {req_id}] Context: {context_prompt[:200] if context_prompt else 'None'}..."
+            )
 
             # Process audio
             t0 = time.perf_counter()
@@ -313,8 +308,7 @@ async def chat_completion(
 
                 t2 = time.perf_counter()
                 logger.info(
-                    f"[REQ {req_id}] Done. AudioProc={(t1-t0):.2f}s, "
-                    f"Transcribe={(t2-t1):.2f}s"
+                    f"[REQ {req_id}] Done. AudioProc={(t1-t0):.2f}s, " f"Transcribe={(t2-t1):.2f}s"
                 )
 
                 return {
@@ -351,9 +345,7 @@ async def chat_completion(
 
 
 async def _stream_transcription(
-    result: Union[
-        Tuple[NDArray[np.float32], str], Tuple[List[NDArray[np.float32]], str]
-    ],
+    result: Union[Tuple[NDArray[np.float32], str], Tuple[List[NDArray[np.float32]], str]],
     request: ChatCompletionRequest,
     context_prompt: Optional[str],
     req_id: str,
@@ -373,7 +365,9 @@ async def _stream_transcription(
             # Multiple chunks - stream tokens within each chunk
             audio_chunks, _ = result  # Ignore prompt from audio processor, use context_prompt
             total_chunks = len(audio_chunks)
-            logger.info(f"[REQ {req_id}] Streaming {total_chunks} audio chunks with token-by-token output")
+            logger.info(
+                f"[REQ {req_id}] Streaming {total_chunks} audio chunks with token-by-token output"
+            )
 
             for i, chunk in enumerate(audio_chunks):
                 try:
@@ -499,14 +493,15 @@ async def _stream_transcription(
 
 def _audio_array_to_base64(audio_array: NDArray[np.float32], sample_rate: int) -> str:
     """Convert numpy audio array to base64-encoded WAV."""
-    import io
     import base64
+    import io
+
     import soundfile as sf
 
     buffer = io.BytesIO()
-    sf.write(buffer, audio_array, sample_rate, format='WAV')
+    sf.write(buffer, audio_array, sample_rate, format="WAV")
     buffer.seek(0)
-    return base64.b64encode(buffer.read()).decode('utf-8')
+    return base64.b64encode(buffer.read()).decode("utf-8")
 
 
 async def _transcribe_single(
@@ -556,11 +551,17 @@ async def _transcribe_single(
     # Calculate audio duration and cap max_new_tokens accordingly
     # ~4 tokens per second of speech + buffer, prevents infinite loops on short audio
     audio_duration_sec = len(audio_array) / ServiceConfig.AUDIO_SAMPLE_RATE
-    max_tokens_for_audio = int(audio_duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
+    max_tokens_for_audio = (
+        int(audio_duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
+    )
 
     # Calculate timeout: base + (audio_duration * multiplier)
-    timeout_sec = ServiceConfig.GENERATION_TIMEOUT_BASE + (audio_duration_sec * ServiceConfig.GENERATION_TIMEOUT_MULTIPLIER)
-    logger.info(f"[REQ {req_id}] Audio duration: {audio_duration_sec:.1f}s, max_tokens: {max_tokens_for_audio}, timeout: {timeout_sec:.0f}s")
+    timeout_sec = ServiceConfig.GENERATION_TIMEOUT_BASE + (
+        audio_duration_sec * ServiceConfig.GENERATION_TIMEOUT_MULTIPLIER
+    )
+    logger.info(
+        f"[REQ {req_id}] Audio duration: {audio_duration_sec:.1f}s, max_tokens: {max_tokens_for_audio}, timeout: {timeout_sec:.0f}s"
+    )
 
     # Run blocking inference in thread pool to avoid blocking event loop
     # This allows SSE events to be sent between chunks
@@ -578,7 +579,11 @@ async def _transcribe_single(
         t1 = time.perf_counter()
 
         # Decode - skip input tokens
-        input_length = device_inputs.input_ids.shape[1] if hasattr(device_inputs, 'input_ids') else device_inputs["input_ids"].shape[1]
+        input_length = (
+            device_inputs.input_ids.shape[1]
+            if hasattr(device_inputs, "input_ids")
+            else device_inputs["input_ids"].shape[1]
+        )
         transcription = model_manager.processor.batch_decode(
             outputs[:, input_length:], skip_special_tokens=True
         )[0]
@@ -646,11 +651,17 @@ async def _transcribe_streaming(
 
     # Calculate audio duration and cap max_new_tokens accordingly
     audio_duration_sec = len(audio_array) / ServiceConfig.AUDIO_SAMPLE_RATE
-    max_tokens_for_audio = int(audio_duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
+    max_tokens_for_audio = (
+        int(audio_duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
+    )
 
     # Calculate timeout: base + (audio_duration * multiplier)
-    timeout_sec = ServiceConfig.GENERATION_TIMEOUT_BASE + (audio_duration_sec * ServiceConfig.GENERATION_TIMEOUT_MULTIPLIER)
-    logger.info(f"[REQ {req_id}] Streaming: audio {audio_duration_sec:.1f}s, max_tokens: {max_tokens_for_audio}, timeout: {timeout_sec:.0f}s")
+    timeout_sec = ServiceConfig.GENERATION_TIMEOUT_BASE + (
+        audio_duration_sec * ServiceConfig.GENERATION_TIMEOUT_MULTIPLIER
+    )
+    logger.info(
+        f"[REQ {req_id}] Streaming: audio {audio_duration_sec:.1f}s, max_tokens: {max_tokens_for_audio}, timeout: {timeout_sec:.0f}s"
+    )
 
     logger.info(f"[REQ {req_id}] Applying chat template for streaming")
     inputs = model_manager.processor.apply_chat_template(conversation)
@@ -735,9 +746,7 @@ async def _process_chunks(
     for i, chunk in enumerate(chunks):
         try:
             logger.info(f"[REQ {req_id}] Processing chunk {i+1}/{len(chunks)}")
-            chunk_transcription = await _transcribe_single(
-                chunk, prompt, language, req_id
-            )
+            chunk_transcription = await _transcribe_single(chunk, prompt, language, req_id)
             if chunk_transcription.strip():
                 transcriptions.append(chunk_transcription.strip())
         except Exception as e:

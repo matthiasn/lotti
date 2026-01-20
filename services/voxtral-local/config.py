@@ -1,10 +1,10 @@
 """Configuration settings for Voxtral Local Service."""
 
 import os
+import platform
 from pathlib import Path
 from typing import Any, Dict
 
-import platform
 import torch
 
 
@@ -44,9 +44,7 @@ class ServiceConfig:
     # Known revisions:
     #   Mini 3B:  3060fe34b35ba5d44202ce9ff3c097642914f8f3
     #   Small 24B: da5b42409f279fdd92febee0511a6c32828569c1
-    MODEL_REVISION = os.getenv(
-        "VOXTRAL_MODEL_REVISION", "3060fe34b35ba5d44202ce9ff3c097642914f8f3"
-    )
+    MODEL_REVISION = os.getenv("VOXTRAL_MODEL_REVISION", "3060fe34b35ba5d44202ce9ff3c097642914f8f3")
     DEFAULT_DEVICE = _get_device()
     TORCH_DTYPE = torch.bfloat16 if DEFAULT_DEVICE in ["cuda", "mps"] else torch.float32
 
@@ -71,7 +69,9 @@ class ServiceConfig:
     # Generation timeout (prevents hangs on problematic audio)
     # Total timeout = base + (audio_duration * multiplier)
     GENERATION_TIMEOUT_BASE = float(os.getenv("GENERATION_TIMEOUT_BASE", "60"))  # 60s base
-    GENERATION_TIMEOUT_MULTIPLIER = float(os.getenv("GENERATION_TIMEOUT_MULTIPLIER", "0.5"))  # 0.5x audio duration
+    GENERATION_TIMEOUT_MULTIPLIER = float(
+        os.getenv("GENERATION_TIMEOUT_MULTIPLIER", "0.5")
+    )  # 0.5x audio duration
 
     # API settings
     MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "2"))

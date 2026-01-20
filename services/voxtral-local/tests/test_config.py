@@ -1,10 +1,7 @@
 """Tests for configuration module."""
 
-import os
 import sys
 from pathlib import Path
-
-import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -77,8 +74,8 @@ class TestServiceConfig:
         assert "mistralai" in str(path) or "Voxtral" in str(path)
 
     def test_chunk_size_seconds(self):
-        """Test audio chunk size is reasonable (30-120 seconds)."""
-        assert 30 <= ServiceConfig.AUDIO_CHUNK_SIZE_SECONDS <= 120
+        """Test audio chunk size is reasonable (30-600 seconds for Voxtral's long audio support)."""
+        assert 30 <= ServiceConfig.AUDIO_CHUNK_SIZE_SECONDS <= 600
 
     def test_max_audio_size_mb(self):
         """Test max audio size is set."""
