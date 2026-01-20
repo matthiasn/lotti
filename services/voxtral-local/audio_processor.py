@@ -34,6 +34,7 @@ class AudioProcessor:
         self.chunk_duration = ServiceConfig.AUDIO_CHUNK_SIZE_SECONDS
         self.overlap = ServiceConfig.AUDIO_OVERLAP_SECONDS
         self.max_duration = ServiceConfig.MAX_AUDIO_DURATION_SECONDS
+        logger.info(f"AudioProcessor initialized: chunk_duration={self.chunk_duration}s")
 
         # Simple in-memory cache for processed audio features
         self._feature_cache: Dict[str, Dict[str, Any]] = {}
@@ -410,8 +411,8 @@ class AudioProcessor:
         chunk_duration = chunk_duration or self.chunk_duration
         overlap = overlap or self.overlap
 
-        # Voxtral can handle longer chunks (60s default)
-        chunk_duration = min(chunk_duration, 60)
+        # Voxtral can handle up to 30 min, but we use configurable chunks (default 5 min)
+        # No artificial cap - use the configured value
 
         chunk_samples = int(chunk_duration * self.sample_rate)
         overlap_samples = int(overlap * self.sample_rate)

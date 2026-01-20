@@ -60,13 +60,18 @@ class ServiceConfig:
     MAX_AUDIO_SIZE_MB = int(os.getenv("MAX_AUDIO_SIZE_MB", "100"))
     AUDIO_SAMPLE_RATE = 16000
     SUPPORTED_AUDIO_FORMATS = ["wav", "mp3", "m4a", "flac", "ogg", "webm"]
-    AUDIO_CHUNK_SIZE_SECONDS = int(os.getenv("AUDIO_CHUNK_SIZE_SECONDS", "60"))
+    AUDIO_CHUNK_SIZE_SECONDS = int(os.getenv("AUDIO_CHUNK_SIZE_SECONDS", "300"))  # 5 min chunks
     AUDIO_OVERLAP_SECONDS = float(os.getenv("AUDIO_OVERLAP_SECONDS", "1.0"))
     MAX_AUDIO_DURATION_SECONDS = 1800  # 30 minutes - Voxtral's limit
 
     # Transcription decode capping
     TOKENS_PER_SEC = float(os.getenv("TOKENS_PER_SEC", "4.0"))
     TOKEN_BUFFER = int(os.getenv("TOKEN_BUFFER", "64"))
+
+    # Generation timeout (prevents hangs on problematic audio)
+    # Total timeout = base + (audio_duration * multiplier)
+    GENERATION_TIMEOUT_BASE = float(os.getenv("GENERATION_TIMEOUT_BASE", "60"))  # 60s base
+    GENERATION_TIMEOUT_MULTIPLIER = float(os.getenv("GENERATION_TIMEOUT_MULTIPLIER", "0.5"))  # 0.5x audio duration
 
     # API settings
     MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "2"))
@@ -120,9 +125,9 @@ class ServiceConfig:
             base_config.update(
                 {
                     "max_new_tokens": cls.MAX_TOKENS_TRANSCRIPTION,
-                    "temperature": 0.0,  # Completely deterministic
                     "do_sample": False,  # No sampling - greedy decoding
                     "num_beams": 1,  # Greedy decoding
+                    # No repetition penalty - causes garbage output
                 }
             )
         else:  # general

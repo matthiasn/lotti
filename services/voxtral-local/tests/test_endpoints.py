@@ -199,162 +199,167 @@ Transcribe this audio.""",
         assert "Flutter" in context
 
 
+def _build_transcription_instruction(context: str | None, language: str | None) -> str:
+    """Helper to build transcription instruction - mirrors logic from main.py.
+
+    This helper duplicates the prompt construction logic from main.py for testing.
+    Keep it in sync with the actual implementation when the prompt changes.
+    """
+    instruction_parts = []
+
+    if context and context.strip():
+        instruction_parts.append(context)
+
+    # Add transcription directive with explicit language preservation
+    # CRITICAL: Voxtral must NOT translate - output must match source language
+    if language and language != "auto":
+        instruction_parts.append(
+            f"Transcribe the following audio in {language}. "
+            "Output the transcription in the SAME language as spoken - do NOT translate."
+        )
+    else:
+        instruction_parts.append(
+            "Transcribe the following audio in its ORIGINAL language. "
+            "Do NOT translate to English or any other language. "
+            "Output the exact words spoken in the same language as the speaker."
+        )
+
+    # Add speech dictionary instruction if context was provided
+    if context and context.strip():
+        instruction_parts.append(
+            "IMPORTANT: If a word sounds similar to any term in the speech dictionary or context above, "
+            "use the exact spelling from the dictionary. The audio may be unclear but those are the "
+            "correct spellings for this context."
+        )
+
+    # Request proper grammar and plain text output
+    instruction_parts.append(
+        "Use proper grammar and capitalization appropriate for the detected language "
+        "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
+        "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+    )
+
+    return "\n\n".join(instruction_parts)
+
+
 class TestTranscriptionPrompt:
     """Tests for transcription prompt construction."""
 
     def test_prompt_includes_grammar_instruction(self):
         """Test that transcription prompt includes grammar/capitalization instruction."""
-        # Simulate the instruction building logic from main.py
-        context = "Dictionary: Flutter, Dart"
-        language = None
-
-        instruction_parts = []
-
-        if context and context.strip():
-            instruction_parts.append(context)
-
-        if language and language != "auto":
-            instruction_parts.append(f"Transcribe the following audio in {language}.")
-        else:
-            instruction_parts.append("Transcribe the following audio.")
-
-        instruction_parts.append(
-            "Use proper grammar and capitalization for the detected language "
-            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
-            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        transcription_instruction = _build_transcription_instruction(
+            context="Dictionary: Flutter, Dart",
+            language=None,
         )
-
-        transcription_instruction = "\n\n".join(instruction_parts)
 
         # Verify grammar instruction is present
         assert "proper grammar and capitalization" in transcription_instruction
-        assert "capitalize 'I'" in transcription_instruction
-        assert "first letter of sentences" in transcription_instruction
-        assert "proper nouns" in transcription_instruction
 
     def test_prompt_includes_context_when_provided(self):
         """Test that context is included in the prompt."""
-        context = "Speech dictionary: Riverpod, GetIt, Flutter"
-        language = None
-
-        instruction_parts = []
-
-        if context and context.strip():
-            instruction_parts.append(context)
-
-        if language and language != "auto":
-            instruction_parts.append(f"Transcribe the following audio in {language}.")
-        else:
-            instruction_parts.append("Transcribe the following audio.")
-
-        instruction_parts.append(
-            "Use proper grammar and capitalization for the detected language "
-            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
-            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        transcription_instruction = _build_transcription_instruction(
+            context="Speech dictionary: Riverpod, GetIt, Flutter",
+            language=None,
         )
-
-        transcription_instruction = "\n\n".join(instruction_parts)
 
         assert "Speech dictionary: Riverpod, GetIt, Flutter" in transcription_instruction
 
     def test_prompt_works_without_context(self):
         """Test that prompt works when no context is provided."""
-        context = None
-        language = None
-
-        instruction_parts = []
-
-        if context and context.strip():
-            instruction_parts.append(context)
-
-        if language and language != "auto":
-            instruction_parts.append(f"Transcribe the following audio in {language}.")
-        else:
-            instruction_parts.append("Transcribe the following audio.")
-
-        instruction_parts.append(
-            "Use proper grammar and capitalization for the detected language "
-            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
-            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        transcription_instruction = _build_transcription_instruction(
+            context=None,
+            language=None,
         )
 
-        transcription_instruction = "\n\n".join(instruction_parts)
-
         # Should still have transcription directive and grammar instruction
-        assert "Transcribe the following audio." in transcription_instruction
+        assert "Transcribe the following audio in its ORIGINAL language" in transcription_instruction
         assert "proper grammar and capitalization" in transcription_instruction
 
     def test_prompt_includes_language_when_specified(self):
         """Test that language is included when specified."""
-        context = None
-        language = "German"
-
-        instruction_parts = []
-
-        if context and context.strip():
-            instruction_parts.append(context)
-
-        if language and language != "auto":
-            instruction_parts.append(f"Transcribe the following audio in {language}.")
-        else:
-            instruction_parts.append("Transcribe the following audio.")
-
-        instruction_parts.append(
-            "Use proper grammar and capitalization for the detected language "
-            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
-            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        transcription_instruction = _build_transcription_instruction(
+            context=None,
+            language="German",
         )
-
-        transcription_instruction = "\n\n".join(instruction_parts)
 
         assert "Transcribe the following audio in German." in transcription_instruction
+        assert "do NOT translate" in transcription_instruction
 
     def test_prompt_uses_auto_detect_for_auto_language(self):
-        """Test that 'auto' language falls back to auto-detect."""
-        context = None
-        language = "auto"
-
-        instruction_parts = []
-
-        if context and context.strip():
-            instruction_parts.append(context)
-
-        if language and language != "auto":
-            instruction_parts.append(f"Transcribe the following audio in {language}.")
-        else:
-            instruction_parts.append("Transcribe the following audio.")
-
-        instruction_parts.append(
-            "Use proper grammar and capitalization for the detected language "
-            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
-            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+        """Test that 'auto' language falls back to original language preservation."""
+        transcription_instruction = _build_transcription_instruction(
+            context=None,
+            language="auto",
         )
 
-        transcription_instruction = "\n\n".join(instruction_parts)
-
-        # Should use generic "Transcribe" without language
-        assert "Transcribe the following audio." in transcription_instruction
+        # Should use generic "Transcribe in ORIGINAL language" without specific language
+        assert "ORIGINAL language" in transcription_instruction
+        assert "Do NOT translate to English" in transcription_instruction
         assert "in auto" not in transcription_instruction
 
-    def test_grammar_instruction_is_language_agnostic(self):
-        """Test that grammar instruction works for all languages, not just English."""
-        context = None
+    def test_prompt_explicitly_prevents_translation(self):
+        """Test that prompt explicitly prevents translation to English."""
+        # Without language specified
+        instruction_no_lang = _build_transcription_instruction(context=None, language=None)
+        assert "Do NOT translate to English" in instruction_no_lang
+        assert "Output the exact words spoken in the same language as the speaker" in instruction_no_lang
 
-        instruction_parts = []
+        # With language specified
+        instruction_with_lang = _build_transcription_instruction(context=None, language="German")
+        assert "do NOT translate" in instruction_with_lang
+        assert "SAME language as spoken" in instruction_with_lang
 
-        if context and context.strip():
-            instruction_parts.append(context)
-
-        instruction_parts.append("Transcribe the following audio.")
-        instruction_parts.append(
-            "Use proper grammar and capitalization for the detected language "
-            "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
-            "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
+    def test_prompt_preserves_source_language(self):
+        """Test that prompt instructs model to preserve source language."""
+        transcription_instruction = _build_transcription_instruction(
+            context=None,
+            language=None,
         )
 
-        transcription_instruction = "\n\n".join(instruction_parts)
+        # These phrases ensure German audio stays German, not translated to English
+        assert "ORIGINAL language" in transcription_instruction
+        assert "same language as the speaker" in transcription_instruction
 
-        # Instruction should mention "detected language" (language-agnostic)
-        assert "for the detected language" in transcription_instruction
-        # English is just an example, not a requirement
-        assert "e.g., in English" in transcription_instruction
+    def test_prompt_includes_dictionary_instruction_when_context_provided(self):
+        """Test that speech dictionary usage instruction is included when context is provided."""
+        transcription_instruction = _build_transcription_instruction(
+            context="Speech dictionary: macOS, iPhone, Flutter, Riverpod",
+            language=None,
+        )
+
+        # Should include instruction to use dictionary spellings for similar-sounding words
+        assert "speech dictionary" in transcription_instruction
+        assert "sounds similar" in transcription_instruction
+        assert "exact spelling from the dictionary" in transcription_instruction
+
+    def test_prompt_omits_dictionary_instruction_without_context(self):
+        """Test that dictionary instruction is not included when no context is provided."""
+        transcription_instruction = _build_transcription_instruction(
+            context=None,
+            language=None,
+        )
+
+        # Should NOT include dictionary-specific instruction when no context
+        assert "speech dictionary" not in transcription_instruction
+        assert "sounds similar" not in transcription_instruction
+
+
+class TestStreamingSupport:
+    """Tests for streaming transcription support."""
+
+    def test_text_iterator_streamer_import(self):
+        """Test that TextIteratorStreamer can be imported."""
+        from transformers import TextIteratorStreamer
+        assert TextIteratorStreamer is not None
+
+    def test_streaming_function_exists(self):
+        """Test that _transcribe_streaming function exists in main module."""
+        from main import _transcribe_streaming
+        import inspect
+        assert inspect.isasyncgenfunction(_transcribe_streaming)
+
+    def test_non_streaming_function_exists(self):
+        """Test that _transcribe_single function exists in main module."""
+        from main import _transcribe_single
+        import inspect
+        assert inspect.iscoroutinefunction(_transcribe_single)

@@ -53,7 +53,7 @@ class TestServiceConfig:
     def test_generation_config_transcription(self):
         """Test transcription generation config is deterministic."""
         config = ServiceConfig.get_generation_config("transcription")
-        assert config["temperature"] == 0.0
+        # Note: temperature removed - Voxtral doesn't accept it
         assert config["do_sample"] is False
         assert config["num_beams"] == 1
         assert "max_new_tokens" in config

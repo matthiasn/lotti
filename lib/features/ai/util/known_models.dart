@@ -459,7 +459,7 @@ const List<KnownModel> voxtralModels = [
   KnownModel(
     providerModelId: 'mistralai/Voxtral-Mini-3B-2507',
     name: 'Voxtral Mini 3B',
-    inputModalities: [Modality.audio],
+    inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description:
@@ -470,7 +470,7 @@ const List<KnownModel> voxtralModels = [
   KnownModel(
     providerModelId: 'mistralai/Voxtral-Small-24B-2507',
     name: 'Voxtral Small 24B',
-    inputModalities: [Modality.audio],
+    inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description: 'High-accuracy transcription model for production use. '

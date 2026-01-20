@@ -2217,6 +2217,7 @@ void main() {
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2258,6 +2259,7 @@ void main() {
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              stream: any(named: 'stream'),
             ),
           ).called(1);
 
@@ -2959,6 +2961,7 @@ Some task summary content...''';
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3023,6 +3026,7 @@ Some task summary content...''';
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              stream: any(named: 'stream'),
             ),
           ).called(1);
 
@@ -3435,6 +3439,7 @@ Remaining steps:
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3845,6 +3850,7 @@ Remaining steps:
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4439,6 +4445,7 @@ be consulted to ensure accuracy.''',
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4475,6 +4482,7 @@ be consulted to ensure accuracy.''',
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              stream: any(named: 'stream'),
             ),
           ).captured;
 
@@ -4579,6 +4587,7 @@ Take into account the following task context:
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4602,6 +4611,7 @@ Take into account the following task context:
               audioBase64: any(named: 'audioBase64'),
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
+              stream: any(named: 'stream'),
             ),
           ).captured;
 
@@ -5197,6 +5207,7 @@ Take into account the following task context:
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -5458,6 +5469,7 @@ Take into account the following task context:
             audioBase64: any(named: 'audioBase64'),
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
+            stream: any(named: 'stream'),
           ),
         ).thenAnswer((_) => mockStream);
 

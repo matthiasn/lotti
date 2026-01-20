@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.818] - 2026-01-19
+### Changed
+- Voxtral Token Streaming: Upgraded from chunk-level to true token-by-token streaming
+  - Text now appears progressively as it's generated, not waiting for full chunks
+  - Tokens batched in groups of 6 for smooth display without excessive overhead
+  - Configurable via Settings → Flags → "Enable AI streaming responses"
+  - Non-streaming mode available for ~20% faster processing when progress display isn't needed
+
 ## [0.9.817] - 2026-01-18
 ### Added
 - Mistral Cloud Provider: New cloud transcription option using Mistral's Voxtral API

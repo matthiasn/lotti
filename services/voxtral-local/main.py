@@ -20,6 +20,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
+from threading import Thread
+from transformers import TextIteratorStreamer
 
 # Load environment variables
 env_path = Path(__file__).parent / ".env"
@@ -368,40 +370,42 @@ async def _stream_transcription(
         chunk_index = 0
 
         if isinstance(result[0], list):
-            # Multiple chunks - stream each one
-            audio_chunks, prompt = result
+            # Multiple chunks - stream tokens within each chunk
+            audio_chunks, _ = result  # Ignore prompt from audio processor, use context_prompt
             total_chunks = len(audio_chunks)
-            logger.info(f"[REQ {req_id}] Streaming {total_chunks} audio chunks")
+            logger.info(f"[REQ {req_id}] Streaming {total_chunks} audio chunks with token-by-token output")
 
             for i, chunk in enumerate(audio_chunks):
                 try:
                     logger.info(f"[REQ {req_id}] Transcribing chunk {i+1}/{total_chunks}")
-                    chunk_transcription = await _transcribe_single(
-                        chunk, prompt, request.language, req_id
-                    )
+                    first_token_in_chunk = True
 
-                    if chunk_transcription.strip():
-                        # Add space separator between chunks (except first)
-                        content = chunk_transcription.strip()
-                        if chunk_index > 0:
-                            content = " " + content
+                    async for token in _transcribe_streaming(
+                        chunk, context_prompt, request.language, req_id
+                    ):
+                        if token:
+                            # Add space separator before first token of non-first chunks
+                            content = token
+                            if first_token_in_chunk and chunk_index > 0:
+                                content = " " + content
+                            first_token_in_chunk = False
 
-                        # Send SSE event with chunk transcription
-                        event_data = {
-                            "id": f"chatcmpl-{req_id}",
-                            "object": "chat.completion.chunk",
-                            "created": created_time,
-                            "model": request.model,
-                            "choices": [
-                                {
-                                    "index": 0,
-                                    "delta": {"content": content},
-                                    "finish_reason": None,
-                                }
-                            ],
-                        }
-                        yield f"data: {json.dumps(event_data)}\n\n"
-                        chunk_index += 1
+                            event_data = {
+                                "id": f"chatcmpl-{req_id}",
+                                "object": "chat.completion.chunk",
+                                "created": created_time,
+                                "model": request.model,
+                                "choices": [
+                                    {
+                                        "index": 0,
+                                        "delta": {"content": content},
+                                        "finish_reason": None,
+                                    }
+                                ],
+                            }
+                            yield f"data: {json.dumps(event_data)}\n\n"
+
+                    chunk_index += 1
 
                 except Exception as e:
                     logger.warning(f"[REQ {req_id}] Chunk {i+1} failed: {e}")
@@ -426,29 +430,28 @@ async def _stream_transcription(
                     chunk_index += 1
 
         else:
-            # Single audio segment - stream as one chunk
-            audio_array, prompt = result
-            logger.info(f"[REQ {req_id}] Transcribing single audio segment")
+            # Single audio segment - stream token by token
+            audio_array, _ = result  # Ignore prompt from audio processor, use context_prompt
+            logger.info(f"[REQ {req_id}] Starting token-by-token streaming")
 
-            transcription = await _transcribe_single(
-                audio_array, prompt, request.language, req_id
-            )
-
-            if transcription.strip():
-                event_data = {
-                    "id": f"chatcmpl-{req_id}",
-                    "object": "chat.completion.chunk",
-                    "created": created_time,
-                    "model": request.model,
-                    "choices": [
-                        {
-                            "index": 0,
-                            "delta": {"content": transcription.strip()},
-                            "finish_reason": None,
-                        }
-                    ],
-                }
-                yield f"data: {json.dumps(event_data)}\n\n"
+            async for token in _transcribe_streaming(
+                audio_array, context_prompt, request.language, req_id
+            ):
+                if token:
+                    event_data = {
+                        "id": f"chatcmpl-{req_id}",
+                        "object": "chat.completion.chunk",
+                        "created": created_time,
+                        "model": request.model,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": token},
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(event_data)}\n\n"
 
         # Send final chunk with finish_reason
         final_event = {
@@ -527,32 +530,16 @@ async def _transcribe_single(
     if max_val > 1.0:
         audio_array = audio_array / max_val
 
-    # Build transcription instruction
-    instruction_parts = []
-
-    # Include context (speech dictionary, task context, etc.) if provided
+    # Build simple transcription instruction
     if context and context.strip():
-        instruction_parts.append(context)
-
-    # Add transcription directive
-    if language and language != "auto":
-        instruction_parts.append(f"Transcribe the following audio in {language}.")
+        transcription_instruction = f"Speech dictionary:\n{context}\n\nTranscribe this audio in its original language. NEVER translate. Use exact spellings from the dictionary. Output ONLY the transcription, no intro."
     else:
-        instruction_parts.append("Transcribe the following audio.")
-
-    # Request proper grammar and plain text output
-    instruction_parts.append(
-        "Use proper grammar and capitalization for the detected language "
-        "(e.g., in English: capitalize 'I', first letter of sentences, proper nouns). "
-        "Return ONLY the plain text transcription - no JSON, XML, or other formatting."
-    )
-
-    transcription_instruction = "\n\n".join(instruction_parts)
+        transcription_instruction = "Transcribe this audio in its original language. NEVER translate. Output ONLY the transcription, no intro."
 
     # Convert audio to base64 for the chat template
     audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
 
-    # Build conversation for Voxtral
+    # Build conversation for Voxtral - audio first to prime language
     conversation = [
         {
             "role": "user",
@@ -560,11 +547,20 @@ async def _transcribe_single(
                 {"type": "audio", "base64": audio_base64},
                 {"type": "text", "text": transcription_instruction},
             ],
-        }
+        },
     ]
 
     logger.info(f"[REQ {req_id}] Transcribing with chat template")
     inputs = model_manager.processor.apply_chat_template(conversation)
+
+    # Calculate audio duration and cap max_new_tokens accordingly
+    # ~4 tokens per second of speech + buffer, prevents infinite loops on short audio
+    audio_duration_sec = len(audio_array) / ServiceConfig.AUDIO_SAMPLE_RATE
+    max_tokens_for_audio = int(audio_duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
+
+    # Calculate timeout: base + (audio_duration * multiplier)
+    timeout_sec = ServiceConfig.GENERATION_TIMEOUT_BASE + (audio_duration_sec * ServiceConfig.GENERATION_TIMEOUT_MULTIPLIER)
+    logger.info(f"[REQ {req_id}] Audio duration: {audio_duration_sec:.1f}s, max_tokens: {max_tokens_for_audio}, timeout: {timeout_sec:.0f}s")
 
     # Run blocking inference in thread pool to avoid blocking event loop
     # This allows SSE events to be sent between chunks
@@ -572,8 +568,9 @@ async def _transcribe_single(
         # Move inputs to device with correct dtype
         device_inputs = inputs.to(model_manager.device, dtype=ServiceConfig.TORCH_DTYPE)
 
-        # Generate
+        # Generate with duration-based token limit
         gen_config = ServiceConfig.get_generation_config("transcription")
+        gen_config["max_new_tokens"] = min(gen_config["max_new_tokens"], max_tokens_for_audio)
 
         t0 = time.perf_counter()
         with torch.inference_mode():
@@ -594,9 +591,135 @@ async def _transcribe_single(
 
         return transcription.strip()
 
-    # Run in thread pool to not block event loop (enables SSE streaming)
-    transcription = await asyncio.to_thread(_run_inference)
-    return transcription
+    # Run in thread pool with timeout to prevent hangs
+    try:
+        transcription = await asyncio.wait_for(
+            asyncio.to_thread(_run_inference),
+            timeout=timeout_sec,
+        )
+        return transcription
+    except asyncio.TimeoutError:
+        logger.error(f"[REQ {req_id}] Generation timed out after {timeout_sec:.0f}s")
+        raise RuntimeError(f"Transcription timed out after {timeout_sec:.0f}s")
+
+
+async def _transcribe_streaming(
+    audio_array: NDArray[np.float32],
+    context: Optional[str],
+    language: Optional[str],
+    req_id: str,
+):
+    """Transcribe audio with true token-by-token streaming."""
+    logger.info(f"[REQ {req_id}] Starting streaming transcription")
+
+    # Ensure audio is float32 and 1D
+    if audio_array.dtype != np.float32:
+        audio_array = audio_array.astype(np.float32)
+    if audio_array.ndim == 2:
+        audio_array = np.mean(audio_array, axis=0)
+    audio_array = np.squeeze(audio_array)
+
+    # Normalize
+    max_val = np.abs(audio_array).max()
+    if max_val > 1.0:
+        audio_array = audio_array / max_val
+
+    # Build simple transcription instruction
+    if context and context.strip():
+        transcription_instruction = f"Speech dictionary:\n{context}\n\nTranscribe this audio in its original language. NEVER translate. Use exact spellings from the dictionary. Output ONLY the transcription, no intro."
+    else:
+        transcription_instruction = "Transcribe this audio in its original language. NEVER translate. Output ONLY the transcription, no intro."
+
+    # Convert audio to base64 for the chat template
+    audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
+
+    # Build conversation for Voxtral - audio first to prime language
+    conversation = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "audio", "base64": audio_base64},
+                {"type": "text", "text": transcription_instruction},
+            ],
+        },
+    ]
+
+    # Calculate audio duration and cap max_new_tokens accordingly
+    audio_duration_sec = len(audio_array) / ServiceConfig.AUDIO_SAMPLE_RATE
+    max_tokens_for_audio = int(audio_duration_sec * ServiceConfig.TOKENS_PER_SEC) + ServiceConfig.TOKEN_BUFFER
+
+    # Calculate timeout: base + (audio_duration * multiplier)
+    timeout_sec = ServiceConfig.GENERATION_TIMEOUT_BASE + (audio_duration_sec * ServiceConfig.GENERATION_TIMEOUT_MULTIPLIER)
+    logger.info(f"[REQ {req_id}] Streaming: audio {audio_duration_sec:.1f}s, max_tokens: {max_tokens_for_audio}, timeout: {timeout_sec:.0f}s")
+
+    logger.info(f"[REQ {req_id}] Applying chat template for streaming")
+    inputs = model_manager.processor.apply_chat_template(conversation)
+
+    # Create streamer for token-by-token output
+    streamer = TextIteratorStreamer(
+        model_manager.processor.tokenizer,
+        skip_prompt=True,
+        skip_special_tokens=True,
+    )
+
+    # Move inputs to device
+    device_inputs = inputs.to(model_manager.device, dtype=ServiceConfig.TORCH_DTYPE)
+
+    # Get generation config with duration-based token limit
+    gen_config = ServiceConfig.get_generation_config("transcription")
+    gen_config["max_new_tokens"] = min(gen_config["max_new_tokens"], max_tokens_for_audio)
+    gen_config["streamer"] = streamer
+
+    # Start generation in background thread
+    def _generate():
+        with torch.inference_mode():
+            model_manager.model.generate(**device_inputs, **gen_config)
+
+    generation_thread = Thread(target=_generate)
+    generation_thread.start()
+
+    # Yield tokens in batches to reduce overhead
+    # Batching every 6 tokens balances SSE/JSON overhead with smooth progress display
+    token_count = 0
+    batch_size = 6
+    token_buffer = []
+    t0 = time.perf_counter()
+    deadline = t0 + timeout_sec
+    timed_out = False
+
+    for text in streamer:
+        # Check timeout
+        if time.perf_counter() > deadline:
+            logger.warning(f"[REQ {req_id}] Streaming timed out after {timeout_sec:.0f}s")
+            timed_out = True
+            break
+
+        if text:
+            token_count += 1
+            token_buffer.append(text)
+
+            # Yield when we have enough tokens
+            if len(token_buffer) >= batch_size:
+                yield "".join(token_buffer)
+                token_buffer = []
+
+    # Yield any remaining tokens
+    if token_buffer:
+        yield "".join(token_buffer)
+
+    # If timed out, yield error indicator
+    if timed_out:
+        yield f" [Timed out after {timeout_sec:.0f}s]"
+
+    # Wait for generation thread (with short timeout if already timed out)
+    generation_thread.join(timeout=5.0 if timed_out else None)
+
+    t1 = time.perf_counter()
+    status = "TIMED OUT" if timed_out else "Completed"
+    logger.info(
+        f"[REQ {req_id}] {status}: ~{token_count} tokens in {t1-t0:.2f}s "
+        f"({token_count/(t1-t0) if t1 > t0 else 0:.1f} tok/s, batched every {batch_size})"
+    )
 
 
 async def _process_chunks(

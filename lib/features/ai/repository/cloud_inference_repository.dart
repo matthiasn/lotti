@@ -39,6 +39,7 @@ class CloudInferenceRepository {
     int? maxCompletionTokens,
     int? maxTokens,
     List<ChatCompletionTool>? tools,
+    bool stream = true,
   }) {
     return CreateChatCompletionRequest(
       messages: messages,
@@ -46,7 +47,7 @@ class CloudInferenceRepository {
       temperature: temperature,
       maxCompletionTokens: maxCompletionTokens,
       maxTokens: maxTokens,
-      stream: true,
+      stream: stream,
       tools: tools,
       toolChoice: tools != null && tools.isNotEmpty
           ? const ChatCompletionToolChoiceOption.mode(
@@ -281,6 +282,7 @@ class CloudInferenceRepository {
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
     List<ChatCompletionTool>? tools,
+    bool stream = true,
   }) {
     final client = overrideClient ??
         OpenAIClient(
@@ -307,6 +309,7 @@ class CloudInferenceRepository {
         baseUrl: baseUrl,
         prompt: prompt,
         maxCompletionTokens: maxCompletionTokens,
+        stream: stream,
       );
     }
 
@@ -346,6 +349,7 @@ class CloudInferenceRepository {
             model: model,
             maxCompletionTokens: maxCompletionTokens,
             tools: tools,
+            stream: stream,
           ),
         )
         .asBroadcastStream();
