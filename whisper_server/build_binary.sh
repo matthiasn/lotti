@@ -25,9 +25,13 @@ fi
 # Activate virtual environment
 source venv/bin/activate
 
-# Determine requirements file based on platform
+# Determine requirements file based on platform and architecture
 if [[ "$(uname)" == "Darwin" ]]; then
-    REQUIREMENTS="requirements_apple_silicon.txt"
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        REQUIREMENTS="requirements_apple_silicon.txt"
+    else
+        REQUIREMENTS="requirements_macos_intel.txt"
+    fi
 elif [[ "$(uname)" == "Linux" ]]; then
     REQUIREMENTS="requirements_linux.txt"
 else

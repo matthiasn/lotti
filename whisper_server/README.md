@@ -102,13 +102,25 @@ Run the executable:
 
 Pre-built binaries for Linux and macOS are available in [GitHub Releases](https://github.com/matthiasn/lotti/releases):
 
+| Platform | Architecture | Filename |
+|----------|--------------|----------|
+| Linux | x64 | `whisper_server-linux-x64.tar.gz` |
+| macOS | Intel (x64) | `whisper_server-macos-x64.tar.gz` |
+| macOS | Apple Silicon (ARM64) | `whisper_server-macos-arm64.tar.gz` |
+
+Download and extract:
+
 ```bash
-# Linux
+# Linux (x64)
 tar -xzvf whisper_server-linux-x64.tar.gz
 ./whisper_api_server
 
-# macOS
+# macOS Intel
 tar -xzvf whisper_server-macos-x64.tar.gz
+./whisper_api_server
+
+# macOS Apple Silicon (M1/M2/M3/M4)
+tar -xzvf whisper_server-macos-arm64.tar.gz
 ./whisper_api_server
 ```
 
