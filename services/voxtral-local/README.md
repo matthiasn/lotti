@@ -103,7 +103,7 @@ Environment variables (set in `.env`):
 | `VOXTRAL_MODEL_ID` | mistralai/Voxtral-Mini-3B-2507 | Model to use |
 | `VOXTRAL_DEVICE` | auto | Device (auto, cuda, mps, cpu) |
 | `MAX_AUDIO_SIZE_MB` | 100 | Max audio file size |
-| `AUDIO_CHUNK_SIZE_SECONDS` | 60 | Chunk size for long audio |
+| `AUDIO_CHUNK_SIZE_SECONDS` | 300 | Chunk size for long audio (5 min default) |
 
 ## Performance
 
@@ -118,15 +118,56 @@ Environment variables (set in `.env`):
 - ~10-15s for 5-minute audio
 - ~1-2min for 30-minute audio
 
-## Comparison with Other Services
+## Comparison with Whisper
 
-| Feature | Voxtral | Gemma 3N | Whisper |
-|---------|---------|----------|---------|
-| Max audio | 30 min | 5 min | ~30 min |
-| VRAM | 9.5 GB | 6-12 GB | 2-10 GB |
-| Languages | 9 | Limited | 99 |
-| HF token | Not needed | Required | Not needed |
-| License | Apache 2.0 | Gemma | MIT |
+| Feature | Voxtral | Whisper |
+|---------|---------|---------|
+| Max audio | 30 min | ~30 min |
+| VRAM | 9.5 GB | 2-10 GB |
+| Languages | 9 | 99 |
+| HF token | Not needed | Not needed |
+| License | Apache 2.0 | MIT |
+
+## Building Standalone Binary
+
+Build a standalone executable that doesn't require Python:
+
+```bash
+# Using the build script
+./build_binary.sh
+
+# Or manually with PyInstaller
+pip install pyinstaller
+pyinstaller voxtral_server.spec
+```
+
+The binary will be created at `dist/voxtral_server`.
+
+### Pre-built Binaries
+
+Pre-built binaries for Linux and macOS are available in [GitHub Releases](https://github.com/matthiasn/lotti/releases).
+
+| Platform | Architecture | Filename |
+|----------|--------------|----------|
+| Linux | x64 | `voxtral_server-linux-x64.tar.gz` |
+| macOS | Intel (x64) | `voxtral_server-macos-x64.tar.gz` |
+| macOS | Apple Silicon (ARM64) | `voxtral_server-macos-arm64.tar.gz` |
+
+Download and extract:
+
+```bash
+# Linux (x64)
+tar -xzvf voxtral_server-linux-x64.tar.gz
+./voxtral_server
+
+# macOS Intel
+tar -xzvf voxtral_server-macos-x64.tar.gz
+./voxtral_server
+
+# macOS Apple Silicon (M1/M2/M3/M4)
+tar -xzvf voxtral_server-macos-arm64.tar.gz
+./voxtral_server
+```
 
 ## Troubleshooting
 

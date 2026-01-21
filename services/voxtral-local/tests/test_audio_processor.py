@@ -1,9 +1,7 @@
 """Tests for audio processor module."""
 
-import base64
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -26,7 +24,7 @@ class TestAudioProcessor:
         """Test processor initializes with correct defaults."""
         assert processor.sample_rate == 16000
         assert processor.max_duration == 1800  # 30 minutes
-        assert processor.chunk_duration == 60  # Default chunk size
+        assert processor.chunk_duration == 300  # 5 min chunks for Voxtral's long audio support
 
     def test_detect_audio_format_wav(self, processor):
         """Test WAV format detection."""
@@ -96,9 +94,7 @@ class TestAudioProcessor:
         """Test chunks have overlap."""
         # 2 minutes of audio
         audio = np.random.randn(16000 * 120).astype(np.float32)
-        chunks = processor.chunk_audio_optimized(
-            audio, chunk_duration=60, overlap=1.0
-        )
+        chunks = processor.chunk_audio_optimized(audio, chunk_duration=60, overlap=1.0)
         # With 60s chunks and 1s overlap on 120s audio, expect ~2 chunks
         assert len(chunks) >= 2
 

@@ -1,6 +1,5 @@
 """Tests for API endpoints."""
 
-import base64
 import sys
 from pathlib import Path
 
@@ -82,9 +81,10 @@ class TestChatCompletionsEndpoint:
         )
         # Should return 400 (no audio) or 404 (model not downloaded)
         # Do not accept 500 as it masks actual server errors
-        assert response.status_code in [400, 404], (
-            f"Expected 400 or 404, got {response.status_code}: {response.text}"
-        )
+        assert response.status_code in [
+            400,
+            404,
+        ], f"Expected 400 or 404, got {response.status_code}: {response.text}"
         # Verify error message is present in response
         response_json = response.json()
         assert "detail" in response_json or "error" in response_json
@@ -163,8 +163,7 @@ class TestContextExtraction:
         context_parts = [
             message.get("content", "")
             for message in messages
-            if isinstance(message.get("content", ""), str)
-            and message.get("content", "").strip()
+            if isinstance(message.get("content", ""), str) and message.get("content", "").strip()
         ]
 
         context = "\n".join(context_parts) if context_parts else None
@@ -272,7 +271,9 @@ class TestTranscriptionPrompt:
         )
 
         # Should still have transcription directive and grammar instruction
-        assert "Transcribe the following audio in its ORIGINAL language" in transcription_instruction
+        assert (
+            "Transcribe the following audio in its ORIGINAL language" in transcription_instruction
+        )
         assert "proper grammar and capitalization" in transcription_instruction
 
     def test_prompt_includes_language_when_specified(self):
@@ -302,7 +303,10 @@ class TestTranscriptionPrompt:
         # Without language specified
         instruction_no_lang = _build_transcription_instruction(context=None, language=None)
         assert "Do NOT translate to English" in instruction_no_lang
-        assert "Output the exact words spoken in the same language as the speaker" in instruction_no_lang
+        assert (
+            "Output the exact words spoken in the same language as the speaker"
+            in instruction_no_lang
+        )
 
         # With language specified
         instruction_with_lang = _build_transcription_instruction(context=None, language="German")
@@ -350,16 +354,21 @@ class TestStreamingSupport:
     def test_text_iterator_streamer_import(self):
         """Test that TextIteratorStreamer can be imported."""
         from transformers import TextIteratorStreamer
+
         assert TextIteratorStreamer is not None
 
     def test_streaming_function_exists(self):
         """Test that _transcribe_streaming function exists in main module."""
-        from main import _transcribe_streaming
         import inspect
+
+        from main import _transcribe_streaming
+
         assert inspect.isasyncgenfunction(_transcribe_streaming)
 
     def test_non_streaming_function_exists(self):
         """Test that _transcribe_single function exists in main module."""
-        from main import _transcribe_single
         import inspect
+
+        from main import _transcribe_single
+
         assert inspect.iscoroutinefunction(_transcribe_single)

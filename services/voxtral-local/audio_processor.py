@@ -47,9 +47,7 @@ class AudioProcessor:
         prompt: Optional[str] = None,
         use_chunking: bool = True,
         request_id: Optional[str] = None,
-    ) -> Union[
-        Tuple[NDArray[np.float32], str], Tuple[List[NDArray[np.float32]], str]
-    ]:
+    ) -> Union[Tuple[NDArray[np.float32], str], Tuple[List[NDArray[np.float32]], str]]:
         """
         Process base64-encoded audio data.
 
@@ -78,8 +76,7 @@ class AudioProcessor:
             size_mb = len(audio_bytes) / (1024 * 1024)
             if size_mb > self.max_size_mb:
                 raise ValueError(
-                    f"Audio file too large: {size_mb:.1f}MB "
-                    f"(max: {self.max_size_mb}MB)"
+                    f"Audio file too large: {size_mb:.1f}MB " f"(max: {self.max_size_mb}MB)"
                 )
 
             # Load audio from bytes
@@ -89,9 +86,7 @@ class AudioProcessor:
             # Resample if necessary
             resample_time = 0.0
             if original_sr != self.sample_rate:
-                audio_array, resample_time = self._resample_audio(
-                    audio_array, int(original_sr)
-                )
+                audio_array, resample_time = self._resample_audio(audio_array, int(original_sr))
 
             # Check duration
             duration = len(audio_array) / self.sample_rate
@@ -145,9 +140,7 @@ class AudioProcessor:
         prompt: Optional[str] = None,
         use_chunking: bool = True,
         request_id: Optional[str] = None,
-    ) -> Union[
-        Tuple[NDArray[np.float32], str], Tuple[List[NDArray[np.float32]], str]
-    ]:
+    ) -> Union[Tuple[NDArray[np.float32], str], Tuple[List[NDArray[np.float32]], str]]:
         """
         Process audio from file path.
 
@@ -171,9 +164,7 @@ class AudioProcessor:
             # Resample if necessary
             resample_time = 0.0
             if original_sr != self.sample_rate:
-                audio_array, resample_time = self._resample_audio(
-                    audio_array, int(original_sr)
-                )
+                audio_array, resample_time = self._resample_audio(audio_array, int(original_sr))
 
             # Check duration
             duration = len(audio_array) / self.sample_rate
@@ -244,9 +235,7 @@ class AudioProcessor:
             return "ogg"
         return "unknown"
 
-    def _load_audio_from_bytes(
-        self, audio_bytes: bytes
-    ) -> Tuple[NDArray[np.float32], int]:
+    def _load_audio_from_bytes(self, audio_bytes: bytes) -> Tuple[NDArray[np.float32], int]:
         """
         Load audio from bytes.
 
@@ -286,9 +275,7 @@ class AudioProcessor:
         # Final fallback: temp file + librosa
         return self._load_from_temp_file(audio_bytes)
 
-    def _load_from_temp_file(
-        self, audio_bytes: bytes
-    ) -> Tuple[NDArray[np.float32], int]:
+    def _load_from_temp_file(self, audio_bytes: bytes) -> Tuple[NDArray[np.float32], int]:
         """Load audio using temporary file (for M4A, MP3, etc.)."""
         temp_file_path = None
         temp_wav_path = None
@@ -296,9 +283,7 @@ class AudioProcessor:
             format_type = self._detect_audio_format(audio_bytes)
             suffix = ".m4a" if format_type == "m4a" else ".audio"
 
-            with tempfile.NamedTemporaryFile(
-                delete=False, suffix=suffix
-            ) as temp_file:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
                 temp_file.write(audio_bytes)
                 temp_file_path = temp_file.name
 
@@ -306,9 +291,7 @@ class AudioProcessor:
             try:
                 ffmpeg_bin = shutil.which("ffmpeg")
                 if ffmpeg_bin and format_type in ("m4a", "unknown"):
-                    with tempfile.NamedTemporaryFile(
-                        delete=False, suffix=".wav"
-                    ) as wav_out:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as wav_out:
                         temp_wav_path = wav_out.name
 
                     cmd = [
@@ -331,23 +314,17 @@ class AudioProcessor:
                         audio_array = audio_array.mean(axis=1)
                     return audio_array.astype("float32"), sample_rate
             except Exception as e:
-                logger.warning(
-                    f"ffmpeg decoding failed, falling back to librosa. Error: {e}"
-                )
+                logger.warning(f"ffmpeg decoding failed, falling back to librosa. Error: {e}")
 
             # Fallback: use librosa
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                audio_array, sample_rate = librosa.load(
-                    temp_file_path, sr=None, mono=True
-                )
+                audio_array, sample_rate = librosa.load(temp_file_path, sr=None, mono=True)
             return audio_array, int(sample_rate)
 
         except Exception as e:
             logger.error(f"Temp file loading failed: {type(e).__name__}: {e}")
-            raise ValueError(
-                f"Unable to load audio from bytes. Temp file method failed: {e}"
-            )
+            raise ValueError(f"Unable to load audio from bytes. Temp file method failed: {e}")
         finally:
             for path in [temp_file_path, temp_wav_path]:
                 if path and os.path.exists(path):
@@ -356,9 +333,7 @@ class AudioProcessor:
                     except Exception as e:
                         logger.warning(f"Failed to clean up temp file: {e}")
 
-    def _normalize_audio(
-        self, audio_array: NDArray[np.float32]
-    ) -> NDArray[np.float32]:
+    def _normalize_audio(self, audio_array: NDArray[np.float32]) -> NDArray[np.float32]:
         """Normalize audio to [-1, 1] range."""
         # Remove DC offset
         audio_array = audio_array - np.mean(audio_array)
@@ -429,15 +404,11 @@ class AudioProcessor:
                 if len(chunk) < self.sample_rate * 2:
                     if chunks:
                         # Merge with previous chunk
-                        chunks[-1] = np.concatenate(
-                            [chunks[-1][:-overlap_samples], chunk]
-                        )
+                        chunks[-1] = np.concatenate([chunks[-1][:-overlap_samples], chunk])
                     continue
                 # Pad to minimum processing size
                 min_samples = min(chunk_samples, len(chunk) + overlap_samples)
-                chunk = np.pad(
-                    chunk, (0, min_samples - len(chunk)), mode="constant"
-                )
+                chunk = np.pad(chunk, (0, min_samples - len(chunk)), mode="constant")
 
             chunks.append(chunk)
 
@@ -471,9 +442,7 @@ class AudioProcessor:
 
     def _get_audio_hash(self, audio_array: NDArray[np.float32]) -> str:
         """Generate hash for audio array for caching."""
-        return hashlib.md5(
-            audio_array.tobytes(), usedforsecurity=False
-        ).hexdigest()[:16]
+        return hashlib.md5(audio_array.tobytes(), usedforsecurity=False).hexdigest()[:16]
 
     def _clean_cache(self) -> None:
         """Clean old cache entries."""
@@ -488,15 +457,11 @@ class AudioProcessor:
             del self._feature_cache[key]
 
         if len(self._feature_cache) > self._cache_max_size:
-            sorted_items = sorted(
-                self._feature_cache.items(), key=lambda x: x[1]["timestamp"]
-            )
+            sorted_items = sorted(self._feature_cache.items(), key=lambda x: x[1]["timestamp"])
             for key, _ in sorted_items[: -self._cache_max_size]:
                 del self._feature_cache[key]
 
-    def cache_audio_features(
-        self, audio_array: NDArray[np.float32], features: Any
-    ) -> str:
+    def cache_audio_features(self, audio_array: NDArray[np.float32], features: Any) -> str:
         """Cache processed audio features."""
         self._clean_cache()
         audio_hash = self._get_audio_hash(audio_array)
@@ -509,9 +474,7 @@ class AudioProcessor:
 
         return audio_hash
 
-    def get_cached_features(
-        self, audio_array: NDArray[np.float32]
-    ) -> Optional[Any]:
+    def get_cached_features(self, audio_array: NDArray[np.float32]) -> Optional[Any]:
         """Get cached features for audio array."""
         audio_hash = self._get_audio_hash(audio_array)
         cache_entry = self._feature_cache.get(audio_hash)

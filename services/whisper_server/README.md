@@ -37,13 +37,16 @@ A high-performance, production-ready Python FastAPI server that provides local W
 Choose the requirements file for your platform:
 
 ```bash
-cd whisper_server
+cd services/whisper_server
 
 # For CUDA GPUs (NVIDIA):
 pip install -r requirements.txt
 
-# For Apple Silicon (M1/M2/M3):
+# For Apple Silicon (M1/M2/M3/M4):
 pip install -r requirements_apple_silicon.txt
+
+# For macOS Intel:
+pip install -r requirements_macos_intel.txt
 
 # For Linux (CPU or generic):
 pip install -r requirements_linux.txt
@@ -84,20 +87,45 @@ The server will:
 
 Build a standalone executable using PyInstaller:
 
-1. **Install PyInstaller:**
-   ```bash
-   pip install pyinstaller
-   ```
+```bash
+# Using the build script (recommended)
+./build_binary.sh
 
-2. **Build the executable:**
-   ```bash
-   pyinstaller whisper_api_server.spec
-   ```
+# Or manually:
+pip install pyinstaller
+pyinstaller whisper_api_server.spec
+```
 
-3. **Run the executable:**
-   ```bash
-   ./dist/whisper_api_server
-   ```
+Run the executable:
+```bash
+./dist/whisper_api_server
+```
+
+### **Pre-built Binaries**
+
+Pre-built binaries for Linux and macOS are available in [GitHub Releases](https://github.com/matthiasn/lotti/releases):
+
+| Platform | Architecture | Filename |
+|----------|--------------|----------|
+| Linux | x64 | `whisper_server-linux-x64.tar.gz` |
+| macOS | Intel (x64) | `whisper_server-macos-x64.tar.gz` |
+| macOS | Apple Silicon (ARM64) | `whisper_server-macos-arm64.tar.gz` |
+
+Download and extract:
+
+```bash
+# Linux (x64)
+tar -xzvf whisper_server-linux-x64.tar.gz
+./whisper_api_server
+
+# macOS Intel
+tar -xzvf whisper_server-macos-x64.tar.gz
+./whisper_api_server
+
+# macOS Apple Silicon (M1/M2/M3/M4)
+tar -xzvf whisper_server-macos-arm64.tar.gz
+./whisper_api_server
+```
 
 ### **Command Line Tool**
 
