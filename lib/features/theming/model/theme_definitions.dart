@@ -13,8 +13,16 @@ class LightModeSurfaces {
   static const Color surfaceContainerHighest = Color(0xFFE8E8E8);
 }
 
+/// Special theme name for the gamey/fun theme transformation.
+/// This applies vibrant gradients, glowing shadows, and playful styling.
+const String gameyThemeName = '🎮 Gamey';
+
 /// Standard FlexScheme themes available for selection.
-final Map<String, FlexScheme> themes = {
+/// The 'Gamey' theme is special and handled separately in the controller.
+final Map<String, FlexScheme?> themes = {
+  // Special gamey theme (uses FlexScheme.blueWhale as base)
+  gameyThemeName: null, // null signals special handling
+  // Standard themes
   'Material': FlexScheme.material,
   'Material High Contrast': FlexScheme.materialHc,
   'Deep Blue': FlexScheme.deepBlue,
@@ -40,3 +48,6 @@ final Map<String, FlexScheme> themes = {
 
 /// Default theme name used when no theme is configured.
 const String defaultThemeName = 'Grey Law';
+
+/// Check if a theme name is the gamey theme
+bool isGameyTheme(String? themeName) => themeName == gameyThemeName;

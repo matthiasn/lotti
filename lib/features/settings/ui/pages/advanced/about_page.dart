@@ -1,23 +1,27 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/gamey/gamey_theme.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
+import 'package:lotti/widgets/gamey/gamey_card.dart';
 import 'package:lotti/widgets/misc/tasks_counts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class AboutPage extends StatefulWidget {
+class AboutPage extends ConsumerStatefulWidget {
   const AboutPage({super.key});
 
   @override
-  State<AboutPage> createState() => _AboutPageState();
+  ConsumerState<AboutPage> createState() => _AboutPageState();
 }
 
-class _AboutPageState extends State<AboutPage> {
+class _AboutPageState extends ConsumerState<AboutPage> {
   String version = '';
   String buildNumber = '';
 
@@ -44,6 +48,25 @@ class _AboutPageState extends State<AboutPage> {
     const enhancedIconInnerSize = SpacingConstants.enhancedSmallFontSize * 1.5;
     const halfVerticalSpacer = SpacingConstants.verticalModalSpacerHeight / 2;
     const halfSmallSpacer = SpacingConstants.inputSpacerSmallHeight / 2;
+
+    final themingState = ref.watch(themingControllerProvider);
+    final useGamey = themingState.isUsingGameyTheme;
+
+    Widget buildCard({required Widget child}) {
+      if (useGamey) {
+        return GameySubtleCard(
+          accentColor: GameyColors.gameyAccent,
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingLarge,
+            vertical: AppTheme.cardSpacing / 2,
+          ),
+          padding: const EdgeInsets.all(SpacingConstants.inputSpacerHeight),
+          child: child,
+        );
+      }
+      return ModernBaseCard(child: child);
+    }
+
     return FutureBuilder<int>(
       future: getIt<JournalDb>().getJournalCount(),
       builder: (
@@ -118,84 +141,74 @@ class _AboutPageState extends State<AboutPage> {
                   ),
                   const SizedBox(height: halfVerticalSpacer),
                   // Version Info Card
-                  ModernBaseCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(
-                          SpacingConstants.inputSpacerHeight),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                color: context.colorScheme.primary,
-                                size: SpacingConstants.inputSpacerHeight,
+                  buildCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: context.colorScheme.primary,
+                              size: SpacingConstants.inputSpacerHeight,
+                            ),
+                            const SizedBox(
+                                width: SpacingConstants.inputSpacerSmallHeight),
+                            Text(
+                              context.messages.settingsAboutAppInformation,
+                              style: context.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: context.colorScheme.onSurface,
                               ),
-                              const SizedBox(
-                                  width:
-                                      SpacingConstants.inputSpacerSmallHeight),
-                              Text(
-                                context.messages.settingsAboutAppInformation,
-                                style: context.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: context.colorScheme.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: halfVerticalSpacer),
-                          _buildInfoRow(context.messages.settingsAboutVersion,
-                              '$version ($buildNumber)', context),
-                          const SizedBox(height: halfSmallSpacer),
-                          _buildInfoRow(context.messages.settingsAboutPlatform,
-                              _getPlatformName(), context),
-                          const SizedBox(height: halfSmallSpacer),
-                          _buildInfoRow(context.messages.settingsAboutBuildType,
-                              _getBuildType(), context),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: halfVerticalSpacer),
+                        _buildInfoRow(context.messages.settingsAboutVersion,
+                            '$version ($buildNumber)', context),
+                        const SizedBox(height: halfSmallSpacer),
+                        _buildInfoRow(context.messages.settingsAboutPlatform,
+                            _getPlatformName(), context),
+                        const SizedBox(height: halfSmallSpacer),
+                        _buildInfoRow(context.messages.settingsAboutBuildType,
+                            _getBuildType(), context),
+                      ],
                     ),
                   ),
                   const SizedBox(height: halfVerticalSpacer),
                   // Statistics Card
-                  ModernBaseCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(
-                          SpacingConstants.inputSpacerHeight),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.analytics_rounded,
-                                color: context.colorScheme.primary,
-                                size: SpacingConstants.inputSpacerHeight,
+                  buildCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.analytics_rounded,
+                              color: context.colorScheme.primary,
+                              size: SpacingConstants.inputSpacerHeight,
+                            ),
+                            const SizedBox(
+                                width: SpacingConstants.inputSpacerSmallHeight),
+                            Text(
+                              context.messages.settingsAboutYourData,
+                              style: context.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: context.colorScheme.onSurface,
                               ),
-                              const SizedBox(
-                                  width:
-                                      SpacingConstants.inputSpacerSmallHeight),
-                              Text(
-                                context.messages.settingsAboutYourData,
-                                style: context.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: context.colorScheme.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: halfVerticalSpacer),
-                          _buildInfoRow(
-                              context.messages.settingsAboutJournalEntries,
-                              '${snapshot.data ?? 0}',
-                              context),
-                          const SizedBox(height: halfSmallSpacer),
-                          const FlaggedCount(),
-                          const SizedBox(height: halfVerticalSpacer),
-                          const TaskCounts(),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: halfVerticalSpacer),
+                        _buildInfoRow(
+                            context.messages.settingsAboutJournalEntries,
+                            '${snapshot.data ?? 0}',
+                            context),
+                        const SizedBox(height: halfSmallSpacer),
+                        const FlaggedCount(),
+                        const SizedBox(height: halfVerticalSpacer),
+                        const TaskCounts(),
+                      ],
                     ),
                   ),
                   const SizedBox(height: halfVerticalSpacer),
