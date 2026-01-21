@@ -61,7 +61,7 @@ jobs:
 
   build-voxtral-macos:
     name: Build Voxtral Server (macOS x64)
-    runs-on: macos-13
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v5
 
@@ -105,7 +105,7 @@ jobs:
 
   build-voxtral-macos-arm64:
     name: Build Voxtral Server (macOS ARM64)
-    runs-on: macos-15-arm64
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v5
 
@@ -195,7 +195,7 @@ jobs:
 
   build-whisper-macos:
     name: Build Whisper Server (macOS x64)
-    runs-on: macos-13
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v5
 
@@ -239,7 +239,7 @@ jobs:
 
   build-whisper-macos-arm64:
     name: Build Whisper Server (macOS ARM64)
-    runs-on: macos-15-arm64
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v5
 
