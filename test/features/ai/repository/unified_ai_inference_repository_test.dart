@@ -145,6 +145,7 @@ void main() {
     registerFallbackValue(FakeJournalAudio());
     registerFallbackValue(FakeChecklistData());
     registerFallbackValue(FakeChecklistItemData());
+    registerFallbackValue(ChatCompletionMessageInputAudioFormat.wav);
   });
 
   late Directory? baseTempDir;
@@ -2218,6 +2219,7 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -2260,6 +2262,7 @@ void main() {
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
               stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
             ),
           ).called(1);
 
@@ -2962,6 +2965,7 @@ Some task summary content...''';
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3027,6 +3031,7 @@ Some task summary content...''';
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
               stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
             ),
           ).called(1);
 
@@ -3440,6 +3445,7 @@ Remaining steps:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -3851,6 +3857,7 @@ Remaining steps:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4588,6 +4595,7 @@ Take into account the following task context:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -5208,6 +5216,7 @@ Take into account the following task context:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -5470,6 +5479,7 @@ Take into account the following task context:
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
           ),
         ).thenAnswer((_) => mockStream);
 

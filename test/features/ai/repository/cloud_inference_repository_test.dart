@@ -3045,4 +3045,270 @@ void main() {
       });
     });
   });
+
+  group('CloudInferenceRepository - generateWithAudio audioFormat parameter',
+      () {
+    late MockOpenAIClient mockClient;
+    late MockHttpClient mockHttpClient;
+    late ProviderContainer container;
+    late CloudInferenceRepository repository;
+
+    setUp(() {
+      mockClient = MockOpenAIClient();
+      mockHttpClient = MockHttpClient();
+      final mockOllamaRepo = MockOllamaInferenceRepository();
+      final mockGeminiRepo = MockGeminiInferenceRepository();
+
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+    });
+
+    tearDown(() async {
+      mockHttpClient.close();
+      container.dispose();
+    });
+
+    test('OpenAI provider uses passed wav audioFormat for chat completions',
+        () {
+      // Arrange - non-transcription model uses chat completions path
+      final openAiProvider = AiConfigInferenceProvider(
+        id: 'openai-provider',
+        name: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - use non-transcription model with wav format
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'gpt-4o-audio-preview', // Not a transcription model
+        audioBase64: 'test-audio-base64',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        provider: openAiProvider,
+        overrideClient: mockClient,
+      );
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      // Check for format: wav in the audio input configuration
+      expect(requestString,
+          contains('format: ChatCompletionMessageInputAudioFormat.wav'));
+    });
+
+    test('OpenAI provider uses passed mp3 audioFormat for chat completions',
+        () {
+      // Arrange
+      final openAiProvider = AiConfigInferenceProvider(
+        id: 'openai-provider',
+        name: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - use non-transcription model with mp3 format
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'gpt-4o-audio-preview',
+        audioBase64: 'test-audio-base64',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        provider: openAiProvider,
+        overrideClient: mockClient,
+        audioFormat: ChatCompletionMessageInputAudioFormat.mp3,
+      );
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      // Check for format: mp3 in the audio input configuration
+      expect(requestString,
+          contains('format: ChatCompletionMessageInputAudioFormat.mp3'));
+    });
+
+    test('Mistral provider uses passed audioFormat for chat completions', () {
+      // Arrange
+      final mistralProvider = AiConfigInferenceProvider(
+        id: 'mistral-provider',
+        name: 'Mistral',
+        baseUrl: 'https://api.mistral.ai/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.mistral,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - use wav format for Mistral
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'mistral-large',
+        audioBase64: 'test-audio-base64',
+        baseUrl: 'https://api.mistral.ai/v1',
+        apiKey: 'test-key',
+        provider: mistralProvider,
+        overrideClient: mockClient,
+      );
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      // Check for format: wav in the audio input configuration
+      expect(requestString,
+          contains('format: ChatCompletionMessageInputAudioFormat.wav'));
+    });
+
+    test('generic provider uses mp3 format regardless of audioFormat parameter',
+        () {
+      // Arrange - generic provider should always use mp3
+      final genericProvider = AiConfigInferenceProvider(
+        id: 'generic-provider',
+        name: 'Generic',
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - pass wav format but expect mp3 to be used
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'some-model',
+        audioBase64: 'test-audio-base64',
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        provider: genericProvider,
+        overrideClient: mockClient,
+      );
+
+      // Assert - should use mp3 regardless of passed audioFormat
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      // Generic providers always use mp3, ignoring the passed audioFormat
+      expect(requestString,
+          contains('format: ChatCompletionMessageInputAudioFormat.mp3'));
+    });
+  });
 }

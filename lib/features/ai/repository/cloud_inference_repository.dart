@@ -273,6 +273,8 @@ class CloudInferenceRepository {
   ///   provider: The inference provider configuration
   ///   maxCompletionTokens: Maximum tokens for completion
   ///   overrideClient: Optional client override for testing
+  ///   audioFormat: The actual format of the audio data (wav or mp3).
+  ///     Required for Mistral/OpenAI chat completions. Defaults to wav.
   ///
   /// Returns:
   ///   Stream of chat completion responses
@@ -287,6 +289,8 @@ class CloudInferenceRepository {
     OpenAIClient? overrideClient,
     List<ChatCompletionTool>? tools,
     bool stream = true,
+    ChatCompletionMessageInputAudioFormat audioFormat =
+        ChatCompletionMessageInputAudioFormat.wav,
   }) {
     final client = overrideClient ??
         OpenAIClient(
@@ -345,12 +349,12 @@ class CloudInferenceRepository {
       );
     }
 
-    // Use WAV format for Mistral and OpenAI (audio is converted to WAV before sending)
-    // Use MP3 format for other providers (Gemini accepts various formats)
-    final audioFormat =
+    // Use the provided audio format for Mistral and OpenAI (only wav/mp3 supported)
+    // For other providers (Gemini), use the provided format or default to mp3
+    final effectiveAudioFormat =
         (provider.inferenceProviderType == InferenceProviderType.mistral ||
                 provider.inferenceProviderType == InferenceProviderType.openAi)
-            ? ChatCompletionMessageInputAudioFormat.wav
+            ? audioFormat
             : ChatCompletionMessageInputAudioFormat.mp3;
 
     return client
@@ -364,7 +368,7 @@ class CloudInferenceRepository {
                     ChatCompletionMessageContentPart.audio(
                       inputAudio: ChatCompletionMessageInputAudio(
                         data: audioBase64,
-                        format: audioFormat,
+                        format: effectiveAudioFormat,
                       ),
                     ),
                   ],
