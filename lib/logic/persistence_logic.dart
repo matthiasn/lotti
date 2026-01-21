@@ -15,16 +15,15 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/location.dart';
-import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
 
 class PersistenceLogic {
@@ -33,7 +32,7 @@ class PersistenceLogic {
   }
 
   JournalDb get _journalDb => getIt<JournalDb>();
-  VectorClockService get _vectorClockService => getIt<VectorClockService>();
+  MetadataService get _metadataService => getIt<MetadataService>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   LoggingService get _loggingService => getIt<LoggingService>();
   final OutboxService outboxService = getIt<OutboxService>();
@@ -51,11 +50,9 @@ class PersistenceLogic {
   }
 
   /// Creates a [Metadata] object with either a random UUID v1 ID or a
-  /// deterministic UUID v5 ID. If [uuidV5Input] is provided, it will be used
-  /// as the basis for the UUID v5 ID.
-  /// The [dateFrom] and [dateTo] parameters are optional and will default to
-  /// the current date and time if not provided. The [dateFrom] and [dateTo] can
-  /// for example differ when importing photos from the camera roll.
+  /// deterministic UUID v5 ID.
+  ///
+  /// Delegates to [MetadataService.createMetadata].
   Future<Metadata> createMetadata({
     DateTime? dateFrom,
     DateTime? dateTo,
@@ -66,33 +63,22 @@ class PersistenceLogic {
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
-  }) async {
-    final now = DateTime.now();
-    final vc = await _vectorClockService.getNextVectorClock();
+  }) =>
+      _metadataService.createMetadata(
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        uuidV5Input: uuidV5Input,
+        private: private,
+        tagIds: tagIds,
+        labelIds: labelIds,
+        categoryId: categoryId,
+        starred: starred,
+        flag: flag,
+      );
 
-    // avoid inserting the same external entity multiple times
-    final id = uuidV5Input != null
-        ? uuid.v5(Namespace.nil.value, uuidV5Input)
-        : uuid.v1();
-
-    return Metadata(
-      createdAt: now,
-      updatedAt: now,
-      dateFrom: dateFrom ?? now,
-      dateTo: dateTo ?? now,
-      id: id,
-      vectorClock: vc,
-      private: private,
-      tagIds: tagIds,
-      labelIds: labelIds,
-      categoryId: categoryId,
-      starred: starred,
-      timezone: await getLocalTimezone(),
-      utcOffset: now.timeZoneOffset.inMinutes,
-      flag: flag,
-    );
-  }
-
+  /// Updates existing [Metadata] with a new vector clock and optional field changes.
+  ///
+  /// Delegates to [MetadataService.updateMetadata].
   Future<Metadata> updateMetadata(
     Metadata metadata, {
     DateTime? dateFrom,
@@ -102,17 +88,16 @@ class PersistenceLogic {
     DateTime? deletedAt,
     List<String>? labelIds,
     bool clearLabelIds = false,
-  }) async =>
-      metadata.copyWith(
-        updatedAt: DateTime.now(),
-        vectorClock: await _vectorClockService.getNextVectorClock(
-          previous: metadata.vectorClock,
-        ),
-        dateFrom: dateFrom ?? metadata.dateFrom,
-        dateTo: dateTo ?? metadata.dateTo,
-        categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
-        deletedAt: deletedAt ?? metadata.deletedAt,
-        labelIds: clearLabelIds ? null : labelIds ?? metadata.labelIds,
+  }) =>
+      _metadataService.updateMetadata(
+        metadata,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        categoryId: categoryId,
+        clearCategoryId: clearCategoryId,
+        deletedAt: deletedAt,
+        labelIds: labelIds,
+        clearLabelIds: clearLabelIds,
       );
 
   Future<QuantitativeEntry?> createQuantitativeEntry(
@@ -412,7 +397,7 @@ class PersistenceLogic {
       createdAt: now,
       updatedAt: now,
       hidden: false,
-      vectorClock: await _vectorClockService.getNextVectorClock(),
+      vectorClock: await _metadataService.getNextVectorClock(),
     );
 
     final res = await _journalDb.upsertEntryLink(link);
@@ -474,7 +459,7 @@ class PersistenceLogic {
             vectorClock: withTags.meta.vectorClock,
             jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.initial,
-            originatingHostId: await _vectorClockService.getHost(),
+            originatingHostId: await _metadataService.getHost(),
           ),
         );
       }
@@ -805,7 +790,7 @@ class PersistenceLogic {
             vectorClock: journalEntity.meta.vectorClock,
             jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.update,
-            originatingHostId: await _vectorClockService.getHost(),
+            originatingHostId: await _metadataService.getHost(),
           ),
         );
       }

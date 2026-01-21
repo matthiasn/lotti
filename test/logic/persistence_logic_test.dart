@@ -26,6 +26,7 @@ import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -146,6 +147,11 @@ void main() {
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<VectorClockService>(VectorClockService())
+        ..registerSingleton<MetadataService>(
+          MetadataService(
+            vectorClockService: getIt<VectorClockService>(),
+          ),
+        )
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
 
       // Set the location for the persistence logic

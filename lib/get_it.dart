@@ -40,6 +40,7 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -303,6 +304,9 @@ Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
     ..registerSingleton<BackfillRequestService>(backfillRequestService)
+    ..registerSingleton<MetadataService>(
+      MetadataService(vectorClockService: vectorClockService),
+    )
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(

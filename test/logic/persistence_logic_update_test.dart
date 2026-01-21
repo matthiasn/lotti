@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -193,6 +194,9 @@ void main() {
       ..registerSingleton<Fts5Db>(fts5Db)
       ..registerSingleton<NotificationService>(notificationService)
       ..registerSingleton<VectorClockService>(vectorClockService)
+      ..registerSingleton<MetadataService>(
+        MetadataService(vectorClockService: vectorClockService),
+      )
       ..registerSingleton<TagsService>(tagsService);
 
     logic = TestPersistenceLogic();
