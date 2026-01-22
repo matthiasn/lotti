@@ -196,6 +196,14 @@
     }
   },
   "aiSettingsFilterByReasoningTooltip": "Filter by reasoning capability",
+  "aiSettingsFilterByResponseTypeTooltip": "Filter by {responseType} prompts",
+  "@aiSettingsFilterByResponseTypeTooltip": {
+    "placeholders": {
+      "responseType": {
+        "type": "String"
+      }
+    }
+  },
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Vision",

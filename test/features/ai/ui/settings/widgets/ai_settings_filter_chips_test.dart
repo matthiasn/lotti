@@ -437,5 +437,231 @@ void main() {
             findsAtLeastNWidgets(4)); // At least 3 capabilities + 1 reasoning
       });
     });
+
+    group('response type filters (Prompts tab)', () {
+      late AiSettingsFilterState promptsTabState;
+
+      setUp(() {
+        promptsTabState = AiSettingsFilterState.initial().copyWith(
+          activeTab: AiSettingsTab.prompts,
+        );
+      });
+
+      Widget createPromptsTabWidget({
+        AiSettingsFilterState? filterState,
+        ValueChanged<AiSettingsFilterState>? onFilterChanged,
+      }) {
+        return AiTestSetup.createTestApp(
+          providerOverrides: AiTestSetup.createControllerOverrides(
+            providers: mockProviders,
+          ),
+          child: AiSettingsFilterChips(
+            filterState: filterState ?? promptsTabState,
+            onFilterChanged: onFilterChanged ??
+                (state) {
+                  filterChanges.add(state);
+                },
+          ),
+        );
+      }
+
+      testWidgets('displays response type filter chips on Prompts tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createPromptsTabWidget());
+        await tester.pumpAndSettle();
+
+        // Should show all 7 response type chips (using localized names)
+        expect(find.text('Task Summary'), findsOneWidget);
+        expect(find.text('Image Analysis'), findsOneWidget);
+        expect(find.text('Audio Transcription'), findsOneWidget);
+        expect(find.text('Checklist Updates'), findsOneWidget);
+        expect(find.text('Generated Prompt'), findsOneWidget);
+        expect(find.text('Image Prompt'), findsOneWidget);
+        expect(find.text('Generate Cover Art'), findsOneWidget);
+      });
+
+      testWidgets('displays response type icons on Prompts tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createPromptsTabWidget());
+
+        // Check for response type icons
+        expect(find.byIcon(Icons.summarize_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.mic_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.checklist_rtl_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.auto_fix_high_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.palette_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
+      });
+
+      testWidgets('does not show capability filters on Prompts tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createPromptsTabWidget());
+
+        // Should NOT show capability chips (Text, Vision, Audio, Reasoning)
+        expect(find.text('Text'), findsNothing);
+        expect(find.text('Vision'), findsNothing);
+        expect(find.text('Audio'), findsNothing);
+        expect(find.text('Reasoning'), findsNothing);
+      });
+
+      testWidgets('toggles response type filter on selection',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createPromptsTabWidget());
+
+        // Find and tap the Task Summary chip
+        final taskSummaryChip = find.ancestor(
+          of: find.text('Task Summary'),
+          matching: find.byType(FilterChip),
+        );
+        expect(taskSummaryChip, findsOneWidget);
+
+        await tester.tap(taskSummaryChip);
+        await tester.pump();
+
+        expect(filterChanges, hasLength(1));
+        expect(filterChanges.first.selectedResponseTypes,
+            {AiResponseType.taskSummary});
+      });
+
+      testWidgets('can select multiple response types',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createPromptsTabWidget());
+
+        // Select Task Summary first
+        final taskSummaryChip = find.ancestor(
+          of: find.text('Task Summary'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(taskSummaryChip);
+        await tester.pump();
+
+        // Update widget with new state
+        final newState = filterChanges.first;
+        await tester.pumpWidget(createPromptsTabWidget(filterState: newState));
+
+        // Select Image Analysis as well
+        final imageAnalysisChip = find.ancestor(
+          of: find.text('Image Analysis'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(imageAnalysisChip);
+        await tester.pump();
+
+        expect(filterChanges, hasLength(2));
+        expect(filterChanges.last.selectedResponseTypes,
+            {AiResponseType.taskSummary, AiResponseType.imageAnalysis});
+      });
+
+      testWidgets('deselects response type when tapped again',
+          (WidgetTester tester) async {
+        final filterState = promptsTabState.copyWith(
+          selectedResponseTypes: {AiResponseType.taskSummary},
+        );
+
+        await tester
+            .pumpWidget(createPromptsTabWidget(filterState: filterState));
+
+        // Tap Task Summary to deselect
+        final taskSummaryChip = find.ancestor(
+          of: find.text('Task Summary'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(taskSummaryChip);
+        await tester.pump();
+
+        expect(filterChanges, hasLength(1));
+        expect(filterChanges.first.selectedResponseTypes, isEmpty);
+      });
+
+      testWidgets('shows selected state for active response type filters',
+          (WidgetTester tester) async {
+        final filterState = promptsTabState.copyWith(
+          selectedResponseTypes: {
+            AiResponseType.taskSummary,
+            AiResponseType.imageAnalysis,
+          },
+        );
+
+        await tester
+            .pumpWidget(createPromptsTabWidget(filterState: filterState));
+
+        // Find FilterChip widgets
+        final taskSummaryChip = tester.widget<FilterChip>(
+          find.ancestor(
+            of: find.text('Task Summary'),
+            matching: find.byType(FilterChip),
+          ),
+        );
+        final imageAnalysisChip = tester.widget<FilterChip>(
+          find.ancestor(
+            of: find.text('Image Analysis'),
+            matching: find.byType(FilterChip),
+          ),
+        );
+        final audioTranscriptionChip = tester.widget<FilterChip>(
+          find.ancestor(
+            of: find.text('Audio Transcription'),
+            matching: find.byType(FilterChip),
+          ),
+        );
+
+        expect(taskSummaryChip.selected, isTrue);
+        expect(imageAnalysisChip.selected, isTrue);
+        expect(audioTranscriptionChip.selected, isFalse);
+      });
+
+      testWidgets('shows clear filters button when response types selected',
+          (WidgetTester tester) async {
+        final filterState = promptsTabState.copyWith(
+          selectedResponseTypes: {AiResponseType.taskSummary},
+        );
+
+        await tester
+            .pumpWidget(createPromptsTabWidget(filterState: filterState));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Clear'), findsOneWidget);
+        expect(find.byIcon(Icons.clear), findsOneWidget);
+      });
+
+      testWidgets('clears prompt filters when clear button tapped',
+          (WidgetTester tester) async {
+        final filterState = promptsTabState.copyWith(
+          searchQuery: 'test query',
+          selectedProviders: {'provider1'},
+          selectedResponseTypes: {
+            AiResponseType.taskSummary,
+            AiResponseType.imageAnalysis,
+          },
+        );
+
+        await tester
+            .pumpWidget(createPromptsTabWidget(filterState: filterState));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Clear'));
+        await tester.pump();
+
+        expect(filterChanges, hasLength(1));
+        final clearedState = filterChanges.first;
+
+        // Should preserve search query and active tab
+        expect(clearedState.searchQuery, 'test query');
+        expect(clearedState.activeTab, AiSettingsTab.prompts);
+
+        // Should clear prompt-specific filters
+        expect(clearedState.selectedProviders, isEmpty);
+        expect(clearedState.selectedResponseTypes, isEmpty);
+      });
+
+      testWidgets('hides clear button when no prompt filters active',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createPromptsTabWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Clear'), findsNothing);
+      });
+    });
   });
 }

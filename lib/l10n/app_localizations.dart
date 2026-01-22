@@ -933,6 +933,12 @@ abstract class AppLocalizations {
   /// **'Filter by reasoning capability'**
   String get aiSettingsFilterByReasoningTooltip;
 
+  /// No description provided for @aiSettingsFilterByResponseTypeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by {responseType} prompts'**
+  String aiSettingsFilterByResponseTypeTooltip(String responseType);
+
   /// No description provided for @aiSettingsModalityAudio.
   ///
   /// In en, this message translates to:

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
@@ -46,6 +47,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Provider Filter (shown on both Models and Prompts tabs)
             _buildProviderFilter(context, ref),
@@ -53,6 +55,10 @@ class AiSettingsFilterChips extends ConsumerWidget {
             // Capability Filters (only shown on Models tab)
             if (filterState.activeTab == AiSettingsTab.models)
               _buildCapabilityFilters(context),
+
+            // Response Type Filters (only shown on Prompts tab)
+            if (filterState.activeTab == AiSettingsTab.prompts)
+              _buildResponseTypeFilters(context),
           ],
         ),
       ),
@@ -91,7 +97,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
                 ),
               );
             },
-            child: filterState.hasModelFilters
+            child: filterState.hasActiveFilters
                 ? ActionChip(
                     key: const ValueKey('clear_button'),
                     avatar: Icon(
@@ -108,7 +114,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
                       ),
                     ),
                     onPressed: () {
-                      onFilterChanged(filterState.resetModelFilters());
+                      onFilterChanged(filterState.resetCurrentTabFilters());
                     },
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     backgroundColor: Colors.transparent,
@@ -225,6 +231,58 @@ class AiSettingsFilterChips extends ConsumerWidget {
           tooltip: context.messages.aiSettingsFilterByReasoningTooltip,
         ),
       ],
+    );
+  }
+
+  /// Builds the response type filters section for Prompts tab
+  Widget _buildResponseTypeFilters(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: AiResponseType.values.map((responseType) {
+        final isSelected =
+            filterState.selectedResponseTypes.contains(responseType);
+        return FilterChip(
+          avatar: Icon(responseType.icon, size: 16),
+          label: Text(responseType.localizedName(context)),
+          selected: isSelected,
+          onSelected: (selected) {
+            final newResponseTypes =
+                Set<AiResponseType>.from(filterState.selectedResponseTypes);
+            if (selected) {
+              newResponseTypes.add(responseType);
+            } else {
+              newResponseTypes.remove(responseType);
+            }
+            onFilterChanged(filterState.copyWith(
+              selectedResponseTypes: newResponseTypes,
+            ));
+          },
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          backgroundColor:
+              context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+          selectedColor:
+              context.colorScheme.primaryContainer.withValues(alpha: 0.7),
+          checkmarkColor: context.colorScheme.onPrimaryContainer,
+          side: BorderSide(
+            color: isSelected
+                ? context.colorScheme.primary.withValues(alpha: 0.8)
+                : context.colorScheme.primaryContainer.withValues(alpha: 0.3),
+          ),
+          labelStyle: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+            color: isSelected
+                ? context.colorScheme.onPrimaryContainer
+                : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          tooltip: context.messages.aiSettingsFilterByResponseTypeTooltip(
+            responseType.localizedName(context),
+          ),
+        );
+      }).toList(),
     );
   }
 }

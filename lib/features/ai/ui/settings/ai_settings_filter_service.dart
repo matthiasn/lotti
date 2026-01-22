@@ -153,6 +153,14 @@ class AiSettingsFilterService {
         }
       }
 
+      // Response type filter - only apply if response types are selected
+      if (filterState.selectedResponseTypes.isNotEmpty) {
+        if (!filterState.selectedResponseTypes
+            .contains(prompt.aiResponseType)) {
+          return false;
+        }
+      }
+
       return true;
     }).toList();
   }
