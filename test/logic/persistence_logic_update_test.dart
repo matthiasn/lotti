@@ -46,11 +46,6 @@ class TestPersistenceLogic extends PersistenceLogic {
   JournalEntity? lastUpdateDbEntity;
 
   @override
-  Future<void> init() async {
-    // Skip location initialization for unit tests.
-  }
-
-  @override
   Future<Metadata> updateMetadata(
     Metadata metadata, {
     DateTime? dateFrom,

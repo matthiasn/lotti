@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -23,31 +23,16 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/location.dart';
 import 'package:uuid/uuid.dart';
 
 class PersistenceLogic {
-  PersistenceLogic() {
-    init();
-  }
-
   JournalDb get _journalDb => getIt<JournalDb>();
   MetadataService get _metadataService => getIt<MetadataService>();
+  GeolocationService get _geolocationService => getIt<GeolocationService>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   LoggingService get _loggingService => getIt<LoggingService>();
   final OutboxService outboxService = getIt<OutboxService>();
   final uuid = const Uuid();
-  DeviceLocation? location;
-
-  /// Tracks entity IDs currently having geolocation added to prevent
-  /// concurrent additions which could cause race conditions.
-  final Set<String> _pendingGeolocationAdds = {};
-
-  Future<void> init() async {
-    if (!Platform.isWindows) {
-      location = DeviceLocation();
-    }
-  }
 
   /// Creates a [Metadata] object with either a random UUID v1 ID or a
   /// deterministic UUID v5 ID.
@@ -668,60 +653,17 @@ class PersistenceLogic {
     return true;
   }
 
-  FutureOr<Geolocation?> addGeolocationAsync(String journalEntityId) async {
-    // Prevent concurrent geolocation additions for the same entity.
-    // This avoids race conditions where multiple async calls could
-    // both see geolocation == null and then both try to update.
-    if (_pendingGeolocationAdds.contains(journalEntityId)) {
-      return null;
-    }
-    _pendingGeolocationAdds.add(journalEntityId);
+  /// Adds geolocation to a journal entry asynchronously.
+  ///
+  /// Delegates to [GeolocationService.addGeolocationAsync].
+  FutureOr<Geolocation?> addGeolocationAsync(String journalEntityId) =>
+      _geolocationService.addGeolocationAsync(journalEntityId, updateDbEntity);
 
-    try {
-      Geolocation? geolocation;
-      try {
-        geolocation = await location?.getCurrentGeoLocation();
-      } catch (e) {
-        _loggingService.captureException(
-          e,
-          domain: 'persistence_logic',
-          subDomain: 'addGeolocation_getCurrentGeoLocation',
-        );
-      }
-
-      if (geolocation == null) {
-        return null;
-      }
-
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-      // Only add geolocation if the entry doesn't already have one.
-      // Geolocation should be set once at creation and never overwritten.
-      if (journalEntity != null && journalEntity.geolocation == null) {
-        await updateDbEntity(
-          journalEntity.copyWith(
-            meta: await updateMetadata(journalEntity.meta),
-            geolocation: geolocation,
-          ),
-        );
-        return geolocation;
-      }
-
-      return journalEntity?.geolocation;
-    } catch (exception, stackTrace) {
-      _loggingService.captureException(
-        exception,
-        domain: 'persistence_logic',
-        subDomain: 'addGeolocation',
-        stackTrace: stackTrace,
-      );
-      return null;
-    } finally {
-      _pendingGeolocationAdds.remove(journalEntityId);
-    }
-  }
-
+  /// Fire-and-forget: add geolocation to entry.
+  ///
+  /// Delegates to [GeolocationService.addGeolocation].
   void addGeolocation(String journalEntityId) {
-    addGeolocationAsync(journalEntityId);
+    _geolocationService.addGeolocation(journalEntityId, updateDbEntity);
   }
 
   Future<bool> updateJournalEntity(
