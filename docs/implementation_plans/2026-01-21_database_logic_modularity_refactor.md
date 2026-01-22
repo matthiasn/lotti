@@ -2,6 +2,35 @@
 
 **Date**: 2026-01-21
 
+---
+
+## Progress Summary
+
+| Phase | Description | Status | Tests |
+|-------|-------------|--------|-------|
+| 1 | Extract MetadataService from PersistenceLogic | ✅ Complete | 38 |
+| 2 | Extract GeolocationService from PersistenceLogic | ✅ Complete | 19 |
+| 3 | Extract ExifDataExtractor from image_import | ✅ Complete | 70 |
+| 4 | Extract AudioMetadataExtractor from image_import | Pending | - |
+| 5 | Split JournalDb - Extract ConflictRepository | Pending | - |
+| 6 | Split JournalDb - Extract EntityDefinitionRepository | Pending | - |
+| 7 | Split JournalDb - Extract TaskRepository | Pending | - |
+| 8 | Introduce Repository Interfaces | Pending | - |
+| 9 | Extract SyncQueueService from PersistenceLogic | Pending | - |
+| 10 | Migrate getIt Calls to Constructor Injection | Pending | - |
+| 11 | HealthImport Decomposition | Pending | - |
+| 12 | Final JournalDb Cleanup | Pending | - |
+
+**Total new tests added**: 127
+
+### Completed Work
+
+**Phase 1-2** (2026-01-21): Extracted `MetadataService` and `GeolocationService` from `PersistenceLogic`, reducing its responsibilities and improving testability. PersistenceLogic no longer has a `location` field or `init()` method.
+
+**Phase 3** (2026-01-22): Extracted `ExifDataExtractor` as a pure utility class for parsing EXIF metadata (GPS coordinates, timestamps, rational numbers). The class has no side effects and is easily testable.
+
+---
+
 ## Overview
 
 Refactor `lib/database` and `lib/logic` to improve modularity, reduce coupling, and enhance testability. The current architecture has monolithic classes (JournalDb at 1,396 lines, PersistenceLogic at 874 lines) with hidden dependencies via service locator pattern.
@@ -165,54 +194,66 @@ class GeolocationService {
 
 ---
 
-## Phase 3: Extract EXIF Data Extractor from image_import
+## Phase 3: Extract EXIF Data Extractor from image_import ✅ COMPLETED
+
+**Status**: Completed on 2026-01-22
 
 **Goal**: Extract GPS parsing and timestamp extraction utilities into a reusable module.
 
-**Scope**: ~100 lines, pure functions, no side effects
+**Scope**: ~130 lines (service + comprehensive tests), pure functions, no side effects
 
-### Files to Create
+### Files Created
 
 **`/lib/logic/media/exif_data_extractor.dart`**
 ```dart
 class ExifDataExtractor {
-  /// Extract GPS coordinates from EXIF data
-  static Geolocation? extractGpsCoordinates(Map<String, IfdTag> exifData);
+  /// Constants for EXIF GPS keys
+  static const String exifGpsLatitudeKey = 'GPS GPSLatitude';
+  static const String exifGpsLongitudeKey = 'GPS GPSLongitude';
+  static const String exifGpsLatitudeRefKey = 'GPS GPSLatitudeRef';
+  static const String exifGpsLongitudeRefKey = 'GPS GPSLongitudeRef';
+  static const List<String> exifTimestampKeys = [...];
 
-  /// Parse GPS coordinate from EXIF tag value
-  static double? parseGpsCoordinate(dynamic value);
+  /// Parse rational number from EXIF format (e.g., "123/456")
+  static double? parseRational(String value);
 
-  /// Parse rational number from EXIF
-  static double? parseRational(dynamic value);
-
-  /// Extract timestamp from EXIF data
-  static DateTime? extractTimestamp(Map<String, IfdTag> exifData);
+  /// Parse GPS coordinate from EXIF data to decimal degrees
+  static double? parseGpsCoordinate(dynamic coordData, String ref);
 
   /// Parse EXIF date string (YYYY:MM:DD HH:MM:SS)
   static DateTime? parseExifDateString(String? dateString);
+
+  /// Extract timestamp from EXIF data
+  static DateTime? extractTimestamp(Map<String, IfdTag>? exifData);
+
+  /// Extract GPS coordinates from EXIF data
+  static Geolocation? extractGpsCoordinates(
+    Map<String, IfdTag>? exifData,
+    DateTime createdAt,
+  );
 }
 ```
 
-### Files to Modify
+### Files Modified
 
 | File | Changes |
 |------|---------|
-| `/lib/logic/image_import.dart` | Replace inline functions with `ExifDataExtractor.method()` calls |
+| `/lib/logic/image_import.dart` | Delegate `parseRational`, `parseGpsCoordinate`, `extractGpsCoordinates`, and timestamp extraction to `ExifDataExtractor`; removed `_parseExifDateTime` (now unused); removed GPS key constants (now in ExifDataExtractor) |
 
-### Tests to Create
+### Tests Created
 
-**`/test/logic/media/exif_data_extractor_test.dart`**
-- Valid GPS coordinates parsed correctly
-- Malformed GPS data returns null (no crash)
-- Missing GPS fields handled gracefully
-- Valid timestamps parsed correctly
-- Invalid date formats return null
-- Edge cases: zero coordinates, negative values, rational edge cases
+**`/test/logic/media/exif_data_extractor_test.dart`** (70 tests)
+- `parseRational`: fraction formats, decimal formats, division by zero, edge cases
+- `parseGpsCoordinate`: N/S/E/W directions, null handling, equator/prime meridian, poles, date line
+- `parseExifDateString`: valid EXIF format, null/empty, invalid formats
+- `extractTimestamp`: null exifData, missing keys, priority order, malformed values
+- `extractGpsCoordinates`: missing GPS keys, valid coordinates (San Francisco, Sydney), geohash generation
+- Constants verification
 
 ### Success Criteria
-- [ ] All existing tests pass
-- [ ] ExifDataExtractor has 100% test coverage
-- [ ] image_import.dart reduced by ~100 lines
+- [x] All existing tests pass (71 tests in image_import_gps_test.dart and image_import_exif_test.dart)
+- [x] ExifDataExtractor has comprehensive test coverage (70 tests)
+- [x] image_import.dart delegates to ExifDataExtractor for all EXIF parsing
 
 ---
 

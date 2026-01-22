@@ -14,6 +14,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/media/exif_data_extractor.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/geohash.dart';
@@ -54,12 +55,6 @@ class MediaImportConstants {
   // File size limits (in bytes)
   static const int maxAudioFileSizeBytes = 500 * 1024 * 1024; // 500 MB
   static const int maxImageFileSizeBytes = 50 * 1024 * 1024; // 50 MB
-
-  // EXIF GPS keys
-  static const String exifGpsLatitudeKey = 'GPS GPSLatitude';
-  static const String exifGpsLongitudeKey = 'GPS GPSLongitude';
-  static const String exifGpsLatitudeRefKey = 'GPS GPSLatitudeRef';
-  static const String exifGpsLongitudeRefKey = 'GPS GPSLongitudeRef';
 
   // Logging domain
   static const String loggingDomain = 'media_import';
@@ -240,17 +235,9 @@ Future<void> importDroppedImages({
 Future<DateTime> _extractImageTimestamp(Uint8List data) async {
   try {
     final exifData = await readExifFromBytes(data);
-
-    // Try preferred keys in order.
-    const preferredKeys = [
-      'EXIF DateTimeOriginal', // Preferred for photos
-      'Image DateTime', // Fallback to file modification time
-    ];
-    for (final key in preferredKeys) {
-      if (exifData.containsKey(key)) {
-        final dateTimeStr = exifData[key].toString();
-        return _parseExifDateTime(dateTimeStr);
-      }
+    final timestamp = ExifDataExtractor.extractTimestamp(exifData);
+    if (timestamp != null) {
+      return timestamp;
     }
   } catch (exception, stackTrace) {
     // Log but don't fail - return current time as fallback
@@ -266,63 +253,15 @@ Future<DateTime> _extractImageTimestamp(Uint8List data) async {
   return DateTime.now();
 }
 
-/// Parses EXIF DateTime string format (yyyy:MM:dd HH:mm:ss)
-DateTime _parseExifDateTime(String exifDateTimeStr) {
-  try {
-    // EXIF format: "2023:12:25 14:30:45"
-    // Replace colons in date part with dashes for standard parsing
-    final parts = exifDateTimeStr.split(' ');
-    if (parts.length == 2) {
-      final datePart = parts[0].replaceAll(':', '-');
-      final timePart = parts[1];
-      final standardFormat = '$datePart $timePart';
-      return DateTime.parse(standardFormat);
-    }
-    // Log unexpected format
-    getIt<LoggingService>().captureException(
-      'Unexpected EXIF date format: $exifDateTimeStr',
-      domain: MediaImportConstants.loggingDomain,
-      subDomain: 'parseExifDateTime',
-    );
-  } catch (e, stackTrace) {
-    getIt<LoggingService>().captureException(
-      e,
-      domain: MediaImportConstants.loggingDomain,
-      subDomain: 'parseExifDateTime',
-      stackTrace: stackTrace,
-    );
-  }
-  return DateTime.now();
-}
-
 /// Parses a rational number from EXIF format
 ///
 /// EXIF rational numbers can be in fraction format (e.g., "123/456")
 /// or decimal format (e.g., "45.67").
 /// Returns the numeric value as a double, or null if parsing fails.
+///
+/// Delegates to [ExifDataExtractor.parseRational].
 @visibleForTesting
-double? parseRational(String value) {
-  try {
-    if (value.contains('/')) {
-      // Parse fraction format
-      final parts = value.split('/');
-      if (parts.length != 2) {
-        return null;
-      }
-      final numerator = double.parse(parts[0]);
-      final denominator = double.parse(parts[1]);
-      if (denominator == 0) {
-        return null;
-      }
-      return numerator / denominator;
-    } else {
-      // Parse decimal format
-      return double.parse(value);
-    }
-  } catch (e) {
-    return null;
-  }
-}
+double? parseRational(String value) => ExifDataExtractor.parseRational(value);
 
 /// Parses GPS coordinate from EXIF data to decimal degrees
 ///
@@ -330,56 +269,19 @@ double? parseRational(String value) {
 /// The coordinate data is typically in the format "[deg/1, min/1, sec/100]".
 /// The reference indicates direction: 'N', 'S' for latitude, 'E', 'W' for longitude.
 /// Returns decimal degrees as a double, or null if parsing fails.
+///
+/// Delegates to [ExifDataExtractor.parseGpsCoordinate].
 @visibleForTesting
-double? parseGpsCoordinate(dynamic coordData, String ref) {
-  try {
-    if (coordData == null) {
-      return null;
-    }
-
-    // Convert to string and clean up brackets
-    final coordStr =
-        coordData.toString().replaceAll('[', '').replaceAll(']', '');
-    final parts = coordStr.split(',');
-
-    if (parts.length != 3) {
-      return null;
-    }
-
-    // Parse degrees, minutes, seconds using rational parser
-    final degrees = parseRational(parts[0].trim());
-    final minutes = parseRational(parts[1].trim());
-    final seconds = parseRational(parts[2].trim());
-
-    if (degrees == null || minutes == null || seconds == null) {
-      return null;
-    }
-
-    // Convert to decimal degrees
-    var decimal = degrees + (minutes / 60.0) + (seconds / 3600.0);
-
-    // Apply directional sign (South and West are negative)
-    if (ref == 'S' || ref == 'W') {
-      decimal = -decimal;
-    }
-
-    return decimal;
-  } catch (e, stackTrace) {
-    getIt<LoggingService>().captureException(
-      e,
-      domain: MediaImportConstants.loggingDomain,
-      subDomain: 'parseGpsCoordinate',
-      stackTrace: stackTrace,
-    );
-    return null;
-  }
-}
+double? parseGpsCoordinate(dynamic coordData, String ref) =>
+    ExifDataExtractor.parseGpsCoordinate(coordData, ref);
 
 /// Extracts GPS coordinates from image EXIF data
 ///
 /// Attempts to read GPS latitude and longitude from EXIF metadata.
 /// Returns a Geolocation object if valid GPS data is found, otherwise returns null.
 /// Missing GPS data is common and not considered an error.
+///
+/// Delegates to [ExifDataExtractor.extractGpsCoordinates] for parsing.
 @visibleForTesting
 Future<Geolocation?> extractGpsCoordinates(
   Uint8List data,
@@ -387,42 +289,7 @@ Future<Geolocation?> extractGpsCoordinates(
 ) async {
   try {
     final exifData = await readExifFromBytes(data);
-
-    // Check for required GPS keys
-    if (!exifData.containsKey(MediaImportConstants.exifGpsLatitudeKey) ||
-        !exifData.containsKey(MediaImportConstants.exifGpsLongitudeKey) ||
-        !exifData.containsKey(MediaImportConstants.exifGpsLatitudeRefKey) ||
-        !exifData.containsKey(MediaImportConstants.exifGpsLongitudeRefKey)) {
-      // Missing GPS data is normal, not an error
-      return null;
-    }
-
-    // Extract GPS data
-    final latitudeData = exifData[MediaImportConstants.exifGpsLatitudeKey];
-    final longitudeData = exifData[MediaImportConstants.exifGpsLongitudeKey];
-    final latitudeRef =
-        exifData[MediaImportConstants.exifGpsLatitudeRefKey].toString();
-    final longitudeRef =
-        exifData[MediaImportConstants.exifGpsLongitudeRefKey].toString();
-
-    // Parse coordinates
-    final latitude = parseGpsCoordinate(latitudeData, latitudeRef);
-    final longitude = parseGpsCoordinate(longitudeData, longitudeRef);
-
-    if (latitude == null || longitude == null) {
-      return null;
-    }
-
-    // Create Geolocation object with geohash
-    return Geolocation(
-      createdAt: createdAt,
-      latitude: latitude,
-      longitude: longitude,
-      geohashString: getGeoHash(
-        latitude: latitude,
-        longitude: longitude,
-      ),
-    );
+    return ExifDataExtractor.extractGpsCoordinates(exifData, createdAt);
   } catch (exception, stackTrace) {
     // Log but don't fail - missing/invalid GPS is common
     getIt<LoggingService>().captureException(
