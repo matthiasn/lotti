@@ -477,7 +477,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String aiSettingsFilterByResponseTypeTooltip(String responseType) {
-    return 'Filter by $responseType prompts';
+    return 'Filtrer par prompts $responseType';
   }
 
   @override
