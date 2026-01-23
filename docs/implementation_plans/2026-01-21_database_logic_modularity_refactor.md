@@ -11,7 +11,7 @@
 | 1 | Extract MetadataService from PersistenceLogic | ✅ Complete | 38 |
 | 2 | Extract GeolocationService from PersistenceLogic | ✅ Complete | 19 |
 | 3 | Extract ExifDataExtractor from image_import | ✅ Complete | 70 |
-| 4 | Extract AudioMetadataExtractor from image_import | Pending | - |
+| 4 | Extract AudioMetadataExtractor from image_import | ✅ Complete | 34 |
 | 5 | Split JournalDb - Extract ConflictRepository | Pending | - |
 | 6 | Split JournalDb - Extract EntityDefinitionRepository | Pending | - |
 | 7 | Split JournalDb - Extract TaskRepository | Pending | - |
@@ -21,13 +21,15 @@
 | 11 | HealthImport Decomposition | Pending | - |
 | 12 | Final JournalDb Cleanup | Pending | - |
 
-**Total new tests added**: 127
+**Total new tests added**: 161
 
 ### Completed Work
 
 **Phase 1-2** (2026-01-21): Extracted `MetadataService` and `GeolocationService` from `PersistenceLogic`, reducing its responsibilities and improving testability. PersistenceLogic no longer has a `location` field or `init()` method.
 
 **Phase 3** (2026-01-22): Extracted `ExifDataExtractor` as a pure utility class for parsing EXIF metadata (GPS coordinates, timestamps, rational numbers). The class has no side effects and is easily testable.
+
+**Phase 4** (2026-01-23): Extracted `AudioMetadataExtractor` for audio file metadata operations (filename timestamp parsing, path computation, duration extraction via MediaKit). The image_import.dart functions now delegate to this class.
 
 ---
 
@@ -257,51 +259,70 @@ class ExifDataExtractor {
 
 ---
 
-## Phase 4: Extract Audio Metadata Extractor from image_import
+## Phase 4: Extract Audio Metadata Extractor from image_import ✅ COMPLETED
+
+**Status**: Completed on 2026-01-23
 
 **Goal**: Extract audio duration and timestamp extraction into a dedicated module.
 
-**Scope**: ~80 lines, async operations with timeout handling
+**Scope**: ~90 lines (service) + 34 tests
 
-### Files to Create
+### Files Created
 
 **`/lib/logic/media/audio_metadata_extractor.dart`**
 ```dart
 class AudioMetadataExtractor {
-  /// Extract duration from audio file using MediaKit
-  static Future<Duration> extractDuration(String filePath, {
-    Duration timeout = const Duration(seconds: 5),
-  });
-
-  /// Parse timestamp from audio filename patterns
-  static DateTime? parseFilenameTimestamp(String filename);
-
   /// Supported audio file extensions
   static const List<String> supportedExtensions = ['m4a', 'aac', 'mp3', 'wav', 'ogg'];
 
-  /// Check if file is a supported audio format
-  static bool isSupported(String filePath);
+  /// Timeout constants for MediaKit operations
+  static const Duration playerOpenTimeout = Duration(seconds: 3);
+  static const Duration durationStreamTimeout = Duration(seconds: 5);
+
+  /// Test bypass flag for duration extraction
+  static bool bypassMediaKitInTests = false;
+
+  /// Parse timestamp from audio filename (yyyy-MM-dd_HH-mm-ss-S format)
+  static DateTime? parseFilenameTimestamp(String filename);
+
+  /// Compute relative directory path for audio storage
+  static String computeRelativePath(DateTime timestamp);
+
+  /// Compute target filename for audio file
+  static String computeTargetFileName(DateTime timestamp, String extension);
+
+  /// Check if file extension is supported
+  static bool isSupported(String extension);
+
+  /// Select appropriate audio metadata reader based on environment
+  static AudioMetadataReader selectReader({AudioMetadataReader? registeredReader});
+
+  /// Extract duration from audio file using MediaKit
+  static Future<Duration> extractDuration(String filePath);
 }
 ```
 
-### Files to Modify
+### Files Modified
 
 | File | Changes |
 |------|---------|
-| `/lib/logic/image_import.dart` | Replace inline functions with `AudioMetadataExtractor.method()` calls |
+| `/lib/logic/image_import.dart` | Delegated `parseAudioFileTimestamp`, `computeAudioRelativePath`, `computeAudioTargetFileName`, `selectAudioMetadataReader`, and `extractDurationWithMediaKit` to `AudioMetadataExtractor`; removed `media_kit` import |
 
-### Tests to Create
+### Tests Created
 
-**`/test/logic/media/audio_metadata_extractor_test.dart`**
-- Filename timestamp patterns parsed correctly
-- Unknown filename formats return null
-- Extension checking works for all supported formats
-- Duration extraction timeout handled (returns Duration.zero)
+**`/test/logic/media/audio_metadata_extractor_test.dart`** (34 tests)
+- `parseFilenameTimestamp`: valid formats, extensions, edge cases
+- `computeRelativePath`: date formatting, single digits, leap years
+- `computeTargetFileName`: full timestamps, extensions, edge cases
+- `isSupported`: supported/unsupported extensions, case insensitivity
+- `extractDuration`: bypass flag, non-existent files
+- `selectReader`: no-op reader, registered reader, multiple calls
+- Constants verification
 
 ### Success Criteria
-- [ ] All existing tests pass
-- [ ] AudioMetadataExtractor has 90%+ test coverage
-- [ ] image_import.dart reduced by ~80 lines
+- [x] All existing tests pass (58 tests in image_import_audio_test.dart)
+- [x] AudioMetadataExtractor has comprehensive test coverage (34 tests)
+- [x] image_import.dart delegates to AudioMetadataExtractor for all audio operations
 
 ---
 

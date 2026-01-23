@@ -14,12 +14,12 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/logic/media/exif_data_extractor.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 /// Creates an onCreated callback for automatic image analysis.
@@ -462,96 +462,62 @@ Future<void> handleDroppedMedia({
 ///
 /// Expected format: yyyy-MM-dd_HH-mm-ss-S.extension (e.g., 2025-10-20_16-49-32-203.m4a)
 /// Returns the parsed DateTime if successful, null otherwise.
+///
+/// Delegates to [AudioMetadataExtractor.parseFilenameTimestamp].
 @visibleForTesting
-DateTime? parseAudioFileTimestamp(String filename) {
-  try {
-    // Remove file extension
-    final nameWithoutExtension = filename.split('.').first;
-
-    // Try to parse using Lotti's audio filename format
-    return DateFormat(AudioRecorderConstants.fileNameDateFormat)
-        .parse(nameWithoutExtension, true)
-        .toLocal();
-  } on FormatException {
-    // Return null if parsing fails (expected for non-Lotti filenames)
-    return null;
-  }
-}
+DateTime? parseAudioFileTimestamp(String filename) =>
+    AudioMetadataExtractor.parseFilenameTimestamp(filename);
 
 /// Function type for reading audio duration from a file.
+///
+/// Re-exported from [AudioMetadataExtractor] for backward compatibility.
 typedef AudioMetadataReader = Future<Duration> Function(String filePath);
 
+/// Test bypass flag - when true, duration extraction returns Duration.zero.
+///
+/// Delegates to [AudioMetadataExtractor.bypassMediaKitInTests].
 @visibleForTesting
-bool imageImportBypassMediaKitInTests = false;
+bool get imageImportBypassMediaKitInTests =>
+    AudioMetadataExtractor.bypassMediaKitInTests;
 
+@visibleForTesting
+set imageImportBypassMediaKitInTests(bool value) =>
+    AudioMetadataExtractor.bypassMediaKitInTests = value;
+
+/// Selects the appropriate audio metadata reader based on environment.
+///
+/// Delegates to [AudioMetadataExtractor.selectReader].
 @visibleForTesting
 AudioMetadataReader selectAudioMetadataReader() {
+  // Check for registered reader via GetIt for backward compatibility
+  AudioMetadataReader? registeredReader;
   if (getIt.isRegistered<AudioMetadataReader>()) {
-    return getIt<AudioMetadataReader>();
+    registeredReader = getIt<AudioMetadataReader>();
   }
-  // In headless/flutter test environments, prefer a no-op reader to avoid
-  // invoking platform media backends that may hang or be unavailable.
-  final isFlutterTestEnv = () {
-    try {
-      return Platform.environment['FLUTTER_TEST'] == 'true';
-    } catch (_) {
-      return false;
-    }
-  }();
-
-  if (imageImportBypassMediaKitInTests || isFlutterTestEnv) {
-    return (_) async => Duration.zero;
-  }
-  return extractDurationWithMediaKit;
+  return AudioMetadataExtractor.selectReader(
+      registeredReader: registeredReader);
 }
 
+/// Extracts audio duration from file using MediaKit.
+///
+/// Delegates to [AudioMetadataExtractor.extractDuration].
 @visibleForTesting
-Future<Duration> extractDurationWithMediaKit(String filePath) async {
-  Player? player;
-  try {
-    if (imageImportBypassMediaKitInTests) {
-      return Duration.zero;
-    }
-    player = Player();
-    try {
-      // Guard against environments where media backends are unavailable.
-      await player
-          .open(Media(filePath), play: false)
-          .timeout(const Duration(seconds: 3));
-    } on TimeoutException {
-      return Duration.zero;
-    } catch (_) {
-      // Opening failed – fall back to zero duration without failing import.
-      return Duration.zero;
-    }
+Future<Duration> extractDurationWithMediaKit(String filePath) =>
+    AudioMetadataExtractor.extractDuration(filePath);
 
-    try {
-      return await player.stream.duration
-          .firstWhere((d) => d > Duration.zero, orElse: () => Duration.zero)
-          .timeout(const Duration(seconds: 5), onTimeout: () => Duration.zero);
-    } on TimeoutException {
-      return Duration.zero;
-    } catch (_) {
-      return Duration.zero;
-    }
-  } finally {
-    await player?.dispose();
-  }
-}
-
+/// Computes the relative directory path for storing audio files.
+///
+/// Delegates to [AudioMetadataExtractor.computeRelativePath].
 @visibleForTesting
-String computeAudioRelativePath(DateTime timestamp) {
-  final day =
-      DateFormat(AudioRecorderConstants.directoryDateFormat).format(timestamp);
-  return '${AudioRecorderConstants.audioDirectoryPrefix}$day/';
-}
+String computeAudioRelativePath(DateTime timestamp) =>
+    AudioMetadataExtractor.computeRelativePath(timestamp);
 
+/// Computes the target filename for an audio file.
+///
+/// Delegates to [AudioMetadataExtractor.computeTargetFileName].
 @visibleForTesting
-String computeAudioTargetFileName(DateTime timestamp, String extension) {
-  final base =
-      DateFormat(AudioRecorderConstants.fileNameDateFormat).format(timestamp);
-  return '$base.$extension';
-}
+String computeAudioTargetFileName(DateTime timestamp, String extension) =>
+    AudioMetadataExtractor.computeTargetFileName(timestamp, extension);
 
 /// Imports dropped audio files and creates audio journal entries
 ///
