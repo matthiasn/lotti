@@ -9,8 +9,8 @@ import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 void main() {
   group('AudioMetadataExtractor.parseFilenameTimestamp Coverage Tests', () {
     test('parses valid Lotti audio filename format', () {
-      final result =
-          AudioMetadataExtractor.parseFilenameTimestamp('2024-01-15_10-30-45-123');
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+          '2024-01-15_10-30-45-123');
       expect(result, isNotNull);
       // Result is converted to local time, so check components
       expect(result!.year, 2024);

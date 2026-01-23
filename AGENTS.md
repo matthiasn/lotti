@@ -99,7 +99,8 @@
 - Aim for full coverage of every code path.
 - Every widget we touch should get as close to full test coverage as is reasonable, with meaningful
   tests.
-- Add CHANGELOG entry.
+- Add CHANGELOG entry under the current version from `pubspec.yaml` (not under [Unreleased]).
+- Update `flatpak/com.matthiasn.lotti.metainfo.xml` alongside CHANGELOG — these two files go hand in hand.
 - Update the feature README files we touch such that they match reality in the codebase, not only
   for what we touch but in their entirety.
 - In most cases we prefer one test file for one implementation file.

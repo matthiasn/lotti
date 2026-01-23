@@ -79,8 +79,8 @@ Future<void> importDroppedAudio({
       final relativePath =
           AudioMetadataExtractor.computeRelativePath(timestamp);
       final directory = await createAssetDirectory(relativePath);
-      final targetFileName =
-          AudioMetadataExtractor.computeTargetFileName(timestamp, fileExtension);
+      final targetFileName = AudioMetadataExtractor.computeTargetFileName(
+          timestamp, fileExtension);
       final targetFilePath = '$directory$targetFileName';
 
       // Copy file first

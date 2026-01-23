@@ -123,8 +123,7 @@ Future<void> importImageAssets(
             );
         final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
             .format(createdAt);
-        final relativePath =
-            '${ImageImportConstants.directoryPrefix}$day/';
+        final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
         final directory = await createAssetDirectory(relativePath);
         final targetFilePath = '$directory$imageFileName';
         await compressAndSave(file, targetFilePath);
@@ -172,8 +171,7 @@ Future<void> importDroppedImages({
       final fileExtension = file.name.split('.').last.toLowerCase();
 
       // Skip non-image files
-      if (!ImageImportConstants.supportedExtensions
-          .contains(fileExtension)) {
+      if (!ImageImportConstants.supportedExtensions.contains(fileExtension)) {
         continue;
       }
 
