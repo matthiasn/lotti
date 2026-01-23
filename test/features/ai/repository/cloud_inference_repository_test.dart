@@ -2748,19 +2748,10 @@ void main() {
           );
         });
 
-        // Act - Use WAV magic bytes for valid audio
-        final wavBytes = [
-          0x52, 0x49, 0x46, 0x46, // RIFF
-          0x00, 0x00, 0x00, 0x00, // file size
-          0x57, 0x41, 0x56, 0x45, // WAVE
-          0x66, 0x6D, 0x74, 0x20, // fmt
-        ];
-        final audioBase64 = base64Encode(wavBytes);
-
         final stream = repository.generateWithAudio(
           'Transcribe this audio',
           model: 'gpt-4o-mini-transcribe',
-          audioBase64: audioBase64,
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
           baseUrl: 'https://api.openai.com/v1',
           apiKey: 'test-key',
           provider: openAiProvider,
@@ -2801,29 +2792,10 @@ void main() {
           );
         });
 
-        final wavBytes = [
-          0x52,
-          0x49,
-          0x46,
-          0x46,
-          0x00,
-          0x00,
-          0x00,
-          0x00,
-          0x57,
-          0x41,
-          0x56,
-          0x45,
-          0x66,
-          0x6D,
-          0x74,
-          0x20,
-        ];
-
         final stream = repository.generateWithAudio(
           'Transcribe this audio',
           model: 'gpt-4o-transcribe',
-          audioBase64: base64Encode(wavBytes),
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
           baseUrl: 'https://api.openai.com/v1',
           apiKey: 'test-key',
           provider: openAiProvider,
@@ -2857,29 +2829,10 @@ void main() {
           );
         });
 
-        final wavBytes = [
-          0x52,
-          0x49,
-          0x46,
-          0x46,
-          0x00,
-          0x00,
-          0x00,
-          0x00,
-          0x57,
-          0x41,
-          0x56,
-          0x45,
-          0x66,
-          0x6D,
-          0x74,
-          0x20,
-        ];
-
         final stream = repository.generateWithAudio(
           'Transcribe with diarization',
           model: 'gpt-4o-transcribe-diarize',
-          audioBase64: base64Encode(wavBytes),
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
           baseUrl: 'https://api.openai.com/v1',
           apiKey: 'test-key',
           provider: openAiProvider,
@@ -2914,29 +2867,10 @@ void main() {
           );
         });
 
-        final wavBytes = [
-          0x52,
-          0x49,
-          0x46,
-          0x46,
-          0x00,
-          0x00,
-          0x00,
-          0x00,
-          0x57,
-          0x41,
-          0x56,
-          0x45,
-          0x66,
-          0x6D,
-          0x74,
-          0x20,
-        ];
-
         final stream = repository.generateWithAudio(
           'Transcribe',
           model: 'gpt-4o-mini-transcribe-2025-01-15',
-          audioBase64: base64Encode(wavBytes),
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
           baseUrl: 'https://api.openai.com/v1',
           apiKey: 'test-key',
           provider: openAiProvider,
@@ -2967,29 +2901,10 @@ void main() {
 
         // This should NOT go to OpenAI transcription endpoint
         // because the provider type is genericOpenAi, not openAi
-        final wavBytes = [
-          0x52,
-          0x49,
-          0x46,
-          0x46,
-          0x00,
-          0x00,
-          0x00,
-          0x00,
-          0x57,
-          0x41,
-          0x56,
-          0x45,
-          0x66,
-          0x6D,
-          0x74,
-          0x20,
-        ];
-
         final stream = repository.generateWithAudio(
           'Transcribe',
           model: 'gpt-4o-mini-transcribe',
-          audioBase64: base64Encode(wavBytes),
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
           baseUrl: 'https://example.com/v1',
           apiKey: 'test-key',
           provider: genericProvider,
