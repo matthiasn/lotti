@@ -261,6 +261,54 @@ void main() {
 
         AudioMetadataExtractor.bypassMediaKitInTests = false;
       });
+
+      test('registered reader takes precedence over bypass flag', () async {
+        // Even with bypass flag set, a registered reader should be used
+        AudioMetadataExtractor.bypassMediaKitInTests = true;
+
+        Future<Duration> customReader(String path) async {
+          return const Duration(minutes: 5);
+        }
+
+        final reader =
+            AudioMetadataExtractor.selectReader(registeredReader: customReader);
+        final duration = await reader('/any/path.m4a');
+
+        // Custom reader should be used, not the bypass no-op
+        expect(duration, const Duration(minutes: 5));
+
+        AudioMetadataExtractor.bypassMediaKitInTests = false;
+      });
+
+      test('returns no-op reader in Flutter test environment', () async {
+        // In Flutter test environment (FLUTTER_TEST=true), should return no-op
+        // even when bypass flag is false
+        AudioMetadataExtractor.bypassMediaKitInTests = false;
+
+        final reader = AudioMetadataExtractor.selectReader();
+        final duration = await reader('/fake/path.m4a');
+
+        // Should return zero because FLUTTER_TEST=true in test environment
+        expect(duration, Duration.zero);
+      });
+
+      test('registered reader can return various durations', () async {
+        Future<Duration> variableReader(String path) async {
+          if (path.contains('short')) {
+            return const Duration(seconds: 10);
+          } else if (path.contains('long')) {
+            return const Duration(hours: 2);
+          }
+          return Duration.zero;
+        }
+
+        final reader = AudioMetadataExtractor.selectReader(
+            registeredReader: variableReader);
+
+        expect(await reader('/short.m4a'), const Duration(seconds: 10));
+        expect(await reader('/long.m4a'), const Duration(hours: 2));
+        expect(await reader('/other.m4a'), Duration.zero);
+      });
     });
 
     group('constants', () {
