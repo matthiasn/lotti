@@ -318,8 +318,8 @@ void main() {
       final requestString = request.toString();
       expect(requestString.contains(prompt), isTrue);
       expect(requestString.contains(audioBase64), isTrue);
-      // Default audioFormat is wav
-      expect(requestString.contains('wav'), isTrue);
+      // Default audioFormat is mp3
+      expect(requestString.contains('mp3'), isTrue);
     });
 
     test('generate with maxCompletionTokens sets maxTokens parameter correctly',
@@ -3074,6 +3074,7 @@ void main() {
         apiKey: 'test-key',
         provider: openAiProvider,
         overrideClient: mockClient,
+        audioFormat: ChatCompletionMessageInputAudioFormat.wav,
       );
 
       // Assert
@@ -3124,7 +3125,7 @@ void main() {
         ]),
       );
 
-      // Act - use non-transcription model with mp3 format
+      // Act - use non-transcription model with mp3 format (default)
       repository.generateWithAudio(
         'Test prompt',
         model: 'gpt-4o-audio-preview',
@@ -3133,7 +3134,6 @@ void main() {
         apiKey: 'test-key',
         provider: openAiProvider,
         overrideClient: mockClient,
-        audioFormat: ChatCompletionMessageInputAudioFormat.mp3,
       );
 
       // Assert
@@ -3192,6 +3192,7 @@ void main() {
         apiKey: 'test-key',
         provider: mistralProvider,
         overrideClient: mockClient,
+        audioFormat: ChatCompletionMessageInputAudioFormat.wav,
       );
 
       // Assert
@@ -3241,7 +3242,7 @@ void main() {
         ]),
       );
 
-      // Act - default audioFormat is wav
+      // Act - explicitly pass wav audioFormat
       repository.generateWithAudio(
         'Test prompt',
         model: 'some-model',
@@ -3250,9 +3251,10 @@ void main() {
         apiKey: 'test-key',
         provider: genericProvider,
         overrideClient: mockClient,
+        audioFormat: ChatCompletionMessageInputAudioFormat.wav,
       );
 
-      // Assert - should use the passed audioFormat (default is wav)
+      // Assert - should use the passed audioFormat (wav)
       final captured = verify(
         () => mockClient.createChatCompletionStream(
           request: captureAny(named: 'request'),

@@ -274,7 +274,7 @@ class CloudInferenceRepository {
   ///   maxCompletionTokens: Maximum tokens for completion
   ///   overrideClient: Optional client override for testing
   ///   audioFormat: The actual format of the audio data (wav or mp3).
-  ///     Required for Mistral/OpenAI chat completions. Defaults to wav.
+  ///     Required for Mistral/OpenAI chat completions. Defaults to mp3.
   ///
   /// Returns:
   ///   Stream of chat completion responses
@@ -290,7 +290,7 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
     bool stream = true,
     ChatCompletionMessageInputAudioFormat audioFormat =
-        ChatCompletionMessageInputAudioFormat.wav,
+        ChatCompletionMessageInputAudioFormat.mp3,
   }) {
     final client = overrideClient ??
         OpenAIClient(

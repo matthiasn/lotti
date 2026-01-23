@@ -1118,7 +1118,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
   /// Performs comprehensive FTUE setup for OpenAI providers.
   ///
   /// This creates:
-  /// 1. Four models (Flash/o4-mini, Reasoning/o3, Audio/GPT-4o Audio, Image/GPT Image 1)
+  /// 1. Four models (Flash/GPT-5 Nano, Reasoning/GPT-5.2, Audio/GPT-4o Transcribe, Image/GPT Image 1.5)
   /// 2. 9 prompts with appropriate model assignments
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
@@ -1309,7 +1309,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
         continue;
       }
 
-      // OpenAI reasoning models (o3, o4-mini) support reasoning mode
+      // OpenAI GPT-5 models (GPT-5.2, GPT-5 Nano) support reasoning mode
       final useReasoning =
           config.modelVariant == 'reasoning' || config.modelVariant == 'flash';
 
@@ -1346,10 +1346,10 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
   /// Gets all prompt configurations for OpenAI FTUE.
   ///
   /// Model assignments:
-  /// - o3 (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
-  /// - o4-mini (Flash): Task Summary, Image Analysis (fast processing)
-  /// - GPT-4o Audio: Audio transcription tasks
-  /// - GPT Image 1: Image generation (cover art output)
+  /// - GPT-5.2 (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
+  /// - GPT-5 Nano (Flash): Task Summary, Image Analysis (fast processing)
+  /// - GPT-4o Transcribe: Audio transcription tasks
+  /// - GPT Image 1.5: Image generation (cover art output)
   List<FtuePromptConfig> _getOpenAiFtuePromptConfigs() {
     return const [
       // Audio Transcription -> Audio model (dedicated transcription)
@@ -1370,49 +1370,49 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       FtuePromptConfig(
         template: taskSummaryPrompt,
         modelVariant: 'flash',
-        promptName: 'Task Summary OpenAI o4-mini',
+        promptName: 'Task Summary OpenAI GPT-5 Nano',
       ),
 
       // Checklist Updates -> Reasoning (complex reasoning needed)
       FtuePromptConfig(
         template: checklistUpdatesPrompt,
         modelVariant: 'reasoning',
-        promptName: 'Checklist OpenAI o3',
+        promptName: 'Checklist OpenAI GPT-5.2',
       ),
 
       // Image Analysis -> Flash (fast processing)
       FtuePromptConfig(
         template: imageAnalysisPrompt,
         modelVariant: 'flash',
-        promptName: 'Image Analysis OpenAI o4-mini',
+        promptName: 'Image Analysis OpenAI GPT-5 Nano',
       ),
 
       // Image Analysis in Task Context -> Flash (fast processing)
       FtuePromptConfig(
         template: imageAnalysisInTaskContextPrompt,
         modelVariant: 'flash',
-        promptName: 'Image Analysis (Task Context) OpenAI o4-mini',
+        promptName: 'Image Analysis (Task Context) OpenAI GPT-5 Nano',
       ),
 
       // Generate Coding Prompt -> Reasoning (complex reasoning needed)
       FtuePromptConfig(
         template: promptGenerationPrompt,
         modelVariant: 'reasoning',
-        promptName: 'Coding Prompt OpenAI o3',
+        promptName: 'Coding Prompt OpenAI GPT-5.2',
       ),
 
       // Generate Image Prompt -> Reasoning (complex reasoning needed)
       FtuePromptConfig(
         template: imagePromptGenerationPrompt,
         modelVariant: 'reasoning',
-        promptName: 'Image Prompt OpenAI o3',
+        promptName: 'Image Prompt OpenAI GPT-5.2',
       ),
 
       // Cover Art Generation -> Image model (image generation)
       FtuePromptConfig(
         template: coverArtGenerationPrompt,
         modelVariant: 'image',
-        promptName: 'Cover Art OpenAI GPT Image',
+        promptName: 'Cover Art OpenAI GPT Image 1.5',
       ),
     ];
   }

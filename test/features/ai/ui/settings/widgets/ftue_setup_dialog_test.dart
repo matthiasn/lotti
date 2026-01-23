@@ -151,10 +151,12 @@ void main() {
         ),
       );
 
-      expect(find.text('o3 (reasoning), o4-mini (fast), Audio, and Image'),
-          findsOneWidget);
       expect(
-        find.text('Optimized: o3 for reasoning, o4-mini for speed'),
+        find.text('GPT-5.2 (reasoning), GPT-5 Nano (fast), Audio, and Image'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Optimized: GPT-5.2 for reasoning, GPT-5 Nano for speed'),
         findsOneWidget,
       );
       expect(find.text('Test Category OpenAI Enabled'), findsOneWidget);

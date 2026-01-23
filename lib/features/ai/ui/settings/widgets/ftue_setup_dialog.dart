@@ -36,9 +36,10 @@ class FtueSetupConfig {
   static const openAi = FtueSetupConfig(
     providerName: 'OpenAI',
     modelCount: 4,
-    modelDescription: 'o3 (reasoning), o4-mini (fast), Audio, and Image',
+    modelDescription:
+        'GPT-5.2 (reasoning), GPT-5 Nano (fast), Audio, and Image',
     promptCount: 9,
-    promptDescription: 'Optimized: o3 for reasoning, o4-mini for speed',
+    promptDescription: 'Optimized: GPT-5.2 for reasoning, GPT-5 Nano for speed',
     categoryName: 'Test Category OpenAI Enabled',
   );
 
