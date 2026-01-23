@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.820] - 2026-01-23
+### Changed
+- Upgraded dependencies
+
 ## [0.9.819] - 2026-01-23
 ### Changed
 - Code Modularity Refactor: Extracted focused services from large modules for better testability and maintainability
