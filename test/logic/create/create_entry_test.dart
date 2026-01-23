@@ -16,6 +16,8 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/geolocation_service.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -42,6 +44,7 @@ void main() {
   final mockOutboxService = MockOutboxService();
   final mockTimeService = MockTimeService();
   final mockNavService = MockNavService();
+  final mockGeolocationService = MockGeolocationService();
 
   // Note: Navigation side effects (beamToNamed calls) are intentionally not mocked/verified
   // in these tests. These are unit tests focused on entry creation and persistence logic.
@@ -104,6 +107,12 @@ void main() {
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<VectorClockService>(VectorClockService())
+        ..registerSingleton<MetadataService>(
+          MetadataService(
+            vectorClockService: getIt<VectorClockService>(),
+          ),
+        )
+        ..registerSingleton<GeolocationService>(mockGeolocationService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());

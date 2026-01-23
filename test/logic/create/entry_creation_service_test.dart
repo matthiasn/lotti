@@ -12,6 +12,8 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/geolocation_service.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -45,6 +47,7 @@ void main() {
       final mockUpdateNotifications = MockUpdateNotifications();
       final mockFts5Db = MockFts5Db();
       final mockOutboxService = MockOutboxService();
+      final mockGeolocationService = MockGeolocationService();
       mockTimeService = MockTimeService();
       mockNavService = MockNavService();
 
@@ -83,6 +86,12 @@ void main() {
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<VectorClockService>(VectorClockService())
+        ..registerSingleton<MetadataService>(
+          MetadataService(
+            vectorClockService: getIt<VectorClockService>(),
+          ),
+        )
+        ..registerSingleton<GeolocationService>(mockGeolocationService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());

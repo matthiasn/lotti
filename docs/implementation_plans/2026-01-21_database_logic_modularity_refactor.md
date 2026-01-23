@@ -1,0 +1,1033 @@
+# Database & Logic Layer Modularity Refactor
+
+**Date**: 2026-01-21
+
+---
+
+## Progress Summary
+
+| Phase | Description | Status | Tests |
+|-------|-------------|--------|-------|
+| 1 | Extract MetadataService from PersistenceLogic | ✅ Complete | 34 |
+| 2 | Extract GeolocationService from PersistenceLogic | ✅ Complete | 19 |
+| 3 | Extract ExifDataExtractor from image_import | ✅ Complete | 70 |
+| 4 | Extract AudioMetadataExtractor from image_import | ✅ Complete | 34 |
+| 5 | Separate Media Import into focused modules | ✅ Complete | 25 |
+| 6 | Split JournalDb - Extract ConflictRepository | Pending | - |
+| 7 | Split JournalDb - Extract EntityDefinitionRepository | Pending | - |
+| 8 | Split JournalDb - Extract TaskRepository | Pending | - |
+| 9 | Introduce Repository Interfaces | Pending | - |
+| 10 | Extract SyncQueueService from PersistenceLogic | Pending | - |
+| 11 | Migrate getIt Calls to Constructor Injection | Pending | - |
+| 12 | HealthImport Decomposition | Pending | - |
+| 13 | Final JournalDb Cleanup | Pending | - |
+
+**Total new tests added**: 182
+
+### Completed Work
+
+**Phase 1-2** (2026-01-21): Extracted `MetadataService` and `GeolocationService` from `PersistenceLogic`, reducing its responsibilities and improving testability. PersistenceLogic no longer has a `location` field or `init()` method.
+
+**Phase 3** (2026-01-22): Extracted `ExifDataExtractor` as a pure utility class for parsing EXIF metadata (GPS coordinates, timestamps, rational numbers). The class has no side effects and is easily testable.
+
+**Phase 4** (2026-01-23): Extracted `AudioMetadataExtractor` for audio file metadata operations (filename timestamp parsing, path computation, duration extraction via MediaKit). The image_import.dart functions now delegate to this class.
+
+**Phase 5** (2026-01-23): Separated media import into focused modules: `audio_import.dart` for audio-specific operations, `media_import.dart` as a dispatcher for `handleDroppedMedia`, and cleaned up `image_import.dart` to only handle image imports. Split tests into corresponding focused test files.
+
+---
+
+## Overview
+
+Refactor `lib/database` and `lib/logic` to improve modularity, reduce coupling, and enhance testability. The current architecture has monolithic classes (JournalDb at 1,396 lines, PersistenceLogic at 874 lines) with hidden dependencies via service locator pattern.
+
+## Problem
+
+### Database Layer (`lib/database`)
+- **JournalDb** is 1,396 lines with 100+ methods mixing CRUD, conflicts, tags, tasks, calendars, and config
+- Hidden `getIt<>` calls throughout make dependencies unclear and testing difficult
+- No interfaces/contracts - tight coupling to concrete implementations
+- Complex queries with 9+ parameters (e.g., `getTasks`)
+
+### Logic Layer (`lib/logic`)
+- **PersistenceLogic** is 874 lines mixing metadata generation, persistence, sync queuing, notifications, and geolocation
+- **image_import.dart** is 820 lines mixing EXIF parsing, file I/O, and entity creation
+- **HealthImport** is 427 lines mixing queuing, permissions, device detection, fetching, and persistence
+- 23+ `getIt<>` calls creating hidden dependencies
+- Race condition handling in geolocation needs isolation
+
+## Solution
+
+Split monolithic classes into focused, single-responsibility components with explicit dependencies. Introduce interfaces where beneficial for testing. Extract reusable utilities into dedicated modules.
+
+## Design Decisions
+
+- **Incremental refactoring**: Each phase is self-contained and leaves codebase working
+- **Interface-first for high-mock components**: Interfaces only where testing benefit is clear
+- **Constructor injection**: Replace `getIt<>` calls inside methods with constructor parameters
+- **Preserve existing tests**: Refactoring should not break existing test coverage
+- **No behavioral changes**: Pure refactoring - functionality remains identical
+
+---
+
+## Phase 1: Extract Metadata Service from PersistenceLogic ✅ COMPLETED
+
+**Status**: Completed on 2026-01-21
+
+**Goal**: Extract pure metadata generation into a focused, easily testable service.
+
+**Scope**: ~80 lines, pure functions, no side effects
+
+### Files to Create
+
+**`/lib/logic/services/metadata_service.dart`**
+```dart
+class MetadataService {
+  MetadataService({
+    required VectorClockService vectorClockService,
+  });
+
+  final VectorClockService _vectorClockService;
+
+  /// Generate metadata for a new journal entry
+  Future<Metadata> createMetadata({
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    String? categoryId,
+    List<String>? tagIds,
+    bool? starred,
+    bool? private,
+    int? flag,
+    String? uuidV5Input,
+  });
+
+  /// Generate a new UUID (v4 or v5 if input provided)
+  String generateId({String? uuidV5Input});
+
+  /// Increment vector clock and return updated metadata
+  Future<Metadata> updateMetadata(Metadata existing);
+}
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/persistence_logic.dart` | Replace inline metadata creation with `_metadataService.createMetadata()` calls |
+| `/lib/get_it.dart` | Register `MetadataService` singleton |
+
+### Tests to Create
+
+**`/test/logic/services/metadata_service_test.dart`**
+- UUID v4 generation is unique
+- UUID v5 generation is deterministic for same input
+- Vector clock increments correctly
+- Default values applied (starred=false, private=false, etc.)
+- DateTo defaults to DateFrom when not specified
+
+### Success Criteria
+- [x] All existing tests pass
+- [x] MetadataService has comprehensive test coverage (38 tests)
+- [x] PersistenceLogic delegates metadata operations to MetadataService
+
+---
+
+## Phase 2: Extract Geolocation Service from PersistenceLogic ✅ COMPLETED
+
+**Status**: Completed on 2026-01-22
+
+**Goal**: Isolate geolocation capture with its race condition handling into a dedicated service.
+
+**Scope**: ~130 lines (service + comprehensive tests), async operations with concurrency control
+
+### Files Created
+
+**`/lib/logic/services/geolocation_service.dart`**
+```dart
+class GeolocationService {
+  GeolocationService({
+    required JournalDb journalDb,
+    required LoggingService loggingService,
+    required MetadataService metadataService,
+    this.deviceLocation,
+  });
+
+  final Set<String> _pendingGeolocationAdds = {};
+
+  /// Add geolocation to entry (fire-and-forget, handles concurrency)
+  void addGeolocation(String journalEntityId, EntityPersister persister);
+
+  /// Async implementation with race condition prevention
+  Future<Geolocation?> addGeolocationAsync(String journalEntityId, EntityPersister persister);
+
+  /// Check if geolocation add is pending for entry
+  bool isPending(String journalEntityId);
+
+  /// Get count of pending operations (for testing)
+  int get pendingCount;
+}
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/persistence_logic.dart` | Delegate to `_geolocationService.addGeolocation()`, removed `location` field and `init()` method |
+| `/lib/get_it.dart` | Register `GeolocationService` singleton with all dependencies |
+| `/test/logic/persistence_logic_test.dart` | Register `GeolocationService` with mock `DeviceLocation` |
+| `/test/logic/persistence_logic_update_test.dart` | Remove obsolete `init()` override |
+
+### Tests Created
+
+**`/test/logic/services/geolocation_service_test.dart`** (19 tests)
+- isPending returns false when no operation is pending
+- isPending returns true when operation is pending
+- pendingCount returns 0 initially / increments during operation
+- Concurrent calls for same entry only process once (race condition prevention)
+- Allows concurrent operations for different entity IDs
+- Returns null when device location is null or returns null
+- Returns null when entry does not exist
+- Returns existing geolocation when entry already has one
+- Adds geolocation to entry without one
+- Clears pending set after successful completion / after error
+- Logs exceptions but doesn't throw
+- Fire-and-forget wrapper works correctly
+
+### Success Criteria
+- [x] All existing tests pass (57 tests in logic/services/)
+- [x] GeolocationService has comprehensive test coverage (19 tests)
+- [x] Race condition handling verified with concurrent test
+
+---
+
+## Phase 3: Extract EXIF Data Extractor from image_import ✅ COMPLETED
+
+**Status**: Completed on 2026-01-22
+
+**Goal**: Extract GPS parsing and timestamp extraction utilities into a reusable module.
+
+**Scope**: ~130 lines (service + comprehensive tests), pure functions, no side effects
+
+### Files Created
+
+**`/lib/logic/media/exif_data_extractor.dart`**
+```dart
+class ExifDataExtractor {
+  /// Constants for EXIF GPS keys
+  static const String exifGpsLatitudeKey = 'GPS GPSLatitude';
+  static const String exifGpsLongitudeKey = 'GPS GPSLongitude';
+  static const String exifGpsLatitudeRefKey = 'GPS GPSLatitudeRef';
+  static const String exifGpsLongitudeRefKey = 'GPS GPSLongitudeRef';
+  static const List<String> exifTimestampKeys = [...];
+
+  /// Parse rational number from EXIF format (e.g., "123/456")
+  static double? parseRational(String value);
+
+  /// Parse GPS coordinate from EXIF data to decimal degrees
+  static double? parseGpsCoordinate(dynamic coordData, String ref);
+
+  /// Parse EXIF date string (YYYY:MM:DD HH:MM:SS)
+  static DateTime? parseExifDateString(String? dateString);
+
+  /// Extract timestamp from EXIF data
+  static DateTime? extractTimestamp(Map<String, IfdTag>? exifData);
+
+  /// Extract GPS coordinates from EXIF data
+  static Geolocation? extractGpsCoordinates(
+    Map<String, IfdTag>? exifData,
+    DateTime createdAt,
+  );
+}
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/image_import.dart` | Delegate `parseRational`, `parseGpsCoordinate`, `extractGpsCoordinates`, and timestamp extraction to `ExifDataExtractor`; removed `_parseExifDateTime` (now unused); removed GPS key constants (now in ExifDataExtractor) |
+
+### Tests Created
+
+**`/test/logic/media/exif_data_extractor_test.dart`** (70 tests)
+- `parseRational`: fraction formats, decimal formats, division by zero, edge cases
+- `parseGpsCoordinate`: N/S/E/W directions, null handling, equator/prime meridian, poles, date line
+- `parseExifDateString`: valid EXIF format, null/empty, invalid formats
+- `extractTimestamp`: null exifData, missing keys, priority order, malformed values
+- `extractGpsCoordinates`: missing GPS keys, valid coordinates (San Francisco, Sydney), geohash generation
+- Constants verification
+
+### Success Criteria
+- [x] All existing tests pass (71 tests in image_import_gps_test.dart and image_import_exif_test.dart)
+- [x] ExifDataExtractor has comprehensive test coverage (70 tests)
+- [x] image_import.dart delegates to ExifDataExtractor for all EXIF parsing
+
+---
+
+## Phase 4: Extract Audio Metadata Extractor from image_import ✅ COMPLETED
+
+**Status**: Completed on 2026-01-23
+
+**Goal**: Extract audio duration and timestamp extraction into a dedicated module.
+
+**Scope**: ~90 lines (service) + 34 tests
+
+### Files Created
+
+**`/lib/logic/media/audio_metadata_extractor.dart`**
+```dart
+class AudioMetadataExtractor {
+  /// Supported audio file extensions
+  static const List<String> supportedExtensions = ['m4a', 'aac', 'mp3', 'wav', 'ogg'];
+
+  /// Timeout constants for MediaKit operations
+  static const Duration playerOpenTimeout = Duration(seconds: 3);
+  static const Duration durationStreamTimeout = Duration(seconds: 5);
+
+  /// Test bypass flag for duration extraction
+  static bool bypassMediaKitInTests = false;
+
+  /// Parse timestamp from audio filename (yyyy-MM-dd_HH-mm-ss-S format)
+  static DateTime? parseFilenameTimestamp(String filename);
+
+  /// Compute relative directory path for audio storage
+  static String computeRelativePath(DateTime timestamp);
+
+  /// Compute target filename for audio file
+  static String computeTargetFileName(DateTime timestamp, String extension);
+
+  /// Check if file extension is supported
+  static bool isSupported(String extension);
+
+  /// Select appropriate audio metadata reader based on environment
+  static AudioMetadataReader selectReader({AudioMetadataReader? registeredReader});
+
+  /// Extract duration from audio file using MediaKit
+  static Future<Duration> extractDuration(String filePath);
+}
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/image_import.dart` | Delegated `parseAudioFileTimestamp`, `computeAudioRelativePath`, `computeAudioTargetFileName`, `selectAudioMetadataReader`, and `extractDurationWithMediaKit` to `AudioMetadataExtractor`; removed `media_kit` import |
+
+### Tests Created
+
+**`/test/logic/media/audio_metadata_extractor_test.dart`** (34 tests)
+- `parseFilenameTimestamp`: valid formats, extensions, edge cases
+- `computeRelativePath`: date formatting, single digits, leap years
+- `computeTargetFileName`: full timestamps, extensions, edge cases
+- `isSupported`: supported/unsupported extensions, case insensitivity
+- `extractDuration`: bypass flag, non-existent files
+- `selectReader`: no-op reader, registered reader, multiple calls
+- Constants verification
+
+### Success Criteria
+- [x] All existing tests pass (58 tests in image_import_audio_test.dart)
+- [x] AudioMetadataExtractor has comprehensive test coverage (34 tests)
+- [x] image_import.dart delegates to AudioMetadataExtractor for all audio operations
+
+---
+
+## Phase 5: Separate Media Import into Focused Modules ✅ COMPLETED
+
+**Status**: Completed on 2026-01-23
+
+**Goal**: Separate audio and image import functionality into distinct modules with a media dispatcher.
+
+**Scope**: ~200 lines refactored across 3 files + 25 new tests
+
+### Problem
+
+The `image_import.dart` file contained both image and audio import logic, violating single responsibility principle:
+- Audio-specific constants and functions mixed with image code
+- `handleDroppedMedia` was in image_import.dart despite handling both media types
+- Test files also mixed audio and image tests
+
+### Files Created
+
+**`/lib/logic/audio_import.dart`**
+```dart
+class AudioImportConstants {
+  static const Set<String> supportedExtensions = {'m4a'};
+  static const int maxFileSizeBytes = 500 * 1024 * 1024;  // 500MB
+  static const String loggingDomain = 'audio_import';
+}
+
+/// Import audio files from drag-and-drop
+Future<void> importDroppedAudio({
+  required DropDoneDetails data,
+  String? linkedId,
+  String? categoryId,
+});
+```
+
+**`/lib/logic/media_import.dart`**
+```dart
+/// Handle dropped media files by dispatching to appropriate import handlers
+Future<void> handleDroppedMedia({
+  required DropDoneDetails data,
+  required String linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+});
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/image_import.dart` | Removed audio constants, `handleDroppedMedia`, and audio import functions; renamed `MediaImportConstants` to `ImageImportConstants` |
+| `/lib/features/journal/ui/pages/entry_details_page.dart` | Import from `media_import.dart` instead of `image_import.dart` |
+| `/lib/features/tasks/ui/pages/task_details_page.dart` | Import from `media_import.dart` instead of `image_import.dart` |
+| `/test/logic/image_import_exif_test.dart` | Updated logging domain references to `ImageImportConstants.loggingDomain` |
+
+### Tests Created
+
+**`/test/logic/audio_import_test.dart`** (9 tests)
+- AudioImportConstants defines supported extensions
+- AudioImportConstants defines reasonable file size limit
+- AudioImportConstants defines logging domain
+- Successfully imports valid M4A file
+- Skips non-audio file silently
+- Logs error for file without extension
+- Logs error for file exceeding size limit
+- Passes linkedId and categoryId
+- Parses timestamp from Lotti filename format
+
+**`/test/logic/media_import_test.dart`** (7 tests)
+- Dispatches image files to importDroppedImages
+- Dispatches audio files to importDroppedAudio
+- Handles mixed image and audio files
+- Ignores unsupported file types
+- Passes categoryId to both image and audio imports
+- Recognizes all supported image extensions
+- Recognizes all supported audio extensions
+
+**`/test/logic/image_import_test.dart`** (9 tests - recreated image-only)
+- ImageImportConstants defines supported extensions
+- ImageImportConstants defines reasonable file size limit
+- ImageImportConstants defines directory prefix
+- ImageImportConstants defines logging domain
+- importPastedImages rejects/accepts images based on size limit
+- importDroppedImages tests for various scenarios
+- importGeneratedImageBytes tests
+- parseRational and parseGpsCoordinate tests
+- extractGpsCoordinates tests
+
+### Success Criteria
+- [x] All existing tests pass
+- [x] Audio import separated into dedicated module (audio_import.dart)
+- [x] Media dispatcher created (media_import.dart)
+- [x] Image import only handles images (image_import.dart)
+- [x] Test files focused on their respective concerns
+
+---
+
+## Phase 6: Split JournalDb - Extract ConflictRepository
+
+**Goal**: Extract conflict detection and resolution into a focused repository.
+
+**Scope**: ~150 lines, database operations
+
+### Files to Create
+
+**`/lib/database/repositories/conflict_repository.dart`**
+```dart
+class ConflictRepository {
+  ConflictRepository({required JournalDb db});
+
+  final JournalDb _db;
+
+  /// Detect if incoming entity conflicts with existing
+  Future<bool> detectConflict({
+    required String id,
+    required VectorClock incoming,
+    required VectorClock existing,
+  });
+
+  /// Add conflict record
+  Future<void> addConflict(Conflict conflict);
+
+  /// Get all unresolved conflicts
+  Future<List<Conflict>> getUnresolvedConflicts();
+
+  /// Watch unresolved conflict count
+  Stream<int> watchConflictCount();
+
+  /// Resolve conflict with chosen version
+  Future<void> resolveConflict({
+    required String conflictId,
+    required String chosenId,
+  });
+
+  /// Delete conflict record
+  Future<void> deleteConflict(String id);
+}
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `/lib/database/database.dart` | Mark conflict methods as `@Deprecated`, delegate to repository |
+| `/lib/get_it.dart` | Register `ConflictRepository` |
+| Callers of conflict methods | Update to use `ConflictRepository` |
+
+### Tests to Create
+
+**`/test/database/repositories/conflict_repository_test.dart`**
+- Conflict detected for concurrent edits
+- No conflict for sequential edits
+- Conflict resolution updates correct records
+- Watch stream emits on changes
+
+### Success Criteria
+- [ ] All existing tests pass
+- [ ] ConflictRepository has 90%+ test coverage
+- [ ] Conflict logic isolated from main JournalDb
+
+---
+
+## Phase 7: Split JournalDb - Extract EntityDefinitionRepository
+
+**Goal**: Extract tag, label, category, and habit definition operations.
+
+**Scope**: ~200 lines, database operations
+
+### Files to Create
+
+**`/lib/database/repositories/entity_definition_repository.dart`**
+```dart
+class EntityDefinitionRepository {
+  EntityDefinitionRepository({required JournalDb db});
+
+  // Tag operations
+  Future<void> upsertTagDefinition(TagEntity tag);
+  Future<List<TagEntity>> getAllTags();
+  Future<TagEntity?> getTagById(String id);
+  Stream<List<TagEntity>> watchTags();
+
+  // Label operations
+  Future<void> upsertLabelDefinition(LabelDefinition label);
+  Future<List<LabelDefinition>> getLabelsForCategory(String categoryId);
+  Stream<List<LabelDefinition>> watchLabels();
+
+  // Category operations
+  Future<void> upsertCategoryDefinition(CategoryDefinition category);
+  Future<List<CategoryDefinition>> getAllCategories();
+  Stream<List<CategoryDefinition>> watchCategories();
+
+  // Habit operations
+  Future<void> upsertHabitDefinition(HabitDefinition habit);
+  Future<List<HabitDefinition>> getActiveHabits();
+  Stream<List<HabitDefinition>> watchHabits();
+
+  // Dashboard operations
+  Future<void> upsertDashboardDefinition(DashboardDefinition dashboard);
+  Future<List<DashboardDefinition>> getAllDashboards();
+  Stream<List<DashboardDefinition>> watchDashboards();
+}
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `/lib/database/database.dart` | Mark definition methods as `@Deprecated`, delegate |
+| `/lib/get_it.dart` | Register `EntityDefinitionRepository` |
+| Callers | Update to use repository |
+
+### Tests to Create
+
+**`/test/database/repositories/entity_definition_repository_test.dart`**
+- CRUD operations for each entity type
+- Watch streams emit on changes
+- Category-filtered label queries work correctly
+
+### Success Criteria
+- [ ] All existing tests pass
+- [ ] EntityDefinitionRepository has 90%+ test coverage
+- [ ] Definition logic isolated from main JournalDb
+
+---
+
+## Phase 8: Split JournalDb - Extract TaskRepository
+
+**Goal**: Extract task-specific queries and filtering into a focused repository.
+
+**Scope**: ~150 lines, complex query logic
+
+### Files to Create
+
+**`/lib/database/repositories/task_repository.dart`**
+```dart
+class TaskRepository {
+  TaskRepository({required JournalDb db});
+
+  /// Get tasks with filters
+  Future<List<JournalEntity>> getTasks({
+    List<bool>? starredStatuses,
+    List<String>? taskStatuses,
+    List<String>? categoryIds,
+    List<String>? labelIds,
+    List<String>? priorities,
+    List<String>? ids,
+    bool sortByDate = false,
+    int limit = 500,
+    int offset = 0,
+  });
+
+  /// Get tasks due on or before date
+  Future<List<JournalEntity>> getTasksDueBefore(DateTime date);
+
+  /// Get tasks by status
+  Future<List<JournalEntity>> getTasksByStatus(String status);
+
+  /// Update task status
+  Future<void> updateTaskStatus(String id, String status);
+
+  /// Update task priority
+  Future<void> updateTaskPriority(String id, String priority);
+}
+```
+
+**`/lib/database/repositories/task_query_builder.dart`** (optional, for complex queries)
+```dart
+class TaskQueryBuilder {
+  TaskQueryBuilder(this._db);
+
+  TaskQueryBuilder withStatuses(List<String> statuses);
+  TaskQueryBuilder withPriorities(List<String> priorities);
+  TaskQueryBuilder withLabels(List<String> labelIds);
+  TaskQueryBuilder withCategories(List<String> categoryIds);
+  TaskQueryBuilder starred(bool starred);
+  TaskQueryBuilder limit(int limit);
+  TaskQueryBuilder offset(int offset);
+  TaskQueryBuilder sortByDate();
+  TaskQueryBuilder sortByPriority();
+
+  Future<List<JournalEntity>> execute();
+}
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `/lib/database/database.dart` | Mark task methods as `@Deprecated`, delegate |
+| `/lib/get_it.dart` | Register `TaskRepository` |
+| Task-related UI/logic | Update to use repository |
+
+### Tests to Create
+
+**`/test/database/repositories/task_repository_test.dart`**
+- Filter combinations work correctly
+- Empty filter lists handled (no crash)
+- Pagination works
+- Sort orders applied correctly
+
+### Success Criteria
+- [ ] All existing tests pass
+- [ ] TaskRepository has 90%+ test coverage
+- [ ] Complex query logic isolated and testable
+
+---
+
+## Phase 9: Introduce Repository Interfaces
+
+**Goal**: Define interfaces for key repositories to enable test doubles.
+
+**Scope**: Interface definitions only, no implementation changes
+
+### Files to Create
+
+**`/lib/database/interfaces/i_entry_repository.dart`**
+```dart
+abstract class IEntryRepository {
+  Future<JournalEntity?> getById(String id);
+  Future<int> upsert(JournalEntity entity);
+  Future<void> delete(String id);
+  Stream<JournalEntity?> watchById(String id);
+}
+```
+
+**`/lib/database/interfaces/i_conflict_repository.dart`**
+```dart
+abstract class IConflictRepository {
+  Future<bool> detectConflict({...});
+  Future<void> addConflict(Conflict conflict);
+  Future<List<Conflict>> getUnresolvedConflicts();
+  Future<void> resolveConflict({...});
+}
+```
+
+**`/lib/database/interfaces/i_task_repository.dart`**
+```dart
+abstract class ITaskRepository {
+  Future<List<JournalEntity>> getTasks({...});
+  Future<void> updateTaskStatus(String id, String status);
+  Future<void> updateTaskPriority(String id, String priority);
+}
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| Concrete repositories | Implement corresponding interfaces |
+| `/lib/get_it.dart` | Register with interface type |
+
+### Tests to Create
+
+**`/test/database/mocks/mock_repositories.dart`**
+- Mock implementations for each interface
+- Can be used in unit tests without database
+
+### Success Criteria
+- [ ] Interfaces defined for top 3 repositories
+- [ ] Existing tests continue to pass
+- [ ] New tests can use mock implementations
+
+---
+
+## Phase 10: Extract SyncQueueService from PersistenceLogic
+
+**Goal**: Isolate sync message queuing into a dedicated service.
+
+**Scope**: ~50 lines, async operations
+
+### Files to Create
+
+**`/lib/logic/services/sync_queue_service.dart`**
+```dart
+class SyncQueueService {
+  SyncQueueService({
+    required OutboxService outboxService,
+    required LoggingService loggingService,
+  });
+
+  /// Queue entity for sync
+  Future<void> queueEntitySync(JournalEntity entity);
+
+  /// Queue definition for sync
+  Future<void> queueDefinitionSync(dynamic definition);
+
+  /// Queue deletion for sync
+  Future<void> queueDeletion(String entityId);
+}
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/persistence_logic.dart` | Delegate sync queuing to `SyncQueueService` |
+| `/lib/get_it.dart` | Register `SyncQueueService` |
+
+### Tests to Create
+
+**`/test/logic/services/sync_queue_service_test.dart`**
+- Entity queued with correct message type
+- Definition queued with correct message type
+- Deletion queued correctly
+
+### Success Criteria
+- [ ] All existing tests pass
+- [ ] SyncQueueService has 90%+ test coverage
+- [ ] Sync logic isolated from persistence logic
+
+---
+
+## Phase 11: Migrate getIt Calls to Constructor Injection
+
+**Goal**: Replace hidden `getIt<>` calls inside methods with constructor parameters.
+
+**Scope**: Systematic update across multiple files
+
+### High-Priority Files
+
+| File | Current getIt calls | Target |
+|------|---------------------|--------|
+| `/lib/logic/persistence_logic.dart` | 5 | 0 (all via constructor) |
+| `/lib/logic/image_import.dart` | 8 | 0 (parameters or constructor) |
+| `/lib/database/fts5_db.dart` | 2 | 0 (constructor injection) |
+| `/lib/database/maintenance.dart` | 6 | 0 (constructor injection) |
+
+### Pattern to Apply
+
+**Before:**
+```dart
+class SomeService {
+  void doWork() {
+    final db = getIt<JournalDb>();  // Hidden dependency
+    db.save(entity);
+  }
+}
+```
+
+**After:**
+```dart
+class SomeService {
+  SomeService({required JournalDb journalDb}) : _journalDb = journalDb;
+
+  final JournalDb _journalDb;
+
+  void doWork() {
+    _journalDb.save(entity);  // Explicit dependency
+  }
+}
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/persistence_logic.dart` | Add constructor params, remove internal getIt calls |
+| `/lib/logic/image_import.dart` | Convert free functions to class or add explicit params |
+| `/lib/database/fts5_db.dart` | Add TagsService to constructor |
+| `/lib/database/maintenance.dart` | Add all DB dependencies to constructor |
+| `/lib/get_it.dart` | Update registrations to pass dependencies |
+
+### Tests to Update
+
+- Update test setup to pass mock dependencies
+- Remove test-specific getIt overrides where possible
+
+### Success Criteria
+- [ ] All `getIt<>` calls moved to constructors or top-level registration
+- [ ] No hidden dependencies in method bodies
+- [ ] Tests updated to use constructor injection
+
+---
+
+## Phase 12: HealthImport Decomposition
+
+**Goal**: Split HealthImport into focused components.
+
+**Scope**: ~427 lines split into 3 components
+
+### Files to Create
+
+**`/lib/logic/health/health_import_queue.dart`**
+```dart
+class HealthImportQueue {
+  final Queue<String> _queue = Queue();
+  bool _isProcessing = false;
+
+  void enqueue(String dataType);
+  Future<void> processQueue(Future<void> Function(String) processor);
+  bool get isEmpty;
+  int get length;
+}
+```
+
+**`/lib/logic/health/health_data_fetcher.dart`**
+```dart
+class HealthDataFetcher {
+  HealthDataFetcher({
+    required HealthService healthService,
+    required LoggingService loggingService,
+  });
+
+  Future<List<HealthDataPoint>> fetchHealthData(
+    HealthDataType type,
+    DateTime from,
+    DateTime to,
+  );
+
+  Future<List<WorkoutData>> fetchWorkouts(DateTime from, DateTime to);
+}
+```
+
+**`/lib/logic/health/health_data_persister.dart`**
+```dart
+class HealthDataPersister {
+  HealthDataPersister({
+    required PersistenceLogic persistenceLogic,
+    required JournalDb journalDb,
+  });
+
+  Future<void> persistHealthData(List<HealthDataPoint> data);
+  Future<void> persistWorkout(WorkoutData workout);
+}
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/health_import.dart` | Compose from new components |
+| `/lib/get_it.dart` | Register new components |
+
+### Tests to Create
+
+**`/test/logic/health/health_import_queue_test.dart`**
+- Queue ordering maintained
+- Concurrent processing prevented
+- Empty queue handled
+
+**`/test/logic/health/health_data_fetcher_test.dart`**
+- Data types fetched correctly
+- Errors handled gracefully
+
+**`/test/logic/health/health_data_persister_test.dart`**
+- Data persisted correctly
+- Duplicates handled
+
+### Success Criteria
+- [ ] All existing tests pass
+- [ ] Each component has 90%+ test coverage
+- [ ] HealthImport now composes from focused components
+
+---
+
+## Phase 13: Final JournalDb Cleanup
+
+**Goal**: Remove deprecated methods, finalize repository structure.
+
+**Scope**: Cleanup and documentation
+
+### Tasks
+
+1. Remove `@Deprecated` annotations after all callers updated
+2. Delete deprecated method implementations from JournalDb
+3. Verify JournalDb is under 500 lines
+4. Add documentation for repository structure
+5. Update any remaining direct JournalDb usage to use repositories
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `/lib/database/database.dart` | Remove deprecated methods |
+| `/lib/database/README.md` | Create with architecture documentation |
+
+### Final Structure
+
+```
+lib/database/
+├── database.dart              (~500 lines, core entry CRUD only)
+├── sync_db.dart
+├── settings_db.dart
+├── logging_db.dart
+├── editor_db.dart
+├── fts5_db.dart
+├── interfaces/
+│   ├── i_entry_repository.dart
+│   ├── i_conflict_repository.dart
+│   └── i_task_repository.dart
+├── repositories/
+│   ├── conflict_repository.dart
+│   ├── entity_definition_repository.dart
+│   └── task_repository.dart
+└── README.md
+```
+
+### Success Criteria
+- [ ] JournalDb under 500 lines
+- [ ] All repositories have clear responsibilities
+- [ ] README documents architecture
+- [ ] All tests pass
+
+---
+
+## Testing Strategy Summary
+
+| Phase | New Test Files | Coverage Target |
+|-------|---------------|-----------------|
+| 1 | metadata_service_test.dart | 100% |
+| 2 | geolocation_service_test.dart | 90% |
+| 3 | exif_data_extractor_test.dart | 100% |
+| 4 | audio_metadata_extractor_test.dart | 90% |
+| 5 | audio_import_test.dart, media_import_test.dart, image_import_test.dart | 90% |
+| 6 | conflict_repository_test.dart | 90% |
+| 7 | entity_definition_repository_test.dart | 90% |
+| 8 | task_repository_test.dart | 90% |
+| 9 | mock_repositories.dart | N/A (test helpers) |
+| 10 | sync_queue_service_test.dart | 90% |
+| 11 | (update existing tests) | Maintain |
+| 12 | health_import_*.dart | 90% each |
+| 13 | (integration verification) | Maintain |
+
+---
+
+## Dependency Graph (Post-Refactor)
+
+```
+UI Layer
+    ↓
+EntryCreationService
+    ↓
+┌─────────────────────────────────────────┐
+│ Logic Services                          │
+│ ├── MetadataService                     │
+│ ├── GeolocationService                  │
+│ ├── SyncQueueService                    │
+│ └── PersistenceLogic (orchestrator)     │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ Repositories                            │
+│ ├── ConflictRepository                  │
+│ ├── EntityDefinitionRepository          │
+│ └── TaskRepository                      │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ Database Layer                          │
+│ ├── JournalDb (core CRUD only)          │
+│ ├── SyncDb                              │
+│ └── Other DBs                           │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Risk Mitigation
+
+| Risk | Mitigation |
+|------|------------|
+| Breaking existing functionality | Run full test suite after each phase |
+| Circular dependencies | Follow dependency graph strictly |
+| Performance regression | Profile before/after Phase 12 |
+| Incomplete migration | Track callers before deprecating methods |
+
+---
+
+## Files Summary
+
+### New Files (20)
+
+| Path | Phase |
+|------|-------|
+| `/lib/logic/services/metadata_service.dart` | 1 |
+| `/lib/logic/services/geolocation_service.dart` | 2 |
+| `/lib/logic/media/exif_data_extractor.dart` | 3 |
+| `/lib/logic/media/audio_metadata_extractor.dart` | 4 |
+| `/lib/logic/audio_import.dart` | 5 |
+| `/lib/logic/media_import.dart` | 5 |
+| `/lib/database/repositories/conflict_repository.dart` | 6 |
+| `/lib/database/repositories/entity_definition_repository.dart` | 7 |
+| `/lib/database/repositories/task_repository.dart` | 8 |
+| `/lib/database/repositories/task_query_builder.dart` | 8 |
+| `/lib/database/interfaces/i_entry_repository.dart` | 9 |
+| `/lib/database/interfaces/i_conflict_repository.dart` | 9 |
+| `/lib/database/interfaces/i_task_repository.dart` | 9 |
+| `/lib/logic/services/sync_queue_service.dart` | 10 |
+| `/lib/logic/health/health_import_queue.dart` | 12 |
+| `/lib/logic/health/health_data_fetcher.dart` | 12 |
+| `/lib/logic/health/health_data_persister.dart` | 12 |
+| `/lib/database/README.md` | 13 |
+| `/test/database/mocks/mock_repositories.dart` | 9 |
+| Various test files | All phases |
+
+### Modified Files (Major)
+
+| Path | Phases |
+|------|--------|
+| `/lib/database/database.dart` | 6, 7, 8, 13 |
+| `/lib/logic/persistence_logic.dart` | 1, 2, 10, 11 |
+| `/lib/logic/image_import.dart` | 3, 4, 5, 11 |
+| `/lib/logic/health_import.dart` | 12 |
+| `/lib/get_it.dart` | All phases |

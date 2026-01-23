@@ -7,7 +7,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/audio_import.dart';
 import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -134,16 +136,9 @@ void main() {
 
     testWidgets('returns early when permissions are not granted',
         (tester) async {
-      // This test verifies the permission check behavior
-      // In a real scenario, PhotoManager.requestPermissionExtend() would be called
-      // Since we can't easily mock PhotoManager without breaking the package,
-      // we test this indirectly by verifying the function doesn't crash
-
       final context = MockBuildContext();
       when(() => context.mounted).thenReturn(true);
 
-      // The function will return early if permissions aren't granted
-      // We're testing that it completes successfully
       await expectLater(
         importImageAssets(context),
         completes,
@@ -154,7 +149,6 @@ void main() {
       final context = MockBuildContext();
       when(() => context.mounted).thenReturn(false);
 
-      // Should return early without processing
       await expectLater(
         importImageAssets(context),
         completes,
@@ -162,10 +156,6 @@ void main() {
     });
 
     testWidgets('handles null assets list gracefully', (tester) async {
-      // This tests the null check for assets
-      // Since AssetPicker.pickAssets returns Future<List<AssetEntity>?>
-      // and we check if assets != null before processing
-
       final context = MockBuildContext();
       when(() => context.mounted).thenReturn(true);
 
@@ -179,7 +169,6 @@ void main() {
       final context = MockBuildContext();
       when(() => context.mounted).thenReturn(true);
 
-      // Test that parameters are accepted without errors
       await expectLater(
         importImageAssets(
           context,
@@ -191,19 +180,16 @@ void main() {
     });
   });
 
-  group('MediaKit Duration Extraction', () {
-    test('selectAudioMetadataReader returns zero duration in test env',
-        () async {
-      // The reader function should work correctly
-      final reader = selectAudioMetadataReader();
+  group('AudioMetadataExtractor Duration Extraction', () {
+    test('selectReader returns zero duration in test env', () async {
+      final reader = AudioMetadataExtractor.selectReader();
       final duration = await reader('/test/path.m4a');
 
-      // In test environment, should return zero
       expect(duration, equals(Duration.zero));
     });
 
     test('audio metadata reader handles various file paths', () async {
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
 
       final testFile = File('${tempDir.path}/test.m4a');
       await testFile.writeAsBytes([0x00, 0x00, 0x00, 0x20]);
@@ -216,9 +202,8 @@ void main() {
     });
 
     test('audio metadata reader handles multiple file paths', () async {
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
 
-      // Test with various file paths
       final paths = [
         '/path/to/audio.m4a',
         '/another/path/recording.m4a',
@@ -231,46 +216,42 @@ void main() {
       }
     });
 
-    test('selectAudioMetadataReader returns bypass reader when flag set', () {
-      imageImportBypassMediaKitInTests = true;
+    test('selectReader returns bypass reader when flag set', () {
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       expect(reader, isNotNull);
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
-    test('selectAudioMetadataReader detects test environment', () {
-      // When running in Flutter test environment, it should return the test reader
-      final reader = selectAudioMetadataReader();
+    test('selectReader detects test environment', () {
+      final reader = AudioMetadataExtractor.selectReader();
       expect(reader, isNotNull);
     });
 
     test('MediaKit bypass flag controls extraction behavior', () async {
-      // Test that the flag actually changes behavior
-      imageImportBypassMediaKitInTests = false;
-      final reader1 = selectAudioMetadataReader();
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
+      final reader1 = AudioMetadataExtractor.selectReader();
 
-      imageImportBypassMediaKitInTests = true;
-      final reader2 = selectAudioMetadataReader();
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
+      final reader2 = AudioMetadataExtractor.selectReader();
 
-      // Both should be valid readers
       expect(reader1, isNotNull);
       expect(reader2, isNotNull);
 
-      // Clean up
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('audio metadata reader returns zero for empty path', () async {
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
 
       final duration = await reader('');
       expect(duration, equals(Duration.zero));
     });
 
     test('audio metadata reader handles special characters in path', () async {
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
 
       final paths = [
         '/path with spaces/file.m4a',
@@ -287,53 +268,48 @@ void main() {
     });
 
     test('audio metadata reader bypasses in test environment', () async {
-      // Should automatically detect FLUTTER_TEST environment variable
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       final duration = await reader('/test.m4a');
 
-      // In test environment, should return zero without attempting MediaKit
       expect(duration, equals(Duration.zero));
     });
   });
 
   group('Audio Metadata Reader Selection Logic', () {
-    test('selectAudioMetadataReader prioritizes registered reader', () {
-      // Clean up any existing registration
+    test('selectReader prioritizes registered reader', () {
       if (getIt.isRegistered<AudioMetadataReader>()) {
         getIt.unregister<AudioMetadataReader>();
       }
 
-      // Register a custom reader
       Future<Duration> customReader(String _) async =>
           const Duration(seconds: 123);
       getIt.registerSingleton<AudioMetadataReader>(customReader);
 
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       expect(reader, equals(customReader));
 
-      // Clean up
       getIt.unregister<AudioMetadataReader>();
     });
 
-    test('selectAudioMetadataReader returns default when none registered', () {
+    test('selectReader returns default when none registered', () {
       if (getIt.isRegistered<AudioMetadataReader>()) {
         getIt.unregister<AudioMetadataReader>();
       }
 
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       expect(reader, isNotNull);
     });
 
-    test('selectAudioMetadataReader works with bypass flag', () {
+    test('selectReader works with bypass flag', () {
       if (getIt.isRegistered<AudioMetadataReader>()) {
         getIt.unregister<AudioMetadataReader>();
       }
 
-      imageImportBypassMediaKitInTests = true;
-      final reader = selectAudioMetadataReader();
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
+      final reader = AudioMetadataExtractor.selectReader();
       expect(reader, isNotNull);
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('registered reader takes precedence over environment detection',
@@ -342,12 +318,11 @@ void main() {
         getIt.unregister<AudioMetadataReader>();
       }
 
-      // Register a reader that returns a specific duration
       getIt.registerSingleton<AudioMetadataReader>(
         (_) async => const Duration(minutes: 5),
       );
 
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       final result = await reader('/dummy/path.m4a');
 
       expect(result, equals(const Duration(minutes: 5)));
@@ -355,26 +330,23 @@ void main() {
       getIt.unregister<AudioMetadataReader>();
     });
 
-    test('selectAudioMetadataReader handles rapid registration changes', () {
+    test('selectReader handles rapid registration changes', () {
       if (getIt.isRegistered<AudioMetadataReader>()) {
         getIt.unregister<AudioMetadataReader>();
       }
 
-      // First reader
       getIt.registerSingleton<AudioMetadataReader>(
         (_) async => const Duration(seconds: 1),
       );
-      final reader1 = selectAudioMetadataReader();
+      final reader1 = AudioMetadataExtractor.selectReader();
 
-      // Unregister and register new reader
       getIt
         ..unregister<AudioMetadataReader>()
         ..registerSingleton<AudioMetadataReader>(
           (_) async => const Duration(seconds: 2),
         );
-      final reader2 = selectAudioMetadataReader();
+      final reader2 = AudioMetadataExtractor.selectReader();
 
-      // They should be different instances
       expect(reader1, isNotNull);
       expect(reader2, isNotNull);
       expect(reader1, isNot(same(reader2)));
@@ -385,36 +357,32 @@ void main() {
 
   group('MediaKit Path Coverage', () {
     test('audio metadata reader early return path', () async {
-      // Test the early return when bypass flag is set
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final reader = selectAudioMetadataReader();
-      // This should return immediately without trying to create a Player
+      final reader = AudioMetadataExtractor.selectReader();
       final duration = await reader('/any/path.m4a');
 
       expect(duration, equals(Duration.zero));
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('bypass flag prevents Player creation', () async {
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final reader = selectAudioMetadataReader();
-      // Multiple calls should all bypass Player creation
+      final reader = AudioMetadataExtractor.selectReader();
       for (var i = 0; i < 5; i++) {
         final duration = await reader('/path$i.m4a');
         expect(duration, equals(Duration.zero));
       }
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('audio metadata reader handles concurrent calls', () async {
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final reader = selectAudioMetadataReader();
-      // Test concurrent execution
+      final reader = AudioMetadataExtractor.selectReader();
       final futures = List.generate(
         10,
         (i) => reader('/path$i.m4a'),
@@ -422,76 +390,72 @@ void main() {
 
       final results = await Future.wait(futures);
 
-      // All should return zero duration
       for (final result in results) {
         expect(result, equals(Duration.zero));
       }
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
   });
 
   group('Environment Detection', () {
-    test('selectAudioMetadataReader detects Flutter test environment', () {
-      // This test runs in FLUTTER_TEST environment
-      // The selector should detect this and return the test reader
-
+    test('selectReader detects Flutter test environment', () {
       if (getIt.isRegistered<AudioMetadataReader>()) {
         getIt.unregister<AudioMetadataReader>();
       }
 
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       expect(reader, isNotNull);
     });
 
     test('environment variable check does not throw', () {
-      // Test that the environment check in selectAudioMetadataReader
-      // handles cases where Platform.environment might throw
       expect(
-        selectAudioMetadataReader,
+        AudioMetadataExtractor.selectReader,
         returnsNormally,
       );
     });
   });
 
   group('Integration Test Coverage Completeness', () {
-    test('all MediaImportConstants are accessible', () {
-      // Test that constants are properly defined and accessible
-      expect(MediaImportConstants.supportedImageExtensions, isNotEmpty);
-      expect(MediaImportConstants.supportedAudioExtensions, isNotEmpty);
-      expect(MediaImportConstants.maxImageFileSizeBytes, greaterThan(0));
-      expect(MediaImportConstants.maxAudioFileSizeBytes, greaterThan(0));
-      expect(MediaImportConstants.imagesDirectoryPrefix, isNotEmpty);
-      expect(MediaImportConstants.loggingDomain, isNotEmpty);
+    test('ImageImportConstants are accessible', () {
+      expect(ImageImportConstants.supportedExtensions, isNotEmpty);
+      expect(ImageImportConstants.maxFileSizeBytes, greaterThan(0));
+      expect(ImageImportConstants.directoryPrefix, isNotEmpty);
+      expect(ImageImportConstants.loggingDomain, isNotEmpty);
+    });
+
+    test('AudioImportConstants are accessible', () {
+      expect(AudioImportConstants.supportedExtensions, isNotEmpty);
+      expect(AudioImportConstants.maxFileSizeBytes, greaterThan(0));
+      expect(AudioImportConstants.loggingDomain, isNotEmpty);
     });
 
     test('helper functions are public and callable', () {
       final timestamp = DateTime(2025, 1, 15, 10, 30, 45);
 
-      final path = computeAudioRelativePath(timestamp);
+      final path = AudioMetadataExtractor.computeRelativePath(timestamp);
       expect(path, contains('/audio/'));
       expect(path, contains('2025-01-15'));
 
-      final filename = computeAudioTargetFileName(timestamp, 'm4a');
+      final filename =
+          AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
       expect(filename, endsWith('.m4a'));
       expect(filename, contains('2025-01-15'));
     });
 
-    test('imageImportBypassMediaKitInTests flag is mutable', () {
-      final originalValue = imageImportBypassMediaKitInTests;
+    test('bypassMediaKitInTests flag is mutable', () {
+      final originalValue = AudioMetadataExtractor.bypassMediaKitInTests;
 
-      imageImportBypassMediaKitInTests = true;
-      expect(imageImportBypassMediaKitInTests, isTrue);
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
+      expect(AudioMetadataExtractor.bypassMediaKitInTests, isTrue);
 
-      imageImportBypassMediaKitInTests = false;
-      expect(imageImportBypassMediaKitInTests, isFalse);
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
+      expect(AudioMetadataExtractor.bypassMediaKitInTests, isFalse);
 
-      // Restore
-      imageImportBypassMediaKitInTests = originalValue;
+      AudioMetadataExtractor.bypassMediaKitInTests = originalValue;
     });
 
     test('audio metadata reader type is properly defined', () {
-      // Test that the typedef is usable
       Future<Duration> reader(String _) async => Duration.zero;
       expect(reader, isNotNull);
 
@@ -499,13 +463,11 @@ void main() {
       expect(result, isA<Future<Duration>>());
     });
 
-    test('selectAudioMetadataReader returns callable function', () async {
-      final reader = selectAudioMetadataReader();
+    test('selectReader returns callable function', () async {
+      final reader = AudioMetadataExtractor.selectReader();
 
-      // The reader should be callable
       final result = await reader('/dummy/path.m4a');
 
-      // In test environment, should return zero
       expect(result, isA<Duration>());
     });
   });
@@ -513,9 +475,8 @@ void main() {
   group('Error Path Coverage', () {
     test('audio metadata reader handles null/invalid paths gracefully',
         () async {
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
 
-      // Test various invalid paths
       final invalidPaths = [
         '',
         ' ',
@@ -531,37 +492,34 @@ void main() {
       }
     });
 
-    test('selectAudioMetadataReader does not crash on GetIt errors', () {
-      // Even if GetIt has issues, should return a valid reader
+    test('selectReader does not crash on GetIt errors', () {
       expect(
-        selectAudioMetadataReader,
+        AudioMetadataExtractor.selectReader,
         returnsNormally,
       );
     });
 
     test('bypass flag prevents actual media operations in tests', () async {
-      // This is important for CI/CD environments without media capabilities
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       final testFile = File('${tempDir.path}/fake_audio.m4a');
       await testFile.writeAsBytes([0x00, 0x00]);
 
-      // Should not attempt to actually read the file with media_kit
       final duration = await reader(testFile.path);
 
       expect(duration, equals(Duration.zero));
 
       await testFile.delete();
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
   });
 
   group('Reader Lifecycle Tests', () {
     test('multiple reader selections return consistent results', () {
-      final reader1 = selectAudioMetadataReader();
-      final reader2 = selectAudioMetadataReader();
-      final reader3 = selectAudioMetadataReader();
+      final reader1 = AudioMetadataExtractor.selectReader();
+      final reader2 = AudioMetadataExtractor.selectReader();
+      final reader3 = AudioMetadataExtractor.selectReader();
 
       expect(reader1, isNotNull);
       expect(reader2, isNotNull);
@@ -569,19 +527,18 @@ void main() {
     });
 
     test('reader works after flag changes', () async {
-      imageImportBypassMediaKitInTests = false;
-      final reader1 = selectAudioMetadataReader();
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
+      final reader1 = AudioMetadataExtractor.selectReader();
       final result1 = await reader1('/test.m4a');
 
-      imageImportBypassMediaKitInTests = true;
-      final reader2 = selectAudioMetadataReader();
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
+      final reader2 = AudioMetadataExtractor.selectReader();
       final result2 = await reader2('/test.m4a');
 
-      // Both should return valid durations
       expect(result1, isA<Duration>());
       expect(result2, isA<Duration>());
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('registered reader persists across selections', () async {
@@ -594,8 +551,8 @@ void main() {
         (_) async => expectedDuration,
       );
 
-      final reader1 = selectAudioMetadataReader();
-      final reader2 = selectAudioMetadataReader();
+      final reader1 = AudioMetadataExtractor.selectReader();
+      final reader2 = AudioMetadataExtractor.selectReader();
 
       final result1 = await reader1('/test1.m4a');
       final result2 = await reader2('/test2.m4a');
@@ -609,7 +566,7 @@ void main() {
 
   group('Edge Case Coverage', () {
     test('audio metadata reader with very long path', () async {
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       final longPath = '/very/long/path/${'segment/' * 100}file.m4a';
 
       expect(
@@ -619,7 +576,7 @@ void main() {
     });
 
     test('audio metadata reader called multiple times sequentially', () async {
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
 
       for (var i = 0; i < 20; i++) {
         final duration = await reader('/path$i.m4a');
@@ -628,30 +585,26 @@ void main() {
     });
 
     test('bypass flag state does not leak between tests', () {
-      // Ensure flag is in expected state
-      expect(imageImportBypassMediaKitInTests, isFalse);
+      expect(AudioMetadataExtractor.bypassMediaKitInTests, isFalse);
 
-      imageImportBypassMediaKitInTests = true;
-      expect(imageImportBypassMediaKitInTests, isTrue);
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
+      expect(AudioMetadataExtractor.bypassMediaKitInTests, isTrue);
 
-      imageImportBypassMediaKitInTests = false;
-      expect(imageImportBypassMediaKitInTests, isFalse);
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
+      expect(AudioMetadataExtractor.bypassMediaKitInTests, isFalse);
     });
 
-    test('selectAudioMetadataReader with and without GetIt registration',
-        () async {
-      // Test without registration
+    test('selectReader with and without GetIt registration', () async {
       if (getIt.isRegistered<AudioMetadataReader>()) {
         getIt.unregister<AudioMetadataReader>();
       }
-      final defaultReader = selectAudioMetadataReader();
+      final defaultReader = AudioMetadataExtractor.selectReader();
       expect(defaultReader, isNotNull);
 
-      // Test with registration
       getIt.registerSingleton<AudioMetadataReader>(
         (_) async => const Duration(hours: 1),
       );
-      final customReader = selectAudioMetadataReader();
+      final customReader = AudioMetadataExtractor.selectReader();
       expect(customReader, isNotNull);
 
       final result = await customReader('/test.m4a');
@@ -663,18 +616,14 @@ void main() {
 
   group('Platform-Specific Behavior', () {
     test('audio metadata reader respects test environment', () async {
-      // In test environment (FLUTTER_TEST=true), should use bypass
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       final duration = await reader('/test.m4a');
 
-      // Should return zero without attempting real media operations
       expect(duration, equals(Duration.zero));
     });
 
     test('test environment detection is reliable', () {
-      // selectAudioMetadataReader checks for test environment
-      // This should consistently return the test-appropriate reader
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       expect(reader, isNotNull);
     });
   });

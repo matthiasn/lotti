@@ -17,6 +17,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -235,3 +236,5 @@ class FakeHabitCompletionData extends Fake implements HabitCompletionData {}
 class MockMaintenance extends Mock implements Maintenance {}
 
 class MockMatrixService extends Mock implements MatrixService {}
+
+class MockGeolocationService extends Mock implements GeolocationService {}

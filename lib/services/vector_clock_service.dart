@@ -10,11 +10,18 @@ import 'package:lotti/utils/file_utils.dart';
 
 class VectorClockService {
   VectorClockService() {
-    init();
+    _initialized = init();
   }
   late int _nextAvailableCounter;
   late String _host;
   Future<void>? _lock;
+
+  /// Future that completes when initialization is done.
+  /// Await this before using the service to ensure it's ready.
+  late final Future<void> _initialized;
+
+  /// Returns a future that completes when the service is fully initialized.
+  Future<void> get initialized => _initialized;
 
   Future<void> init() async {
     _host = await _getHost() ?? await setNewHost();

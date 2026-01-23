@@ -40,6 +40,8 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/geolocation_service.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -53,6 +55,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/location.dart';
 import 'package:meta/meta.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -303,6 +306,17 @@ Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
     ..registerSingleton<BackfillRequestService>(backfillRequestService)
+    ..registerSingleton<MetadataService>(
+      MetadataService(vectorClockService: vectorClockService),
+    )
+    ..registerSingleton<GeolocationService>(
+      GeolocationService(
+        journalDb: journalDb,
+        loggingService: loggingService,
+        metadataService: getIt<MetadataService>(),
+        deviceLocation: Platform.isWindows ? null : DeviceLocation(),
+      ),
+    )
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
     ..registerSingleton<EditorStateService>(EditorStateService())
     ..registerSingleton<HealthImport>(

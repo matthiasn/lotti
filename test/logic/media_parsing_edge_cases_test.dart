@@ -1,14 +1,16 @@
-/// Comprehensive tests to achieve 100% coverage for image_import.dart
+/// Comprehensive tests to achieve 100% coverage for audio and GPS parsing
 /// This file specifically targets previously uncovered code paths
 library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 
 void main() {
-  group('_parseAudioFileTimestamp Coverage Tests', () {
+  group('AudioMetadataExtractor.parseFilenameTimestamp Coverage Tests', () {
     test('parses valid Lotti audio filename format', () {
-      final result = parseAudioFileTimestamp('2024-01-15_10-30-45-123');
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+          '2024-01-15_10-30-45-123');
       expect(result, isNotNull);
       // Result is converted to local time, so check components
       expect(result!.year, 2024);
@@ -17,16 +19,21 @@ void main() {
     });
 
     test('returns null for invalid filename format', () {
-      expect(parseAudioFileTimestamp('invalid-format'), isNull);
+      expect(
+        AudioMetadataExtractor.parseFilenameTimestamp('invalid-format'),
+        isNull,
+      );
     });
 
     test('returns null for empty filename', () {
-      expect(parseAudioFileTimestamp(''), isNull);
+      expect(AudioMetadataExtractor.parseFilenameTimestamp(''), isNull);
     });
 
     test('parses filename with extension by stripping it', () {
       // Function removes extension before parsing
-      final result = parseAudioFileTimestamp('2024-01-15_10-30-45-123.m4a');
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2024-01-15_10-30-45-123.m4a',
+      );
       expect(result, isNotNull);
       expect(result!.year, 2024);
       expect(result.month, 1);
@@ -35,22 +42,27 @@ void main() {
 
     test('handles filename without milliseconds gracefully', () {
       // Format requires milliseconds (yyyy-MM-dd_HH-mm-ss-S), so this should fail
-      final result = parseAudioFileTimestamp('2024-01-15_10-30-45');
+      final result =
+          AudioMetadataExtractor.parseFilenameTimestamp('2024-01-15_10-30-45');
       expect(result, isNull);
     });
 
     test('handles partial date format', () {
-      final result = parseAudioFileTimestamp('2024-01-15');
+      final result =
+          AudioMetadataExtractor.parseFilenameTimestamp('2024-01-15');
       expect(result, isNull);
     });
 
     test('handles garbage input', () {
-      final result = parseAudioFileTimestamp('abc-def-ghi');
+      final result =
+          AudioMetadataExtractor.parseFilenameTimestamp('abc-def-ghi');
       expect(result, isNull);
     });
 
     test('handles edge case timestamps', () {
-      final result = parseAudioFileTimestamp('2024-12-31_23-59-59-999');
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2024-12-31_23-59-59-999',
+      );
       expect(result, isNotNull);
       // UTC to local conversion may roll over to 2025 depending on timezone
       expect(result!.year, greaterThanOrEqualTo(2024));
@@ -66,7 +78,9 @@ void main() {
     });
 
     test('handles leap year date', () {
-      final result = parseAudioFileTimestamp('2024-02-29_12-00-00-000');
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2024-02-29_12-00-00-000',
+      );
       expect(result, isNotNull);
       expect(result!.year, 2024);
       expect(result.month, 2);
@@ -74,91 +88,95 @@ void main() {
     });
   });
 
-  group('_extractDurationWithMediaKit Coverage Tests', () {
+  group('AudioMetadataExtractor.extractDuration Coverage Tests', () {
     test('returns zero duration when bypass flag is set', () async {
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final duration = await extractDurationWithMediaKit('/fake/path.m4a');
+      final duration =
+          await AudioMetadataExtractor.extractDuration('/fake/path.m4a');
 
       expect(duration, Duration.zero);
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('handles non-existent file path', () async {
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final duration = await extractDurationWithMediaKit('/does/not/exist.m4a');
+      final duration =
+          await AudioMetadataExtractor.extractDuration('/does/not/exist.m4a');
 
       expect(duration, Duration.zero);
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('handles empty file path', () async {
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final duration = await extractDurationWithMediaKit('');
+      final duration = await AudioMetadataExtractor.extractDuration('');
 
       expect(duration, Duration.zero);
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('bypass flag prevents Player instantiation', () async {
-      // This tests line 537-540
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final duration = await extractDurationWithMediaKit('/any/path.m4a');
+      final duration =
+          await AudioMetadataExtractor.extractDuration('/any/path.m4a');
 
       // Should return immediately without creating Player
       expect(duration, Duration.zero);
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
   });
 
-  group('computeAudioRelativePath Coverage Tests', () {
+  group('AudioMetadataExtractor.computeRelativePath Coverage Tests', () {
     test('formats date correctly for directory', () {
       final timestamp = DateTime(2024, 1, 15, 10, 30, 45, 123);
-      final path = computeAudioRelativePath(timestamp);
+      final path = AudioMetadataExtractor.computeRelativePath(timestamp);
 
       expect(path, equals('/audio/2024-01-15/'));
     });
 
     test('handles single digit month and day', () {
       final timestamp = DateTime(2024, 3, 5);
-      final path = computeAudioRelativePath(timestamp);
+      final path = AudioMetadataExtractor.computeRelativePath(timestamp);
 
       expect(path, equals('/audio/2024-03-05/'));
     });
 
     test('handles end of year', () {
       final timestamp = DateTime(2024, 12, 31);
-      final path = computeAudioRelativePath(timestamp);
+      final path = AudioMetadataExtractor.computeRelativePath(timestamp);
 
       expect(path, equals('/audio/2024-12-31/'));
     });
 
     test('handles leap year day', () {
       final timestamp = DateTime(2024, 2, 29);
-      final path = computeAudioRelativePath(timestamp);
+      final path = AudioMetadataExtractor.computeRelativePath(timestamp);
 
       expect(path, equals('/audio/2024-02-29/'));
     });
   });
 
-  group('computeAudioTargetFileName Coverage Tests', () {
+  group('AudioMetadataExtractor.computeTargetFileName Coverage Tests', () {
     test('formats filename with full timestamp', () {
       final timestamp = DateTime(2024, 1, 15, 10, 30, 45, 123);
-      final filename = computeAudioTargetFileName(timestamp, 'm4a');
+      final filename =
+          AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
 
       expect(filename, equals('2024-01-15_10-30-45-123.m4a'));
     });
 
     test('handles zero milliseconds', () {
       final timestamp = DateTime(2024, 1, 15, 10, 30, 45);
-      final filename = computeAudioTargetFileName(timestamp, 'm4a');
+      final filename =
+          AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
 
       // Milliseconds are formatted with padding, so 0 becomes 000
       expect(filename, equals('2024-01-15_10-30-45-000.m4a'));
@@ -166,21 +184,24 @@ void main() {
 
     test('handles maximum milliseconds', () {
       final timestamp = DateTime(2024, 1, 15, 10, 30, 45, 999);
-      final filename = computeAudioTargetFileName(timestamp, 'm4a');
+      final filename =
+          AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
 
       expect(filename, equals('2024-01-15_10-30-45-999.m4a'));
     });
 
     test('preserves file extension', () {
       final timestamp = DateTime(2024, 1, 15);
-      final filename = computeAudioTargetFileName(timestamp, 'wav');
+      final filename =
+          AudioMetadataExtractor.computeTargetFileName(timestamp, 'wav');
 
       expect(filename, endsWith('.wav'));
     });
 
     test('handles midnight timestamp', () {
       final timestamp = DateTime(2024, 1, 15);
-      final filename = computeAudioTargetFileName(timestamp, 'm4a');
+      final filename =
+          AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
 
       // Milliseconds are formatted with padding
       expect(filename, equals('2024-01-15_00-00-00-000.m4a'));
@@ -188,35 +209,36 @@ void main() {
 
     test('handles end of day timestamp', () {
       final timestamp = DateTime(2024, 1, 15, 23, 59, 59, 999);
-      final filename = computeAudioTargetFileName(timestamp, 'm4a');
+      final filename =
+          AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
 
       expect(filename, equals('2024-01-15_23-59-59-999.m4a'));
     });
   });
 
-  group('selectAudioMetadataReader Coverage Tests', () {
+  group('AudioMetadataExtractor.selectReader Coverage Tests', () {
     test('uses default reader when bypass flag is set', () async {
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
       final duration = await reader('/fake/path.m4a');
 
       expect(duration, Duration.zero);
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
 
     test('returns reader function that can be called', () async {
-      imageImportBypassMediaKitInTests = true;
+      AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-      final reader = selectAudioMetadataReader();
+      final reader = AudioMetadataExtractor.selectReader();
 
       expect(reader, isA<AudioMetadataReader>());
 
       final result = await reader('/test.m4a');
       expect(result, Duration.zero);
 
-      imageImportBypassMediaKitInTests = false;
+      AudioMetadataExtractor.bypassMediaKitInTests = false;
     });
   });
 
@@ -323,40 +345,52 @@ void main() {
   });
 
   group('Audio Timestamp Edge Cases', () {
-    test('parseAudioFileTimestamp handles century boundary', () {
-      final result = parseAudioFileTimestamp('2099-12-31_23-59-59-999');
+    test('parseFilenameTimestamp handles century boundary', () {
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2099-12-31_23-59-59-999',
+      );
       expect(result, isNotNull);
       // May rollover to 2100 due to timezone, just verify it parsed
       expect(result!.year, greaterThanOrEqualTo(2099));
     });
 
-    test('parseAudioFileTimestamp handles year 2000', () {
-      final result = parseAudioFileTimestamp('2000-01-01_00-00-00-000');
+    test('parseFilenameTimestamp handles year 2000', () {
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2000-01-01_00-00-00-000',
+      );
       expect(result, isNotNull);
       expect(result!.year, 2000);
     });
 
-    test('parseAudioFileTimestamp handles non-leap year Feb 28', () {
-      final result = parseAudioFileTimestamp('2023-02-28_12-00-00-000');
+    test('parseFilenameTimestamp handles non-leap year Feb 28', () {
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2023-02-28_12-00-00-000',
+      );
       expect(result, isNotNull);
       expect(result!.year, 2023);
       expect(result.month, 2);
     });
 
-    test('parseAudioFileTimestamp handles invalid Feb 29 in non-leap year', () {
-      final result = parseAudioFileTimestamp('2023-02-29_12-00-00-000');
+    test('parseFilenameTimestamp handles invalid Feb 29 in non-leap year', () {
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2023-02-29_12-00-00-000',
+      );
       // DateTime.parse may accept and adjust to March 1st
       expect(result, isA<DateTime?>());
     });
 
-    test('parseAudioFileTimestamp handles DST transition times', () {
+    test('parseFilenameTimestamp handles DST transition times', () {
       // March 10, 2024 at 2:00 AM (DST starts in many regions)
-      final result = parseAudioFileTimestamp('2024-03-10_02-00-00-000');
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2024-03-10_02-00-00-000',
+      );
       expect(result, isNotNull);
     });
 
-    test('parseAudioFileTimestamp handles different century', () {
-      final result = parseAudioFileTimestamp('2100-01-01_00-00-00-000');
+    test('parseFilenameTimestamp handles different century', () {
+      final result = AudioMetadataExtractor.parseFilenameTimestamp(
+        '2100-01-01_00-00-00-000',
+      );
       expect(result, isNotNull);
       expect(result!.year, 2100);
     });

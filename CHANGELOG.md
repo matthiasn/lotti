@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.819] - 2026-01-23
+### Changed
+- Code Modularity Refactor: Extracted focused services from large modules for better testability and maintainability
+  - `MetadataService`: Handles metadata creation with vector clock integration (from PersistenceLogic)
+  - `GeolocationService`: Manages geolocation addition with race condition prevention (from PersistenceLogic)
+  - `ExifDataExtractor`: Pure functions for EXIF timestamp and GPS coordinate extraction (from image_import)
+  - `AudioMetadataExtractor`: Audio file metadata parsing and duration extraction via MediaKit (from image_import)
+  - Media import separation: `audio_import.dart`, `media_import.dart`, and `image_import.dart` now have single responsibilities
+
 ## [0.9.818] - 2026-01-19
 ### Changed
 - Voxtral Token Streaming: Upgraded from chunk-level to true token-by-token streaming
