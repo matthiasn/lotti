@@ -71,10 +71,18 @@ class OpenAiTranscriptionRepository {
     final requestTimeout =
         timeout ?? const Duration(seconds: whisperTranscriptionTimeoutSeconds);
 
-    // Define timeout error message once
-    final timeoutMinutes = requestTimeout.inMinutes;
+    // Build timeout display string - use seconds for sub-minute, minutes otherwise
+    final String timeoutDisplay;
+    if (requestTimeout.inMinutes == 0) {
+      final seconds = requestTimeout.inSeconds;
+      timeoutDisplay = seconds == 1 ? '1 second' : '$seconds seconds';
+    } else {
+      final minutes = requestTimeout.inMinutes;
+      timeoutDisplay = minutes == 1 ? '1 minute' : '$minutes minutes';
+    }
+
     final timeoutErrorMessage = 'Transcription request timed out after '
-        '${timeoutMinutes == 1 ? '1 minute' : '$timeoutMinutes minutes'}. '
+        '$timeoutDisplay. '
         'This can happen with very long audio files or slow processing. '
         'Please try with a shorter recording.';
 
@@ -84,7 +92,7 @@ class OpenAiTranscriptionRepository {
           developer.log(
             'Sending audio transcription request to OpenAI - '
             'model: $model, audioLength: ${audioBase64.length}, '
-            'timeout: ${requestTimeout.inMinutes} minutes',
+            'timeout: $timeoutDisplay',
             name: 'OpenAiTranscriptionRepository',
           );
 

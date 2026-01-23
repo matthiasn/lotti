@@ -350,14 +350,7 @@ class CloudInferenceRepository {
       );
     }
 
-    // Use the provided audio format for Mistral and OpenAI (only wav/mp3 supported)
-    // For other providers (Gemini), use the provided format or default to mp3
-    final effectiveAudioFormat =
-        (provider.inferenceProviderType == InferenceProviderType.mistral ||
-                provider.inferenceProviderType == InferenceProviderType.openAi)
-            ? audioFormat
-            : ChatCompletionMessageInputAudioFormat.mp3;
-
+    // Use the audio format as prepared by _prepareAudio (wav or mp3)
     return client
         .createChatCompletionStream(
           request: _createBaseRequest(
@@ -369,7 +362,7 @@ class CloudInferenceRepository {
                     ChatCompletionMessageContentPart.audio(
                       inputAudio: ChatCompletionMessageInputAudio(
                         data: audioBase64,
-                        format: effectiveAudioFormat,
+                        format: audioFormat,
                       ),
                     ),
                   ],

@@ -318,7 +318,8 @@ void main() {
       final requestString = request.toString();
       expect(requestString.contains(prompt), isTrue);
       expect(requestString.contains(audioBase64), isTrue);
-      expect(requestString.contains('mp3'), isTrue);
+      // Default audioFormat is wav
+      expect(requestString.contains('wav'), isTrue);
     });
 
     test('generate with maxCompletionTokens sets maxTokens parameter correctly',
@@ -3207,9 +3208,8 @@ void main() {
           contains('format: ChatCompletionMessageInputAudioFormat.wav'));
     });
 
-    test('generic provider uses mp3 format regardless of audioFormat parameter',
-        () {
-      // Arrange - generic provider should always use mp3
+    test('generic provider uses passed audioFormat parameter', () {
+      // Arrange
       final genericProvider = AiConfigInferenceProvider(
         id: 'generic-provider',
         name: 'Generic',
@@ -3241,7 +3241,7 @@ void main() {
         ]),
       );
 
-      // Act - pass wav format but expect mp3 to be used
+      // Act - default audioFormat is wav
       repository.generateWithAudio(
         'Test prompt',
         model: 'some-model',
@@ -3252,7 +3252,7 @@ void main() {
         overrideClient: mockClient,
       );
 
-      // Assert - should use mp3 regardless of passed audioFormat
+      // Assert - should use the passed audioFormat (default is wav)
       final captured = verify(
         () => mockClient.createChatCompletionStream(
           request: captureAny(named: 'request'),
@@ -3261,9 +3261,8 @@ void main() {
 
       final request = captured.first as CreateChatCompletionRequest;
       final requestString = request.toString();
-      // Generic providers always use mp3, ignoring the passed audioFormat
       expect(requestString,
-          contains('format: ChatCompletionMessageInputAudioFormat.mp3'));
+          contains('format: ChatCompletionMessageInputAudioFormat.wav'));
     });
   });
 }

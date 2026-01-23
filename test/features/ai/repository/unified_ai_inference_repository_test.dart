@@ -4453,6 +4453,7 @@ be consulted to ensure accuracy.''',
             baseUrl: any(named: 'baseUrl'),
             apiKey: any(named: 'apiKey'),
             stream: any(named: 'stream'),
+            audioFormat: any(named: 'audioFormat'),
           ),
         ).thenAnswer((_) => mockStream);
 
@@ -4490,6 +4491,7 @@ be consulted to ensure accuracy.''',
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
               stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
             ),
           ).captured;
 
@@ -4620,6 +4622,7 @@ Take into account the following task context:
               baseUrl: 'https://api.example.com',
               apiKey: 'test-api-key',
               stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
             ),
           ).captured;
 

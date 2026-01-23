@@ -523,16 +523,12 @@ class UnifiedAiInferenceRepository {
 
     final fullPath = await AudioUtils.getFullAudioPath(entity);
 
-    // Determine the audio format from file extension
+    // Only Mistral specifically requires WAV format - convert M4A to WAV for Mistral.
+    // Other providers (OpenAI, Gemini) accept M4A bytes labeled as mp3.
     final isM4aFile = AudioFormatConverterService.isM4aFile(fullPath);
-    final isMp3File = fullPath.toLowerCase().endsWith('.mp3');
-
-    // For Mistral and OpenAI chat completions, only wav/mp3 are supported
-    // M4A files need to be converted to WAV
-    final needsWavConversion = (provider.inferenceProviderType ==
-                InferenceProviderType.mistral ||
-            provider.inferenceProviderType == InferenceProviderType.openAi) &&
-        isM4aFile;
+    final needsWavConversion =
+        provider.inferenceProviderType == InferenceProviderType.mistral &&
+            isM4aFile;
 
     if (needsWavConversion) {
       developer.log(
@@ -560,19 +556,15 @@ class UnifiedAiInferenceRepository {
       }
     }
 
-    // No conversion needed - read original file and use actual format
+    // No conversion needed - read original file
     final file = File(fullPath);
     final bytes = await file.readAsBytes();
 
-    // Determine the format for the API
-    // MP3 files should be labeled as mp3, everything else (wav, m4a for non-chat APIs) as wav
-    final format = isMp3File
-        ? ChatCompletionMessageInputAudioFormat.mp3
-        : ChatCompletionMessageInputAudioFormat.wav;
-
+    // Label as mp3 (most providers accept M4A bytes labeled as mp3)
+    // Actual MP3 files are also labeled as mp3
     return PreparedAudio(
       base64: base64Encode(bytes),
-      format: format,
+      format: ChatCompletionMessageInputAudioFormat.mp3,
     );
   }
 
