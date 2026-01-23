@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Function type for reading audio duration from a file.
@@ -119,6 +120,11 @@ class AudioMetadataExtractor {
     // Use registered reader if provided (for dependency injection)
     if (registeredReader != null) {
       return registeredReader;
+    }
+
+    // Check if a reader is registered in GetIt (highest priority)
+    if (getIt.isRegistered<AudioMetadataReader>()) {
+      return getIt<AudioMetadataReader>();
     }
 
     // In headless/flutter test environments, prefer a no-op reader to avoid
