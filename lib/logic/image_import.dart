@@ -6,15 +6,12 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:exif/exif.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
-import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/logic/media/exif_data_extractor.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -41,23 +38,21 @@ void Function(JournalEntity)? _createAnalysisCallback(
       );
 }
 
-/// Constants for media import operations
-class MediaImportConstants {
-  const MediaImportConstants._();
+/// Constants for image import operations.
+class ImageImportConstants {
+  const ImageImportConstants._();
 
-  // Supported file extensions
-  static const Set<String> supportedImageExtensions = {'jpg', 'jpeg', 'png'};
-  static const Set<String> supportedAudioExtensions = {'m4a'};
+  /// Supported image file extensions for import.
+  static const Set<String> supportedExtensions = {'jpg', 'jpeg', 'png'};
 
-  // Directory paths
-  static const String imagesDirectoryPrefix = '/images/';
+  /// Directory prefix for storing imported images.
+  static const String directoryPrefix = '/images/';
 
-  // File size limits (in bytes)
-  static const int maxAudioFileSizeBytes = 500 * 1024 * 1024; // 500 MB
-  static const int maxImageFileSizeBytes = 50 * 1024 * 1024; // 50 MB
+  /// Maximum image file size in bytes (50 MB).
+  static const int maxFileSizeBytes = 50 * 1024 * 1024;
 
-  // Logging domain
-  static const String loggingDomain = 'media_import';
+  /// Logging domain for image import operations.
+  static const String loggingDomain = 'image_import';
 }
 
 /// Imports images from the device's photo library.
@@ -129,7 +124,7 @@ Future<void> importImageAssets(
         final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
             .format(createdAt);
         final relativePath =
-            '${MediaImportConstants.imagesDirectoryPrefix}$day/';
+            '${ImageImportConstants.directoryPrefix}$day/';
         final directory = await createAssetDirectory(relativePath);
         final targetFilePath = '$directory$imageFileName';
         await compressAndSave(file, targetFilePath);
@@ -177,17 +172,17 @@ Future<void> importDroppedImages({
       final fileExtension = file.name.split('.').last.toLowerCase();
 
       // Skip non-image files
-      if (!MediaImportConstants.supportedImageExtensions
+      if (!ImageImportConstants.supportedExtensions
           .contains(fileExtension)) {
         continue;
       }
 
       // Validate file size
       final fileSize = await File(srcPath).length();
-      if (fileSize > MediaImportConstants.maxImageFileSizeBytes) {
+      if (fileSize > ImageImportConstants.maxFileSizeBytes) {
         getIt<LoggingService>().captureException(
           'Image file too large: $fileSize bytes',
-          domain: MediaImportConstants.loggingDomain,
+          domain: ImageImportConstants.loggingDomain,
           subDomain: 'importDroppedImages',
         );
         continue;
@@ -195,7 +190,7 @@ Future<void> importDroppedImages({
 
       final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
           .format(lastModified);
-      final relativePath = '${MediaImportConstants.imagesDirectoryPrefix}$day/';
+      final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
       final directory = await createAssetDirectory(relativePath);
       final targetFileName = '$id.$fileExtension';
       final targetFilePath = '$directory$targetFileName';
@@ -219,7 +214,7 @@ Future<void> importDroppedImages({
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
         exception,
-        domain: MediaImportConstants.loggingDomain,
+        domain: ImageImportConstants.loggingDomain,
         subDomain: 'importDroppedImages',
         stackTrace: stackTrace,
       );
@@ -243,7 +238,7 @@ Future<DateTime> _extractImageTimestamp(Uint8List data) async {
     // Log but don't fail - return current time as fallback
     getIt<LoggingService>().captureException(
       exception,
-      domain: MediaImportConstants.loggingDomain,
+      domain: ImageImportConstants.loggingDomain,
       subDomain: 'extractImageTimestamp',
       stackTrace: stackTrace,
     );
@@ -294,7 +289,7 @@ Future<Geolocation?> extractGpsCoordinates(
     // Log but don't fail - missing/invalid GPS is common
     getIt<LoggingService>().captureException(
       exception,
-      domain: MediaImportConstants.loggingDomain,
+      domain: ImageImportConstants.loggingDomain,
       subDomain: 'extractGpsCoordinates',
       stackTrace: stackTrace,
     );
@@ -315,10 +310,10 @@ Future<void> importPastedImages({
   AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
   // Validate file size
-  if (data.length > MediaImportConstants.maxImageFileSizeBytes) {
+  if (data.length > ImageImportConstants.maxFileSizeBytes) {
     getIt<LoggingService>().captureException(
       'Pasted image too large: ${data.length} bytes',
-      domain: MediaImportConstants.loggingDomain,
+      domain: ImageImportConstants.loggingDomain,
       subDomain: 'importPastedImages',
     );
     return;
@@ -331,7 +326,7 @@ Future<void> importPastedImages({
 
   final day =
       DateFormat(AudioRecorderConstants.directoryDateFormat).format(capturedAt);
-  final relativePath = '${MediaImportConstants.imagesDirectoryPrefix}$day/';
+  final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
   final directory = await createAssetDirectory(relativePath);
   final targetFileName = '$id.$fileExtension';
   final targetFilePath = '$directory$targetFileName';
@@ -374,10 +369,10 @@ Future<String?> importGeneratedImageBytes({
   String? categoryId,
 }) async {
   // Validate file size
-  if (data.length > MediaImportConstants.maxImageFileSizeBytes) {
+  if (data.length > ImageImportConstants.maxFileSizeBytes) {
     getIt<LoggingService>().captureException(
       'Generated image too large: ${data.length} bytes',
-      domain: MediaImportConstants.loggingDomain,
+      domain: ImageImportConstants.loggingDomain,
       subDomain: 'importGeneratedImageBytes',
     );
     return null;
@@ -388,7 +383,7 @@ Future<String?> importGeneratedImageBytes({
 
   final day =
       DateFormat(AudioRecorderConstants.directoryDateFormat).format(capturedAt);
-  final relativePath = '${MediaImportConstants.imagesDirectoryPrefix}$day/';
+  final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
   final directory = await createAssetDirectory(relativePath);
   final targetFileName = '$id.$fileExtension';
   final targetFilePath = '$directory$targetFileName';
@@ -414,241 +409,4 @@ Future<String?> importGeneratedImageBytes({
   }
 
   return createdEntity.id;
-}
-
-/// Handles dropped files and routes them to appropriate import functions.
-///
-/// Examines file extensions and calls the correct import function based on
-/// file type. Supports both images and audio files.
-/// If [analysisTrigger] is provided, triggers automatic image analysis
-/// for each imported image (fire-and-forget, doesn't block import).
-Future<void> handleDroppedMedia({
-  required DropDoneDetails data,
-  required String linkedId,
-  String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
-}) async {
-  // Group files by type for efficient processing
-  final hasImages = data.files.any((file) {
-    final ext = file.name.split('.').last.toLowerCase();
-    return MediaImportConstants.supportedImageExtensions.contains(ext);
-  });
-
-  final hasAudio = data.files.any((file) {
-    final ext = file.name.split('.').last.toLowerCase();
-    return MediaImportConstants.supportedAudioExtensions.contains(ext);
-  });
-
-  // Process each type once
-  if (hasImages) {
-    await importDroppedImages(
-      data: data,
-      linkedId: linkedId,
-      categoryId: categoryId,
-      analysisTrigger: analysisTrigger,
-    );
-  }
-
-  if (hasAudio) {
-    await importDroppedAudio(
-      data: data,
-      linkedId: linkedId,
-      categoryId: categoryId,
-    );
-  }
-}
-
-/// Parses timestamp from audio filename if it matches Lotti's format
-///
-/// Expected format: yyyy-MM-dd_HH-mm-ss-S.extension (e.g., 2025-10-20_16-49-32-203.m4a)
-/// Returns the parsed DateTime if successful, null otherwise.
-///
-/// Delegates to [AudioMetadataExtractor.parseFilenameTimestamp].
-@visibleForTesting
-DateTime? parseAudioFileTimestamp(String filename) =>
-    AudioMetadataExtractor.parseFilenameTimestamp(filename);
-
-/// Function type for reading audio duration from a file.
-///
-/// Re-exported from [AudioMetadataExtractor] for backward compatibility.
-typedef AudioMetadataReader = Future<Duration> Function(String filePath);
-
-/// Test bypass flag - when true, duration extraction returns Duration.zero.
-///
-/// Delegates to [AudioMetadataExtractor.bypassMediaKitInTests].
-@visibleForTesting
-bool get imageImportBypassMediaKitInTests =>
-    AudioMetadataExtractor.bypassMediaKitInTests;
-
-@visibleForTesting
-// ignore: avoid_positional_boolean_parameters
-set imageImportBypassMediaKitInTests(bool value) =>
-    AudioMetadataExtractor.bypassMediaKitInTests = value;
-
-/// Selects the appropriate audio metadata reader based on environment.
-///
-/// Delegates to [AudioMetadataExtractor.selectReader].
-@visibleForTesting
-AudioMetadataReader selectAudioMetadataReader() {
-  // Check for registered reader via GetIt for backward compatibility
-  AudioMetadataReader? registeredReader;
-  if (getIt.isRegistered<AudioMetadataReader>()) {
-    registeredReader = getIt<AudioMetadataReader>();
-  }
-  return AudioMetadataExtractor.selectReader(
-      registeredReader: registeredReader);
-}
-
-/// Extracts audio duration from file using MediaKit.
-///
-/// Delegates to [AudioMetadataExtractor.extractDuration].
-@visibleForTesting
-Future<Duration> extractDurationWithMediaKit(String filePath) =>
-    AudioMetadataExtractor.extractDuration(filePath);
-
-/// Computes the relative directory path for storing audio files.
-///
-/// Delegates to [AudioMetadataExtractor.computeRelativePath].
-@visibleForTesting
-String computeAudioRelativePath(DateTime timestamp) =>
-    AudioMetadataExtractor.computeRelativePath(timestamp);
-
-/// Computes the target filename for an audio file.
-///
-/// Delegates to [AudioMetadataExtractor.computeTargetFileName].
-@visibleForTesting
-String computeAudioTargetFileName(DateTime timestamp, String extension) =>
-    AudioMetadataExtractor.computeTargetFileName(timestamp, extension);
-
-/// Imports dropped audio files and creates audio journal entries
-///
-/// Validates file extensions, size limits, and extracts audio duration before
-/// importing. Only processes files with supported audio extensions.
-///
-/// If duration extraction fails, continues with zero duration which can be
-/// updated later. If journal entry creation fails, cleans up the copied file.
-Future<void> importDroppedAudio({
-  required DropDoneDetails data,
-  String? linkedId,
-  String? categoryId,
-}) async {
-  for (final file in data.files) {
-    String? copiedFilePath;
-
-    try {
-      final lastModified = await file.lastModified();
-
-      // Try to parse timestamp from filename, fall back to lastModified
-      final parsedTimestamp = parseAudioFileTimestamp(file.name);
-      final timestamp = parsedTimestamp ?? lastModified;
-
-      final srcPath = file.path;
-
-      // Validate file name has extension
-      final nameParts = file.name.split('.');
-      if (nameParts.length < 2) {
-        getIt<LoggingService>().captureException(
-          'Audio file has no extension: ${file.name}',
-          domain: MediaImportConstants.loggingDomain,
-          subDomain: 'importDroppedAudio',
-        );
-        continue;
-      }
-
-      final fileExtension = nameParts.last.toLowerCase();
-
-      // Skip non-audio files
-      if (!MediaImportConstants.supportedAudioExtensions
-          .contains(fileExtension)) {
-        continue;
-      }
-
-      // Validate file size
-      final fileSize = await File(srcPath).length();
-      if (fileSize > MediaImportConstants.maxAudioFileSizeBytes) {
-        getIt<LoggingService>().captureException(
-          'Audio file too large: $fileSize bytes',
-          domain: MediaImportConstants.loggingDomain,
-          subDomain: 'importDroppedAudio',
-        );
-        continue;
-      }
-
-      final relativePath = computeAudioRelativePath(timestamp);
-      final directory = await createAssetDirectory(relativePath);
-      final targetFileName =
-          computeAudioTargetFileName(timestamp, fileExtension);
-      final targetFilePath = '$directory$targetFileName';
-
-      // Copy file first
-      await File(srcPath).copy(targetFilePath);
-      copiedFilePath = targetFilePath;
-
-      // Extract audio duration using injected metadata reader.
-      var duration = Duration.zero;
-      try {
-        final reader = selectAudioMetadataReader();
-        duration = await reader(targetFilePath);
-      } catch (exception, stackTrace) {
-        // Log but continue with zero duration - can be updated later
-        getIt<LoggingService>().captureException(
-          exception,
-          domain: MediaImportConstants.loggingDomain,
-          subDomain: 'importDroppedAudio_duration',
-          stackTrace: stackTrace,
-        );
-      }
-
-      final audioNote = AudioNote(
-        createdAt: timestamp,
-        audioFile: targetFileName,
-        audioDirectory: relativePath,
-        duration: duration,
-      );
-
-      // Create journal entry
-      final result = await SpeechRepository.createAudioEntry(
-        audioNote,
-        linkedId: linkedId,
-        categoryId: categoryId,
-      );
-
-      // If entry creation failed, clean up the copied file
-      if (result == null) {
-        try {
-          await File(copiedFilePath).delete();
-        } catch (deleteException, deleteStackTrace) {
-          getIt<LoggingService>().captureException(
-            deleteException,
-            domain: MediaImportConstants.loggingDomain,
-            subDomain: 'importDroppedAudio_cleanup',
-            stackTrace: deleteStackTrace,
-          );
-        }
-      }
-    } catch (exception, stackTrace) {
-      // Log and clean up on any error
-      getIt<LoggingService>().captureException(
-        exception,
-        domain: MediaImportConstants.loggingDomain,
-        subDomain: 'importDroppedAudio',
-        stackTrace: stackTrace,
-      );
-
-      // Clean up copied file if it exists
-      if (copiedFilePath != null) {
-        try {
-          await File(copiedFilePath).delete();
-        } catch (deleteException, deleteStackTrace) {
-          getIt<LoggingService>().captureException(
-            deleteException,
-            domain: MediaImportConstants.loggingDomain,
-            subDomain: 'importDroppedAudio_cleanup',
-            stackTrace: deleteStackTrace,
-          );
-        }
-      }
-      // Continue processing other files even if one fails
-    }
-  }
 }

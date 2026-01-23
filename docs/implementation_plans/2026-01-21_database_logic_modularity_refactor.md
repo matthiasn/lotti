@@ -12,16 +12,17 @@
 | 2 | Extract GeolocationService from PersistenceLogic | ✅ Complete | 19 |
 | 3 | Extract ExifDataExtractor from image_import | ✅ Complete | 70 |
 | 4 | Extract AudioMetadataExtractor from image_import | ✅ Complete | 34 |
-| 5 | Split JournalDb - Extract ConflictRepository | Pending | - |
-| 6 | Split JournalDb - Extract EntityDefinitionRepository | Pending | - |
-| 7 | Split JournalDb - Extract TaskRepository | Pending | - |
-| 8 | Introduce Repository Interfaces | Pending | - |
-| 9 | Extract SyncQueueService from PersistenceLogic | Pending | - |
-| 10 | Migrate getIt Calls to Constructor Injection | Pending | - |
-| 11 | HealthImport Decomposition | Pending | - |
-| 12 | Final JournalDb Cleanup | Pending | - |
+| 5 | Separate Media Import into focused modules | ✅ Complete | 25 |
+| 6 | Split JournalDb - Extract ConflictRepository | Pending | - |
+| 7 | Split JournalDb - Extract EntityDefinitionRepository | Pending | - |
+| 8 | Split JournalDb - Extract TaskRepository | Pending | - |
+| 9 | Introduce Repository Interfaces | Pending | - |
+| 10 | Extract SyncQueueService from PersistenceLogic | Pending | - |
+| 11 | Migrate getIt Calls to Constructor Injection | Pending | - |
+| 12 | HealthImport Decomposition | Pending | - |
+| 13 | Final JournalDb Cleanup | Pending | - |
 
-**Total new tests added**: 157
+**Total new tests added**: 182
 
 ### Completed Work
 
@@ -30,6 +31,8 @@
 **Phase 3** (2026-01-22): Extracted `ExifDataExtractor` as a pure utility class for parsing EXIF metadata (GPS coordinates, timestamps, rational numbers). The class has no side effects and is easily testable.
 
 **Phase 4** (2026-01-23): Extracted `AudioMetadataExtractor` for audio file metadata operations (filename timestamp parsing, path computation, duration extraction via MediaKit). The image_import.dart functions now delegate to this class.
+
+**Phase 5** (2026-01-23): Separated media import into focused modules: `audio_import.dart` for audio-specific operations, `media_import.dart` as a dispatcher for `handleDroppedMedia`, and cleaned up `image_import.dart` to only handle image imports. Split tests into corresponding focused test files.
 
 ---
 
@@ -326,7 +329,102 @@ class AudioMetadataExtractor {
 
 ---
 
-## Phase 5: Split JournalDb - Extract ConflictRepository
+## Phase 5: Separate Media Import into Focused Modules ✅ COMPLETED
+
+**Status**: Completed on 2026-01-23
+
+**Goal**: Separate audio and image import functionality into distinct modules with a media dispatcher.
+
+**Scope**: ~200 lines refactored across 3 files + 25 new tests
+
+### Problem
+
+The `image_import.dart` file contained both image and audio import logic, violating single responsibility principle:
+- Audio-specific constants and functions mixed with image code
+- `handleDroppedMedia` was in image_import.dart despite handling both media types
+- Test files also mixed audio and image tests
+
+### Files Created
+
+**`/lib/logic/audio_import.dart`**
+```dart
+class AudioImportConstants {
+  static const Set<String> supportedExtensions = {'m4a'};
+  static const int maxFileSizeBytes = 500 * 1024 * 1024;  // 500MB
+  static const String loggingDomain = 'audio_import';
+}
+
+/// Import audio files from drag-and-drop
+Future<void> importDroppedAudio({
+  required DropDoneDetails data,
+  String? linkedId,
+  String? categoryId,
+});
+```
+
+**`/lib/logic/media_import.dart`**
+```dart
+/// Handle dropped media files by dispatching to appropriate import handlers
+Future<void> handleDroppedMedia({
+  required DropDoneDetails data,
+  required String linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+});
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `/lib/logic/image_import.dart` | Removed audio constants, `handleDroppedMedia`, and audio import functions; renamed `MediaImportConstants` to `ImageImportConstants` |
+| `/lib/features/journal/ui/pages/entry_details_page.dart` | Import from `media_import.dart` instead of `image_import.dart` |
+| `/lib/features/tasks/ui/pages/task_details_page.dart` | Import from `media_import.dart` instead of `image_import.dart` |
+| `/test/logic/image_import_exif_test.dart` | Updated logging domain references to `ImageImportConstants.loggingDomain` |
+
+### Tests Created
+
+**`/test/logic/audio_import_test.dart`** (9 tests)
+- AudioImportConstants defines supported extensions
+- AudioImportConstants defines reasonable file size limit
+- AudioImportConstants defines logging domain
+- Successfully imports valid M4A file
+- Skips non-audio file silently
+- Logs error for file without extension
+- Logs error for file exceeding size limit
+- Passes linkedId and categoryId
+- Parses timestamp from Lotti filename format
+
+**`/test/logic/media_import_test.dart`** (7 tests)
+- Dispatches image files to importDroppedImages
+- Dispatches audio files to importDroppedAudio
+- Handles mixed image and audio files
+- Ignores unsupported file types
+- Passes categoryId to both image and audio imports
+- Recognizes all supported image extensions
+- Recognizes all supported audio extensions
+
+**`/test/logic/image_import_test.dart`** (9 tests - recreated image-only)
+- ImageImportConstants defines supported extensions
+- ImageImportConstants defines reasonable file size limit
+- ImageImportConstants defines directory prefix
+- ImageImportConstants defines logging domain
+- importPastedImages rejects/accepts images based on size limit
+- importDroppedImages tests for various scenarios
+- importGeneratedImageBytes tests
+- parseRational and parseGpsCoordinate tests
+- extractGpsCoordinates tests
+
+### Success Criteria
+- [x] All existing tests pass
+- [x] Audio import separated into dedicated module (audio_import.dart)
+- [x] Media dispatcher created (media_import.dart)
+- [x] Image import only handles images (image_import.dart)
+- [x] Test files focused on their respective concerns
+
+---
+
+## Phase 6: Split JournalDb - Extract ConflictRepository
 
 **Goal**: Extract conflict detection and resolution into a focused repository.
 
@@ -391,7 +489,7 @@ class ConflictRepository {
 
 ---
 
-## Phase 6: Split JournalDb - Extract EntityDefinitionRepository
+## Phase 7: Split JournalDb - Extract EntityDefinitionRepository
 
 **Goal**: Extract tag, label, category, and habit definition operations.
 
@@ -454,7 +552,7 @@ class EntityDefinitionRepository {
 
 ---
 
-## Phase 7: Split JournalDb - Extract TaskRepository
+## Phase 8: Split JournalDb - Extract TaskRepository
 
 **Goal**: Extract task-specific queries and filtering into a focused repository.
 
@@ -536,7 +634,7 @@ class TaskQueryBuilder {
 
 ---
 
-## Phase 8: Introduce Repository Interfaces
+## Phase 9: Introduce Repository Interfaces
 
 **Goal**: Define interfaces for key repositories to enable test doubles.
 
@@ -593,7 +691,7 @@ abstract class ITaskRepository {
 
 ---
 
-## Phase 9: Extract SyncQueueService from PersistenceLogic
+## Phase 10: Extract SyncQueueService from PersistenceLogic
 
 **Goal**: Isolate sync message queuing into a dedicated service.
 
@@ -641,7 +739,7 @@ class SyncQueueService {
 
 ---
 
-## Phase 10: Migrate getIt Calls to Constructor Injection
+## Phase 11: Migrate getIt Calls to Constructor Injection
 
 **Goal**: Replace hidden `getIt<>` calls inside methods with constructor parameters.
 
@@ -703,7 +801,7 @@ class SomeService {
 
 ---
 
-## Phase 11: HealthImport Decomposition
+## Phase 12: HealthImport Decomposition
 
 **Goal**: Split HealthImport into focused components.
 
@@ -784,7 +882,7 @@ class HealthDataPersister {
 
 ---
 
-## Phase 12: Final JournalDb Cleanup
+## Phase 13: Final JournalDb Cleanup
 
 **Goal**: Remove deprecated methods, finalize repository structure.
 
@@ -842,14 +940,15 @@ lib/database/
 | 2 | geolocation_service_test.dart | 90% |
 | 3 | exif_data_extractor_test.dart | 100% |
 | 4 | audio_metadata_extractor_test.dart | 90% |
-| 5 | conflict_repository_test.dart | 90% |
-| 6 | entity_definition_repository_test.dart | 90% |
-| 7 | task_repository_test.dart | 90% |
-| 8 | mock_repositories.dart | N/A (test helpers) |
-| 9 | sync_queue_service_test.dart | 90% |
-| 10 | (update existing tests) | Maintain |
-| 11 | health_import_*.dart | 90% each |
-| 12 | (integration verification) | Maintain |
+| 5 | audio_import_test.dart, media_import_test.dart, image_import_test.dart | 90% |
+| 6 | conflict_repository_test.dart | 90% |
+| 7 | entity_definition_repository_test.dart | 90% |
+| 8 | task_repository_test.dart | 90% |
+| 9 | mock_repositories.dart | N/A (test helpers) |
+| 10 | sync_queue_service_test.dart | 90% |
+| 11 | (update existing tests) | Maintain |
+| 12 | health_import_*.dart | 90% each |
+| 13 | (integration verification) | Maintain |
 
 ---
 
@@ -898,7 +997,7 @@ EntryCreationService
 
 ## Files Summary
 
-### New Files (18)
+### New Files (20)
 
 | Path | Phase |
 |------|-------|
@@ -906,27 +1005,29 @@ EntryCreationService
 | `/lib/logic/services/geolocation_service.dart` | 2 |
 | `/lib/logic/media/exif_data_extractor.dart` | 3 |
 | `/lib/logic/media/audio_metadata_extractor.dart` | 4 |
-| `/lib/database/repositories/conflict_repository.dart` | 5 |
-| `/lib/database/repositories/entity_definition_repository.dart` | 6 |
-| `/lib/database/repositories/task_repository.dart` | 7 |
-| `/lib/database/repositories/task_query_builder.dart` | 7 |
-| `/lib/database/interfaces/i_entry_repository.dart` | 8 |
-| `/lib/database/interfaces/i_conflict_repository.dart` | 8 |
-| `/lib/database/interfaces/i_task_repository.dart` | 8 |
-| `/lib/logic/services/sync_queue_service.dart` | 9 |
-| `/lib/logic/health/health_import_queue.dart` | 11 |
-| `/lib/logic/health/health_data_fetcher.dart` | 11 |
-| `/lib/logic/health/health_data_persister.dart` | 11 |
-| `/lib/database/README.md` | 12 |
-| `/test/database/mocks/mock_repositories.dart` | 8 |
+| `/lib/logic/audio_import.dart` | 5 |
+| `/lib/logic/media_import.dart` | 5 |
+| `/lib/database/repositories/conflict_repository.dart` | 6 |
+| `/lib/database/repositories/entity_definition_repository.dart` | 7 |
+| `/lib/database/repositories/task_repository.dart` | 8 |
+| `/lib/database/repositories/task_query_builder.dart` | 8 |
+| `/lib/database/interfaces/i_entry_repository.dart` | 9 |
+| `/lib/database/interfaces/i_conflict_repository.dart` | 9 |
+| `/lib/database/interfaces/i_task_repository.dart` | 9 |
+| `/lib/logic/services/sync_queue_service.dart` | 10 |
+| `/lib/logic/health/health_import_queue.dart` | 12 |
+| `/lib/logic/health/health_data_fetcher.dart` | 12 |
+| `/lib/logic/health/health_data_persister.dart` | 12 |
+| `/lib/database/README.md` | 13 |
+| `/test/database/mocks/mock_repositories.dart` | 9 |
 | Various test files | All phases |
 
 ### Modified Files (Major)
 
 | Path | Phases |
 |------|--------|
-| `/lib/database/database.dart` | 5, 6, 7, 12 |
-| `/lib/logic/persistence_logic.dart` | 1, 2, 9, 10 |
-| `/lib/logic/image_import.dart` | 3, 4, 10 |
-| `/lib/logic/health_import.dart` | 11 |
+| `/lib/database/database.dart` | 6, 7, 8, 13 |
+| `/lib/logic/persistence_logic.dart` | 1, 2, 10, 11 |
+| `/lib/logic/image_import.dart` | 3, 4, 5, 11 |
+| `/lib/logic/health_import.dart` | 12 |
 | `/lib/get_it.dart` | All phases |

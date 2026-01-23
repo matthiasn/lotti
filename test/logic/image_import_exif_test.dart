@@ -543,7 +543,7 @@ void main() {
       verify(
         () => loggingService.captureException(
           any<String>(),
-          domain: 'media_import',
+          domain: ImageImportConstants.loggingDomain,
           subDomain: 'importPastedImages',
         ),
       ).called(1);
@@ -701,7 +701,7 @@ void main() {
       verify(
         () => loggingService.captureException(
           any<dynamic>(),
-          domain: 'media_import',
+          domain: ImageImportConstants.loggingDomain,
           subDomain: 'extractImageTimestamp',
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
