@@ -213,9 +213,9 @@ void main() {
 
     group('OpenAI FTUE functions', () {
       test('findOpenAiKnownModel returns model for valid ID', () {
-        final model = findOpenAiKnownModel('o3-2025-04-16');
+        final model = findOpenAiKnownModel('gpt-5.2');
         expect(model, isNotNull);
-        expect(model!.providerModelId, equals('o3-2025-04-16'));
+        expect(model!.providerModelId, equals('gpt-5.2'));
         expect(model.isReasoningModel, isTrue);
       });
 
@@ -228,11 +228,11 @@ void main() {
         final models = getOpenAiFtueKnownModels();
         expect(models, isNotNull);
 
-        // Verify flash model (o4-mini)
+        // Verify flash model (GPT-5 Nano)
         expect(models!.flash.providerModelId, equals(ftueOpenAiFlashModelId));
-        expect(models.flash.name, contains('o4-mini'));
+        expect(models.flash.name, contains('GPT-5 Nano'));
 
-        // Verify reasoning model (o3)
+        // Verify reasoning model (GPT-5.2)
         expect(models.reasoning.providerModelId,
             equals(ftueOpenAiReasoningModelId));
         expect(models.reasoning.isReasoningModel, isTrue);

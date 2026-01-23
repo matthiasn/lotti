@@ -258,40 +258,24 @@ const List<KnownModel> ollamaModels = [
 /// OpenAI models - Advanced language and multimodal models
 const List<KnownModel> openaiModels = [
   KnownModel(
-    providerModelId: 'gpt-4.1-2025-04-14',
-    name: 'GPT-4.1',
+    providerModelId: 'gpt-5-nano',
+    name: 'GPT-5 Nano',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     supportsFunctionCalling: true,
-    description: 'Flagship GPT model for complex tasks',
-  ),
-  KnownModel(
-    providerModelId: 'o3-2025-04-16',
-    name: 'o3',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description: 'Our most powerful reasoning model',
-  ),
-  KnownModel(
-    providerModelId: 'o4-mini-2025-04-16',
-    name: 'o4-mini',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description: 'Faster, more affordable reasoning model',
-  ),
-  KnownModel(
-    providerModelId: 'gpt-4o-mini-transcribe',
-    name: 'GPT-4o Mini Transcribe',
-    inputModalities: [Modality.text, Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
     description:
-        'Recommended transcription model with improved accuracy and language recognition',
+        'Fastest and most affordable GPT-5 model. Great for summarization and classification.',
+  ),
+  KnownModel(
+    providerModelId: 'gpt-5.2',
+    name: 'GPT-5.2',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Flagship model for coding and agentic tasks. Best for complex work requiring broad knowledge.',
   ),
   KnownModel(
     providerModelId: 'gpt-4o-transcribe',
@@ -300,16 +284,16 @@ const List<KnownModel> openaiModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description:
-        'Premium transcription model with best-in-class word error rate',
+        'Premium transcription model with best-in-class word error rate.',
   ),
   KnownModel(
-    providerModelId: 'gpt-image-1',
-    name: 'GPT Image 1',
+    providerModelId: 'gpt-image-1.5',
+    name: 'GPT Image 1.5',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text, Modality.image],
     isReasoningModel: false,
     description:
-        'Advanced image generation model for creating visual content from text descriptions',
+        'Latest image generation with better instruction following, text rendering, and 4x faster.',
   ),
 ];
 
@@ -573,10 +557,10 @@ KnownModel? findGeminiKnownModel(String providerModelId) {
 // =============================================================================
 
 /// Model IDs used for OpenAI FTUE automation
-const ftueOpenAiReasoningModelId = 'o3-2025-04-16';
-const ftueOpenAiFlashModelId = 'o4-mini-2025-04-16';
-const ftueOpenAiAudioModelId = 'gpt-4o-mini-transcribe';
-const ftueOpenAiImageModelId = 'gpt-image-1';
+const ftueOpenAiReasoningModelId = 'gpt-5.2';
+const ftueOpenAiFlashModelId = 'gpt-5-nano';
+const ftueOpenAiAudioModelId = 'gpt-4o-transcribe';
+const ftueOpenAiImageModelId = 'gpt-image-1.5';
 
 /// Finds a KnownModel by its provider model ID from the openaiModels list.
 /// Returns null if not found.
@@ -590,10 +574,10 @@ KnownModel? findOpenAiKnownModel(String providerModelId) {
 }
 
 /// Returns the four KnownModel configurations needed for OpenAI FTUE.
-/// - Flash model (o4-mini) for fast processing tasks
-/// - Reasoning model (o3) for complex reasoning tasks
-/// - Audio model (GPT-4o Audio) for transcription
-/// - Image model (GPT Image 1) for image generation output
+/// - Flash model (GPT-5 Nano) for fast processing tasks
+/// - Reasoning model (GPT-5.2) for complex reasoning tasks
+/// - Audio model (GPT-4o Transcribe) for transcription
+/// - Image model (GPT Image 1.5) for image generation output
 ({
   KnownModel flash,
   KnownModel reasoning,
