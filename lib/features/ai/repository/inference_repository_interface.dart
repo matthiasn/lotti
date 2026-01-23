@@ -29,7 +29,6 @@ abstract class InferenceRepositoryInterface {
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
-    bool isReasoningModel = false,
   });
 
   /// Optional: Generate text with a simple prompt (for backwards compatibility)

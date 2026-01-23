@@ -68,7 +68,6 @@ class ConversationRepository extends _$ConversationRepository {
     List<ChatCompletionTool>? tools,
     double temperature = 0.7,
     ConversationStrategy? strategy,
-    bool isReasoningModel = false,
   }) async {
     final manager = _conversations[conversationId];
     if (manager == null) {
@@ -83,6 +82,13 @@ class ConversationRepository extends _$ConversationRepository {
       manager.emitError('Maximum conversation turns reached');
       return;
     }
+
+    // OpenAI GPT-5 models only accept temperature=1.0 (the default).
+    // Other providers support custom temperature values.
+    final effectiveTemperature =
+        provider.inferenceProviderType == InferenceProviderType.openAi
+            ? 1.0
+            : temperature;
 
     // Start conversation loop
     var shouldContinue = true;
@@ -106,11 +112,10 @@ class ConversationRepository extends _$ConversationRepository {
           model: model,
           provider: provider,
           tools: tools,
-          temperature: temperature,
+          temperature: effectiveTemperature,
           thoughtSignatures: manager.thoughtSignatures,
           signatureCollector: signatureCollector,
           turnIndex: manager.turnCount,
-          isReasoningModel: isReasoningModel,
         );
 
         // Collect response

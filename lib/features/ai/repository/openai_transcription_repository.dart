@@ -5,6 +5,7 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
+import 'package:uuid/uuid.dart';
 
 /// Repository for handling OpenAI transcription-specific inference operations.
 ///
@@ -281,9 +282,11 @@ class OpenAiTranscriptionRepository {
             name: 'OpenAiTranscriptionRepository',
           );
 
-          // Create a mock stream response to match the expected format
+          // Create a wrapper response to match the expected stream format.
+          // Use UUID for unique ID and fixed timestamp (0) since these are
+          // internal metadata not used downstream.
           return CreateChatCompletionStreamResponse(
-            id: 'openai-transcription-${DateTime.now().millisecondsSinceEpoch}',
+            id: 'openai-transcription-${const Uuid().v4()}',
             choices: [
               ChatCompletionStreamResponseChoice(
                 delta: ChatCompletionStreamResponseDelta(
@@ -293,7 +296,7 @@ class OpenAiTranscriptionRepository {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: 0,
           );
         } on OpenAiTranscriptionException {
           rethrow;

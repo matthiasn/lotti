@@ -409,7 +409,6 @@ class CloudInferenceRepository {
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
-    bool isReasoningModel = false,
   }) {
     developer.log(
       'CloudInferenceRepository.generateWithMessages called with:\n'
@@ -478,23 +477,11 @@ class CloudInferenceRepository {
       );
     }
 
-    // For OpenAI reasoning models, don't pass temperature (they don't support it)
-    final isOpenAiReasoningModel = isReasoningModel &&
-        provider.inferenceProviderType == InferenceProviderType.openAi;
-    final effectiveTemperature = isOpenAiReasoningModel ? null : temperature;
-
-    if (isOpenAiReasoningModel) {
-      developer.log(
-        'OpenAI reasoning model detected - nullifying temperature parameter',
-        name: 'CloudInferenceRepository',
-      );
-    }
-
     final res = client.createChatCompletionStream(
       request: _createBaseRequest(
         messages: messages,
         model: model,
-        temperature: effectiveTemperature,
+        temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
       ),

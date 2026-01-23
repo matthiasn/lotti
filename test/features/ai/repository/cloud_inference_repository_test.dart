@@ -2602,7 +2602,7 @@ void main() {
         ]),
       );
 
-      // Act - pass null temperature for reasoning model
+      // Act - pass null temperature
       // Note: generateWithMessages doesn't have overrideClient, so we test
       // that null temperature is accepted by the method signature
       final stream = repository.generateWithMessages(
@@ -2611,10 +2611,9 @@ void main() {
             content: ChatCompletionUserMessageContent.string('Hello'),
           ),
         ],
-        model: 'o4-mini',
-        temperature: null, // Reasoning models don't support temperature
+        model: 'gpt-5-nano',
+        temperature: null,
         provider: provider,
-        isReasoningModel: true,
       );
 
       // Verify stream is created (actual API call would fail without mock,
@@ -2623,7 +2622,7 @@ void main() {
     });
   });
 
-  group('CloudInferenceRepository - OpenAI Reasoning Model Temperature', () {
+  group('CloudInferenceRepository - Temperature handling by provider', () {
     late ProviderContainer container;
     late CloudInferenceRepository repository;
     late MockHttpClient mockHttpClient;
@@ -2649,10 +2648,7 @@ void main() {
       container.dispose();
     });
 
-    test(
-        'generateWithMessages nullifies temperature for OpenAI reasoning models',
-        () {
-      // Create an OpenAI provider (not generic)
+    test('generateWithMessages accepts temperature for OpenAI provider', () {
       final openAiProvider = AiConfigInferenceProvider(
         id: 'openai-provider',
         name: 'OpenAI',
@@ -2662,47 +2658,16 @@ void main() {
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
-      // Act - pass temperature with isReasoningModel=true for OpenAI provider
-      // The repository should nullify temperature internally
+      // Temperature handling for OpenAI is done at the caller level
+      // (conversation_repository or unified_ai_inference_repository)
       final stream = repository.generateWithMessages(
         messages: const [
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string('Hello'),
           ),
         ],
-        model: 'o3-2025-04-16',
-        temperature: 0.7, // This should be nullified
-        provider: openAiProvider,
-        isReasoningModel: true,
-      );
-
-      // Verify stream is created
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
-      expect(stream.isBroadcast, isTrue);
-    });
-
-    test(
-        'generateWithMessages preserves temperature for non-reasoning OpenAI models',
-        () {
-      final openAiProvider = AiConfigInferenceProvider(
-        id: 'openai-provider',
-        name: 'OpenAI',
-        baseUrl: 'https://api.openai.com/v1',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.openAi,
-      );
-
-      // Act - pass temperature with isReasoningModel=false
-      // Temperature should be preserved
-      final stream = repository.generateWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-        ],
-        model: 'gpt-4.1-2025-04-14',
-        temperature: 0.7, // Should be preserved
+        model: 'gpt-5.2',
+        temperature: 1, // OpenAI GPT-5 only accepts 1.0
         provider: openAiProvider,
       );
 
@@ -2710,11 +2675,8 @@ void main() {
       expect(stream.isBroadcast, isTrue);
     });
 
-    test(
-        'generateWithMessages preserves temperature for genericOpenAi reasoning models',
+    test('generateWithMessages accepts temperature for genericOpenAi provider',
         () {
-      // genericOpenAi providers might have reasoning models but don't need
-      // the special OpenAI temperature handling
       final genericProvider = AiConfigInferenceProvider(
         id: 'generic-provider',
         name: 'Generic OpenAI Compatible',
@@ -2724,28 +2686,22 @@ void main() {
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
-      // Act - isReasoningModel=true but provider is genericOpenAi
-      // Temperature should NOT be nullified
       final stream = repository.generateWithMessages(
         messages: const [
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string('Hello'),
           ),
         ],
-        model: 'custom-reasoning-model',
+        model: 'custom-model',
         temperature: 0.7,
         provider: genericProvider,
-        isReasoningModel: true, // This flag alone shouldn't nullify temp
       );
 
       expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
       expect(stream.isBroadcast, isTrue);
     });
 
-    test(
-        'generateWithMessages preserves temperature for Anthropic reasoning models',
-        () {
-      // Anthropic provider with reasoning model - temperature should be preserved
+    test('generateWithMessages accepts temperature for Anthropic provider', () {
       final anthropicProvider = AiConfigInferenceProvider(
         id: 'anthropic-provider',
         name: 'Anthropic',
@@ -2764,7 +2720,6 @@ void main() {
         model: 'claude-opus-4',
         temperature: 0.5,
         provider: anthropicProvider,
-        isReasoningModel: true, // Anthropic doesn't need special handling
       );
 
       expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());

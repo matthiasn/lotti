@@ -26,16 +26,17 @@ void main() {
     final labelsItems = labelsProp['items'] as Map<String, dynamic>;
     final itemProps = labelsItems['properties'] as Map<String, dynamic>;
     expect((itemProps['id'] as Map<String, dynamic>)['type'], 'string');
-    // Confidence field exists with type string (enum removed for OpenAI compatibility)
     final confidence = itemProps['confidence'] as Map<String, dynamic>;
     expect(confidence['type'], 'string');
-    // Note: enum was removed for OpenAI reasoning model compatibility
-    // Confidence values are documented in description instead
-    expect(confidence.containsKey('enum'), isFalse);
+    expect(confidence['enum'],
+        containsAll(['low', 'medium', 'high', 'very_high']));
 
-    // Note: oneOf was removed for OpenAI reasoning model compatibility
-    // Handler accepts either `labels` or `labelIds`
-    expect(params.containsKey('oneOf'), isFalse);
-    expect(params['additionalProperties'], isFalse);
+    // oneOf accepts either new or legacy
+    final oneOf = params['oneOf'] as List<dynamic>;
+    expect(oneOf.length, 2);
+    final r0 = (oneOf[0] as Map<String, dynamic>)['required'] as List<dynamic>;
+    final r1 = (oneOf[1] as Map<String, dynamic>)['required'] as List<dynamic>;
+    expect(r0.contains('labels') || r1.contains('labels'), isTrue);
+    expect(r0.contains('labelIds') || r1.contains('labelIds'), isTrue);
   });
 }

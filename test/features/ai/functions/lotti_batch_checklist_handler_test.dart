@@ -559,11 +559,9 @@ void main() {
         expect(created.every((e) => e['isChecked'] == false), true);
       });
 
-      test('createdItems should always be unchecked regardless of AI input',
+      test('createdItems should include isChecked state when provided',
           () async {
-        // Arrange: existing checklist branch
-        // Note: AI may pass isChecked:true but we ignore it for new items
-        // to prevent AI from creating pre-completed todos
+        // Arrange: existing checklist branch, with one item marked done
         final taskWithChecklist = TestDataFactory.createTask(
           id: testTask.meta.id,
           checklistIds: ['checklist-1'],
@@ -575,8 +573,8 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'title': 'item1', 'isChecked': true}, // AI tries to mark done
-              {'title': 'item2'},
+              {'title': 'done', 'isChecked': true},
+              {'title': 'todo'},
             ],
             'taskId': taskWithChecklist.meta.id,
           },
@@ -619,9 +617,9 @@ void main() {
         final created =
             (decoded['createdItems'] as List).cast<Map<String, dynamic>>();
         expect(created.length, 2);
-        expect(created.map((e) => e['title']).toList(), ['item1', 'item2']);
-        // Both items should be unchecked - AI's isChecked:true is ignored
-        expect(created[0]['isChecked'], false);
+        expect(created.map((e) => e['title']).toList(), ['done', 'todo']);
+        // First is checked, second is not
+        expect(created[0]['isChecked'], true);
         expect(created[1]['isChecked'], false);
       });
 
