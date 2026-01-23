@@ -321,9 +321,10 @@ class CloudInferenceRepository {
       );
     }
 
-    // For OpenAI transcription models (gpt-4o-transcribe, gpt-4o-mini-transcribe),
-    // use the dedicated transcription repository. These models require the
-    // /v1/audio/transcriptions endpoint, not chat completions.
+    // For OpenAI transcription models (gpt-4o-transcribe), use the dedicated
+    // transcription repository. These models require the /v1/audio/transcriptions
+    // endpoint, not chat completions. The app records in M4A format which OpenAI
+    // accepts directly - no conversion needed.
     if (provider.inferenceProviderType == InferenceProviderType.openAi &&
         OpenAiTranscriptionRepository.isOpenAiTranscriptionModel(model)) {
       developer.log(
