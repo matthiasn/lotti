@@ -49,7 +49,7 @@ class ChecklistCompletionFunctions {
         function: FunctionObject(
           name: addMultipleChecklistItems,
           description:
-              'Add one or more NEW checklist items to the task in a single call. Items are always created as unchecked (not done). Always pass a JSON array of objects. If no checklist exists, create a "TODOs" checklist first.',
+              'Add one or more checklist items to the task in a single call. Always pass a JSON array of objects. If no checklist exists, create a "TODOs" checklist first.',
           parameters: {
             'type': 'object',
             'properties': {
@@ -66,16 +66,19 @@ class ChecklistCompletionFunctions {
                       'description':
                           'Checklist item title (trimmed, non-empty, max 400 chars)',
                     },
+                    'isChecked': {
+                      'type': 'boolean',
+                      'description':
+                          'Whether the item is already checked (default: false)'
+                    },
                   },
                   'required': ['title'],
-                  'additionalProperties': false,
                 },
                 'description':
-                    'Array of checklist item objects. Example: {"items": [{"title": "Buy milk"}, {"title": "Write tests"}] }',
+                    'Array of checklist item objects. Example: {"items": [{"title": "Buy milk"}, {"title": "Write tests", "isChecked": true}] }',
               },
             },
             'required': ['items'],
-            'additionalProperties': false,
           },
         ),
       ),
