@@ -481,6 +481,7 @@ bool get imageImportBypassMediaKitInTests =>
     AudioMetadataExtractor.bypassMediaKitInTests;
 
 @visibleForTesting
+// ignore: avoid_positional_boolean_parameters
 set imageImportBypassMediaKitInTests(bool value) =>
     AudioMetadataExtractor.bypassMediaKitInTests = value;
 

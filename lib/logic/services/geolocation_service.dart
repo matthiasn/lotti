@@ -59,7 +59,7 @@ class GeolocationService {
   /// allows the caller (typically PersistenceLogic) to handle persistence
   /// with all its side effects (sync, notifications, etc.).
   void addGeolocation(String journalEntityId, EntityPersister persister) {
-    addGeolocationAsync(journalEntityId, persister);
+    unawaited(addGeolocationAsync(journalEntityId, persister));
   }
 
   /// Adds geolocation to a journal entry asynchronously.

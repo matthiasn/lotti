@@ -1,5 +1,4 @@
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
@@ -103,13 +102,4 @@ class MetadataService {
         deletedAt: deletedAt ?? metadata.deletedAt,
         labelIds: clearLabelIds ? null : labelIds ?? metadata.labelIds,
       );
-
-  /// Gets the next vector clock, optionally based on a previous clock.
-  ///
-  /// This is a convenience method that delegates to the internal vector clock service.
-  Future<VectorClock> getNextVectorClock({VectorClock? previous}) =>
-      _vectorClockService.getNextVectorClock(previous: previous);
-
-  /// Gets the host ID from the vector clock service.
-  Future<String?> getHost() => _vectorClockService.getHost();
 }

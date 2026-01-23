@@ -143,12 +143,21 @@ void main() {
         final metadata = await metadataService.createMetadata(
           dateFrom: dateFrom,
         );
+        final afterCreate = DateTime.now();
 
         expect(metadata.dateFrom, equals(dateFrom));
+        // dateTo should be bounded by beforeCreate and afterCreate
         expect(
           metadata.dateTo.isAfter(beforeCreate) ||
               metadata.dateTo.isAtSameMomentAs(beforeCreate),
           isTrue,
+          reason: 'dateTo should not be before beforeCreate',
+        );
+        expect(
+          metadata.dateTo.isBefore(afterCreate) ||
+              metadata.dateTo.isAtSameMomentAs(afterCreate),
+          isTrue,
+          reason: 'dateTo should not be after afterCreate',
         );
       });
 
@@ -436,61 +445,6 @@ void main() {
         expect(updated.deletedAt, equals(deletedAt));
       });
     });
-
-    group('getNextVectorClock', () {
-      test('delegates to VectorClockService without previous', () async {
-        const expectedClock = VectorClock({'host': 123});
-        when(() => mockVectorClockService.getNextVectorClock())
-            .thenAnswer((_) async => expectedClock);
-
-        final result = await metadataService.getNextVectorClock();
-
-        expect(result, equals(expectedClock));
-        verify(() => mockVectorClockService.getNextVectorClock()).called(1);
-      });
-
-      test('delegates to VectorClockService with previous', () async {
-        const previousClock = VectorClock({'old-host': 5});
-        const expectedClock = VectorClock({'old-host': 5, 'new-host': 1});
-        when(
-          () => mockVectorClockService.getNextVectorClock(
-            previous: previousClock,
-          ),
-        ).thenAnswer((_) async => expectedClock);
-
-        final result =
-            await metadataService.getNextVectorClock(previous: previousClock);
-
-        expect(result, equals(expectedClock));
-        verify(
-          () => mockVectorClockService.getNextVectorClock(
-            previous: previousClock,
-          ),
-        ).called(1);
-      });
-    });
-
-    group('getHost', () {
-      test('delegates to VectorClockService', () async {
-        const expectedHost = 'my-unique-host-id';
-        when(() => mockVectorClockService.getHost())
-            .thenAnswer((_) async => expectedHost);
-
-        final result = await metadataService.getHost();
-
-        expect(result, equals(expectedHost));
-        verify(() => mockVectorClockService.getHost()).called(1);
-      });
-
-      test('returns null when VectorClockService returns null', () async {
-        when(() => mockVectorClockService.getHost())
-            .thenAnswer((_) async => null);
-
-        final result = await metadataService.getHost();
-
-        expect(result, isNull);
-      });
-    });
   });
 
   group('MetadataService integration with real VectorClockService', () {
@@ -504,8 +458,8 @@ void main() {
       getIt.registerSingleton<SettingsDb>(settingsDb);
 
       vectorClockService = VectorClockService();
-      // Allow init() to complete
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      // Await initialization to complete instead of using arbitrary delay
+      await vectorClockService.initialized;
 
       metadataService = MetadataService(
         vectorClockService: vectorClockService,
@@ -513,6 +467,7 @@ void main() {
     });
 
     tearDown(() async {
+      await settingsDb.close();
       await getIt.reset();
     });
 

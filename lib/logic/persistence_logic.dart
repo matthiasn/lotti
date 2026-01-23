@@ -21,6 +21,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:uuid/uuid.dart';
@@ -28,6 +29,7 @@ import 'package:uuid/uuid.dart';
 class PersistenceLogic {
   JournalDb get _journalDb => getIt<JournalDb>();
   MetadataService get _metadataService => getIt<MetadataService>();
+  VectorClockService get _vectorClockService => getIt<VectorClockService>();
   GeolocationService get _geolocationService => getIt<GeolocationService>();
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
   LoggingService get _loggingService => getIt<LoggingService>();
@@ -382,7 +384,7 @@ class PersistenceLogic {
       createdAt: now,
       updatedAt: now,
       hidden: false,
-      vectorClock: await _metadataService.getNextVectorClock(),
+      vectorClock: await _vectorClockService.getNextVectorClock(),
     );
 
     final res = await _journalDb.upsertEntryLink(link);
@@ -444,7 +446,7 @@ class PersistenceLogic {
             vectorClock: withTags.meta.vectorClock,
             jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.initial,
-            originatingHostId: await _metadataService.getHost(),
+            originatingHostId: await _vectorClockService.getHost(),
           ),
         );
       }
@@ -732,7 +734,7 @@ class PersistenceLogic {
             vectorClock: journalEntity.meta.vectorClock,
             jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.update,
-            originatingHostId: await _metadataService.getHost(),
+            originatingHostId: await _vectorClockService.getHost(),
           ),
         );
       }

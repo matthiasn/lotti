@@ -8,7 +8,7 @@
 
 | Phase | Description | Status | Tests |
 |-------|-------------|--------|-------|
-| 1 | Extract MetadataService from PersistenceLogic | ✅ Complete | 38 |
+| 1 | Extract MetadataService from PersistenceLogic | ✅ Complete | 34 |
 | 2 | Extract GeolocationService from PersistenceLogic | ✅ Complete | 19 |
 | 3 | Extract ExifDataExtractor from image_import | ✅ Complete | 70 |
 | 4 | Extract AudioMetadataExtractor from image_import | ✅ Complete | 34 |
@@ -21,7 +21,7 @@
 | 11 | HealthImport Decomposition | Pending | - |
 | 12 | Final JournalDb Cleanup | Pending | - |
 
-**Total new tests added**: 161
+**Total new tests added**: 157
 
 ### Completed Work
 
