@@ -111,7 +111,9 @@ void main() {
       verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
     });
 
-    test('ignores audio entries when calculating duration to prevent double-counting', () async {
+    test(
+        'ignores audio entries when calculating duration to prevent double-counting',
+        () async {
       // Arrange
       final taskId = testTask.id;
       // Create audio entry with unique ID (testAudioEntry shares ID with testTextEntry)
@@ -229,7 +231,7 @@ void main() {
           dateTo: DateTime(2022, 7, 7, 14),
           updatedAt: DateTime(2022, 7, 7, 13),
         ),
-        data: AiResponseData(
+        data: const AiResponseData(
           model: 'test-model',
           systemMessage: 'system',
           prompt: 'prompt',

@@ -507,5 +507,13 @@
   "settingsResetGeminiTitle": "Réinitialiser le dialogue de configuration Gemini",
   "settingsResetGeminiSubtitle": "Afficher à nouveau le dialogue de configuration Gemini AI",
   "settingsResetGeminiConfirmQuestion": "Cela affichera à nouveau le dialogue de configuration Gemini. Continuer?",
-  "settingsResetGeminiConfirm": "Réinitialiser"
+  "settingsResetGeminiConfirm": "Réinitialiser",
+  "aiSettingsFilterByResponseTypeTooltip": "Filtrer par prompts {responseType}",
+  "@aiSettingsFilterByResponseTypeTooltip": {
+    "placeholders": {
+      "responseType": {
+        "type": "String"
+      }
+    }
+  }
 }

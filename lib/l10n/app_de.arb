@@ -551,5 +551,13 @@
   "settingsResetGeminiTitle": "Gemini-Einrichtungsdialog zurücksetzen",
   "settingsResetGeminiSubtitle": "Den Gemini AI-Einrichtungsdialog erneut anzeigen",
   "settingsResetGeminiConfirmQuestion": "Der Gemini-Einrichtungsdialog wird erneut angezeigt. Fortfahren?",
-  "settingsResetGeminiConfirm": "Zurücksetzen"
+  "settingsResetGeminiConfirm": "Zurücksetzen",
+  "aiSettingsFilterByResponseTypeTooltip": "Nach {responseType}-Prompts filtern",
+  "@aiSettingsFilterByResponseTypeTooltip": {
+    "placeholders": {
+      "responseType": {
+        "type": "String"
+      }
+    }
+  }
 }
