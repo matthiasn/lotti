@@ -17,6 +17,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:path/path.dart' as p;
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 /// Creates an onCreated callback for automatic image analysis.
@@ -125,7 +126,7 @@ Future<void> importImageAssets(
             .format(createdAt);
         final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
         final directory = await createAssetDirectory(relativePath);
-        final targetFilePath = '$directory$imageFileName';
+        final targetFilePath = p.join(directory, imageFileName);
         await compressAndSave(file, targetFilePath);
         final created = asset.createDateTime;
 
@@ -191,7 +192,7 @@ Future<void> importDroppedImages({
       final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
       final directory = await createAssetDirectory(relativePath);
       final targetFileName = '$id.$fileExtension';
-      final targetFilePath = '$directory$targetFileName';
+      final targetFilePath = p.join(directory, targetFileName);
 
       await File(srcPath).copy(targetFilePath);
 
@@ -327,7 +328,7 @@ Future<void> importPastedImages({
   final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
   final directory = await createAssetDirectory(relativePath);
   final targetFileName = '$id.$fileExtension';
-  final targetFilePath = '$directory$targetFileName';
+  final targetFilePath = p.join(directory, targetFileName);
 
   final file = await File(targetFilePath).create(recursive: true);
   await file.writeAsBytes(data);
@@ -384,7 +385,7 @@ Future<String?> importGeneratedImageBytes({
   final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
   final directory = await createAssetDirectory(relativePath);
   final targetFileName = '$id.$fileExtension';
-  final targetFilePath = '$directory$targetFileName';
+  final targetFilePath = p.join(directory, targetFileName);
 
   final file = await File(targetFilePath).create(recursive: true);
   await file.writeAsBytes(data);

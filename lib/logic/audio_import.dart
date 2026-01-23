@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:path/path.dart' as path;
 
 /// Constants for audio import operations.
 class AudioImportConstants {
@@ -81,7 +82,7 @@ Future<void> importDroppedAudio({
       final directory = await createAssetDirectory(relativePath);
       final targetFileName = AudioMetadataExtractor.computeTargetFileName(
           timestamp, fileExtension);
-      final targetFilePath = '$directory$targetFileName';
+      final targetFilePath = path.join(directory, targetFileName);
 
       // Copy file first
       await File(srcPath).copy(targetFilePath);
