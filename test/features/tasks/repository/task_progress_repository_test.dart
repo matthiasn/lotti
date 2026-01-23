@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -108,6 +109,219 @@ void main() {
       expect(result?.$2.containsKey(testTextEntry.id), isTrue);
       verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
       verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+    });
+
+    test('ignores audio entries when calculating duration to prevent double-counting', () async {
+      // Arrange
+      final taskId = testTask.id;
+      // Create audio entry with unique ID (testAudioEntry shares ID with testTextEntry)
+      final audioEntry = JournalAudio(
+        meta: Metadata(
+          id: 'unique-audio-entry-id',
+          createdAt: DateTime(2022, 7, 7, 13),
+          dateFrom: DateTime(2022, 7, 7, 13),
+          dateTo: DateTime(2022, 7, 7, 14),
+          updatedAt: DateTime(2022, 7, 7, 13),
+        ),
+        entryText: const EntryText(plainText: 'audio entry text'),
+        data: AudioData(
+          dateFrom: DateTime(2022, 7, 7, 13),
+          dateTo: DateTime(2022, 7, 7, 14),
+          duration: const Duration(hours: 1),
+          audioFile: '',
+          audioDirectory: '',
+        ),
+      );
+
+      when(() => mockJournalDb.journalEntityById(taskId))
+          .thenAnswer((_) async => testTask);
+      when(() => mockJournalDb.getLinkedEntities(taskId))
+          .thenAnswer((_) async => [audioEntry, testTextEntry]);
+
+      // Act
+      final result = await repository.getTaskProgressData(id: taskId);
+
+      // Assert
+      expect(result, isNotNull);
+      // Audio entry should be excluded (to prevent double-counting meeting time)
+      expect(result?.$2.containsKey(audioEntry.id), isFalse);
+      // Text entry should still be included
+      expect(result?.$2.containsKey(testTextEntry.id), isTrue);
+      verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
+      verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+    });
+  });
+
+  group('sumTimeSpentFromEntities', () {
+    // Create audio entry with unique ID for these tests
+    final uniqueAudioEntry = JournalAudio(
+      meta: Metadata(
+        id: 'unique-audio-id-for-sum-tests',
+        createdAt: DateTime(2022, 7, 7, 13),
+        dateFrom: DateTime(2022, 7, 7, 13),
+        dateTo: DateTime(2022, 7, 7, 14),
+        updatedAt: DateTime(2022, 7, 7, 13),
+      ),
+      entryText: const EntryText(plainText: 'audio entry'),
+      data: AudioData(
+        dateFrom: DateTime(2022, 7, 7, 13),
+        dateTo: DateTime(2022, 7, 7, 14),
+        duration: const Duration(hours: 1),
+        audioFile: '',
+        audioDirectory: '',
+      ),
+    );
+
+    test('returns zero for empty list', () {
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities([]);
+
+      // Assert
+      expect(total, equals(Duration.zero));
+    });
+
+    test('returns zero when only audio entries present', () {
+      // Arrange
+      final entities = [uniqueAudioEntry];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert
+      expect(total, equals(Duration.zero));
+    });
+
+    test('excludes audio entries from total time calculation', () {
+      // Arrange
+      final entities = [uniqueAudioEntry, testTextEntry];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert - should only include testTextEntry duration, not audio
+      final expectedDuration = testTextEntry.meta.dateTo.difference(
+        testTextEntry.meta.dateFrom,
+      );
+      expect(total, equals(expectedDuration));
+    });
+
+    test('excludes tasks from total time calculation', () {
+      // Arrange
+      final entities = [testTask, testTextEntry];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert - should only include testTextEntry duration
+      final expectedDuration = testTextEntry.meta.dateTo.difference(
+        testTextEntry.meta.dateFrom,
+      );
+      expect(total, equals(expectedDuration));
+    });
+
+    test('excludes AiResponseEntry from total time calculation', () {
+      // Arrange
+      final aiResponse = AiResponseEntry(
+        meta: Metadata(
+          id: 'ai-response-id',
+          createdAt: DateTime(2022, 7, 7, 13),
+          dateFrom: DateTime(2022, 7, 7, 13),
+          dateTo: DateTime(2022, 7, 7, 14),
+          updatedAt: DateTime(2022, 7, 7, 13),
+        ),
+        data: AiResponseData(
+          model: 'test-model',
+          systemMessage: 'system',
+          prompt: 'prompt',
+          thoughts: '',
+          response: 'response',
+        ),
+      );
+      final entities = [aiResponse, testTextEntry];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert - should only include testTextEntry duration
+      final expectedDuration = testTextEntry.meta.dateTo.difference(
+        testTextEntry.meta.dateFrom,
+      );
+      expect(total, equals(expectedDuration));
+    });
+
+    test('returns zero when all entries are excluded types', () {
+      // Arrange
+      final entities = [uniqueAudioEntry, testTask];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert
+      expect(total, equals(Duration.zero));
+    });
+
+    test('handles mix of audio, text, and image entries correctly', () {
+      // Arrange - create unique image entry
+      final imageEntry = JournalImage(
+        meta: Metadata(
+          id: 'unique-image-id',
+          createdAt: DateTime(2022, 7, 7, 15),
+          dateFrom: DateTime(2022, 7, 7, 15),
+          dateTo: DateTime(2022, 7, 7, 15, 30), // 30 min duration
+          updatedAt: DateTime(2022, 7, 7, 15),
+        ),
+        entryText: const EntryText(plainText: 'image entry'),
+        data: ImageData(
+          imageId: '',
+          imageFile: '',
+          imageDirectory: '',
+          capturedAt: DateTime(2022, 7, 7, 15),
+        ),
+      );
+      final entities = [uniqueAudioEntry, testTextEntry, imageEntry];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert - should sum text (1hr) + image (30min), exclude audio
+      final textDuration = testTextEntry.meta.dateTo.difference(
+        testTextEntry.meta.dateFrom,
+      );
+      final imageDuration = imageEntry.meta.dateTo.difference(
+        imageEntry.meta.dateFrom,
+      );
+      expect(total, equals(textDuration + imageDuration));
+    });
+
+    test('sums multiple text entries correctly', () {
+      // Arrange
+      final textEntry1 = JournalEntry(
+        meta: Metadata(
+          id: 'text-entry-1',
+          createdAt: DateTime(2022, 7, 7, 9),
+          dateFrom: DateTime(2022, 7, 7, 9),
+          dateTo: DateTime(2022, 7, 7, 10), // 1 hour
+          updatedAt: DateTime(2022, 7, 7, 10),
+        ),
+        entryText: const EntryText(plainText: 'entry 1'),
+      );
+      final textEntry2 = JournalEntry(
+        meta: Metadata(
+          id: 'text-entry-2',
+          createdAt: DateTime(2022, 7, 7, 14),
+          dateFrom: DateTime(2022, 7, 7, 14),
+          dateTo: DateTime(2022, 7, 7, 14, 30), // 30 min
+          updatedAt: DateTime(2022, 7, 7, 14, 30),
+        ),
+        entryText: const EntryText(plainText: 'entry 2'),
+      );
+      final entities = [textEntry1, textEntry2];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert - 1 hour + 30 min = 1.5 hours
+      expect(total, equals(const Duration(hours: 1, minutes: 30)));
     });
   });
 
