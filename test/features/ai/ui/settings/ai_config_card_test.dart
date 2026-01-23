@@ -75,6 +75,10 @@ void main() {
       // Set up repository mock to return the test provider when requested
       when(() => mockRepository.getConfigById('test-provider-id'))
           .thenAnswer((_) async => testProvider as AiConfigInferenceProvider);
+
+      // Set up repository mock to return the test model when requested
+      when(() => mockRepository.getConfigById('test-model-id'))
+          .thenAnswer((_) async => testModel as AiConfigModel);
     });
 
     Widget createTestWidget(AiConfig config, {bool showCapabilities = false}) {
@@ -145,6 +149,89 @@ void main() {
 
         expect(find.text(testPrompt.name), findsOneWidget);
         expect(find.text(testPrompt.description!), findsOneWidget);
+      });
+    });
+
+    group('Prompt provider badge', () {
+      testWidgets('displays provider name via default model lookup',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget(testPrompt));
+        await tester.pumpAndSettle();
+
+        // Should show the provider name from the model's provider
+        expect(find.text('Test Anthropic Provider'), findsOneWidget);
+      });
+
+      testWidgets('shows loading state while model loads',
+          (WidgetTester tester) async {
+        // Use a completer to control when the model lookup completes
+        final modelCompleter = Completer<AiConfigModel?>();
+
+        when(() => mockRepository.getConfigById('test-model-id'))
+            .thenAnswer((_) => modelCompleter.future);
+
+        await tester.pumpWidget(createTestWidget(testPrompt));
+        await tester.pump();
+
+        // Should show loading state
+        expect(find.text('Loading...'), findsOneWidget);
+
+        // Complete to clean up
+        modelCompleter.complete(testModel as AiConfigModel);
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('shows nothing when model lookup fails',
+          (WidgetTester tester) async {
+        when(() => mockRepository.getConfigById('test-model-id'))
+            .thenThrow(Exception('Failed to load model'));
+
+        await tester.pumpWidget(createTestWidget(testPrompt));
+        await tester.pumpAndSettle();
+
+        // Should not show provider name (graceful handling)
+        expect(find.text('Test Anthropic Provider'), findsNothing);
+      });
+
+      testWidgets('shows nothing when model is not found',
+          (WidgetTester tester) async {
+        when(() => mockRepository.getConfigById('test-model-id'))
+            .thenAnswer((_) async => null);
+
+        await tester.pumpWidget(createTestWidget(testPrompt));
+        await tester.pumpAndSettle();
+
+        // Should not show provider badge when model not found
+        expect(find.text('Test Anthropic Provider'), findsNothing);
+      });
+
+      testWidgets('shows provider badge with correct styling',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget(testPrompt));
+        await tester.pumpAndSettle();
+
+        // Find the provider name text widget
+        final providerText = find.text('Test Anthropic Provider');
+        expect(providerText, findsOneWidget);
+
+        // Verify it's inside a styled container with gradient decoration
+        final containerFinder = find.ancestor(
+          of: providerText,
+          matching: find.byType(Container),
+        );
+        expect(containerFinder, findsWidgets);
+
+        // Verify the container has a gradient decoration
+        final containers = tester.widgetList<Container>(containerFinder);
+        final hasGradientDecoration = containers.any((container) {
+          final decoration = container.decoration;
+          if (decoration is BoxDecoration) {
+            return decoration.gradient is LinearGradient;
+          }
+          return false;
+        });
+        expect(hasGradientDecoration, isTrue,
+            reason: 'Provider badge should have a LinearGradient decoration');
       });
     });
 

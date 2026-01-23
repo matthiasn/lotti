@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 part 'ai_settings_filter_state.freezed.dart';
@@ -38,6 +39,9 @@ abstract class AiSettingsFilterState with _$AiSettingsFilterState {
     /// Whether to show only reasoning-capable models (only used on Models tab)
     @Default(false) bool reasoningFilter,
 
+    /// Selected response types for filtering prompts (only used on Prompts tab)
+    @Default({}) Set<AiResponseType> selectedResponseTypes,
+
     /// Currently active tab
     @Default(AiSettingsTab.providers) AiSettingsTab activeTab,
   }) = _AiSettingsFilterState;
@@ -73,12 +77,46 @@ extension AiSettingsFilterStateX on AiSettingsFilterState {
       selectedCapabilities.isNotEmpty ||
       reasoningFilter;
 
+  /// Determines if prompt-specific filters are active
+  bool get hasPromptFilters =>
+      selectedProviders.isNotEmpty || selectedResponseTypes.isNotEmpty;
+
+  /// Determines if any filters are active for the current tab
+  bool get hasActiveFilters {
+    switch (activeTab) {
+      case AiSettingsTab.providers:
+        return false;
+      case AiSettingsTab.models:
+        return hasModelFilters;
+      case AiSettingsTab.prompts:
+        return hasPromptFilters;
+    }
+  }
+
   /// Resets only model-specific filters (preserves search query)
   AiSettingsFilterState resetModelFilters() => copyWith(
         selectedProviders: const {},
         selectedCapabilities: const {},
         reasoningFilter: false,
       );
+
+  /// Resets only prompt-specific filters (preserves search query)
+  AiSettingsFilterState resetPromptFilters() => copyWith(
+        selectedProviders: const {},
+        selectedResponseTypes: const {},
+      );
+
+  /// Resets filters for the current active tab
+  AiSettingsFilterState resetCurrentTabFilters() {
+    switch (activeTab) {
+      case AiSettingsTab.providers:
+        return this;
+      case AiSettingsTab.models:
+        return resetModelFilters();
+      case AiSettingsTab.prompts:
+        return resetPromptFilters();
+    }
+  }
 }
 
 /// Extension to add localized display names for AiSettingsTab

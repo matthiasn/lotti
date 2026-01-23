@@ -114,6 +114,19 @@ class AppTheme {
   static const double labelChipPaddingRight = 10;
   static const double labelChipPaddingVertical = 4;
 
+  // Filter chip styling constants
+  static const double filterChipSpacing = 6;
+  static const double filterChipIconSize = 16;
+  static const double filterChipFontSize = 13;
+  static const double filterChipLetterSpacing = 0.2;
+  static const double filterChipPaddingHorizontal = 12;
+  static const double filterChipPaddingVertical = 6;
+  static const double alphaFilterChipBackground = 0.5;
+  static const double alphaFilterChipSelected = 0.7;
+  static const double alphaFilterChipBorderSelected = 0.8;
+  static const double alphaFilterChipBorderUnselected = 0.3;
+  static const double alphaFilterChipTextUnselected = 0.8;
+
   // Status indicator alpha values
   static const double alphaPrimaryContainerLight = 0.3; // Enhanced
   static const double alphaPrimaryContainerDark = 0.2;

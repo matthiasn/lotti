@@ -476,6 +476,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Filter by reasoning capability';
 
   @override
+  String aiSettingsFilterByResponseTypeTooltip(String responseType) {
+    return 'Filtrer par prompts $responseType';
+  }
+
+  @override
   String get aiSettingsModalityAudio => 'Audio';
 
   @override

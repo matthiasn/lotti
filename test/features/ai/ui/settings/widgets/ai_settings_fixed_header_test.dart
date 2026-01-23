@@ -127,7 +127,7 @@ void main() {
       expect(searchController.text, 'test query');
     });
 
-    testWidgets('displays filter section only on models tab',
+    testWidgets('displays filter section on models and prompts tabs',
         (WidgetTester tester) async {
       // Start on providers tab (default)
       await tester.pumpWidget(createWidget(
@@ -138,15 +138,36 @@ void main() {
       // Should not show AiSettingsFilterChips on providers tab
       expect(find.byType(AiSettingsFilterChips), findsNothing);
 
-      // Now test with models tab active - create fresh widget to avoid exceptions
+      // Test with models tab active
       await tester.pumpWidget(createWidget(
         filterState:
             const AiSettingsFilterState(activeTab: AiSettingsTab.models),
       ));
       await tester.pumpAndSettle();
 
-      // Filter chips widget should now be visible
+      // Filter chips widget should be visible on Models tab
       expect(find.byType(AiSettingsFilterChips), findsOneWidget);
+
+      // Test with prompts tab active
+      await tester.pumpWidget(createWidget(
+        filterState:
+            const AiSettingsFilterState(activeTab: AiSettingsTab.prompts),
+      ));
+      await tester.pumpAndSettle();
+
+      // Filter chips widget should also be visible on Prompts tab
+      expect(find.byType(AiSettingsFilterChips), findsOneWidget);
+    });
+
+    testWidgets('hides filter section on providers tab',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createWidget(
+        filterState: const AiSettingsFilterState(),
+      ));
+      await tester.pumpAndSettle();
+
+      // Should NOT show AiSettingsFilterChips on providers tab
+      expect(find.byType(AiSettingsFilterChips), findsNothing);
     });
 
     testWidgets('has proper spacing between sections',

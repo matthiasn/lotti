@@ -19,7 +19,7 @@ import 'package:lotti/themes/theme.dart';
 /// Features:
 /// - Search bar for filtering configurations
 /// - Tab bar for switching between providers, models, and prompts
-/// - Context-aware filter chips (only shown on models tab)
+/// - Context-aware filter chips (shown on Models and Prompts tabs)
 /// - Proper visual separation with border
 ///
 /// Example:
@@ -112,8 +112,9 @@ class AiSettingsFixedHeader extends StatelessWidget {
   }
 
   Widget _buildFilterSection() {
-    // Model filters are only shown on the Models tab (matching main branch behavior)
-    if (filterState.activeTab == AiSettingsTab.models) {
+    // Filters are shown on Models and Prompts tabs
+    if (filterState.activeTab == AiSettingsTab.models ||
+        filterState.activeTab == AiSettingsTab.prompts) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
         child: SingleChildScrollView(

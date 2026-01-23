@@ -460,6 +460,116 @@ void main() {
         // With O(n*m) this would be slow, with O(n+m) it's fast
         expect(stopwatch.elapsedMilliseconds, lessThan(100));
       });
+
+      test('filters prompts by response type', () {
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedResponseTypes: {AiResponseType.taskSummary});
+        final result = service.filterPrompts(testPrompts, filterState);
+
+        expect(result, hasLength(1));
+        expect(result.first.aiResponseType, AiResponseType.taskSummary);
+      });
+
+      test('filters prompts by multiple response types', () {
+        final filterState = AiSettingsFilterState.initial().copyWith(
+          selectedResponseTypes: {
+            AiResponseType.taskSummary,
+            AiResponseType.imageAnalysis,
+          },
+        );
+        final result = service.filterPrompts(testPrompts, filterState);
+
+        expect(result, hasLength(2));
+        expect(result, containsAll(testPrompts));
+      });
+
+      test('returns all prompts when no response types selected', () {
+        final filterState = AiSettingsFilterState.initial()
+            .copyWith(selectedResponseTypes: <AiResponseType>{});
+        final result = service.filterPrompts(testPrompts, filterState);
+
+        expect(result, hasLength(2));
+      });
+
+      test('combines provider and response type filters (AND logic)', () {
+        // Create a prompt with different provider that matches response type
+        final gptPrompt = AiConfig.prompt(
+          id: 'gpt-task-prompt',
+          name: 'GPT Task Summary',
+          description: 'Uses GPT for task summary',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'gpt-model',
+          modelIds: ['gpt-model'],
+          createdAt: DateTime.now(),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        ) as AiConfigPrompt;
+
+        final prompts = [...testPrompts, gptPrompt];
+
+        // Filter by both anthropic provider AND taskSummary response type
+        final filterState = AiSettingsFilterState.initial().copyWith(
+          selectedProviders: {'anthropic-provider'},
+          selectedResponseTypes: {AiResponseType.taskSummary},
+        );
+
+        final result = service.filterPrompts(
+          prompts,
+          filterState,
+          allModels: testModels,
+        );
+
+        // Should only return the original task-summary prompt (anthropic + taskSummary)
+        // Not the GPT prompt (wrong provider) or image-analysis prompt (wrong type)
+        expect(result, hasLength(1));
+        expect(result.first.id, 'task-summary');
+      });
+
+      test('returns empty list when response type filter excludes all prompts',
+          () {
+        final filterState = AiSettingsFilterState.initial().copyWith(
+          selectedResponseTypes: {AiResponseType.audioTranscription},
+        );
+        final result = service.filterPrompts(testPrompts, filterState);
+
+        expect(result, isEmpty);
+      });
+
+      test('filters prompts with all response types', () {
+        // Create prompts for all response types
+        final allTypePrompts = AiResponseType.values.map((type) {
+          return AiConfig.prompt(
+            id: 'prompt-${type.name}',
+            name: 'Prompt ${type.name}',
+            systemMessage: 'System',
+            userMessage: 'User',
+            defaultModelId: 'claude-model',
+            modelIds: ['claude-model'],
+            createdAt: DateTime.now(),
+            useReasoning: false,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: type,
+          ) as AiConfigPrompt;
+        }).toList();
+
+        // Select only specific response types
+        final filterState = AiSettingsFilterState.initial().copyWith(
+          selectedResponseTypes: {
+            AiResponseType.imageGeneration,
+            AiResponseType.promptGeneration,
+          },
+        );
+
+        final result = service.filterPrompts(allTypePrompts, filterState);
+
+        expect(result, hasLength(2));
+        expect(
+          result.map((p) => p.aiResponseType).toSet(),
+          {AiResponseType.imageGeneration, AiResponseType.promptGeneration},
+        );
+      });
     });
 
     group('edge cases', () {

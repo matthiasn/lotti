@@ -204,6 +204,16 @@ class AiConfigCard extends ConsumerWidget {
                         ),
                       ],
 
+                      // Provider info for prompts (via default model)
+                      if (config is AiConfigPrompt) ...[
+                        const SizedBox(
+                            height:
+                                AppTheme.spacingBetweenTitleAndSubtitleCompact),
+                        _PromptProviderBadge(
+                          modelId: (config as AiConfigPrompt).defaultModelId,
+                        ),
+                      ],
+
                       // Description
                       if (config.description != null &&
                           config.description!.isNotEmpty) ...[
@@ -391,6 +401,52 @@ class _CompactProviderName extends ConsumerWidget {
         ),
       ),
       // Error is handled above with hasError check
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// Widget that shows provider badge for a prompt by looking up its default model
+class _PromptProviderBadge extends ConsumerWidget {
+  const _PromptProviderBadge({
+    required this.modelId,
+  });
+
+  final String modelId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final modelAsync = ref.watch(aiConfigByIdProvider(modelId));
+
+    return modelAsync.when(
+      data: (config) {
+        if (config == null || config is! AiConfigModel) {
+          return const SizedBox.shrink();
+        }
+        final model = config;
+        // Now show the provider name using the model's inferenceProviderId
+        return _CompactProviderName(providerId: model.inferenceProviderId);
+      },
+      loading: () => Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.statusIndicatorPaddingHorizontal,
+          vertical: AppTheme.statusIndicatorPaddingVertical,
+        ),
+        decoration: BoxDecoration(
+          color: context.colorScheme.surfaceContainerHighest
+              .withValues(alpha: AppTheme.alphaSurfaceContainerHighest),
+          borderRadius:
+              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall),
+        ),
+        child: Text(
+          context.messages.commonLoading,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.onSurfaceVariant
+                .withValues(alpha: AppTheme.alphaSurfaceVariantDim),
+            fontSize: AppTheme.statusIndicatorFontSizeCompact,
+          ),
+        ),
+      ),
       error: (_, __) => const SizedBox.shrink(),
     );
   }
