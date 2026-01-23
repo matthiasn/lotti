@@ -19,7 +19,7 @@ import 'package:lotti/themes/theme.dart';
 /// Features:
 /// - Search bar for filtering configurations
 /// - Tab bar for switching between providers, models, and prompts
-/// - Context-aware filter chips (only shown on models tab)
+/// - Context-aware filter chips (shown on Models and Prompts tabs)
 /// - Proper visual separation with border
 ///
 /// Example:
