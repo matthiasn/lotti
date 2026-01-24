@@ -725,7 +725,8 @@ void main() {
       expect(find.text('Set Up AI Features?'), findsOneWidget);
     });
 
-    testWidgets('does not show prompt setup dialog for non-Gemini providers',
+    testWidgets(
+        'does not show prompt setup dialog for providers without FTUE support',
         (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -733,19 +734,19 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Select OpenAI provider type
+      // Select Anthropic provider type (which doesn't have FTUE support)
       await tester.tap(find.ancestor(
         of: find.text('OpenAI Compatible'),
         matching: find.byType(GestureDetector),
       ));
       await tester.pumpAndSettle();
 
-      final openAiOption = find.text('OpenAI').first;
-      await tester.ensureVisible(openAiOption);
+      final anthropicOption = find.text('Anthropic Claude');
+      await tester.ensureVisible(anthropicOption);
       await tester.pumpAndSettle();
 
       await tester.tap(find.ancestor(
-        of: openAiOption,
+        of: anthropicOption,
         matching: find.byType(InkWell),
       ));
       await tester.pumpAndSettle();
@@ -753,10 +754,10 @@ void main() {
       // Fill required fields
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My OpenAI');
+          'My Anthropic');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'),
-          'test-openai-key');
+          'test-anthropic-key');
       await tester.pumpAndSettle();
 
       // Scroll to save button and tap
@@ -767,7 +768,7 @@ void main() {
       await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
-      // Prompt setup dialog should NOT appear
+      // Prompt setup dialog should NOT appear for non-Gemini/non-OpenAI providers
       expect(find.text('Set Up AI Features?'), findsNothing);
     });
 

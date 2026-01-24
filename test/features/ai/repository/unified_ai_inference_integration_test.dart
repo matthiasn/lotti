@@ -100,6 +100,7 @@ void main() {
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(FakeAiResponseData());
     registerFallbackValue(fallbackJournalEntity);
+    registerFallbackValue(ChatCompletionMessageInputAudioFormat.mp3);
   });
 
   late Directory? baseTempDir;
@@ -928,6 +929,7 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(
@@ -1027,6 +1029,7 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
             )).thenAnswer((_) => mockStream);
 
         await repository.runInference(

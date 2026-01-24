@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.821] - 2026-01-24
+### Added
+- OpenAI Onboarding FTUE: First-time user experience for OpenAI providers with one-click setup
+  - Auto-creates 4 models: GPT-5.2 (reasoning), GPT-5 Nano (flash), GPT-4o Transcribe (audio), GPT Image 1.5 (image)
+  - Configures 9 optimized prompts with appropriate model assignments
+  - Creates a test category with all prompts enabled and auto-selection configured
+  - Follows the same streamlined pattern as Gemini FTUE
+
+### Changed
+- Audio format handling simplified: M4A files now sent as-is labeled as mp3 for most providers
+  - Only Mistral requires actual WAV conversion
+  - Reduces processing overhead for OpenAI and Gemini transcription
+
 ## [0.9.820] - 2026-01-23
 ### Changed
 - Upgraded dependencies

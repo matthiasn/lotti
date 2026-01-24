@@ -211,6 +211,49 @@ void main() {
       });
     });
 
+    group('OpenAI FTUE functions', () {
+      test('findOpenAiKnownModel returns model for valid ID', () {
+        final model = findOpenAiKnownModel('gpt-5.2');
+        expect(model, isNotNull);
+        expect(model!.providerModelId, equals('gpt-5.2'));
+        expect(model.isReasoningModel, isTrue);
+      });
+
+      test('findOpenAiKnownModel returns null for invalid ID', () {
+        final model = findOpenAiKnownModel('non-existent-model-id');
+        expect(model, isNull);
+      });
+
+      test('getOpenAiFtueKnownModels returns all required models', () {
+        final models = getOpenAiFtueKnownModels();
+        expect(models, isNotNull);
+
+        // Verify flash model (GPT-5 Nano)
+        expect(models!.flash.providerModelId, equals(ftueOpenAiFlashModelId));
+        expect(models.flash.name, contains('GPT-5 Nano'));
+
+        // Verify reasoning model (GPT-5.2)
+        expect(models.reasoning.providerModelId,
+            equals(ftueOpenAiReasoningModelId));
+        expect(models.reasoning.isReasoningModel, isTrue);
+
+        // Verify audio model
+        expect(models.audio.providerModelId, equals(ftueOpenAiAudioModelId));
+        expect(models.audio.inputModalities, contains(Modality.audio));
+
+        // Verify image model
+        expect(models.image.providerModelId, equals(ftueOpenAiImageModelId));
+        expect(models.image.outputModalities, contains(Modality.image));
+      });
+
+      test('FTUE model constants are valid OpenAI model IDs', () {
+        expect(findOpenAiKnownModel(ftueOpenAiReasoningModelId), isNotNull);
+        expect(findOpenAiKnownModel(ftueOpenAiFlashModelId), isNotNull);
+        expect(findOpenAiKnownModel(ftueOpenAiAudioModelId), isNotNull);
+        expect(findOpenAiKnownModel(ftueOpenAiImageModelId), isNotNull);
+      });
+    });
+
     group('knownModelsByProvider', () {
       test('should contain all provider types', () {
         expect(

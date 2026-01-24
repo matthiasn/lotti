@@ -83,6 +83,13 @@ class ConversationRepository extends _$ConversationRepository {
       return;
     }
 
+    // OpenAI GPT-5 models only accept temperature=1.0 (the default).
+    // Other providers support custom temperature values.
+    final effectiveTemperature =
+        provider.inferenceProviderType == InferenceProviderType.openAi
+            ? 1.0
+            : temperature;
+
     // Start conversation loop
     var shouldContinue = true;
 
@@ -105,7 +112,7 @@ class ConversationRepository extends _$ConversationRepository {
           model: model,
           provider: provider,
           tools: tools,
-          temperature: temperature,
+          temperature: effectiveTemperature,
           thoughtSignatures: manager.thoughtSignatures,
           signatureCollector: signatureCollector,
           turnIndex: manager.turnCount,
@@ -286,14 +293,17 @@ class ConversationRepository extends _$ConversationRepository {
         if (!manager.canContinue()) {
           shouldContinue = false;
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
+        // Log full error details for debugging
+        final errorMessage = e.toString();
         developer.log(
-          'Error during conversation turn',
+          'Error during conversation turn:\n$errorMessage',
           name: 'ConversationRepository',
           error: e,
+          stackTrace: stackTrace,
         );
         try {
-          manager.emitError(e.toString());
+          manager.emitError(errorMessage);
         } catch (_) {
           // Ignore errors when emitting error events
         }

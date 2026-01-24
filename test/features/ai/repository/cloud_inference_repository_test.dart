@@ -35,6 +35,8 @@ class FakeCreateChatCompletionRequest extends Fake
 
 class FakeRequest extends Fake implements http.Request {}
 
+class FakeBaseRequest extends Fake implements http.BaseRequest {}
+
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
 class FakeAiConfigInferenceProvider extends Fake
@@ -46,6 +48,7 @@ void main() {
     registerFallbackValue(FakeCreateChatCompletionRequest());
     registerFallbackValue(Uri.parse('http://example.com'));
     registerFallbackValue(FakeRequest());
+    registerFallbackValue(FakeBaseRequest());
     registerFallbackValue(FakeGeminiThinkingConfig());
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(<ChatCompletionTool>[]);
@@ -315,6 +318,7 @@ void main() {
       final requestString = request.toString();
       expect(requestString.contains(prompt), isTrue);
       expect(requestString.contains(audioBase64), isTrue);
+      // Default audioFormat is mp3
       expect(requestString.contains('mp3'), isTrue);
     });
 
@@ -2448,6 +2452,734 @@ void main() {
           provider: provider,
         ),
       ).called(1);
+    });
+  });
+
+  // Note: OpenAI Transcription API test removed - the _transcribeWithOpenAiApi
+  // method uses http.MultipartRequest directly which can't be easily mocked.
+  // The functionality is tested via integration/manual testing.
+
+  group('CloudInferenceRepository - Nullable Temperature', () {
+    late MockOpenAIClient mockClient;
+    late ProviderContainer container;
+    late CloudInferenceRepository repository;
+
+    setUp(() {
+      mockClient = MockOpenAIClient();
+      final mockOllamaRepo = MockOllamaInferenceRepository();
+      final mockGeminiRepo = MockGeminiInferenceRepository();
+
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref);
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('generate accepts null temperature parameter', () {
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - pass null temperature (for reasoning models)
+      repository.generate(
+        'Hello',
+        model: 'o3',
+        temperature: null, // OpenAI reasoning models don't support temperature
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        overrideClient: mockClient,
+      );
+
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.temperature, isNull);
+    });
+
+    test('generateWithImages accepts null temperature parameter', () {
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - pass null temperature
+      repository.generateWithImages(
+        'Describe this image',
+        model: 'o3',
+        temperature: null,
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        images: ['base64image'],
+        overrideClient: mockClient,
+      );
+
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      expect(request.temperature, isNull);
+    });
+
+    test('generateWithMessages accepts null temperature parameter', () {
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - pass null temperature
+      // Note: generateWithMessages doesn't have overrideClient, so we test
+      // that null temperature is accepted by the method signature
+      final stream = repository.generateWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hello'),
+          ),
+        ],
+        model: 'gpt-5-nano',
+        temperature: null,
+        provider: provider,
+      );
+
+      // Verify stream is created (actual API call would fail without mock,
+      // but this tests the null temperature parameter is accepted)
+      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+    });
+  });
+
+  group('CloudInferenceRepository - Temperature handling by provider', () {
+    late ProviderContainer container;
+    late CloudInferenceRepository repository;
+    late MockHttpClient mockHttpClient;
+
+    setUp(() {
+      mockHttpClient = MockHttpClient();
+      final mockOllamaRepo = MockOllamaInferenceRepository();
+      final mockGeminiRepo = MockGeminiInferenceRepository();
+
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+    });
+
+    tearDown(() {
+      mockHttpClient.close();
+      container.dispose();
+    });
+
+    test('generateWithMessages accepts temperature for OpenAI provider', () {
+      final openAiProvider = AiConfigInferenceProvider(
+        id: 'openai-provider',
+        name: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      // Temperature handling for OpenAI is done at the caller level
+      // (conversation_repository or unified_ai_inference_repository)
+      final stream = repository.generateWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hello'),
+          ),
+        ],
+        model: 'gpt-5.2',
+        temperature: 1, // OpenAI GPT-5 only accepts 1.0
+        provider: openAiProvider,
+      );
+
+      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream.isBroadcast, isTrue);
+    });
+
+    test('generateWithMessages accepts temperature for genericOpenAi provider',
+        () {
+      final genericProvider = AiConfigInferenceProvider(
+        id: 'generic-provider',
+        name: 'Generic OpenAI Compatible',
+        baseUrl: 'https://example.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      final stream = repository.generateWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hello'),
+          ),
+        ],
+        model: 'custom-model',
+        temperature: 0.7,
+        provider: genericProvider,
+      );
+
+      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream.isBroadcast, isTrue);
+    });
+
+    test('generateWithMessages accepts temperature for Anthropic provider', () {
+      final anthropicProvider = AiConfigInferenceProvider(
+        id: 'anthropic-provider',
+        name: 'Anthropic',
+        baseUrl: 'https://api.anthropic.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.anthropic,
+      );
+
+      final stream = repository.generateWithMessages(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hello'),
+          ),
+        ],
+        model: 'claude-opus-4',
+        temperature: 0.5,
+        provider: anthropicProvider,
+      );
+
+      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream.isBroadcast, isTrue);
+    });
+
+    group('generateWithAudio with OpenAI transcription models', () {
+      test('routes gpt-4o-mini-transcribe to OpenAI transcription endpoint',
+          () async {
+        // Arrange
+        final openAiProvider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        // Mock successful transcription response
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': 'Transcribed text'}))),
+            200,
+          );
+        });
+
+        final stream = repository.generateWithAudio(
+          'Transcribe this audio',
+          model: 'gpt-4o-mini-transcribe',
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          provider: openAiProvider,
+        );
+
+        final response = await stream.first;
+
+        // Assert - verify it went through OpenAI transcription endpoint
+        expect(
+            response.choices?.first.delta?.content, equals('Transcribed text'));
+
+        // Verify the request was sent to the transcription endpoint
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        expect(captured, hasLength(1));
+        final request = captured.first as http.MultipartRequest;
+        expect(request.url.toString(),
+            equals('https://api.openai.com/v1/audio/transcriptions'));
+        expect(request.fields['model'], equals('gpt-4o-mini-transcribe'));
+      });
+
+      test('routes gpt-4o-transcribe to OpenAI transcription endpoint',
+          () async {
+        // Arrange
+        final openAiProvider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': 'Transcribed text'}))),
+            200,
+          );
+        });
+
+        final stream = repository.generateWithAudio(
+          'Transcribe this audio',
+          model: 'gpt-4o-transcribe',
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          provider: openAiProvider,
+        );
+
+        final response = await stream.first;
+        expect(
+            response.choices?.first.delta?.content, equals('Transcribed text'));
+
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.MultipartRequest;
+        expect(request.fields['model'], equals('gpt-4o-transcribe'));
+      });
+
+      test('routes gpt-4o-transcribe-diarize to OpenAI transcription endpoint',
+          () async {
+        final openAiProvider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': 'Speaker 1: Hello'}))),
+            200,
+          );
+        });
+
+        final stream = repository.generateWithAudio(
+          'Transcribe with diarization',
+          model: 'gpt-4o-transcribe-diarize',
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          provider: openAiProvider,
+        );
+
+        final response = await stream.first;
+        expect(
+            response.choices?.first.delta?.content, equals('Speaker 1: Hello'));
+
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.MultipartRequest;
+        expect(request.fields['model'], equals('gpt-4o-transcribe-diarize'));
+      });
+
+      test(
+          'routes snapshot alias gpt-4o-mini-transcribe-2025-01-15 to OpenAI transcription endpoint',
+          () async {
+        final openAiProvider = AiConfigInferenceProvider(
+          id: 'openai-provider',
+          name: 'OpenAI',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode({'text': 'Transcribed'}))),
+            200,
+          );
+        });
+
+        final stream = repository.generateWithAudio(
+          'Transcribe',
+          model: 'gpt-4o-mini-transcribe-2025-01-15',
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          provider: openAiProvider,
+        );
+
+        final response = await stream.first;
+        expect(response.choices?.first.delta?.content, equals('Transcribed'));
+
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        final request = captured.first as http.MultipartRequest;
+        expect(request.fields['model'],
+            equals('gpt-4o-mini-transcribe-2025-01-15'));
+      });
+
+      test(
+          'does not route non-OpenAI provider to OpenAI transcription endpoint',
+          () async {
+        // Arrange - use genericOpenAi provider with same model name
+        final genericProvider = AiConfigInferenceProvider(
+          id: 'generic-provider',
+          name: 'Generic',
+          baseUrl: 'https://example.com/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        // This should NOT go to OpenAI transcription endpoint
+        // because the provider type is genericOpenAi, not openAi
+        final stream = repository.generateWithAudio(
+          'Transcribe',
+          model: 'gpt-4o-mini-transcribe',
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
+          baseUrl: 'https://example.com/v1',
+          apiKey: 'test-key',
+          provider: genericProvider,
+        );
+
+        // The stream should be created (even though it won't work in practice)
+        // It should NOT have sent to OpenAI's transcription endpoint
+        expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      });
+    });
+  });
+
+  group('CloudInferenceRepository - generateWithAudio audioFormat parameter',
+      () {
+    late MockOpenAIClient mockClient;
+    late MockHttpClient mockHttpClient;
+    late ProviderContainer container;
+    late CloudInferenceRepository repository;
+
+    setUp(() {
+      mockClient = MockOpenAIClient();
+      mockHttpClient = MockHttpClient();
+      final mockOllamaRepo = MockOllamaInferenceRepository();
+      final mockGeminiRepo = MockGeminiInferenceRepository();
+
+      container = ProviderContainer(
+        overrides: [
+          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+        ],
+      );
+
+      final ref = container.read(testRefProvider);
+      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+    });
+
+    tearDown(() async {
+      mockHttpClient.close();
+      container.dispose();
+    });
+
+    test('OpenAI provider uses passed wav audioFormat for chat completions',
+        () {
+      // Arrange - non-transcription model uses chat completions path
+      final openAiProvider = AiConfigInferenceProvider(
+        id: 'openai-provider',
+        name: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - use non-transcription model with wav format
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'gpt-4o-audio-preview', // Not a transcription model
+        audioBase64: 'test-audio-base64',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        provider: openAiProvider,
+        overrideClient: mockClient,
+        audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+      );
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      // Check for format: wav in the audio input configuration
+      expect(requestString,
+          contains('format: ChatCompletionMessageInputAudioFormat.wav'));
+    });
+
+    test('OpenAI provider uses passed mp3 audioFormat for chat completions',
+        () {
+      // Arrange
+      final openAiProvider = AiConfigInferenceProvider(
+        id: 'openai-provider',
+        name: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - use non-transcription model with mp3 format (default)
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'gpt-4o-audio-preview',
+        audioBase64: 'test-audio-base64',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-key',
+        provider: openAiProvider,
+        overrideClient: mockClient,
+      );
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      // Check for format: mp3 in the audio input configuration
+      expect(requestString,
+          contains('format: ChatCompletionMessageInputAudioFormat.mp3'));
+    });
+
+    test('Mistral provider uses passed audioFormat for chat completions', () {
+      // Arrange
+      final mistralProvider = AiConfigInferenceProvider(
+        id: 'mistral-provider',
+        name: 'Mistral',
+        baseUrl: 'https://api.mistral.ai/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.mistral,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - use wav format for Mistral
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'mistral-large',
+        audioBase64: 'test-audio-base64',
+        baseUrl: 'https://api.mistral.ai/v1',
+        apiKey: 'test-key',
+        provider: mistralProvider,
+        overrideClient: mockClient,
+        audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+      );
+
+      // Assert
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      // Check for format: wav in the audio input configuration
+      expect(requestString,
+          contains('format: ChatCompletionMessageInputAudioFormat.wav'));
+    });
+
+    test('generic provider uses passed audioFormat parameter', () {
+      // Arrange
+      final genericProvider = AiConfigInferenceProvider(
+        id: 'generic-provider',
+        name: 'Generic',
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act - explicitly pass wav audioFormat
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'some-model',
+        audioBase64: 'test-audio-base64',
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        provider: genericProvider,
+        overrideClient: mockClient,
+        audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+      );
+
+      // Assert - should use the passed audioFormat (wav)
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      expect(requestString,
+          contains('format: ChatCompletionMessageInputAudioFormat.wav'));
     });
   });
 }

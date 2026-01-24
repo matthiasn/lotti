@@ -1,31 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
-/// Dialog shown after creating a Gemini provider to offer FTUE setup.
-///
-/// Displays a preview of what will be created:
-/// - 3 models (Flash, Pro, Nano Banana Pro)
-/// - 9 prompts (optimized assignment: Pro for complex tasks, Flash for fast processing)
-/// - 1 category (Test Category Gemini Enabled)
-class FtueSetupDialog extends StatelessWidget {
-  const FtueSetupDialog({
+/// Configuration for FTUE setup preview display
+class FtueSetupConfig {
+  const FtueSetupConfig({
     required this.providerName,
-    super.key,
+    required this.modelCount,
+    required this.modelDescription,
+    required this.promptCount,
+    required this.promptDescription,
+    required this.categoryName,
   });
 
   final String providerName;
+  final int modelCount;
+  final String modelDescription;
+  final int promptCount;
+  final String promptDescription;
+  final String categoryName;
+
+  /// Default configuration for Gemini FTUE
+  static const gemini = FtueSetupConfig(
+    providerName: 'Gemini',
+    modelCount: 3,
+    modelDescription: 'Flash, Pro, and Nano Banana Pro (image)',
+    promptCount: 9,
+    promptDescription: 'Optimized: Pro for complex tasks, Flash for speed',
+    categoryName: 'Test Category Gemini Enabled',
+  );
+
+  /// Default configuration for OpenAI FTUE
+  static const openAi = FtueSetupConfig(
+    providerName: 'OpenAI',
+    modelCount: 4,
+    modelDescription:
+        'GPT-5.2 (reasoning), GPT-5 Nano (fast), Audio, and Image',
+    promptCount: 9,
+    promptDescription: 'Optimized: GPT-5.2 for reasoning, GPT-5 Nano for speed',
+    categoryName: 'Test Category OpenAI Enabled',
+  );
+
+  /// Get the appropriate config for a provider type
+  static FtueSetupConfig forProviderType(InferenceProviderType type) {
+    return switch (type) {
+      InferenceProviderType.gemini => gemini,
+      InferenceProviderType.openAi => openAi,
+      _ => gemini, // Default to Gemini for unsupported types
+    };
+  }
+}
+
+/// Dialog shown after creating a provider to offer FTUE setup.
+///
+/// Displays a preview of what will be created:
+/// - Models (varies by provider)
+/// - Prompts (optimized assignment based on model capabilities)
+/// - Category with auto-selection configured
+class FtueSetupDialog extends StatelessWidget {
+  const FtueSetupDialog({
+    required this.config,
+    super.key,
+  });
+
+  final FtueSetupConfig config;
 
   /// Shows the FTUE setup dialog and returns true if user confirms setup.
-  static Future<bool> show(BuildContext context,
-      {required String providerName}) async {
+  static Future<bool> show(
+    BuildContext context, {
+    required String providerName,
+    FtueSetupConfig? config,
+  }) async {
+    final effectiveConfig = config ??
+        (providerName == 'OpenAI'
+            ? FtueSetupConfig.openAi
+            : FtueSetupConfig.gemini);
+
     // useRootNavigator ensures dialog survives widget tree rebuilds (e.g., window resize)
     return await showDialog<bool>(
           context: context,
           // ignore: avoid_redundant_argument_values
           useRootNavigator: true,
-          builder: (context) => FtueSetupDialog(providerName: providerName),
+          builder: (context) => FtueSetupDialog(config: effectiveConfig),
         ) ??
         false;
   }
@@ -104,7 +162,7 @@ class FtueSetupDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Get started quickly with $providerName',
+            'Get started quickly with ${config.providerName}',
             style: context.textTheme.titleSmall?.copyWith(
               color: context.colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.w600,
@@ -150,8 +208,8 @@ class FtueSetupDialog extends StatelessWidget {
           _buildPreviewItem(
             context,
             icon: Icons.memory,
-            title: '3 Models',
-            subtitle: 'Flash, Pro, and Nano Banana Pro (image)',
+            title: '${config.modelCount} Models',
+            subtitle: config.modelDescription,
           ),
           const SizedBox(height: 8),
 
@@ -159,8 +217,8 @@ class FtueSetupDialog extends StatelessWidget {
           _buildPreviewItem(
             context,
             icon: Icons.chat_bubble_outline,
-            title: '9 Prompts',
-            subtitle: 'Optimized: Pro for complex tasks, Flash for speed',
+            title: '${config.promptCount} Prompts',
+            subtitle: config.promptDescription,
           ),
           const SizedBox(height: 8),
 
@@ -169,7 +227,7 @@ class FtueSetupDialog extends StatelessWidget {
             context,
             icon: Icons.folder_outlined,
             title: '1 Category',
-            subtitle: 'Test Category Gemini Enabled',
+            subtitle: config.categoryName,
           ),
         ],
       ),

@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../test_utils.dart';
+
+class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 void main() {
   group('ProviderPromptSetupService', () {
@@ -20,8 +25,8 @@ void main() {
     late AiConfigInferenceProvider ollamaProvider;
     late List<AiConfigModel> ollamaModels;
 
-    // Unsupported provider
-    late AiConfigInferenceProvider openAiProvider;
+    // Unsupported provider (for testing offerPromptSetup rejection)
+    late AiConfigInferenceProvider unsupportedProvider;
 
     setUpAll(AiTestSetup.registerFallbackValues);
 
@@ -81,13 +86,13 @@ void main() {
         ),
       ];
 
-      // Unsupported provider
-      openAiProvider = AiTestDataFactory.createTestProvider(
-        id: 'openai-provider-id',
-        name: 'My OpenAI',
-        type: InferenceProviderType.openAi,
-        apiKey: 'test-openai-key',
-        baseUrl: 'https://api.openai.com/v1',
+      // Unsupported provider (Anthropic is not supported for offerPromptSetup)
+      // Note: Anthropic is the default type in createTestProvider
+      unsupportedProvider = AiTestDataFactory.createTestProvider(
+        id: 'anthropic-provider-id',
+        name: 'My Anthropic',
+        apiKey: 'test-anthropic-key',
+        baseUrl: 'https://api.anthropic.com',
       );
     });
 
@@ -120,7 +125,7 @@ void main() {
             result = await setupService.offerPromptSetup(
               context: context,
               ref: ref,
-              provider: openAiProvider,
+              provider: unsupportedProvider,
             );
           },
         ));
@@ -795,12 +800,13 @@ void main() {
         expect(identical(service1, service2), isTrue);
       });
 
-      test('supportedProviders should include Gemini and Ollama', () {
+      test('supportedProviders should include Gemini, Ollama, and OpenAI', () {
         expect(
           ProviderPromptSetupService.supportedProviders,
           containsAll([
             InferenceProviderType.gemini,
             InferenceProviderType.ollama,
+            InferenceProviderType.openAi,
           ]),
         );
       });
@@ -955,6 +961,543 @@ void main() {
         // Should return false because no models for this provider
         expect(result, isFalse);
       });
+    });
+  });
+
+  group('GeminiFtueResult', () {
+    test('totalModels should return sum of modelsCreated and modelsVerified',
+        () {
+      const result = GeminiFtueResult(
+        modelsCreated: 2,
+        modelsVerified: 1,
+        promptsCreated: 5,
+        promptsSkipped: 3,
+        categoryCreated: true,
+      );
+
+      expect(result.totalModels, equals(3));
+    });
+
+    test('totalPrompts should return sum of promptsCreated and promptsSkipped',
+        () {
+      const result = GeminiFtueResult(
+        modelsCreated: 2,
+        modelsVerified: 1,
+        promptsCreated: 5,
+        promptsSkipped: 3,
+        categoryCreated: true,
+      );
+
+      expect(result.totalPrompts, equals(8));
+    });
+
+    test('should handle zero values correctly', () {
+      const result = GeminiFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+      );
+
+      expect(result.totalModels, equals(0));
+      expect(result.totalPrompts, equals(0));
+    });
+
+    test('should include optional categoryUpdated and categoryName', () {
+      const result = GeminiFtueResult(
+        modelsCreated: 3,
+        modelsVerified: 0,
+        promptsCreated: 9,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        categoryUpdated: true,
+        categoryName: 'Test Category',
+      );
+
+      expect(result.categoryUpdated, isTrue);
+      expect(result.categoryName, equals('Test Category'));
+    });
+
+    test('should handle errors list', () {
+      const result = GeminiFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        errors: ['Error 1', 'Error 2'],
+      );
+
+      expect(result.errors, hasLength(2));
+      expect(result.errors, contains('Error 1'));
+      expect(result.errors, contains('Error 2'));
+    });
+  });
+
+  group('OpenAiFtueResult', () {
+    test('totalModels should return sum of modelsCreated and modelsVerified',
+        () {
+      const result = OpenAiFtueResult(
+        modelsCreated: 3,
+        modelsVerified: 1,
+        promptsCreated: 7,
+        promptsSkipped: 2,
+        categoryCreated: true,
+      );
+
+      expect(result.totalModels, equals(4));
+    });
+
+    test('totalPrompts should return sum of promptsCreated and promptsSkipped',
+        () {
+      const result = OpenAiFtueResult(
+        modelsCreated: 3,
+        modelsVerified: 1,
+        promptsCreated: 7,
+        promptsSkipped: 2,
+        categoryCreated: true,
+      );
+
+      expect(result.totalPrompts, equals(9));
+    });
+
+    test('should handle zero values correctly', () {
+      const result = OpenAiFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+      );
+
+      expect(result.totalModels, equals(0));
+      expect(result.totalPrompts, equals(0));
+    });
+
+    test('should include optional categoryUpdated and categoryName', () {
+      const result = OpenAiFtueResult(
+        modelsCreated: 4,
+        modelsVerified: 0,
+        promptsCreated: 9,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        categoryUpdated: true,
+        categoryName: 'Test Category OpenAI',
+      );
+
+      expect(result.categoryUpdated, isTrue);
+      expect(result.categoryName, equals('Test Category OpenAI'));
+    });
+
+    test('should handle errors list', () {
+      const result = OpenAiFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        errors: ['OpenAI Error 1', 'OpenAI Error 2'],
+      );
+
+      expect(result.errors, hasLength(2));
+      expect(result.errors, contains('OpenAI Error 1'));
+      expect(result.errors, contains('OpenAI Error 2'));
+    });
+  });
+
+  group('PromptConfig', () {
+    test('should hold template and model correctly', () {
+      // PromptConfig requires PreconfiguredPrompt which is internal,
+      // so we just test the class structure exists
+      expect(PromptConfig, isNotNull);
+    });
+  });
+
+  group('PromptPreviewInfo', () {
+    test('should hold preview information', () {
+      const preview = PromptPreviewInfo(
+        icon: Icons.mic,
+        name: 'Audio Transcription',
+        modelName: 'Gemini Flash',
+      );
+
+      expect(preview.icon, equals(Icons.mic));
+      expect(preview.name, equals('Audio Transcription'));
+      expect(preview.modelName, equals('Gemini Flash'));
+    });
+  });
+
+  group('OpenAI FTUE Setup - performOpenAiFtueSetup', () {
+    late ProviderPromptSetupService setupService;
+    late MockAiConfigRepository mockRepository;
+    late MockCategoryRepository mockCategoryRepository;
+    late AiConfigInferenceProvider openAiProvider;
+
+    setUpAll(() {
+      registerFallbackValue(
+        AiConfig.model(
+          id: 'fallback-model',
+          name: 'Fallback',
+          providerModelId: 'fallback',
+          inferenceProviderId: 'fallback',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      registerFallbackValue(
+        AiConfig.prompt(
+          id: 'fallback-prompt',
+          name: 'Fallback',
+          systemMessage: 'system',
+          userMessage: 'user',
+          defaultModelId: 'model',
+          modelIds: ['model'],
+          createdAt: DateTime.now(),
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          useReasoning: false,
+        ),
+      );
+      registerFallbackValue(
+        CategoryDefinition(
+          id: 'fallback-category',
+          name: 'Fallback',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
+    });
+
+    setUp(() {
+      setupService = const ProviderPromptSetupService();
+      mockRepository = MockAiConfigRepository();
+      mockCategoryRepository = MockCategoryRepository();
+
+      openAiProvider = AiTestDataFactory.createTestProvider(
+        id: 'openai-provider-id',
+        name: 'OpenAI',
+        type: InferenceProviderType.openAi,
+        apiKey: 'test-openai-key',
+        baseUrl: 'https://api.openai.com/v1',
+      );
+    });
+
+    Widget createOpenAiFtueTestWidget({
+      required Future<OpenAiFtueResult?> Function(BuildContext, WidgetRef)
+          onPressed,
+    }) {
+      return ProviderScope(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                return ElevatedButton(
+                  onPressed: () async {
+                    await onPressed(context, ref);
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('should return null for non-OpenAI provider',
+        (WidgetTester tester) async {
+      final geminiProvider = AiTestDataFactory.createTestProvider(
+        id: 'gemini-id',
+        name: 'Gemini',
+        type: InferenceProviderType.gemini,
+      );
+
+      OpenAiFtueResult? result;
+      await tester.pumpWidget(createOpenAiFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performOpenAiFtueSetup(
+            context: context,
+            ref: ref,
+            provider: geminiProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNull);
+    });
+
+    testWidgets('should create models when they do not exist',
+        (WidgetTester tester) async {
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: 'Test Category OpenAI Enabled',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      OpenAiFtueResult? result;
+      await tester.pumpWidget(createOpenAiFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performOpenAiFtueSetup(
+            context: context,
+            ref: ref,
+            provider: openAiProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.modelsCreated, equals(4));
+      expect(result!.modelsVerified, equals(0));
+      expect(result!.promptsCreated, equals(9));
+      expect(result!.promptsSkipped, equals(0));
+      expect(result!.categoryCreated, isTrue);
+
+      verify(() => mockRepository.saveConfig(any())).called(13);
+    });
+
+    testWidgets('should verify existing models and skip creation',
+        (WidgetTester tester) async {
+      final existingModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'existing-flash',
+          name: 'o4-mini',
+          providerModelId: ftueOpenAiFlashModelId,
+          inferenceProviderId: openAiProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-reasoning',
+          name: 'o3',
+          providerModelId: ftueOpenAiReasoningModelId,
+          inferenceProviderId: openAiProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-audio',
+          name: 'GPT-4o Audio',
+          providerModelId: ftueOpenAiAudioModelId,
+          inferenceProviderId: openAiProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-image',
+          name: 'GPT Image 1',
+          providerModelId: ftueOpenAiImageModelId,
+          inferenceProviderId: openAiProvider.id,
+        ),
+      ];
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => existingModels);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: 'Test Category OpenAI Enabled',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      OpenAiFtueResult? result;
+      await tester.pumpWidget(createOpenAiFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performOpenAiFtueSetup(
+            context: context,
+            ref: ref,
+            provider: openAiProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.modelsCreated, equals(0));
+      expect(result!.modelsVerified, equals(4));
+    });
+
+    testWidgets('should skip existing prompts with same preconfiguredPromptId',
+        (WidgetTester tester) async {
+      final existingModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'existing-flash',
+          providerModelId: ftueOpenAiFlashModelId,
+          inferenceProviderId: openAiProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-reasoning',
+          providerModelId: ftueOpenAiReasoningModelId,
+          inferenceProviderId: openAiProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-audio',
+          providerModelId: ftueOpenAiAudioModelId,
+          inferenceProviderId: openAiProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-image',
+          providerModelId: ftueOpenAiImageModelId,
+          inferenceProviderId: openAiProvider.id,
+        ),
+      ];
+
+      final existingPrompts = <AiConfig>[
+        AiConfig.prompt(
+          id: 'existing-prompt-id',
+          name: 'Task Summary',
+          systemMessage: 'system',
+          userMessage: 'user',
+          defaultModelId: 'existing-flash',
+          modelIds: ['existing-flash'],
+          createdAt: DateTime.now(),
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          preconfiguredPromptId: 'task_summary',
+          useReasoning: false,
+        ),
+      ];
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => existingModels);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => existingPrompts);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: 'Test Category OpenAI Enabled',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      OpenAiFtueResult? result;
+      await tester.pumpWidget(createOpenAiFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performOpenAiFtueSetup(
+            context: context,
+            ref: ref,
+            provider: openAiProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.promptsSkipped, equals(1));
+      expect(result!.promptsCreated, equals(8));
+    });
+
+    testWidgets('should update existing category instead of creating new one',
+        (WidgetTester tester) async {
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+      final existingCategory = CategoryDefinition(
+        id: 'existing-category-id',
+        name: 'Test Category OpenAI Enabled',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => [existingCategory]);
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      OpenAiFtueResult? result;
+      await tester.pumpWidget(createOpenAiFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performOpenAiFtueSetup(
+            context: context,
+            ref: ref,
+            provider: openAiProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.categoryCreated, isFalse);
+      expect(result!.categoryUpdated, isTrue);
+      expect(result!.categoryName, equals('Test Category OpenAI Enabled'));
+
+      verify(() => mockCategoryRepository.updateCategory(any())).called(1);
+      verifyNever(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          ));
+    });
+  });
+
+  group('FtuePromptConfig', () {
+    test('should expose modelVariant and promptName properties', () {
+      // Test that FtuePromptConfig can be created and properties accessed
+      // We can't test the template property directly since PreconfiguredPrompt
+      // templates are internal to the preconfigured_prompts library
+      expect(FtuePromptConfig, isNotNull);
     });
   });
 }

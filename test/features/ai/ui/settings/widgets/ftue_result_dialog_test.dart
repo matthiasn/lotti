@@ -6,12 +6,13 @@ import 'package:lotti/features/ai/ui/settings/widgets/ftue_result_dialog.dart';
 void main() {
   group('FtueResultDialog', () {
     testWidgets('displays success state when no errors', (tester) async {
-      const result = GeminiFtueResult(
+      const result = FtueResultData(
         modelsCreated: 3,
         modelsVerified: 0,
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: true,
+        categoryUpdated: false,
         categoryName: 'Test Category Gemini Enabled',
       );
 
@@ -34,12 +35,13 @@ void main() {
     });
 
     testWidgets('displays warning state when errors present', (tester) async {
-      const result = GeminiFtueResult(
+      const result = FtueResultData(
         modelsCreated: 2,
         modelsVerified: 1,
         promptsCreated: 15,
         promptsSkipped: 3,
         categoryCreated: true,
+        categoryUpdated: false,
         categoryName: 'Test Category',
         errors: ['Failed to create prompt: Audio Transcription'],
       );
@@ -65,12 +67,13 @@ void main() {
 
     testWidgets('shows None when no models created or verified',
         (tester) async {
-      const result = GeminiFtueResult(
+      const result = FtueResultData(
         modelsCreated: 0,
         modelsVerified: 0,
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: true,
+        categoryUpdated: false,
         categoryName: 'Test Category',
       );
 
@@ -88,7 +91,7 @@ void main() {
 
     testWidgets('shows category as updated when categoryUpdated is true',
         (tester) async {
-      const result = GeminiFtueResult(
+      const result = FtueResultData(
         modelsCreated: 0,
         modelsVerified: 3,
         promptsCreated: 0,
@@ -112,12 +115,13 @@ void main() {
 
     testWidgets('does not show category section when not created',
         (tester) async {
-      const result = GeminiFtueResult(
+      const result = FtueResultData(
         modelsCreated: 3,
         modelsVerified: 0,
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: false,
+        categoryUpdated: false,
       );
 
       await tester.pumpWidget(

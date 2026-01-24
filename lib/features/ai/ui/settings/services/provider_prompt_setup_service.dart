@@ -60,6 +60,7 @@ class ProviderPromptSetupService {
   static const Set<InferenceProviderType> supportedProviders = {
     InferenceProviderType.gemini,
     InferenceProviderType.ollama,
+    InferenceProviderType.openAi,
   };
 
   /// Shows a dialog offering to set up default prompts for supported providers.
@@ -126,6 +127,7 @@ class ProviderPromptSetupService {
     return switch (type) {
       InferenceProviderType.gemini => 'Gemini',
       InferenceProviderType.ollama => 'Ollama',
+      InferenceProviderType.openAi => 'OpenAI',
       _ => 'AI Provider',
     };
   }
@@ -1079,4 +1081,482 @@ class _FtuePromptResult {
 
   /// All prompts that should be in the category (created + existing).
   final List<AiConfigPrompt> allPrompts;
+}
+
+// =============================================================================
+// OpenAI FTUE (First Time User Experience) Setup
+// =============================================================================
+
+/// Result of the OpenAI FTUE setup process.
+class OpenAiFtueResult {
+  const OpenAiFtueResult({
+    required this.modelsCreated,
+    required this.modelsVerified,
+    required this.promptsCreated,
+    required this.promptsSkipped,
+    required this.categoryCreated,
+    this.categoryUpdated = false,
+    this.categoryName,
+    this.errors = const [],
+  });
+
+  final int modelsCreated;
+  final int modelsVerified;
+  final int promptsCreated;
+  final int promptsSkipped;
+  final bool categoryCreated;
+  final bool categoryUpdated;
+  final String? categoryName;
+  final List<String> errors;
+
+  int get totalModels => modelsCreated + modelsVerified;
+  int get totalPrompts => promptsCreated + promptsSkipped;
+}
+
+/// Extension to add OpenAI FTUE functionality to ProviderPromptSetupService.
+extension OpenAiFtueSetup on ProviderPromptSetupService {
+  /// Performs comprehensive FTUE setup for OpenAI providers.
+  ///
+  /// This creates:
+  /// 1. Four models (Flash/GPT-5 Nano, Reasoning/GPT-5.2, Audio/GPT-4o Transcribe, Image/GPT Image 1.5)
+  /// 2. 9 prompts with appropriate model assignments
+  /// 3. A test category with all prompts enabled and auto-selection configured
+  ///
+  /// Returns [OpenAiFtueResult] with details of what was created.
+  Future<OpenAiFtueResult?> performOpenAiFtueSetup({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AiConfigInferenceProvider provider,
+  }) async {
+    // Only works with OpenAI providers
+    if (provider.inferenceProviderType != InferenceProviderType.openAi) {
+      return null;
+    }
+
+    final repository = ref.read(aiConfigRepositoryProvider);
+    final categoryRepository = ref.read(categoryRepositoryProvider);
+
+    // Step 1: Create/verify models
+    final modelResult = await _ensureOpenAiFtueModelsExist(
+      repository: repository,
+      providerId: provider.id,
+    );
+
+    if (modelResult == null) {
+      return const OpenAiFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        errors: ['Failed to find required OpenAI model configurations'],
+      );
+    }
+
+    // Step 2: Create prompts
+    final promptResult = await _createOpenAiFtuePrompts(
+      repository: repository,
+      flashModel: modelResult.flash,
+      reasoningModel: modelResult.reasoning,
+      audioModel: modelResult.audio,
+      imageModel: modelResult.image,
+    );
+
+    // Step 3: Create or update category with auto-selection
+    final (category, categoryWasCreated) =
+        await _createOrUpdateOpenAiFtueCategory(
+      categoryRepository: categoryRepository,
+      prompts: promptResult.allPrompts,
+      flashModelId: modelResult.flash.id,
+      reasoningModelId: modelResult.reasoning.id,
+      audioModelId: modelResult.audio.id,
+      imageModelId: modelResult.image.id,
+    );
+
+    return OpenAiFtueResult(
+      modelsCreated: modelResult.created.length,
+      modelsVerified: modelResult.verified.length,
+      promptsCreated: promptResult.created.length,
+      promptsSkipped: promptResult.skipped,
+      categoryCreated: categoryWasCreated,
+      categoryUpdated: !categoryWasCreated && category != null,
+      categoryName: category?.name,
+    );
+  }
+
+  /// Ensures the four FTUE models exist for the given OpenAI provider.
+  Future<_OpenAiFtueModelResult?> _ensureOpenAiFtueModelsExist({
+    required AiConfigRepository repository,
+    required String providerId,
+  }) async {
+    final knownModels = getOpenAiFtueKnownModels();
+    if (knownModels == null) {
+      return null;
+    }
+
+    final allModels = await repository.getConfigsByType(AiConfigType.model);
+    final providerModels = allModels
+        .whereType<AiConfigModel>()
+        .where((m) => m.inferenceProviderId == providerId)
+        .toList();
+
+    final created = <AiConfigModel>[];
+    final verified = <AiConfigModel>[];
+    const uuid = Uuid();
+
+    // Process each model type
+    final modelConfigs = [
+      (known: knownModels.flash, id: ftueOpenAiFlashModelId),
+      (known: knownModels.reasoning, id: ftueOpenAiReasoningModelId),
+      (known: knownModels.audio, id: ftueOpenAiAudioModelId),
+      (known: knownModels.image, id: ftueOpenAiImageModelId),
+    ];
+
+    AiConfigModel? flashModel;
+    AiConfigModel? reasoningModel;
+    AiConfigModel? audioModel;
+    AiConfigModel? imageModel;
+
+    for (final config in modelConfigs) {
+      // Check if model with same providerModelId already exists
+      final existing = providerModels.firstWhereOrNull(
+        (m) => m.providerModelId == config.id,
+      );
+
+      AiConfigModel model;
+      if (existing != null) {
+        verified.add(existing);
+        model = existing;
+      } else {
+        // Create new model
+        model = config.known.toAiConfigModel(
+          id: uuid.v4(),
+          inferenceProviderId: providerId,
+        );
+        await repository.saveConfig(model);
+        created.add(model);
+      }
+
+      // Assign to appropriate variable
+      if (config.id == ftueOpenAiFlashModelId) {
+        flashModel = model;
+      } else if (config.id == ftueOpenAiReasoningModelId) {
+        reasoningModel = model;
+      } else if (config.id == ftueOpenAiAudioModelId) {
+        audioModel = model;
+      } else if (config.id == ftueOpenAiImageModelId) {
+        imageModel = model;
+      }
+    }
+
+    if (flashModel == null ||
+        reasoningModel == null ||
+        audioModel == null ||
+        imageModel == null) {
+      return null;
+    }
+
+    return _OpenAiFtueModelResult(
+      flash: flashModel,
+      reasoning: reasoningModel,
+      audio: audioModel,
+      image: imageModel,
+      created: created,
+      verified: verified,
+    );
+  }
+
+  /// Creates all FTUE prompts for OpenAI with idempotency checks.
+  Future<_FtuePromptResult> _createOpenAiFtuePrompts({
+    required AiConfigRepository repository,
+    required AiConfigModel flashModel,
+    required AiConfigModel reasoningModel,
+    required AiConfigModel audioModel,
+    required AiConfigModel imageModel,
+  }) async {
+    final created = <AiConfigPrompt>[];
+    final allPrompts = <AiConfigPrompt>[];
+    var skipped = 0;
+    const uuid = Uuid();
+
+    // Get existing prompts to check for duplicates
+    final existingPrompts =
+        await repository.getConfigsByType(AiConfigType.prompt);
+    final existingPromptsMap = <String, AiConfigPrompt>{};
+    for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
+      final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
+      existingPromptsMap[key] = p;
+    }
+
+    // Define all prompt configurations for OpenAI
+    final promptConfigs = _getOpenAiFtuePromptConfigs();
+
+    for (final config in promptConfigs) {
+      final model = switch (config.modelVariant) {
+        'flash' => flashModel,
+        'reasoning' => reasoningModel,
+        'audio' => audioModel,
+        'image' => imageModel,
+        _ => flashModel,
+      };
+
+      // Check for existing prompt with same preconfiguredPromptId + modelId
+      final key = '${config.template.id}_${model.id}';
+      final existingPrompt = existingPromptsMap[key];
+      if (existingPrompt != null) {
+        allPrompts.add(existingPrompt);
+        skipped++;
+        continue;
+      }
+
+      // OpenAI GPT-5 models (GPT-5.2, GPT-5 Nano) support reasoning mode
+      final useReasoning =
+          config.modelVariant == 'reasoning' || config.modelVariant == 'flash';
+
+      final prompt = AiConfig.prompt(
+        id: uuid.v4(),
+        name: config.promptName,
+        systemMessage: config.template.systemMessage,
+        userMessage: config.template.userMessage,
+        defaultModelId: model.id,
+        modelIds: [model.id],
+        createdAt: DateTime.now(),
+        useReasoning: useReasoning,
+        requiredInputData: config.template.requiredInputData,
+        aiResponseType: config.template.aiResponseType,
+        description: config.template.description,
+        trackPreconfigured: true,
+        preconfiguredPromptId: config.template.id,
+        defaultVariables: config.template.defaultVariables,
+      );
+
+      await repository.saveConfig(prompt);
+      final createdPrompt = prompt as AiConfigPrompt;
+      created.add(createdPrompt);
+      allPrompts.add(createdPrompt);
+    }
+
+    return _FtuePromptResult(
+      created: created,
+      skipped: skipped,
+      allPrompts: allPrompts,
+    );
+  }
+
+  /// Gets all prompt configurations for OpenAI FTUE.
+  ///
+  /// Model assignments:
+  /// - GPT-5.2 (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
+  /// - GPT-5 Nano (Flash): Task Summary, Image Analysis (fast processing)
+  /// - GPT-4o Transcribe: Audio transcription tasks
+  /// - GPT Image 1.5: Image generation (cover art output)
+  List<FtuePromptConfig> _getOpenAiFtuePromptConfigs() {
+    return const [
+      // Audio Transcription -> Audio model (dedicated transcription)
+      FtuePromptConfig(
+        template: audioTranscriptionPrompt,
+        modelVariant: 'audio',
+        promptName: 'Audio Transcription OpenAI',
+      ),
+
+      // Audio Transcription with Task Context -> Audio model
+      FtuePromptConfig(
+        template: audioTranscriptionWithTaskContextPrompt,
+        modelVariant: 'audio',
+        promptName: 'Audio Transcription (Task Context) OpenAI',
+      ),
+
+      // Task Summary -> Flash (fast processing)
+      FtuePromptConfig(
+        template: taskSummaryPrompt,
+        modelVariant: 'flash',
+        promptName: 'Task Summary OpenAI GPT-5 Nano',
+      ),
+
+      // Checklist Updates -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: checklistUpdatesPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Checklist OpenAI GPT-5.2',
+      ),
+
+      // Image Analysis -> Flash (fast processing)
+      FtuePromptConfig(
+        template: imageAnalysisPrompt,
+        modelVariant: 'flash',
+        promptName: 'Image Analysis OpenAI GPT-5 Nano',
+      ),
+
+      // Image Analysis in Task Context -> Flash (fast processing)
+      FtuePromptConfig(
+        template: imageAnalysisInTaskContextPrompt,
+        modelVariant: 'flash',
+        promptName: 'Image Analysis (Task Context) OpenAI GPT-5 Nano',
+      ),
+
+      // Generate Coding Prompt -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: promptGenerationPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Coding Prompt OpenAI GPT-5.2',
+      ),
+
+      // Generate Image Prompt -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: imagePromptGenerationPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Image Prompt OpenAI GPT-5.2',
+      ),
+
+      // Cover Art Generation -> Image model (image generation)
+      FtuePromptConfig(
+        template: coverArtGenerationPrompt,
+        modelVariant: 'image',
+        promptName: 'Cover Art OpenAI GPT Image 1.5',
+      ),
+    ];
+  }
+
+  /// Creates or updates the FTUE test category for OpenAI.
+  Future<(CategoryDefinition?, bool)> _createOrUpdateOpenAiFtueCategory({
+    required CategoryRepository categoryRepository,
+    required List<AiConfigPrompt> prompts,
+    required String flashModelId,
+    required String reasoningModelId,
+    required String audioModelId,
+    required String imageModelId,
+  }) async {
+    const categoryName = 'Test Category OpenAI Enabled';
+
+    // Build allowedPromptIds from all created prompts
+    final allowedPromptIds = prompts.map((p) => p.id).toList();
+
+    // Build automaticPrompts map with auto-selection logic
+    final automaticPrompts = _buildOpenAiFtueAutomaticPrompts(
+      prompts,
+      flashModelId: flashModelId,
+      reasoningModelId: reasoningModelId,
+      audioModelId: audioModelId,
+      imageModelId: imageModelId,
+    );
+
+    // Check if category already exists
+    final allCategories = await categoryRepository.getAllCategories();
+    final existingCategory = allCategories
+        .where((c) => c.name == categoryName && c.deletedAt == null)
+        .firstOrNull;
+
+    if (existingCategory != null) {
+      // Update existing category with new prompts
+      final updatedCategory = existingCategory.copyWith(
+        allowedPromptIds: allowedPromptIds,
+        automaticPrompts: automaticPrompts,
+      );
+
+      await categoryRepository.updateCategory(updatedCategory);
+      return (updatedCategory, false);
+    }
+
+    // Create new category
+    final category = await categoryRepository.createCategory(
+      name: categoryName,
+      color: '#10A37F', // OpenAI Green
+    );
+
+    // Update with prompts configuration
+    final updatedCategory = category.copyWith(
+      allowedPromptIds: allowedPromptIds,
+      automaticPrompts: automaticPrompts,
+    );
+
+    await categoryRepository.updateCategory(updatedCategory);
+
+    return (updatedCategory, true);
+  }
+
+  /// Builds the automaticPrompts map for OpenAI FTUE auto-selection.
+  Map<AiResponseType, List<String>> _buildOpenAiFtueAutomaticPrompts(
+    List<AiConfigPrompt> prompts, {
+    required String flashModelId,
+    required String reasoningModelId,
+    required String audioModelId,
+    required String imageModelId,
+  }) {
+    final map = <AiResponseType, List<String>>{};
+
+    String? findPromptId(String preconfiguredId, String modelId) {
+      return prompts
+          .firstWhereOrNull(
+            (p) =>
+                p.preconfiguredPromptId == preconfiguredId &&
+                p.defaultModelId == modelId,
+          )
+          ?.id;
+    }
+
+    // Audio Transcription -> Audio model
+    final audioTranscript = findPromptId('audio_transcription', audioModelId);
+    if (audioTranscript != null) {
+      map[AiResponseType.audioTranscription] = [audioTranscript];
+    }
+
+    // Image Analysis (task context) -> Flash (fast processing)
+    final imageAnalysis =
+        findPromptId('image_analysis_task_context', flashModelId);
+    if (imageAnalysis != null) {
+      map[AiResponseType.imageAnalysis] = [imageAnalysis];
+    }
+
+    // Task Summary -> Flash (fast processing)
+    final taskSummary = findPromptId('task_summary', flashModelId);
+    if (taskSummary != null) {
+      map[AiResponseType.taskSummary] = [taskSummary];
+    }
+
+    // Checklist Updates -> Reasoning (complex reasoning needed)
+    final checklist = findPromptId('checklist_updates', reasoningModelId);
+    if (checklist != null) {
+      map[AiResponseType.checklistUpdates] = [checklist];
+    }
+
+    // Prompt Generation -> Reasoning (complex reasoning needed)
+    final promptGen = findPromptId('prompt_generation', reasoningModelId);
+    if (promptGen != null) {
+      map[AiResponseType.promptGeneration] = [promptGen];
+    }
+
+    // Image Prompt Generation -> Reasoning (complex reasoning needed)
+    final imagePrompt =
+        findPromptId('image_prompt_generation', reasoningModelId);
+    if (imagePrompt != null) {
+      map[AiResponseType.imagePromptGeneration] = [imagePrompt];
+    }
+
+    // Image Generation -> Image model
+    final imageGen = findPromptId('cover_art_generation', imageModelId);
+    if (imageGen != null) {
+      map[AiResponseType.imageGeneration] = [imageGen];
+    }
+
+    return map;
+  }
+}
+
+/// Internal result class for OpenAI model creation.
+class _OpenAiFtueModelResult {
+  const _OpenAiFtueModelResult({
+    required this.flash,
+    required this.reasoning,
+    required this.audio,
+    required this.image,
+    required this.created,
+    required this.verified,
+  });
+
+  final AiConfigModel flash;
+  final AiConfigModel reasoning;
+  final AiConfigModel audio;
+  final AiConfigModel image;
+  final List<AiConfigModel> created;
+  final List<AiConfigModel> verified;
 }

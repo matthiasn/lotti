@@ -9,7 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
+import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -28,8 +28,8 @@ import '../mocks/sync_config_test_mocks.dart';
 
 class _MockUserActivityService extends Mock implements UserActivityService {}
 
-/// Mock Gemini setup prompt service that always returns false (don't show prompt)
-class _MockGeminiSetupPromptService extends GeminiSetupPromptService {
+/// Mock AI setup prompt service that always returns false (don't show prompt)
+class _MockAiSetupPromptService extends AiSetupPromptService {
   @override
   Future<bool> build() async => false;
 }
@@ -212,8 +212,8 @@ void main() {
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
           // Prevent Gemini setup prompt from triggering during tests
-          geminiSetupPromptServiceProvider
-              .overrideWith(_MockGeminiSetupPromptService.new),
+          aiSetupPromptServiceProvider
+              .overrideWith(_MockAiSetupPromptService.new),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -261,8 +261,8 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedIn),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          geminiSetupPromptServiceProvider
-              .overrideWith(_MockGeminiSetupPromptService.new),
+          aiSetupPromptServiceProvider
+              .overrideWith(_MockAiSetupPromptService.new),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -327,8 +327,8 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedOut),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          geminiSetupPromptServiceProvider
-              .overrideWith(_MockGeminiSetupPromptService.new),
+          aiSetupPromptServiceProvider
+              .overrideWith(_MockAiSetupPromptService.new),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -404,8 +404,8 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedOut),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          geminiSetupPromptServiceProvider
-              .overrideWith(_MockGeminiSetupPromptService.new),
+          aiSetupPromptServiceProvider
+              .overrideWith(_MockAiSetupPromptService.new),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -434,8 +434,8 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedIn),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          geminiSetupPromptServiceProvider
-              .overrideWith(_MockGeminiSetupPromptService.new),
+          aiSetupPromptServiceProvider
+              .overrideWith(_MockAiSetupPromptService.new),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -459,8 +459,8 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedOut),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          geminiSetupPromptServiceProvider
-              .overrideWith(_MockGeminiSetupPromptService.new),
+          aiSetupPromptServiceProvider
+              .overrideWith(_MockAiSetupPromptService.new),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,

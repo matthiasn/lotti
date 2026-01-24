@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/providers/ollama_inference_repository_provider
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/gemini_config.dart';
@@ -23,13 +24,16 @@ class CloudInferenceRepository {
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
         _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
-        _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient);
+        _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
+        _openAiTranscriptionRepository =
+            OpenAiTranscriptionRepository(httpClient: httpClient);
 
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
   final WhisperInferenceRepository _whisperRepository;
   final VoxtralInferenceRepository _voxtralRepository;
+  final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
 
   /// Helper method to create common request parameters
   CreateChatCompletionRequest _createBaseRequest({
@@ -97,7 +101,7 @@ class CloudInferenceRepository {
   Stream<CreateChatCompletionStreamResponse> generate(
     String prompt, {
     required String model,
-    required double temperature,
+    required double? temperature,
     required String baseUrl,
     required String apiKey,
     String? systemMessage,
@@ -121,7 +125,7 @@ class CloudInferenceRepository {
       return _ollamaRepository.generateText(
         prompt: prompt,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         systemMessage: systemMessage,
         maxCompletionTokens: maxCompletionTokens,
         provider: provider,
@@ -144,7 +148,7 @@ class CloudInferenceRepository {
       return _geminiRepository.generateText(
         prompt: prompt,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         systemMessage: systemMessage,
         maxCompletionTokens: maxCompletionTokens,
         provider: provider,
@@ -190,7 +194,7 @@ class CloudInferenceRepository {
     required String baseUrl,
     required String apiKey,
     required String model,
-    required double temperature,
+    required double? temperature,
     required List<String> images,
     int? maxCompletionTokens,
     OpenAIClient? overrideClient,
@@ -208,7 +212,7 @@ class CloudInferenceRepository {
       return _ollamaRepository.generateWithImages(
         prompt: prompt,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         images: images,
         maxCompletionTokens: maxCompletionTokens,
         provider: provider!,
@@ -269,6 +273,8 @@ class CloudInferenceRepository {
   ///   provider: The inference provider configuration
   ///   maxCompletionTokens: Maximum tokens for completion
   ///   overrideClient: Optional client override for testing
+  ///   audioFormat: The actual format of the audio data (wav or mp3).
+  ///     Required for Mistral/OpenAI chat completions. Defaults to mp3.
   ///
   /// Returns:
   ///   Stream of chat completion responses
@@ -283,6 +289,8 @@ class CloudInferenceRepository {
     OpenAIClient? overrideClient,
     List<ChatCompletionTool>? tools,
     bool stream = true,
+    ChatCompletionMessageInputAudioFormat audioFormat =
+        ChatCompletionMessageInputAudioFormat.mp3,
   }) {
     final client = overrideClient ??
         OpenAIClient(
@@ -313,7 +321,28 @@ class CloudInferenceRepository {
       );
     }
 
-    // For other providers, use the standard OpenAI-compatible format
+    // For OpenAI transcription models (gpt-4o-transcribe), use the dedicated
+    // transcription repository. These models require the /v1/audio/transcriptions
+    // endpoint, not chat completions. The app records in M4A format which OpenAI
+    // accepts directly - no conversion needed.
+    if (provider.inferenceProviderType == InferenceProviderType.openAi &&
+        OpenAiTranscriptionRepository.isOpenAiTranscriptionModel(model)) {
+      developer.log(
+        'Using OpenAI transcription endpoint for model: $model',
+        name: 'CloudInferenceRepository',
+      );
+      return _openAiTranscriptionRepository.transcribeAudio(
+        model: model,
+        audioBase64: audioBase64,
+        apiKey: apiKey,
+        prompt: prompt,
+      );
+    }
+
+    // For all other providers (OpenAI chat models, Gemini, etc.), use the standard
+    // OpenAI-compatible chat completions format with audio content parts.
+    // Note: Audio must be converted to WAV format before calling this method
+    // (handled by UnifiedAiInferenceRepository._prepareAudio).
     if (tools != null && tools.isNotEmpty) {
       developer.log(
         'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
@@ -321,13 +350,7 @@ class CloudInferenceRepository {
       );
     }
 
-    // Use WAV format for Mistral (audio is converted to WAV before sending)
-    // Use MP3 format for other providers
-    final audioFormat =
-        provider.inferenceProviderType == InferenceProviderType.mistral
-            ? ChatCompletionMessageInputAudioFormat.wav
-            : ChatCompletionMessageInputAudioFormat.mp3;
-
+    // Use the audio format as prepared by _prepareAudio (wav or mp3)
     return client
         .createChatCompletionStream(
           request: _createBaseRequest(
@@ -373,7 +396,7 @@ class CloudInferenceRepository {
   Stream<CreateChatCompletionStreamResponse> generateWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
-    required double temperature,
+    required double? temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
@@ -411,7 +434,7 @@ class CloudInferenceRepository {
       return _geminiRepository.generateTextWithMessages(
         messages: messages,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         thinkingConfig: finalThinking,
         provider: provider,
         thoughtSignatures: thoughtSignatures,
@@ -428,7 +451,7 @@ class CloudInferenceRepository {
       return _ollamaRepository.generateTextWithMessages(
         messages: messages,
         model: model,
-        temperature: temperature,
+        temperature: temperature ?? 0.7, // Default if not specified
         provider: provider,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,

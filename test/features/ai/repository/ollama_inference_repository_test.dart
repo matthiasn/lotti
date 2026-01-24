@@ -1289,6 +1289,208 @@ void main() {
       final toolCall = responses.first.choices?.first.delta?.toolCalls?.first;
       expect(toolCall?.id, startsWith('tool-'));
     });
+
+    test('should throw exception on non-200 status with generic error',
+        () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(500);
+      when(() => mockResponse.stream).thenAnswer((_) =>
+          http.ByteStream(Stream.value(utf8.encode('Internal server error'))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+      );
+
+      expect(
+        stream.toList(),
+        throwsA(predicate((e) =>
+            e is Exception && e.toString().contains('failed with status 500'))),
+      );
+    });
+
+    test('should handle malformed JSON in stream gracefully', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      // Return malformed JSON followed by valid JSON
+      when(() => mockResponse.stream)
+          .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
+                utf8.encode('not valid json\n'),
+                utf8.encode('{"message":{"content":"test"},"done":true}\n'),
+              ])));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+      );
+
+      // Should still produce responses despite malformed JSON
+      final responses = await stream.toList();
+      expect(responses, isNotEmpty);
+    });
+
+    test('should handle empty stream lines', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      // Return empty lines mixed with valid JSON
+      when(() => mockResponse.stream)
+          .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
+                utf8.encode('\n'),
+                utf8.encode('   \n'),
+                utf8.encode('{"message":{"content":"test"},"done":true}\n'),
+              ])));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+      );
+
+      final responses = await stream.toList();
+      expect(responses, hasLength(1));
+    });
+
+    test('should handle response with thinking content', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream)
+          .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
+                // Thinking content should be skipped
+                utf8.encode(
+                    '{"message":{"thinking":"processing..."},"done":false}\n'),
+                utf8.encode(
+                    '{"message":{"content":"final response"},"done":true}\n'),
+              ])));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final stream = repository.generateTextWithMessages(
+        messages: messages,
+        model: 'test-model',
+        temperature: 0.7,
+        provider: provider,
+      );
+
+      final responses = await stream.toList();
+      // Should have 1 response (thinking skipped, final response included)
+      expect(responses, hasLength(1));
+    });
+  });
+
+  group('installModel error handling', () {
+    test('should handle malformed progress JSON during install', () async {
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream)
+          .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
+                utf8.encode('not valid json\n'),
+                utf8.encode('{"status":"success"}\n'),
+              ])));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      final progressList = <OllamaPullProgress>[];
+
+      await repository
+          .installModel('llama2', 'http://localhost:11434')
+          .forEach(progressList.add);
+
+      // Should not throw, handles malformed JSON gracefully
+      expect(progressList, isNotEmpty);
+    });
+
+    test('should handle HTTP error during model install', () async {
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(500);
+      when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(Stream.value(utf8.encode('Server error'))));
+
+      when(() => mockHttpClient.send(any()))
+          .thenAnswer((_) async => mockResponse);
+
+      expect(
+        () => repository
+            .installModel('llama2', 'http://localhost:11434')
+            .toList(),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 }
 

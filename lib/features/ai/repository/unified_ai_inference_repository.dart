@@ -57,6 +57,17 @@ part 'unified_ai_inference_repository.g.dart';
 /// Minimum title length for AI suggestion to be applied
 const kMinExistingTitleLengthForAiSuggestion = 5;
 
+/// Result of audio preparation containing base64 data and format
+class PreparedAudio {
+  const PreparedAudio({
+    required this.base64,
+    required this.format,
+  });
+
+  final String base64;
+  final ChatCompletionMessageInputAudioFormat format;
+}
+
 /// Repository for unified AI inference handling
 /// This replaces the specialized controllers and provides a generic way
 /// to run any configured AI prompt
@@ -289,7 +300,7 @@ class UnifiedAiInferenceRepository {
 
       // Prepare any additional data (images, audio)
       final images = await _prepareImages(promptConfig, entity);
-      final audioBase64 = await _prepareAudio(promptConfig, entity, provider);
+      final preparedAudio = await _prepareAudio(promptConfig, entity, provider);
 
       // Run the inference
       final buffer = StringBuffer();
@@ -351,13 +362,20 @@ class UnifiedAiInferenceRepository {
       // Start timing the inference
       final stopwatch = Stopwatch()..start();
 
+      // OpenAI reasoning models with reasoning_effort set only accept temperature=1.0.
+      // Other models (including non-reasoning OpenAI models like GPT-4/GPT-4o)
+      // support custom temperature values.
+      final useReasoningEffort =
+          model.isReasoningModel && promptConfig.useReasoning;
+      final temperature = useReasoningEffort ? 1.0 : 0.6;
+
       final stream = await _runCloudInference(
         prompt: prompt,
         model: model,
         provider: provider,
         images: images,
-        audioBase64: audioBase64,
-        temperature: 0.6,
+        preparedAudio: preparedAudio,
+        temperature: temperature,
         systemMessage: systemMessage,
         entity: entity,
         promptConfig: promptConfig,
@@ -439,6 +457,7 @@ class UnifiedAiInferenceRepository {
         toolCalls: toolCalls,
         usage: usage,
         durationMs: durationMs,
+        temperature: temperature,
       );
 
       onStatusChange(InferenceStatus.idle);
@@ -485,7 +504,7 @@ class UnifiedAiInferenceRepository {
   ///
   /// For Mistral cloud provider, M4A files are converted to WAV format
   /// since the Mistral API only accepts WAV or MP3.
-  Future<String?> _prepareAudio(
+  Future<PreparedAudio?> _prepareAudio(
     AiConfigPrompt promptConfig,
     JournalEntity entity,
     AiConfigInferenceProvider provider,
@@ -504,11 +523,16 @@ class UnifiedAiInferenceRepository {
 
     final fullPath = await AudioUtils.getFullAudioPath(entity);
 
-    // For Mistral cloud, convert M4A to WAV
-    if (provider.inferenceProviderType == InferenceProviderType.mistral &&
-        AudioFormatConverterService.isM4aFile(fullPath)) {
+    // Only Mistral specifically requires WAV format - convert M4A to WAV for Mistral.
+    // Other providers (OpenAI, Gemini) accept M4A bytes labeled as mp3.
+    final isM4aFile = AudioFormatConverterService.isM4aFile(fullPath);
+    final needsWavConversion =
+        provider.inferenceProviderType == InferenceProviderType.mistral &&
+            isM4aFile;
+
+    if (needsWavConversion) {
       developer.log(
-        'Converting M4A to WAV for Mistral cloud',
+        'Converting M4A to WAV for ${provider.inferenceProviderType}',
         name: 'UnifiedAiInferenceRepository',
       );
 
@@ -522,7 +546,10 @@ class UnifiedAiInferenceRepository {
       try {
         final wavFile = File(result.outputPath!);
         final bytes = await wavFile.readAsBytes();
-        return base64Encode(bytes);
+        return PreparedAudio(
+          base64: base64Encode(bytes),
+          format: ChatCompletionMessageInputAudioFormat.wav,
+        );
       } finally {
         // Clean up temp WAV file
         await audioConverter.deleteConvertedFile(result.outputPath);
@@ -532,7 +559,13 @@ class UnifiedAiInferenceRepository {
     // No conversion needed - read original file
     final file = File(fullPath);
     final bytes = await file.readAsBytes();
-    return base64Encode(bytes);
+
+    // Label as mp3 (most providers accept M4A bytes labeled as mp3)
+    // Actual MP3 files are also labeled as mp3
+    return PreparedAudio(
+      base64: base64Encode(bytes),
+      format: ChatCompletionMessageInputAudioFormat.mp3,
+    );
   }
 
   /// Run cloud inference
@@ -542,15 +575,15 @@ class UnifiedAiInferenceRepository {
     required AiConfigModel model,
     required AiConfigInferenceProvider provider,
     required List<String> images,
-    required String? audioBase64,
-    required double temperature,
+    required PreparedAudio? preparedAudio,
+    required double? temperature,
     required JournalEntity entity,
     required AiConfigPrompt promptConfig,
     required bool isAiStreamingEnabled,
   }) async {
     final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
 
-    if (audioBase64 != null) {
+    if (preparedAudio != null) {
       // No function calling tools for audio transcription tasks
       // This prevents models from getting confused about their capabilities
       developer.log(
@@ -561,12 +594,13 @@ class UnifiedAiInferenceRepository {
       return cloudRepo.generateWithAudio(
         prompt,
         model: model.providerModelId,
-        audioBase64: audioBase64,
+        audioBase64: preparedAudio.base64,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
         provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
         stream: isAiStreamingEnabled,
+        audioFormat: preparedAudio.format,
       );
     } else if (images.isNotEmpty) {
       // No function calling tools for image analysis tasks
@@ -690,6 +724,7 @@ class UnifiedAiInferenceRepository {
     List<ChatCompletionMessageToolCall>? toolCalls,
     CompletionUsage? usage,
     int? durationMs,
+    double? temperature,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
@@ -741,9 +776,10 @@ class UnifiedAiInferenceRepository {
     }
 
     // Create AI response data
+    // Note: temperature is computed earlier based on model.isReasoningModel
     final data = AiResponseData(
       model: model.providerModelId,
-      temperature: 0.6,
+      temperature: temperature,
       systemMessage: promptConfig.systemMessage,
       prompt: prompt,
       promptId: promptConfig.id,
@@ -1359,6 +1395,16 @@ class UnifiedAiInferenceRepository {
           final parsed = parseLabelCallArgs(toolCall.function.arguments);
           final requested =
               LinkedHashSet<String>.from(parsed.selectedIds).toList();
+
+          // Defensive check: warn if AI called without valid labels
+          if (requested.isEmpty) {
+            developer.log(
+              'assign_task_labels called without valid labels or labelIds - '
+              'raw args: ${toolCall.function.arguments}',
+              name: 'UnifiedAiInferenceRepository',
+            );
+            continue;
+          }
 
           // Phase 3: filter suppressed IDs for this task (hard filter)
           final suppressedSet =
