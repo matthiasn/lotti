@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.822] - 2026-01-24
+### Fixed
+- Task Time Tracking: Audio recording duration no longer counts toward time spent
+  - Prevents double-counting when recording meetings (e.g., 1-hour recording + 1-hour time entry)
+  - Only actual logged work entries contribute to task progress calculations
+
+### Changed
+- Added missing translations to German, Spanish, French, and Romanian localization files
+
 ## [0.9.821] - 2026-01-24
 ### Added
 - OpenAI Onboarding FTUE: First-time user experience for OpenAI providers with one-click setup
