@@ -54,6 +54,13 @@ class TimeBudgetList extends ConsumerWidget {
                   ),
                   const Spacer(),
                   _BudgetsSummaryChip(budgets: budgets),
+                  const SizedBox(width: AppTheme.spacingSmall),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: () => AddBudgetSheet.show(context, selectedDate),
+                    tooltip: context.messages.dailyOsAddBudget,
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ],
               ),
             ),

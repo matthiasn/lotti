@@ -27,7 +27,8 @@ abstract class DayPlanRepository {
   /// Saves a day plan.
   ///
   /// Creates or updates the plan using the existing persistence logic.
-  Future<void> save(DayPlanEntry plan);
+  /// Returns the saved plan with updated metadata (e.g., new vector clock).
+  Future<DayPlanEntry> save(DayPlanEntry plan);
 
   /// Gets all day plans within a date range.
   Future<List<DayPlanEntry>> getDayPlansInRange({
@@ -93,8 +94,21 @@ class DayPlanRepositoryImpl implements DayPlanRepository {
   }
 
   @override
-  Future<void> save(DayPlanEntry plan) async {
-    await _persistenceLogic.createDbEntity(plan);
+  Future<DayPlanEntry> save(DayPlanEntry plan) async {
+    // Check if this is an update or a new create
+    final existing = await _journalDb.getDayPlanById(plan.meta.id);
+
+    if (existing == null) {
+      // New plan - use createDbEntity
+      await _persistenceLogic.createDbEntity(plan);
+      return plan;
+    } else {
+      // Update existing - use updateMetadata + updateDbEntity
+      final updatedMeta = await _persistenceLogic.updateMetadata(plan.meta);
+      final updatedPlan = plan.copyWith(meta: updatedMeta);
+      await _persistenceLogic.updateDbEntity(updatedPlan);
+      return updatedPlan;
+    }
   }
 
   @override

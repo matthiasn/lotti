@@ -40,6 +40,7 @@ void main() {
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
+      pinnedTasks: const [],
     );
   }
 
@@ -179,6 +180,7 @@ void main() {
             recordedDuration: Duration.zero,
             status: BudgetProgressStatus.underBudget,
             contributingEntries: [],
+            pinnedTasks: [],
           ),
         ),
       );

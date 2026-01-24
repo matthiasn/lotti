@@ -52,8 +52,8 @@ class DayPlanController extends _$DayPlanController {
 
   /// Updates the day plan with new data.
   Future<void> updatePlan(DayPlanEntry updatedPlan) async {
-    await _repository.save(updatedPlan);
-    state = AsyncData(updatedPlan);
+    final savedPlan = await _repository.save(updatedPlan);
+    state = AsyncData(savedPlan);
   }
 
   /// Agrees to the current plan.

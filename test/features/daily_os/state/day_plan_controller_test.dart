@@ -54,6 +54,15 @@ void main() {
       const AsyncValue<JournalEntity?>.loading(),
     );
     registerFallbackValue(createTestPlan());
+    registerFallbackValue(
+      Metadata(
+        id: 'test',
+        createdAt: DateTime(2026, 1, 15),
+        updatedAt: DateTime(2026, 1, 15),
+        dateFrom: DateTime(2026, 1, 15),
+        dateTo: DateTime(2026, 1, 16),
+      ),
+    );
 
     getIt.allowReassignment = true;
   });
@@ -68,6 +77,16 @@ void main() {
         .thenAnswer((_) => updateStreamController.stream);
 
     when(() => mockPersistenceLogic.createDbEntity(any()))
+        .thenAnswer((_) async => true);
+
+    when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
+      (invocation) async {
+        final meta = invocation.positionalArguments.first as Metadata;
+        return meta.copyWith(updatedAt: DateTime.now());
+      },
+    );
+
+    when(() => mockPersistenceLogic.updateDbEntity(any()))
         .thenAnswer((_) async => true);
 
     getIt
@@ -127,9 +146,9 @@ void main() {
       );
       await notifier.agreeToPlan();
 
-      // Verify persistence was called with agreed status
+      // Verify persistence was called with agreed status (updateDbEntity for existing plans)
       final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       expect(captured.length, greaterThan(0));
@@ -156,7 +175,7 @@ void main() {
       await notifier.addBudget(newBudget);
 
       final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;
@@ -195,7 +214,7 @@ void main() {
       await notifier.removeBudget('budget-1');
 
       final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;
@@ -230,7 +249,7 @@ void main() {
       await notifier.pinTask(taskRef);
 
       final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;
@@ -262,7 +281,7 @@ void main() {
       await notifier.unpinTask('task-1');
 
       final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;
@@ -284,7 +303,7 @@ void main() {
       await notifier.setDayLabel('Deep Work Day');
 
       final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;
@@ -345,7 +364,7 @@ void main() {
       await notifier.reorderBudgets(['budget-3', 'budget-1', 'budget-2']);
 
       final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;
@@ -388,7 +407,7 @@ void main() {
       await notifier.updateBudget(updatedBudget);
 
       final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;

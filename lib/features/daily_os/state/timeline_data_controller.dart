@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -52,9 +53,13 @@ class ActualTimeSlot extends TimelineSlot {
     required super.endTime,
     required this.entry,
     super.categoryId,
+    this.linkedFrom,
   });
 
   final JournalEntity entry;
+
+  /// The parent entity this entry is linked to (e.g., a Task).
+  final JournalEntity? linkedFrom;
 }
 
 /// Combined timeline data for plan vs actual view.
@@ -93,13 +98,23 @@ class DailyTimelineData {
 /// Provides timeline data for plan vs actual comparison.
 @riverpod
 class TimelineDataController extends _$TimelineDataController {
-  @override
-  Future<DailyTimelineData> build({required DateTime date}) async {
-    final dayPlanAsync = await ref.watch(
-      dayPlanControllerProvider(date: date).future,
+  late final DateTime _date;
+  StreamSubscription<Set<String>>? _updateSubscription;
+
+  void _listen() {
+    final notifications = getIt<UpdateNotifications>();
+    _updateSubscription = notifications.updateStream.listen((_) async {
+      // Refresh timeline data when any journal entries change
+      state = AsyncData(await _fetchData());
+    });
+  }
+
+  Future<DailyTimelineData> _fetchData() async {
+    final dayPlanAsync = await ref.read(
+      dayPlanControllerProvider(date: _date).future,
     );
 
-    final dayStart = date.dayAtMidnight;
+    final dayStart = _date.dayAtMidnight;
     final dayEnd = dayStart.add(const Duration(days: 1));
 
     // Fetch actual entries for the day
@@ -108,6 +123,30 @@ class TimelineDataController extends _$TimelineDataController {
       rangeStart: dayStart,
       rangeEnd: dayEnd,
     );
+
+    // Fetch linked entries (parent tasks/journals) for each entry
+    final entryIds = entries.map((e) => e.meta.id).toSet();
+    final links = await db.linksForEntryIds(entryIds);
+    final entryIdToLinkedFromIds = <String, Set<String>>{};
+    final linkedFromIds = <String>{};
+
+    for (final link in links) {
+      final fromId = link.fromId;
+      final toId = link.toId;
+      entryIdToLinkedFromIds[toId] = {
+        fromId,
+        ...?entryIdToLinkedFromIds[toId],
+      };
+    }
+
+    entryIdToLinkedFromIds.forEach((toId, fromIds) {
+      linkedFromIds.addAll(fromIds);
+    });
+
+    final linkedFromEntries = await db.getJournalEntitiesForIds(linkedFromIds);
+    final linkedFromMap = <String, JournalEntity>{
+      for (final entry in linkedFromEntries) entry.meta.id: entry,
+    };
 
     // Convert planned blocks to time slots
     final plannedSlots = <PlannedTimeSlot>[];
@@ -127,12 +166,21 @@ class TimelineDataController extends _$TimelineDataController {
     // Convert actual entries to time slots
     final actualSlots = <ActualTimeSlot>[];
     for (final entry in entries) {
+      // Get the linked parent entry (e.g., a Task)
+      final linkedFromId = entryIdToLinkedFromIds[entry.meta.id]?.firstOrNull;
+      final linkedFrom =
+          linkedFromId != null ? linkedFromMap[linkedFromId] : null;
+
+      // Use category from linked parent if available
+      final categoryId = linkedFrom?.meta.categoryId ?? entry.meta.categoryId;
+
       actualSlots.add(
         ActualTimeSlot(
           startTime: entry.meta.dateFrom,
           endTime: entry.meta.dateTo,
           entry: entry,
-          categoryId: entry.meta.categoryId,
+          categoryId: categoryId,
+          linkedFrom: linkedFrom,
         ),
       );
     }
@@ -146,12 +194,26 @@ class TimelineDataController extends _$TimelineDataController {
     final dayEndHour = _calculateDayEndHour(plannedSlots, actualSlots);
 
     return DailyTimelineData(
-      date: date,
+      date: _date,
       plannedSlots: plannedSlots,
       actualSlots: actualSlots,
       dayStartHour: dayStartHour,
       dayEndHour: dayEndHour,
     );
+  }
+
+  @override
+  Future<DailyTimelineData> build({required DateTime date}) async {
+    _date = date;
+
+    ref
+      ..onDispose(() => _updateSubscription?.cancel())
+      // Also watch day plan for planned block changes
+      ..watch(dayPlanControllerProvider(date: date));
+
+    final result = await _fetchData();
+    _listen();
+    return result;
   }
 
   int _calculateDayStartHour(

@@ -37,6 +37,7 @@ class TimeBudgetProgress {
     required this.recordedDuration,
     required this.status,
     required this.contributingEntries,
+    required this.pinnedTasks,
   });
 
   final TimeBudget budget;
@@ -45,6 +46,13 @@ class TimeBudgetProgress {
   final Duration recordedDuration;
   final BudgetProgressStatus status;
   final List<JournalEntity> contributingEntries;
+
+  /// Tasks pinned to this budget (resolved from PinnedTaskRef).
+  final List<Task> pinnedTasks;
+
+  /// Tasks that contributed time to this budget (from contributingEntries).
+  List<Task> get contributingTasks =>
+      contributingEntries.whereType<Task>().toList();
 
   Duration get remainingDuration => plannedDuration - recordedDuration;
 
@@ -72,7 +80,8 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
       return [];
     }
 
-    final budgets = [...dayPlanEntity.data.budgets]
+    final dayPlanData = dayPlanEntity.data;
+    final budgets = [...dayPlanData.budgets]
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     if (budgets.isEmpty) {
       return [];
@@ -97,6 +106,30 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
       }
     }
 
+    // Fetch all pinned tasks
+    final allPinnedTaskIds =
+        dayPlanData.pinnedTasks.map((ref) => ref.taskId).toSet();
+    final pinnedTaskEntities =
+        await db.getJournalEntitiesForIds(allPinnedTaskIds);
+    final pinnedTasksById = <String, Task>{
+      for (final entity in pinnedTaskEntities)
+        if (entity is Task) entity.meta.id: entity,
+    };
+
+    // Group pinned tasks by budget ID
+    final pinnedTasksByBudgetId = <String, List<Task>>{};
+    for (final budget in budgets) {
+      final taskRefs = dayPlanData.pinnedTasksForBudget(budget.id);
+      final tasks = <Task>[];
+      for (final ref in taskRefs) {
+        final task = pinnedTasksById[ref.taskId];
+        if (task != null) {
+          tasks.add(task);
+        }
+      }
+      pinnedTasksByBudgetId[budget.id] = tasks;
+    }
+
     // Calculate progress for each budget
     final cacheService = getIt<EntitiesCacheService>();
     final results = <TimeBudgetProgress>[];
@@ -114,6 +147,7 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
           recordedDuration: recordedDuration,
           status: _calculateStatus(plannedDuration, recordedDuration),
           contributingEntries: categoryEntries,
+          pinnedTasks: pinnedTasksByBudgetId[budget.id] ?? [],
         ),
       );
     }

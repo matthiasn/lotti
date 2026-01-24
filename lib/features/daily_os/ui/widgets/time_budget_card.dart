@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Card displaying a single time budget with progress.
 class TimeBudgetCard extends ConsumerWidget {
@@ -122,45 +124,24 @@ class TimeBudgetCard extends ConsumerWidget {
                 categoryColor: categoryColor,
               ),
 
-              // Expanded content (task list preview)
-              if (isExpanded && progress.contributingEntries.isNotEmpty) ...[
+              // Pinned tasks section (tasks planned to work on)
+              if (progress.pinnedTasks.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingMedium),
                 const Divider(height: 1),
                 const SizedBox(height: AppTheme.spacingSmall),
-                ...progress.contributingEntries.take(3).map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(
-                          children: [
-                            Icon(
-                              MdiIcons.checkCircle,
-                              size: 14,
-                              color: categoryColor.withValues(alpha: 0.7),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _getEntryTitle(entry, context.messages),
-                                style: context.textTheme.bodySmall,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                if (progress.contributingEntries.length > 3)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '+${progress.contributingEntries.length - 3} more',
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
+                ...progress.pinnedTasks.map(
+                  (task) => _PinnedTaskRow(task: task),
+                ),
+              ],
+
+              // Contributing tasks section (tasks tracked under this budget)
+              if (progress.contributingTasks.isNotEmpty) ...[
+                const SizedBox(height: AppTheme.spacingMedium),
+                const Divider(height: 1),
+                const SizedBox(height: AppTheme.spacingSmall),
+                ...progress.contributingTasks.map(
+                  (task) => _PinnedTaskRow(task: task),
+                ),
               ],
             ],
           ),
@@ -177,13 +158,6 @@ class TimeBudgetCard extends ConsumerWidget {
       return messages.dailyOsHoursMinutesPlanned(hours, mins);
     }
     return messages.dailyOsMinutesPlanned(duration.inMinutes);
-  }
-
-  String _getEntryTitle(JournalEntity entry, AppLocalizations messages) {
-    return switch (entry) {
-      Task(:final data) => data.title,
-      _ => messages.dailyOsEntry,
-    };
   }
 }
 
@@ -344,5 +318,91 @@ class _BudgetProgressBar extends StatelessWidget {
       case BudgetProgressStatus.underBudget:
         return categoryColor.withValues(alpha: 0.8);
     }
+  }
+}
+
+/// A compact row displaying a pinned task within a budget card.
+class _PinnedTaskRow extends StatelessWidget {
+  const _PinnedTaskRow({required this.task});
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompleted =
+        task.data.status is TaskDone || task.data.status is TaskRejected;
+
+    // Text color - slightly muted for completed tasks
+    final textColor = isCompleted
+        ? context.colorScheme.onSurface.withValues(alpha: 0.5)
+        : context.colorScheme.onSurface.withValues(alpha: 0.85);
+
+    // Status color for circle and chevron
+    final statusColor = _getStatusColor(context, task.data.status);
+
+    return GestureDetector(
+      onTap: () => beamToNamed('/tasks/${task.meta.id}'),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          children: [
+            // Status circle reflecting task state
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: statusColor,
+                  width: 1.5,
+                ),
+                color: isCompleted ? statusColor.withValues(alpha: 0.3) : null,
+              ),
+              child: isCompleted
+                  ? Icon(
+                      Icons.check,
+                      size: 10,
+                      color: statusColor,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            // Task title
+            Expanded(
+              child: Text(
+                task.data.title,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: textColor,
+                  fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Navigation chevron
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: statusColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(BuildContext context, TaskStatus status) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    return switch (status) {
+      TaskOpen() => context.colorScheme.outline,
+      TaskInProgress() => context.colorScheme.primary,
+      TaskGroomed() => context.colorScheme.tertiary,
+      TaskOnHold() => context.colorScheme.secondary,
+      TaskBlocked() => context.colorScheme.error,
+      TaskDone() => isLight ? taskStatusDarkGreen : taskStatusGreen,
+      TaskRejected() => context.colorScheme.outline,
+    };
   }
 }

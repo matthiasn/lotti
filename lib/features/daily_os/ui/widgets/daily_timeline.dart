@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
+import 'package:lotti/features/journal/state/journal_focus_controller.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -356,7 +359,10 @@ class _ActualBlockWidget extends ConsumerWidget {
     final highlightedId = ref.watch(highlightedCategoryIdProvider);
     final isHighlighted = categoryId != null && highlightedId == categoryId;
 
-    final title = _getEntryTitle(slot.entry);
+    final title = _getEntryTitle(
+      slot.entry,
+      category?.name ?? context.messages.dailyOsEntry,
+    );
 
     return Positioned(
       top: top,
@@ -365,20 +371,47 @@ class _ActualBlockWidget extends ConsumerWidget {
       height: height.clamp(20.0, double.infinity),
       child: GestureDetector(
         onTap: () {
-          // Single tap highlights the category
+          // Single tap navigates to the entry (like calendar view)
+          final entryId = slot.entry.meta.id;
+          final linkedFrom = slot.linkedFrom;
+
+          if (linkedFrom != null) {
+            if (linkedFrom is Task) {
+              // Publish task focus intent before navigation
+              ref
+                  .read(
+                    taskFocusControllerProvider(id: linkedFrom.meta.id)
+                        .notifier,
+                  )
+                  .publishTaskFocus(
+                    entryId: entryId,
+                    alignment: kDefaultScrollAlignment,
+                  );
+              beamToNamed('/tasks/${linkedFrom.meta.id}');
+            } else {
+              // Publish journal focus intent before navigation
+              ref
+                  .read(
+                    journalFocusControllerProvider(id: linkedFrom.meta.id)
+                        .notifier,
+                  )
+                  .publishJournalFocus(
+                    entryId: entryId,
+                    alignment: kDefaultScrollAlignment,
+                  );
+              beamToNamed('/journal/${linkedFrom.meta.id}');
+            }
+          } else {
+            // No linked parent, navigate directly to entry
+            beamToNamed('/journal/$entryId');
+          }
+        },
+        onLongPress: () {
+          // Long press highlights the category
           if (categoryId != null) {
             ref
                 .read(dailyOsControllerProvider.notifier)
                 .highlightCategory(categoryId);
-          }
-        },
-        onLongPress: () {
-          // Long press navigates to the entry
-          final entryId = slot.entry.meta.id;
-          if (slot.entry is Task) {
-            beamToNamed('/tasks/$entryId');
-          } else {
-            beamToNamed('/journal/$entryId');
           }
         },
         child: AnimatedContainer(
@@ -416,11 +449,10 @@ class _ActualBlockWidget extends ConsumerWidget {
     );
   }
 
-  String _getEntryTitle(JournalEntity entry) {
+  String _getEntryTitle(JournalEntity entry, String fallback) {
     return switch (entry) {
       Task(:final data) => data.title,
-      JournalEntry() => 'Journal',
-      _ => 'Entry',
+      _ => fallback,
     };
   }
 

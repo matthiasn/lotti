@@ -107,6 +107,9 @@ void main() {
     when(() => mockEntitiesCacheService.getCategoryById(any()))
         .thenReturn(null);
 
+    when(() => mockDb.getJournalEntitiesForIds(any()))
+        .thenAnswer((_) async => []);
+
     getIt
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)

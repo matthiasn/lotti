@@ -67,6 +67,7 @@ void main() {
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
+      pinnedTasks: const [],
     );
   }
 

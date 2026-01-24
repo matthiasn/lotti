@@ -56,30 +56,17 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
     final category = _selectedCategory;
     if (category == null) return;
 
-    // Get the day plan - await to ensure we have the latest data
-    final dayPlanController =
-        ref.read(dayPlanControllerProvider(date: widget.date).notifier);
-    final dayPlanAsync = ref.read(dayPlanControllerProvider(date: widget.date));
+    // Always await the future to ensure we have the data
+    final dayPlanEntity = await ref.read(
+      dayPlanControllerProvider(date: widget.date).future,
+    );
 
-    // If data is still loading, wait for it
-    DayPlanEntry? dayPlanEntry;
-    if (dayPlanAsync.isLoading) {
-      // Wait for the provider to resolve
-      final resolved = await ref.read(
-        dayPlanControllerProvider(date: widget.date).future,
-      );
-      dayPlanEntry = resolved is DayPlanEntry ? resolved : null;
-    } else {
-      dayPlanEntry =
-          dayPlanAsync.value is DayPlanEntry ? dayPlanAsync.value! as DayPlanEntry : null;
-    }
-
-    if (dayPlanEntry == null) {
+    if (dayPlanEntity is! DayPlanEntry) {
       // Cannot determine existing budgets, don't allow add
       return;
     }
 
-    final currentBudgets = dayPlanEntry.data.budgets;
+    final currentBudgets = dayPlanEntity.data.budgets;
 
     // Check for duplicate category
     final hasDuplicate = currentBudgets.any((b) => b.categoryId == category.id);
@@ -104,7 +91,9 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
       sortOrder: currentBudgets.length,
     );
 
-    await dayPlanController.addBudget(budget);
+    await ref
+        .read(dayPlanControllerProvider(date: widget.date).notifier)
+        .addBudget(budget);
 
     if (mounted) {
       Navigator.pop(context);
