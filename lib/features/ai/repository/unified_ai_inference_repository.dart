@@ -362,12 +362,12 @@ class UnifiedAiInferenceRepository {
       // Start timing the inference
       final stopwatch = Stopwatch()..start();
 
-      // OpenAI GPT-5 models only accept temperature=1.0 (the default).
-      // Other providers (Gemini, Ollama, etc.) support custom temperature values.
-      final temperature =
-          provider.inferenceProviderType == InferenceProviderType.openAi
-              ? 1.0
-              : 0.6;
+      // OpenAI reasoning models with reasoning_effort set only accept temperature=1.0.
+      // Other models (including non-reasoning OpenAI models like GPT-4/GPT-4o)
+      // support custom temperature values.
+      final useReasoningEffort =
+          model.isReasoningModel && promptConfig.useReasoning;
+      final temperature = useReasoningEffort ? 1.0 : 0.6;
 
       final stream = await _runCloudInference(
         prompt: prompt,
