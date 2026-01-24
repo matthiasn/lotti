@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.821" date="2026-01-24">
+      <description>
+        <p>OpenAI Onboarding FTUE: Added first-time user experience for OpenAI providers with one-click setup. Automatically creates 4 models (GPT-5.2 for reasoning, GPT-5 Nano for fast tasks, GPT-4o Transcribe for audio, and GPT Image 1.5 for image generation), configures 9 optimized prompts with appropriate model assignments, and creates a test category with all prompts enabled. Follows the same streamlined pattern as Gemini FTUE.</p>
+        <p>Audio Format Simplification: M4A audio files are now sent directly to most providers labeled as mp3, reducing processing overhead. Only Mistral requires actual WAV conversion.</p>
+      </description>
+    </release>
     <release version="0.9.819" date="2026-01-23">
       <description>
         <p>Code Modularity Refactor: Extracted focused services from large modules for better testability and maintainability. MetadataService handles metadata creation with vector clock integration. GeolocationService manages geolocation addition with race condition prevention. ExifDataExtractor provides pure functions for EXIF timestamp and GPS coordinate extraction. AudioMetadataExtractor handles audio file metadata parsing and duration extraction. Media import is now separated into audio_import, media_import, and image_import with single responsibilities each.</p>
