@@ -13,11 +13,21 @@ TaskProgressRepository taskProgressRepository(Ref ref) {
 }
 
 class TaskProgressRepository {
+  /// Determines if an entity's duration should count toward time spent.
+  ///
+  /// Excludes the following entity types:
+  /// - [Task]: represents task structure, not logged work
+  /// - [AiResponseEntry]: represents AI outputs, not logged work
+  /// - [JournalAudio]: audio recording duration should not count as time spent,
+  ///   as it would cause double-counting (e.g., recording a 1-hour meeting
+  ///   while also logging a 1-hour time entry for the same meeting)
+  static bool _shouldCountDuration(JournalEntity entity) =>
+      entity is! Task && entity is! AiResponseEntry && entity is! JournalAudio;
+
   /// Calculate total time spent from a list of entities.
   ///
-  /// Filters out [Task] and [AiResponseEntry] entities (which represent
-  /// task structure and AI outputs rather than logged work), then sums
-  /// the durations of the remaining entities.
+  /// Uses [_shouldCountDuration] to filter out entities that don't represent
+  /// logged work, then sums the durations of the remaining entities.
   ///
   /// This is the canonical implementation of time-spent calculation logic.
   /// Both [getTaskProgressData] and `AiInputRepository._calculateTimeSpentFromEntities`
@@ -25,7 +35,7 @@ class TaskProgressRepository {
   static Duration sumTimeSpentFromEntities(List<JournalEntity> entities) {
     var total = Duration.zero;
     for (final entity in entities) {
-      if (entity is! Task && entity is! AiResponseEntry) {
+      if (_shouldCountDuration(entity)) {
         total += entryDuration(entity);
       }
     }
@@ -46,7 +56,7 @@ class TaskProgressRepository {
     final items = await getIt<JournalDb>().getLinkedEntities(id);
 
     for (final journalEntity in items) {
-      if (journalEntity is! Task && journalEntity is! AiResponseEntry) {
+      if (_shouldCountDuration(journalEntity)) {
         final duration = entryDuration(journalEntity);
         durations[journalEntity.id] = duration;
       }
