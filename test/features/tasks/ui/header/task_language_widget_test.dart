@@ -167,10 +167,11 @@ void main() {
       final padding = tester.widget<Padding>(find.byType(Padding).first);
       expect(padding.padding, equals(const EdgeInsets.only(right: 5)));
 
-      // Verify flag dimensions (doubled in size)
+      // Verify flag dimensions via ImageTheme (doubled in size)
       final flagWidget = tester.widget<CountryFlag>(find.byType(CountryFlag));
-      expect(flagWidget.height, equals(20));
-      expect(flagWidget.width, equals(30));
+      final imageTheme = flagWidget.theme as ImageTheme;
+      expect(imageTheme.height, equals(20));
+      expect(imageTheme.width, equals(30));
 
       // Verify the flag is inside a container with decoration
       final flagContainer = tester.widget<Container>(

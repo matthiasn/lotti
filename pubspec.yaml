@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.822+3629
+version: 0.9.822+3630
 
 msix_config:
   display_name: LottiApp
@@ -24,7 +24,7 @@ dependencies:
   clock: ^1.1.1
   collection: ^1.18.0
   connectivity_plus: ^7.0.0
-  country_flags: ^3.0.0
+  country_flags: ^4.1.1
   crypto: ^3.0.1
   dart_geohash: ^2.0.1
   dbus: ^0.7.11
@@ -83,7 +83,7 @@ dependencies:
   latlong2: ^0.9.0
   location: ^8.0.0
   material_design_icons_flutter: ^7.0.7096
-  matrix: ^4.0.0
+  matrix: ^6.0.0
   media_kit: ^1.0.2
   media_kit_libs_audio: ^1.0.7
   meta: ^1.12.0
@@ -130,14 +130,14 @@ dependency_overrides:
   analyzer_plugin: ^0.13.1
   get_it: ^8.0.2
   intl: ^0.20.2
-  rxdart: ^0.28.0
   # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
   # See: https://github.com/flutter/flutter/issues/178915
   path_provider_foundation: 2.5.1
+  rxdart: ^0.28.0
 
 dev_dependencies:
-  arb_utils: ^0.8.3
-  archive: ^3.3.0
+  arb_utils: ^0.10.1
+  archive: ^4.0.7
   async: any
   build_runner: ^2.5.4
   cross_file: any

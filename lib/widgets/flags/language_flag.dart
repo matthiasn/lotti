@@ -9,6 +9,7 @@ Widget buildLanguageFlag({
   Key? key,
 }) {
   const nigerianLanguageCodes = {'ig', 'pcm', 'yo'};
+  const flagBorderRadius = 4.0;
   const languageCountryOverrides = {
     'zh': 'cn',
     'tw': 'gh',
@@ -17,8 +18,11 @@ Widget buildLanguageFlag({
   if (nigerianLanguageCodes.contains(languageCode)) {
     return CountryFlag.fromCountryCode(
       'ng',
-      height: height,
-      width: width,
+      theme: ImageTheme(
+        height: height,
+        width: width,
+        shape: const RoundedRectangle(flagBorderRadius),
+      ),
       key: key ?? ValueKey('flag-$languageCode'),
     );
   }
@@ -27,16 +31,22 @@ Widget buildLanguageFlag({
   if (overrideCountryCode != null) {
     return CountryFlag.fromCountryCode(
       overrideCountryCode,
-      height: height,
-      width: width,
+      theme: ImageTheme(
+        height: height,
+        width: width,
+        shape: const RoundedRectangle(flagBorderRadius),
+      ),
       key: key ?? ValueKey('flag-$languageCode'),
     );
   }
 
   return CountryFlag.fromLanguageCode(
     languageCode,
-    height: height,
-    width: width,
+    theme: ImageTheme(
+      height: height,
+      width: width,
+      shape: const RoundedRectangle(flagBorderRadius),
+    ),
     key: key ?? ValueKey('flag-$languageCode'),
   );
 }
