@@ -131,6 +131,9 @@ dependency_overrides:
   get_it: ^8.0.2
   intl: ^0.20.2
   rxdart: ^0.28.0
+  # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
+  # See: https://github.com/flutter/flutter/issues/178915
+  path_provider_foundation: 2.5.1
 
 dev_dependencies:
   arb_utils: ^0.8.3
