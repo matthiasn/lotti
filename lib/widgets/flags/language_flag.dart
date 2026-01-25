@@ -14,29 +14,29 @@ Widget buildLanguageFlag({
     'tw': 'gh',
   };
 
+  final imageTheme = ImageTheme(
+    height: height,
+    width: width,
+    shape: const RoundedRectangle(4),
+  );
+  final flagKey = key ?? ValueKey('flag-$languageCode');
+
   if (nigerianLanguageCodes.contains(languageCode)) {
-    return CountryFlag.fromCountryCode(
-      'ng',
-      height: height,
-      width: width,
-      key: key ?? ValueKey('flag-$languageCode'),
-    );
+    return CountryFlag.fromCountryCode('ng', theme: imageTheme, key: flagKey);
   }
 
   final overrideCountryCode = languageCountryOverrides[languageCode];
   if (overrideCountryCode != null) {
     return CountryFlag.fromCountryCode(
       overrideCountryCode,
-      height: height,
-      width: width,
-      key: key ?? ValueKey('flag-$languageCode'),
+      theme: imageTheme,
+      key: flagKey,
     );
   }
 
   return CountryFlag.fromLanguageCode(
     languageCode,
-    height: height,
-    width: width,
-    key: key ?? ValueKey('flag-$languageCode'),
+    theme: imageTheme,
+    key: flagKey,
   );
 }

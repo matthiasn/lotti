@@ -111,10 +111,11 @@ void main() {
       expect(find.byType(InputDecorator), findsOneWidget);
       expect(find.byType(Row), findsWidgets);
 
-      // Verify flag dimensions
+      // Verify flag dimensions (via ImageTheme)
       final flag = tester.widget<CountryFlag>(find.byType(CountryFlag));
-      expect(flag.height, 20);
-      expect(flag.width, 30);
+      final imageTheme = flag.theme as ImageTheme;
+      expect(imageTheme.height, 20);
+      expect(imageTheme.width, 30);
 
       // Verify spacing - find SizedBox with width 8
       final sizedBoxes = tester.widgetList<SizedBox>(
