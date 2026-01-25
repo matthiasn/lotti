@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.822+3630
+version: 0.9.822+3631
 
 msix_config:
   display_name: LottiApp
