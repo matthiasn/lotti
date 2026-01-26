@@ -121,6 +121,25 @@ class _InferenceProviderEditPageState
                   await FtueResultDialog.showOpenAi(context, result: result);
                 }
               }
+            } else if (config.inferenceProviderType ==
+                InferenceProviderType.mistral) {
+              // Use enhanced FTUE for Mistral providers
+              final confirmed = await FtueSetupDialog.show(
+                context,
+                providerName: 'Mistral',
+              );
+
+              if (confirmed && context.mounted) {
+                final result = await setupService.performMistralFtueSetup(
+                  context: context,
+                  ref: ref,
+                  provider: config,
+                );
+
+                if (result != null && context.mounted) {
+                  await FtueResultDialog.showMistral(context, result: result);
+                }
+              }
             } else {
               // Use standard prompt setup for other providers
               await setupService.offerPromptSetup(

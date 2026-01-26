@@ -192,4 +192,88 @@ void main() {
       expect(result, isTrue);
     });
   });
+
+  group('FtueSetupDialog - Mistral', () {
+    testWidgets('displays correct title and provider name for Mistral',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FtueSetupDialog(config: FtueSetupConfig.mistral),
+          ),
+        ),
+      );
+
+      expect(find.text('Set Up AI Features?'), findsOneWidget);
+      expect(find.text('Get started quickly with Mistral'), findsOneWidget);
+    });
+
+    testWidgets('shows Mistral-specific preview of what will be created',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FtueSetupDialog(config: FtueSetupConfig.mistral),
+          ),
+        ),
+      );
+
+      expect(find.text('What will be created:'), findsOneWidget);
+      expect(find.text('3 Models'), findsOneWidget);
+      expect(find.text('8 Prompts'), findsOneWidget);
+      expect(find.text('1 Category'), findsOneWidget);
+    });
+
+    testWidgets('shows Mistral model descriptions', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FtueSetupDialog(config: FtueSetupConfig.mistral),
+          ),
+        ),
+      );
+
+      expect(
+        find.text(
+            'Magistral Medium (reasoning), Mistral Small (fast), Voxtral Small (audio)'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+            'Optimized: Magistral for reasoning, Mistral Small for speed'),
+        findsOneWidget,
+      );
+      expect(find.text('Test Category Mistral Enabled'), findsOneWidget);
+    });
+
+    testWidgets('Set Up button returns true for Mistral', (tester) async {
+      bool? result;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                result = await FtueSetupDialog.show(
+                  context,
+                  providerName: 'Mistral',
+                );
+              },
+              child: const Text('Open Dialog'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Get started quickly with Mistral'), findsOneWidget);
+
+      await tester.tap(find.text('Set Up'));
+      await tester.pumpAndSettle();
+
+      expect(result, isTrue);
+    });
+  });
 }

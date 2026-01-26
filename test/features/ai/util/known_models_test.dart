@@ -268,6 +268,7 @@ void main() {
             InferenceProviderType.openRouter,
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
+            InferenceProviderType.mistral,
           ]),
         );
       });
@@ -363,6 +364,109 @@ void main() {
               reason:
                   '${model.name} description should mention language support');
         }
+      });
+    });
+
+    group('Mistral Models', () {
+      test('should have Fast, Reasoning, and Audio models', () {
+        expect(mistralModels.length, greaterThanOrEqualTo(3));
+
+        final flashModel = mistralModels.firstWhere(
+          (m) => m.providerModelId == ftueMistralFlashModelId,
+        );
+        final reasoningModel = mistralModels.firstWhere(
+          (m) => m.providerModelId == ftueMistralReasoningModelId,
+        );
+        final audioModel = mistralModels.firstWhere(
+          (m) => m.providerModelId == ftueMistralAudioModelId,
+        );
+
+        expect(flashModel.name, contains('Mistral Small'));
+        expect(reasoningModel.name, contains('Magistral'));
+        expect(audioModel.name, contains('Voxtral'));
+      });
+
+      test('Mistral Small should have vision capabilities', () {
+        final flashModel = mistralModels.firstWhere(
+          (m) => m.providerModelId == ftueMistralFlashModelId,
+        );
+        expect(flashModel.inputModalities, contains(Modality.image),
+            reason: 'Mistral Small should accept image input');
+        expect(flashModel.isReasoningModel, isFalse);
+      });
+
+      test('Magistral Medium should be a reasoning model', () {
+        final reasoningModel = mistralModels.firstWhere(
+          (m) => m.providerModelId == ftueMistralReasoningModelId,
+        );
+        expect(reasoningModel.isReasoningModel, isTrue,
+            reason: 'Magistral Medium should be a reasoning model');
+      });
+
+      test('Voxtral Small should have audio input', () {
+        final audioModel = mistralModels.firstWhere(
+          (m) => m.providerModelId == ftueMistralAudioModelId,
+        );
+        expect(audioModel.inputModalities, contains(Modality.audio),
+            reason: 'Voxtral Small should accept audio input');
+        expect(audioModel.outputModalities, contains(Modality.text));
+      });
+
+      test('all Mistral models should have valid configurations', () {
+        for (final model in mistralModels) {
+          expect(model.providerModelId, isNotEmpty,
+              reason:
+                  'Model ${model.name} should have non-empty providerModelId');
+          expect(model.name, isNotEmpty,
+              reason: 'Model should have non-empty name');
+          expect(model.description, isNotEmpty,
+              reason: 'Model ${model.name} should have non-empty description');
+          expect(model.inputModalities, isNotEmpty,
+              reason:
+                  'Model ${model.name} should have at least one input modality');
+          expect(model.outputModalities, isNotEmpty,
+              reason:
+                  'Model ${model.name} should have at least one output modality');
+        }
+      });
+    });
+
+    group('Mistral FTUE functions', () {
+      test('findMistralKnownModel returns model for valid ID', () {
+        final model = findMistralKnownModel(ftueMistralReasoningModelId);
+        expect(model, isNotNull);
+        expect(model!.providerModelId, equals(ftueMistralReasoningModelId));
+        expect(model.isReasoningModel, isTrue);
+      });
+
+      test('findMistralKnownModel returns null for invalid ID', () {
+        final model = findMistralKnownModel('non-existent-model-id');
+        expect(model, isNull);
+      });
+
+      test('getMistralFtueKnownModels returns all required models', () {
+        final models = getMistralFtueKnownModels();
+        expect(models, isNotNull);
+
+        // Verify flash model (Mistral Small)
+        expect(models!.flash.providerModelId, equals(ftueMistralFlashModelId));
+        expect(models.flash.inputModalities, contains(Modality.image),
+            reason: 'Flash model should have vision');
+
+        // Verify reasoning model (Magistral Medium)
+        expect(models.reasoning.providerModelId,
+            equals(ftueMistralReasoningModelId));
+        expect(models.reasoning.isReasoningModel, isTrue);
+
+        // Verify audio model (Voxtral Small)
+        expect(models.audio.providerModelId, equals(ftueMistralAudioModelId));
+        expect(models.audio.inputModalities, contains(Modality.audio));
+      });
+
+      test('FTUE model constants are valid Mistral model IDs', () {
+        expect(findMistralKnownModel(ftueMistralFlashModelId), isNotNull);
+        expect(findMistralKnownModel(ftueMistralReasoningModelId), isNotNull);
+        expect(findMistralKnownModel(ftueMistralAudioModelId), isNotNull);
       });
     });
   });

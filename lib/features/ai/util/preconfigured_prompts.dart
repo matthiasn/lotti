@@ -170,7 +170,7 @@ Example Links section (these are format examples only - never copy these URLs, o
 ```''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.taskSummary,
-  useReasoning: true,
+  useReasoning: false,
   description:
       'Generate a comprehensive summary of a task including progress, remaining work, and insights',
 );

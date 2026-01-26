@@ -925,7 +925,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     required String proModelId,
     required String imageModelId,
   }) async {
-    const categoryName = 'Test Category Gemini Enabled';
+    const categoryName = ftueGeminiCategoryName;
 
     // Build allowedPromptIds from all created prompts
     final allowedPromptIds = prompts.map((p) => p.id).toList();
@@ -958,7 +958,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     // Create new category
     final category = await categoryRepository.createCategory(
       name: categoryName,
-      color: '#4285F4', // Google Blue
+      color: ftueGeminiCategoryColor,
     );
 
     // Update with prompts configuration
@@ -1426,7 +1426,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     required String audioModelId,
     required String imageModelId,
   }) async {
-    const categoryName = 'Test Category OpenAI Enabled';
+    const categoryName = ftueOpenAiCategoryName;
 
     // Build allowedPromptIds from all created prompts
     final allowedPromptIds = prompts.map((p) => p.id).toList();
@@ -1460,7 +1460,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     // Create new category
     final category = await categoryRepository.createCategory(
       name: categoryName,
-      color: '#10A37F', // OpenAI Green
+      color: ftueOpenAiCategoryColor,
     );
 
     // Update with prompts configuration
@@ -1557,6 +1557,457 @@ class _OpenAiFtueModelResult {
   final AiConfigModel reasoning;
   final AiConfigModel audio;
   final AiConfigModel image;
+  final List<AiConfigModel> created;
+  final List<AiConfigModel> verified;
+}
+
+// =============================================================================
+// Mistral FTUE (First Time User Experience) Setup
+// =============================================================================
+
+/// Result of the Mistral FTUE setup process.
+class MistralFtueResult {
+  const MistralFtueResult({
+    required this.modelsCreated,
+    required this.modelsVerified,
+    required this.promptsCreated,
+    required this.promptsSkipped,
+    required this.categoryCreated,
+    this.categoryUpdated = false,
+    this.categoryName,
+    this.errors = const [],
+  });
+
+  final int modelsCreated;
+  final int modelsVerified;
+  final int promptsCreated;
+  final int promptsSkipped;
+  final bool categoryCreated;
+  final bool categoryUpdated;
+  final String? categoryName;
+  final List<String> errors;
+
+  int get totalModels => modelsCreated + modelsVerified;
+  int get totalPrompts => promptsCreated + promptsSkipped;
+}
+
+/// Extension to add Mistral FTUE functionality to ProviderPromptSetupService.
+extension MistralFtueSetup on ProviderPromptSetupService {
+  /// Performs comprehensive FTUE setup for Mistral providers.
+  ///
+  /// This creates:
+  /// 1. Three models (Fast/Mistral Small, Reasoning/Magistral Medium, Audio/Voxtral Small)
+  /// 2. 8 prompts with appropriate model assignments (no image generation)
+  /// 3. A test category with all prompts enabled and auto-selection configured
+  ///
+  /// Returns [MistralFtueResult] with details of what was created.
+  Future<MistralFtueResult?> performMistralFtueSetup({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AiConfigInferenceProvider provider,
+  }) async {
+    // Only works with Mistral providers
+    if (provider.inferenceProviderType != InferenceProviderType.mistral) {
+      return null;
+    }
+
+    final repository = ref.read(aiConfigRepositoryProvider);
+    final categoryRepository = ref.read(categoryRepositoryProvider);
+
+    // Step 1: Create/verify models
+    final modelResult = await _ensureMistralFtueModelsExist(
+      repository: repository,
+      providerId: provider.id,
+    );
+
+    if (modelResult == null) {
+      return const MistralFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        errors: ['Failed to find required Mistral model configurations'],
+      );
+    }
+
+    // Step 2: Create prompts
+    final promptResult = await _createMistralFtuePrompts(
+      repository: repository,
+      flashModel: modelResult.flash,
+      reasoningModel: modelResult.reasoning,
+      audioModel: modelResult.audio,
+    );
+
+    // Step 3: Create or update category with auto-selection
+    final (category, categoryWasCreated) =
+        await _createOrUpdateMistralFtueCategory(
+      categoryRepository: categoryRepository,
+      prompts: promptResult.allPrompts,
+      flashModelId: modelResult.flash.id,
+      reasoningModelId: modelResult.reasoning.id,
+      audioModelId: modelResult.audio.id,
+    );
+
+    return MistralFtueResult(
+      modelsCreated: modelResult.created.length,
+      modelsVerified: modelResult.verified.length,
+      promptsCreated: promptResult.created.length,
+      promptsSkipped: promptResult.skipped,
+      categoryCreated: categoryWasCreated,
+      categoryUpdated: !categoryWasCreated && category != null,
+      categoryName: category?.name,
+    );
+  }
+
+  /// Ensures the three FTUE models exist for the given Mistral provider.
+  Future<_MistralFtueModelResult?> _ensureMistralFtueModelsExist({
+    required AiConfigRepository repository,
+    required String providerId,
+  }) async {
+    final knownModels = getMistralFtueKnownModels();
+    if (knownModels == null) {
+      return null;
+    }
+
+    final allModels = await repository.getConfigsByType(AiConfigType.model);
+    final providerModels = allModels
+        .whereType<AiConfigModel>()
+        .where((m) => m.inferenceProviderId == providerId)
+        .toList();
+
+    final created = <AiConfigModel>[];
+    final verified = <AiConfigModel>[];
+    const uuid = Uuid();
+
+    // Process each model type
+    final modelConfigs = [
+      (known: knownModels.flash, id: ftueMistralFlashModelId),
+      (known: knownModels.reasoning, id: ftueMistralReasoningModelId),
+      (known: knownModels.audio, id: ftueMistralAudioModelId),
+    ];
+
+    AiConfigModel? flashModel;
+    AiConfigModel? reasoningModel;
+    AiConfigModel? audioModel;
+
+    for (final config in modelConfigs) {
+      // Check if model with same providerModelId already exists
+      final existing = providerModels.firstWhereOrNull(
+        (m) => m.providerModelId == config.id,
+      );
+
+      AiConfigModel model;
+      if (existing != null) {
+        verified.add(existing);
+        model = existing;
+      } else {
+        // Create new model
+        model = config.known.toAiConfigModel(
+          id: uuid.v4(),
+          inferenceProviderId: providerId,
+        );
+        await repository.saveConfig(model);
+        created.add(model);
+      }
+
+      // Assign to appropriate variable
+      if (config.id == ftueMistralFlashModelId) {
+        flashModel = model;
+      } else if (config.id == ftueMistralReasoningModelId) {
+        reasoningModel = model;
+      } else if (config.id == ftueMistralAudioModelId) {
+        audioModel = model;
+      }
+    }
+
+    if (flashModel == null || reasoningModel == null || audioModel == null) {
+      return null;
+    }
+
+    return _MistralFtueModelResult(
+      flash: flashModel,
+      reasoning: reasoningModel,
+      audio: audioModel,
+      created: created,
+      verified: verified,
+    );
+  }
+
+  /// Creates all FTUE prompts for Mistral with idempotency checks.
+  Future<_FtuePromptResult> _createMistralFtuePrompts({
+    required AiConfigRepository repository,
+    required AiConfigModel flashModel,
+    required AiConfigModel reasoningModel,
+    required AiConfigModel audioModel,
+  }) async {
+    final created = <AiConfigPrompt>[];
+    final allPrompts = <AiConfigPrompt>[];
+    var skipped = 0;
+    const uuid = Uuid();
+
+    // Get existing prompts to check for duplicates
+    final existingPrompts =
+        await repository.getConfigsByType(AiConfigType.prompt);
+    final existingPromptsMap = <String, AiConfigPrompt>{};
+    for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
+      final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
+      existingPromptsMap[key] = p;
+    }
+
+    // Define all prompt configurations for Mistral
+    final promptConfigs = _getMistralFtuePromptConfigs();
+
+    for (final config in promptConfigs) {
+      final model = switch (config.modelVariant) {
+        'flash' => flashModel,
+        'reasoning' => reasoningModel,
+        'audio' => audioModel,
+        _ => flashModel,
+      };
+
+      // Check for existing prompt with same preconfiguredPromptId + modelId
+      final key = '${config.template.id}_${model.id}';
+      final existingPrompt = existingPromptsMap[key];
+      if (existingPrompt != null) {
+        allPrompts.add(existingPrompt);
+        skipped++;
+        continue;
+      }
+
+      // Magistral reasoning model supports reasoning mode
+      final useReasoning = config.modelVariant == 'reasoning';
+
+      final prompt = AiConfig.prompt(
+        id: uuid.v4(),
+        name: config.promptName,
+        systemMessage: config.template.systemMessage,
+        userMessage: config.template.userMessage,
+        defaultModelId: model.id,
+        modelIds: [model.id],
+        createdAt: DateTime.now(),
+        useReasoning: useReasoning,
+        requiredInputData: config.template.requiredInputData,
+        aiResponseType: config.template.aiResponseType,
+        description: config.template.description,
+        trackPreconfigured: true,
+        preconfiguredPromptId: config.template.id,
+        defaultVariables: config.template.defaultVariables,
+      );
+
+      await repository.saveConfig(prompt);
+      final createdPrompt = prompt as AiConfigPrompt;
+      created.add(createdPrompt);
+      allPrompts.add(createdPrompt);
+    }
+
+    return _FtuePromptResult(
+      created: created,
+      skipped: skipped,
+      allPrompts: allPrompts,
+    );
+  }
+
+  /// Gets all prompt configurations for Mistral FTUE.
+  ///
+  /// Model assignments:
+  /// - Magistral Medium (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
+  /// - Mistral Small (Flash): Task Summary, Image Analysis (fast processing)
+  /// - Voxtral Small (Audio): Audio transcription tasks
+  /// Note: No image generation model available for Mistral
+  List<FtuePromptConfig> _getMistralFtuePromptConfigs() {
+    return const [
+      // Audio Transcription -> Audio model (dedicated transcription)
+      FtuePromptConfig(
+        template: audioTranscriptionPrompt,
+        modelVariant: 'audio',
+        promptName: 'Audio Transcription Mistral Voxtral',
+      ),
+
+      // Audio Transcription with Task Context -> Audio model
+      FtuePromptConfig(
+        template: audioTranscriptionWithTaskContextPrompt,
+        modelVariant: 'audio',
+        promptName: 'Audio Transcription (Task Context) Mistral Voxtral',
+      ),
+
+      // Task Summary -> Flash (fast processing)
+      FtuePromptConfig(
+        template: taskSummaryPrompt,
+        modelVariant: 'flash',
+        promptName: 'Task Summary Mistral Small',
+      ),
+
+      // Checklist Updates -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: checklistUpdatesPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Checklist Mistral Magistral',
+      ),
+
+      // Image Analysis -> Flash (fast processing with vision)
+      FtuePromptConfig(
+        template: imageAnalysisPrompt,
+        modelVariant: 'flash',
+        promptName: 'Image Analysis Mistral Small',
+      ),
+
+      // Image Analysis in Task Context -> Flash (fast processing)
+      FtuePromptConfig(
+        template: imageAnalysisInTaskContextPrompt,
+        modelVariant: 'flash',
+        promptName: 'Image Analysis (Task Context) Mistral Small',
+      ),
+
+      // Generate Coding Prompt -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: promptGenerationPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Coding Prompt Mistral Magistral',
+      ),
+
+      // Generate Image Prompt -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: imagePromptGenerationPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Image Prompt Mistral Magistral',
+      ),
+
+      // Note: No cover art generation - Mistral has no image generation model
+    ];
+  }
+
+  /// Creates or updates the FTUE test category for Mistral.
+  Future<(CategoryDefinition?, bool)> _createOrUpdateMistralFtueCategory({
+    required CategoryRepository categoryRepository,
+    required List<AiConfigPrompt> prompts,
+    required String flashModelId,
+    required String reasoningModelId,
+    required String audioModelId,
+  }) async {
+    const categoryName = ftueMistralCategoryName;
+
+    // Build allowedPromptIds from all created prompts
+    final allowedPromptIds = prompts.map((p) => p.id).toList();
+
+    // Build automaticPrompts map with auto-selection logic
+    final automaticPrompts = _buildMistralFtueAutomaticPrompts(
+      prompts,
+      flashModelId: flashModelId,
+      reasoningModelId: reasoningModelId,
+      audioModelId: audioModelId,
+    );
+
+    // Check if category already exists
+    final allCategories = await categoryRepository.getAllCategories();
+    final existingCategory = allCategories
+        .where((c) => c.name == categoryName && c.deletedAt == null)
+        .firstOrNull;
+
+    if (existingCategory != null) {
+      // Update existing category with new prompts
+      final updatedCategory = existingCategory.copyWith(
+        allowedPromptIds: allowedPromptIds,
+        automaticPrompts: automaticPrompts,
+      );
+
+      await categoryRepository.updateCategory(updatedCategory);
+      return (updatedCategory, false);
+    }
+
+    // Create new category
+    final category = await categoryRepository.createCategory(
+      name: categoryName,
+      color: ftueMistralCategoryColor,
+    );
+
+    // Update with prompts configuration
+    final updatedCategory = category.copyWith(
+      allowedPromptIds: allowedPromptIds,
+      automaticPrompts: automaticPrompts,
+    );
+
+    await categoryRepository.updateCategory(updatedCategory);
+
+    return (updatedCategory, true);
+  }
+
+  /// Builds the automaticPrompts map for Mistral FTUE auto-selection.
+  Map<AiResponseType, List<String>> _buildMistralFtueAutomaticPrompts(
+    List<AiConfigPrompt> prompts, {
+    required String flashModelId,
+    required String reasoningModelId,
+    required String audioModelId,
+  }) {
+    final map = <AiResponseType, List<String>>{};
+
+    String? findPromptId(String preconfiguredId, String modelId) {
+      return prompts
+          .firstWhereOrNull(
+            (p) =>
+                p.preconfiguredPromptId == preconfiguredId &&
+                p.defaultModelId == modelId,
+          )
+          ?.id;
+    }
+
+    // Audio Transcription -> Audio model (Voxtral)
+    final audioTranscript = findPromptId('audio_transcription', audioModelId);
+    if (audioTranscript != null) {
+      map[AiResponseType.audioTranscription] = [audioTranscript];
+    }
+
+    // Image Analysis (task context) -> Flash (Mistral Small with vision)
+    final imageAnalysis =
+        findPromptId('image_analysis_task_context', flashModelId);
+    if (imageAnalysis != null) {
+      map[AiResponseType.imageAnalysis] = [imageAnalysis];
+    }
+
+    // Task Summary -> Flash (fast processing)
+    final taskSummary = findPromptId('task_summary', flashModelId);
+    if (taskSummary != null) {
+      map[AiResponseType.taskSummary] = [taskSummary];
+    }
+
+    // Checklist Updates -> Reasoning (Magistral)
+    final checklist = findPromptId('checklist_updates', reasoningModelId);
+    if (checklist != null) {
+      map[AiResponseType.checklistUpdates] = [checklist];
+    }
+
+    // Prompt Generation -> Reasoning (Magistral)
+    final promptGen = findPromptId('prompt_generation', reasoningModelId);
+    if (promptGen != null) {
+      map[AiResponseType.promptGeneration] = [promptGen];
+    }
+
+    // Image Prompt Generation -> Reasoning (Magistral)
+    final imagePrompt =
+        findPromptId('image_prompt_generation', reasoningModelId);
+    if (imagePrompt != null) {
+      map[AiResponseType.imagePromptGeneration] = [imagePrompt];
+    }
+
+    // Note: No image generation - Mistral has no image generation model
+
+    return map;
+  }
+}
+
+/// Internal result class for Mistral model creation.
+class _MistralFtueModelResult {
+  const _MistralFtueModelResult({
+    required this.flash,
+    required this.reasoning,
+    required this.audio,
+    required this.created,
+    required this.verified,
+  });
+
+  final AiConfigModel flash;
+  final AiConfigModel reasoning;
+  final AiConfigModel audio;
   final List<AiConfigModel> created;
   final List<AiConfigModel> verified;
 }

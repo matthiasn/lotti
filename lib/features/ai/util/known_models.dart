@@ -493,12 +493,34 @@ const List<KnownModel> voxtralModels = [
 /// Mistral models - Mistral AI cloud models
 ///
 /// These models run on Mistral's cloud API (api.mistral.ai) and include
-/// both language models and audio transcription capabilities.
+/// language models, reasoning models, and audio transcription capabilities.
 /// Audio files are automatically converted to WAV format before upload.
 const List<KnownModel> mistralModels = [
+  // Fast model - efficient for quick tasks
+  KnownModel(
+    providerModelId: 'mistral-small-2501',
+    name: 'Mistral Small 3.1',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Fast and efficient model with vision capabilities. '
+        'Great for summaries, image analysis, and quick tasks.',
+  ),
+  // Reasoning model - for complex tasks
+  KnownModel(
+    providerModelId: 'magistral-medium-2506',
+    name: 'Magistral Medium',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description: 'Powerful reasoning model with chain-of-thought capabilities. '
+        '40k context window. Best for complex reasoning, coding, and analysis.',
+  ),
+  // Audio transcription model
   KnownModel(
     providerModelId: 'voxtral-small-2507',
-    name: 'Voxtral Small 2507',
+    name: 'Voxtral Small',
     inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
@@ -594,4 +616,59 @@ KnownModel? findOpenAiKnownModel(String providerModelId) {
   }
 
   return (flash: flash, reasoning: reasoning, audio: audio, image: image);
+}
+
+// =============================================================================
+// FTUE Category Constants (shared across all providers)
+// =============================================================================
+
+/// Category names for FTUE test categories
+const ftueGeminiCategoryName = 'Test Category Gemini Enabled';
+const ftueOpenAiCategoryName = 'Test Category OpenAI Enabled';
+const ftueMistralCategoryName = 'Test Category Mistral Enabled';
+
+/// Brand colors for FTUE test categories (hex format)
+const ftueGeminiCategoryColor = '#4285F4'; // Google Blue
+const ftueOpenAiCategoryColor = '#10A37F'; // OpenAI Green
+const ftueMistralCategoryColor = '#FF7000'; // Mistral Orange
+
+// =============================================================================
+// Mistral FTUE (First Time User Experience) Model Constants
+// =============================================================================
+
+/// Model IDs used for Mistral FTUE automation
+const ftueMistralFlashModelId = 'mistral-small-2501';
+const ftueMistralReasoningModelId = 'magistral-medium-2506';
+const ftueMistralAudioModelId = 'voxtral-small-2507';
+
+/// Finds a KnownModel by its provider model ID from the mistralModels list.
+/// Returns null if not found.
+KnownModel? findMistralKnownModel(String providerModelId) {
+  for (final model in mistralModels) {
+    if (model.providerModelId == providerModelId) {
+      return model;
+    }
+  }
+  return null;
+}
+
+/// Returns the three KnownModel configurations needed for Mistral FTUE.
+/// - Flash model (Mistral Small) for fast processing tasks
+/// - Reasoning model (Magistral Medium) for complex reasoning tasks
+/// - Audio model (Voxtral Small) for transcription
+/// Note: Mistral does not have a native image generation model.
+({
+  KnownModel flash,
+  KnownModel reasoning,
+  KnownModel audio,
+})? getMistralFtueKnownModels() {
+  final flash = findMistralKnownModel(ftueMistralFlashModelId);
+  final reasoning = findMistralKnownModel(ftueMistralReasoningModelId);
+  final audio = findMistralKnownModel(ftueMistralAudioModelId);
+
+  if (flash == null || reasoning == null || audio == null) {
+    return null;
+  }
+
+  return (flash: flash, reasoning: reasoning, audio: audio);
 }

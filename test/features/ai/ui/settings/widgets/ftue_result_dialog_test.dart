@@ -168,5 +168,66 @@ void main() {
 
       expect(find.text('Setup Complete'), findsNothing);
     });
+
+    testWidgets('showMistral displays Mistral results correctly',
+        (tester) async {
+      const result = MistralFtueResult(
+        modelsCreated: 3,
+        modelsVerified: 0,
+        promptsCreated: 8,
+        promptsSkipped: 0,
+        categoryCreated: true,
+        categoryName: 'Test Category Mistral Enabled',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                await FtueResultDialog.showMistral(context, result: result);
+              },
+              child: const Text('Open Dialog'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Setup Complete'), findsOneWidget);
+      expect(find.text('3 created'), findsOneWidget);
+      expect(find.text('8 created'), findsOneWidget);
+      expect(
+        find.text('Test Category Mistral Enabled (created)'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('FtueResultData - Mistral', () {
+    test('fromMistral creates correct data from MistralFtueResult', () {
+      const result = MistralFtueResult(
+        modelsCreated: 3,
+        modelsVerified: 0,
+        promptsCreated: 8,
+        promptsSkipped: 0,
+        categoryCreated: true,
+        categoryName: 'Test Category Mistral Enabled',
+        errors: ['Test error'],
+      );
+
+      final data = FtueResultData.fromMistral(result);
+
+      expect(data.modelsCreated, equals(3));
+      expect(data.modelsVerified, equals(0));
+      expect(data.promptsCreated, equals(8));
+      expect(data.promptsSkipped, equals(0));
+      expect(data.categoryCreated, isTrue);
+      expect(data.categoryUpdated, isFalse);
+      expect(data.categoryName, equals('Test Category Mistral Enabled'));
+      expect(data.errors, contains('Test error'));
+    });
   });
 }
