@@ -15,7 +15,7 @@ part 'day_plan_controller.g.dart';
 /// Listens for updates and refreshes when the plan changes.
 @riverpod
 class DayPlanController extends _$DayPlanController {
-  late final DateTime _date;
+  late DateTime _date;
   StreamSubscription<Set<String>>? _updateSubscription;
   late DayPlanRepository _repository;
 

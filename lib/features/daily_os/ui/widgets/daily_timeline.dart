@@ -18,7 +18,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class DailyTimeline extends ConsumerWidget {
   const DailyTimeline({super.key});
 
-  static const double _hourHeight = 60;
+  static const double _hourHeight = 40;
   static const double _timeAxisWidth = 50;
   static const double _laneWidth = 120;
 

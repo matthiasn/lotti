@@ -55,7 +55,7 @@ final class TimelineDataControllerProvider
 }
 
 String _$timelineDataControllerHash() =>
-    r'cdb948be43aa693fe23bae10d8122aba099e6ffd';
+    r'66ef1c4ff4c9b3fe90f116e80f833e21751706cd';
 
 /// Provides timeline data for plan vs actual comparison.
 

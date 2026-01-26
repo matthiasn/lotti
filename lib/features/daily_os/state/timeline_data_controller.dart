@@ -255,7 +255,10 @@ class TimelineDataController extends _$TimelineDataController {
     List<PlannedTimeSlot> planned,
     List<ActualTimeSlot> actual,
   ) {
-    var earliest = 8; // Default start
+    // If no content, use default range
+    if (planned.isEmpty && actual.isEmpty) return 8;
+
+    var earliest = 24;
 
     if (planned.isNotEmpty) {
       final plannedStart = planned.first.startTime.hour;
@@ -267,14 +270,18 @@ class TimelineDataController extends _$TimelineDataController {
       if (actualStart < earliest) earliest = actualStart;
     }
 
-    return earliest;
+    // Add 1 hour buffer before, but not before midnight
+    return (earliest - 1).clamp(0, 23);
   }
 
   int _calculateDayEndHour(
     List<PlannedTimeSlot> planned,
     List<ActualTimeSlot> actual,
   ) {
-    var latest = 18; // Default end
+    // If no content, use default range
+    if (planned.isEmpty && actual.isEmpty) return 18;
+
+    var latest = 0;
 
     if (planned.isNotEmpty) {
       final plannedEnd = planned.last.endTime.hour + 1;
@@ -286,6 +293,7 @@ class TimelineDataController extends _$TimelineDataController {
       if (actualEnd > latest) latest = actualEnd;
     }
 
-    return latest.clamp(0, 24);
+    // Add 1 hour buffer after, but not past midnight
+    return (latest + 1).clamp(1, 24);
   }
 }

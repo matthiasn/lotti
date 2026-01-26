@@ -62,7 +62,7 @@ final class DayPlanControllerProvider
   }
 }
 
-String _$dayPlanControllerHash() => r'1fc1462d335414f8abf220b2a69ba0c43ddee265';
+String _$dayPlanControllerHash() => r'fd82ddccaf3349ef67b7361652a053758fd6b363';
 
 /// Provides the day plan for a specific date.
 ///
