@@ -199,5 +199,71 @@ void main() {
       // Should show "+1h over" for over budget
       expect(find.text('+1h over'), findsOneWidget);
     });
+
+    testWidgets('shows summary chip with hours and minutes', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          budgets: [
+            createProgress(
+              id: 'b1',
+              category: testCategory,
+              planned: const Duration(hours: 3, minutes: 30),
+              recorded: const Duration(hours: 1, minutes: 15),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "1h 15m / 3h 30m"
+      expect(find.text('1h 15m / 3h 30m'), findsOneWidget);
+    });
+
+    testWidgets('shows summary chip with minutes only', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          budgets: [
+            createProgress(
+              id: 'b1',
+              category: testCategory,
+              planned: const Duration(minutes: 45),
+              recorded: const Duration(minutes: 30),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "30m / 45m"
+      expect(find.text('30m / 45m'), findsOneWidget);
+    });
+
+    testWidgets('shows add block button', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          budgets: [createProgress(id: 'b1', category: testCategory)],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+    });
+
+    testWidgets('tapping add button shows sheet', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          budgets: [createProgress(id: 'b1', category: testCategory)],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the add button
+      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.pumpAndSettle();
+
+      // The sheet should appear (or try to)
+      // We just verify the tap doesn't crash
+      expect(find.byType(TimeBudgetList), findsOneWidget);
+    });
   });
 }

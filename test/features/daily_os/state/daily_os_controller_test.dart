@@ -326,4 +326,163 @@ void main() {
       expect(DailyOsSection.values, contains(DailyOsSection.summary));
     });
   });
+
+  group('DailyOsState computed properties', () {
+    test('isDraft returns true when dayPlan is null', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.isDraft, isTrue);
+    });
+
+    test('isAgreed returns false when dayPlan is null', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.isAgreed, isFalse);
+    });
+
+    test('needsReview returns false when dayPlan is null', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.needsReview, isFalse);
+    });
+
+    test('overBudgetCount returns zero with empty budgets', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.overBudgetCount, equals(0));
+    });
+
+    test('totalRecordedTime returns zero with empty budgets', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.totalRecordedTime, equals(Duration.zero));
+    });
+  });
+
+  group('DailyOsState expandedSection', () {
+    test('default expandedSection is null', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.expandedSection, isNull);
+    });
+
+    test('can set expandedSection via constructor', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedSection: DailyOsSection.timeline,
+      );
+
+      expect(state.expandedSection, equals(DailyOsSection.timeline));
+    });
+
+    test('copyWith changes expandedSection', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      final modified = state.copyWith(expandedSection: DailyOsSection.budgets);
+
+      expect(modified.expandedSection, equals(DailyOsSection.budgets));
+    });
+  });
+
+  group('DailyOsState isEditingPlan', () {
+    test('default isEditingPlan is false', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.isEditingPlan, isFalse);
+    });
+
+    test('can set isEditingPlan via constructor', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        isEditingPlan: true,
+      );
+
+      expect(state.isEditingPlan, isTrue);
+    });
+  });
+
+  group('DailyOsState highlightedCategoryId', () {
+    test('default highlightedCategoryId is null', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.highlightedCategoryId, isNull);
+    });
+
+    test('can set highlightedCategoryId via constructor', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        highlightedCategoryId: 'cat-123',
+      );
+
+      expect(state.highlightedCategoryId, equals('cat-123'));
+    });
+
+    test('copyWith changes highlightedCategoryId', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        highlightedCategoryId: 'cat-old',
+      );
+
+      final modified = state.copyWith(highlightedCategoryId: 'cat-new');
+
+      expect(modified.highlightedCategoryId, equals('cat-new'));
+    });
+  });
 }

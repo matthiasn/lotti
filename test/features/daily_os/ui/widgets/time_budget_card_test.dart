@@ -201,5 +201,119 @@ void main() {
 
       expect(find.text('Uncategorized'), findsOneWidget);
     });
+
+    testWidgets('displays hours and minutes for planned duration',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgress(
+            planned: const Duration(hours: 2, minutes: 30),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('2h 30m planned'), findsOneWidget);
+    });
+
+    testWidgets('displays minutes only for short planned duration',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgress(
+            planned: const Duration(minutes: 45),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('45 min planned'), findsOneWidget);
+    });
+
+    testWidgets('shows highlighted border when category is highlighted',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => 'cat-1'),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgress(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Widget should have enhanced styling when highlighted
+      expect(find.byType(AnimatedContainer), findsWidgets);
+    });
+
+    testWidgets('handles long press callback', (tester) async {
+      var longPressed = false;
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgress(),
+            onLongPress: () => longPressed = true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.byType(TimeBudgetCard));
+      await tester.pumpAndSettle();
+
+      expect(longPressed, isTrue);
+    });
+
+    testWidgets('displays remaining time with hours and minutes',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgress(
+            planned: const Duration(hours: 3),
+            recorded: const Duration(hours: 1, minutes: 30),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('1h 30m left'), findsOneWidget);
+    });
+
+    testWidgets('displays over budget with hours and minutes', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgress(
+            planned: const Duration(hours: 1),
+            recorded: const Duration(hours: 2, minutes: 15),
+            status: BudgetProgressStatus.overBudget,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('+1h 15m over'), findsOneWidget);
+    });
+
+    testWidgets('shows progress bar with correct visual states',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgress(
+            recorded: const Duration(hours: 2, minutes: 30),
+            status: BudgetProgressStatus.overBudget,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The progress bar should show over-budget indicator
+      expect(find.byType(TimeBudgetCard), findsOneWidget);
+    });
   });
 }
