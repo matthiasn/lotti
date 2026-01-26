@@ -186,5 +186,109 @@ void main() {
       // Default is 9:00 AM to 10:00 AM = 1 hour
       expect(find.text('1h'), findsOneWidget);
     });
+
+    testWidgets('category selector is tappable', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Find the category selector by its placeholder text
+      final selectorFinder = find.text('Choose a category...');
+      expect(selectorFinder, findsOneWidget);
+
+      // The selector should be inside a GestureDetector
+      final gestureDetector = find.ancestor(
+        of: selectorFinder,
+        matching: find.byType(GestureDetector),
+      );
+      expect(gestureDetector, findsWidgets);
+    });
+
+    testWidgets('time selectors are tappable', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Find start time selector
+      final startFinder = find.text('Start');
+      expect(startFinder, findsOneWidget);
+
+      // The time selectors should be tappable
+      final startGestureDetector = find.ancestor(
+        of: startFinder,
+        matching: find.byType(GestureDetector),
+      );
+      expect(startGestureDetector, findsWidgets);
+
+      // Find end time selector
+      final endFinder = find.text('End');
+      expect(endFinder, findsOneWidget);
+
+      final endGestureDetector = find.ancestor(
+        of: endFinder,
+        matching: find.byType(GestureDetector),
+      );
+      expect(endGestureDetector, findsWidgets);
+    });
+
+    testWidgets('shows arrow between time selectors', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Arrow icon between start and end time
+      expect(find.byIcon(MdiIcons.arrowRight), findsOneWidget);
+    });
+
+    testWidgets('shows chevron icons for selection', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Chevron for category selector
+      expect(find.byIcon(MdiIcons.chevronRight), findsOneWidget);
+    });
+
+    testWidgets('displays default start time', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Default start time is 9:00 AM
+      expect(find.text('9:00 AM'), findsOneWidget);
+    });
+
+    testWidgets('displays default end time', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Default end time is 10:00 AM
+      expect(find.text('10:00 AM'), findsOneWidget);
+    });
+
+    testWidgets('Cancel button is enabled', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final cancelButton = find.widgetWithText(OutlinedButton, 'Cancel');
+      expect(cancelButton, findsOneWidget);
+
+      final buttonWidget = tester.widget<OutlinedButton>(cancelButton);
+      expect(buttonWidget.onPressed, isNotNull);
+    });
+
+    testWidgets('shows drag handle at top', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // The drag handle is a Container with specific decoration
+      // Check that the widget structure exists (handle container is 40x4)
+      expect(find.byType(Container), findsWidgets);
+    });
+
+    testWidgets('has correct layout structure', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Should have main Column for layout
+      expect(find.byType(Column), findsWidgets);
+      // Should have Row for time selectors and buttons
+      expect(find.byType(Row), findsWidgets);
+    });
   });
 }

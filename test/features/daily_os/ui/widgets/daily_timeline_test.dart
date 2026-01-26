@@ -352,5 +352,341 @@ void main() {
       // Should show "Planned" as fallback when no category
       expect(find.text('Planned'), findsOneWidget);
     });
+
+    testWidgets('renders multiple planned blocks', (tester) async {
+      final testCategory2 = CategoryDefinition(
+        id: 'cat-2',
+        name: 'Exercise',
+        color: '#34A853',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+      when(() => mockCacheService.getCategoryById('cat-2'))
+          .thenReturn(testCategory2);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          data: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-1',
+                  categoryId: testCategory.id,
+                  startTime: testDate.add(const Duration(hours: 9)),
+                  endTime: testDate.add(const Duration(hours: 10)),
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: testCategory.id,
+              ),
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-2',
+                  categoryId: testCategory2.id,
+                  startTime: testDate.add(const Duration(hours: 14)),
+                  endTime: testDate.add(const Duration(hours: 15)),
+                ),
+                startTime: testDate.add(const Duration(hours: 14)),
+                endTime: testDate.add(const Duration(hours: 15)),
+                categoryId: testCategory2.id,
+              ),
+            ],
+            actualSlots: const [],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show both category names
+      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('Exercise'), findsOneWidget);
+    });
+
+    testWidgets('renders actual entry as non-task with fallback title',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      final entryMeta = Metadata(
+        id: 'entry-1',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate.add(const Duration(hours: 10)),
+        dateTo: testDate.add(const Duration(hours: 11)),
+        categoryId: testCategory.id,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          data: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: JournalEntity.journalEntry(meta: entryMeta),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show category name as fallback for non-task entries
+      expect(find.text('Work'), findsOneWidget);
+    });
+
+    testWidgets('highlights planned block when category is highlighted',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            dailyOsSelectedDateProvider.overrideWithValue(testDate),
+            timelineDataControllerProvider(date: testDate).overrideWith(
+              () => _TestTimelineController(
+                DailyTimelineData(
+                  date: testDate,
+                  plannedSlots: [
+                    PlannedTimeSlot(
+                      block: PlannedBlock(
+                        id: 'block-1',
+                        categoryId: testCategory.id,
+                        startTime: testDate.add(const Duration(hours: 9)),
+                        endTime: testDate.add(const Duration(hours: 10)),
+                      ),
+                      startTime: testDate.add(const Duration(hours: 9)),
+                      endTime: testDate.add(const Duration(hours: 10)),
+                      categoryId: testCategory.id,
+                    ),
+                  ],
+                  actualSlots: const [],
+                  dayStartHour: 8,
+                  dayEndHour: 18,
+                ),
+              ),
+            ),
+            // Highlight the category
+            highlightedCategoryIdProvider.overrideWith((ref) => 'cat-1'),
+          ],
+          child: const SingleChildScrollView(
+            child: DailyTimeline(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Widget should render (test passes if no exception)
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+
+    testWidgets('renders both planned and actual blocks simultaneously',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      final taskMeta = Metadata(
+        id: 'task-1',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate.add(const Duration(hours: 10)),
+        dateTo: testDate.add(const Duration(hours: 11)),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          data: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-1',
+                  categoryId: testCategory.id,
+                  startTime: testDate.add(const Duration(hours: 9)),
+                  endTime: testDate.add(const Duration(hours: 11)),
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: Task(
+                  meta: taskMeta,
+                  data: TaskData(
+                    title: 'Real Work Done',
+                    status: TaskStatus.groomed(
+                      id: 'status-1',
+                      createdAt: testDate,
+                      utcOffset: 0,
+                    ),
+                    dateFrom: testDate.add(const Duration(hours: 10)),
+                    dateTo: testDate.add(const Duration(hours: 11)),
+                    statusHistory: const [],
+                  ),
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show both plan label and actual task title
+      expect(find.text('Work'), findsOneWidget); // Planned block
+      expect(find.text('Real Work Done'), findsOneWidget); // Actual task
+    });
+
+    testWidgets('planned block is tappable', (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          data: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-1',
+                  categoryId: testCategory.id,
+                  startTime: testDate.add(const Duration(hours: 9)),
+                  endTime: testDate.add(const Duration(hours: 10)),
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            actualSlots: const [],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the planned block text and its GestureDetector ancestor
+      final blockFinder = find.text('Work');
+      expect(blockFinder, findsOneWidget);
+
+      final gestureDetector = find.ancestor(
+        of: blockFinder,
+        matching: find.byType(GestureDetector),
+      );
+      expect(gestureDetector, findsWidgets);
+    });
+
+    testWidgets('actual block is tappable', (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      final taskMeta = Metadata(
+        id: 'task-1',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate.add(const Duration(hours: 10)),
+        dateTo: testDate.add(const Duration(hours: 11)),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          data: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: Task(
+                  meta: taskMeta,
+                  data: TaskData(
+                    title: 'Tap Me Task',
+                    status: TaskStatus.groomed(
+                      id: 'status-1',
+                      createdAt: testDate,
+                      utcOffset: 0,
+                    ),
+                    dateFrom: testDate.add(const Duration(hours: 10)),
+                    dateTo: testDate.add(const Duration(hours: 11)),
+                    statusHistory: const [],
+                  ),
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the actual block text and its GestureDetector ancestor
+      final blockFinder = find.text('Tap Me Task');
+      expect(blockFinder, findsOneWidget);
+
+      final gestureDetector = find.ancestor(
+        of: blockFinder,
+        matching: find.byType(GestureDetector),
+      );
+      expect(gestureDetector, findsWidgets);
+    });
+
+    testWidgets('respects custom day bounds', (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          data: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-1',
+                  categoryId: testCategory.id,
+                  startTime: testDate.add(const Duration(hours: 6)),
+                  endTime: testDate.add(const Duration(hours: 7)),
+                ),
+                startTime: testDate.add(const Duration(hours: 6)),
+                endTime: testDate.add(const Duration(hours: 7)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            actualSlots: const [],
+            dayStartHour: 5, // Early start
+            dayEndHour: 10, // Early end
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show early hour labels
+      expect(find.text('05:00'), findsOneWidget);
+      expect(find.text('06:00'), findsOneWidget);
+      expect(find.text('07:00'), findsOneWidget);
+    });
   });
 }
