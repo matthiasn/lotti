@@ -153,28 +153,6 @@ void main() {
       expect(find.text('Over'), findsOneWidget);
     });
 
-    testWidgets('shows action buttons when not complete', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(plan: createTestPlan()),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Done for today'), findsOneWidget);
-      expect(find.text('Copy to tomorrow'), findsOneWidget);
-    });
-
-    testWidgets('shows completion message when day is complete',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(plan: createTestPlan(isComplete: true)),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Day Complete'), findsOneWidget);
-      expect(find.text('Great job! You completed your day.'), findsOneWidget);
-      expect(find.byIcon(MdiIcons.partyPopper), findsOneWidget);
-    });
-
     testWidgets('shows progress bar when budgets exist', (tester) async {
       await tester.pumpWidget(
         createTestWidget(

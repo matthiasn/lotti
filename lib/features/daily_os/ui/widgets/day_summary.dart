@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -26,9 +24,6 @@ class DaySummary extends ConsumerWidget {
       data: (dayPlan) {
         return budgetStatsAsync.when(
           data: (stats) {
-            final isComplete =
-                dayPlan is DayPlanEntry && dayPlan.data.isComplete;
-
             return ModernBaseCard(
               margin: const EdgeInsets.all(AppTheme.spacingLarge),
               padding: const EdgeInsets.all(AppTheme.spacingLarge),
@@ -39,17 +34,13 @@ class DaySummary extends ConsumerWidget {
                   Row(
                     children: [
                       Icon(
-                        isComplete ? MdiIcons.checkCircle : MdiIcons.sunCompass,
+                        MdiIcons.sunCompass,
                         size: 24,
-                        color: isComplete
-                            ? Colors.green
-                            : context.colorScheme.primary,
+                        color: context.colorScheme.primary,
                       ),
                       const SizedBox(width: AppTheme.spacingMedium),
                       Text(
-                        isComplete
-                            ? context.messages.dailyOsDayComplete
-                            : context.messages.dailyOsDaySummary,
+                        context.messages.dailyOsDaySummary,
                         style: context.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -97,67 +88,6 @@ class DaySummary extends ConsumerWidget {
                   if (stats.budgetCount > 0) ...[
                     const SizedBox(height: AppTheme.spacingLarge),
                     _OverallProgressBar(stats: stats),
-                  ],
-
-                  // Action buttons
-                  if (!isComplete) ...[
-                    const SizedBox(height: AppTheme.spacingLarge),
-                    const Divider(),
-                    const SizedBox(height: AppTheme.spacingMedium),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _ActionButton(
-                          icon: MdiIcons.checkAll,
-                          label: context.messages.dailyOsDoneForToday,
-                          onPressed: () {
-                            ref
-                                .read(
-                                  dayPlanControllerProvider(date: selectedDate)
-                                      .notifier,
-                                )
-                                .markComplete();
-                          },
-                        ),
-                        _ActionButton(
-                          icon: MdiIcons.contentCopy,
-                          label: context.messages.dailyOsCopyToTomorrow,
-                          onPressed: () {
-                            // TODO: Implement copy budgets to next day
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-
-                  // Completion message
-                  if (isComplete) ...[
-                    const SizedBox(height: AppTheme.spacingMedium),
-                    Container(
-                      padding: const EdgeInsets.all(AppTheme.spacingMedium),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            MdiIcons.partyPopper,
-                            color: Colors.green,
-                            size: 20,
-                          ),
-                          const SizedBox(width: AppTheme.spacingSmall),
-                          Expanded(
-                            child: Text(
-                              context.messages.dailyOsCompletionMessage,
-                              style: context.textTheme.bodyMedium?.copyWith(
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ],
               ),
@@ -297,31 +227,6 @@ class _OverallProgressBar extends StatelessWidget {
     if (fraction >= 0.8) return Colors.green.shade400;
     if (fraction >= 0.5) return context.colorScheme.primary;
     return context.colorScheme.primary.withValues(alpha: 0.7);
-  }
-}
-
-/// Action button for summary actions.
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      style: TextButton.styleFrom(
-        foregroundColor: context.colorScheme.primary,
-      ),
-    );
   }
 }
 
