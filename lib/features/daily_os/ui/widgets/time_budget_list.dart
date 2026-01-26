@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
+import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_edit_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -26,7 +27,7 @@ class TimeBudgetList extends ConsumerWidget {
     return budgetProgressAsync.when(
       data: (budgets) {
         if (budgets.isEmpty) {
-          return _EmptyBudgetsState(date: selectedDate);
+          return BudgetsEmptyState(date: selectedDate);
         }
 
         return Column(
@@ -176,62 +177,6 @@ class _BudgetsSummaryChip extends StatelessWidget {
       return '${hours}h ${mins}m';
     }
     return '${duration.inMinutes}m';
-  }
-}
-
-/// Empty state when no budgets are defined.
-class _EmptyBudgetsState extends StatelessWidget {
-  const _EmptyBudgetsState({required this.date});
-
-  final DateTime date;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(AppTheme.spacingLarge),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        border: Border.all(
-          color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            MdiIcons.chartDonutVariant,
-            size: 48,
-            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: AppTheme.spacingMedium),
-          Text(
-            context.messages.dailyOsNoBudgets,
-            style: context.textTheme.titleMedium?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppTheme.spacingSmall),
-          Text(
-            context.messages.dailyOsNoBudgetsHint,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color:
-                  context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppTheme.spacingLarge),
-          FilledButton.tonalIcon(
-            onPressed: () {
-              AddBudgetSheet.show(context, date);
-            },
-            icon: const Icon(Icons.add),
-            label: Text(context.messages.dailyOsAddBudget),
-          ),
-        ],
-      ),
-    );
   }
 }
 

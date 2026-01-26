@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
 import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -31,7 +32,7 @@ class DailyTimeline extends ConsumerWidget {
     return timelineDataAsync.when(
       data: (data) {
         if (data.plannedSlots.isEmpty && data.actualSlots.isEmpty) {
-          return const _EmptyTimelineState();
+          return const TimelineEmptyState();
         }
 
         return _TimelineContent(data: data);
@@ -496,52 +497,6 @@ class _CurrentTimeIndicator extends StatelessWidget {
               height: 2,
               color: Colors.redAccent,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Empty state when no timeline data.
-class _EmptyTimelineState extends StatelessWidget {
-  const _EmptyTimelineState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(AppTheme.spacingLarge),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        border: Border.all(
-          color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            MdiIcons.calendarBlankOutline,
-            size: 48,
-            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: AppTheme.spacingMedium),
-          Text(
-            context.messages.dailyOsNoTimeline,
-            style: context.textTheme.titleMedium?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppTheme.spacingSmall),
-          Text(
-            context.messages.dailyOsNoTimelineHint,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color:
-                  context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

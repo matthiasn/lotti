@@ -4,6 +4,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -99,20 +100,44 @@ class DailyTimelineData {
 @riverpod
 class TimelineDataController extends _$TimelineDataController {
   late final DateTime _date;
+  late final DayPlanRepository _dayPlanRepository;
   StreamSubscription<Set<String>>? _updateSubscription;
+  bool _isDisposed = false;
+
+  DailyTimelineData get _emptyData => DailyTimelineData(
+        date: _date,
+        plannedSlots: [],
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
 
   void _listen() {
     final notifications = getIt<UpdateNotifications>();
     _updateSubscription = notifications.updateStream.listen((_) async {
-      // Refresh timeline data when any journal entries change
-      state = AsyncData(await _fetchData());
+      // Don't update if provider has been disposed
+      if (_isDisposed) return;
+
+      try {
+        // Refresh timeline data when any journal entries change
+        final data = await _fetchData();
+        if (!_isDisposed) {
+          state = AsyncData(data);
+        }
+      } catch (e) {
+        // Ignore errors from disposed refs - silently return
+        if (_isDisposed) return;
+        rethrow;
+      }
     });
   }
 
   Future<DailyTimelineData> _fetchData() async {
-    final dayPlanAsync = await ref.read(
-      dayPlanControllerProvider(date: _date).future,
-    );
+    // Check if disposed
+    if (_isDisposed) return _emptyData;
+
+    // Get day plan directly from repository (doesn't use ref)
+    final dayPlan = await _dayPlanRepository.getOrCreateDayPlan(_date);
 
     final dayStart = _date.dayAtMidnight;
     final dayEnd = dayStart.add(const Duration(days: 1));
@@ -150,17 +175,15 @@ class TimelineDataController extends _$TimelineDataController {
 
     // Convert planned blocks to time slots
     final plannedSlots = <PlannedTimeSlot>[];
-    if (dayPlanAsync is DayPlanEntry) {
-      for (final block in dayPlanAsync.data.plannedBlocks) {
-        plannedSlots.add(
-          PlannedTimeSlot(
-            startTime: block.startTime,
-            endTime: block.endTime,
-            block: block,
-            categoryId: block.categoryId,
-          ),
-        );
-      }
+    for (final block in dayPlan.data.plannedBlocks) {
+      plannedSlots.add(
+        PlannedTimeSlot(
+          startTime: block.startTime,
+          endTime: block.endTime,
+          block: block,
+          categoryId: block.categoryId,
+        ),
+      );
     }
 
     // Convert actual entries to time slots
@@ -205,9 +228,14 @@ class TimelineDataController extends _$TimelineDataController {
   @override
   Future<DailyTimelineData> build({required DateTime date}) async {
     _date = date;
+    _isDisposed = false;
+    _dayPlanRepository = ref.read(dayPlanRepositoryProvider);
 
     ref
-      ..onDispose(() => _updateSubscription?.cancel())
+      ..onDispose(() {
+        _isDisposed = true;
+        _updateSubscription?.cancel();
+      })
       // Also watch day plan for planned block changes
       ..watch(dayPlanControllerProvider(date: date));
 
