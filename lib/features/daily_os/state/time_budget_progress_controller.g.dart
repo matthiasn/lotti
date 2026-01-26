@@ -10,8 +10,9 @@ part of 'time_budget_progress_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Provides aggregated budget progress for a day.
 ///
-/// Combines the day's time budgets with actual recorded time entries
-/// to calculate progress for each budget category.
+/// Budgets are derived from the sum of planned blocks per category.
+/// Combines planned time with actual recorded time entries
+/// to calculate progress for each category.
 
 @ProviderFor(TimeBudgetProgressController)
 final timeBudgetProgressControllerProvider =
@@ -19,14 +20,16 @@ final timeBudgetProgressControllerProvider =
 
 /// Provides aggregated budget progress for a day.
 ///
-/// Combines the day's time budgets with actual recorded time entries
-/// to calculate progress for each budget category.
+/// Budgets are derived from the sum of planned blocks per category.
+/// Combines planned time with actual recorded time entries
+/// to calculate progress for each category.
 final class TimeBudgetProgressControllerProvider extends $AsyncNotifierProvider<
     TimeBudgetProgressController, List<TimeBudgetProgress>> {
   /// Provides aggregated budget progress for a day.
   ///
-  /// Combines the day's time budgets with actual recorded time entries
-  /// to calculate progress for each budget category.
+  /// Budgets are derived from the sum of planned blocks per category.
+  /// Combines planned time with actual recorded time entries
+  /// to calculate progress for each category.
   TimeBudgetProgressControllerProvider._(
       {required TimeBudgetProgressControllerFamily super.from,
       required DateTime super.argument})
@@ -65,12 +68,13 @@ final class TimeBudgetProgressControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$timeBudgetProgressControllerHash() =>
-    r'adf5d54e39ab90c473c8b0639919c9c8a2a50a01';
+    r'49245b2b2b6a241f87ddc4df637f45973f74f808';
 
 /// Provides aggregated budget progress for a day.
 ///
-/// Combines the day's time budgets with actual recorded time entries
-/// to calculate progress for each budget category.
+/// Budgets are derived from the sum of planned blocks per category.
+/// Combines planned time with actual recorded time entries
+/// to calculate progress for each category.
 
 final class TimeBudgetProgressControllerFamily extends $Family
     with
@@ -91,8 +95,9 @@ final class TimeBudgetProgressControllerFamily extends $Family
 
   /// Provides aggregated budget progress for a day.
   ///
-  /// Combines the day's time budgets with actual recorded time entries
-  /// to calculate progress for each budget category.
+  /// Budgets are derived from the sum of planned blocks per category.
+  /// Combines planned time with actual recorded time entries
+  /// to calculate progress for each category.
 
   TimeBudgetProgressControllerProvider call({
     required DateTime date,
@@ -105,8 +110,9 @@ final class TimeBudgetProgressControllerFamily extends $Family
 
 /// Provides aggregated budget progress for a day.
 ///
-/// Combines the day's time budgets with actual recorded time entries
-/// to calculate progress for each budget category.
+/// Budgets are derived from the sum of planned blocks per category.
+/// Combines planned time with actual recorded time entries
+/// to calculate progress for each category.
 
 abstract class _$TimeBudgetProgressController
     extends $AsyncNotifier<List<TimeBudgetProgress>> {

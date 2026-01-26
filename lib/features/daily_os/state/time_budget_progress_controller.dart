@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -28,27 +26,31 @@ enum BudgetProgressStatus {
   overBudget,
 }
 
-/// Computed progress for a single time budget.
+/// Computed progress for a category's time budget (derived from blocks).
 class TimeBudgetProgress {
   const TimeBudgetProgress({
-    required this.budget,
+    required this.categoryId,
     required this.category,
     required this.plannedDuration,
     required this.recordedDuration,
     required this.status,
     required this.contributingEntries,
     required this.pinnedTasks,
+    required this.blocks,
   });
 
-  final TimeBudget budget;
+  final String categoryId;
   final CategoryDefinition? category;
   final Duration plannedDuration;
   final Duration recordedDuration;
   final BudgetProgressStatus status;
   final List<JournalEntity> contributingEntries;
 
-  /// Tasks pinned to this budget (resolved from PinnedTaskRef).
+  /// Tasks pinned to this category (resolved from PinnedTaskRef).
   final List<Task> pinnedTasks;
+
+  /// The planned blocks that contribute to this budget.
+  final List<PlannedBlock> blocks;
 
   /// Tasks that contributed time to this budget (from contributingEntries).
   List<Task> get contributingTasks =>
@@ -66,8 +68,9 @@ class TimeBudgetProgress {
 
 /// Provides aggregated budget progress for a day.
 ///
-/// Combines the day's time budgets with actual recorded time entries
-/// to calculate progress for each budget category.
+/// Budgets are derived from the sum of planned blocks per category.
+/// Combines planned time with actual recorded time entries
+/// to calculate progress for each category.
 @riverpod
 class TimeBudgetProgressController extends _$TimeBudgetProgressController {
   @override
@@ -81,9 +84,8 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
     }
 
     final dayPlanData = dayPlanEntity.data;
-    final budgets = [...dayPlanData.budgets]
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    if (budgets.isEmpty) {
+    final derivedBudgets = dayPlanData.derivedBudgets;
+    if (derivedBudgets.isEmpty) {
       return [];
     }
 
@@ -116,10 +118,10 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
         if (entity is Task) entity.meta.id: entity,
     };
 
-    // Group pinned tasks by budget ID
-    final pinnedTasksByBudgetId = <String, List<Task>>{};
-    for (final budget in budgets) {
-      final taskRefs = dayPlanData.pinnedTasksForBudget(budget.id);
+    // Group pinned tasks by category ID
+    final pinnedTasksByCategoryId = <String, List<Task>>{};
+    for (final budget in derivedBudgets) {
+      final taskRefs = dayPlanData.pinnedTasksForCategory(budget.categoryId);
       final tasks = <Task>[];
       for (final ref in taskRefs) {
         final task = pinnedTasksById[ref.taskId];
@@ -127,27 +129,28 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
           tasks.add(task);
         }
       }
-      pinnedTasksByBudgetId[budget.id] = tasks;
+      pinnedTasksByCategoryId[budget.categoryId] = tasks;
     }
 
-    // Calculate progress for each budget
+    // Calculate progress for each derived budget
     final cacheService = getIt<EntitiesCacheService>();
     final results = <TimeBudgetProgress>[];
 
-    for (final budget in budgets) {
+    for (final budget in derivedBudgets) {
       final categoryEntries = entriesByCategory[budget.categoryId] ?? [];
       final recordedDuration = _sumDurations(categoryEntries);
       final plannedDuration = budget.plannedDuration;
 
       results.add(
         TimeBudgetProgress(
-          budget: budget,
+          categoryId: budget.categoryId,
           category: cacheService.getCategoryById(budget.categoryId),
           plannedDuration: plannedDuration,
           recordedDuration: recordedDuration,
           status: _calculateStatus(plannedDuration, recordedDuration),
           contributingEntries: categoryEntries,
-          pinnedTasks: pinnedTasksByBudgetId[budget.id] ?? [],
+          pinnedTasks: pinnedTasksByCategoryId[budget.categoryId] ?? [],
+          blocks: budget.blocks,
         ),
       );
     }

@@ -4,7 +4,8 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
-import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
+import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart'
+    as add_block;
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_header.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_summary.dart';
@@ -116,7 +117,7 @@ class DailyOsPage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          AddBudgetSheet.show(context, selectedDate);
+          add_block.AddBlockSheet.show(context, selectedDate);
         },
         child: const Icon(Icons.add),
       ),

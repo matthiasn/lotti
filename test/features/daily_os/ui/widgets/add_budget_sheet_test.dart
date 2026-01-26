@@ -64,7 +64,7 @@ void main() {
   });
 
   DayPlanEntry createTestPlan({
-    List<TimeBudget>? budgets,
+    List<PlannedBlock>? plannedBlocks,
   }) {
     return DayPlanEntry(
       meta: Metadata(
@@ -77,7 +77,7 @@ void main() {
       data: DayPlanData(
         planDate: testDate,
         status: const DayPlanStatus.draft(),
-        budgets: budgets ?? [],
+        plannedBlocks: plannedBlocks ?? [],
       ),
     );
   }
@@ -97,19 +97,19 @@ void main() {
       ],
       child: Builder(
         builder: (context) => Scaffold(
-          body: AddBudgetSheet(date: testDate),
+          body: AddBlockSheet(date: testDate),
         ),
       ),
     );
   }
 
-  group('AddBudgetSheet', () {
+  group('AddBlockSheet', () {
     testWidgets('renders sheet with title', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Title and button both show 'Add Budget'
-      expect(find.text('Add Budget'), findsNWidgets(2));
+      // Title and button both show 'Add Block'
+      expect(find.text('Add Block'), findsNWidgets(2));
     });
 
     testWidgets('shows Select Category label', (tester) async {
@@ -134,22 +134,19 @@ void main() {
       expect(find.byIcon(MdiIcons.folderOutline), findsOneWidget);
     });
 
-    testWidgets('shows Planned Duration label', (tester) async {
+    testWidgets('shows Time Range label', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Planned Duration'), findsOneWidget);
+      expect(find.text('Time Range'), findsOneWidget);
     });
 
-    testWidgets('shows duration chips', (tester) async {
+    testWidgets('shows Start and End labels', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('30m'), findsOneWidget);
-      expect(find.text('1h'), findsOneWidget);
-      expect(find.text('2h'), findsOneWidget);
-      expect(find.text('3h'), findsOneWidget);
-      expect(find.text('4h'), findsOneWidget);
+      expect(find.text('Start'), findsOneWidget);
+      expect(find.text('End'), findsOneWidget);
     });
 
     testWidgets('shows action buttons', (tester) async {
@@ -157,17 +154,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Cancel'), findsOneWidget);
-      // Add Budget button appears twice: title and button
-      expect(find.text('Add Budget'), findsNWidgets(2));
+      // Add Block button appears twice: title and button
+      expect(find.text('Add Block'), findsNWidgets(2));
     });
 
-    testWidgets('Add Budget button is disabled without category',
+    testWidgets('Add Block button is disabled without category',
         (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Find the FilledButton with Add Budget text
-      final addButton = find.widgetWithText(FilledButton, 'Add Budget');
+      // Find the FilledButton with Add Block text
+      final addButton = find.widgetWithText(FilledButton, 'Add Block');
       expect(addButton, findsOneWidget);
 
       // The button should be disabled (onPressed is null)
@@ -175,30 +172,18 @@ void main() {
       expect(buttonWidget.onPressed, isNull);
     });
 
-    testWidgets('renders AddBudgetSheet widget', (tester) async {
+    testWidgets('renders AddBlockSheet widget', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byType(AddBudgetSheet), findsOneWidget);
+      expect(find.byType(AddBlockSheet), findsOneWidget);
     });
 
-    testWidgets('can select different duration', (tester) async {
+    testWidgets('shows duration display', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Tap on 2h duration chip
-      await tester.tap(find.text('2h'));
-      await tester.pumpAndSettle();
-
-      // The chip should be visually selected
-      expect(find.text('2h'), findsOneWidget);
-    });
-
-    testWidgets('1h is selected by default', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      // 1h should be selected by default - we verify by checking it's rendered
+      // Default is 9:00 AM to 10:00 AM = 1 hour
       expect(find.text('1h'), findsOneWidget);
     });
   });

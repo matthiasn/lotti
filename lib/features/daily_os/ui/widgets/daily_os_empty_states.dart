@@ -1,7 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
+import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart'
+    as add_block;
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -314,7 +315,7 @@ class _BudgetsEmptyStateState extends State<BudgetsEmptyState>
 
           // Stylized add button
           _AddBudgetButton(
-            onPressed: () => AddBudgetSheet.show(context, widget.date),
+            onPressed: () => add_block.AddBlockSheet.show(context, widget.date),
             isDark: isDark,
           ),
         ],

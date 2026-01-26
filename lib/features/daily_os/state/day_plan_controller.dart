@@ -83,50 +83,6 @@ class DayPlanController extends _$DayPlanController {
     await updatePlan(updated);
   }
 
-  /// Adds a time budget to the plan.
-  Future<void> addBudget(TimeBudget budget) async {
-    final current = state.value;
-    if (current is! DayPlanEntry) return;
-
-    final updated = current.copyWith(
-      data: current.data.copyWith(
-        budgets: [...current.data.budgets, budget],
-      ),
-    );
-    await updatePlan(updated);
-  }
-
-  /// Updates an existing budget.
-  Future<void> updateBudget(TimeBudget budget) async {
-    final current = state.value;
-    if (current is! DayPlanEntry) return;
-
-    final updatedBudgets = current.data.budgets.map((b) {
-      return b.id == budget.id ? budget : b;
-    }).toList();
-
-    final updated = current.copyWith(
-      data: current.data.copyWith(budgets: updatedBudgets),
-    );
-    await updatePlan(updated);
-  }
-
-  /// Removes a budget from the plan.
-  Future<void> removeBudget(String budgetId) async {
-    final current = state.value;
-    if (current is! DayPlanEntry) return;
-
-    final updated = current.copyWith(
-      data: current.data.copyWith(
-        budgets: current.data.budgets.where((b) => b.id != budgetId).toList(),
-        pinnedTasks: current.data.pinnedTasks
-            .where((t) => t.budgetId != budgetId)
-            .toList(),
-      ),
-    );
-    await updatePlan(updated);
-  }
-
   /// Adds a planned block to the timeline.
   Future<void> addPlannedBlock(PlannedBlock block) async {
     final current = state.value;
@@ -169,7 +125,7 @@ class DayPlanController extends _$DayPlanController {
     await updatePlan(updated);
   }
 
-  /// Pins a task to a budget.
+  /// Pins a task to a category.
   Future<void> pinTask(PinnedTaskRef taskRef) async {
     final current = state.value;
     if (current is! DayPlanEntry) return;
@@ -182,7 +138,7 @@ class DayPlanController extends _$DayPlanController {
     await updatePlan(updated);
   }
 
-  /// Unpins a task from a budget.
+  /// Unpins a task.
   Future<void> unpinTask(String taskId) async {
     final current = state.value;
     if (current is! DayPlanEntry) return;
@@ -203,43 +159,6 @@ class DayPlanController extends _$DayPlanController {
 
     final updated = current.copyWith(
       data: current.data.copyWith(dayLabel: label),
-    );
-    await updatePlan(updated);
-  }
-
-  /// Reorders budgets according to the new order.
-  ///
-  /// Takes a list of budget IDs in the desired order.
-  /// Budgets not in the list are preserved and appended at the end.
-  Future<void> reorderBudgets(List<String> budgetIdsInNewOrder) async {
-    final current = state.value;
-    if (current is! DayPlanEntry) return;
-
-    final budgetMap = {for (final b in current.data.budgets) b.id: b};
-    final processedIds = <String>{};
-    final reorderedBudgets = <TimeBudget>[];
-
-    // First, add budgets in the specified order
-    for (var i = 0; i < budgetIdsInNewOrder.length; i++) {
-      final budgetId = budgetIdsInNewOrder[i];
-      final budget = budgetMap[budgetId];
-      if (budget != null) {
-        reorderedBudgets.add(budget.copyWith(sortOrder: i));
-        processedIds.add(budgetId);
-      }
-    }
-
-    // Then, append any budgets that weren't in the list (preserve them)
-    var nextSortOrder = reorderedBudgets.length;
-    for (final budget in current.data.budgets) {
-      if (!processedIds.contains(budget.id)) {
-        reorderedBudgets.add(budget.copyWith(sortOrder: nextSortOrder));
-        nextSortOrder++;
-      }
-    }
-
-    final updated = current.copyWith(
-      data: current.data.copyWith(budgets: reorderedBudgets),
     );
     await updatePlan(updated);
   }

@@ -8,13 +8,14 @@ import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-/// Bottom sheet for adding a new time budget.
-class AddBudgetSheet extends ConsumerStatefulWidget {
-  const AddBudgetSheet({required this.date, super.key});
+/// Bottom sheet for adding a new planned block.
+class AddBlockSheet extends ConsumerStatefulWidget {
+  const AddBlockSheet({required this.date, super.key});
 
   final DateTime date;
 
@@ -22,17 +23,18 @@ class AddBudgetSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => AddBudgetSheet(date: date),
+      builder: (context) => AddBlockSheet(date: date),
     );
   }
 
   @override
-  ConsumerState<AddBudgetSheet> createState() => _AddBudgetSheetState();
+  ConsumerState<AddBlockSheet> createState() => _AddBlockSheetState();
 }
 
-class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
+class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
   CategoryDefinition? _selectedCategory;
-  int _plannedMinutes = 60;
+  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
 
   void _showCategorySelector() {
     ModalUtils.showSinglePageModal<void>(
@@ -52,48 +54,75 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
     );
   }
 
+  Future<void> _selectStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime,
+    );
+    if (picked != null) {
+      setState(() {
+        _startTime = picked;
+        // Auto-adjust end time if start is after end
+        if (_timeToMinutes(_startTime) >= _timeToMinutes(_endTime)) {
+          _endTime = TimeOfDay(
+            hour: (_startTime.hour + 1) % 24,
+            minute: _startTime.minute,
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _selectEndTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _endTime,
+    );
+    if (picked != null && _timeToMinutes(picked) > _timeToMinutes(_startTime)) {
+      setState(() {
+        _endTime = picked;
+      });
+    }
+  }
+
+  int _timeToMinutes(TimeOfDay time) => time.hour * 60 + time.minute;
+
+  Duration get _duration {
+    final startMinutes = _timeToMinutes(_startTime);
+    final endMinutes = _timeToMinutes(_endTime);
+    return Duration(minutes: endMinutes - startMinutes);
+  }
+
   Future<void> _handleAdd() async {
     final category = _selectedCategory;
     if (category == null) return;
 
-    // Always await the future to ensure we have the data
     final dayPlanEntity = await ref.read(
       dayPlanControllerProvider(date: widget.date).future,
     );
 
     if (dayPlanEntity is! DayPlanEntry) {
-      // Cannot determine existing budgets, don't allow add
       return;
     }
 
-    final currentBudgets = dayPlanEntity.data.budgets;
+    final planDate = widget.date.dayAtMidnight;
+    final startTime = planDate.add(
+      Duration(hours: _startTime.hour, minutes: _startTime.minute),
+    );
+    final endTime = planDate.add(
+      Duration(hours: _endTime.hour, minutes: _endTime.minute),
+    );
 
-    // Check for duplicate category
-    final hasDuplicate = currentBudgets.any((b) => b.categoryId == category.id);
-    if (hasDuplicate) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.messages.dailyOsDuplicateBudget(category.name),
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
-
-    final budget = TimeBudget(
+    final block = PlannedBlock(
       id: const Uuid().v1(),
       categoryId: category.id,
-      plannedMinutes: _plannedMinutes,
-      sortOrder: currentBudgets.length,
+      startTime: startTime,
+      endTime: endTime,
     );
 
     await ref
         .read(dayPlanControllerProvider(date: widget.date).notifier)
-        .addBudget(budget);
+        .addPlannedBlock(block);
 
     if (mounted) {
       Navigator.pop(context);
@@ -133,7 +162,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
 
             // Title
             Text(
-              context.messages.dailyOsAddBudget,
+              context.messages.dailyOsAddBlock,
               style: context.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -211,42 +240,57 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
 
             const SizedBox(height: AppTheme.spacingLarge),
 
-            // Duration selector
+            // Time selectors
             Text(
-              context.messages.dailyOsPlannedDuration,
+              context.messages.dailyOsTimeRange,
               style: context.textTheme.labelLarge,
             ),
             const SizedBox(height: AppTheme.spacingSmall),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
               children: [
-                _DurationChip(
-                  label: context.messages.dailyOsDuration30m,
-                  isSelected: _plannedMinutes == 30,
-                  onTap: () => setState(() => _plannedMinutes = 30),
+                Expanded(
+                  child: _TimeSelector(
+                    label: context.messages.dailyOsStartTime,
+                    time: _startTime,
+                    onTap: _selectStartTime,
+                  ),
                 ),
-                _DurationChip(
-                  label: context.messages.dailyOsDuration1h,
-                  isSelected: _plannedMinutes == 60,
-                  onTap: () => setState(() => _plannedMinutes = 60),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingSmall),
+                  child: Icon(
+                    MdiIcons.arrowRight,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                _DurationChip(
-                  label: context.messages.dailyOsDuration2h,
-                  isSelected: _plannedMinutes == 120,
-                  onTap: () => setState(() => _plannedMinutes = 120),
-                ),
-                _DurationChip(
-                  label: context.messages.dailyOsDuration3h,
-                  isSelected: _plannedMinutes == 180,
-                  onTap: () => setState(() => _plannedMinutes = 180),
-                ),
-                _DurationChip(
-                  label: context.messages.dailyOsDuration4h,
-                  isSelected: _plannedMinutes == 240,
-                  onTap: () => setState(() => _plannedMinutes = 240),
+                Expanded(
+                  child: _TimeSelector(
+                    label: context.messages.dailyOsEndTime,
+                    time: _endTime,
+                    onTap: _selectEndTime,
+                  ),
                 ),
               ],
+            ),
+
+            const SizedBox(height: AppTheme.spacingMedium),
+
+            // Duration display
+            Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: context.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  _formatDuration(_duration),
+                  style: context.textTheme.labelLarge?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             ),
 
             const SizedBox(height: 24),
@@ -264,7 +308,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                 Expanded(
                   child: FilledButton(
                     onPressed: _selectedCategory != null ? _handleAdd : null,
-                    child: Text(context.messages.dailyOsAddBudget),
+                    child: Text(context.messages.dailyOsAddBlock),
                   ),
                 ),
               ],
@@ -276,18 +320,28 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
       ),
     );
   }
+
+  String _formatDuration(Duration duration) {
+    if (duration.inHours > 0) {
+      final hours = duration.inHours;
+      final mins = duration.inMinutes % 60;
+      if (mins == 0) return '${hours}h';
+      return '${hours}h ${mins}m';
+    }
+    return '${duration.inMinutes}m';
+  }
 }
 
-/// Duration selection chip.
-class _DurationChip extends StatelessWidget {
-  const _DurationChip({
+/// Time selection widget.
+class _TimeSelector extends StatelessWidget {
+  const _TimeSelector({
     required this.label,
-    required this.isSelected,
+    required this.time,
     required this.onTap,
   });
 
   final String label;
-  final bool isSelected;
+  final TimeOfDay time;
   final VoidCallback onTap;
 
   @override
@@ -295,26 +349,30 @@ class _DurationChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(AppTheme.spacingMedium),
         decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer
-              : context.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
+          color: context.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected
-                ? context.colorScheme.primary
-                : context.colorScheme.outline.withValues(alpha: 0.3),
+            color: context.colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
-        child: Text(
-          label,
-          style: context.textTheme.labelLarge?.copyWith(
-            color: isSelected
-                ? context.colorScheme.onPrimaryContainer
-                : context.colorScheme.onSurfaceVariant,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: context.textTheme.labelSmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              time.format(context),
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

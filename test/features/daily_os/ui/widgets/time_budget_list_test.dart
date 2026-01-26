@@ -57,17 +57,21 @@ void main() {
     BudgetProgressStatus status = BudgetProgressStatus.underBudget,
   }) {
     return TimeBudgetProgress(
-      budget: TimeBudget(
-        id: id,
-        categoryId: category.id,
-        plannedMinutes: planned.inMinutes,
-      ),
+      categoryId: category.id,
       category: category,
       plannedDuration: planned,
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
       pinnedTasks: const [],
+      blocks: [
+        PlannedBlock(
+          id: id,
+          categoryId: category.id,
+          startTime: testDate.add(const Duration(hours: 9)),
+          endTime: testDate.add(Duration(hours: 9 + planned.inHours)),
+        ),
+      ],
     );
   }
 

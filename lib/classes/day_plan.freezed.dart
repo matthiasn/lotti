@@ -468,385 +468,6 @@ class _$DayPlanStatusNeedsReviewCopyWithImpl<$Res>
 }
 
 /// @nodoc
-mixin _$TimeBudget {
-  /// UUID for internal reference within the plan
-  String get id;
-
-  /// Links to CategoryDefinition
-  String get categoryId;
-
-  /// Duration in minutes (JSON-friendly integer)
-  int get plannedMinutes;
-
-  /// Display order in budget list
-  int get sortOrder;
-
-  /// Create a copy of TimeBudget
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $TimeBudgetCopyWith<TimeBudget> get copyWith =>
-      _$TimeBudgetCopyWithImpl<TimeBudget>(this as TimeBudget, _$identity);
-
-  /// Serializes this TimeBudget to a JSON map.
-  Map<String, dynamic> toJson();
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is TimeBudget &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.categoryId, categoryId) ||
-                other.categoryId == categoryId) &&
-            (identical(other.plannedMinutes, plannedMinutes) ||
-                other.plannedMinutes == plannedMinutes) &&
-            (identical(other.sortOrder, sortOrder) ||
-                other.sortOrder == sortOrder));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, categoryId, plannedMinutes, sortOrder);
-
-  @override
-  String toString() {
-    return 'TimeBudget(id: $id, categoryId: $categoryId, plannedMinutes: $plannedMinutes, sortOrder: $sortOrder)';
-  }
-}
-
-/// @nodoc
-abstract mixin class $TimeBudgetCopyWith<$Res> {
-  factory $TimeBudgetCopyWith(
-          TimeBudget value, $Res Function(TimeBudget) _then) =
-      _$TimeBudgetCopyWithImpl;
-  @useResult
-  $Res call({String id, String categoryId, int plannedMinutes, int sortOrder});
-}
-
-/// @nodoc
-class _$TimeBudgetCopyWithImpl<$Res> implements $TimeBudgetCopyWith<$Res> {
-  _$TimeBudgetCopyWithImpl(this._self, this._then);
-
-  final TimeBudget _self;
-  final $Res Function(TimeBudget) _then;
-
-  /// Create a copy of TimeBudget
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? categoryId = null,
-    Object? plannedMinutes = null,
-    Object? sortOrder = null,
-  }) {
-    return _then(_self.copyWith(
-      id: null == id
-          ? _self.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      categoryId: null == categoryId
-          ? _self.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String,
-      plannedMinutes: null == plannedMinutes
-          ? _self.plannedMinutes
-          : plannedMinutes // ignore: cast_nullable_to_non_nullable
-              as int,
-      sortOrder: null == sortOrder
-          ? _self.sortOrder
-          : sortOrder // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
-  }
-}
-
-/// Adds pattern-matching-related methods to [TimeBudget].
-extension TimeBudgetPatterns on TimeBudget {
-  /// A variant of `map` that fallback to returning `orElse`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>(
-    TResult Function(_TimeBudget value)? $default, {
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case _TimeBudget() when $default != null:
-        return $default(_that);
-      case _:
-        return orElse();
-    }
-  }
-
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// Callbacks receives the raw object, upcasted.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case final Subclass2 value:
-  ///     return ...;
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>(
-    TResult Function(_TimeBudget value) $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _TimeBudget():
-        return $default(_that);
-      case _:
-        throw StateError('Unexpected subclass');
-    }
-  }
-
-  /// A variant of `map` that fallback to returning `null`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>(
-    TResult? Function(_TimeBudget value)? $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _TimeBudget() when $default != null:
-        return $default(_that);
-      case _:
-        return null;
-    }
-  }
-
-  /// A variant of `when` that fallback to an `orElse` callback.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>(
-    TResult Function(
-            String id, String categoryId, int plannedMinutes, int sortOrder)?
-        $default, {
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case _TimeBudget() when $default != null:
-        return $default(
-            _that.id, _that.categoryId, _that.plannedMinutes, _that.sortOrder);
-      case _:
-        return orElse();
-    }
-  }
-
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// As opposed to `map`, this offers destructuring.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case Subclass2(:final field2):
-  ///     return ...;
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>(
-    TResult Function(
-            String id, String categoryId, int plannedMinutes, int sortOrder)
-        $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _TimeBudget():
-        return $default(
-            _that.id, _that.categoryId, _that.plannedMinutes, _that.sortOrder);
-      case _:
-        throw StateError('Unexpected subclass');
-    }
-  }
-
-  /// A variant of `when` that fallback to returning `null`
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(
-            String id, String categoryId, int plannedMinutes, int sortOrder)?
-        $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _TimeBudget() when $default != null:
-        return $default(
-            _that.id, _that.categoryId, _that.plannedMinutes, _that.sortOrder);
-      case _:
-        return null;
-    }
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _TimeBudget implements TimeBudget {
-  const _TimeBudget(
-      {required this.id,
-      required this.categoryId,
-      required this.plannedMinutes,
-      this.sortOrder = 0});
-  factory _TimeBudget.fromJson(Map<String, dynamic> json) =>
-      _$TimeBudgetFromJson(json);
-
-  /// UUID for internal reference within the plan
-  @override
-  final String id;
-
-  /// Links to CategoryDefinition
-  @override
-  final String categoryId;
-
-  /// Duration in minutes (JSON-friendly integer)
-  @override
-  final int plannedMinutes;
-
-  /// Display order in budget list
-  @override
-  @JsonKey()
-  final int sortOrder;
-
-  /// Create a copy of TimeBudget
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  _$TimeBudgetCopyWith<_TimeBudget> get copyWith =>
-      __$TimeBudgetCopyWithImpl<_TimeBudget>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$TimeBudgetToJson(
-      this,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _TimeBudget &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.categoryId, categoryId) ||
-                other.categoryId == categoryId) &&
-            (identical(other.plannedMinutes, plannedMinutes) ||
-                other.plannedMinutes == plannedMinutes) &&
-            (identical(other.sortOrder, sortOrder) ||
-                other.sortOrder == sortOrder));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, categoryId, plannedMinutes, sortOrder);
-
-  @override
-  String toString() {
-    return 'TimeBudget(id: $id, categoryId: $categoryId, plannedMinutes: $plannedMinutes, sortOrder: $sortOrder)';
-  }
-}
-
-/// @nodoc
-abstract mixin class _$TimeBudgetCopyWith<$Res>
-    implements $TimeBudgetCopyWith<$Res> {
-  factory _$TimeBudgetCopyWith(
-          _TimeBudget value, $Res Function(_TimeBudget) _then) =
-      __$TimeBudgetCopyWithImpl;
-  @override
-  @useResult
-  $Res call({String id, String categoryId, int plannedMinutes, int sortOrder});
-}
-
-/// @nodoc
-class __$TimeBudgetCopyWithImpl<$Res> implements _$TimeBudgetCopyWith<$Res> {
-  __$TimeBudgetCopyWithImpl(this._self, this._then);
-
-  final _TimeBudget _self;
-  final $Res Function(_TimeBudget) _then;
-
-  /// Create a copy of TimeBudget
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? id = null,
-    Object? categoryId = null,
-    Object? plannedMinutes = null,
-    Object? sortOrder = null,
-  }) {
-    return _then(_TimeBudget(
-      id: null == id
-          ? _self.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      categoryId: null == categoryId
-          ? _self.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String,
-      plannedMinutes: null == plannedMinutes
-          ? _self.plannedMinutes
-          : plannedMinutes // ignore: cast_nullable_to_non_nullable
-              as int,
-      sortOrder: null == sortOrder
-          ? _self.sortOrder
-          : sortOrder // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
-  }
-}
-
-/// @nodoc
 mixin _$PlannedBlock {
   /// UUID for internal reference within the plan
   String get id;
@@ -1259,10 +880,10 @@ mixin _$PinnedTaskRef {
   /// References Task entity by ID
   String get taskId;
 
-  /// Which budget this task is pinned to (references TimeBudget.id)
-  String get budgetId;
+  /// Which category this task is pinned to
+  String get categoryId;
 
-  /// Display order within the budget's task list
+  /// Display order within the category's task list
   int get sortOrder;
 
   /// Create a copy of PinnedTaskRef
@@ -1282,19 +903,19 @@ mixin _$PinnedTaskRef {
         (other.runtimeType == runtimeType &&
             other is PinnedTaskRef &&
             (identical(other.taskId, taskId) || other.taskId == taskId) &&
-            (identical(other.budgetId, budgetId) ||
-                other.budgetId == budgetId) &&
+            (identical(other.categoryId, categoryId) ||
+                other.categoryId == categoryId) &&
             (identical(other.sortOrder, sortOrder) ||
                 other.sortOrder == sortOrder));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, taskId, budgetId, sortOrder);
+  int get hashCode => Object.hash(runtimeType, taskId, categoryId, sortOrder);
 
   @override
   String toString() {
-    return 'PinnedTaskRef(taskId: $taskId, budgetId: $budgetId, sortOrder: $sortOrder)';
+    return 'PinnedTaskRef(taskId: $taskId, categoryId: $categoryId, sortOrder: $sortOrder)';
   }
 }
 
@@ -1304,7 +925,7 @@ abstract mixin class $PinnedTaskRefCopyWith<$Res> {
           PinnedTaskRef value, $Res Function(PinnedTaskRef) _then) =
       _$PinnedTaskRefCopyWithImpl;
   @useResult
-  $Res call({String taskId, String budgetId, int sortOrder});
+  $Res call({String taskId, String categoryId, int sortOrder});
 }
 
 /// @nodoc
@@ -1321,7 +942,7 @@ class _$PinnedTaskRefCopyWithImpl<$Res>
   @override
   $Res call({
     Object? taskId = null,
-    Object? budgetId = null,
+    Object? categoryId = null,
     Object? sortOrder = null,
   }) {
     return _then(_self.copyWith(
@@ -1329,9 +950,9 @@ class _$PinnedTaskRefCopyWithImpl<$Res>
           ? _self.taskId
           : taskId // ignore: cast_nullable_to_non_nullable
               as String,
-      budgetId: null == budgetId
-          ? _self.budgetId
-          : budgetId // ignore: cast_nullable_to_non_nullable
+      categoryId: null == categoryId
+          ? _self.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
               as String,
       sortOrder: null == sortOrder
           ? _self.sortOrder
@@ -1434,13 +1055,14 @@ extension PinnedTaskRefPatterns on PinnedTaskRef {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String taskId, String budgetId, int sortOrder)? $default, {
+    TResult Function(String taskId, String categoryId, int sortOrder)?
+        $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _PinnedTaskRef() when $default != null:
-        return $default(_that.taskId, _that.budgetId, _that.sortOrder);
+        return $default(_that.taskId, _that.categoryId, _that.sortOrder);
       case _:
         return orElse();
     }
@@ -1461,12 +1083,12 @@ extension PinnedTaskRefPatterns on PinnedTaskRef {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String taskId, String budgetId, int sortOrder) $default,
+    TResult Function(String taskId, String categoryId, int sortOrder) $default,
   ) {
     final _that = this;
     switch (_that) {
       case _PinnedTaskRef():
-        return $default(_that.taskId, _that.budgetId, _that.sortOrder);
+        return $default(_that.taskId, _that.categoryId, _that.sortOrder);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -1486,12 +1108,13 @@ extension PinnedTaskRefPatterns on PinnedTaskRef {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String taskId, String budgetId, int sortOrder)? $default,
+    TResult? Function(String taskId, String categoryId, int sortOrder)?
+        $default,
   ) {
     final _that = this;
     switch (_that) {
       case _PinnedTaskRef() when $default != null:
-        return $default(_that.taskId, _that.budgetId, _that.sortOrder);
+        return $default(_that.taskId, _that.categoryId, _that.sortOrder);
       case _:
         return null;
     }
@@ -1502,7 +1125,7 @@ extension PinnedTaskRefPatterns on PinnedTaskRef {
 @JsonSerializable()
 class _PinnedTaskRef implements PinnedTaskRef {
   const _PinnedTaskRef(
-      {required this.taskId, required this.budgetId, this.sortOrder = 0});
+      {required this.taskId, required this.categoryId, this.sortOrder = 0});
   factory _PinnedTaskRef.fromJson(Map<String, dynamic> json) =>
       _$PinnedTaskRefFromJson(json);
 
@@ -1510,11 +1133,11 @@ class _PinnedTaskRef implements PinnedTaskRef {
   @override
   final String taskId;
 
-  /// Which budget this task is pinned to (references TimeBudget.id)
+  /// Which category this task is pinned to
   @override
-  final String budgetId;
+  final String categoryId;
 
-  /// Display order within the budget's task list
+  /// Display order within the category's task list
   @override
   @JsonKey()
   final int sortOrder;
@@ -1540,19 +1163,19 @@ class _PinnedTaskRef implements PinnedTaskRef {
         (other.runtimeType == runtimeType &&
             other is _PinnedTaskRef &&
             (identical(other.taskId, taskId) || other.taskId == taskId) &&
-            (identical(other.budgetId, budgetId) ||
-                other.budgetId == budgetId) &&
+            (identical(other.categoryId, categoryId) ||
+                other.categoryId == categoryId) &&
             (identical(other.sortOrder, sortOrder) ||
                 other.sortOrder == sortOrder));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, taskId, budgetId, sortOrder);
+  int get hashCode => Object.hash(runtimeType, taskId, categoryId, sortOrder);
 
   @override
   String toString() {
-    return 'PinnedTaskRef(taskId: $taskId, budgetId: $budgetId, sortOrder: $sortOrder)';
+    return 'PinnedTaskRef(taskId: $taskId, categoryId: $categoryId, sortOrder: $sortOrder)';
   }
 }
 
@@ -1564,7 +1187,7 @@ abstract mixin class _$PinnedTaskRefCopyWith<$Res>
       __$PinnedTaskRefCopyWithImpl;
   @override
   @useResult
-  $Res call({String taskId, String budgetId, int sortOrder});
+  $Res call({String taskId, String categoryId, int sortOrder});
 }
 
 /// @nodoc
@@ -1581,7 +1204,7 @@ class __$PinnedTaskRefCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   $Res call({
     Object? taskId = null,
-    Object? budgetId = null,
+    Object? categoryId = null,
     Object? sortOrder = null,
   }) {
     return _then(_PinnedTaskRef(
@@ -1589,9 +1212,9 @@ class __$PinnedTaskRefCopyWithImpl<$Res>
           ? _self.taskId
           : taskId // ignore: cast_nullable_to_non_nullable
               as String,
-      budgetId: null == budgetId
-          ? _self.budgetId
-          : budgetId // ignore: cast_nullable_to_non_nullable
+      categoryId: null == categoryId
+          ? _self.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
               as String,
       sortOrder: null == sortOrder
           ? _self.sortOrder
@@ -1618,13 +1241,10 @@ mixin _$DayPlanData {
   /// When the day was marked complete
   DateTime? get completedAt;
 
-  /// Time budget allocations by category
-  List<TimeBudget> get budgets;
-
   /// Planned time blocks on the timeline
   List<PlannedBlock> get plannedBlocks;
 
-  /// References to tasks pinned to budgets
+  /// References to tasks pinned to categories
   List<PinnedTaskRef> get pinnedTasks;
 
   /// Create a copy of DayPlanData
@@ -1651,7 +1271,6 @@ mixin _$DayPlanData {
                 other.agreedAt == agreedAt) &&
             (identical(other.completedAt, completedAt) ||
                 other.completedAt == completedAt) &&
-            const DeepCollectionEquality().equals(other.budgets, budgets) &&
             const DeepCollectionEquality()
                 .equals(other.plannedBlocks, plannedBlocks) &&
             const DeepCollectionEquality()
@@ -1667,13 +1286,12 @@ mixin _$DayPlanData {
       dayLabel,
       agreedAt,
       completedAt,
-      const DeepCollectionEquality().hash(budgets),
       const DeepCollectionEquality().hash(plannedBlocks),
       const DeepCollectionEquality().hash(pinnedTasks));
 
   @override
   String toString() {
-    return 'DayPlanData(planDate: $planDate, status: $status, dayLabel: $dayLabel, agreedAt: $agreedAt, completedAt: $completedAt, budgets: $budgets, plannedBlocks: $plannedBlocks, pinnedTasks: $pinnedTasks)';
+    return 'DayPlanData(planDate: $planDate, status: $status, dayLabel: $dayLabel, agreedAt: $agreedAt, completedAt: $completedAt, plannedBlocks: $plannedBlocks, pinnedTasks: $pinnedTasks)';
   }
 }
 
@@ -1689,7 +1307,6 @@ abstract mixin class $DayPlanDataCopyWith<$Res> {
       String? dayLabel,
       DateTime? agreedAt,
       DateTime? completedAt,
-      List<TimeBudget> budgets,
       List<PlannedBlock> plannedBlocks,
       List<PinnedTaskRef> pinnedTasks});
 
@@ -1713,7 +1330,6 @@ class _$DayPlanDataCopyWithImpl<$Res> implements $DayPlanDataCopyWith<$Res> {
     Object? dayLabel = freezed,
     Object? agreedAt = freezed,
     Object? completedAt = freezed,
-    Object? budgets = null,
     Object? plannedBlocks = null,
     Object? pinnedTasks = null,
   }) {
@@ -1738,10 +1354,6 @@ class _$DayPlanDataCopyWithImpl<$Res> implements $DayPlanDataCopyWith<$Res> {
           ? _self.completedAt
           : completedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      budgets: null == budgets
-          ? _self.budgets
-          : budgets // ignore: cast_nullable_to_non_nullable
-              as List<TimeBudget>,
       plannedBlocks: null == plannedBlocks
           ? _self.plannedBlocks
           : plannedBlocks // ignore: cast_nullable_to_non_nullable
@@ -1863,7 +1475,6 @@ extension DayPlanDataPatterns on DayPlanData {
             String? dayLabel,
             DateTime? agreedAt,
             DateTime? completedAt,
-            List<TimeBudget> budgets,
             List<PlannedBlock> plannedBlocks,
             List<PinnedTaskRef> pinnedTasks)?
         $default, {
@@ -1878,7 +1489,6 @@ extension DayPlanDataPatterns on DayPlanData {
             _that.dayLabel,
             _that.agreedAt,
             _that.completedAt,
-            _that.budgets,
             _that.plannedBlocks,
             _that.pinnedTasks);
       case _:
@@ -1907,7 +1517,6 @@ extension DayPlanDataPatterns on DayPlanData {
             String? dayLabel,
             DateTime? agreedAt,
             DateTime? completedAt,
-            List<TimeBudget> budgets,
             List<PlannedBlock> plannedBlocks,
             List<PinnedTaskRef> pinnedTasks)
         $default,
@@ -1921,7 +1530,6 @@ extension DayPlanDataPatterns on DayPlanData {
             _that.dayLabel,
             _that.agreedAt,
             _that.completedAt,
-            _that.budgets,
             _that.plannedBlocks,
             _that.pinnedTasks);
       case _:
@@ -1949,7 +1557,6 @@ extension DayPlanDataPatterns on DayPlanData {
             String? dayLabel,
             DateTime? agreedAt,
             DateTime? completedAt,
-            List<TimeBudget> budgets,
             List<PlannedBlock> plannedBlocks,
             List<PinnedTaskRef> pinnedTasks)?
         $default,
@@ -1963,7 +1570,6 @@ extension DayPlanDataPatterns on DayPlanData {
             _that.dayLabel,
             _that.agreedAt,
             _that.completedAt,
-            _that.budgets,
             _that.plannedBlocks,
             _that.pinnedTasks);
       case _:
@@ -1981,11 +1587,9 @@ class _DayPlanData implements DayPlanData {
       this.dayLabel,
       this.agreedAt,
       this.completedAt,
-      final List<TimeBudget> budgets = const [],
       final List<PlannedBlock> plannedBlocks = const [],
       final List<PinnedTaskRef> pinnedTasks = const []})
-      : _budgets = budgets,
-        _plannedBlocks = plannedBlocks,
+      : _plannedBlocks = plannedBlocks,
         _pinnedTasks = pinnedTasks;
   factory _DayPlanData.fromJson(Map<String, dynamic> json) =>
       _$DayPlanDataFromJson(json);
@@ -2010,18 +1614,6 @@ class _DayPlanData implements DayPlanData {
   @override
   final DateTime? completedAt;
 
-  /// Time budget allocations by category
-  final List<TimeBudget> _budgets;
-
-  /// Time budget allocations by category
-  @override
-  @JsonKey()
-  List<TimeBudget> get budgets {
-    if (_budgets is EqualUnmodifiableListView) return _budgets;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_budgets);
-  }
-
   /// Planned time blocks on the timeline
   final List<PlannedBlock> _plannedBlocks;
 
@@ -2034,10 +1626,10 @@ class _DayPlanData implements DayPlanData {
     return EqualUnmodifiableListView(_plannedBlocks);
   }
 
-  /// References to tasks pinned to budgets
+  /// References to tasks pinned to categories
   final List<PinnedTaskRef> _pinnedTasks;
 
-  /// References to tasks pinned to budgets
+  /// References to tasks pinned to categories
   @override
   @JsonKey()
   List<PinnedTaskRef> get pinnedTasks {
@@ -2075,7 +1667,6 @@ class _DayPlanData implements DayPlanData {
                 other.agreedAt == agreedAt) &&
             (identical(other.completedAt, completedAt) ||
                 other.completedAt == completedAt) &&
-            const DeepCollectionEquality().equals(other._budgets, _budgets) &&
             const DeepCollectionEquality()
                 .equals(other._plannedBlocks, _plannedBlocks) &&
             const DeepCollectionEquality()
@@ -2091,13 +1682,12 @@ class _DayPlanData implements DayPlanData {
       dayLabel,
       agreedAt,
       completedAt,
-      const DeepCollectionEquality().hash(_budgets),
       const DeepCollectionEquality().hash(_plannedBlocks),
       const DeepCollectionEquality().hash(_pinnedTasks));
 
   @override
   String toString() {
-    return 'DayPlanData(planDate: $planDate, status: $status, dayLabel: $dayLabel, agreedAt: $agreedAt, completedAt: $completedAt, budgets: $budgets, plannedBlocks: $plannedBlocks, pinnedTasks: $pinnedTasks)';
+    return 'DayPlanData(planDate: $planDate, status: $status, dayLabel: $dayLabel, agreedAt: $agreedAt, completedAt: $completedAt, plannedBlocks: $plannedBlocks, pinnedTasks: $pinnedTasks)';
   }
 }
 
@@ -2115,7 +1705,6 @@ abstract mixin class _$DayPlanDataCopyWith<$Res>
       String? dayLabel,
       DateTime? agreedAt,
       DateTime? completedAt,
-      List<TimeBudget> budgets,
       List<PlannedBlock> plannedBlocks,
       List<PinnedTaskRef> pinnedTasks});
 
@@ -2140,7 +1729,6 @@ class __$DayPlanDataCopyWithImpl<$Res> implements _$DayPlanDataCopyWith<$Res> {
     Object? dayLabel = freezed,
     Object? agreedAt = freezed,
     Object? completedAt = freezed,
-    Object? budgets = null,
     Object? plannedBlocks = null,
     Object? pinnedTasks = null,
   }) {
@@ -2165,10 +1753,6 @@ class __$DayPlanDataCopyWithImpl<$Res> implements _$DayPlanDataCopyWith<$Res> {
           ? _self.completedAt
           : completedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      budgets: null == budgets
-          ? _self._budgets
-          : budgets // ignore: cast_nullable_to_non_nullable
-              as List<TimeBudget>,
       plannedBlocks: null == plannedBlocks
           ? _self._plannedBlocks
           : plannedBlocks // ignore: cast_nullable_to_non_nullable

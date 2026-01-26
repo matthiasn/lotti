@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -99,8 +100,8 @@ class DailyTimelineData {
 /// Provides timeline data for plan vs actual comparison.
 @riverpod
 class TimelineDataController extends _$TimelineDataController {
-  late final DateTime _date;
-  late final DayPlanRepository _dayPlanRepository;
+  late DateTime _date;
+  late DayPlanRepository _dayPlanRepository;
   StreamSubscription<Set<String>>? _updateSubscription;
   bool _isDisposed = false;
 
@@ -124,9 +125,15 @@ class TimelineDataController extends _$TimelineDataController {
         if (!_isDisposed) {
           state = AsyncData(data);
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
         // Ignore errors from disposed refs - silently return
         if (_isDisposed) return;
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'timeline_data_controller',
+          subDomain: '_listen',
+          stackTrace: stackTrace,
+        );
         rethrow;
       }
     });

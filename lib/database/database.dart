@@ -1275,6 +1275,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<List<EntryLink>> linksForEntryIds(Set<String> ids) async {
+    if (ids.isEmpty) return <EntryLink>[];
     final entryLinks = await linksForIds(ids.toList()).get();
     return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
   }

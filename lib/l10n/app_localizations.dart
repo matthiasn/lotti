@@ -1473,6 +1473,18 @@ abstract class AppLocalizations {
   /// **'Enable Events'**
   String get configFlagEnableEvents;
 
+  /// No description provided for @configFlagEnableDailyOs.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Daily OS (WIP)'**
+  String get configFlagEnableDailyOs;
+
+  /// No description provided for @configFlagEnableDailyOsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable the Daily Operating System view for day planning. This is a work in progress feature.'**
+  String get configFlagEnableDailyOsDescription;
+
   /// No description provided for @configFlagUseCloudInferenceDescription.
   ///
   /// In en, this message translates to:
@@ -1940,6 +1952,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'4h'**
   String get dailyOsDuration4h;
+
+  /// No description provided for @dailyOsAddBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Block'**
+  String get dailyOsAddBlock;
 
   /// No description provided for @dashboardActiveLabel.
   ///

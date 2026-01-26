@@ -783,6 +783,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get configFlagEnableEvents => 'Enable Events';
 
   @override
+  String get configFlagEnableDailyOs => 'Enable Daily OS (WIP)';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Enable the Daily Operating System view for day planning. This is a work in progress feature.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.';
 
@@ -1051,6 +1058,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsDuration4h => '4h';
+
+  @override
+  String get dailyOsAddBlock => 'Add Block';
 
   @override
   String get dashboardActiveLabel => 'Activ:';

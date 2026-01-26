@@ -13,8 +13,8 @@ enum DayPlanReviewReason {
   /// A task with due date was added for this day
   newDueTask,
 
-  /// A time budget was changed
-  budgetModified,
+  /// A planned block was changed
+  blockModified,
 
   /// A task was moved to this day
   taskRescheduled,
@@ -52,37 +52,10 @@ sealed class DayPlanStatus with _$DayPlanStatus {
       _$DayPlanStatusFromJson(json);
 }
 
-/// A time budget allocation for a category within a day.
-///
-/// Embedded within [DayPlanData].
-@freezed
-abstract class TimeBudget with _$TimeBudget {
-  const factory TimeBudget({
-    /// UUID for internal reference within the plan
-    required String id,
-
-    /// Links to CategoryDefinition
-    required String categoryId,
-
-    /// Duration in minutes (JSON-friendly integer)
-    required int plannedMinutes,
-
-    /// Display order in budget list
-    @Default(0) int sortOrder,
-  }) = _TimeBudget;
-
-  factory TimeBudget.fromJson(Map<String, dynamic> json) =>
-      _$TimeBudgetFromJson(json);
-}
-
-/// Extension for Duration conversion on TimeBudget.
-extension TimeBudgetX on TimeBudget {
-  Duration get plannedDuration => Duration(minutes: plannedMinutes);
-}
-
 /// A planned time block on the timeline.
 ///
 /// Represents intended structure of the day. Embedded within [DayPlanData].
+/// Time budgets are derived by summing block durations per category.
 @freezed
 abstract class PlannedBlock with _$PlannedBlock {
   const factory PlannedBlock({
@@ -111,7 +84,7 @@ extension PlannedBlockX on PlannedBlock {
   Duration get duration => endTime.difference(startTime);
 }
 
-/// A reference to a task pinned to a specific budget.
+/// A reference to a task pinned to a specific category for the day.
 ///
 /// Embedded within [DayPlanData]. The actual Task entity is stored
 /// separately in the journal table.
@@ -121,10 +94,10 @@ abstract class PinnedTaskRef with _$PinnedTaskRef {
     /// References Task entity by ID
     required String taskId,
 
-    /// Which budget this task is pinned to (references TimeBudget.id)
-    required String budgetId,
+    /// Which category this task is pinned to
+    required String categoryId,
 
-    /// Display order within the budget's task list
+    /// Display order within the category's task list
     @Default(0) int sortOrder,
   }) = _PinnedTaskRef;
 
@@ -134,8 +107,9 @@ abstract class PinnedTaskRef with _$PinnedTaskRef {
 
 /// Data payload for a day plan entity.
 ///
-/// Contains all plan information including embedded budgets,
-/// planned blocks, and pinned task references.
+/// Contains all plan information including planned blocks and pinned task
+/// references. Time budgets are derived from the sum of block durations
+/// per category.
 @freezed
 abstract class DayPlanData with _$DayPlanData {
   const factory DayPlanData({
@@ -154,13 +128,10 @@ abstract class DayPlanData with _$DayPlanData {
     /// When the day was marked complete
     DateTime? completedAt,
 
-    /// Time budget allocations by category
-    @Default([]) List<TimeBudget> budgets,
-
     /// Planned time blocks on the timeline
     @Default([]) List<PlannedBlock> plannedBlocks,
 
-    /// References to tasks pinned to budgets
+    /// References to tasks pinned to categories
     @Default([]) List<PinnedTaskRef> pinnedTasks,
   }) = _DayPlanData;
 
@@ -168,39 +139,73 @@ abstract class DayPlanData with _$DayPlanData {
       _$DayPlanDataFromJson(json);
 }
 
+/// Derived time budget for a category, computed from planned blocks.
+class DerivedTimeBudget {
+  DerivedTimeBudget({
+    required this.categoryId,
+    required this.plannedDuration,
+    required this.blocks,
+  });
+
+  final String categoryId;
+  final Duration plannedDuration;
+  final List<PlannedBlock> blocks;
+
+  int get plannedMinutes => plannedDuration.inMinutes;
+}
+
 /// Extension methods for DayPlanData.
 extension DayPlanDataX on DayPlanData {
-  /// Total planned duration across all budgets.
-  Duration get totalPlannedDuration => budgets.fold(
-        Duration.zero,
-        (total, budget) => total + budget.plannedDuration,
-      );
+  /// Get all unique category IDs that have planned blocks.
+  Set<String> get categoryIds =>
+      plannedBlocks.map((block) => block.categoryId).toSet();
 
-  /// Find budget by ID.
-  TimeBudget? budgetById(String id) {
-    for (final budget in budgets) {
-      if (budget.id == id) return budget;
-    }
-    return null;
-  }
-
-  /// Find budget by category ID.
-  TimeBudget? budgetByCategoryId(String categoryId) {
-    for (final budget in budgets) {
-      if (budget.categoryId == categoryId) return budget;
-    }
-    return null;
-  }
-
-  /// Get pinned tasks for a specific budget.
-  List<PinnedTaskRef> pinnedTasksForBudget(String budgetId) =>
-      pinnedTasks.where((ref) => ref.budgetId == budgetId).toList()
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-  /// Get planned blocks for a specific category.
+  /// Get planned blocks for a specific category, sorted by start time.
   List<PlannedBlock> blocksForCategory(String categoryId) =>
       plannedBlocks.where((block) => block.categoryId == categoryId).toList()
         ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  /// Get total planned duration for a specific category.
+  Duration plannedDurationForCategory(String categoryId) =>
+      blocksForCategory(categoryId).fold(
+        Duration.zero,
+        (total, block) => total + block.duration,
+      );
+
+  /// Get derived time budgets for all categories with blocks.
+  List<DerivedTimeBudget> get derivedBudgets {
+    final budgets = <DerivedTimeBudget>[];
+    for (final categoryId in categoryIds) {
+      final blocks = blocksForCategory(categoryId);
+      final duration = blocks.fold(
+        Duration.zero,
+        (total, block) => total + block.duration,
+      );
+      budgets.add(DerivedTimeBudget(
+        categoryId: categoryId,
+        plannedDuration: duration,
+        blocks: blocks,
+      ));
+    }
+    // Sort by earliest block start time
+    budgets.sort((a, b) {
+      if (a.blocks.isEmpty) return 1;
+      if (b.blocks.isEmpty) return -1;
+      return a.blocks.first.startTime.compareTo(b.blocks.first.startTime);
+    });
+    return budgets;
+  }
+
+  /// Total planned duration across all blocks.
+  Duration get totalPlannedDuration => plannedBlocks.fold(
+        Duration.zero,
+        (total, block) => total + block.duration,
+      );
+
+  /// Get pinned tasks for a specific category.
+  List<PinnedTaskRef> pinnedTasksForCategory(String categoryId) =>
+      pinnedTasks.where((ref) => ref.categoryId == categoryId).toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
   /// Whether this plan has been agreed to.
   bool get isAgreed => status is DayPlanStatusAgreed;
@@ -213,4 +218,12 @@ extension DayPlanDataX on DayPlanData {
 
   /// Whether the day has been marked complete.
   bool get isComplete => completedAt != null;
+
+  /// Find a block by ID.
+  PlannedBlock? blockById(String id) {
+    for (final block in plannedBlocks) {
+      if (block.id == id) return block;
+    }
+    return null;
+  }
 }

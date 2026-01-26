@@ -51,25 +51,10 @@ Map<String, dynamic> _$DayPlanStatusNeedsReviewToJson(
 
 const _$DayPlanReviewReasonEnumMap = {
   DayPlanReviewReason.newDueTask: 'newDueTask',
-  DayPlanReviewReason.budgetModified: 'budgetModified',
+  DayPlanReviewReason.blockModified: 'blockModified',
   DayPlanReviewReason.taskRescheduled: 'taskRescheduled',
   DayPlanReviewReason.manualReset: 'manualReset',
 };
-
-_TimeBudget _$TimeBudgetFromJson(Map<String, dynamic> json) => _TimeBudget(
-      id: json['id'] as String,
-      categoryId: json['categoryId'] as String,
-      plannedMinutes: (json['plannedMinutes'] as num).toInt(),
-      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
-    );
-
-Map<String, dynamic> _$TimeBudgetToJson(_TimeBudget instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'categoryId': instance.categoryId,
-      'plannedMinutes': instance.plannedMinutes,
-      'sortOrder': instance.sortOrder,
-    };
 
 _PlannedBlock _$PlannedBlockFromJson(Map<String, dynamic> json) =>
     _PlannedBlock(
@@ -92,14 +77,14 @@ Map<String, dynamic> _$PlannedBlockToJson(_PlannedBlock instance) =>
 _PinnedTaskRef _$PinnedTaskRefFromJson(Map<String, dynamic> json) =>
     _PinnedTaskRef(
       taskId: json['taskId'] as String,
-      budgetId: json['budgetId'] as String,
+      categoryId: json['categoryId'] as String,
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$PinnedTaskRefToJson(_PinnedTaskRef instance) =>
     <String, dynamic>{
       'taskId': instance.taskId,
-      'budgetId': instance.budgetId,
+      'categoryId': instance.categoryId,
       'sortOrder': instance.sortOrder,
     };
 
@@ -113,10 +98,6 @@ _DayPlanData _$DayPlanDataFromJson(Map<String, dynamic> json) => _DayPlanData(
       completedAt: json['completedAt'] == null
           ? null
           : DateTime.parse(json['completedAt'] as String),
-      budgets: (json['budgets'] as List<dynamic>?)
-              ?.map((e) => TimeBudget.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
       plannedBlocks: (json['plannedBlocks'] as List<dynamic>?)
               ?.map((e) => PlannedBlock.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -134,7 +115,6 @@ Map<String, dynamic> _$DayPlanDataToJson(_DayPlanData instance) =>
       'dayLabel': instance.dayLabel,
       'agreedAt': instance.agreedAt?.toIso8601String(),
       'completedAt': instance.completedAt?.toIso8601String(),
-      'budgets': instance.budgets,
       'plannedBlocks': instance.plannedBlocks,
       'pinnedTasks': instance.pinnedTasks,
     };

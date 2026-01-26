@@ -90,6 +90,13 @@ Future<void> initConfigFlags(
       status: false,
     ),
   );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableDailyOsFlag,
+      description: 'Enable Daily OS (WIP)?',
+      status: false,
+    ),
+  );
 
   // No additional flags for label guardrails: always-on behavior.
 }

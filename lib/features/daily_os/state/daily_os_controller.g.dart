@@ -161,4 +161,4 @@ final class HighlightedCategoryIdProvider
 }
 
 String _$highlightedCategoryIdHash() =>
-    r'd62a980bb4ef76cee3b1358cbebea31add1a6caa';
+    r'4d99c4f6b8f16b3a8738f1d7f329519a824a1d67';

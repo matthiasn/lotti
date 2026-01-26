@@ -34,7 +34,7 @@ void main() {
   final planId = dayPlanId(testDate);
 
   DayPlanEntry createTestPlan({
-    List<TimeBudget> budgets = const [],
+    List<PlannedBlock> plannedBlocks = const [],
   }) {
     return DayPlanEntry(
       meta: Metadata(
@@ -47,7 +47,7 @@ void main() {
       data: DayPlanData(
         planDate: testDate,
         status: const DayPlanStatus.draft(),
-        budgets: budgets,
+        plannedBlocks: plannedBlocks,
       ),
     );
   }
@@ -126,8 +126,8 @@ void main() {
   });
 
   group('TimeBudgetProgressController', () {
-    test('returns empty list when no budgets defined', () async {
-      final plan = createTestPlan(budgets: []);
+    test('returns empty list when no blocks defined', () async {
+      final plan = createTestPlan(plannedBlocks: []);
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -143,11 +143,15 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('calculates progress for budget with no recorded time', () async {
+    test('calculates progress for block with no recorded time', () async {
       final plan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-              id: 'budget-1', categoryId: 'cat-work', plannedMinutes: 120),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)), // 2 hours
+          ),
         ],
       );
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
@@ -171,9 +175,13 @@ void main() {
 
     test('calculates progress when recording partial time', () async {
       final plan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-              id: 'budget-1', categoryId: 'cat-work', plannedMinutes: 120),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)), // 2 hours
+          ),
         ],
       );
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
@@ -206,9 +214,13 @@ void main() {
 
     test('returns nearLimit status when within 15 minutes of budget', () async {
       final plan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-              id: 'budget-1', categoryId: 'cat-work', plannedMinutes: 60),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 10)), // 1 hour
+          ),
         ],
       );
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
@@ -237,9 +249,13 @@ void main() {
 
     test('returns exhausted status when exactly at budget', () async {
       final plan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-              id: 'budget-1', categoryId: 'cat-work', plannedMinutes: 60),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 10)), // 1 hour
+          ),
         ],
       );
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
@@ -268,9 +284,13 @@ void main() {
 
     test('returns overBudget status when exceeding budget', () async {
       final plan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-              id: 'budget-1', categoryId: 'cat-work', plannedMinutes: 60),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 10)), // 1 hour
+          ),
         ],
       );
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
@@ -300,9 +320,13 @@ void main() {
 
     test('aggregates multiple entries for same category', () async {
       final plan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-              id: 'budget-1', categoryId: 'cat-work', plannedMinutes: 180),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)), // 3 hours
+          ),
         ],
       );
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
@@ -341,13 +365,56 @@ void main() {
       expect(result.first.contributingEntries.length, equals(2));
     });
 
-    test('handles multiple budgets correctly', () async {
+    test('aggregates multiple blocks for same category', () async {
       final plan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-              id: 'budget-1', categoryId: 'cat-work', plannedMinutes: 120),
-          TimeBudget(
-              id: 'budget-2', categoryId: 'cat-personal', plannedMinutes: 60),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)), // 2 hours
+          ),
+          PlannedBlock(
+            id: 'block-2',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 14)),
+            endTime: testDate.add(const Duration(hours: 15)), // 1 hour
+          ),
+        ],
+      );
+      when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final result = await container.read(
+        timeBudgetProgressControllerProvider(date: testDate).future,
+      );
+
+      // Should aggregate to one budget with 3 hours total
+      expect(result.length, equals(1));
+      expect(result.first.plannedDuration, equals(const Duration(hours: 3)));
+      expect(result.first.blocks.length, equals(2));
+    });
+
+    test('handles multiple categories correctly', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)), // 2 hours
+          ),
+          PlannedBlock(
+            id: 'block-2',
+            categoryId: 'cat-personal',
+            startTime: testDate.add(const Duration(hours: 14)),
+            endTime: testDate.add(const Duration(hours: 15)), // 1 hour
+          ),
         ],
       );
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
@@ -380,25 +447,34 @@ void main() {
 
       expect(result.length, equals(2));
 
-      final workBudget =
-          result.firstWhere((p) => p.budget.categoryId == 'cat-work');
+      final workBudget = result.firstWhere((p) => p.categoryId == 'cat-work');
       expect(workBudget.recordedDuration, equals(const Duration(hours: 1)));
 
       final personalBudget =
-          result.firstWhere((p) => p.budget.categoryId == 'cat-personal');
+          result.firstWhere((p) => p.categoryId == 'cat-personal');
       expect(
-          personalBudget.recordedDuration, equals(const Duration(minutes: 45)));
+        personalBudget.recordedDuration,
+        equals(const Duration(minutes: 45)),
+      );
     });
   });
 
   group('dayBudgetStats', () {
     test('calculates total stats correctly', () async {
       final plan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-              id: 'budget-1', categoryId: 'cat-work', plannedMinutes: 120),
-          TimeBudget(
-              id: 'budget-2', categoryId: 'cat-personal', plannedMinutes: 60),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)), // 2 hours
+          ),
+          PlannedBlock(
+            id: 'block-2',
+            categoryId: 'cat-personal',
+            startTime: testDate.add(const Duration(hours: 14)),
+            endTime: testDate.add(const Duration(hours: 15)), // 1 hour
+          ),
         ],
       );
       when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
@@ -431,7 +507,9 @@ void main() {
 
       expect(result.totalPlanned, equals(const Duration(hours: 3)));
       expect(
-          result.totalRecorded, equals(const Duration(hours: 2, minutes: 30)));
+        result.totalRecorded,
+        equals(const Duration(hours: 2, minutes: 30)),
+      );
       expect(result.budgetCount, equals(2));
       expect(result.overBudgetCount, equals(1)); // personal is over by 30 mins
       expect(result.isOverBudget, isFalse); // total is still under

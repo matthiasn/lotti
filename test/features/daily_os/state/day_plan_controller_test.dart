@@ -31,7 +31,7 @@ void main() {
 
   DayPlanEntry createTestPlan({
     DayPlanStatus status = const DayPlanStatus.draft(),
-    List<TimeBudget> budgets = const [],
+    List<PlannedBlock> plannedBlocks = const [],
   }) {
     return DayPlanEntry(
       meta: Metadata(
@@ -44,7 +44,7 @@ void main() {
       data: DayPlanData(
         planDate: testDate,
         status: status,
-        budgets: budgets,
+        plannedBlocks: plannedBlocks,
       ),
     );
   }
@@ -156,7 +156,7 @@ void main() {
       expect(savedPlan.data.isAgreed, isTrue);
     });
 
-    test('addBudget adds a budget to the plan', () async {
+    test('addPlannedBlock adds a block to the plan', () async {
       final existingPlan = createTestPlan();
       when(() => mockDb.getDayPlanById(planId))
           .thenAnswer((_) async => existingPlan);
@@ -167,43 +167,43 @@ void main() {
         dayPlanControllerProvider(date: testDate).notifier,
       );
 
-      const newBudget = TimeBudget(
-        id: 'budget-1',
+      final newBlock = PlannedBlock(
+        id: 'block-1',
         categoryId: 'cat-work',
-        plannedMinutes: 120,
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 11),
       );
-      await notifier.addBudget(newBudget);
+      await notifier.addPlannedBlock(newBlock);
 
       final captured = verify(
         () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;
-      expect(savedPlan.data.budgets.length, equals(1));
-      expect(savedPlan.data.budgets.first.categoryId, equals('cat-work'));
+      expect(savedPlan.data.plannedBlocks.length, equals(1));
+      expect(savedPlan.data.plannedBlocks.first.categoryId, equals('cat-work'));
     });
 
-    test('removeBudget removes a budget and its pinned tasks', () async {
+    test('removePlannedBlock removes a block', () async {
       final existingPlan = createTestPlan(
-        budgets: const [
-          TimeBudget(id: 'budget-1', categoryId: 'cat-1', plannedMinutes: 60),
-          TimeBudget(id: 'budget-2', categoryId: 'cat-2', plannedMinutes: 90),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 1, 15, 9),
+            endTime: DateTime(2026, 1, 15, 10),
+          ),
+          PlannedBlock(
+            id: 'block-2',
+            categoryId: 'cat-2',
+            startTime: DateTime(2026, 1, 15, 14),
+            endTime: DateTime(2026, 1, 15, 15),
+          ),
         ],
       );
 
-      // We need to add pinned tasks as well - but the createTestPlan doesn't
-      // have pinnedTasks parameter, so let's create a more complete plan
-      final planWithTasks = existingPlan.copyWith(
-        data: existingPlan.data.copyWith(
-          pinnedTasks: const [
-            PinnedTaskRef(taskId: 'task-1', budgetId: 'budget-1'),
-            PinnedTaskRef(taskId: 'task-2', budgetId: 'budget-2'),
-          ],
-        ),
-      );
-
       when(() => mockDb.getDayPlanById(planId))
-          .thenAnswer((_) async => planWithTasks);
+          .thenAnswer((_) async => existingPlan);
 
       await container.read(dayPlanControllerProvider(date: testDate).future);
 
@@ -211,24 +211,67 @@ void main() {
         dayPlanControllerProvider(date: testDate).notifier,
       );
 
-      await notifier.removeBudget('budget-1');
+      await notifier.removePlannedBlock('block-1');
 
       final captured = verify(
         () => mockPersistenceLogic.updateDbEntity(captureAny()),
       ).captured;
 
       final savedPlan = captured.last as DayPlanEntry;
-      expect(savedPlan.data.budgets.length, equals(1));
-      expect(savedPlan.data.budgets.first.id, equals('budget-2'));
-      // Pinned tasks for the removed budget should also be gone
-      expect(savedPlan.data.pinnedTasks.length, equals(1));
-      expect(savedPlan.data.pinnedTasks.first.budgetId, equals('budget-2'));
+      expect(savedPlan.data.plannedBlocks.length, equals(1));
+      expect(savedPlan.data.plannedBlocks.first.id, equals('block-2'));
+    });
+
+    test('updatePlannedBlock updates an existing block', () async {
+      final existingPlan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 1, 15, 9),
+            endTime: DateTime(2026, 1, 15, 10),
+          ),
+        ],
+      );
+
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => existingPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      final updatedBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-1',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 12), // Extended end time
+      );
+      await notifier.updatePlannedBlock(updatedBlock);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.plannedBlocks.length, equals(1));
+      expect(
+        savedPlan.data.plannedBlocks.first.endTime,
+        equals(DateTime(2026, 1, 15, 12)),
+      );
     });
 
     test('pinTask adds a pinned task', () async {
       final existingPlan = createTestPlan(
-        budgets: const [
-          TimeBudget(id: 'budget-1', categoryId: 'cat-1', plannedMinutes: 60),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 1, 15, 9),
+            endTime: DateTime(2026, 1, 15, 10),
+          ),
         ],
       );
 
@@ -243,7 +286,7 @@ void main() {
 
       const taskRef = PinnedTaskRef(
         taskId: 'task-123',
-        budgetId: 'budget-1',
+        categoryId: 'cat-1',
         sortOrder: 1,
       );
       await notifier.pinTask(taskRef);
@@ -263,8 +306,8 @@ void main() {
           planDate: testDate,
           status: const DayPlanStatus.draft(),
           pinnedTasks: const [
-            PinnedTaskRef(taskId: 'task-1', budgetId: 'budget-1'),
-            PinnedTaskRef(taskId: 'task-2', budgetId: 'budget-1'),
+            PinnedTaskRef(taskId: 'task-1', categoryId: 'cat-1'),
+            PinnedTaskRef(taskId: 'task-2', categoryId: 'cat-1'),
           ],
         ),
       );
@@ -326,93 +369,6 @@ void main() {
       // Should have refetched the plan
       verify(() => mockDb.getDayPlanById(planId))
           .called(greaterThanOrEqualTo(2));
-    });
-
-    test('reorderBudgets updates sortOrder of budgets', () async {
-      final existingPlan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-            id: 'budget-1',
-            categoryId: 'cat-1',
-            plannedMinutes: 60,
-          ),
-          TimeBudget(
-            id: 'budget-2',
-            categoryId: 'cat-2',
-            plannedMinutes: 90,
-            sortOrder: 1,
-          ),
-          TimeBudget(
-            id: 'budget-3',
-            categoryId: 'cat-3',
-            plannedMinutes: 120,
-            sortOrder: 2,
-          ),
-        ],
-      );
-
-      when(() => mockDb.getDayPlanById(planId))
-          .thenAnswer((_) async => existingPlan);
-
-      await container.read(dayPlanControllerProvider(date: testDate).future);
-
-      final notifier = container.read(
-        dayPlanControllerProvider(date: testDate).notifier,
-      );
-
-      // Reorder: move budget-3 to the first position
-      await notifier.reorderBudgets(['budget-3', 'budget-1', 'budget-2']);
-
-      final captured = verify(
-        () => mockPersistenceLogic.updateDbEntity(captureAny()),
-      ).captured;
-
-      final savedPlan = captured.last as DayPlanEntry;
-      expect(savedPlan.data.budgets.length, equals(3));
-
-      // Verify the new order and sortOrder values
-      expect(savedPlan.data.budgets[0].id, equals('budget-3'));
-      expect(savedPlan.data.budgets[0].sortOrder, equals(0));
-      expect(savedPlan.data.budgets[1].id, equals('budget-1'));
-      expect(savedPlan.data.budgets[1].sortOrder, equals(1));
-      expect(savedPlan.data.budgets[2].id, equals('budget-2'));
-      expect(savedPlan.data.budgets[2].sortOrder, equals(2));
-    });
-
-    test('updateBudget updates budget plannedMinutes', () async {
-      final existingPlan = createTestPlan(
-        budgets: const [
-          TimeBudget(
-            id: 'budget-1',
-            categoryId: 'cat-1',
-            plannedMinutes: 60,
-          ),
-        ],
-      );
-
-      when(() => mockDb.getDayPlanById(planId))
-          .thenAnswer((_) async => existingPlan);
-
-      await container.read(dayPlanControllerProvider(date: testDate).future);
-
-      final notifier = container.read(
-        dayPlanControllerProvider(date: testDate).notifier,
-      );
-
-      const updatedBudget = TimeBudget(
-        id: 'budget-1',
-        categoryId: 'cat-1',
-        plannedMinutes: 120,
-      );
-      await notifier.updateBudget(updatedBudget);
-
-      final captured = verify(
-        () => mockPersistenceLogic.updateDbEntity(captureAny()),
-      ).captured;
-
-      final savedPlan = captured.last as DayPlanEntry;
-      expect(savedPlan.data.budgets.length, equals(1));
-      expect(savedPlan.data.budgets.first.plannedMinutes, equals(120));
     });
   });
 }

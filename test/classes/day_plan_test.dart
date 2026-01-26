@@ -78,7 +78,7 @@ void main() {
       test('needsReview without previouslyAgreedAt', () {
         final status = DayPlanStatus.needsReview(
           triggeredAt: DateTime(2026, 1, 14, 14),
-          reason: DayPlanReviewReason.budgetModified,
+          reason: DayPlanReviewReason.blockModified,
         );
 
         final json = jsonEncode(status.toJson());
@@ -90,37 +90,6 @@ void main() {
         expect(
           (fromJson as DayPlanStatusNeedsReview).previouslyAgreedAt,
           isNull,
-        );
-      });
-    });
-
-    group('TimeBudget', () {
-      test('can be serialized and deserialized', () {
-        const budget = TimeBudget(
-          id: 'budget-1',
-          categoryId: 'category-work',
-          plannedMinutes: 180,
-        );
-
-        final json = jsonEncode(budget.toJson());
-        final fromJson = TimeBudget.fromJson(
-          jsonDecode(json) as Map<String, dynamic>,
-        );
-
-        expect(fromJson, equals(budget));
-        expect(fromJson.plannedDuration, equals(const Duration(hours: 3)));
-      });
-
-      test('plannedDuration extension works correctly', () {
-        const budget = TimeBudget(
-          id: 'budget-1',
-          categoryId: 'category-work',
-          plannedMinutes: 90,
-        );
-
-        expect(
-          budget.plannedDuration,
-          equals(const Duration(hours: 1, minutes: 30)),
         );
       });
     });
@@ -180,7 +149,7 @@ void main() {
       test('can be serialized and deserialized', () {
         const ref = PinnedTaskRef(
           taskId: 'task-123',
-          budgetId: 'budget-1',
+          categoryId: 'category-1',
           sortOrder: 2,
         );
 
@@ -195,7 +164,7 @@ void main() {
       test('defaults sortOrder to 0', () {
         const ref = PinnedTaskRef(
           taskId: 'task-123',
-          budgetId: 'budget-1',
+          categoryId: 'category-1',
         );
 
         expect(ref.sortOrder, equals(0));
@@ -212,19 +181,6 @@ void main() {
           dayLabel: 'Focused Workday',
           agreedAt: DateTime(2026, 1, 14, 8),
           completedAt: DateTime(2026, 1, 14, 18),
-          budgets: const [
-            TimeBudget(
-              id: 'budget-1',
-              categoryId: 'category-work',
-              plannedMinutes: 180,
-            ),
-            TimeBudget(
-              id: 'budget-2',
-              categoryId: 'category-personal',
-              plannedMinutes: 60,
-              sortOrder: 1,
-            ),
-          ],
           plannedBlocks: [
             PlannedBlock(
               id: 'block-1',
@@ -232,11 +188,17 @@ void main() {
               startTime: DateTime(2026, 1, 14, 9),
               endTime: DateTime(2026, 1, 14, 12),
             ),
+            PlannedBlock(
+              id: 'block-2',
+              categoryId: 'category-personal',
+              startTime: DateTime(2026, 1, 14, 14),
+              endTime: DateTime(2026, 1, 14, 15),
+            ),
           ],
           pinnedTasks: const [
             PinnedTaskRef(
               taskId: 'task-1',
-              budgetId: 'budget-1',
+              categoryId: 'category-work',
             ),
           ],
         );
@@ -247,8 +209,7 @@ void main() {
         );
 
         expect(fromJson, equals(data));
-        expect(fromJson.budgets.length, equals(2));
-        expect(fromJson.plannedBlocks.length, equals(1));
+        expect(fromJson.plannedBlocks.length, equals(2));
         expect(fromJson.pinnedTasks.length, equals(1));
       });
 
@@ -258,30 +219,32 @@ void main() {
           status: const DayPlanStatus.draft(),
         );
 
-        expect(data.budgets, isEmpty);
         expect(data.plannedBlocks, isEmpty);
         expect(data.pinnedTasks, isEmpty);
       });
 
-      test('totalPlannedDuration calculates correctly', () {
+      test('totalPlannedDuration calculates correctly from blocks', () {
         final data = DayPlanData(
           planDate: DateTime(2026, 1, 14),
           status: const DayPlanStatus.draft(),
-          budgets: const [
-            TimeBudget(
-              id: 'budget-1',
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
               categoryId: 'cat-1',
-              plannedMinutes: 120,
+              startTime: DateTime(2026, 1, 14, 9),
+              endTime: DateTime(2026, 1, 14, 11), // 2 hours
             ),
-            TimeBudget(
-              id: 'budget-2',
+            PlannedBlock(
+              id: 'block-2',
               categoryId: 'cat-2',
-              plannedMinutes: 60,
+              startTime: DateTime(2026, 1, 14, 13),
+              endTime: DateTime(2026, 1, 14, 14), // 1 hour
             ),
-            TimeBudget(
-              id: 'budget-3',
+            PlannedBlock(
+              id: 'block-3',
               categoryId: 'cat-3',
-              plannedMinutes: 30,
+              startTime: DateTime(2026, 1, 14, 15),
+              endTime: DateTime(2026, 1, 14, 15, 30), // 30 min
             ),
           ],
         );
@@ -290,69 +253,6 @@ void main() {
           data.totalPlannedDuration,
           equals(const Duration(hours: 3, minutes: 30)),
         );
-      });
-
-      test('budgetById finds correct budget', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          budgets: const [
-            TimeBudget(
-              id: 'budget-1',
-              categoryId: 'cat-1',
-              plannedMinutes: 120,
-            ),
-            TimeBudget(
-              id: 'budget-2',
-              categoryId: 'cat-2',
-              plannedMinutes: 60,
-            ),
-          ],
-        );
-
-        expect(data.budgetById('budget-2')?.categoryId, equals('cat-2'));
-        expect(data.budgetById('nonexistent'), isNull);
-      });
-
-      test('budgetByCategoryId finds correct budget', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          budgets: const [
-            TimeBudget(
-              id: 'budget-1',
-              categoryId: 'cat-1',
-              plannedMinutes: 120,
-            ),
-            TimeBudget(
-              id: 'budget-2',
-              categoryId: 'cat-2',
-              plannedMinutes: 60,
-            ),
-          ],
-        );
-
-        expect(data.budgetByCategoryId('cat-2')?.id, equals('budget-2'));
-        expect(data.budgetByCategoryId('nonexistent'), isNull);
-      });
-
-      test('pinnedTasksForBudget returns sorted tasks', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          pinnedTasks: const [
-            PinnedTaskRef(taskId: 'task-3', budgetId: 'budget-1', sortOrder: 2),
-            PinnedTaskRef(taskId: 'task-1', budgetId: 'budget-1'),
-            PinnedTaskRef(taskId: 'task-2', budgetId: 'budget-1', sortOrder: 1),
-            PinnedTaskRef(taskId: 'task-4', budgetId: 'budget-2'),
-          ],
-        );
-
-        final tasks = data.pinnedTasksForBudget('budget-1');
-        expect(tasks.length, equals(3));
-        expect(tasks[0].taskId, equals('task-1'));
-        expect(tasks[1].taskId, equals('task-2'));
-        expect(tasks[2].taskId, equals('task-3'));
       });
 
       test('blocksForCategory returns sorted blocks', () {
@@ -385,6 +285,88 @@ void main() {
         expect(blocks.length, equals(2));
         expect(blocks[0].id, equals('block-1'));
         expect(blocks[1].id, equals('block-2'));
+      });
+
+      test('derivedBudgets aggregates blocks by category', () {
+        final data = DayPlanData(
+          planDate: DateTime(2026, 1, 14),
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 1, 14, 9),
+              endTime: DateTime(2026, 1, 14, 11), // 2 hours
+            ),
+            PlannedBlock(
+              id: 'block-2',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 1, 14, 14),
+              endTime: DateTime(2026, 1, 14, 15), // 1 hour
+            ),
+            PlannedBlock(
+              id: 'block-3',
+              categoryId: 'cat-2',
+              startTime: DateTime(2026, 1, 14, 12),
+              endTime: DateTime(2026, 1, 14, 13), // 1 hour
+            ),
+          ],
+        );
+
+        final budgets = data.derivedBudgets;
+        expect(budgets.length, equals(2));
+
+        // Should be sorted by earliest block start time
+        final cat1Budget = budgets.firstWhere((b) => b.categoryId == 'cat-1');
+        expect(cat1Budget.plannedDuration, equals(const Duration(hours: 3)));
+        expect(cat1Budget.blocks.length, equals(2));
+
+        final cat2Budget = budgets.firstWhere((b) => b.categoryId == 'cat-2');
+        expect(cat2Budget.plannedDuration, equals(const Duration(hours: 1)));
+        expect(cat2Budget.blocks.length, equals(1));
+      });
+
+      test('pinnedTasksForCategory returns sorted tasks', () {
+        final data = DayPlanData(
+          planDate: DateTime(2026, 1, 14),
+          status: const DayPlanStatus.draft(),
+          pinnedTasks: const [
+            PinnedTaskRef(taskId: 'task-3', categoryId: 'cat-1', sortOrder: 2),
+            PinnedTaskRef(taskId: 'task-1', categoryId: 'cat-1'),
+            PinnedTaskRef(taskId: 'task-2', categoryId: 'cat-1', sortOrder: 1),
+            PinnedTaskRef(taskId: 'task-4', categoryId: 'cat-2'),
+          ],
+        );
+
+        final tasks = data.pinnedTasksForCategory('cat-1');
+        expect(tasks.length, equals(3));
+        expect(tasks[0].taskId, equals('task-1'));
+        expect(tasks[1].taskId, equals('task-2'));
+        expect(tasks[2].taskId, equals('task-3'));
+      });
+
+      test('blockById finds correct block', () {
+        final data = DayPlanData(
+          planDate: DateTime(2026, 1, 14),
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 1, 14, 9),
+              endTime: DateTime(2026, 1, 14, 11),
+            ),
+            PlannedBlock(
+              id: 'block-2',
+              categoryId: 'cat-2',
+              startTime: DateTime(2026, 1, 14, 14),
+              endTime: DateTime(2026, 1, 14, 15),
+            ),
+          ],
+        );
+
+        expect(data.blockById('block-2')?.categoryId, equals('cat-2'));
+        expect(data.blockById('nonexistent'), isNull);
       });
 
       test('status helper methods work correctly', () {
@@ -429,6 +411,75 @@ void main() {
           completedAt: DateTime(2026, 1, 14, 18),
         );
         expect(complete.isComplete, isTrue);
+      });
+
+      test('plannedDurationForCategory calculates correctly', () {
+        final data = DayPlanData(
+          planDate: DateTime(2026, 1, 14),
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 1, 14, 9),
+              endTime: DateTime(2026, 1, 14, 11), // 2 hours
+            ),
+            PlannedBlock(
+              id: 'block-2',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 1, 14, 14),
+              endTime: DateTime(2026, 1, 14, 14, 30), // 30 min
+            ),
+            PlannedBlock(
+              id: 'block-3',
+              categoryId: 'cat-2',
+              startTime: DateTime(2026, 1, 14, 12),
+              endTime: DateTime(2026, 1, 14, 13), // 1 hour
+            ),
+          ],
+        );
+
+        expect(
+          data.plannedDurationForCategory('cat-1'),
+          equals(const Duration(hours: 2, minutes: 30)),
+        );
+        expect(
+          data.plannedDurationForCategory('cat-2'),
+          equals(const Duration(hours: 1)),
+        );
+        expect(
+          data.plannedDurationForCategory('nonexistent'),
+          equals(Duration.zero),
+        );
+      });
+
+      test('categoryIds returns all unique categories', () {
+        final data = DayPlanData(
+          planDate: DateTime(2026, 1, 14),
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 1, 14, 9),
+              endTime: DateTime(2026, 1, 14, 11),
+            ),
+            PlannedBlock(
+              id: 'block-2',
+              categoryId: 'cat-1',
+              startTime: DateTime(2026, 1, 14, 14),
+              endTime: DateTime(2026, 1, 14, 15),
+            ),
+            PlannedBlock(
+              id: 'block-3',
+              categoryId: 'cat-2',
+              startTime: DateTime(2026, 1, 14, 12),
+              endTime: DateTime(2026, 1, 14, 13),
+            ),
+          ],
+        );
+
+        expect(data.categoryIds, equals({'cat-1', 'cat-2'}));
       });
     });
 

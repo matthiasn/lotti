@@ -12,6 +12,8 @@ import '../../../../test_helper.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final testDate = DateTime(2026, 1, 15);
+
   final testCategory = CategoryDefinition(
     id: 'cat-1',
     name: 'Work',
@@ -28,19 +30,26 @@ void main() {
     Duration recorded = const Duration(hours: 1),
     BudgetProgressStatus status = BudgetProgressStatus.underBudget,
     CategoryDefinition? category,
+    List<PlannedBlock>? blocks,
   }) {
+    final effectiveCategory = category ?? testCategory;
     return TimeBudgetProgress(
-      budget: TimeBudget(
-        id: 'budget-1',
-        categoryId: category?.id ?? testCategory.id,
-        plannedMinutes: planned.inMinutes,
-      ),
-      category: category ?? testCategory,
+      categoryId: effectiveCategory.id,
+      category: effectiveCategory,
       plannedDuration: planned,
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
       pinnedTasks: const [],
+      blocks: blocks ??
+          [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: effectiveCategory.id,
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(Duration(hours: 9 + planned.inHours)),
+            ),
+          ],
     );
   }
 
@@ -169,18 +178,22 @@ void main() {
     testWidgets('displays uncategorized when no category', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          progress: const TimeBudgetProgress(
-            budget: TimeBudget(
-              id: 'budget-1',
-              categoryId: 'missing',
-              plannedMinutes: 60,
-            ),
+          progress: TimeBudgetProgress(
+            categoryId: 'missing',
             category: null,
-            plannedDuration: Duration(hours: 1),
+            plannedDuration: const Duration(hours: 1),
             recordedDuration: Duration.zero,
             status: BudgetProgressStatus.underBudget,
-            contributingEntries: [],
-            pinnedTasks: [],
+            contributingEntries: const [],
+            pinnedTasks: const [],
+            blocks: [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'missing',
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+              ),
+            ],
           ),
         ),
       );
