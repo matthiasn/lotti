@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -195,6 +196,13 @@ sealed class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = SurveyEntry;
 
+  const factory JournalEntity.dayPlan({
+    required Metadata meta,
+    required DayPlanData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = DayPlanEntry;
+
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
       _$JournalEntityFromJson(json);
 }
@@ -252,6 +260,9 @@ extension JournalEntityExtension on JournalEntity {
 
       case final MeasurementEntry measurement:
         ids.add(measurement.data.dataTypeId);
+
+      case DayPlanEntry():
+        ids.add(dayPlanNotification);
     }
 
     return ids;

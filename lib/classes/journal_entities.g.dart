@@ -417,3 +417,24 @@ Map<String, dynamic> _$SurveyEntryToJson(SurveyEntry instance) =>
       'geolocation': instance.geolocation,
       'runtimeType': instance.$type,
     };
+
+DayPlanEntry _$DayPlanEntryFromJson(Map<String, dynamic> json) => DayPlanEntry(
+      meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
+      data: DayPlanData.fromJson(json['data'] as Map<String, dynamic>),
+      entryText: json['entryText'] == null
+          ? null
+          : EntryText.fromJson(json['entryText'] as Map<String, dynamic>),
+      geolocation: json['geolocation'] == null
+          ? null
+          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$DayPlanEntryToJson(DayPlanEntry instance) =>
+    <String, dynamic>{
+      'meta': instance.meta,
+      'data': instance.data,
+      'entryText': instance.entryText,
+      'geolocation': instance.geolocation,
+      'runtimeType': instance.$type,
+    };

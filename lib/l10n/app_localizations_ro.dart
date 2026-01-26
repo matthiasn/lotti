@@ -783,6 +783,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get configFlagEnableEvents => 'Enable Events';
 
   @override
+  String get configFlagEnableDailyOs => 'Enable Daily OS (WIP)';
+
+  @override
+  String get configFlagEnableDailyOsDescription =>
+      'Enable the Daily Operating System view for day planning. This is a work in progress feature.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.';
 
@@ -816,6 +823,247 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get customColor => 'Custom Color';
+
+  @override
+  String get dailyOsTodayButton => 'Today';
+
+  @override
+  String get dailyOsTimeline => 'Timeline';
+
+  @override
+  String get dailyOsTimeBudgets => 'Time Budgets';
+
+  @override
+  String get dailyOsDaySummary => 'Day Summary';
+
+  @override
+  String get dailyOsDayComplete => 'Day Complete';
+
+  @override
+  String get dailyOsDayPlan => 'Day Plan';
+
+  @override
+  String get dailyOsPlanned => 'Planned';
+
+  @override
+  String get dailyOsRecorded => 'Recorded';
+
+  @override
+  String get dailyOsRemaining => 'Remaining';
+
+  @override
+  String get dailyOsOver => 'Over';
+
+  @override
+  String get dailyOsDoneForToday => 'Done for today';
+
+  @override
+  String get dailyOsCopyToTomorrow => 'Copy to tomorrow';
+
+  @override
+  String get dailyOsAddBudget => 'Add Budget';
+
+  @override
+  String get dailyOsSelectCategory => 'Select Category';
+
+  @override
+  String get dailyOsPlannedDuration => 'Planned Duration';
+
+  @override
+  String get dailyOsAgreeToPlan => 'Agree to Plan';
+
+  @override
+  String get dailyOsReAgree => 'Re-agree';
+
+  @override
+  String get dailyOsDraftMessage => 'Plan is in draft. Agree to lock it in.';
+
+  @override
+  String get dailyOsReviewMessage => 'Changes detected. Review your plan.';
+
+  @override
+  String get dailyOsCompletionMessage => 'Great job! You completed your day.';
+
+  @override
+  String get dailyOsNoTimeline => 'No timeline entries';
+
+  @override
+  String get dailyOsNoTimelineHint =>
+      'Start a timer or add planned blocks to see your day.';
+
+  @override
+  String get dailyOsNoBudgets => 'No time budgets';
+
+  @override
+  String get dailyOsNoBudgetsHint =>
+      'Add budgets to track how you spend your time across categories.';
+
+  @override
+  String get dailyOsOverBudget => 'Over budget';
+
+  @override
+  String get dailyOsNearLimit => 'Near limit';
+
+  @override
+  String get dailyOsOnTrack => 'On track';
+
+  @override
+  String get dailyOsOverallProgress => 'Overall Progress';
+
+  @override
+  String get dailyOsViewModeClassic => 'Classic';
+
+  @override
+  String get dailyOsViewModeDailyOs => 'Daily OS';
+
+  @override
+  String get dailyOsEditPlannedBlock => 'Edit Planned Block';
+
+  @override
+  String get dailyOsTimeRange => 'Time Range';
+
+  @override
+  String get dailyOsStartTime => 'Start';
+
+  @override
+  String get dailyOsEndTime => 'End';
+
+  @override
+  String get dailyOsCategory => 'Category';
+
+  @override
+  String get dailyOsUncategorized => 'Uncategorized';
+
+  @override
+  String get dailyOsNote => 'Note';
+
+  @override
+  String get dailyOsAddNote => 'Add a note...';
+
+  @override
+  String get dailyOsCancel => 'Cancel';
+
+  @override
+  String get dailyOsSave => 'Save';
+
+  @override
+  String get dailyOsDelete => 'Delete';
+
+  @override
+  String get dailyOsDeletePlannedBlock => 'Delete Block?';
+
+  @override
+  String get dailyOsDeletePlannedBlockConfirm =>
+      'This will remove the planned block from your timeline.';
+
+  @override
+  String get dailyOsEditBudget => 'Edit Budget';
+
+  @override
+  String get dailyOsDeleteBudget => 'Delete Budget?';
+
+  @override
+  String get dailyOsDeleteBudgetConfirm =>
+      'This will remove the time budget from your day plan.';
+
+  @override
+  String get dailyOsPlan => 'Plan';
+
+  @override
+  String get dailyOsActual => 'Actual';
+
+  @override
+  String dailyOsDuplicateBudget(String categoryName) {
+    return 'A budget for \"$categoryName\" already exists';
+  }
+
+  @override
+  String get dailyOsInvalidTimeRange => 'Invalid time range';
+
+  @override
+  String get dailyOsTimesUp => 'Time\'s up';
+
+  @override
+  String dailyOsTimeLeft(String time) {
+    return '$time left';
+  }
+
+  @override
+  String dailyOsTimeOver(String time) {
+    return '+$time over';
+  }
+
+  @override
+  String dailyOsHoursPlanned(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours planned',
+      one: '1 hour planned',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsHoursMinutesPlanned(int hours, int minutes) {
+    return '${hours}h ${minutes}m planned';
+  }
+
+  @override
+  String dailyOsMinutesPlanned(int count) {
+    return '$count min planned';
+  }
+
+  @override
+  String get dailyOsEntry => 'Entry';
+
+  @override
+  String get dailyOsFailedToLoadBudgets => 'Failed to load budgets';
+
+  @override
+  String get dailyOsFailedToLoadTimeline => 'Failed to load timeline';
+
+  @override
+  String get dailyOsChooseCategory => 'Choose a category...';
+
+  @override
+  String dailyOsDurationHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsDurationHoursMinutes(int hours, int minutes) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
+  String dailyOsDurationMinutes(int count) {
+    return '$count minutes';
+  }
+
+  @override
+  String get dailyOsDuration30m => '30m';
+
+  @override
+  String get dailyOsDuration1h => '1h';
+
+  @override
+  String get dailyOsDuration2h => '2h';
+
+  @override
+  String get dailyOsDuration3h => '3h';
+
+  @override
+  String get dailyOsDuration4h => '4h';
+
+  @override
+  String get dailyOsAddBlock => 'Add Block';
 
   @override
   String get dashboardActiveLabel => 'Activ:';

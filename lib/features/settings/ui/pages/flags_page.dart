@@ -27,6 +27,7 @@ class _FlagsPageState extends State<FlagsPage> {
     enableDashboardsPageFlag,
     enableCalendarPageFlag,
     enableEventsFlag,
+    enableDailyOsFlag,
   ];
 
   // Helper to get icon for each flag
@@ -56,6 +57,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return Icons.calendar_today_rounded;
       case enableEventsFlag:
         return Icons.event_rounded;
+      case enableDailyOsFlag:
+        return Icons.today_rounded;
       default:
         return Icons.settings;
     }
@@ -88,6 +91,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return context.messages.configFlagEnableCalendarPageDescription;
       case enableEventsFlag:
         return context.messages.configFlagEnableEventsDescription;
+      case enableDailyOsFlag:
+        return context.messages.configFlagEnableDailyOsDescription;
       default:
         return flag.description;
     }
@@ -120,6 +125,8 @@ class _FlagsPageState extends State<FlagsPage> {
         return context.messages.configFlagEnableCalendarPage;
       case enableEventsFlag:
         return context.messages.configFlagEnableEvents;
+      case enableDailyOsFlag:
+        return context.messages.configFlagEnableDailyOs;
       default:
         return flag.name;
     }

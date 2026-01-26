@@ -108,6 +108,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable Events?',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableDailyOsFlag,
+    description: 'Enable Daily OS (WIP)?',
+    status: false,
+  ),
 };
 
 void main() {

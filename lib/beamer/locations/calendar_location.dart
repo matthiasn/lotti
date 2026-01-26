@@ -1,6 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
+import 'package:lotti/features/calendar/ui/pages/calendar_wrapper_page.dart';
 
 class CalendarLocation extends BeamLocation<BeamState> {
   CalendarLocation(RouteInformation super.routeInformation);
@@ -15,7 +15,7 @@ class CalendarLocation extends BeamLocation<BeamState> {
     return [
       const BeamPage(
         key: ValueKey('calendar_page'),
-        child: DayViewPage(),
+        child: CalendarWrapperPage(),
       ),
     ];
   }

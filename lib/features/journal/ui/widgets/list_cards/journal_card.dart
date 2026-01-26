@@ -22,6 +22,7 @@ import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -265,6 +266,16 @@ class ModernJournalCard extends StatelessWidget {
               style: context.textTheme.bodyMedium?.copyWith(
                 decoration:
                     ci.data.isChecked ? TextDecoration.lineThrough : null,
+              ),
+            );
+          case final DayPlanEntry dayPlan:
+            return Text(
+              dayPlan.data.dayLabel ?? context.messages.dailyOsDayPlan,
+              style: context.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: isCompact
+                    ? AppTheme.titleFontSizeCompact
+                    : AppTheme.titleFontSize,
               ),
             );
         }
