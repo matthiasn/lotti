@@ -541,8 +541,7 @@ void main() {
       expect(result.first.recordedDuration, equals(const Duration(hours: 1)));
     });
 
-    test('prefers linked parent category over entry direct category',
-        () async {
+    test('prefers linked parent category over entry direct category', () async {
       final plan = createTestPlan(
         plannedBlocks: [
           PlannedBlock(

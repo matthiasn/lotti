@@ -140,8 +140,9 @@ abstract class DayPlanData with _$DayPlanData {
 }
 
 /// Derived time budget for a category, computed from planned blocks.
+@immutable
 class DerivedTimeBudget {
-  DerivedTimeBudget({
+  const DerivedTimeBudget({
     required this.categoryId,
     required this.plannedDuration,
     required this.blocks,

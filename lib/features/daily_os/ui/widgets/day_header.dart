@@ -77,7 +77,7 @@ class DayHeader extends ConsumerWidget {
                     child: Column(
                       children: [
                         Text(
-                          _formatDayName(selectedDate),
+                          _formatDayName(context, selectedDate),
                           style: context.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: context.colorScheme.onSurface,
@@ -85,7 +85,7 @@ class DayHeader extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _formatDate(selectedDate),
+                          _formatDate(context, selectedDate),
                           style: context.textTheme.bodyMedium?.copyWith(
                             color: context.colorScheme.onSurfaceVariant,
                           ),
@@ -188,12 +188,14 @@ class DayHeader extends ConsumerWidget {
     );
   }
 
-  String _formatDayName(DateTime date) {
-    return DateFormat('EEEE').format(date);
+  String _formatDayName(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context).toString();
+    return DateFormat('EEEE', locale).format(date);
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('MMMM d, yyyy').format(date);
+  String _formatDate(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context).toString();
+    return DateFormat.yMMMMd(locale).format(date);
   }
 
   bool _isToday(DateTime date) {
@@ -287,7 +289,7 @@ class _StatusIndicator extends StatelessWidget {
       return (
         MdiIcons.alertCircle,
         context.colorScheme.error,
-        'Over budget',
+        context.messages.dailyOsOverBudget,
       );
     }
 
@@ -296,7 +298,7 @@ class _StatusIndicator extends StatelessWidget {
       return (
         MdiIcons.clockAlert,
         Colors.orange,
-        'Near limit',
+        context.messages.dailyOsNearLimit,
       );
     }
 
@@ -304,24 +306,25 @@ class _StatusIndicator extends StatelessWidget {
       return (
         MdiIcons.checkCircle,
         Colors.green,
-        'On track',
+        context.messages.dailyOsOnTrack,
       );
     }
 
     return (
       MdiIcons.clockOutline,
       context.colorScheme.onSurfaceVariant,
-      '${_formatDuration(stats.totalRemaining)} left',
+      context.messages
+          .dailyOsTimeLeft(_formatDuration(context, stats.totalRemaining)),
     );
   }
 
-  String _formatDuration(Duration duration) {
+  String _formatDuration(BuildContext context, Duration duration) {
     if (duration.inHours > 0) {
       final hours = duration.inHours;
       final mins = duration.inMinutes % 60;
-      if (mins == 0) return '${hours}h';
-      return '${hours}h ${mins}m';
+      if (mins == 0) return context.messages.dailyOsDurationHours(hours);
+      return context.messages.dailyOsDurationHoursMinutes(hours, mins);
     }
-    return '${duration.inMinutes}m';
+    return context.messages.dailyOsDurationMinutes(duration.inMinutes);
   }
 }

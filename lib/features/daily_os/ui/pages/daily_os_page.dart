@@ -42,6 +42,9 @@ class DailyOsPage extends ConsumerWidget {
               child: RefreshIndicator(
                 onRefresh: () async {
                   ref.invalidate(dayPlanControllerProvider(date: selectedDate));
+                  // Wait for the provider to reload data
+                  await ref.read(
+                      dayPlanControllerProvider(date: selectedDate).future);
                 },
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),

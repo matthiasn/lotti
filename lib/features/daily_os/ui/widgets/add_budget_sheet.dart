@@ -80,10 +80,22 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
       context: context,
       initialTime: _endTime,
     );
-    if (picked != null && _timeToMinutes(picked) > _timeToMinutes(_startTime)) {
-      setState(() {
-        _endTime = picked;
-      });
+    if (picked != null) {
+      if (_timeToMinutes(picked) > _timeToMinutes(_startTime)) {
+        setState(() {
+          _endTime = picked;
+        });
+      } else {
+        // Show feedback when end time is not after start time
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.messages.dailyOsInvalidTimeRange),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
     }
   }
 

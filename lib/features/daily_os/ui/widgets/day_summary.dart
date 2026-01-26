@@ -56,14 +56,14 @@ class DaySummary extends ConsumerWidget {
                       Expanded(
                         child: _StatItem(
                           label: context.messages.dailyOsPlanned,
-                          value: _formatDuration(stats.totalPlanned),
+                          value: _formatDuration(context, stats.totalPlanned),
                           icon: MdiIcons.targetAccount,
                         ),
                       ),
                       Expanded(
                         child: _StatItem(
                           label: context.messages.dailyOsRecorded,
-                          value: _formatDuration(stats.totalRecorded),
+                          value: _formatDuration(context, stats.totalRecorded),
                           icon: MdiIcons.clockCheck,
                         ),
                       ),
@@ -72,7 +72,8 @@ class DaySummary extends ConsumerWidget {
                           label: stats.isOverBudget
                               ? context.messages.dailyOsOver
                               : context.messages.dailyOsRemaining,
-                          value: _formatDuration(stats.totalRemaining.abs()),
+                          value: _formatDuration(
+                              context, stats.totalRemaining.abs()),
                           icon: stats.isOverBudget
                               ? MdiIcons.alertCircle
                               : MdiIcons.clockOutline,
@@ -102,15 +103,15 @@ class DaySummary extends ConsumerWidget {
     );
   }
 
-  String _formatDuration(Duration duration) {
+  String _formatDuration(BuildContext context, Duration duration) {
     final hours = duration.inHours;
     final mins = duration.inMinutes % 60;
 
     if (hours > 0) {
-      if (mins == 0) return '${hours}h';
-      return '${hours}h ${mins}m';
+      if (mins == 0) return context.messages.dailyOsDurationHours(hours);
+      return context.messages.dailyOsDurationHoursMinutes(hours, mins);
     }
-    return '${mins}m';
+    return context.messages.dailyOsDurationMinutes(mins);
   }
 }
 

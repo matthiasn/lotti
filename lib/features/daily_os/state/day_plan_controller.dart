@@ -41,9 +41,9 @@ class DayPlanController extends _$DayPlanController {
       ..onDispose(() => _updateSubscription?.cancel())
       ..cacheFor(entryCacheDuration);
 
-    final result = await _fetch();
+    // Start listening before fetch to avoid missing updates during fetch
     _listen();
-    return result;
+    return _fetch();
   }
 
   Future<DayPlanEntry> _fetch() async {

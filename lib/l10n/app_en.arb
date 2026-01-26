@@ -325,6 +325,7 @@
   "dailyOsTimeBudgets": "Time Budgets",
   "dailyOsDaySummary": "Day Summary",
   "dailyOsDayComplete": "Day Complete",
+  "dailyOsDayPlan": "Day Plan",
   "dailyOsPlanned": "Planned",
   "dailyOsRecorded": "Recorded",
   "dailyOsRemaining": "Remaining",

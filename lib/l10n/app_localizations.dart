@@ -1581,6 +1581,12 @@ abstract class AppLocalizations {
   /// **'Day Complete'**
   String get dailyOsDayComplete;
 
+  /// No description provided for @dailyOsDayPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Day Plan'**
+  String get dailyOsDayPlan;
+
   /// No description provided for @dailyOsPlanned.
   ///
   /// In en, this message translates to:

@@ -134,7 +134,7 @@ class TimelineDataController extends _$TimelineDataController {
           subDomain: '_listen',
           stackTrace: stackTrace,
         );
-        rethrow;
+        // Don't rethrow - this would terminate the subscription and prevent future updates
       }
     });
   }

@@ -100,7 +100,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('4h'), findsOneWidget);
+      expect(find.text('4 hours'), findsOneWidget);
       expect(find.text('Planned'), findsOneWidget);
     });
 
@@ -117,7 +117,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('3h'), findsOneWidget);
+      expect(find.text('3 hours'), findsOneWidget);
       expect(find.text('Recorded'), findsOneWidget);
     });
 

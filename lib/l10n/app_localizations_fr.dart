@@ -843,6 +843,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsDayComplete => 'Day Complete';
 
   @override
+  String get dailyOsDayPlan => 'Day Plan';
+
+  @override
   String get dailyOsPlanned => 'Planned';
 
   @override

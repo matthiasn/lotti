@@ -825,7 +825,8 @@ dayPlanById:
 SELECT * FROM journal
   WHERE type = 'DayPlanEntry'
   AND id = :id
-  AND deleted = false;
+  AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 dayPlansInRange:
 SELECT * FROM journal
@@ -833,4 +834,5 @@ SELECT * FROM journal
   AND deleted = false
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;

@@ -6637,25 +6637,27 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> dayPlanById(String id) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id = ?1 AND deleted = FALSE',
+        'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id = ?1 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
         variables: [
           Variable<String>(id)
         ],
         readsFrom: {
           journal,
+          configFlags,
         }).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> dayPlansInRange(
       DateTime rangeStart, DateTime rangeEnd) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
+        'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
         variables: [
           Variable<DateTime>(rangeStart),
           Variable<DateTime>(rangeEnd)
         ],
         readsFrom: {
           journal,
+          configFlags,
         }).asyncMap(journal.mapFromRow);
   }
 

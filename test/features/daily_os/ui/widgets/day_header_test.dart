@@ -179,7 +179,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show remaining time indicator
-      expect(find.text('2h left'), findsOneWidget);
+      expect(find.text('2 hours left'), findsOneWidget);
     });
 
     testWidgets('shows over budget indicator', (tester) async {
