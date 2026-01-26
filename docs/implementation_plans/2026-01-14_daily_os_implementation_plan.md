@@ -112,9 +112,7 @@ class DayPlanData with _$DayPlanData {
     required DateTime planDate,                // The day this plan is for (at midnight)
     required DayPlanStatus status,             // draft/agreed/needsReview
     String? dayLabel,                          // e.g., "Focused Workday", "Recovery Day"
-    DateTime? agreedAt,                        // When the plan was last agreed
     DateTime? completedAt,                     // When day was marked complete
-    @Default([]) List<TimeBudget> budgets,     // Embedded budget allocations
     @Default([]) List<PlannedBlock> plannedBlocks,  // Embedded timeline blocks
     @Default([]) List<PinnedTaskRef> pinnedTasks,   // References to pinned tasks
   }) = _DayPlanData;
@@ -122,6 +120,12 @@ class DayPlanData with _$DayPlanData {
   factory DayPlanData.fromJson(Map<String, dynamic> json) =>
       _$DayPlanDataFromJson(json);
 }
+
+// Note: Time budgets are NOT stored in DayPlanData. Instead, they are derived
+// at runtime from planned blocks grouped by category. See DerivedTimeBudget
+// in lib/classes/day_plan.dart and TimeBudgetProgress computed by
+// time_budget_progress_controller.dart. This simplifies the data model and
+// ensures budgets always reflect the current block configuration.
 
 /// Generates deterministic ID for a day's plan
 String dayPlanId(DateTime date) =>

@@ -196,7 +196,11 @@ class TimelineDataController extends _$TimelineDataController {
     // Convert actual entries to time slots
     final actualSlots = <ActualTimeSlot>[];
     for (final entry in entries) {
-      // Get the linked parent entry (e.g., a Task)
+      // Get the linked parent entry (e.g., a Task).
+      // Note: If an entry has multiple linked parents, we use the first one.
+      // In practice, time entries are typically linked to a single task/journal,
+      // so this covers the common case. If multi-parent attribution becomes
+      // needed, this logic would need to be extended (e.g., prioritize by type).
       final linkedFromId = entryIdToLinkedFromIds[entry.meta.id]?.firstOrNull;
       final linkedFrom =
           linkedFromId != null ? linkedFromMap[linkedFromId] : null;

@@ -99,8 +99,11 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
       rangeEnd: dayEnd,
     );
 
-    // Fetch linked entries (parent tasks/journals) for each entry
-    // This mirrors timeline_data_controller's approach for consistency
+    // Fetch linked entries (parent tasks/journals) for each entry.
+    // This mirrors timeline_data_controller's approach for consistency.
+    // Note: If an entry has multiple linked parents, the last link wins.
+    // In practice, time entries are typically linked to a single task/journal,
+    // so this covers the common case.
     final entryIds = entries.map((e) => e.meta.id).toSet();
     final links = await db.linksForEntryIds(entryIds);
     final entryIdToLinkedFromId = <String, String>{};
