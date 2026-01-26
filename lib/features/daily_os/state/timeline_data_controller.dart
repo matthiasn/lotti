@@ -283,14 +283,16 @@ class TimelineDataController extends _$TimelineDataController {
 
     var latest = 0;
 
-    if (planned.isNotEmpty) {
-      final plannedEnd = planned.last.endTime.hour + 1;
-      if (plannedEnd > latest) latest = plannedEnd;
+    // Find max end time across all planned slots (not just the last by start)
+    for (final slot in planned) {
+      final endHour = slot.endTime.hour + 1;
+      if (endHour > latest) latest = endHour;
     }
 
-    if (actual.isNotEmpty) {
-      final actualEnd = actual.last.endTime.hour + 1;
-      if (actualEnd > latest) latest = actualEnd;
+    // Find max end time across all actual slots
+    for (final slot in actual) {
+      final endHour = slot.endTime.hour + 1;
+      if (endHour > latest) latest = endHour;
     }
 
     // Add 1 hour buffer after, but not past midnight

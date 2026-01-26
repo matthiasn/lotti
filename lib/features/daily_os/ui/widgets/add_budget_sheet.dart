@@ -64,8 +64,10 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
         _startTime = picked;
         // Auto-adjust end time if start is after end
         if (_timeToMinutes(_startTime) >= _timeToMinutes(_endTime)) {
+          // Cap at 23:00 to avoid midnight wrap creating invalid range
+          final newEndHour = (_startTime.hour + 1).clamp(0, 23);
           _endTime = TimeOfDay(
-            hour: (_startTime.hour + 1) % 24,
+            hour: newEndHour,
             minute: _startTime.minute,
           );
         }
@@ -93,9 +95,15 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
     return Duration(minutes: endMinutes - startMinutes);
   }
 
+  bool get _isValidTimeRange =>
+      _timeToMinutes(_endTime) > _timeToMinutes(_startTime);
+
   Future<void> _handleAdd() async {
     final category = _selectedCategory;
     if (category == null) return;
+
+    // Validate time range before saving
+    if (!_isValidTimeRange) return;
 
     final dayPlanEntity = await ref.read(
       dayPlanControllerProvider(date: widget.date).future,
@@ -307,7 +315,9 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
                 const SizedBox(width: AppTheme.spacingMedium),
                 Expanded(
                   child: FilledButton(
-                    onPressed: _selectedCategory != null ? _handleAdd : null,
+                    onPressed: _selectedCategory != null && _isValidTimeRange
+                        ? _handleAdd
+                        : null,
                     child: Text(context.messages.dailyOsAddBlock),
                   ),
                 ),

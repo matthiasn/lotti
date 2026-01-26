@@ -371,4 +371,240 @@ void main() {
           .called(greaterThanOrEqualTo(2));
     });
   });
+
+  group('Status transitions to needsReview', () {
+    test('addPlannedBlock transitions agreed plan to needsReview', () async {
+      final agreedPlan = createTestPlan(
+        status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+      );
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => agreedPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      final newBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-work',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 11),
+      );
+      await notifier.addPlannedBlock(newBlock);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.needsReview, isTrue);
+      expect(
+        (savedPlan.data.status as DayPlanStatusNeedsReview).reason,
+        equals(DayPlanReviewReason.blockModified),
+      );
+    });
+
+    test('updatePlannedBlock transitions agreed plan to needsReview', () async {
+      final agreedPlan = createTestPlan(
+        status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 1, 15, 9),
+            endTime: DateTime(2026, 1, 15, 10),
+          ),
+        ],
+      );
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => agreedPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      final updatedBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-1',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 12),
+      );
+      await notifier.updatePlannedBlock(updatedBlock);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.needsReview, isTrue);
+    });
+
+    test('removePlannedBlock transitions agreed plan to needsReview', () async {
+      final agreedPlan = createTestPlan(
+        status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 1, 15, 9),
+            endTime: DateTime(2026, 1, 15, 10),
+          ),
+        ],
+      );
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => agreedPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      await notifier.removePlannedBlock('block-1');
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.needsReview, isTrue);
+    });
+
+    test('pinTask transitions agreed plan to needsReview', () async {
+      final agreedPlan = createTestPlan(
+        status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 1, 15, 9),
+            endTime: DateTime(2026, 1, 15, 10),
+          ),
+        ],
+      );
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => agreedPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      const taskRef = PinnedTaskRef(
+        taskId: 'task-123',
+        categoryId: 'cat-1',
+      );
+      await notifier.pinTask(taskRef);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.needsReview, isTrue);
+      expect(
+        (savedPlan.data.status as DayPlanStatusNeedsReview).reason,
+        equals(DayPlanReviewReason.taskRescheduled),
+      );
+    });
+
+    test('unpinTask transitions agreed plan to needsReview', () async {
+      final agreedPlan = DayPlanEntry(
+        meta: Metadata(
+          id: planId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(days: 1)),
+        ),
+        data: DayPlanData(
+          planDate: testDate,
+          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+          pinnedTasks: const [
+            PinnedTaskRef(taskId: 'task-1', categoryId: 'cat-1'),
+          ],
+        ),
+      );
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => agreedPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      await notifier.unpinTask('task-1');
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.needsReview, isTrue);
+    });
+
+    test('edits on draft plan do not change status', () async {
+      final draftPlan = createTestPlan();
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => draftPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      final newBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-work',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 11),
+      );
+      await notifier.addPlannedBlock(newBlock);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.isDraft, isTrue);
+    });
+
+    test('needsReview status preserves previouslyAgreedAt', () async {
+      final agreedAt = DateTime(2026, 1, 15, 8);
+      final agreedPlan = createTestPlan(
+        status: DayPlanStatus.agreed(agreedAt: agreedAt),
+      );
+      when(() => mockDb.getDayPlanById(planId))
+          .thenAnswer((_) async => agreedPlan);
+
+      await container.read(dayPlanControllerProvider(date: testDate).future);
+
+      final notifier = container.read(
+        dayPlanControllerProvider(date: testDate).notifier,
+      );
+
+      final newBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-work',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 11),
+      );
+      await notifier.addPlannedBlock(newBlock);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+
+      final savedPlan = captured.last as DayPlanEntry;
+      final status = savedPlan.data.status as DayPlanStatusNeedsReview;
+      expect(status.previouslyAgreedAt, equals(agreedAt));
+    });
+  });
 }

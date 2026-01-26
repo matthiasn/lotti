@@ -68,7 +68,7 @@ final class TimeBudgetProgressControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$timeBudgetProgressControllerHash() =>
-    r'49245b2b2b6a241f87ddc4df637f45973f74f808';
+    r'55ae73aca32080415a2419e0bfe8be128afd3ad2';
 
 /// Provides aggregated budget progress for a day.
 ///

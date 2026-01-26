@@ -319,7 +319,7 @@ class _PlannedBlockWidget extends ConsumerWidget {
           ),
           padding: const EdgeInsets.all(4),
           child: Text(
-            category?.name ?? 'Planned',
+            category?.name ?? context.messages.dailyOsPlanned,
             style: context.textTheme.labelSmall?.copyWith(
               color: categoryColor.withValues(alpha: 0.9),
               fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,

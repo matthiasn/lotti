@@ -83,16 +83,38 @@ class DayPlanController extends _$DayPlanController {
     await updatePlan(updated);
   }
 
+  /// Transitions an agreed plan to needsReview status.
+  /// Returns the updated data if transition occurred, or original data if not.
+  DayPlanData _transitionToNeedsReviewIfAgreed(
+    DayPlanData data,
+    DayPlanReviewReason reason,
+  ) {
+    if (data.status is! DayPlanStatusAgreed) return data;
+
+    final agreed = data.status as DayPlanStatusAgreed;
+    return data.copyWith(
+      status: DayPlanStatus.needsReview(
+        triggeredAt: DateTime.now(),
+        reason: reason,
+        previouslyAgreedAt: agreed.agreedAt,
+      ),
+    );
+  }
+
   /// Adds a planned block to the timeline.
   Future<void> addPlannedBlock(PlannedBlock block) async {
     final current = state.value;
     if (current is! DayPlanEntry) return;
 
-    final updated = current.copyWith(
-      data: current.data.copyWith(
-        plannedBlocks: [...current.data.plannedBlocks, block],
-      ),
+    var updatedData = current.data.copyWith(
+      plannedBlocks: [...current.data.plannedBlocks, block],
     );
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.blockModified,
+    );
+
+    final updated = current.copyWith(data: updatedData);
     await updatePlan(updated);
   }
 
@@ -105,9 +127,13 @@ class DayPlanController extends _$DayPlanController {
       return b.id == block.id ? block : b;
     }).toList();
 
-    final updated = current.copyWith(
-      data: current.data.copyWith(plannedBlocks: updatedBlocks),
+    var updatedData = current.data.copyWith(plannedBlocks: updatedBlocks);
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.blockModified,
     );
+
+    final updated = current.copyWith(data: updatedData);
     await updatePlan(updated);
   }
 
@@ -116,12 +142,16 @@ class DayPlanController extends _$DayPlanController {
     final current = state.value;
     if (current is! DayPlanEntry) return;
 
-    final updated = current.copyWith(
-      data: current.data.copyWith(
-        plannedBlocks:
-            current.data.plannedBlocks.where((b) => b.id != blockId).toList(),
-      ),
+    var updatedData = current.data.copyWith(
+      plannedBlocks:
+          current.data.plannedBlocks.where((b) => b.id != blockId).toList(),
     );
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.blockModified,
+    );
+
+    final updated = current.copyWith(data: updatedData);
     await updatePlan(updated);
   }
 
@@ -130,11 +160,15 @@ class DayPlanController extends _$DayPlanController {
     final current = state.value;
     if (current is! DayPlanEntry) return;
 
-    final updated = current.copyWith(
-      data: current.data.copyWith(
-        pinnedTasks: [...current.data.pinnedTasks, taskRef],
-      ),
+    var updatedData = current.data.copyWith(
+      pinnedTasks: [...current.data.pinnedTasks, taskRef],
     );
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.taskRescheduled,
+    );
+
+    final updated = current.copyWith(data: updatedData);
     await updatePlan(updated);
   }
 
@@ -143,12 +177,16 @@ class DayPlanController extends _$DayPlanController {
     final current = state.value;
     if (current is! DayPlanEntry) return;
 
-    final updated = current.copyWith(
-      data: current.data.copyWith(
-        pinnedTasks:
-            current.data.pinnedTasks.where((t) => t.taskId != taskId).toList(),
-      ),
+    var updatedData = current.data.copyWith(
+      pinnedTasks:
+          current.data.pinnedTasks.where((t) => t.taskId != taskId).toList(),
     );
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.taskRescheduled,
+    );
+
+    final updated = current.copyWith(data: updatedData);
     await updatePlan(updated);
   }
 

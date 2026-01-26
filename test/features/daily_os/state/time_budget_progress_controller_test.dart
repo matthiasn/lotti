@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -109,6 +111,8 @@ void main() {
 
     when(() => mockDb.getJournalEntitiesForIds(any()))
         .thenAnswer((_) async => []);
+
+    when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
     getIt
       ..registerSingleton<JournalDb>(mockDb)
@@ -456,6 +460,171 @@ void main() {
         personalBudget.recordedDuration,
         equals(const Duration(minutes: 45)),
       );
+    });
+
+    test('uses linked parent category for budget attribution', () async {
+      // Budget for work category
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)), // 2 hours
+          ),
+        ],
+      );
+      when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
+
+      // Time entry with NO category, but linked to a task WITH cat-work category
+      final timeEntry = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: null, // Entry has no category
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      // Parent task with work category
+      final parentTask = JournalEntity.task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: 'cat-work', // Parent has the category
+        ),
+        data: TaskData(
+          title: 'Test Task',
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: [],
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry]);
+
+      // Set up link from task to time entry
+      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1'}))
+          .thenAnswer((_) async => [parentTask]);
+
+      final result = await container.read(
+        timeBudgetProgressControllerProvider(date: testDate).future,
+      );
+
+      // Should attribute the time to cat-work via the linked parent
+      expect(result.length, equals(1));
+      expect(result.first.categoryId, equals('cat-work'));
+      expect(result.first.recordedDuration, equals(const Duration(hours: 1)));
+    });
+
+    test('prefers linked parent category over entry direct category',
+        () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+          PlannedBlock(
+            id: 'block-2',
+            categoryId: 'cat-personal',
+            startTime: testDate.add(const Duration(hours: 14)),
+            endTime: testDate.add(const Duration(hours: 15)),
+          ),
+        ],
+      );
+      when(() => mockDb.getDayPlanById(planId)).thenAnswer((_) async => plan);
+
+      // Entry has personal category, but is linked to work task
+      final timeEntry = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: 'cat-personal', // Entry has personal category
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      final parentTask = JournalEntity.task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: 'cat-work', // Parent has work category
+        ),
+        data: TaskData(
+          title: 'Test Task',
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: [],
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry]);
+
+      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1'}))
+          .thenAnswer((_) async => [parentTask]);
+
+      final result = await container.read(
+        timeBudgetProgressControllerProvider(date: testDate).future,
+      );
+
+      // Time should be attributed to work (parent) not personal (entry)
+      final workBudget = result.firstWhere((p) => p.categoryId == 'cat-work');
+      expect(workBudget.recordedDuration, equals(const Duration(hours: 1)));
+
+      final personalBudget =
+          result.firstWhere((p) => p.categoryId == 'cat-personal');
+      expect(personalBudget.recordedDuration, equals(Duration.zero));
     });
   });
 

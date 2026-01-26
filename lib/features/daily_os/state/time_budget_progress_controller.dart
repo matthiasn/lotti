@@ -99,10 +99,32 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
       rangeEnd: dayEnd,
     );
 
-    // Group entries by category
+    // Fetch linked entries (parent tasks/journals) for each entry
+    // This mirrors timeline_data_controller's approach for consistency
+    final entryIds = entries.map((e) => e.meta.id).toSet();
+    final links = await db.linksForEntryIds(entryIds);
+    final entryIdToLinkedFromId = <String, String>{};
+    final linkedFromIds = <String>{};
+
+    for (final link in links) {
+      entryIdToLinkedFromId[link.toId] = link.fromId;
+      linkedFromIds.add(link.fromId);
+    }
+
+    final linkedFromEntries = await db.getJournalEntitiesForIds(linkedFromIds);
+    final linkedFromMap = <String, JournalEntity>{
+      for (final entry in linkedFromEntries) entry.meta.id: entry,
+    };
+
+    // Group entries by category, using linked parent's category if available
     final entriesByCategory = <String, List<JournalEntity>>{};
     for (final entry in entries) {
-      final categoryId = entry.meta.categoryId;
+      // Use category from linked parent if available (matches timeline behavior)
+      final linkedFromId = entryIdToLinkedFromId[entry.meta.id];
+      final linkedFrom =
+          linkedFromId != null ? linkedFromMap[linkedFromId] : null;
+      final categoryId = linkedFrom?.meta.categoryId ?? entry.meta.categoryId;
+
       if (categoryId != null) {
         entriesByCategory.putIfAbsent(categoryId, () => []).add(entry);
       }
