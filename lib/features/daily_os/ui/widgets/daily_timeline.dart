@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -28,40 +29,49 @@ class _LaneAssignment {
   final int laneIndex;
 }
 
+/// Tracks a lane's end time for priority queue ordering.
+class _LaneEndTime {
+  const _LaneEndTime({required this.laneIndex, required this.endTime});
+
+  final int laneIndex;
+  final DateTime endTime;
+}
+
 /// Assigns time slots to lanes to prevent visual overlap.
 ///
-/// Uses a greedy algorithm: for each slot (sorted by start time),
-/// find the first lane where it doesn't overlap with the last slot in that lane.
-/// If no suitable lane exists, create a new lane.
+/// Uses a greedy algorithm with a min-heap for O(N log K) complexity,
+/// where N is the number of slots and K is the number of lanes.
+/// For each slot (sorted by start time), check if the earliest-ending lane
+/// can accommodate it. If not, create a new lane.
 List<_LaneAssignment> _assignLanes(List<ActualTimeSlot> slots) {
   if (slots.isEmpty) return [];
 
   // Sort by start time
   final sorted = [...slots]..sort((a, b) => a.startTime.compareTo(b.startTime));
 
-  // Each lane tracks the end time of its last slot
-  final laneEndTimes = <DateTime>[];
+  // Min-heap ordered by lane end time (earliest first)
+  final laneHeap = PriorityQueue<_LaneEndTime>(
+    (a, b) => a.endTime.compareTo(b.endTime),
+  );
+
   final assignments = <_LaneAssignment>[];
+  var nextLaneIndex = 0;
 
   for (final slot in sorted) {
-    var assignedLane = -1;
+    int assignedLane;
 
-    // Find first lane where this slot doesn't overlap
-    for (var i = 0; i < laneEndTimes.length; i++) {
-      if (!slot.startTime.isBefore(laneEndTimes[i])) {
-        // No overlap - slot starts at or after the lane's last slot ends
-        assignedLane = i;
-        laneEndTimes[i] = slot.endTime;
-        break;
-      }
+    if (laneHeap.isNotEmpty &&
+        !slot.startTime.isBefore(laneHeap.first.endTime)) {
+      // Reuse the earliest-ending lane (no overlap)
+      final reusedLane = laneHeap.removeFirst();
+      assignedLane = reusedLane.laneIndex;
+    } else {
+      // Create a new lane
+      assignedLane = nextLaneIndex++;
     }
 
-    // If no suitable lane found, create a new one
-    if (assignedLane == -1) {
-      assignedLane = laneEndTimes.length;
-      laneEndTimes.add(slot.endTime);
-    }
-
+    // Add/update lane in heap with new end time
+    laneHeap.add(_LaneEndTime(laneIndex: assignedLane, endTime: slot.endTime));
     assignments.add(_LaneAssignment(slot: slot, laneIndex: assignedLane));
   }
 
