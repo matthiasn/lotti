@@ -361,11 +361,6 @@ class _ActualBlockWidget extends ConsumerWidget {
     final highlightedId = ref.watch(highlightedCategoryIdProvider);
     final isHighlighted = categoryId != null && highlightedId == categoryId;
 
-    final title = _getEntryTitle(
-      slot.entry,
-      category?.name ?? context.messages.dailyOsEntry,
-    );
-
     return Positioned(
       top: top,
       left: 0,
@@ -436,32 +431,15 @@ class _ActualBlockWidget extends ConsumerWidget {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(4),
-          child: Text(
-            title,
-            style: context.textTheme.labelSmall?.copyWith(
-              color: _getTextColor(categoryColor),
-              fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          // No text label - show only colored block to avoid overflow clutter.
+          // Semantics preserved for accessibility.
+          child: Semantics(
+            label: category?.name ?? '',
+            child: const SizedBox.expand(),
           ),
         ),
       ),
     );
-  }
-
-  String _getEntryTitle(JournalEntity entry, String fallback) {
-    return switch (entry) {
-      Task(:final data) => data.title,
-      _ => fallback,
-    };
-  }
-
-  Color _getTextColor(Color backgroundColor) {
-    // Simple luminance check for text contrast
-    final luminance = backgroundColor.computeLuminance();
-    return luminance > 0.5 ? Colors.black87 : Colors.white;
   }
 }
 

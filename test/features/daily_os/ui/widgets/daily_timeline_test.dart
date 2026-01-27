@@ -204,7 +204,8 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
     });
 
-    testWidgets('renders actual time entries with task title', (tester) async {
+    testWidgets('renders actual time entries as colored blocks',
+        (tester) async {
       when(() => mockCacheService.getCategoryById('cat-1'))
           .thenReturn(testCategory);
 
@@ -249,8 +250,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should render the task title in the actual block
-      expect(find.text('Important Task'), findsOneWidget);
+      // Actual blocks render as colored blocks without text labels.
+      // The category name is preserved via Semantics for accessibility.
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
     });
 
     testWidgets('renders time axis labels', (tester) async {
@@ -411,7 +413,7 @@ void main() {
       expect(find.text('Exercise'), findsOneWidget);
     });
 
-    testWidgets('renders actual entry as non-task with fallback title',
+    testWidgets('renders actual entry as non-task with semantics label',
         (tester) async {
       when(() => mockCacheService.getCategoryById('cat-1'))
           .thenReturn(testCategory);
@@ -445,8 +447,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show category name as fallback for non-task entries
-      expect(find.text('Work'), findsOneWidget);
+      // Actual blocks show category name via Semantics (no visible text)
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
     });
 
     testWidgets('highlights planned block when category is highlighted',
@@ -553,9 +555,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show both plan label and actual task title
-      expect(find.text('Work'), findsOneWidget); // Planned block
-      expect(find.text('Real Work Done'), findsOneWidget); // Actual task
+      // Planned block shows visible text label
+      expect(find.text('Work'), findsOneWidget);
+      // Both planned and actual blocks have semantics label 'Work'
+      // (planned via Text widget, actual via Semantics widget)
+      expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
     });
 
     testWidgets('planned block is tappable', (tester) async {
@@ -643,8 +647,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find the actual block text and its GestureDetector ancestor
-      final blockFinder = find.text('Tap Me Task');
+      // Find the actual block by its semantics label and check for GestureDetector
+      final blockFinder = find.bySemanticsLabel('Work');
       expect(blockFinder, findsOneWidget);
 
       final gestureDetector = find.ancestor(
