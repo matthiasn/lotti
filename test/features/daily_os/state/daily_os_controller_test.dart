@@ -167,7 +167,7 @@ void main() {
             status: BudgetProgressStatus.underBudget,
             blocks: [],
             contributingEntries: [],
-            pinnedTasks: [],
+            taskProgressItems: [],
           ),
           const TimeBudgetProgress(
             categoryId: 'cat-2',
@@ -177,7 +177,7 @@ void main() {
             status: BudgetProgressStatus.underBudget,
             blocks: [],
             contributingEntries: [],
-            pinnedTasks: [],
+            taskProgressItems: [],
           ),
         ],
         timelineData: createTestTimelineData(),
@@ -202,7 +202,7 @@ void main() {
             status: BudgetProgressStatus.overBudget,
             blocks: [],
             contributingEntries: [],
-            pinnedTasks: [],
+            taskProgressItems: [],
           ),
           const TimeBudgetProgress(
             categoryId: 'cat-2',
@@ -212,7 +212,7 @@ void main() {
             status: BudgetProgressStatus.underBudget,
             blocks: [],
             contributingEntries: [],
-            pinnedTasks: [],
+            taskProgressItems: [],
           ),
           const TimeBudgetProgress(
             categoryId: 'cat-3',
@@ -222,7 +222,7 @@ void main() {
             status: BudgetProgressStatus.overBudget,
             blocks: [],
             contributingEntries: [],
-            pinnedTasks: [],
+            taskProgressItems: [],
           ),
         ],
         timelineData: createTestTimelineData(),
@@ -292,7 +292,7 @@ void main() {
           status: BudgetProgressStatus.underBudget,
           blocks: [],
           contributingEntries: [],
-          pinnedTasks: [],
+          taskProgressItems: [],
         ),
       ];
 

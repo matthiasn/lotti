@@ -1066,6 +1066,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsAddBlock => 'Add Block';
 
   @override
+  String get dailyOsTasks => 'Tasks';
+
+  @override
   String get dashboardActiveLabel => 'Aktiv:';
 
   @override

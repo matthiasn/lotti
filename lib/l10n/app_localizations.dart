@@ -1965,6 +1965,12 @@ abstract class AppLocalizations {
   /// **'Add Block'**
   String get dailyOsAddBlock;
 
+  /// No description provided for @dailyOsTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get dailyOsTasks;
+
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:

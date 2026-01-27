@@ -66,7 +66,7 @@ void main() {
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
-      pinnedTasks: const [],
+      taskProgressItems: const [],
       blocks: [
         PlannedBlock(
           id: id,
