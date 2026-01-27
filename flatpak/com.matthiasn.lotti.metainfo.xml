@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.824" date="2026-01-27">
+      <description>
+        <p>Day Plan Timeline Fix: Fixed a crash that occurred when calendar entries crossed midnight (e.g., a work session starting at 23:00 and ending at 01:00 the next day). The timeline view now correctly handles overnight entries by treating them as ending at midnight for display purposes. Added defensive bounds checking to prevent the RangeError that caused blank/grey screens on days with late-night entries.</p>
+      </description>
+    </release>
     <release version="0.9.823" date="2026-01-26">
       <description>
         <p>Daily Operating System: New time management feature for planning and tracking your day. (WIP)</p>

@@ -688,5 +688,46 @@ void main() {
       expect(find.text('06:00'), findsOneWidget);
       expect(find.text('07:00'), findsOneWidget);
     });
+
+    testWidgets(
+        'handles invalid day bounds without crashing (endHour < startHour)',
+        (tester) async {
+      // This test verifies the defensive clamp prevents RangeError when
+      // entries cross midnight (e.g., end at 01:00 next day, start at 23:00).
+      // In such cases, the controller might calculate endHour < startHour.
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          data: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-1',
+                  categoryId: testCategory.id,
+                  startTime: testDate.add(const Duration(hours: 23)),
+                  endTime: testDate.add(const Duration(hours: 25)), // next day
+                ),
+                startTime: testDate.add(const Duration(hours: 23)),
+                endTime: testDate.add(const Duration(hours: 25)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            actualSlots: const [],
+            // Invalid: endHour < startHour (would cause negative totalHours)
+            dayStartHour: 22,
+            dayEndHour: 2, // This is less than startHour
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should render without throwing RangeError
+      expect(find.byType(DailyTimeline), findsOneWidget);
+      // Should show at least 1 hour on the timeline (clamped minimum)
+      expect(find.text('22:00'), findsOneWidget);
+    });
   });
 }

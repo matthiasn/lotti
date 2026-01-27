@@ -225,7 +225,11 @@ class TimelineDataController extends _$TimelineDataController {
 
     // Calculate day bounds
     final dayStartHour = _calculateDayStartHour(plannedSlots, actualSlots);
-    final dayEndHour = _calculateDayEndHour(plannedSlots, actualSlots);
+    final dayEndHour = _calculateDayEndHour(
+      plannedSlots,
+      actualSlots,
+      _date.dayAtMidnight,
+    );
 
     return DailyTimelineData(
       date: _date,
@@ -281,21 +285,27 @@ class TimelineDataController extends _$TimelineDataController {
   int _calculateDayEndHour(
     List<PlannedTimeSlot> planned,
     List<ActualTimeSlot> actual,
+    DateTime dayStart,
   ) {
     // If no content, use default range
     if (planned.isEmpty && actual.isEmpty) return 18;
 
+    final nextDay = dayStart.add(const Duration(days: 1));
     var latest = 0;
 
     // Find max end time across all planned slots (not just the last by start)
     for (final slot in planned) {
-      final endHour = slot.endTime.hour + 1;
+      // If entry ends on the next day (crosses midnight), treat as hour 24
+      final endHour =
+          !slot.endTime.isBefore(nextDay) ? 24 : slot.endTime.hour + 1;
       if (endHour > latest) latest = endHour;
     }
 
     // Find max end time across all actual slots
     for (final slot in actual) {
-      final endHour = slot.endTime.hour + 1;
+      // If entry ends on the next day (crosses midnight), treat as hour 24
+      final endHour =
+          !slot.endTime.isBefore(nextDay) ? 24 : slot.endTime.hour + 1;
       if (endHour > latest) latest = endHour;
     }
 

@@ -53,7 +53,8 @@ class _TimelineContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final startHour = data.dayStartHour;
     final endHour = data.dayEndHour;
-    final totalHours = endHour - startHour;
+    // Ensure totalHours is at least 1 to prevent RangeError in List.generate
+    final totalHours = (endHour - startHour).clamp(1, 24);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
