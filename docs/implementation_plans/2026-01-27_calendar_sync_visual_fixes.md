@@ -1,9 +1,42 @@
 # Implementation Plan: Calendar View Sync and Visual Fixes
 
 **Date:** 2026-01-27
-**Status:** IN PROGRESS
+**Status:** PARTIALLY COMPLETE
 **Epic:** Daily Operating System
 **Related PR:** #2580 (Calendar Refresh Fix - provides context on visibility-based refresh pattern)
+
+---
+
+## Implementation Status
+
+### Completed (v0.9.825)
+
+- [x] **Phase 1: Unified Daily OS Data Controller** - COMPLETE
+  - Created `UnifiedDailyOsDataController` with `ref.keepAlive()` + manual `StreamSubscription`
+  - Consolidated day plan, timeline data, and budget progress into single atomic state
+  - All UI components now update together when data changes
+  - Updated all widget tests to use the unified controller
+  - Added comprehensive unit tests for the unified controller (27 tests)
+
+- [x] **Controller Cleanup** - COMPLETE
+  - Removed `TimelineDataController` class (kept data types: `TimelineSlot`, `PlannedTimeSlot`, `ActualTimeSlot`, `DailyTimelineData`)
+  - Removed `TimeBudgetProgressController` class (kept data types: `BudgetProgressStatus`, `TimeBudgetProgress`, `DayBudgetStats`, `dayBudgetStatsProvider`)
+  - Deleted generated files for removed controllers
+  - Deleted obsolete test file that used removed `timeBudgetProgressControllerProvider`
+
+- [x] **Test Coverage** - COMPLETE
+  - Added `unified_daily_os_data_controller_test.dart` with 27 tests covering:
+    - Budget progress status calculation (underBudget, nearLimit, exhausted, overBudget)
+    - Timeline data building (planned slots, actual slots, sorting)
+    - Day bounds calculation (start/end hours with buffer)
+    - Midnight crossing handling (entries/blocks ending on next day)
+    - Linked entry category resolution (parent category takes precedence)
+    - DayBudgetStats aggregation
+
+### Pending
+
+- [ ] **Phase 2: Remove Tracked Labels** - NOT STARTED
+- [ ] **Phase 3: Overlapping Entries (Option A)** - NOT STARTED
 
 ---
 
