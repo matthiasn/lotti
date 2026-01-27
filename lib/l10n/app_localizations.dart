@@ -1023,6 +1023,42 @@ abstract class AppLocalizations {
   /// **'Providers'**
   String get aiSettingsTabProviders;
 
+  /// No description provided for @aiSettingsSelectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get aiSettingsSelectLabel;
+
+  /// No description provided for @aiSettingsSelectModeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle selection mode for bulk operations'**
+  String get aiSettingsSelectModeTooltip;
+
+  /// No description provided for @aiSettingsDeleteSelectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ({count})'**
+  String aiSettingsDeleteSelectedLabel(int count);
+
+  /// No description provided for @aiSettingsDeleteSelectedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected prompts'**
+  String get aiSettingsDeleteSelectedTooltip;
+
+  /// No description provided for @aiSettingsDeleteSelectedConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Selected Prompts'**
+  String get aiSettingsDeleteSelectedConfirmTitle;
+
+  /// No description provided for @aiSettingsDeleteSelectedConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {count} selected prompts? This action cannot be undone.'**
+  String aiSettingsDeleteSelectedConfirmMessage(int count);
+
   /// No description provided for @aiTaskSummaryRunning.
   ///
   /// In en, this message translates to:

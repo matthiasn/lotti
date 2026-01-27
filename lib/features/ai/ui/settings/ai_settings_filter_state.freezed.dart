@@ -32,6 +32,12 @@ mixin _$AiSettingsFilterState {
   /// Currently active tab
   AiSettingsTab get activeTab;
 
+  /// Whether selection mode is active (only used on Prompts tab)
+  bool get selectionMode;
+
+  /// Selected prompt IDs for bulk operations (only used on Prompts tab)
+  Set<String> get selectedPromptIds;
+
   /// Create a copy of AiSettingsFilterState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -56,7 +62,11 @@ mixin _$AiSettingsFilterState {
             const DeepCollectionEquality()
                 .equals(other.selectedResponseTypes, selectedResponseTypes) &&
             (identical(other.activeTab, activeTab) ||
-                other.activeTab == activeTab));
+                other.activeTab == activeTab) &&
+            (identical(other.selectionMode, selectionMode) ||
+                other.selectionMode == selectionMode) &&
+            const DeepCollectionEquality()
+                .equals(other.selectedPromptIds, selectedPromptIds));
   }
 
   @override
@@ -67,11 +77,13 @@ mixin _$AiSettingsFilterState {
       const DeepCollectionEquality().hash(selectedCapabilities),
       reasoningFilter,
       const DeepCollectionEquality().hash(selectedResponseTypes),
-      activeTab);
+      activeTab,
+      selectionMode,
+      const DeepCollectionEquality().hash(selectedPromptIds));
 
   @override
   String toString() {
-    return 'AiSettingsFilterState(searchQuery: $searchQuery, selectedProviders: $selectedProviders, selectedCapabilities: $selectedCapabilities, reasoningFilter: $reasoningFilter, selectedResponseTypes: $selectedResponseTypes, activeTab: $activeTab)';
+    return 'AiSettingsFilterState(searchQuery: $searchQuery, selectedProviders: $selectedProviders, selectedCapabilities: $selectedCapabilities, reasoningFilter: $reasoningFilter, selectedResponseTypes: $selectedResponseTypes, activeTab: $activeTab, selectionMode: $selectionMode, selectedPromptIds: $selectedPromptIds)';
   }
 }
 
@@ -87,7 +99,9 @@ abstract mixin class $AiSettingsFilterStateCopyWith<$Res> {
       Set<Modality> selectedCapabilities,
       bool reasoningFilter,
       Set<AiResponseType> selectedResponseTypes,
-      AiSettingsTab activeTab});
+      AiSettingsTab activeTab,
+      bool selectionMode,
+      Set<String> selectedPromptIds});
 }
 
 /// @nodoc
@@ -109,6 +123,8 @@ class _$AiSettingsFilterStateCopyWithImpl<$Res>
     Object? reasoningFilter = null,
     Object? selectedResponseTypes = null,
     Object? activeTab = null,
+    Object? selectionMode = null,
+    Object? selectedPromptIds = null,
   }) {
     return _then(_self.copyWith(
       searchQuery: null == searchQuery
@@ -135,6 +151,14 @@ class _$AiSettingsFilterStateCopyWithImpl<$Res>
           ? _self.activeTab
           : activeTab // ignore: cast_nullable_to_non_nullable
               as AiSettingsTab,
+      selectionMode: null == selectionMode
+          ? _self.selectionMode
+          : selectionMode // ignore: cast_nullable_to_non_nullable
+              as bool,
+      selectedPromptIds: null == selectedPromptIds
+          ? _self.selectedPromptIds
+          : selectedPromptIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
     ));
   }
 }
@@ -238,7 +262,9 @@ extension AiSettingsFilterStatePatterns on AiSettingsFilterState {
             Set<Modality> selectedCapabilities,
             bool reasoningFilter,
             Set<AiResponseType> selectedResponseTypes,
-            AiSettingsTab activeTab)?
+            AiSettingsTab activeTab,
+            bool selectionMode,
+            Set<String> selectedPromptIds)?
         $default, {
     required TResult orElse(),
   }) {
@@ -251,7 +277,9 @@ extension AiSettingsFilterStatePatterns on AiSettingsFilterState {
             _that.selectedCapabilities,
             _that.reasoningFilter,
             _that.selectedResponseTypes,
-            _that.activeTab);
+            _that.activeTab,
+            _that.selectionMode,
+            _that.selectedPromptIds);
       case _:
         return orElse();
     }
@@ -278,7 +306,9 @@ extension AiSettingsFilterStatePatterns on AiSettingsFilterState {
             Set<Modality> selectedCapabilities,
             bool reasoningFilter,
             Set<AiResponseType> selectedResponseTypes,
-            AiSettingsTab activeTab)
+            AiSettingsTab activeTab,
+            bool selectionMode,
+            Set<String> selectedPromptIds)
         $default,
   ) {
     final _that = this;
@@ -290,7 +320,9 @@ extension AiSettingsFilterStatePatterns on AiSettingsFilterState {
             _that.selectedCapabilities,
             _that.reasoningFilter,
             _that.selectedResponseTypes,
-            _that.activeTab);
+            _that.activeTab,
+            _that.selectionMode,
+            _that.selectedPromptIds);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -316,7 +348,9 @@ extension AiSettingsFilterStatePatterns on AiSettingsFilterState {
             Set<Modality> selectedCapabilities,
             bool reasoningFilter,
             Set<AiResponseType> selectedResponseTypes,
-            AiSettingsTab activeTab)?
+            AiSettingsTab activeTab,
+            bool selectionMode,
+            Set<String> selectedPromptIds)?
         $default,
   ) {
     final _that = this;
@@ -328,7 +362,9 @@ extension AiSettingsFilterStatePatterns on AiSettingsFilterState {
             _that.selectedCapabilities,
             _that.reasoningFilter,
             _that.selectedResponseTypes,
-            _that.activeTab);
+            _that.activeTab,
+            _that.selectionMode,
+            _that.selectedPromptIds);
       case _:
         return null;
     }
@@ -344,10 +380,13 @@ class _AiSettingsFilterState implements AiSettingsFilterState {
       final Set<Modality> selectedCapabilities = const {},
       this.reasoningFilter = false,
       final Set<AiResponseType> selectedResponseTypes = const {},
-      this.activeTab = AiSettingsTab.providers})
+      this.activeTab = AiSettingsTab.providers,
+      this.selectionMode = false,
+      final Set<String> selectedPromptIds = const {}})
       : _selectedProviders = selectedProviders,
         _selectedCapabilities = selectedCapabilities,
-        _selectedResponseTypes = selectedResponseTypes;
+        _selectedResponseTypes = selectedResponseTypes,
+        _selectedPromptIds = selectedPromptIds;
 
   /// Text query for searching across all AI configuration names and descriptions
   @override
@@ -403,6 +442,24 @@ class _AiSettingsFilterState implements AiSettingsFilterState {
   @JsonKey()
   final AiSettingsTab activeTab;
 
+  /// Whether selection mode is active (only used on Prompts tab)
+  @override
+  @JsonKey()
+  final bool selectionMode;
+
+  /// Selected prompt IDs for bulk operations (only used on Prompts tab)
+  final Set<String> _selectedPromptIds;
+
+  /// Selected prompt IDs for bulk operations (only used on Prompts tab)
+  @override
+  @JsonKey()
+  Set<String> get selectedPromptIds {
+    if (_selectedPromptIds is EqualUnmodifiableSetView)
+      return _selectedPromptIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_selectedPromptIds);
+  }
+
   /// Create a copy of AiSettingsFilterState
   /// with the given fields replaced by the non-null parameter values.
   @override
@@ -428,7 +485,11 @@ class _AiSettingsFilterState implements AiSettingsFilterState {
             const DeepCollectionEquality()
                 .equals(other._selectedResponseTypes, _selectedResponseTypes) &&
             (identical(other.activeTab, activeTab) ||
-                other.activeTab == activeTab));
+                other.activeTab == activeTab) &&
+            (identical(other.selectionMode, selectionMode) ||
+                other.selectionMode == selectionMode) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedPromptIds, _selectedPromptIds));
   }
 
   @override
@@ -439,11 +500,13 @@ class _AiSettingsFilterState implements AiSettingsFilterState {
       const DeepCollectionEquality().hash(_selectedCapabilities),
       reasoningFilter,
       const DeepCollectionEquality().hash(_selectedResponseTypes),
-      activeTab);
+      activeTab,
+      selectionMode,
+      const DeepCollectionEquality().hash(_selectedPromptIds));
 
   @override
   String toString() {
-    return 'AiSettingsFilterState(searchQuery: $searchQuery, selectedProviders: $selectedProviders, selectedCapabilities: $selectedCapabilities, reasoningFilter: $reasoningFilter, selectedResponseTypes: $selectedResponseTypes, activeTab: $activeTab)';
+    return 'AiSettingsFilterState(searchQuery: $searchQuery, selectedProviders: $selectedProviders, selectedCapabilities: $selectedCapabilities, reasoningFilter: $reasoningFilter, selectedResponseTypes: $selectedResponseTypes, activeTab: $activeTab, selectionMode: $selectionMode, selectedPromptIds: $selectedPromptIds)';
   }
 }
 
@@ -461,7 +524,9 @@ abstract mixin class _$AiSettingsFilterStateCopyWith<$Res>
       Set<Modality> selectedCapabilities,
       bool reasoningFilter,
       Set<AiResponseType> selectedResponseTypes,
-      AiSettingsTab activeTab});
+      AiSettingsTab activeTab,
+      bool selectionMode,
+      Set<String> selectedPromptIds});
 }
 
 /// @nodoc
@@ -483,6 +548,8 @@ class __$AiSettingsFilterStateCopyWithImpl<$Res>
     Object? reasoningFilter = null,
     Object? selectedResponseTypes = null,
     Object? activeTab = null,
+    Object? selectionMode = null,
+    Object? selectedPromptIds = null,
   }) {
     return _then(_AiSettingsFilterState(
       searchQuery: null == searchQuery
@@ -509,6 +576,14 @@ class __$AiSettingsFilterStateCopyWithImpl<$Res>
           ? _self.activeTab
           : activeTab // ignore: cast_nullable_to_non_nullable
               as AiSettingsTab,
+      selectionMode: null == selectionMode
+          ? _self.selectionMode
+          : selectionMode // ignore: cast_nullable_to_non_nullable
+              as bool,
+      selectedPromptIds: null == selectedPromptIds
+          ? _self._selectedPromptIds
+          : selectedPromptIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
     ));
   }
 }

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_config_card_container.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_empty_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/dismissible_config_card.dart';
+import 'package:lotti/themes/theme.dart';
 
 /// A sliver-based configuration list for AI settings
 ///
@@ -20,6 +22,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/dismissible_config_card.da
 /// - Loading, error, and empty states
 /// - Generic type support for all AI configuration types
 /// - Optional capability indicators for models
+/// - Selection mode with checkboxes for bulk operations
 ///
 /// The widget uses extracted state components for better maintainability:
 /// - [ConfigLoadingState] for loading UI
@@ -36,6 +39,9 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
     this.showCapabilities = false,
     this.enableSwipeToDelete = true,
     this.onRetry,
+    this.selectionMode = false,
+    this.selectedIds = const {},
+    this.onSelectionChanged,
     super.key,
   });
 
@@ -62,6 +68,15 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
 
   /// Optional callback for retry button in error state
   final VoidCallback? onRetry;
+
+  /// Whether selection mode is active
+  final bool selectionMode;
+
+  /// Set of selected configuration IDs
+  final Set<String> selectedIds;
+
+  /// Callback when selection changes
+  final ValueChanged<String>? onSelectionChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -93,6 +108,12 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
 
             final configIndex = index ~/ 2;
             final config = filteredConfigs[configIndex];
+            final isSelected = selectedIds.contains(config.id);
+
+            // In selection mode, show checkbox and handle tap differently
+            if (selectionMode) {
+              return _buildSelectableCard(context, config, isSelected);
+            }
 
             if (!enableSwipeToDelete) {
               return AiConfigCard(
@@ -110,6 +131,34 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
           },
           childCount: filteredConfigs.length * 2 - 1,
         ),
+      ),
+    );
+  }
+
+  /// Builds a card with selection checkbox
+  Widget _buildSelectableCard(
+    BuildContext context,
+    T config,
+    bool isSelected,
+  ) {
+    return AiConfigCardContainer(
+      isSelected: isSelected,
+      onTap: () => onSelectionChanged?.call(config.id),
+      child: Row(
+        children: [
+          // Checkbox
+          _SelectionCheckbox(isSelected: isSelected),
+
+          // Card content (reuse from AiConfigCard logic)
+          Expanded(
+            child: AiConfigCard(
+              config: config,
+              showCapabilities: showCapabilities,
+              onTap: () => onSelectionChanged?.call(config.id),
+              compact: true,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -140,6 +189,40 @@ class AiSettingsConfigSliver<T extends AiConfig> extends ConsumerWidget {
         error: error,
         onRetry: onRetry,
       ),
+    );
+  }
+}
+
+/// Animated checkbox widget for selection mode
+class _SelectionCheckbox extends StatelessWidget {
+  const _SelectionCheckbox({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 24,
+      height: 24,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: isSelected ? context.colorScheme.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isSelected
+              ? context.colorScheme.primary
+              : context.colorScheme.outline.withValues(alpha: 0.5),
+          width: 2,
+        ),
+      ),
+      child: isSelected
+          ? Icon(
+              Icons.check,
+              size: 16,
+              color: context.colorScheme.onPrimary,
+            )
+          : null,
     );
   }
 }

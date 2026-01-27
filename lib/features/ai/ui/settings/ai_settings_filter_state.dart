@@ -44,6 +44,12 @@ abstract class AiSettingsFilterState with _$AiSettingsFilterState {
 
     /// Currently active tab
     @Default(AiSettingsTab.providers) AiSettingsTab activeTab,
+
+    /// Whether selection mode is active (only used on Prompts tab)
+    @Default(false) bool selectionMode,
+
+    /// Selected prompt IDs for bulk operations (only used on Prompts tab)
+    @Default({}) Set<String> selectedPromptIds,
   }) = _AiSettingsFilterState;
 
   /// Creates initial filter state
@@ -116,6 +122,41 @@ extension AiSettingsFilterStateX on AiSettingsFilterState {
       case AiSettingsTab.prompts:
         return resetPromptFilters();
     }
+  }
+
+  /// Whether any prompts are selected
+  bool get hasSelectedPrompts => selectedPromptIds.isNotEmpty;
+
+  /// Number of selected prompts
+  int get selectedPromptCount => selectedPromptIds.length;
+
+  /// Toggles selection for a specific prompt
+  AiSettingsFilterState togglePromptSelection(String promptId) {
+    final newSelection = Set<String>.from(selectedPromptIds);
+    if (newSelection.contains(promptId)) {
+      newSelection.remove(promptId);
+    } else {
+      newSelection.add(promptId);
+    }
+    return copyWith(selectedPromptIds: newSelection);
+  }
+
+  /// Selects all prompts from the given list
+  AiSettingsFilterState selectAllPrompts(List<String> promptIds) {
+    return copyWith(selectedPromptIds: Set<String>.from(promptIds));
+  }
+
+  /// Clears all selected prompts
+  AiSettingsFilterState clearSelection() {
+    return copyWith(selectedPromptIds: const {});
+  }
+
+  /// Exits selection mode and clears selection
+  AiSettingsFilterState exitSelectionMode() {
+    return copyWith(
+      selectionMode: false,
+      selectedPromptIds: const {},
+    );
   }
 }
 

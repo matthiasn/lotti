@@ -4,6 +4,7 @@ import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
@@ -168,6 +169,64 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     }
   }
 
+  /// Handles selection toggle for a prompt
+  void _handlePromptSelectionToggle(String promptId) {
+    _updateFilterState(_filterState.togglePromptSelection(promptId));
+  }
+
+  /// Handles delete button tap - shows confirmation dialog
+  Future<void> _handleDeleteTap() async {
+    final selectedCount = _filterState.selectedPromptCount;
+    if (selectedCount == 0) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.messages.aiSettingsDeleteSelectedConfirmTitle),
+        content: Text(
+          context.messages
+              .aiSettingsDeleteSelectedConfirmMessage(selectedCount),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(context.messages.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colorScheme.error,
+              foregroundColor: context.colorScheme.onError,
+            ),
+            child: Text(context.messages.deleteButton),
+          ),
+        ],
+      ),
+    );
+
+    if ((confirmed ?? false) && mounted) {
+      await _deleteSelectedPrompts();
+    }
+  }
+
+  /// Deletes all selected prompts
+  Future<void> _deleteSelectedPrompts() async {
+    final repository = ref.read(aiConfigRepositoryProvider);
+    final selectedIds = _filterState.selectedPromptIds.toList();
+
+    for (final id in selectedIds) {
+      await repository.deleteConfig(id);
+    }
+
+    // Exit selection mode and refresh
+    _updateFilterState(_filterState.exitSelectionMode());
+
+    // Invalidate the prompts provider to refresh the list
+    ref.invalidate(
+      aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -205,6 +264,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       floatingActionButton: AiSettingsFloatingActionButton(
         activeTab: _filterState.activeTab,
         onPressed: _handleAddTap,
+        selectionMode: _filterState.selectionMode,
+        selectedCount: _filterState.selectedPromptCount,
+        onDeletePressed: _handleDeleteTap,
       ),
     );
   }
@@ -353,6 +415,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
               configType: AiConfigType.prompt,
             ),
           ),
+          selectionMode: _filterState.selectionMode,
+          selectedIds: _filterState.selectedPromptIds,
+          onSelectionChanged: _handlePromptSelectionToggle,
         );
       },
       loading: () => const SliverFillRemaining(
