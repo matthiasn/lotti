@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.824] - 2026-01-27
+### Fixed
+- Day Plan Timeline: Fixed crash when entries cross midnight (e.g., 23:00 to 01:00 next day)
+  - Entries ending after midnight are now correctly treated as ending at 24:00 for display purposes
+  - Added defensive bounds checking to prevent RangeError in List.generate
+  - Resolves blank/grey screen issue on days with late-night or overnight entries
+
 ## [0.9.823] - 2026-01-24 (WIP)
 ### Added
 - Daily Operating System: New time management feature for planning and tracking your day (WIP)
