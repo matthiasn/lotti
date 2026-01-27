@@ -1,5 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -110,8 +111,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      // The displayName appears in the value field label (e.g., "Water [ml]")
+      // Title is now provided by Wolt Modal Sheet wrapper, not the dialog itself
       expect(
-        find.text(measurableWater.displayName),
+        find.textContaining(measurableWater.displayName),
         findsOneWidget,
       );
 
@@ -160,10 +163,115 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      // The displayName appears in the value field label (e.g., "Water [ml]")
+      // Title is now provided by Wolt Modal Sheet wrapper, not the dialog itself
       expect(
-        find.text('Water'),
+        find.textContaining('Water'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('renders FilledButton for save action after entering data',
+        (tester) async {
+      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+        return mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          private: false,
+        );
+      }
+
+      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Enter a value to make the form dirty
+      final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
+      await tester.enterText(valueFieldFinder, '500');
+      await tester.pumpAndSettle();
+
+      // Verify save button is rendered with the expected key
+      final saveButtonFinder = find.byKey(const Key('measurement_save'));
+      expect(saveButtonFinder, findsOneWidget);
+
+      // Verify it's a FilledButton (not the old LottiTertiaryButton)
+      final button = tester.widget(saveButtonFinder);
+      expect(button, isA<FilledButton>());
+
+      // Verify save icon is present (FilledButton.icon includes an icon)
+      expect(find.byIcon(Icons.save_rounded), findsOneWidget);
+    });
+
+    testWidgets('dialog uses Column layout instead of AlertDialog',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify dialog does NOT use AlertDialog wrapper
+      expect(find.byType(AlertDialog), findsNothing);
+
+      // Verify FormBuilder is the top-level widget structure
+      expect(find.byType(FormBuilder), findsOneWidget);
+    });
+
+    testWidgets('value field has autofocus enabled', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the value TextField and check autofocus
+      final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
+      expect(valueFieldFinder, findsOneWidget);
+
+      // The value field should receive focus automatically
+      // We verify this by checking that TextField has autofocus property
+      final textField = find.descendant(
+        of: valueFieldFinder,
+        matching: find.byType(TextField),
+      );
+      expect(textField, findsOneWidget);
+
+      final textFieldWidget = tester.widget<TextField>(textField);
+      expect(textFieldWidget.autofocus, isTrue);
     });
   });
 }

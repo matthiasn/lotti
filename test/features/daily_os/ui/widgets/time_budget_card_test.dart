@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
@@ -314,6 +316,566 @@ void main() {
 
       // The progress bar should show over-budget indicator
       expect(find.byType(TimeBudgetCard), findsOneWidget);
+    });
+  });
+
+  group('TimeBudgetCard - Pinned Tasks Section', () {
+    Task createTask({
+      required String id,
+      required String title,
+      required TaskStatus status,
+    }) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          statusHistory: const [],
+          status: status,
+        ),
+      );
+    }
+
+    TimeBudgetProgress createProgressWithTasks({
+      List<Task> pinnedTasks = const [],
+      List<JournalEntity> contributingEntries = const [],
+    }) {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: contributingEntries,
+        pinnedTasks: pinnedTasks,
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('hides pinned tasks section when empty', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: []),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show task title text when no tasks
+      expect(find.text('Test Task'), findsNothing);
+      // Only one divider (not the task section divider)
+      // Actually, when both sections are empty, there should be no dividers
+      // from task sections. Let's just verify the card renders
+      expect(find.byType(TimeBudgetCard), findsOneWidget);
+    });
+
+    testWidgets('shows pinned tasks section with divider when populated',
+        (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'My Pinned Task',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('My Pinned Task'), findsOneWidget);
+      expect(find.byType(Divider), findsOneWidget);
+    });
+
+    testWidgets('displays task title in pinned task row', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Important Work Item',
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Important Work Item'), findsOneWidget);
+    });
+
+    testWidgets('shows chevron icon for pinned tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Task With Chevron',
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows check icon for completed tasks (TaskDone)',
+        (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Completed Task',
+        status: TaskStatus.done(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    });
+
+    testWidgets('shows check icon for rejected tasks (TaskRejected)',
+        (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Rejected Task',
+        status: TaskStatus.rejected(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    });
+
+    testWidgets('does not show check icon for in-progress tasks',
+        (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'In Progress Task',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check), findsNothing);
+    });
+
+    testWidgets('does not show check icon for open tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Open Task',
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check), findsNothing);
+    });
+
+    testWidgets('does not show check icon for blocked tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Blocked Task',
+        status: TaskStatus.blocked(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'Waiting for dependency',
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check), findsNothing);
+    });
+
+    testWidgets('does not show check icon for on-hold tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'On Hold Task',
+        status: TaskStatus.onHold(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'Paused',
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check), findsNothing);
+    });
+
+    testWidgets('does not show check icon for groomed tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Groomed Task',
+        status: TaskStatus.groomed(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check), findsNothing);
+    });
+
+    testWidgets('displays multiple pinned tasks', (tester) async {
+      final tasks = [
+        createTask(
+          id: 'task-1',
+          title: 'First Task',
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+        createTask(
+          id: 'task-2',
+          title: 'Second Task',
+          status: TaskStatus.open(
+            id: 'status-2',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+        createTask(
+          id: 'task-3',
+          title: 'Third Task',
+          status: TaskStatus.done(
+            id: 'status-3',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: tasks),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('First Task'), findsOneWidget);
+      expect(find.text('Second Task'), findsOneWidget);
+      expect(find.text('Third Task'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(3));
+    });
+
+    testWidgets('task row is tappable with GestureDetector', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Tappable Task',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(pinnedTasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the task text and verify it has a GestureDetector ancestor
+      final taskTextFinder = find.text('Tappable Task');
+      expect(taskTextFinder, findsOneWidget);
+
+      final gestureDetector = find.ancestor(
+        of: taskTextFinder,
+        matching: find.byType(GestureDetector),
+      );
+      expect(gestureDetector, findsWidgets);
+    });
+  });
+
+  group('TimeBudgetCard - Contributing Tasks Section', () {
+    Task createTask({
+      required String id,
+      required String title,
+      required TaskStatus status,
+    }) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          statusHistory: const [],
+          status: status,
+        ),
+      );
+    }
+
+    JournalEntity createEntry({required String id}) {
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+        ),
+      );
+    }
+
+    TimeBudgetProgress createProgressWithContributing({
+      List<JournalEntity> contributingEntries = const [],
+    }) {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: contributingEntries,
+        pinnedTasks: const [],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('hides contributing tasks section when no tasks in entries',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithContributing(
+            contributingEntries: [
+              createEntry(id: 'entry-1'),
+              createEntry(id: 'entry-2'),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No tasks means no task section (only JournalEntries in contributingEntries)
+      expect(find.byType(TimeBudgetCard), findsOneWidget);
+      // No divider from task section since contributingTasks is empty
+      expect(find.byType(Divider), findsNothing);
+    });
+
+    testWidgets('shows contributing tasks section when tasks present',
+        (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Contributing Task',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithContributing(
+            contributingEntries: [task],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Contributing Task'), findsOneWidget);
+      expect(find.byType(Divider), findsOneWidget);
+    });
+
+    testWidgets('shows only tasks from mixed contributing entries',
+        (tester) async {
+      final task1 = createTask(
+        id: 'task-1',
+        title: 'Task One',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+      final task2 = createTask(
+        id: 'task-2',
+        title: 'Task Two',
+        status: TaskStatus.done(
+          id: 'status-2',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithContributing(
+            contributingEntries: [
+              createEntry(id: 'entry-1'),
+              task1,
+              createEntry(id: 'entry-2'),
+              task2,
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Task One'), findsOneWidget);
+      expect(find.text('Task Two'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
+    });
+
+    testWidgets('shows both pinned and contributing sections when both have data',
+        (tester) async {
+      final pinnedTask = Task(
+        meta: Metadata(
+          id: 'pinned-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+        ),
+        data: TaskData(
+          title: 'Pinned Task',
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          statusHistory: const [],
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      final contributingTask = createTask(
+        id: 'contrib-1',
+        title: 'Contributing Task',
+        status: TaskStatus.done(
+          id: 'status-2',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      final progress = TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: [contributingTask],
+        pinnedTasks: [pinnedTask],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: progress),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pinned Task'), findsOneWidget);
+      expect(find.text('Contributing Task'), findsOneWidget);
+      // Two dividers - one for pinned section, one for contributing section
+      expect(find.byType(Divider), findsNWidgets(2));
     });
   });
 }

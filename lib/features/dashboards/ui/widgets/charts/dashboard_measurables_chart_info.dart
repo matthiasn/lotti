@@ -25,13 +25,12 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
     Future<void> captureData() async {
       await ModalUtils.showSinglePageModal<void>(
         context: context,
+        title: measurableDataType.displayName,
         builder: (_) {
           return MeasurementDialog(
             measurableId: measurableDataType.id,
           );
         },
-        padding: EdgeInsets.zero,
-        navBarHeight: 5,
       );
     }
 
