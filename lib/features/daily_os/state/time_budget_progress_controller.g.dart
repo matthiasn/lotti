@@ -142,16 +142,22 @@ abstract class _$TimeBudgetProgressController
 }
 
 /// Provides total stats for a day's budgets.
+///
+/// Uses the unified controller to ensure consistent updates when entries change.
 
 @ProviderFor(dayBudgetStats)
 final dayBudgetStatsProvider = DayBudgetStatsFamily._();
 
 /// Provides total stats for a day's budgets.
+///
+/// Uses the unified controller to ensure consistent updates when entries change.
 
 final class DayBudgetStatsProvider extends $FunctionalProvider<
         AsyncValue<DayBudgetStats>, DayBudgetStats, FutureOr<DayBudgetStats>>
     with $FutureModifier<DayBudgetStats>, $FutureProvider<DayBudgetStats> {
   /// Provides total stats for a day's budgets.
+  ///
+  /// Uses the unified controller to ensure consistent updates when entries change.
   DayBudgetStatsProvider._(
       {required DayBudgetStatsFamily super.from,
       required DateTime super.argument})
@@ -199,9 +205,11 @@ final class DayBudgetStatsProvider extends $FunctionalProvider<
   }
 }
 
-String _$dayBudgetStatsHash() => r'88329ea0a3d893732a63faaa1531a79757e2652c';
+String _$dayBudgetStatsHash() => r'7b66ec7fef611199e17e687a40d5469cf3bb2b49';
 
 /// Provides total stats for a day's budgets.
+///
+/// Uses the unified controller to ensure consistent updates when entries change.
 
 final class DayBudgetStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<DayBudgetStats>, DateTime> {
@@ -215,6 +223,8 @@ final class DayBudgetStatsFamily extends $Family
         );
 
   /// Provides total stats for a day's budgets.
+  ///
+  /// Uses the unified controller to ensure consistent updates when entries change.
 
   DayBudgetStatsProvider call({
     required DateTime date,

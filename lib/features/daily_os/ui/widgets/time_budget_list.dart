@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
@@ -18,12 +19,13 @@ class TimeBudgetList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final budgetProgressAsync = ref.watch(
-      timeBudgetProgressControllerProvider(date: selectedDate),
+    final unifiedDataAsync = ref.watch(
+      unifiedDailyOsDataControllerProvider(date: selectedDate),
     );
 
-    return budgetProgressAsync.when(
-      data: (budgets) {
+    return unifiedDataAsync.when(
+      data: (unifiedData) {
+        final budgets = unifiedData.budgetProgress;
         if (budgets.isEmpty) {
           return BudgetsEmptyState(date: selectedDate);
         }

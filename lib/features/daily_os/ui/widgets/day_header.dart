@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -20,8 +19,8 @@ class DayHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final dayPlanAsync =
-        ref.watch(dayPlanControllerProvider(date: selectedDate));
+    final unifiedDataAsync =
+        ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
     final budgetStatsAsync =
         ref.watch(dayBudgetStatsProvider(date: selectedDate));
 
@@ -120,11 +119,9 @@ class DayHeader extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Day label chip
-                dayPlanAsync.when(
-                  data: (dayPlan) {
-                    if (dayPlan is! DayPlanEntry) {
-                      return const SizedBox.shrink();
-                    }
+                unifiedDataAsync.when(
+                  data: (unifiedData) {
+                    final dayPlan = unifiedData.dayPlan;
                     final label = dayPlan.data.dayLabel;
                     if (label == null || label.isEmpty) {
                       return const SizedBox.shrink();

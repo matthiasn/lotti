@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -209,11 +210,14 @@ class TimeBudgetProgressController extends _$TimeBudgetProgressController {
 }
 
 /// Provides total stats for a day's budgets.
+///
+/// Uses the unified controller to ensure consistent updates when entries change.
 @riverpod
 Future<DayBudgetStats> dayBudgetStats(Ref ref, {required DateTime date}) async {
-  final progress = await ref.watch(
-    timeBudgetProgressControllerProvider(date: date).future,
+  final unifiedData = await ref.watch(
+    unifiedDailyOsDataControllerProvider(date: date).future,
   );
+  final progress = unifiedData.budgetProgress;
 
   final totalPlanned = progress.fold(
     Duration.zero,

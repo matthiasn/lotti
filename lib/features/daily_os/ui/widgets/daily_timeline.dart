@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
 import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
@@ -25,12 +26,13 @@ class DailyTimeline extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final timelineDataAsync = ref.watch(
-      timelineDataControllerProvider(date: selectedDate),
+    final unifiedDataAsync = ref.watch(
+      unifiedDailyOsDataControllerProvider(date: selectedDate),
     );
 
-    return timelineDataAsync.when(
-      data: (data) {
+    return unifiedDataAsync.when(
+      data: (unifiedData) {
+        final data = unifiedData.timelineData;
         if (data.plannedSlots.isEmpty && data.actualSlots.isEmpty) {
           return const TimelineEmptyState();
         }

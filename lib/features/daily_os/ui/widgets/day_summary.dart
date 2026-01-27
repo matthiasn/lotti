@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -15,87 +14,78 @@ class DaySummary extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final dayPlanAsync =
-        ref.watch(dayPlanControllerProvider(date: selectedDate));
     final budgetStatsAsync =
         ref.watch(dayBudgetStatsProvider(date: selectedDate));
 
-    return dayPlanAsync.when(
-      data: (dayPlan) {
-        return budgetStatsAsync.when(
-          data: (stats) {
-            return ModernBaseCard(
-              margin: const EdgeInsets.all(AppTheme.spacingLarge),
-              padding: const EdgeInsets.all(AppTheme.spacingLarge),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return budgetStatsAsync.when(
+      data: (stats) {
+        return ModernBaseCard(
+          margin: const EdgeInsets.all(AppTheme.spacingLarge),
+          padding: const EdgeInsets.all(AppTheme.spacingLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
                 children: [
-                  // Header
-                  Row(
-                    children: [
-                      Icon(
-                        MdiIcons.sunCompass,
-                        size: 24,
-                        color: context.colorScheme.primary,
-                      ),
-                      const SizedBox(width: AppTheme.spacingMedium),
-                      Text(
-                        context.messages.dailyOsDaySummary,
-                        style: context.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  Icon(
+                    MdiIcons.sunCompass,
+                    size: 24,
+                    color: context.colorScheme.primary,
                   ),
-
-                  const SizedBox(height: AppTheme.spacingLarge),
-
-                  // Stats row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatItem(
-                          label: context.messages.dailyOsPlanned,
-                          value: _formatDuration(context, stats.totalPlanned),
-                          icon: MdiIcons.targetAccount,
-                        ),
-                      ),
-                      Expanded(
-                        child: _StatItem(
-                          label: context.messages.dailyOsRecorded,
-                          value: _formatDuration(context, stats.totalRecorded),
-                          icon: MdiIcons.clockCheck,
-                        ),
-                      ),
-                      Expanded(
-                        child: _StatItem(
-                          label: stats.isOverBudget
-                              ? context.messages.dailyOsOver
-                              : context.messages.dailyOsRemaining,
-                          value: _formatDuration(
-                              context, stats.totalRemaining.abs()),
-                          icon: stats.isOverBudget
-                              ? MdiIcons.alertCircle
-                              : MdiIcons.clockOutline,
-                          valueColor: stats.isOverBudget
-                              ? context.colorScheme.error
-                              : null,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: AppTheme.spacingMedium),
+                  Text(
+                    context.messages.dailyOsDaySummary,
+                    style: context.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-
-                  // Progress indicator
-                  if (stats.budgetCount > 0) ...[
-                    const SizedBox(height: AppTheme.spacingLarge),
-                    _OverallProgressBar(stats: stats),
-                  ],
                 ],
               ),
-            );
-          },
-          loading: () => const _LoadingState(),
-          error: (_, __) => const SizedBox.shrink(),
+
+              const SizedBox(height: AppTheme.spacingLarge),
+
+              // Stats row
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatItem(
+                      label: context.messages.dailyOsPlanned,
+                      value: _formatDuration(context, stats.totalPlanned),
+                      icon: MdiIcons.targetAccount,
+                    ),
+                  ),
+                  Expanded(
+                    child: _StatItem(
+                      label: context.messages.dailyOsRecorded,
+                      value: _formatDuration(context, stats.totalRecorded),
+                      icon: MdiIcons.clockCheck,
+                    ),
+                  ),
+                  Expanded(
+                    child: _StatItem(
+                      label: stats.isOverBudget
+                          ? context.messages.dailyOsOver
+                          : context.messages.dailyOsRemaining,
+                      value:
+                          _formatDuration(context, stats.totalRemaining.abs()),
+                      icon: stats.isOverBudget
+                          ? MdiIcons.alertCircle
+                          : MdiIcons.clockOutline,
+                      valueColor:
+                          stats.isOverBudget ? context.colorScheme.error : null,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Progress indicator
+              if (stats.budgetCount > 0) ...[
+                const SizedBox(height: AppTheme.spacingLarge),
+                _OverallProgressBar(stats: stats),
+              ],
+            ],
+          ),
         );
       },
       loading: () => const _LoadingState(),

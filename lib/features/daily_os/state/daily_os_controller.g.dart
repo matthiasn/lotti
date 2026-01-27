@@ -64,6 +64,8 @@ abstract class _$DailyOsSelectedDate extends $Notifier<DateTime> {
 /// Main controller for the Daily OS view.
 ///
 /// Combines day plan, budget progress, and timeline data into a unified state.
+/// Uses the UnifiedDailyOsDataController for data that auto-updates when
+/// entries are created or synced.
 
 @ProviderFor(DailyOsController)
 final dailyOsControllerProvider = DailyOsControllerProvider._();
@@ -71,11 +73,15 @@ final dailyOsControllerProvider = DailyOsControllerProvider._();
 /// Main controller for the Daily OS view.
 ///
 /// Combines day plan, budget progress, and timeline data into a unified state.
+/// Uses the UnifiedDailyOsDataController for data that auto-updates when
+/// entries are created or synced.
 final class DailyOsControllerProvider
     extends $AsyncNotifierProvider<DailyOsController, DailyOsState> {
   /// Main controller for the Daily OS view.
   ///
   /// Combines day plan, budget progress, and timeline data into a unified state.
+  /// Uses the UnifiedDailyOsDataController for data that auto-updates when
+  /// entries are created or synced.
   DailyOsControllerProvider._()
       : super(
           from: null,
@@ -95,11 +101,13 @@ final class DailyOsControllerProvider
   DailyOsController create() => DailyOsController();
 }
 
-String _$dailyOsControllerHash() => r'0070bfc8b6a6a350c3987d50f289ddc30d7bc2bd';
+String _$dailyOsControllerHash() => r'4af28676e54e9b0f67654b5df4025c118b0b4b75';
 
 /// Main controller for the Daily OS view.
 ///
 /// Combines day plan, budget progress, and timeline data into a unified state.
+/// Uses the UnifiedDailyOsDataController for data that auto-updates when
+/// entries are created or synced.
 
 abstract class _$DailyOsController extends $AsyncNotifier<DailyOsState> {
   FutureOr<DailyOsState> build();
