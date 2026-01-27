@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.825] - 2026-01-27
+### Changed
+- Daily OS Architecture: Unified data controller for consistent real-time updates
+  - Consolidated day plan, timeline data, and budget progress into single atomic state
+  - Uses `ref.keepAlive()` + manual `StreamSubscription` to prevent Riverpod 3's automatic pausing
+  - All UI components (timeline, budget progress bars, summary) now update together
+  - Fixes auto-update failure when time entries are created or synced
+
+### Removed
+- Deprecated controllers: `TimelineDataController` and `TimeBudgetProgressController` classes
+  - Data types (`TimelineSlot`, `TimeBudgetProgress`, etc.) preserved in existing files
+  - All functionality now handled by `UnifiedDailyOsDataController`
+
 ## [0.9.824] - 2026-01-27
 ### Fixed
 - Day Plan Timeline: Fixed crash when entries cross midnight (e.g., 23:00 to 01:00 next day)

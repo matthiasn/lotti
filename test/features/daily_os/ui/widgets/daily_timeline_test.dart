@@ -6,7 +6,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
+import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -17,14 +19,14 @@ import '../../../../test_helper.dart';
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
-/// Mock controller that returns fixed timeline data.
-class _TestTimelineController extends TimelineDataController {
-  _TestTimelineController(this._data);
+/// Mock controller that returns fixed unified data.
+class _TestUnifiedController extends UnifiedDailyOsDataController {
+  _TestUnifiedController(this._data);
 
-  final DailyTimelineData _data;
+  final DailyOsData _data;
 
   @override
-  Future<DailyTimelineData> build({required DateTime date}) async {
+  Future<DailyOsData> build({required DateTime date}) async {
     return _data;
   }
 }
@@ -65,17 +67,44 @@ void main() {
     }
   });
 
+  DayPlanEntry createEmptyDayPlan(DateTime date) {
+    return DayPlanEntry(
+      meta: Metadata(
+        id: dayPlanId(date),
+        createdAt: date,
+        updatedAt: date,
+        dateFrom: date,
+        dateTo: date.add(const Duration(days: 1)),
+      ),
+      data: DayPlanData(
+        planDate: date,
+        status: const DayPlanStatus.draft(),
+      ),
+    );
+  }
+
   Widget createTestWidget({
-    required DailyTimelineData data,
+    required DailyTimelineData timelineData,
+    DayPlanEntry? dayPlan,
+    List<TimeBudgetProgress> budgetProgress = const [],
+    String? highlightedCategoryId,
     List<Override> additionalOverrides = const [],
   }) {
+    final unifiedData = DailyOsData(
+      date: testDate,
+      dayPlan: dayPlan ?? createEmptyDayPlan(testDate),
+      timelineData: timelineData,
+      budgetProgress: budgetProgress,
+    );
+
     return RiverpodWidgetTestBench(
       overrides: [
         dailyOsSelectedDateProvider.overrideWithValue(testDate),
-        timelineDataControllerProvider(date: testDate).overrideWith(
-          () => _TestTimelineController(data),
+        unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+          () => _TestUnifiedController(unifiedData),
         ),
-        highlightedCategoryIdProvider.overrideWith((ref) => null),
+        highlightedCategoryIdProvider
+            .overrideWith((ref) => highlightedCategoryId),
         ...additionalOverrides,
       ],
       child: const SingleChildScrollView(
@@ -88,7 +117,7 @@ void main() {
     testWidgets('renders empty state when no data', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: const [],
             actualSlots: const [],
@@ -109,7 +138,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -143,7 +172,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -177,7 +206,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -204,7 +233,8 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
     });
 
-    testWidgets('renders actual time entries with task title', (tester) async {
+    testWidgets('renders actual time entries as colored blocks',
+        (tester) async {
       when(() => mockCacheService.getCategoryById('cat-1'))
           .thenReturn(testCategory);
 
@@ -218,7 +248,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: const [],
             actualSlots: [
@@ -249,8 +279,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should render the task title in the actual block
-      expect(find.text('Important Task'), findsOneWidget);
+      // Actual blocks render as colored blocks without text labels.
+      // The category name is preserved via Semantics for accessibility.
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
     });
 
     testWidgets('renders time axis labels', (tester) async {
@@ -259,7 +290,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -295,7 +326,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -326,7 +357,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -372,7 +403,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -411,7 +442,7 @@ void main() {
       expect(find.text('Exercise'), findsOneWidget);
     });
 
-    testWidgets('renders actual entry as non-task with fallback title',
+    testWidgets('renders actual entry as non-task with semantics label',
         (tester) async {
       when(() => mockCacheService.getCategoryById('cat-1'))
           .thenReturn(testCategory);
@@ -427,7 +458,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: const [],
             actualSlots: [
@@ -445,8 +476,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show category name as fallback for non-task entries
-      expect(find.text('Work'), findsOneWidget);
+      // Actual blocks show category name via Semantics (no visible text)
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
     });
 
     testWidgets('highlights planned block when category is highlighted',
@@ -455,38 +486,27 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWithValue(testDate),
-            timelineDataControllerProvider(date: testDate).overrideWith(
-              () => _TestTimelineController(
-                DailyTimelineData(
-                  date: testDate,
-                  plannedSlots: [
-                    PlannedTimeSlot(
-                      block: PlannedBlock(
-                        id: 'block-1',
-                        categoryId: testCategory.id,
-                        startTime: testDate.add(const Duration(hours: 9)),
-                        endTime: testDate.add(const Duration(hours: 10)),
-                      ),
-                      startTime: testDate.add(const Duration(hours: 9)),
-                      endTime: testDate.add(const Duration(hours: 10)),
-                      categoryId: testCategory.id,
-                    ),
-                  ],
-                  actualSlots: const [],
-                  dayStartHour: 8,
-                  dayEndHour: 18,
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-1',
+                  categoryId: testCategory.id,
+                  startTime: testDate.add(const Duration(hours: 9)),
+                  endTime: testDate.add(const Duration(hours: 10)),
                 ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: testCategory.id,
               ),
-            ),
-            // Highlight the category
-            highlightedCategoryIdProvider.overrideWith((ref) => 'cat-1'),
-          ],
-          child: const SingleChildScrollView(
-            child: DailyTimeline(),
+            ],
+            actualSlots: const [],
+            dayStartHour: 8,
+            dayEndHour: 18,
           ),
+          highlightedCategoryId: 'cat-1',
         ),
       );
       await tester.pumpAndSettle();
@@ -510,7 +530,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -553,9 +573,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show both plan label and actual task title
-      expect(find.text('Work'), findsOneWidget); // Planned block
-      expect(find.text('Real Work Done'), findsOneWidget); // Actual task
+      // Planned block shows visible text label
+      expect(find.text('Work'), findsOneWidget);
+      // Both planned and actual blocks have semantics label 'Work'
+      // (planned via Text widget, actual via Semantics widget)
+      expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
     });
 
     testWidgets('planned block is tappable', (tester) async {
@@ -564,7 +586,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -612,7 +634,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: const [],
             actualSlots: [
@@ -643,8 +665,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find the actual block text and its GestureDetector ancestor
-      final blockFinder = find.text('Tap Me Task');
+      // Find the actual block by its semantics label and check for GestureDetector
+      final blockFinder = find.bySemanticsLabel('Work');
       expect(blockFinder, findsOneWidget);
 
       final gestureDetector = find.ancestor(
@@ -660,7 +682,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(
@@ -700,7 +722,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          data: DailyTimelineData(
+          timelineData: DailyTimelineData(
             date: testDate,
             plannedSlots: [
               PlannedTimeSlot(

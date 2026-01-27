@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
 import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
@@ -25,12 +26,13 @@ class DailyTimeline extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final timelineDataAsync = ref.watch(
-      timelineDataControllerProvider(date: selectedDate),
+    final unifiedDataAsync = ref.watch(
+      unifiedDailyOsDataControllerProvider(date: selectedDate),
     );
 
-    return timelineDataAsync.when(
-      data: (data) {
+    return unifiedDataAsync.when(
+      data: (unifiedData) {
+        final data = unifiedData.timelineData;
         if (data.plannedSlots.isEmpty && data.actualSlots.isEmpty) {
           return const TimelineEmptyState();
         }
@@ -361,11 +363,6 @@ class _ActualBlockWidget extends ConsumerWidget {
     final highlightedId = ref.watch(highlightedCategoryIdProvider);
     final isHighlighted = categoryId != null && highlightedId == categoryId;
 
-    final title = _getEntryTitle(
-      slot.entry,
-      category?.name ?? context.messages.dailyOsEntry,
-    );
-
     return Positioned(
       top: top,
       left: 0,
@@ -436,32 +433,15 @@ class _ActualBlockWidget extends ConsumerWidget {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(4),
-          child: Text(
-            title,
-            style: context.textTheme.labelSmall?.copyWith(
-              color: _getTextColor(categoryColor),
-              fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          // No text label - show only colored block to avoid overflow clutter.
+          // Semantics preserved for accessibility.
+          child: Semantics(
+            label: category?.name ?? '',
+            child: const SizedBox.expand(),
           ),
         ),
       ),
     );
-  }
-
-  String _getEntryTitle(JournalEntity entry, String fallback) {
-    return switch (entry) {
-      Task(:final data) => data.title,
-      _ => fallback,
-    };
-  }
-
-  Color _getTextColor(Color backgroundColor) {
-    // Simple luminance check for text contrast
-    final luminance = backgroundColor.computeLuminance();
-    return luminance > 0.5 ? Colors.black87 : Colors.white;
   }
 }
 

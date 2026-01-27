@@ -4,22 +4,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_header.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../test_helper.dart';
 
-/// Mock controller that returns a fixed DayPlanEntry.
-class _TestDayPlanController extends DayPlanController {
-  _TestDayPlanController(this._entry);
+/// Mock controller that returns fixed unified data.
+class _TestUnifiedController extends UnifiedDailyOsDataController {
+  _TestUnifiedController(this._data);
 
-  final DayPlanEntry? _entry;
+  final DailyOsData _data;
 
   @override
-  Future<JournalEntity?> build({required DateTime date}) async {
-    return _entry;
+  Future<DailyOsData> build({required DateTime date}) async {
+    return _data;
   }
 }
 
@@ -64,11 +65,24 @@ void main() {
         );
     final effectivePlan = plan ?? createTestPlan();
 
+    final unifiedData = DailyOsData(
+      date: date,
+      dayPlan: effectivePlan,
+      timelineData: DailyTimelineData(
+        date: date,
+        plannedSlots: const [],
+        actualSlots: const [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      ),
+      budgetProgress: const [],
+    );
+
     return RiverpodWidgetTestBench(
       overrides: [
         dailyOsSelectedDateProvider.overrideWithValue(date),
-        dayPlanControllerProvider(date: date).overrideWith(
-          () => _TestDayPlanController(effectivePlan),
+        unifiedDailyOsDataControllerProvider(date: date).overrideWith(
+          () => _TestUnifiedController(unifiedData),
         ),
         dayBudgetStatsProvider(date: date).overrideWith(
           (ref) async => effectiveStats,

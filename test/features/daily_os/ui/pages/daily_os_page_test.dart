@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_header.dart';
@@ -27,26 +28,14 @@ class _TestDayPlanController extends DayPlanController {
   }
 }
 
-/// Mock controller that returns fixed budget progress data.
-class _TestBudgetProgressController extends TimeBudgetProgressController {
-  _TestBudgetProgressController(this._budgets);
+/// Mock controller that returns fixed unified data.
+class _TestUnifiedController extends UnifiedDailyOsDataController {
+  _TestUnifiedController(this._data);
 
-  final List<TimeBudgetProgress> _budgets;
-
-  @override
-  Future<List<TimeBudgetProgress>> build({required DateTime date}) async {
-    return _budgets;
-  }
-}
-
-/// Mock controller that returns fixed timeline data.
-class _TestTimelineController extends TimelineDataController {
-  _TestTimelineController(this._data);
-
-  final DailyTimelineData _data;
+  final DailyOsData _data;
 
   @override
-  Future<DailyTimelineData> build({required DateTime date}) async {
+  Future<DailyOsData> build({required DateTime date}) async {
     return _data;
   }
 }
@@ -89,6 +78,7 @@ void main() {
   Widget createTestWidget({
     DayPlanEntry? plan,
     DayBudgetStats? stats,
+    List<TimeBudgetProgress> budgetProgress = const [],
     List<Override> additionalOverrides = const [],
   }) {
     final effectivePlan = plan ?? createTestPlan();
@@ -100,20 +90,24 @@ void main() {
           overBudgetCount: 0,
         );
 
+    final unifiedData = DailyOsData(
+      date: testDate,
+      dayPlan: effectivePlan,
+      timelineData: createTestTimelineData(),
+      budgetProgress: budgetProgress,
+    );
+
     return RiverpodWidgetTestBench(
       overrides: [
         dailyOsSelectedDateProvider.overrideWithValue(testDate),
+        unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+          () => _TestUnifiedController(unifiedData),
+        ),
         dayPlanControllerProvider(date: testDate).overrideWith(
           () => _TestDayPlanController(effectivePlan),
         ),
         dayBudgetStatsProvider(date: testDate).overrideWith(
           (ref) async => effectiveStats,
-        ),
-        timeBudgetProgressControllerProvider(date: testDate).overrideWith(
-          () => _TestBudgetProgressController([]),
-        ),
-        timelineDataControllerProvider(date: testDate).overrideWith(
-          () => _TestTimelineController(createTestTimelineData()),
         ),
         ...additionalOverrides,
       ],

@@ -1,8 +1,8 @@
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -118,30 +118,25 @@ class DailyOsSelectedDate extends _$DailyOsSelectedDate {
 /// Main controller for the Daily OS view.
 ///
 /// Combines day plan, budget progress, and timeline data into a unified state.
+/// Uses the UnifiedDailyOsDataController for data that auto-updates when
+/// entries are created or synced.
 @riverpod
 class DailyOsController extends _$DailyOsController {
   @override
   Future<DailyOsState> build() async {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
 
-    // Watch all dependencies
-    final dayPlanAsync = await ref.watch(
-      dayPlanControllerProvider(date: selectedDate).future,
-    );
-
-    final budgetProgressAsync = await ref.watch(
-      timeBudgetProgressControllerProvider(date: selectedDate).future,
-    );
-
-    final timelineDataAsync = await ref.watch(
-      timelineDataControllerProvider(date: selectedDate).future,
+    // Watch the unified controller which handles all data fetching
+    // and auto-updates via stream subscription
+    final unifiedData = await ref.watch(
+      unifiedDailyOsDataControllerProvider(date: selectedDate).future,
     );
 
     return DailyOsState(
       selectedDate: selectedDate,
-      dayPlan: dayPlanAsync is DayPlanEntry ? dayPlanAsync : null,
-      budgetProgress: budgetProgressAsync,
-      timelineData: timelineDataAsync,
+      dayPlan: unifiedData.dayPlan,
+      budgetProgress: unifiedData.budgetProgress,
+      timelineData: unifiedData.timelineData,
     );
   }
 

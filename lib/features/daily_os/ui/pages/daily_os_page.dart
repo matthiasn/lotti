@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart'
     as add_block;
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
@@ -27,8 +27,8 @@ class DailyOsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final dayPlanAsync =
-        ref.watch(dayPlanControllerProvider(date: selectedDate));
+    final unifiedDataAsync =
+        ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
 
     return Scaffold(
       body: SafeArea(
@@ -41,10 +41,14 @@ class DailyOsPage extends ConsumerWidget {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
-                  ref.invalidate(dayPlanControllerProvider(date: selectedDate));
-                  // Wait for the provider to reload data
+                  // Invalidate the unified controller to trigger a full refresh
+                  ref.invalidate(
+                    unifiedDailyOsDataControllerProvider(date: selectedDate),
+                  );
                   await ref.read(
-                      dayPlanControllerProvider(date: selectedDate).future);
+                    unifiedDailyOsDataControllerProvider(date: selectedDate)
+                        .future,
+                  );
                 },
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -52,11 +56,9 @@ class DailyOsPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Agreement status banner
-                      dayPlanAsync.when(
-                        data: (dayPlan) {
-                          if (dayPlan is! DayPlanEntry) {
-                            return const SizedBox.shrink();
-                          }
+                      unifiedDataAsync.when(
+                        data: (unifiedData) {
+                          final dayPlan = unifiedData.dayPlan;
                           final data = dayPlan.data;
                           if (data.isDraft) {
                             return _AgreementBanner(
