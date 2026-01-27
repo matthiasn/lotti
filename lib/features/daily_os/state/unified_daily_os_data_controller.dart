@@ -184,9 +184,12 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       );
     }
 
-    // Convert actual entries to time slots
+    // Convert actual entries to time slots (skip zero-duration entries)
     final actualSlots = <ActualTimeSlot>[];
     for (final entry in entries) {
+      final duration = entry.meta.dateTo.difference(entry.meta.dateFrom);
+      if (duration.inMinutes == 0) continue;
+
       final linkedFromId = entryIdToLinkedFromIds[entry.meta.id]?.firstOrNull;
       final linkedFrom =
           linkedFromId != null ? linkedFromMap[linkedFromId] : null;

@@ -761,6 +761,53 @@ void main() {
           secondSlot.duration, equals(const Duration(hours: 1, minutes: 30)));
     });
 
+    test('excludes zero-duration entries from actual slots', () async {
+      final plan = createTestPlan(plannedBlocks: []);
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      final entries = [
+        createTestEntry(
+          id: 'entry-normal',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 9)),
+          dateTo: testDate.add(const Duration(hours: 10)),
+        ),
+        // Zero-duration entry (start == end)
+        createTestEntry(
+          id: 'entry-zero',
+          categoryId: 'cat-personal',
+          dateFrom: testDate.add(const Duration(hours: 14)),
+          dateTo: testDate.add(const Duration(hours: 14)),
+        ),
+        createTestEntry(
+          id: 'entry-another',
+          categoryId: 'cat-health',
+          dateFrom: testDate.add(const Duration(hours: 15)),
+          dateTo: testDate.add(const Duration(hours: 16)),
+        ),
+      ];
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => entries);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final timeline = result.timelineData;
+      // Only 2 slots - zero-duration entry excluded
+      expect(timeline.actualSlots.length, equals(2));
+      expect(
+        timeline.actualSlots.map((s) => s.entry.meta.id),
+        equals(['entry-normal', 'entry-another']),
+      );
+    });
+
     test('actual slots include linked parent reference', () async {
       final plan = createTestPlan(plannedBlocks: []);
       when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
