@@ -1,9 +1,12 @@
 # Implementation Plan: Calendar View Sync and Visual Fixes
 
 **Date:** 2026-01-27
-**Status:** PARTIALLY COMPLETE
+**Status:** COMPLETE
 **Epic:** Daily Operating System
-**Related PR:** #2580 (Calendar Refresh Fix - provides context on visibility-based refresh pattern)
+**Related PRs:**
+- #2580 (Calendar Refresh Fix - provides context on visibility-based refresh pattern)
+- #2610 (Day view crash when entry crosses midnight)
+- #2611 (Unified daily operating system controller)
 
 ---
 
@@ -24,6 +27,11 @@
   - Deleted generated files for removed controllers
   - Deleted obsolete test file that used removed `timeBudgetProgressControllerProvider`
 
+- [x] **Bug Fix: Midnight Crossing Crash** - COMPLETE (PR #2610)
+  - Fixed `_calculateDayEndHour()` to handle entries ending after midnight
+  - Entries crossing midnight now treated as ending at hour 24 instead of wrapping around
+  - Prevents crash when viewing days with overnight entries
+
 - [x] **Test Coverage** - COMPLETE
   - Added `unified_daily_os_data_controller_test.dart` with 27 tests covering:
     - Budget progress status calculation (underBudget, nearLimit, exhausted, overBudget)
@@ -33,6 +41,10 @@
     - Linked entry category resolution (parent category takes precedence)
     - DayBudgetStats aggregation
 
+- [x] **Phase 2: Remove Tracked Labels** - COMPLETE
+  - Text labels removed from actual blocks in `_ActualBlockWidget`
+  - Category name preserved via `Semantics` widget for accessibility
+
 - [x] **Phase 3: Overlapping Entries (Option A)** - COMPLETE
   - Implemented greedy lane assignment algorithm in `_assignLanes()`
   - Non-overlapping entries share the same lane (full width)
@@ -40,12 +52,6 @@
   - Small gap (2px) between lanes for visual separation
   - Added 8 widget tests covering various overlap scenarios
   - Edge cases handled: single entry, identical times, back-to-back entries, lane reuse
-
-### Pending
-
-- [ ] **Phase 2: Remove Tracked Labels** - ALREADY COMPLETE (done in previous session)
-  - Text labels removed from actual blocks in `_ActualBlockWidget`
-  - Category name preserved via `Semantics` widget for accessibility
 
 ---
 
