@@ -31,6 +31,16 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.826" date="2026-01-27">
+      <description>
+        <p>Daily OS Timeline Overlap Handling: Overlapping time entries now display in separate visual lanes instead of stacking on top of each other. Uses a greedy lane assignment algorithm that places non-overlapping entries in the same lane for full-width display, while overlapping entries get their own adjacent lanes with equal widths and a small gap for visual separation. Useful when tracking multiple concurrent activities like a meeting while taking notes.</p>
+      </description>
+    </release>
+    <release version="0.9.825" date="2026-01-27">
+      <description>
+        <p>Daily OS Architecture Refactor: Unified data controller for consistent real-time updates. Consolidated day plan, timeline data, and budget progress into a single atomic state that updates together when any underlying data changes. Uses ref.keepAlive() with a manual StreamSubscription to prevent Riverpod 3's automatic pausing behavior. Fixes the auto-update failure where the timeline and budget progress bars wouldn't refresh when time entries were created or synced.</p>
+      </description>
+    </release>
     <release version="0.9.824" date="2026-01-27">
       <description>
         <p>Day Plan Timeline Fix: Fixed a crash that occurred when calendar entries crossed midnight (e.g., a work session starting at 23:00 and ending at 01:00 the next day). The timeline view now correctly handles overnight entries by treating them as ending at midnight for display purposes. Added defensive bounds checking to prevent the RangeError that caused blank/grey screens on days with late-night entries.</p>

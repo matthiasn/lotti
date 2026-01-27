@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -14,6 +17,72 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+/// Represents a slot assigned to a specific lane.
+class _LaneAssignment {
+  const _LaneAssignment({
+    required this.slot,
+    required this.laneIndex,
+  });
+
+  final ActualTimeSlot slot;
+  final int laneIndex;
+}
+
+/// Tracks a lane's end time for priority queue ordering.
+class _LaneEndTime {
+  const _LaneEndTime({required this.laneIndex, required this.endTime});
+
+  final int laneIndex;
+  final DateTime endTime;
+}
+
+/// Assigns time slots to lanes to prevent visual overlap.
+///
+/// Uses a greedy algorithm with a min-heap for O(N log K) complexity,
+/// where N is the number of slots and K is the number of lanes.
+/// For each slot (sorted by start time), check if the earliest-ending lane
+/// can accommodate it. If not, create a new lane.
+List<_LaneAssignment> _assignLanes(List<ActualTimeSlot> slots) {
+  if (slots.isEmpty) return [];
+
+  // Sort by start time
+  final sorted = [...slots]..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  // Min-heap ordered by lane end time (earliest first)
+  final laneHeap = PriorityQueue<_LaneEndTime>(
+    (a, b) => a.endTime.compareTo(b.endTime),
+  );
+
+  final assignments = <_LaneAssignment>[];
+  var nextLaneIndex = 0;
+
+  for (final slot in sorted) {
+    int assignedLane;
+
+    if (laneHeap.isNotEmpty &&
+        !slot.startTime.isBefore(laneHeap.first.endTime)) {
+      // Reuse the earliest-ending lane (no overlap)
+      final reusedLane = laneHeap.removeFirst();
+      assignedLane = reusedLane.laneIndex;
+    } else {
+      // Create a new lane
+      assignedLane = nextLaneIndex++;
+    }
+
+    // Add/update lane in heap with new end time
+    laneHeap.add(_LaneEndTime(laneIndex: assignedLane, endTime: slot.endTime));
+    assignments.add(_LaneAssignment(slot: slot, laneIndex: assignedLane));
+  }
+
+  return assignments;
+}
+
+/// Returns the number of lanes needed for the given assignments.
+int _getLaneCount(List<_LaneAssignment> assignments) {
+  if (assignments.isEmpty) return 1;
+  return assignments.map((a) => a.laneIndex).reduce(math.max) + 1;
+}
 
 /// Timeline showing plan vs actual time blocks.
 class DailyTimeline extends ConsumerWidget {
@@ -210,7 +279,7 @@ class _TimelineContent extends StatelessWidget {
                   ),
                 ),
 
-                // Actual blocks lane
+                // Actual blocks lane with overlap handling
                 Positioned(
                   top: 0,
                   bottom: 0,
@@ -218,13 +287,24 @@ class _TimelineContent extends StatelessWidget {
                       DailyTimeline._laneWidth +
                       8,
                   right: 8,
-                  child: Stack(
-                    children: data.actualSlots.map((slot) {
-                      return _ActualBlockWidget(
-                        slot: slot,
-                        startHour: startHour,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final assignments = _assignLanes(data.actualSlots);
+                      final laneCount = _getLaneCount(assignments);
+                      final laneWidth = constraints.maxWidth / laneCount;
+
+                      return Stack(
+                        children: assignments.map((assignment) {
+                          return _ActualBlockWidget(
+                            slot: assignment.slot,
+                            startHour: startHour,
+                            laneIndex: assignment.laneIndex,
+                            laneCount: laneCount,
+                            laneWidth: laneWidth,
+                          );
+                        }).toList(),
                       );
-                    }).toList(),
+                    },
                   ),
                 ),
 
@@ -341,10 +421,16 @@ class _ActualBlockWidget extends ConsumerWidget {
   const _ActualBlockWidget({
     required this.slot,
     required this.startHour,
+    required this.laneIndex,
+    required this.laneCount,
+    required this.laneWidth,
   });
 
   final ActualTimeSlot slot;
   final int startHour;
+  final int laneIndex;
+  final int laneCount;
+  final double laneWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -363,10 +449,16 @@ class _ActualBlockWidget extends ConsumerWidget {
     final highlightedId = ref.watch(highlightedCategoryIdProvider);
     final isHighlighted = categoryId != null && highlightedId == categoryId;
 
+    // Calculate horizontal position based on lane assignment
+    final left = laneIndex * laneWidth;
+    // Add small gap between lanes for visual separation
+    final gap = laneCount > 1 ? 2.0 : 0.0;
+    final width = laneWidth - gap;
+
     return Positioned(
       top: top,
-      left: 0,
-      right: 0,
+      left: left,
+      width: width,
       height: height.clamp(20.0, double.infinity),
       child: GestureDetector(
         onTap: () {
