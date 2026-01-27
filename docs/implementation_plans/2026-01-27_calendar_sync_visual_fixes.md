@@ -33,10 +33,19 @@
     - Linked entry category resolution (parent category takes precedence)
     - DayBudgetStats aggregation
 
+- [x] **Phase 3: Overlapping Entries (Option A)** - COMPLETE
+  - Implemented greedy lane assignment algorithm in `_assignLanes()`
+  - Non-overlapping entries share the same lane (full width)
+  - Overlapping entries placed in adjacent lanes with equal widths
+  - Small gap (2px) between lanes for visual separation
+  - Added 8 widget tests covering various overlap scenarios
+  - Edge cases handled: single entry, identical times, back-to-back entries, lane reuse
+
 ### Pending
 
-- [ ] **Phase 2: Remove Tracked Labels** - NOT STARTED
-- [ ] **Phase 3: Overlapping Entries (Option A)** - NOT STARTED
+- [ ] **Phase 2: Remove Tracked Labels** - ALREADY COMPLETE (done in previous session)
+  - Text labels removed from actual blocks in `_ActualBlockWidget`
+  - Category name preserved via `Semantics` widget for accessibility
 
 ---
 

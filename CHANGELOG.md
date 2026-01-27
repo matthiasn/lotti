@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.826] - 2026-01-27
+### Added
+- Daily OS Timeline: Overlapping entries now display in separate lanes
+  - Uses greedy lane assignment algorithm to prevent visual overlap
+  - Entries that don't overlap share the same lane (full width)
+  - Overlapping entries are placed in adjacent lanes with equal widths
+  - Small gap between lanes for visual separation
+
 ## [0.9.825] - 2026-01-27
 ### Changed
 - Daily OS Architecture: Unified data controller for consistent real-time updates

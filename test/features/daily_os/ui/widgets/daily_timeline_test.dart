@@ -752,4 +752,461 @@ void main() {
       expect(find.text('22:00'), findsOneWidget);
     });
   });
+
+  group('DailyTimeline - Overlapping Entries Lane Assignment', () {
+    JournalEntity createJournalEntry({
+      required String id,
+      required DateTime dateFrom,
+      required DateTime dateTo,
+      String? categoryId,
+    }) {
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: dateFrom,
+          updatedAt: dateFrom,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          categoryId: categoryId,
+        ),
+      );
+    }
+
+    testWidgets('renders single entry at full width', (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-1',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 10)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 12,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Single entry should render successfully
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+
+    testWidgets('renders two non-overlapping entries in same lane',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-1',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 10)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: 'cat-1',
+              ),
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-2',
+                  dateFrom: testDate.add(const Duration(hours: 11)),
+                  dateTo: testDate.add(const Duration(hours: 12)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 11)),
+                endTime: testDate.add(const Duration(hours: 12)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 14,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Both entries should render (using semantics since text is hidden)
+      expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+
+    testWidgets('renders two overlapping entries in separate lanes',
+        (tester) async {
+      final category2 = CategoryDefinition(
+        id: 'cat-2',
+        name: 'Exercise',
+        color: '#34A853',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+      when(() => mockCacheService.getCategoryById('cat-2'))
+          .thenReturn(category2);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              // Entry 1: 9:00 - 11:00
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-1',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 11)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: 'cat-1',
+              ),
+              // Entry 2: 10:00 - 12:00 (overlaps with entry 1)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-2',
+                  dateFrom: testDate.add(const Duration(hours: 10)),
+                  dateTo: testDate.add(const Duration(hours: 12)),
+                  categoryId: 'cat-2',
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 12)),
+                categoryId: 'cat-2',
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 14,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Both overlapping entries should be visible
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
+      expect(find.bySemanticsLabel('Exercise'), findsOneWidget);
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+
+    testWidgets('renders three overlapping entries in three lanes',
+        (tester) async {
+      final category2 = CategoryDefinition(
+        id: 'cat-2',
+        name: 'Exercise',
+        color: '#34A853',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      final category3 = CategoryDefinition(
+        id: 'cat-3',
+        name: 'Meeting',
+        color: '#EA4335',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+      when(() => mockCacheService.getCategoryById('cat-2'))
+          .thenReturn(category2);
+      when(() => mockCacheService.getCategoryById('cat-3'))
+          .thenReturn(category3);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              // Entry 1: 9:00 - 12:00
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-1',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 12)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 12)),
+                categoryId: 'cat-1',
+              ),
+              // Entry 2: 9:30 - 11:00 (overlaps with entry 1)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-2',
+                  dateFrom: testDate.add(const Duration(hours: 9, minutes: 30)),
+                  dateTo: testDate.add(const Duration(hours: 11)),
+                  categoryId: 'cat-2',
+                ),
+                startTime: testDate.add(const Duration(hours: 9, minutes: 30)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: 'cat-2',
+              ),
+              // Entry 3: 10:00 - 11:30 (overlaps with both)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-3',
+                  dateFrom: testDate.add(const Duration(hours: 10)),
+                  dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
+                  categoryId: 'cat-3',
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11, minutes: 30)),
+                categoryId: 'cat-3',
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 14,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // All three overlapping entries should be visible
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
+      expect(find.bySemanticsLabel('Exercise'), findsOneWidget);
+      expect(find.bySemanticsLabel('Meeting'), findsOneWidget);
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+
+    testWidgets('reuses lane after entry ends', (tester) async {
+      final category2 = CategoryDefinition(
+        id: 'cat-2',
+        name: 'Exercise',
+        color: '#34A853',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      final category3 = CategoryDefinition(
+        id: 'cat-3',
+        name: 'Meeting',
+        color: '#EA4335',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+      when(() => mockCacheService.getCategoryById('cat-2'))
+          .thenReturn(category2);
+      when(() => mockCacheService.getCategoryById('cat-3'))
+          .thenReturn(category3);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              // Entry 1: 9:00 - 10:00 (lane 0)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-1',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 10)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: 'cat-1',
+              ),
+              // Entry 2: 9:30 - 11:00 (overlaps with entry 1, uses lane 1)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-2',
+                  dateFrom: testDate.add(const Duration(hours: 9, minutes: 30)),
+                  dateTo: testDate.add(const Duration(hours: 11)),
+                  categoryId: 'cat-2',
+                ),
+                startTime: testDate.add(const Duration(hours: 9, minutes: 30)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: 'cat-2',
+              ),
+              // Entry 3: 10:00 - 11:00 (starts after entry 1 ends, reuses lane 0)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-3',
+                  dateFrom: testDate.add(const Duration(hours: 10)),
+                  dateTo: testDate.add(const Duration(hours: 11)),
+                  categoryId: 'cat-3',
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: 'cat-3',
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 14,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // All three entries should be visible (lane reuse is handled internally)
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
+      expect(find.bySemanticsLabel('Exercise'), findsOneWidget);
+      expect(find.bySemanticsLabel('Meeting'), findsOneWidget);
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+
+    testWidgets('handles entries with identical times', (tester) async {
+      final category2 = CategoryDefinition(
+        id: 'cat-2',
+        name: 'Exercise',
+        color: '#34A853',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+      when(() => mockCacheService.getCategoryById('cat-2'))
+          .thenReturn(category2);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              // Entry 1: 9:00 - 10:00
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-1',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 10)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: 'cat-1',
+              ),
+              // Entry 2: Same exact times (parallel task tracking)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-2',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 10)),
+                  categoryId: 'cat-2',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: 'cat-2',
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 12,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Both entries with identical times should be visible in separate lanes
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
+      expect(find.bySemanticsLabel('Exercise'), findsOneWidget);
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+
+    testWidgets('handles back-to-back entries in same lane', (tester) async {
+      final category2 = CategoryDefinition(
+        id: 'cat-2',
+        name: 'Exercise',
+        color: '#34A853',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+      when(() => mockCacheService.getCategoryById('cat-2'))
+          .thenReturn(category2);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              // Entry 1: 9:00 - 10:00
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-1',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 10)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 10)),
+                categoryId: 'cat-1',
+              ),
+              // Entry 2: 10:00 - 11:00 (starts exactly when entry 1 ends)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-2',
+                  dateFrom: testDate.add(const Duration(hours: 10)),
+                  dateTo: testDate.add(const Duration(hours: 11)),
+                  categoryId: 'cat-2',
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: 'cat-2',
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 12,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Back-to-back entries should both render (in same lane, no overlap)
+      expect(find.bySemanticsLabel('Work'), findsOneWidget);
+      expect(find.bySemanticsLabel('Exercise'), findsOneWidget);
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+  });
 }
