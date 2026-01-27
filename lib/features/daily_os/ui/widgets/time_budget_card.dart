@@ -13,6 +13,31 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
+/// Formats a duration as "Xh Ym" or "Xm".
+String _formatCompactDuration(Duration duration) {
+  if (duration.inHours > 0) {
+    final hours = duration.inHours;
+    final mins = duration.inMinutes % 60;
+    if (mins == 0) return '${hours}h';
+    return '${hours}h ${mins}m';
+  }
+  return '${duration.inMinutes}m';
+}
+
+/// Returns the appropriate color for a task status.
+Color _getTaskStatusColor(BuildContext context, TaskStatus status) {
+  final isLight = Theme.of(context).brightness == Brightness.light;
+  return switch (status) {
+    TaskOpen() => context.colorScheme.outline,
+    TaskInProgress() => context.colorScheme.primary,
+    TaskGroomed() => context.colorScheme.tertiary,
+    TaskOnHold() => context.colorScheme.secondary,
+    TaskBlocked() => context.colorScheme.error,
+    TaskDone() => isLight ? taskStatusDarkGreen : taskStatusGreen,
+    TaskRejected() => context.colorScheme.outline,
+  };
+}
+
 /// Card displaying a single time budget with progress.
 class TimeBudgetCard extends ConsumerWidget {
   const TimeBudgetCard({
@@ -354,7 +379,7 @@ class _ExpandableTaskSectionState extends State<_ExpandableTaskSection> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '• ${_formatDuration(_totalTime)}',
+                        '• ${_formatCompactDuration(_totalTime)}',
                         style: context.textTheme.labelMedium?.copyWith(
                           color: context.colorScheme.onSurfaceVariant,
                         ),
@@ -441,16 +466,6 @@ class _ExpandableTaskSectionState extends State<_ExpandableTaskSection> {
       },
     );
   }
-
-  String _formatDuration(Duration duration) {
-    if (duration.inHours > 0) {
-      final hours = duration.inHours;
-      final mins = duration.inMinutes % 60;
-      if (mins == 0) return '${hours}h';
-      return '${hours}h ${mins}m';
-    }
-    return '${duration.inMinutes}m';
-  }
 }
 
 /// A row displaying a task with thumbnail, time, and completion indicator.
@@ -464,7 +479,7 @@ class _TaskProgressRow extends StatelessWidget {
     final task = item.task;
     final isCompleted = item.wasCompletedOnDay;
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final statusColor = _getStatusColor(context, task.data.status);
+    final statusColor = _getTaskStatusColor(context, task.data.status);
     final checkColor = isLight ? taskStatusDarkGreen : taskStatusGreen;
 
     // Text color - slightly muted for completed tasks
@@ -507,7 +522,7 @@ class _TaskProgressRow extends StatelessWidget {
             const SizedBox(width: 8),
             // Time spent
             Text(
-              _formatDuration(item.timeSpentOnDay),
+              _formatCompactDuration(item.timeSpentOnDay),
               style: context.textTheme.labelSmall?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -516,29 +531,6 @@ class _TaskProgressRow extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    if (duration.inHours > 0) {
-      final hours = duration.inHours;
-      final mins = duration.inMinutes % 60;
-      if (mins == 0) return '${hours}h';
-      return '${hours}h ${mins}m';
-    }
-    return '${duration.inMinutes}m';
-  }
-
-  Color _getStatusColor(BuildContext context, TaskStatus status) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    return switch (status) {
-      TaskOpen() => context.colorScheme.outline,
-      TaskInProgress() => context.colorScheme.primary,
-      TaskGroomed() => context.colorScheme.tertiary,
-      TaskOnHold() => context.colorScheme.secondary,
-      TaskBlocked() => context.colorScheme.error,
-      TaskDone() => isLight ? taskStatusDarkGreen : taskStatusGreen,
-      TaskRejected() => context.colorScheme.outline,
-    };
   }
 }
 
@@ -554,7 +546,7 @@ class _TaskGridTile extends StatelessWidget {
     final isCompleted = item.wasCompletedOnDay;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final coverArtId = task.data.coverArtId;
-    final statusColor = _getStatusColor(context, task.data.status);
+    final statusColor = _getTaskStatusColor(context, task.data.status);
 
     return GestureDetector(
       onTap: () => beamToNamed('/tasks/${task.meta.id}'),
@@ -616,7 +608,7 @@ class _TaskGridTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  _formatDuration(item.timeSpentOnDay),
+                  _formatCompactDuration(item.timeSpentOnDay),
                   style: context.textTheme.labelSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
@@ -663,28 +655,5 @@ class _TaskGridTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    if (duration.inHours > 0) {
-      final hours = duration.inHours;
-      final mins = duration.inMinutes % 60;
-      if (mins == 0) return '${hours}h';
-      return '${hours}h ${mins}m';
-    }
-    return '${duration.inMinutes}m';
-  }
-
-  Color _getStatusColor(BuildContext context, TaskStatus status) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    return switch (status) {
-      TaskOpen() => context.colorScheme.outline,
-      TaskInProgress() => context.colorScheme.primary,
-      TaskGroomed() => context.colorScheme.tertiary,
-      TaskOnHold() => context.colorScheme.secondary,
-      TaskBlocked() => context.colorScheme.error,
-      TaskDone() => isLight ? taskStatusDarkGreen : taskStatusGreen,
-      TaskRejected() => context.colorScheme.outline,
-    };
   }
 }
