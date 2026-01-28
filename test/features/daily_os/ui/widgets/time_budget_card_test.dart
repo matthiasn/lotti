@@ -10,6 +10,7 @@ import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 
 import '../../../../test_helper.dart';
 
@@ -617,6 +618,219 @@ void main() {
 
       // Default is list view, should show 0m for zero duration
       expect(find.text('0m'), findsWidgets);
+    });
+
+    testWidgets('shows due today badge in list view', (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(id: 'task-1', title: 'Due Task'),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: false,
+        dueDateStatus: const DueDateStatus(
+          urgency: DueDateUrgency.dueToday,
+          daysUntilDue: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([task])),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "Due today" badge
+      expect(find.text('Due today'), findsOneWidget);
+    });
+
+    testWidgets('shows overdue badge in list view', (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(id: 'task-1', title: 'Overdue Task'),
+        timeSpentOnDay: const Duration(minutes: 30),
+        wasCompletedOnDay: false,
+        dueDateStatus: const DueDateStatus(
+          urgency: DueDateUrgency.overdue,
+          daysUntilDue: -2,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([task])),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "Overdue" badge
+      expect(find.text('Overdue'), findsOneWidget);
+    });
+
+    testWidgets('shows due badge in grid view', (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(id: 'task-1', title: 'Grid Due Task'),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: false,
+        dueDateStatus: const DueDateStatus(
+          urgency: DueDateUrgency.dueToday,
+          daysUntilDue: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks([task]),
+          initialViewMode: TaskViewMode.grid,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show short "Due" badge in grid
+      expect(find.text('Due'), findsOneWidget);
+    });
+
+    testWidgets('shows late badge in grid view for overdue', (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(id: 'task-1', title: 'Grid Overdue Task'),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: false,
+        dueDateStatus: const DueDateStatus(
+          urgency: DueDateUrgency.overdue,
+          daysUntilDue: -1,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks([task]),
+          initialViewMode: TaskViewMode.grid,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show short "Late" badge in grid
+      expect(find.text('Late'), findsOneWidget);
+    });
+
+    testWidgets('does not show badge for tasks without due date',
+        (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(id: 'task-1', title: 'Regular Task'),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: false,
+        // No dueDateStatus specified, defaults to none
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([task])),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show any due badges
+      expect(find.text('Due today'), findsNothing);
+      expect(find.text('Overdue'), findsNothing);
+    });
+  });
+
+  group('TimeBudgetCard - Warning Banner', () {
+    testWidgets('shows warning banner when hasNoBudgetWarning is true',
+        (tester) async {
+      final progress = TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: Duration.zero,
+        recordedDuration: Duration.zero,
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: Task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: testDate,
+                updatedAt: testDate,
+                dateFrom: testDate,
+                dateTo: testDate,
+                categoryId: testCategory.id,
+              ),
+              data: TaskData(
+                title: 'Due Task',
+                dateFrom: testDate,
+                dateTo: testDate,
+                due: testDate,
+                statusHistory: [],
+                status: TaskStatus.open(
+                  id: 'status-1',
+                  createdAt: testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            ),
+            timeSpentOnDay: Duration.zero,
+            wasCompletedOnDay: false,
+            dueDateStatus: const DueDateStatus(
+              urgency: DueDateUrgency.dueToday,
+              daysUntilDue: 0,
+            ),
+          ),
+        ],
+        blocks: const [],
+        hasNoBudgetWarning: true,
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            taskViewPreferenceProvider(categoryId: progress.categoryId)
+                .overrideWith(() => FakeTaskViewPreference(TaskViewMode.list)),
+          ],
+          child: TimeBudgetCard(
+            progress: progress,
+            onTap: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show warning banner
+      expect(find.text('No time budgeted'), findsOneWidget);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    });
+
+    testWidgets('does not show warning banner when hasNoBudgetWarning is false',
+        (tester) async {
+      final progress = TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: Duration.zero,
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: const [],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+        // hasNoBudgetWarning defaults to false
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            taskViewPreferenceProvider(categoryId: progress.categoryId)
+                .overrideWith(() => FakeTaskViewPreference(TaskViewMode.list)),
+          ],
+          child: TimeBudgetCard(
+            progress: progress,
+            onTap: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should NOT show warning banner
+      expect(find.text('No time budgeted'), findsNothing);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
     });
   });
 }

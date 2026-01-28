@@ -1715,4 +1715,281 @@ void main() {
       expect(progress.recordedDuration, equals(const Duration(hours: 1)));
     });
   });
+
+  group('UnifiedDailyOsDataController - Due Task Visibility', () {
+    JournalEntity createDueTask({
+      required String id,
+      required String? categoryId,
+      required DateTime? dueDate,
+      String title = 'Due Task',
+      TaskStatus? status,
+    }) {
+      return JournalEntity.task(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: categoryId,
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: testDate,
+          dateTo: testDate,
+          due: dueDate,
+          statusHistory: [],
+          status: status ??
+              TaskStatus.open(
+                id: 'status-1',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+        ),
+      );
+    }
+
+    test('includes due tasks in budget even without tracked time', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      // Task due today with no tracked time
+      final dueTask = createDueTask(
+        id: 'task-due',
+        categoryId: 'cat-work',
+        dueDate: testDate,
+        title: 'Task Due Today',
+      );
+
+      when(() => mockDb.getTasksDueOnOrBefore(testDate))
+          .thenAnswer((_) async => [dueTask as Task]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final progress = result.budgetProgress.first;
+      expect(progress.taskProgressItems.length, equals(1));
+      expect(progress.taskProgressItems.first.task.data.title,
+          equals('Task Due Today'));
+      expect(progress.taskProgressItems.first.timeSpentOnDay,
+          equals(Duration.zero));
+      expect(progress.taskProgressItems.first.isDueOrOverdue, isTrue);
+    });
+
+    test('deduplicates tasks with both tracked time and due date', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      // Time entry linked to task
+      final timeEntry = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: null,
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      // Task with due date AND tracked time
+      final taskWithDue = createDueTask(
+        id: 'task-1',
+        categoryId: 'cat-work',
+        dueDate: testDate,
+        title: 'Task With Both',
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry]);
+
+      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1'}))
+          .thenAnswer((_) async => [taskWithDue]);
+
+      when(() => mockDb.getTasksDueOnOrBefore(testDate))
+          .thenAnswer((_) async => [taskWithDue as Task]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final progress = result.budgetProgress.first;
+      // Should have only ONE entry (deduplicated)
+      expect(progress.taskProgressItems.length, equals(1));
+      // Should have the tracked time
+      expect(progress.taskProgressItems.first.timeSpentOnDay,
+          equals(const Duration(hours: 1)));
+      // Should also have due date status
+      expect(progress.taskProgressItems.first.isDueOrOverdue, isTrue);
+    });
+
+    test('creates synthetic budget for category with due tasks but no budget',
+        () async {
+      // Plan with NO budget for cat-unplanned
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      // Due task in a category WITHOUT a budget
+      final dueTask = createDueTask(
+        id: 'task-unplanned',
+        categoryId: 'cat-unplanned',
+        dueDate: testDate,
+        title: 'Unplanned Due Task',
+      );
+
+      when(() => mockDb.getTasksDueOnOrBefore(testDate))
+          .thenAnswer((_) async => [dueTask as Task]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      // Should have 2 budgets: the planned one and a synthetic one
+      expect(result.budgetProgress.length, equals(2));
+
+      final syntheticBudget = result.budgetProgress
+          .firstWhere((b) => b.categoryId == 'cat-unplanned');
+      expect(syntheticBudget.plannedDuration, equals(Duration.zero));
+      expect(syntheticBudget.hasNoBudgetWarning, isTrue);
+      expect(syntheticBudget.taskProgressItems.length, equals(1));
+      expect(syntheticBudget.taskProgressItems.first.task.data.title,
+          equals('Unplanned Due Task'));
+    });
+
+    test('sorts overdue tasks before due-today tasks', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      // Task due today
+      final dueTodayTask = createDueTask(
+        id: 'task-today',
+        categoryId: 'cat-work',
+        dueDate: testDate,
+        title: 'Due Today',
+      );
+
+      // Overdue task (due yesterday)
+      final overdueTask = createDueTask(
+        id: 'task-overdue',
+        categoryId: 'cat-work',
+        dueDate: testDate.subtract(const Duration(days: 1)),
+        title: 'Overdue',
+      );
+
+      when(() => mockDb.getTasksDueOnOrBefore(testDate))
+          .thenAnswer((_) async => [dueTodayTask as Task, overdueTask as Task]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final items = result.budgetProgress.first.taskProgressItems;
+      expect(items.length, equals(2));
+      // Overdue should come first
+      expect(items[0].task.data.title, equals('Overdue'));
+      expect(items[1].task.data.title, equals('Due Today'));
+    });
+
+    test('ignores due tasks without category', () async {
+      final plan = createTestPlan(plannedBlocks: []);
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      // Due task with NULL category
+      final dueTask = createDueTask(
+        id: 'task-no-cat',
+        categoryId: null,
+        dueDate: testDate,
+        title: 'Task Without Category',
+      );
+
+      when(() => mockDb.getTasksDueOnOrBefore(testDate))
+          .thenAnswer((_) async => [dueTask as Task]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      // No budgets should be created for tasks without category
+      expect(result.budgetProgress, isEmpty);
+    });
+  });
 }
