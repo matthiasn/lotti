@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -227,6 +228,16 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     );
   }
 
+  /// Checks if a task was marked Done on the specified day.
+  bool _wasCompletedOnDay(Task task, DateTime day) {
+    final status = task.data.status;
+    if (status is! TaskDone) return false;
+    final doneAt = status.createdAt;
+    return doneAt.year == day.year &&
+        doneAt.month == day.month &&
+        doneAt.day == day.day;
+  }
+
   List<TimeBudgetProgress> _buildBudgetProgress({
     required DayPlanEntry dayPlan,
     required List<JournalEntity> entries,
@@ -259,6 +270,13 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       final recordedDuration = _sumDurations(categoryEntries);
       final plannedDuration = budget.plannedDuration;
 
+      // Build task progress items for this category
+      final taskProgressItems = _buildTaskProgressItems(
+        categoryEntries: categoryEntries,
+        entryIdToLinkedFromIds: entryIdToLinkedFromIds,
+        linkedFromMap: linkedFromMap,
+      );
+
       results.add(
         TimeBudgetProgress(
           categoryId: budget.categoryId,
@@ -267,14 +285,73 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
           recordedDuration: recordedDuration,
           status: _calculateStatus(plannedDuration, recordedDuration),
           contributingEntries: categoryEntries,
-          // Pinned tasks are loaded separately when needed
-          pinnedTasks: const [],
+          taskProgressItems: taskProgressItems,
           blocks: budget.blocks,
         ),
       );
     }
 
     return results;
+  }
+
+  /// Builds task progress items from entries linked to tasks.
+  List<TaskDayProgress> _buildTaskProgressItems({
+    required List<JournalEntity> categoryEntries,
+    required Map<String, Set<String>> entryIdToLinkedFromIds,
+    required Map<String, JournalEntity> linkedFromMap,
+  }) {
+    // Group entries by their parent task
+    final taskIdToEntries = <String, List<JournalEntity>>{};
+    final taskById = <String, Task>{};
+
+    for (final entry in categoryEntries) {
+      final linkedFromIds = entryIdToLinkedFromIds[entry.meta.id];
+      if (linkedFromIds == null) continue;
+
+      for (final linkedFromId in linkedFromIds) {
+        final linkedFrom = linkedFromMap[linkedFromId];
+        if (linkedFrom is Task) {
+          taskIdToEntries.putIfAbsent(linkedFrom.meta.id, () => []).add(entry);
+          taskById[linkedFrom.meta.id] = linkedFrom;
+        }
+      }
+    }
+
+    // Build TaskDayProgress for each task
+    final items = <TaskDayProgress>[];
+    for (final taskId in taskById.keys) {
+      final task = taskById[taskId]!;
+      final entries = taskIdToEntries[taskId] ?? [];
+      final timeSpentOnDay = _sumDurations(entries);
+      final wasCompletedOnDay = _wasCompletedOnDay(task, _date);
+
+      // Include if has time OR was completed today
+      if (timeSpentOnDay > Duration.zero || wasCompletedOnDay) {
+        items.add(
+          TaskDayProgress(
+            task: task,
+            timeSpentOnDay: timeSpentOnDay,
+            wasCompletedOnDay: wasCompletedOnDay,
+          ),
+        );
+      }
+    }
+
+    // Sort: time descending, zero-time completed at end
+    items.sort((a, b) {
+      // Both have time: sort by time descending
+      if (a.timeSpentOnDay > Duration.zero &&
+          b.timeSpentOnDay > Duration.zero) {
+        return b.timeSpentOnDay.compareTo(a.timeSpentOnDay);
+      }
+      // One has time, one doesn't: time first
+      if (a.timeSpentOnDay > Duration.zero) return -1;
+      if (b.timeSpentOnDay > Duration.zero) return 1;
+      // Both zero time: alphabetical by title
+      return a.task.data.title.compareTo(b.task.data.title);
+    });
+
+    return items;
   }
 
   Duration _sumDurations(List<JournalEntity> entries) {

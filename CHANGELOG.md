@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.827] - 2026-01-27
+### Added
+- Daily OS Time Budgets: Task visualization with time tracking
+  - Shows tasks that contributed time to each budget category
+  - Displays per-task time spent and completion status (checkmark for tasks completed today)
+  - Switchable list/grid view with toggle button
+  - Grid view shows task thumbnails (cover art) with time badge and title overlay
+  - List view shows compact rows with status indicator, title, and time
+  - Collapsible task section with header showing task count and total time
+  - Tasks sorted by time spent (descending), zero-time completed tasks at end
+
 ## [0.9.826] - 2026-01-27
 ### Added
 - Daily OS Timeline: Overlapping entries now display in separate lanes

@@ -86,6 +86,8 @@ void main() {
     required String? categoryId,
     required DateTime dateFrom,
     required DateTime dateTo,
+    String title = 'Test Task',
+    TaskStatus? status,
   }) {
     return JournalEntity.task(
       meta: Metadata(
@@ -97,15 +99,16 @@ void main() {
         categoryId: categoryId,
       ),
       data: TaskData(
-        title: 'Test Task',
+        title: title,
         dateFrom: dateFrom,
         dateTo: dateTo,
         statusHistory: [],
-        status: TaskStatus.inProgress(
-          id: 'status-1',
-          createdAt: dateFrom,
-          utcOffset: 0,
-        ),
+        status: status ??
+            TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: dateFrom,
+              utcOffset: 0,
+            ),
       ),
     );
   }
@@ -1293,6 +1296,421 @@ void main() {
       expect(result.budgetCount, equals(2));
       expect(result.overBudgetCount, equals(1)); // personal is over by 30 mins
       expect(result.isOverBudget, isFalse); // total is still under
+    });
+  });
+
+  group('UnifiedDailyOsDataController - Task Progress Items', () {
+    test('builds taskProgressItems from entries linked to tasks', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      // Time entry linked to a task
+      final timeEntry = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: null,
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10, minutes: 30)),
+      );
+
+      final parentTask = createTestTask(
+        id: 'task-1',
+        categoryId: 'cat-work',
+        dateFrom: testDate,
+        dateTo: testDate,
+        title: 'My Task',
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry]);
+
+      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1'}))
+          .thenAnswer((_) async => [parentTask]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final progress = result.budgetProgress.first;
+      expect(progress.taskProgressItems.length, equals(1));
+
+      final taskProgress = progress.taskProgressItems.first;
+      expect(taskProgress.task.data.title, equals('My Task'));
+      expect(
+        taskProgress.timeSpentOnDay,
+        equals(const Duration(hours: 1, minutes: 30)),
+      );
+      expect(taskProgress.wasCompletedOnDay, isFalse);
+    });
+
+    test('aggregates multiple entries for same task', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 17)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      // Two time entries linked to the same task
+      final timeEntry1 = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: null,
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+      final timeEntry2 = createTestEntry(
+        id: 'time-entry-2',
+        categoryId: null,
+        dateFrom: testDate.add(const Duration(hours: 14)),
+        dateTo: testDate.add(const Duration(hours: 15, minutes: 30)),
+      );
+
+      final parentTask = createTestTask(
+        id: 'task-1',
+        categoryId: 'cat-work',
+        dateFrom: testDate,
+        dateTo: testDate,
+        title: 'My Task',
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry1, timeEntry2]);
+
+      when(() => mockDb.linksForEntryIds({'time-entry-1', 'time-entry-2'}))
+          .thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+          EntryLink.basic(
+            id: 'link-2',
+            fromId: 'task-1',
+            toId: 'time-entry-2',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1'}))
+          .thenAnswer((_) async => [parentTask]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final progress = result.budgetProgress.first;
+      expect(progress.taskProgressItems.length, equals(1));
+      expect(
+        progress.taskProgressItems.first.timeSpentOnDay,
+        equals(const Duration(hours: 2, minutes: 30)),
+      );
+    });
+
+    test('marks task as completed on day when done today', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      final timeEntry = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: null,
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      // Task marked done TODAY
+      final doneTask = createTestTask(
+        id: 'task-1',
+        categoryId: 'cat-work',
+        dateFrom: testDate,
+        dateTo: testDate,
+        title: 'Completed Task',
+        status: TaskStatus.done(
+          id: 'status-done',
+          createdAt: testDate.add(const Duration(hours: 11)), // Done today
+          utcOffset: 0,
+        ),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry]);
+
+      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1'}))
+          .thenAnswer((_) async => [doneTask]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final taskProgress = result.budgetProgress.first.taskProgressItems.first;
+      expect(taskProgress.wasCompletedOnDay, isTrue);
+    });
+
+    test('does not mark task as completed when done on different day',
+        () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      final timeEntry = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: null,
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      // Task marked done YESTERDAY (not today)
+      final doneTask = createTestTask(
+        id: 'task-1',
+        categoryId: 'cat-work',
+        dateFrom: testDate,
+        dateTo: testDate,
+        title: 'Previously Completed',
+        status: TaskStatus.done(
+          id: 'status-done',
+          createdAt:
+              testDate.subtract(const Duration(days: 1)), // Done yesterday
+          utcOffset: 0,
+        ),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry]);
+
+      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1'}))
+          .thenAnswer((_) async => [doneTask]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final taskProgress = result.budgetProgress.first.taskProgressItems.first;
+      expect(taskProgress.wasCompletedOnDay, isFalse);
+    });
+
+    test('sorts tasks by time descending', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 17)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      // Entries for two different tasks
+      final entry1 = createTestEntry(
+        id: 'entry-1',
+        categoryId: null,
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)), // 1 hour
+      );
+      final entry2 = createTestEntry(
+        id: 'entry-2',
+        categoryId: null,
+        dateFrom: testDate.add(const Duration(hours: 11)),
+        dateTo: testDate.add(const Duration(hours: 14)), // 3 hours
+      );
+
+      final task1 = createTestTask(
+        id: 'task-1',
+        categoryId: 'cat-work',
+        dateFrom: testDate,
+        dateTo: testDate,
+        title: 'Short Task',
+      );
+      final task2 = createTestTask(
+        id: 'task-2',
+        categoryId: 'cat-work',
+        dateFrom: testDate,
+        dateTo: testDate,
+        title: 'Long Task',
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [entry1, entry2]);
+
+      when(() => mockDb.linksForEntryIds({'entry-1', 'entry-2'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+          EntryLink.basic(
+            id: 'link-2',
+            fromId: 'task-2',
+            toId: 'entry-2',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1', 'task-2'}))
+          .thenAnswer((_) async => [task1, task2]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final items = result.budgetProgress.first.taskProgressItems;
+      expect(items.length, equals(2));
+      // Sorted by time descending: Long Task (3h) first, then Short Task (1h)
+      expect(items[0].task.data.title, equals('Long Task'));
+      expect(items[0].timeSpentOnDay, equals(const Duration(hours: 3)));
+      expect(items[1].task.data.title, equals('Short Task'));
+      expect(items[1].timeSpentOnDay, equals(const Duration(hours: 1)));
+    });
+
+    test('returns empty taskProgressItems when no tasks linked', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      // Entry with NO links to tasks
+      final entry = createTestEntry(
+        id: 'entry-1',
+        categoryId: 'cat-work',
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [entry]);
+
+      // No links
+      when(() => mockDb.linksForEntryIds({'entry-1'}))
+          .thenAnswer((_) async => []);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final progress = result.budgetProgress.first;
+      expect(progress.taskProgressItems, isEmpty);
+      // But the entry still contributes to the budget
+      expect(progress.recordedDuration, equals(const Duration(hours: 1)));
     });
   });
 }

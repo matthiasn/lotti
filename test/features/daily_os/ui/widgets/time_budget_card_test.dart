@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
@@ -40,7 +42,7 @@ void main() {
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
-      pinnedTasks: const [],
+      taskProgressItems: const [],
       blocks: blocks ??
           [
             PlannedBlock(
@@ -185,7 +187,7 @@ void main() {
             recordedDuration: Duration.zero,
             status: BudgetProgressStatus.underBudget,
             contributingEntries: const [],
-            pinnedTasks: const [],
+            taskProgressItems: const [],
             blocks: [
               PlannedBlock(
                 id: 'block-1',
@@ -314,6 +316,307 @@ void main() {
 
       // The progress bar should show over-budget indicator
       expect(find.byType(TimeBudgetCard), findsOneWidget);
+    });
+  });
+
+  group('TimeBudgetCard - Task Section', () {
+    Task createTestTask({
+      required String id,
+      required String title,
+      String? categoryId,
+      TaskStatus? status,
+    }) {
+      final now = DateTime(2026, 1, 15);
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+          categoryId: categoryId,
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: now,
+          dateTo: now,
+          statusHistory: [],
+          status: status ??
+              TaskStatus.inProgress(
+                id: 'status-$id',
+                createdAt: now,
+                utcOffset: 0,
+              ),
+        ),
+      );
+    }
+
+    TimeBudgetProgress createProgressWithTasks(List<TaskDayProgress> tasks) {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 4),
+        recordedDuration: const Duration(hours: 2),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: tasks,
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 13)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('shows task section header with count and total time',
+        (tester) async {
+      final tasks = [
+        TaskDayProgress(
+          task: createTestTask(id: 'task-1', title: 'Task One'),
+          timeSpentOnDay: const Duration(hours: 1, minutes: 30),
+          wasCompletedOnDay: false,
+        ),
+        TaskDayProgress(
+          task: createTestTask(id: 'task-2', title: 'Task Two'),
+          timeSpentOnDay: const Duration(hours: 1),
+          wasCompletedOnDay: false,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks(tasks)),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "Tasks (2)" and total time "• 2h 30m"
+      expect(find.textContaining('Tasks (2)'), findsOneWidget);
+      expect(find.textContaining('2h 30m'), findsOneWidget);
+    });
+
+    testWidgets('hides task section when no tasks', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([])),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show tasks header
+      expect(find.textContaining('Tasks'), findsNothing);
+    });
+
+    testWidgets('shows task titles in list view', (tester) async {
+      final tasks = [
+        TaskDayProgress(
+          task: createTestTask(id: 'task-1', title: 'Build Feature'),
+          timeSpentOnDay: const Duration(hours: 2),
+          wasCompletedOnDay: false,
+        ),
+        TaskDayProgress(
+          task: createTestTask(id: 'task-2', title: 'Fix Bug'),
+          timeSpentOnDay: const Duration(hours: 1),
+          wasCompletedOnDay: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks(tasks)),
+      );
+      await tester.pumpAndSettle();
+
+      // Toggle to list view
+      final listIcon = find.byIcon(Icons.view_list_rounded);
+      if (listIcon.evaluate().isNotEmpty) {
+        await tester.tap(listIcon);
+        await tester.pumpAndSettle();
+      }
+
+      // Task titles should be visible
+      expect(find.text('Build Feature'), findsOneWidget);
+      expect(find.text('Fix Bug'), findsOneWidget);
+    });
+
+    testWidgets('shows checkmark for completed tasks in list view',
+        (tester) async {
+      final completedTask = TaskDayProgress(
+        task: createTestTask(
+          id: 'task-1',
+          title: 'Completed Task',
+          status: TaskStatus.done(
+            id: 'status-done',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: true,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([completedTask])),
+      );
+      await tester.pumpAndSettle();
+
+      // Toggle to list view
+      final listIcon = find.byIcon(Icons.view_list_rounded);
+      if (listIcon.evaluate().isNotEmpty) {
+        await tester.tap(listIcon);
+        await tester.pumpAndSettle();
+      }
+
+      // Should show checkmark icon for completed task
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    });
+
+    testWidgets('shows time spent in list view', (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(id: 'task-1', title: 'My Task'),
+        timeSpentOnDay: const Duration(hours: 2, minutes: 15),
+        wasCompletedOnDay: false,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([task])),
+      );
+      await tester.pumpAndSettle();
+
+      // Toggle to list view
+      final listIcon = find.byIcon(Icons.view_list_rounded);
+      if (listIcon.evaluate().isNotEmpty) {
+        await tester.tap(listIcon);
+        await tester.pumpAndSettle();
+      }
+
+      // Should show formatted time
+      expect(find.text('2h 15m'), findsWidgets);
+    });
+
+    testWidgets('toggles between list and grid view', (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(id: 'task-1', title: 'My Task'),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: false,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([task])),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially in grid mode, should show list toggle icon
+      expect(find.byIcon(Icons.view_list_rounded), findsOneWidget);
+
+      // Tap to switch to list view
+      await tester.tap(find.byIcon(Icons.view_list_rounded));
+      await tester.pumpAndSettle();
+
+      // Now should show grid toggle icon
+      expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
+
+      // Tap to switch back to grid view
+      await tester.tap(find.byIcon(Icons.grid_view_rounded));
+      await tester.pumpAndSettle();
+
+      // Should show list toggle icon again
+      expect(find.byIcon(Icons.view_list_rounded), findsOneWidget);
+    });
+
+    testWidgets('collapses and expands task section', (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(id: 'task-1', title: 'Visible Task'),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: false,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([task])),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially expanded - task should be visible in some form
+      expect(find.textContaining('Tasks (1)'), findsOneWidget);
+
+      // Collapse the section
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
+      await tester.pumpAndSettle();
+
+      // Should show expand icon
+      expect(find.byIcon(Icons.keyboard_arrow_right), findsOneWidget);
+
+      // View toggle should be hidden when collapsed
+      expect(find.byIcon(Icons.view_list_rounded), findsNothing);
+      expect(find.byIcon(Icons.grid_view_rounded), findsNothing);
+
+      // Expand again
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_right));
+      await tester.pumpAndSettle();
+
+      // Should show collapse icon
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+    });
+
+    testWidgets('grid view shows tasks in grid layout', (tester) async {
+      final tasks = [
+        TaskDayProgress(
+          task: createTestTask(id: 'task-1', title: 'Task A'),
+          timeSpentOnDay: const Duration(hours: 2),
+          wasCompletedOnDay: false,
+        ),
+        TaskDayProgress(
+          task: createTestTask(id: 'task-2', title: 'Task B'),
+          timeSpentOnDay: const Duration(hours: 1),
+          wasCompletedOnDay: false,
+        ),
+        TaskDayProgress(
+          task: createTestTask(id: 'task-3', title: 'Task C'),
+          timeSpentOnDay: const Duration(minutes: 30),
+          wasCompletedOnDay: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks(tasks)),
+      );
+      await tester.pumpAndSettle();
+
+      // Should be in grid view by default
+      expect(find.byType(GridView), findsOneWidget);
+      // Task titles should be visible in grid tiles
+      expect(find.text('Task A'), findsOneWidget);
+      expect(find.text('Task B'), findsOneWidget);
+      expect(find.text('Task C'), findsOneWidget);
+    });
+
+    testWidgets('shows zero time as 0m', (tester) async {
+      final task = TaskDayProgress(
+        task: createTestTask(
+          id: 'task-1',
+          title: 'Just Completed',
+          status: TaskStatus.done(
+            id: 'status-done',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+        timeSpentOnDay: Duration.zero,
+        wasCompletedOnDay: true,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithTasks([task])),
+      );
+      await tester.pumpAndSettle();
+
+      // Toggle to list view to see time text
+      final listIcon = find.byIcon(Icons.view_list_rounded);
+      if (listIcon.evaluate().isNotEmpty) {
+        await tester.tap(listIcon);
+        await tester.pumpAndSettle();
+      }
+
+      // Should show 0m for zero duration
+      expect(find.text('0m'), findsWidgets);
     });
   });
 }

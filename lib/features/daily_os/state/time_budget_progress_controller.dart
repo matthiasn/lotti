@@ -6,6 +6,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'time_budget_progress_controller.g.dart';
 
+/// Progress data for a single task on a specific day.
+class TaskDayProgress {
+  const TaskDayProgress({
+    required this.task,
+    required this.timeSpentOnDay,
+    required this.wasCompletedOnDay,
+  });
+
+  final Task task;
+  final Duration timeSpentOnDay;
+  final bool wasCompletedOnDay;
+}
+
 /// Status of budget consumption.
 enum BudgetProgressStatus {
   /// More than 15 minutes remaining
@@ -30,7 +43,7 @@ class TimeBudgetProgress {
     required this.recordedDuration,
     required this.status,
     required this.contributingEntries,
-    required this.pinnedTasks,
+    required this.taskProgressItems,
     required this.blocks,
   });
 
@@ -41,15 +54,11 @@ class TimeBudgetProgress {
   final BudgetProgressStatus status;
   final List<JournalEntity> contributingEntries;
 
-  /// Tasks pinned to this category (resolved from PinnedTaskRef).
-  final List<Task> pinnedTasks;
+  /// Tasks with tracked time or completed today, sorted by time descending.
+  final List<TaskDayProgress> taskProgressItems;
 
   /// The planned blocks that contribute to this budget.
   final List<PlannedBlock> blocks;
-
-  /// Tasks that contributed time to this budget (from contributingEntries).
-  List<Task> get contributingTasks =>
-      contributingEntries.whereType<Task>().toList();
 
   Duration get remainingDuration => plannedDuration - recordedDuration;
 

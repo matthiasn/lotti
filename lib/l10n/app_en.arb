@@ -458,6 +458,7 @@
   "dailyOsDuration3h": "3h",
   "dailyOsDuration4h": "4h",
   "dailyOsAddBlock": "Add Block",
+  "dailyOsTasks": "Tasks",
   "dashboardActiveLabel": "Active:",
   "dashboardAddChartsTitle": "Add Charts:",
   "dashboardAddHabitButton": "Habit Charts",
