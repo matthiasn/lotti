@@ -39,7 +39,10 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
     this.selectedCount = 0,
     this.onDeletePressed,
     super.key,
-  });
+  }) : assert(
+          !selectionMode || onDeletePressed != null,
+          'onDeletePressed must be provided when selectionMode is true',
+        );
 
   /// The currently active tab
   final AiSettingsTab activeTab;
