@@ -156,6 +156,8 @@ void main() {
 
     when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
+    when(() => mockDb.getTasksDueOnOrBefore(any())).thenAnswer((_) async => []);
+
     getIt
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)

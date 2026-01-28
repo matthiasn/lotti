@@ -6661,6 +6661,18 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> tasksDueOnOrBefore(String endDate) {
+    return customSelect(
+        'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') <= ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
+        variables: [
+          Variable<String>(endDate)
+        ],
+        readsFrom: {
+          journal,
+          configFlags,
+        }).asyncMap(journal.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

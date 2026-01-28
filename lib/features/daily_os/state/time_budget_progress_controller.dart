@@ -2,6 +2,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'time_budget_progress_controller.g.dart';
@@ -12,11 +13,20 @@ class TaskDayProgress {
     required this.task,
     required this.timeSpentOnDay,
     required this.wasCompletedOnDay,
+    this.dueDateStatus = const DueDateStatus.none(),
   });
 
   final Task task;
   final Duration timeSpentOnDay;
   final bool wasCompletedOnDay;
+
+  /// Due date status relative to the day being viewed.
+  /// Use `dueDateStatus.isUrgent` to check if due/overdue.
+  /// Use `dueDateStatus.urgentColor` for badge coloring (red=overdue, orange=dueToday).
+  final DueDateStatus dueDateStatus;
+
+  /// Convenience getter for UI checks.
+  bool get isDueOrOverdue => dueDateStatus.isUrgent;
 }
 
 /// Status of budget consumption.
@@ -45,6 +55,7 @@ class TimeBudgetProgress {
     required this.contributingEntries,
     required this.taskProgressItems,
     required this.blocks,
+    this.hasNoBudgetWarning = false,
   });
 
   final String categoryId;
@@ -59,6 +70,9 @@ class TimeBudgetProgress {
 
   /// The planned blocks that contribute to this budget.
   final List<PlannedBlock> blocks;
+
+  /// True if this category has due tasks but zero planned time.
+  final bool hasNoBudgetWarning;
 
   Duration get remainingDuration => plannedDuration - recordedDuration;
 

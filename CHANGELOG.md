@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.828] - 2026-01-28
+### Added
+- Daily OS Due Task Visibility: Tasks due today or overdue now appear in time budget cards
+  - Due tasks show even without tracked time, ensuring nothing falls through the cracks
+  - Visual badges indicate urgency: red "Overdue" / "Late" and orange "Due today" / "Due"
+  - Categories with due tasks but no planned budget show a warning banner
+  - Intelligent deduplication: tasks with both tracked time and due dates merge properly
+  - Smart sorting: tasks with time first (by duration), then due tasks, then alphabetical
+
+### Changed
+- Task view mode preference (list/grid) now persists per category
+  - Stored in settings database, survives app restarts
+  - Default changed from grid to list view for better readability
+
 ## [0.9.827] - 2026-01-27
 ### Added
 - Daily OS Time Budgets: Task visualization with time tracking

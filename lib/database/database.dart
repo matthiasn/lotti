@@ -1061,6 +1061,18 @@ class JournalDb extends _$JournalDb {
     return res.map((e) => fromDbEntity(e) as DayPlanEntry).toList();
   }
 
+  /// Returns tasks that are due on or before the specified date.
+  /// Excludes completed (DONE) and rejected (REJECTED) tasks.
+  /// This includes both tasks due on the specified day and overdue tasks.
+  Future<List<Task>> getTasksDueOnOrBefore(DateTime date) async {
+    // Use end of day to capture tasks due on this day
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+    final endIso = endOfDay.toIso8601String();
+
+    final res = await tasksDueOnOrBefore(endIso).get();
+    return res.map(fromDbEntity).whereType<Task>().toList();
+  }
+
   Future<List<JournalEntity>> getQuantitativeByType({
     required String type,
     required DateTime rangeStart,

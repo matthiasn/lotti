@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -6,10 +7,31 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
+import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
 
 import '../../../../test_helper.dart';
+
+/// Fake TaskViewPreference for testing.
+class FakeTaskViewPreference extends TaskViewPreference {
+  FakeTaskViewPreference(this._initialMode);
+
+  final TaskViewMode _initialMode;
+
+  @override
+  Future<TaskViewMode> build({required String categoryId}) async {
+    return _initialMode;
+  }
+
+  @override
+  Future<void> toggle() async {
+    final current = state.value ?? TaskViewMode.list;
+    final newMode =
+        current == TaskViewMode.list ? TaskViewMode.grid : TaskViewMode.list;
+    state = AsyncData(newMode);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -60,10 +82,13 @@ void main() {
     VoidCallback? onTap,
     bool isExpanded = false,
     List<Override> overrides = const [],
+    TaskViewMode initialViewMode = TaskViewMode.list,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
         highlightedCategoryIdProvider.overrideWith((ref) => null),
+        taskViewPreferenceProvider(categoryId: progress.categoryId)
+            .overrideWith(() => FakeTaskViewPreference(initialViewMode)),
         ...overrides,
       ],
       child: TimeBudgetCard(
@@ -425,14 +450,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Toggle to list view
-      final listIcon = find.byIcon(Icons.view_list_rounded);
-      if (listIcon.evaluate().isNotEmpty) {
-        await tester.tap(listIcon);
-        await tester.pumpAndSettle();
-      }
-
-      // Task titles should be visible
+      // Default is list view, task titles should be visible
       expect(find.text('Build Feature'), findsOneWidget);
       expect(find.text('Fix Bug'), findsOneWidget);
     });
@@ -458,14 +476,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Toggle to list view
-      final listIcon = find.byIcon(Icons.view_list_rounded);
-      if (listIcon.evaluate().isNotEmpty) {
-        await tester.tap(listIcon);
-        await tester.pumpAndSettle();
-      }
-
-      // Should show checkmark icon for completed task
+      // Default is list view, should show checkmark icon for completed task
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
@@ -481,14 +492,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Toggle to list view
-      final listIcon = find.byIcon(Icons.view_list_rounded);
-      if (listIcon.evaluate().isNotEmpty) {
-        await tester.tap(listIcon);
-        await tester.pumpAndSettle();
-      }
-
-      // Should show formatted time
+      // Default is list view, should show formatted time
       expect(find.text('2h 15m'), findsWidgets);
     });
 
@@ -504,22 +508,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Initially in grid mode, should show list toggle icon
-      expect(find.byIcon(Icons.view_list_rounded), findsOneWidget);
-
-      // Tap to switch to list view
-      await tester.tap(find.byIcon(Icons.view_list_rounded));
-      await tester.pumpAndSettle();
-
-      // Now should show grid toggle icon
+      // Initially in list mode (default), should show grid toggle icon
       expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
 
-      // Tap to switch back to grid view
+      // Tap to switch to grid view
       await tester.tap(find.byIcon(Icons.grid_view_rounded));
       await tester.pumpAndSettle();
 
-      // Should show list toggle icon again
+      // Now should show list toggle icon
       expect(find.byIcon(Icons.view_list_rounded), findsOneWidget);
+
+      // Tap to switch back to list view
+      await tester.tap(find.byIcon(Icons.view_list_rounded));
+      await tester.pumpAndSettle();
+
+      // Should show grid toggle icon again
+      expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
     });
 
     testWidgets('collapses and expands task section', (tester) async {
@@ -576,11 +580,14 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks(tasks)),
+        createTestWidget(
+          progress: createProgressWithTasks(tasks),
+          initialViewMode: TaskViewMode.grid,
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Should be in grid view by default
+      // Should be in grid view
       expect(find.byType(GridView), findsOneWidget);
       // Task titles should be visible in grid tiles
       expect(find.text('Task A'), findsOneWidget);
@@ -608,14 +615,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Toggle to list view to see time text
-      final listIcon = find.byIcon(Icons.view_list_rounded);
-      if (listIcon.evaluate().isNotEmpty) {
-        await tester.tap(listIcon);
-        await tester.pumpAndSettle();
-      }
-
-      // Should show 0m for zero duration
+      // Default is list view, should show 0m for zero duration
       expect(find.text('0m'), findsWidgets);
     });
   });
