@@ -128,8 +128,10 @@ class AiSettingsFilterChips extends ConsumerWidget {
                       color: context.colorScheme.error.withValues(alpha: 0.3),
                       width: 0.8,
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.filterChipPaddingHorizontal,
+                      vertical: AppTheme.filterChipPaddingVertical,
+                    ),
                     tooltip: context.messages.aiSettingsClearAllFiltersTooltip,
                   )
                 : const SizedBox.shrink(key: ValueKey('no_clear_button')),
@@ -406,8 +408,10 @@ class AiSettingsFilterChips extends ConsumerWidget {
                   side: BorderSide(
                     color: context.colorScheme.error.withValues(alpha: 0.5),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.filterChipPaddingHorizontal,
+                    vertical: AppTheme.filterChipPaddingVertical,
+                  ),
                   tooltip: context.messages.aiSettingsDeleteSelectedTooltip,
                 )
               : const SizedBox.shrink(key: ValueKey('no_delete_button')),

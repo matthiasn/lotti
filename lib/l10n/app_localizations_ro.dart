@@ -522,28 +522,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsTabProviders => 'Providers';
 
   @override
-  String get aiSettingsSelectLabel => 'Selectare';
+  String get aiSettingsSelectLabel => 'Select';
 
   @override
   String get aiSettingsSelectModeTooltip =>
-      'Comutați modul de selecție pentru operațiuni în bloc';
+      'Toggle selection mode for bulk operations';
 
   @override
   String aiSettingsDeleteSelectedLabel(int count) {
-    return 'Șterge ($count)';
+    return 'Delete ($count)';
   }
 
   @override
-  String get aiSettingsDeleteSelectedTooltip =>
-      'Ștergeți prompt-urile selectate';
+  String get aiSettingsDeleteSelectedTooltip => 'Delete selected prompts';
 
   @override
-  String get aiSettingsDeleteSelectedConfirmTitle =>
-      'Ștergeți prompt-urile selectate';
+  String get aiSettingsDeleteSelectedConfirmTitle => 'Delete Selected Prompts';
 
   @override
   String aiSettingsDeleteSelectedConfirmMessage(int count) {
-    return 'Sunteți sigur că doriți să ștergeți $count prompt-uri selectate? Această acțiune nu poate fi anulată.';
+    return 'Are you sure you want to delete $count selected prompts? This action cannot be undone.';
   }
 
   @override

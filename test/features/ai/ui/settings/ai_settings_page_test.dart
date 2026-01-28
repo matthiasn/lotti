@@ -673,15 +673,19 @@ void main() {
         // Find the prompt card - in selection mode it's rendered inside compact AiConfigCard
         final promptCardFinders = find.text('Task Summary');
         // The first one is the filter chip, the card is rendered later
-        if (promptCardFinders.evaluate().length > 1) {
-          await tester.tap(promptCardFinders.last);
-          await tester.pumpAndSettle();
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
 
-          // FAB should now show delete icon
-          expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
-          // And the prompt should show check icon (selected)
-          expect(find.byIcon(Icons.check), findsOneWidget);
-        }
+        // FAB should now show delete icon
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+        // And the prompt should show check icon (selected)
+        expect(find.byIcon(Icons.check), findsOneWidget);
       });
 
       testWidgets(
@@ -704,19 +708,23 @@ void main() {
 
         // Select a prompt by tapping on the card text
         final promptCardFinders = find.text('Task Summary');
-        if (promptCardFinders.evaluate().length > 1) {
-          await tester.tap(promptCardFinders.last);
-          await tester.pumpAndSettle();
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
 
-          // Tap delete FAB
-          final deleteFab = find.byType(FloatingActionButton);
-          await tester.tap(deleteFab);
-          await tester.pumpAndSettle();
+        // Tap delete FAB
+        final deleteFab = find.byType(FloatingActionButton);
+        await tester.tap(deleteFab);
+        await tester.pumpAndSettle();
 
-          // Should show confirmation dialog with correct title
-          expect(find.byType(AlertDialog), findsOneWidget);
-          expect(find.text('Delete Selected Prompts'), findsOneWidget);
-        }
+        // Should show confirmation dialog with correct title
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('Delete Selected Prompts'), findsOneWidget);
       });
 
       testWidgets('should dismiss dialog and not delete when Cancel is tapped',
@@ -737,24 +745,28 @@ void main() {
         await tester.pumpAndSettle();
 
         final promptCardFinders = find.text('Task Summary');
-        if (promptCardFinders.evaluate().length > 1) {
-          await tester.tap(promptCardFinders.last);
-          await tester.pumpAndSettle();
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
 
-          // Tap delete FAB
-          await tester.tap(find.byType(FloatingActionButton));
-          await tester.pumpAndSettle();
+        // Tap delete FAB
+        await tester.tap(find.byType(FloatingActionButton));
+        await tester.pumpAndSettle();
 
-          // Tap Cancel button
-          await tester.tap(find.text('Cancel'));
-          await tester.pumpAndSettle();
+        // Tap Cancel button
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
 
-          // Dialog should be dismissed
-          expect(find.byType(AlertDialog), findsNothing);
+        // Dialog should be dismissed
+        expect(find.byType(AlertDialog), findsNothing);
 
-          // Selection should still be active
-          expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
-        }
+        // Selection should still be active
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
       });
 
       testWidgets('should delete selected prompts when Delete is confirmed',
@@ -779,24 +791,28 @@ void main() {
         await tester.pumpAndSettle();
 
         final promptCardFinders = find.text('Task Summary');
-        if (promptCardFinders.evaluate().length > 1) {
-          await tester.tap(promptCardFinders.last);
-          await tester.pumpAndSettle();
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
 
-          // Tap delete FAB
-          await tester.tap(find.byType(FloatingActionButton));
-          await tester.pumpAndSettle();
+        // Tap delete FAB
+        await tester.tap(find.byType(FloatingActionButton));
+        await tester.pumpAndSettle();
 
-          // Tap Delete button to confirm
-          await tester.tap(find.text('Delete'));
-          await tester.pumpAndSettle();
+        // Tap Delete button to confirm
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
 
-          // Dialog should be dismissed
-          expect(find.byType(AlertDialog), findsNothing);
+        // Dialog should be dismissed
+        expect(find.byType(AlertDialog), findsNothing);
 
-          // Selection mode should be exited (Add Prompt FAB should return)
-          expect(find.text('Add Prompt'), findsOneWidget);
-        }
+        // Selection mode should be exited (Add Prompt FAB should return)
+        expect(find.text('Add Prompt'), findsOneWidget);
       });
 
       testWidgets('should exit selection mode when Select chip is toggled off',
@@ -818,20 +834,24 @@ void main() {
 
         // Select a prompt
         final promptCardFinders = find.text('Task Summary');
-        if (promptCardFinders.evaluate().length > 1) {
-          await tester.tap(promptCardFinders.last);
-          await tester.pumpAndSettle();
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
 
-          // Should be in selection mode with items selected
-          expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+        // Should be in selection mode with items selected
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
 
-          // Toggle off selection mode
-          await tester.tap(selectChip);
-          await tester.pumpAndSettle();
+        // Toggle off selection mode
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
 
-          // Should exit selection mode and show Add Prompt FAB
-          expect(find.text('Add Prompt'), findsOneWidget);
-        }
+        // Should exit selection mode and show Add Prompt FAB
+        expect(find.text('Add Prompt'), findsOneWidget);
       });
 
       testWidgets('should maintain selection when switching tabs and back',
@@ -852,32 +872,35 @@ void main() {
 
         // Select a prompt
         final promptCardFinders = find.text('Task Summary');
-        if (promptCardFinders.evaluate().length > 1) {
-          await tester.tap(promptCardFinders.last);
-          await tester.pumpAndSettle();
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
 
-          // Should have delete FAB with selected item
-          expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
-          expect(
-              find.byIcon(Icons.check), findsOneWidget); // Selected indicator
+        // Should have delete FAB with selected item
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsOneWidget); // Selected indicator
 
-          // Switch to Models tab (use Tab widget which is more reliable)
-          final modelsTab = find.text('Models');
-          await tester.tap(modelsTab);
-          await tester.pumpAndSettle();
+        // Switch to Models tab (use Tab widget which is more reliable)
+        final modelsTab = find.text('Models');
+        await tester.tap(modelsTab);
+        await tester.pumpAndSettle();
 
-          // Verify we're on Models tab by checking for model content
-          expect(find.text('Claude Sonnet 3.5'), findsOneWidget);
+        // Verify we're on Models tab by checking for model content
+        expect(find.text('Claude Sonnet 3.5'), findsOneWidget);
 
-          // Switch back to Prompts tab
-          final promptsTab = find.text('Prompts');
-          await tester.tap(promptsTab);
-          await tester.pumpAndSettle();
+        // Switch back to Prompts tab
+        final promptsTab = find.text('Prompts');
+        await tester.tap(promptsTab);
+        await tester.pumpAndSettle();
 
-          // Selection state should be maintained (delete FAB and check icon)
-          expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
-          expect(find.byIcon(Icons.check), findsOneWidget);
-        }
+        // Selection state should be maintained (delete FAB and check icon)
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsOneWidget);
       });
     });
   });

@@ -257,6 +257,8 @@ class MistralInferenceRepository {
       }
 
       var chunksReceived = 0;
+      var parseErrorCount = 0;
+      const maxParseErrors = 5;
       var buffer = StringBuffer();
 
       await for (final chunk
@@ -298,11 +300,22 @@ class MistralInferenceRepository {
                 yield response;
               }
             } on FormatException catch (e) {
+              parseErrorCount++;
               developer.log(
-                'Failed to parse SSE chunk: $data',
+                'Failed to parse SSE chunk ($parseErrorCount/$maxParseErrors): $data',
                 name: 'MistralInferenceRepository',
                 error: e,
               );
+              if (parseErrorCount >= maxParseErrors) {
+                _logException(
+                  e,
+                  subDomain: 'parse_threshold_exceeded',
+                );
+                throw MistralInferenceException(
+                  'Too many parse errors ($parseErrorCount) during streaming',
+                  originalError: e,
+                );
+              }
               // Continue processing other chunks
             }
           }

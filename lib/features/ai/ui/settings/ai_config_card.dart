@@ -84,8 +84,13 @@ class AiConfigCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // In compact mode, return just the content without outer container
+    // but still handle onTap via GestureDetector
     if (compact) {
-      return _buildCardContent(context);
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: _buildCardContent(context),
+      );
     }
 
     return AnimatedContainer(

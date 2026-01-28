@@ -392,7 +392,7 @@ void main() {
 
       testWidgets('onTap still works in compact mode',
           (WidgetTester tester) async {
-        var tapped = false;
+        var cardTapped = false;
 
         final widget = MaterialApp(
           localizationsDelegates: const [
@@ -407,13 +407,10 @@ void main() {
               overrides: [
                 aiConfigRepositoryProvider.overrideWithValue(mockRepository),
               ],
-              child: GestureDetector(
-                onTap: () => tapped = true,
-                child: AiConfigCard(
-                  config: testProvider,
-                  onTap: () => tapped = true,
-                  compact: true,
-                ),
+              child: AiConfigCard(
+                config: testProvider,
+                onTap: () => cardTapped = true,
+                compact: true,
               ),
             ),
           ),
@@ -423,8 +420,8 @@ void main() {
         await tester.tap(find.text(testProvider.name));
         await tester.pump();
 
-        // In compact mode, onTap callback should still be invoked
-        expect(tapped, isTrue);
+        // In compact mode, AiConfigCard's onTap callback should be invoked
+        expect(cardTapped, isTrue);
         expect(find.text(testProvider.name), findsOneWidget);
       });
 
